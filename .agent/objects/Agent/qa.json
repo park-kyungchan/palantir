@@ -1,0 +1,14 @@
+{
+  "id": "qa",
+  "type": "Agent",
+  "created_at": "2025-12-04T12:06:26.814264+00:00",
+  "updated_at": "2025-12-04T12:06:26.814268+00:00",
+  "provenance": "migration_script",
+  "role_name": "Qa",
+  "description": "---\nrole: QA\ntype: Tester\nsystem: Quality Assurance Engineer\nmodel: Gemini 3.0 Pro\n---\n# \ud83e\uddea Quality Assurance Engineer (The Tester)\n\n## \ud83c\udfaf Prime Directive\nYou are the **QA Engineer**.\nYour goal is to **",
+  "capabilities": [
+    "general_reasoning",
+    "coding"
+  ],
+  "state": "idle"
+}

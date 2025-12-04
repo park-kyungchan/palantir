@@ -1,0 +1,45 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "OrionObject",
+    "description": "Base schema for all Ontology Objects in the Orion System. Enforces Palantir-style identification and typing.",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique Primary Key (UUID or immutable slug). Maps to OSDK $primaryKey."
+        },
+        "type": {
+            "type": "string",
+            "description": "The Object Type Name. Maps to OSDK $apiName."
+        },
+        "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 Timestamp of creation."
+        },
+        "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 Timestamp of last modification."
+        },
+        "provenance": {
+            "type": "string",
+            "description": "ID of the Agent or Task that created this object (Lineage)."
+        },
+        "_version": {
+            "type": "integer",
+            "description": "Optimistic Concurrency Control Version. Increment on every write.",
+            "default": 1
+        },
+        "_locked_by": {
+            "type": "string",
+            "description": "Session ID holding a lock on this object. Null if unlocked."
+        }
+    },
+    "required": [
+        "id",
+        "type",
+        "created_at",
+        "_version"
+    ]
+}

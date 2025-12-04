@@ -1,0 +1,11 @@
+{
+  "id": "task_e2e-golden-path",
+  "type": "Task",
+  "created_at": "2025-12-04T12:06:26.816268+00:00",
+  "updated_at": "2025-12-04T12:06:26.816273+00:00",
+  "provenance": "migration_script",
+  "objective": "Implement Data Ingestion Pipeline",
+  "status": "pending",
+  "assigned_to": null,
+  "plan_id": "e2e-golden-path"
+}
