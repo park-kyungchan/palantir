@@ -1,0 +1,12 @@
+{
+  "concept_id": "garbage_collection",
+  "name": "Garbage Collection & ARC",
+  "category": "memory",
+  "prerequisites": [
+    "value_vs_reference"
+  ],
+  "related_concepts": [
+    "memory_leaks",
+    "retain_cycles"
+  ]
+}

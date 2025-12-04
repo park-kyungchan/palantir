@@ -1,0 +1,12 @@
+{
+  "concept_id": "parameters",
+  "name": "Parameters & Arguments",
+  "category": "functions",
+  "prerequisites": [
+    "function_definition"
+  ],
+  "related_concepts": [
+    "default_values",
+    "variadic"
+  ]
+}

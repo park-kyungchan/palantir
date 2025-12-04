@@ -1,0 +1,11 @@
+{
+  "impl_id": "5d3aa11f-16b4-42fe-a53b-b8210b8fd7c9",
+  "concept_id": "concurrency",
+  "language_id": "go",
+  "syntax_template": "go func() { ch <- result }()",
+  "design_rationale": "CSP model: goroutines + channels. 'Do not communicate by sharing memory; share memory by communicating.'",
+  "sources": [
+    {},
+    {}
+  ]
+}

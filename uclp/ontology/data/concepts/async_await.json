@@ -1,0 +1,13 @@
+{
+  "concept_id": "async_await",
+  "name": "Async/Await",
+  "category": "concurrency",
+  "prerequisites": [
+    "function_definition",
+    "closures"
+  ],
+  "related_concepts": [
+    "goroutines",
+    "tasks"
+  ]
+}

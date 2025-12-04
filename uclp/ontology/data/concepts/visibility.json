@@ -1,0 +1,11 @@
+{
+  "concept_id": "visibility",
+  "name": "Visibility & Access Control",
+  "category": "modules",
+  "prerequisites": [
+    "packages"
+  ],
+  "related_concepts": [
+    "encapsulation"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "language_id": "go",
+  "name": "Go",
+  "philosophy_summary": "Derived from patterns",
+  "idiomatic_patterns": [
+    {
+      "pattern": "if err != nil",
+      "usage": "Error checking at every call site",
+      "philosophy": "Explicit error handling"
+    },
+    {
+      "pattern": "defer cleanup()",
+      "usage": "Resource cleanup",
+      "philosophy": "Cleanup close to acquisition"
+    },
+    {
+      "pattern": "go func() {}()",
+      "usage": "Spawning concurrent work",
+      "philosophy": "Lightweight concurrency"
+    },
+    {
+      "pattern": "ch := make(chan T)",
+      "usage": "Channel communication",
+      "philosophy": "Share by communicating"
+    },
+    {
+      "pattern": "type T struct { OtherType }",
+      "usage": "Embedding for composition",
+      "philosophy": "Composition over inheritance"
+    }
+  ]
+}

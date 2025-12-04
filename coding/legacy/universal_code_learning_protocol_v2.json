@@ -1,0 +1,1545 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "protocol_name": "Universal Code Learning Protocol",
+  "version": "2.2.0",
+  "description": "LLM-agnostic protocol for teaching programming concepts across multiple languages with dynamic design philosophy explanations, structured citations, and extensibility support",
+
+  "metadata": {
+    "created_date": "2024-01-15",
+    "last_updated": "2024-11-29",
+    "maintainers": ["protocol-team"],
+    "license": "MIT"
+  },
+
+  "versioning": {
+    "current_version": "2.2.0",
+    "version_format": "semver",
+    "version_pattern": "^\\d+\\.\\d+\\.\\d+$",
+    "rules": {
+      "major": "Breaking changes to schema structure, incompatible with previous versions",
+      "minor": "New features, backward compatible (e.g., new language support)",
+      "patch": "Bug fixes, documentation improvements, no schema changes"
+    }
+  },
+
+  "changelog": [
+    {
+      "version": "2.2.0",
+      "date": "2024-11-29",
+      "breaking": false,
+      "changes": [
+        "Added TypeScript as fourth supported language",
+        "Updated languages_metadata with TypeScript entry (order: 4)",
+        "Added TypeScript core_philosophy with design principles and famous quotes",
+        "Extended all comparison_axes with TypeScript values",
+        "Added TypeScript code_validation commands (tsc for light, strict mode)",
+        "Updated idiomatic_patterns with TypeScript patterns",
+        "Extended example_explanations with TypeScript examples"
+      ],
+      "migration_guide": "Update dashboard to support TypeScript syntax highlighting. All comparison tables now include 4 languages: Go, Python, Swift, TypeScript."
+    },
+    {
+      "version": "2.1.1",
+      "date": "2024-11-29",
+      "breaking": false,
+      "changes": [
+        "Expanded comparison_axes from 19 to 44 to fully match required_axes_per_category",
+        "Created separate schema file (universal_code_learning_protocol_schema.json) with full ajv validation support",
+        "Added $ref connections in schema for core_principle, language_philosophy, famous_quote, language_example",
+        "Updated validation_command to use correct schema file path"
+      ],
+      "migration_guide": "Run ajv validation with updated schema file. All axes in required_axes_per_category now have definitions in comparison_axes."
+    },
+    {
+      "version": "2.1.0",
+      "date": "2024-11-29",
+      "breaking": false,
+      "changes": [
+        "Added definitions section with reusable JSON Schema components (draft-07 compatible)",
+        "Added conditional required fields to source_schema using allOf/if-then pattern",
+        "Unified sources structure to array format across all sections",
+        "Expanded comparison_axes from 6 to 19 axes for complete coverage",
+        "Added light/strict dual-mode code validation system with fallback chains",
+        "Standardized caching TTL to seconds with explicit component definitions",
+        "Added cache invalidation rules for schema, language, and concept changes"
+      ],
+      "migration_guide": "Update all single source objects to sources arrays. Verify comparison tables include newly defined axes. Review code validation commands for your environment."
+    },
+    {
+      "version": "2.0.0",
+      "date": "2024-11-29",
+      "breaking": true,
+      "changes": [
+        "Added JSON Schema validation with strict type enforcement",
+        "Added structured citation system (sources arrays)",
+        "Added languages_metadata for extensibility",
+        "Added required_axes_per_category for comparison tables",
+        "Added depth_selection rules with auto-detection",
+        "Added code_validation harness specifications",
+        "Added caching_strategy for dynamic context",
+        "Added compatibility requirements"
+      ],
+      "migration_guide": "Update all response templates to include sources arrays. Ensure comparison tables have all required axes per category. Validate against new JSON Schema before deployment."
+    },
+    {
+      "version": "1.0.0",
+      "date": "2024-01-15",
+      "breaking": false,
+      "changes": [
+        "Initial release with core_philosophy, response_structure, comparison_framework, dynamic_context sections"
+      ],
+      "migration_guide": null
+    }
+  ],
+
+  "compatibility": {
+    "min_llm_capabilities": {
+      "structured_output": true,
+      "code_generation": true,
+      "multi_turn_context": 10,
+      "context_window_tokens": 32000,
+      "markdown_support": true,
+      "xml_parsing": true
+    },
+    "tested_llms": [
+      {"name": "Claude", "versions": ["3.5 Sonnet", "3.5 Opus", "3 Haiku"], "status": "verified"},
+      {"name": "GPT-4", "versions": ["gpt-4-turbo", "gpt-4o"], "status": "verified"},
+      {"name": "Gemini", "versions": ["1.5 Pro", "1.5 Flash"], "status": "verified"},
+      {"name": "Codex", "versions": ["code-davinci-002"], "status": "compatible"}
+    ],
+    "dashboard_requirements": {
+      "json_parsing": true,
+      "markdown_rendering": true,
+      "code_syntax_highlighting": ["go", "python", "swift", "typescript"],
+      "mermaid_diagram_support": "optional"
+    }
+  },
+
+  "definitions": {
+    "_comment": "Reusable JSON Schema definitions (draft-07 compatible). Use $ref: '#/definitions/name' to reference.",
+
+    "source": {
+      "type": "object",
+      "description": "Structured citation for referenced information",
+      "properties": {
+        "title": {"type": "string", "description": "Document or resource title"},
+        "url": {"type": "string", "format": "uri", "description": "Resource URL"},
+        "type": {
+          "type": "string",
+          "enum": ["official_doc", "pep", "swift_evolution", "go_proposal", "creator_interview", "creator_talk", "blog", "book", "community", "benchmark", "repository", "specification", "article", "video"],
+          "description": "Source type for categorization"
+        },
+        "language": {
+          "type": "string",
+          "enum": ["go", "python", "swift", "typescript", "all"],
+          "description": "Applicable programming language"
+        },
+        "author": {"type": "string", "description": "Author or organization name"},
+        "accessed_date": {"type": "string", "format": "date", "description": "ISO 8601 date when accessed"},
+        "section": {"type": "string", "description": "Specific section or chapter"},
+        "quote": {"type": "string", "description": "Direct quotation if applicable"},
+        "year": {"type": "integer", "description": "Publication year"},
+        "note": {"type": "string", "maxLength": 200, "description": "Additional context"}
+      },
+      "required": ["title", "type", "language"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {"type": {"enum": ["official_doc", "pep", "swift_evolution", "go_proposal", "blog", "repository", "specification", "article"]}}
+          },
+          "then": {
+            "required": ["url"]
+          }
+        },
+        {
+          "if": {
+            "properties": {"type": {"enum": ["creator_interview", "creator_talk", "video"]}}
+          },
+          "then": {
+            "required": ["author"]
+          }
+        },
+        {
+          "if": {
+            "properties": {"type": {"const": "book"}}
+          },
+          "then": {
+            "required": ["author", "year"]
+          }
+        }
+      ]
+    },
+
+    "sources_array": {
+      "type": "array",
+      "description": "Array of source citations",
+      "items": {"$ref": "#/definitions/source"},
+      "minItems": 0
+    },
+
+    "language_entry": {
+      "type": "object",
+      "description": "Metadata for a supported programming language",
+      "properties": {
+        "id": {"type": "string", "description": "Unique identifier"},
+        "display_name": {"type": "string", "description": "Human-readable name"},
+        "code_fence_lang": {"type": "string", "description": "Markdown code fence language"},
+        "order": {"type": "integer", "minimum": 1, "description": "Display order"},
+        "enabled": {"type": "boolean", "description": "Whether language is active"},
+        "added_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Protocol version when added"},
+        "file_extensions": {"type": "array", "items": {"type": "string"}, "description": "File extensions"},
+        "package_manager": {"type": "string", "description": "Primary package manager"},
+        "doc_sources": {"type": "array", "items": {"type": "string", "format": "uri"}, "description": "Official documentation URLs"},
+        "official_style_guide": {"type": "string", "format": "uri", "description": "Style guide URL"},
+        "community_resources": {"type": "array", "items": {"type": "string", "format": "uri"}, "description": "Community resource URLs"}
+      },
+      "required": ["id", "display_name", "code_fence_lang", "order", "enabled", "added_version", "doc_sources"]
+    },
+
+    "comparison_axis": {
+      "type": "object",
+      "description": "Definition of a comparison axis",
+      "properties": {
+        "axis_id": {"type": "string", "pattern": "^[a-z_]+$", "description": "Unique identifier in snake_case"},
+        "name": {"type": "string", "description": "Human-readable name"},
+        "description": {"type": "string", "description": "What this axis compares"},
+        "how_to_compare": {"type": "string", "description": "Guidance for comparing across languages"}
+      },
+      "required": ["axis_id", "name", "description"]
+    }
+  },
+
+  "languages_metadata": {
+    "go": {
+      "id": "go",
+      "display_name": "Go",
+      "code_fence_lang": "go",
+      "order": 1,
+      "enabled": true,
+      "added_version": "1.0.0",
+      "file_extensions": [".go"],
+      "package_manager": "go mod",
+      "doc_sources": [
+        "https://go.dev/doc/",
+        "https://go.dev/ref/spec",
+        "https://pkg.go.dev/std"
+      ],
+      "official_style_guide": "https://go.dev/doc/effective_go",
+      "community_resources": ["https://gobyexample.com/"]
+    },
+    "python": {
+      "id": "python",
+      "display_name": "Python",
+      "code_fence_lang": "python",
+      "order": 2,
+      "enabled": true,
+      "added_version": "1.0.0",
+      "file_extensions": [".py"],
+      "package_manager": "pip",
+      "doc_sources": [
+        "https://docs.python.org/3/",
+        "https://peps.python.org/"
+      ],
+      "official_style_guide": "https://peps.python.org/pep-0008/",
+      "community_resources": ["https://realpython.com/"]
+    },
+    "swift": {
+      "id": "swift",
+      "display_name": "Swift",
+      "code_fence_lang": "swift",
+      "order": 3,
+      "enabled": true,
+      "added_version": "1.0.0",
+      "file_extensions": [".swift"],
+      "package_manager": "Swift Package Manager",
+      "doc_sources": [
+        "https://docs.swift.org/swift-book/",
+        "https://developer.apple.com/documentation/swift"
+      ],
+      "official_style_guide": "https://google.github.io/swift/",
+      "community_resources": ["https://www.hackingwithswift.com/"]
+    },
+    "typescript": {
+      "id": "typescript",
+      "display_name": "TypeScript",
+      "code_fence_lang": "typescript",
+      "order": 4,
+      "enabled": true,
+      "added_version": "2.2.0",
+      "file_extensions": [".ts", ".tsx", ".mts", ".cts"],
+      "package_manager": "npm",
+      "doc_sources": [
+        "https://www.typescriptlang.org/docs/",
+        "https://github.com/microsoft/TypeScript/wiki"
+      ],
+      "official_style_guide": "https://google.github.io/styleguide/tsguide.html",
+      "community_resources": ["https://basarat.gitbook.io/typescript/", "https://typescript-kr.github.io/"]
+    }
+  },
+
+  "language_extension_guide": {
+    "required_fields": ["id", "display_name", "code_fence_lang", "order", "enabled", "added_version", "file_extensions", "package_manager", "doc_sources"],
+    "steps": [
+      "Add entry to languages_metadata with all required fields",
+      "Add core_philosophy entry with design_principles, mental_models, ecosystem_context",
+      "Add idiomatic_patterns entry with 5 required patterns",
+      "Update all comparison_axes with new language values",
+      "Add code_validation commands for new language",
+      "Increment protocol minor version",
+      "Add changelog entry"
+    ]
+  },
+
+  "source_schema": {
+    "_comment": "This schema is also defined in definitions.source with full validation. Use $ref for programmatic access.",
+    "type": "object",
+    "required": ["title", "type", "language"],
+    "properties": {
+      "title": {"type": "string", "description": "Document or resource title"},
+      "url": {"type": "string", "format": "uri", "description": "Required for official_doc, pep, swift_evolution, go_proposal, blog, repository, specification, article"},
+      "type": {"type": "string", "enum": ["official_doc", "pep", "swift_evolution", "go_proposal", "creator_interview", "creator_talk", "blog", "book", "community", "benchmark", "repository", "specification", "article", "video"]},
+      "language": {"type": "string", "enum": ["go", "python", "swift", "all"]},
+      "author": {"type": "string", "description": "Required for creator_interview, creator_talk, video, book"},
+      "accessed_date": {"type": "string", "format": "date", "description": "ISO 8601 date"},
+      "section": {"type": "string", "description": "Specific section or chapter"},
+      "quote": {"type": "string", "description": "Direct quotation if applicable"},
+      "year": {"type": "integer", "description": "Publication year, required for book"},
+      "note": {"type": "string", "maxLength": 200, "description": "Additional context"}
+    },
+    "conditional_requirements": {
+      "_comment": "These conditions are enforced via allOf/if-then in definitions.source",
+      "url_required_for": ["official_doc", "pep", "swift_evolution", "go_proposal", "blog", "repository", "specification", "article"],
+      "author_required_for": ["creator_interview", "creator_talk", "video", "book"],
+      "year_required_for": ["book"]
+    }
+  },
+
+  "sections": {
+    "core_philosophy": {
+      "description": "Foundation knowledge about each language's design philosophy",
+      "languages": {
+        "go": {
+          "creators": ["Robert Griesemer", "Rob Pike", "Ken Thompson"],
+          "birth_year": 2009,
+          "origin_organization": "Google",
+          "problem_to_solve": [
+            "C++ compilation taking 45+ minutes at Google scale",
+            "Complex dependency management in large codebases",
+            "Difficulty writing concurrent programs safely",
+            "Language complexity growing beyond manageability"
+          ],
+          "core_principles": [
+            {
+              "principle": "Less is exponentially more",
+              "explanation": "Simplicity through deliberate feature omission. Every feature must justify its complexity cost.",
+              "concrete_example": "No generics for 10 years (until Go 1.18) to avoid compile-time complexity",
+              "sources": [
+                {
+                  "title": "Less is exponentially more",
+                  "url": "https://commandcenter.blogspot.com/2012/06/less-is-exponentially-more.html",
+                  "type": "creator_talk",
+                  "author": "Rob Pike",
+                  "language": "go",
+                  "year": 2012
+                }
+              ]
+            },
+            {
+              "principle": "Composition over inheritance",
+              "explanation": "Embed types instead of inheriting. Avoid deep hierarchies.",
+              "concrete_example": "type Reader struct { io.Reader } embeds interface, no 'extends' keyword",
+              "sources": []
+            },
+            {
+              "principle": "Explicit is better than implicit",
+              "explanation": "Error handling must be visible. No hidden control flow.",
+              "concrete_example": "if err != nil { return err } appears at every error site",
+              "sources": []
+            },
+            {
+              "principle": "Do not communicate by sharing memory; share memory by communicating",
+              "explanation": "CSP model: use channels to pass data between goroutines",
+              "concrete_example": "ch := make(chan int); go func() { ch <- 42 }(); val := <-ch",
+              "sources": [
+                {
+                  "title": "Share Memory By Communicating",
+                  "url": "https://go.dev/blog/codelab-share",
+                  "type": "official_doc",
+                  "language": "go"
+                }
+              ]
+            }
+          ],
+          "intentionally_excluded": [
+            {"feature": "Classes and inheritance", "reason": "Leads to fragile base class problem and complex hierarchies"},
+            {"feature": "Exceptions", "reason": "Hides control flow, makes error handling non-local"},
+            {"feature": "Generics (until 1.18)", "reason": "Compilation speed and simplicity prioritized"},
+            {"feature": "Ternary operator", "reason": "if-else is clearer, avoids nested ternary abuse"},
+            {"feature": "Default parameters", "reason": "Explicit function calls are clearer"},
+            {"feature": "while loop", "reason": "for loop with condition serves same purpose"}
+          ],
+          "famous_quotes": [
+            {
+              "quote": "Simplicity is complicated.",
+              "author": "Rob Pike",
+              "sources": [
+                {
+                  "title": "Simplicity is Complicated",
+                  "url": "https://www.youtube.com/watch?v=rFejpH_tAHM",
+                  "type": "creator_talk",
+                  "author": "Rob Pike",
+                  "language": "go",
+                  "year": 2015
+                }
+              ]
+            },
+            {"quote": "Clear is better than clever.", "author": "Go Proverbs", "sources": []},
+            {"quote": "Errors are values.", "author": "Go Blog", "sources": []},
+            {"quote": "A little copying is better than a little dependency.", "author": "Go Proverbs", "sources": []}
+          ]
+        },
+        "python": {
+          "creators": ["Guido van Rossum"],
+          "birth_year": 1991,
+          "origin_organization": "CWI (Centrum Wiskunde & Informatica), Netherlands",
+          "problem_to_solve": [
+            "Bridge gap between shell scripting and C programming",
+            "Make programming accessible and readable",
+            "Reduce ceremony and boilerplate",
+            "Enable rapid prototyping"
+          ],
+          "core_principles": [
+            {
+              "principle": "Beautiful is better than ugly",
+              "explanation": "Code is read more than written. Aesthetics matter.",
+              "concrete_example": "Significant whitespace enforces consistent formatting",
+              "sources": [
+                {
+                  "title": "PEP 20 - The Zen of Python",
+                  "url": "https://peps.python.org/pep-0020/",
+                  "type": "pep",
+                  "language": "python"
+                }
+              ]
+            },
+            {
+              "principle": "Explicit is better than implicit",
+              "explanation": "self parameter in methods, no implicit variable declarations",
+              "concrete_example": "def method(self, arg): self.value = arg",
+              "sources": []
+            },
+            {
+              "principle": "There should be one obvious way to do it",
+              "explanation": "Reduce cognitive load by having canonical patterns",
+              "concrete_example": "List comprehension [x*2 for x in items] is the way to transform lists",
+              "sources": []
+            },
+            {
+              "principle": "Readability counts",
+              "explanation": "Code should read like English where possible",
+              "concrete_example": "if item in collection: instead of collection.contains(item)",
+              "sources": []
+            },
+            {
+              "principle": "Batteries included",
+              "explanation": "Comprehensive standard library for common tasks",
+              "concrete_example": "json, http, sqlite3, unittest all in stdlib",
+              "sources": []
+            }
+          ],
+          "zen_of_python_pep20": [
+            "Beautiful is better than ugly.",
+            "Explicit is better than implicit.",
+            "Simple is better than complex.",
+            "Complex is better than complicated.",
+            "Flat is better than nested.",
+            "Sparse is better than dense.",
+            "Readability counts.",
+            "Special cases aren't special enough to break the rules.",
+            "Although practicality beats purity.",
+            "Errors should never pass silently.",
+            "Unless explicitly silenced.",
+            "In the face of ambiguity, refuse the temptation to guess.",
+            "There should be one-- and preferably only one --obvious way to do it.",
+            "Although that way may not be obvious at first unless you're Dutch.",
+            "Now is better than never.",
+            "Although never is often better than *right* now.",
+            "If the implementation is hard to explain, it's a bad idea.",
+            "If the implementation is easy to explain, it may be a good idea.",
+            "Namespaces are one honking great idea -- let's do more of those!"
+          ],
+          "intentionally_included": [
+            {"feature": "Dynamic typing", "reason": "Rapid prototyping, less ceremony"},
+            {"feature": "Duck typing", "reason": "Focus on behavior, not type hierarchy"},
+            {"feature": "GIL (Global Interpreter Lock)", "reason": "Simplifies CPython internals, enables easy C extensions"}
+          ],
+          "famous_quotes": [
+            {"quote": "Python is an experiment in how much freedom programmers need.", "author": "Guido van Rossum", "sources": []},
+            {"quote": "Code is read much more often than it is written.", "author": "Guido van Rossum", "sources": []}
+          ]
+        },
+        "swift": {
+          "creators": ["Chris Lattner"],
+          "birth_year": 2014,
+          "origin_organization": "Apple",
+          "problem_to_solve": [
+            "Objective-C verbosity and complexity",
+            "Nil/null pointer crashes (billion dollar mistake)",
+            "Memory management errors (pre-ARC manual retain/release)",
+            "Need for modern language features while maintaining C interop",
+            "Compile-time safety without runtime overhead"
+          ],
+          "core_principles": [
+            {
+              "principle": "Safe",
+              "explanation": "Prevent common programming errors at compile time",
+              "concrete_examples": [
+                "Optionals force handling of nil",
+                "ARC prevents memory leaks automatically",
+                "Type safety catches misuse before runtime",
+                "Actors prevent data races"
+              ],
+              "sources": []
+            },
+            {
+              "principle": "Fast",
+              "explanation": "Performance comparable to C/C++ without sacrificing safety",
+              "concrete_examples": [
+                "Value types (struct) avoid heap allocation",
+                "Copy-on-write for collections",
+                "Aggressive compiler optimizations",
+                "No runtime overhead for optionals"
+              ],
+              "sources": []
+            },
+            {
+              "principle": "Expressive",
+              "explanation": "Modern syntax that is readable and writable",
+              "concrete_examples": [
+                "Type inference reduces boilerplate",
+                "Trailing closures for DSL-like APIs",
+                "String interpolation: \"Hello, \\(name)\"",
+                "Pattern matching in switch"
+              ],
+              "sources": []
+            },
+            {
+              "principle": "Protocol-oriented programming",
+              "explanation": "Prefer protocols and extensions over class inheritance",
+              "concrete_example": "protocol Drawable { func draw() }; extension Drawable { func draw() { /* default */ } }",
+              "sources": [
+                {
+                  "title": "Protocol-Oriented Programming in Swift",
+                  "url": "https://developer.apple.com/videos/play/wwdc2015/408/",
+                  "type": "creator_talk",
+                  "author": "Dave Abrahams",
+                  "language": "swift",
+                  "year": 2015
+                }
+              ]
+            }
+          ],
+          "intentionally_excluded": [
+            {"feature": "Implicit nil/null", "reason": "Billion dollar mistake - optionals make nil explicit"},
+            {"feature": "Header files", "reason": "Single file per type, no declaration/definition split"},
+            {"feature": "Pointer arithmetic (by default)", "reason": "Safety first, available in unsafe blocks if needed"}
+          ],
+          "evolution_highlights": [
+            {"version": "2.0", "feature": "Error handling (throws/try/catch)", "year": 2015},
+            {"version": "3.0", "feature": "Major syntax overhaul, API guidelines", "year": 2016},
+            {"version": "5.0", "feature": "ABI stability, Result type", "year": 2019},
+            {"version": "5.5", "feature": "async/await, actors", "year": 2021},
+            {"version": "6.0", "feature": "Complete concurrency checking, typed throws", "year": 2024}
+          ],
+          "famous_quotes": [
+            {"quote": "Swift is designed to make writing and maintaining correct programs easier.", "author": "Swift.org", "sources": []},
+            {"quote": "We designed Swift to be the first industrial-quality systems programming language that is as expressive and enjoyable as a scripting language.", "author": "Chris Lattner", "sources": []}
+          ]
+        },
+        "typescript": {
+          "creators": ["Anders Hejlsberg"],
+          "birth_year": 2012,
+          "origin_organization": "Microsoft",
+          "problem_to_solve": [
+            "JavaScript lacks static typing for large-scale applications",
+            "Tooling support (autocomplete, refactoring) limited without types",
+            "Runtime errors that could be caught at compile time",
+            "Difficulty maintaining large JavaScript codebases"
+          ],
+          "core_principles": [
+            {
+              "principle": "JavaScript that scales",
+              "explanation": "Add optional static types to JavaScript without changing runtime semantics",
+              "concrete_example": "const name: string = 'Alice'; // Type annotation, compiles to: const name = 'Alice';",
+              "sources": [
+                {
+                  "title": "TypeScript Design Goals",
+                  "url": "https://github.com/Microsoft/TypeScript/wiki/TypeScript-Design-Goals",
+                  "type": "official_doc",
+                  "language": "typescript"
+                }
+              ]
+            },
+            {
+              "principle": "Structural typing",
+              "explanation": "Type compatibility based on shape, not explicit declaration. If it has the required properties, it fits.",
+              "concrete_example": "interface Point { x: number; y: number }; const p = { x: 1, y: 2, z: 3 }; // p is compatible with Point",
+              "sources": []
+            },
+            {
+              "principle": "Gradual typing",
+              "explanation": "Incrementally adopt types in existing JavaScript codebase. 'any' type allows opting out.",
+              "concrete_example": "let data: any = fetchData(); // Start with any, refine later",
+              "sources": []
+            },
+            {
+              "principle": "Type inference",
+              "explanation": "Compiler infers types where possible, reducing annotation burden",
+              "concrete_example": "const items = [1, 2, 3]; // Inferred as number[]",
+              "sources": []
+            },
+            {
+              "principle": "Emit idiomatic JavaScript",
+              "explanation": "Generated JavaScript should be readable and work well with existing JS ecosystem",
+              "concrete_example": "async/await compiles to generator-based code for older targets, native code for ES2017+",
+              "sources": []
+            }
+          ],
+          "intentionally_excluded": [
+            {"feature": "Runtime type checking", "reason": "Types are erased at compile time, no runtime overhead"},
+            {"feature": "Sound type system", "reason": "Pragmatic balance between correctness and productivity"},
+            {"feature": "Breaking JavaScript semantics", "reason": "Must be valid JavaScript superset"},
+            {"feature": "Nominal typing (by default)", "reason": "Structural typing better matches JavaScript patterns"}
+          ],
+          "evolution_highlights": [
+            {"version": "1.0", "feature": "Initial release with classes, interfaces, generics", "year": 2014},
+            {"version": "2.0", "feature": "Non-nullable types, control flow analysis", "year": 2016},
+            {"version": "3.0", "feature": "Project references, unknown type", "year": 2018},
+            {"version": "4.0", "feature": "Variadic tuple types, labeled tuples", "year": 2020},
+            {"version": "5.0", "feature": "Decorators, const type parameters", "year": 2023}
+          ],
+          "famous_quotes": [
+            {
+              "quote": "TypeScript is JavaScript that scales.",
+              "author": "TypeScript Team",
+              "sources": [
+                {
+                  "title": "TypeScript Homepage",
+                  "url": "https://www.typescriptlang.org/",
+                  "type": "official_doc",
+                  "language": "typescript"
+                }
+              ]
+            },
+            {"quote": "The best way to deal with complexity is to not create it in the first place.", "author": "Anders Hejlsberg", "sources": []}
+          ]
+        }
+      },
+      "comparison_axes": {
+        "type_system": {
+          "go": "Static, structural typing (interfaces matched by structure, not declaration)",
+          "python": "Dynamic, duck typing (type checked at runtime, optional hints)",
+          "swift": "Static, nominal typing with powerful inference",
+          "typescript": "Static, structural typing with gradual adoption (any type escape hatch)",
+          "philosophy_difference": "Go: simplicity through minimal features. Python: flexibility through dynamic typing. Swift: safety through strict typing with inference. TypeScript: pragmatic balance - JavaScript compatibility with optional type safety."
+        },
+        "memory_management": {
+          "go": "Garbage collection (concurrent, low-latency mark-and-sweep)",
+          "python": "Reference counting + cycle-detecting garbage collector",
+          "swift": "ARC (Automatic Reference Counting) - deterministic, compile-time inserted",
+          "typescript": "JavaScript GC (V8/SpiderMonkey) - mark-and-sweep, generational",
+          "philosophy_difference": "Go: simplicity (just forget about memory). Python: convenience (reference counting is simple to understand). Swift: control + safety (deterministic deallocation, no GC pauses). TypeScript: inherits JavaScript's GC, no control."
+        },
+        "error_handling": {
+          "go": "Explicit error return values, no exceptions",
+          "python": "Exception-based (try/except), EAFP philosophy",
+          "swift": "Typed throws + Result type + Optionals for different error scenarios",
+          "typescript": "Exception-based (try/catch) + Promise rejection + union types for Result pattern",
+          "philosophy_difference": "Go: errors are values, handle explicitly every time. Python: separate happy path from error path. Swift: compiler-enforced handling with type safety. TypeScript: JavaScript exceptions + type-safe Result pattern via union types."
+        },
+        "concurrency": {
+          "go": "Goroutines + channels (CSP model), M:N scheduling",
+          "python": "asyncio (event loop) + threading (GIL-limited) + multiprocessing",
+          "swift": "async/await + actors (structured concurrency)",
+          "typescript": "async/await + Promises (event loop), Web Workers for parallelism",
+          "philosophy_difference": "Go: communication over shared state. Python: pragmatic mix of models for different needs. Swift: safety through isolation, structured lifetime management. TypeScript: single-threaded event loop with async syntax sugar."
+        }
+      }
+    },
+
+    "response_structure": {
+      "description": "How LLM should structure responses when teaching concepts",
+      "template": {
+        "required_sections": [
+          {
+            "name": "concept_definition",
+            "purpose": "Language-neutral definition of the concept",
+            "format": "XML tag + Markdown heading",
+            "ordering": 1,
+            "required_fields": ["CONCEPT_NAME", "KOREAN_NAME", "ENGLISH_NAME", "DEFINITION"],
+            "template": "<concept name=\"{CONCEPT_NAME}\">\n## Concept: {KOREAN_NAME} ({ENGLISH_NAME})\n\n{DEFINITION}\n</concept>"
+          },
+          {
+            "name": "why_philosophy",
+            "purpose": "Why this concept exists and the design philosophy behind it",
+            "format": "XML tag + Markdown list",
+            "ordering": 2,
+            "required_fields": ["PROBLEM_DESCRIPTION", "SOLUTION_APPROACH", "DESIGN_PHILOSOPHY"],
+            "template": "<why>\n### Why does this exist?\n\n- **Problem**: {PROBLEM_DESCRIPTION}\n- **Solution**: {SOLUTION_APPROACH}\n- **Philosophy**: {DESIGN_PHILOSOPHY}\n</why>"
+          },
+          {
+            "name": "language_implementations",
+            "purpose": "How each language implements this concept",
+            "format": "XML tag with nested lang tags + code fences",
+            "ordering": 3,
+            "required_fields": ["GO_CODE", "GO_DESIGN_RATIONALE", "PYTHON_CODE", "PYTHON_DESIGN_RATIONALE", "SWIFT_CODE", "SWIFT_DESIGN_RATIONALE"],
+            "language_order": ["Go", "Python", "Swift"],
+            "sources_format": {
+              "_comment": "Sources are now arrays, not single placeholders",
+              "structure": "Each language section has a sources array",
+              "rendering": "Render as bullet list under **Sources**: heading"
+            },
+            "template": "<implementations>\n### Implementation\n\n<lang name=\"Go\">\n```go\n{GO_CODE}\n```\n**Design Decision**: {GO_DESIGN_RATIONALE}\n\n**Sources**:\n{GO_SOURCES_LIST}\n</lang>\n\n<lang name=\"Python\">\n```python\n{PYTHON_CODE}\n```\n**Design Decision**: {PYTHON_DESIGN_RATIONALE}\n\n**Sources**:\n{PYTHON_SOURCES_LIST}\n</lang>\n\n<lang name=\"Swift\">\n```swift\n{SWIFT_CODE}\n```\n**Design Decision**: {SWIFT_DESIGN_RATIONALE}\n\n**Sources**:\n{SWIFT_SOURCES_LIST}\n</lang>\n</implementations>",
+            "sources_list_format": "- [{title}]({url}) - {note}"
+          },
+          {
+            "name": "comparison_matrix",
+            "purpose": "Side-by-side comparison table",
+            "format": "Markdown table",
+            "ordering": 4,
+            "rules": {
+              "all_languages_required": true,
+              "ellipsis_forbidden": true,
+              "na_requires_justification": true,
+              "required_axes": "Must include all axes from required_axes_per_category for the concept's category"
+            },
+            "template": "| Criterion | Go | Python | Swift |\n|-----------|----|----|----|\n| {CRITERION_1} | {GO_VALUE} | {PYTHON_VALUE} | {SWIFT_VALUE} |"
+          },
+          {
+            "name": "tradeoffs",
+            "purpose": "Advantages, disadvantages, and when to use each approach",
+            "format": "XML tag + structured comparison",
+            "ordering": 5,
+            "required_fields": ["GO_PROS", "GO_CONS", "GO_SACRIFICE", "PYTHON_PROS", "PYTHON_CONS", "PYTHON_SACRIFICE", "SWIFT_PROS", "SWIFT_CONS", "SWIFT_SACRIFICE"],
+            "template": "<tradeoffs>\n### Trade-offs\n\n**Go**:\n- Advantages: {GO_PROS}\n- Disadvantages: {GO_CONS}\n- What was sacrificed: {GO_SACRIFICE}\n\n**Python**:\n- Advantages: {PYTHON_PROS}\n- Disadvantages: {PYTHON_CONS}\n- What was sacrificed: {PYTHON_SACRIFICE}\n\n**Swift**:\n- Advantages: {SWIFT_PROS}\n- Disadvantages: {SWIFT_CONS}\n- What was sacrificed: {SWIFT_SACRIFICE}\n\n**Selection Guide**:\n- {CONDITION_1} → {RECOMMENDATION_1}\n- {CONDITION_2} → {RECOMMENDATION_2}\n</tradeoffs>"
+          },
+          {
+            "name": "depth_levels",
+            "purpose": "Explanations at different expertise levels",
+            "format": "XML tag with nested level tags",
+            "ordering": 6,
+            "template": "<levels>\n<level difficulty=\"beginner\">\n{BEGINNER_EXPLANATION}\n</level>\n\n<level difficulty=\"intermediate\">\n{INTERMEDIATE_EXPLANATION}\n</level>\n\n<level difficulty=\"advanced\">\n{ADVANCED_EXPLANATION}\n</level>\n</levels>"
+          },
+          {
+            "name": "sources",
+            "purpose": "Citations for all referenced information",
+            "format": "XML tag with nested source arrays per language",
+            "ordering": 7,
+            "structure": {
+              "_comment": "All sources are arrays, even for single citations",
+              "per_language": "Each language has its own sources array",
+              "general": "Cross-language sources go in 'all' array"
+            },
+            "template": "<sources>\n### Sources\n\n**Go**:\n{GO_SOURCES_LIST}\n\n**Python**:\n{PYTHON_SOURCES_LIST}\n\n**Swift**:\n{SWIFT_SOURCES_LIST}\n\n**General**:\n{GENERAL_SOURCES_LIST}\n</sources>"
+          }
+        ],
+        "optional_sections": [
+          {
+            "name": "visual_diagram",
+            "purpose": "Conceptual diagram using Mermaid or ASCII",
+            "format": "Mermaid code fence",
+            "allowed_positions": ["after concept_definition", "after why_philosophy"]
+          },
+          {
+            "name": "common_pitfalls",
+            "purpose": "Common mistakes and anti-patterns",
+            "format": "XML tag + list per language",
+            "allowed_positions": ["after language_implementations"]
+          },
+          {
+            "name": "real_world_example",
+            "purpose": "Practical scenario showing all three approaches",
+            "format": "XML tag with scenario attribute + full code",
+            "allowed_positions": ["after comparison_matrix"]
+          },
+          {
+            "name": "further_reading",
+            "purpose": "Links to official documentation and resources",
+            "format": "Markdown links grouped by language",
+            "allowed_positions": ["always last"]
+          }
+        ]
+      },
+      "formatting_guidelines": {
+        "xml_usage": {
+          "purpose": "Structural clarity for LLM parsing",
+          "rules": [
+            "Section boundaries must be wrapped in XML tags",
+            "Nested structures use parent/child XML tags",
+            "Attributes for metadata only (name, difficulty, scenario)"
+          ]
+        },
+        "markdown_usage": {
+          "purpose": "Human readability",
+          "rules": [
+            "Headings: ## or ### (# reserved for document title)",
+            "Emphasis: **bold** for key terms, `code` for keywords",
+            "Lists: - or 1. with consistent style",
+            "Code blocks: Always specify language (```go, ```python, ```swift)",
+            "Tables: Only for comparison matrices"
+          ]
+        },
+        "code_presentation": {
+          "parallel_display": "Each language in independent block (not side-by-side)",
+          "annotation": "**Design Decision**: section immediately after each code block",
+          "source_citation": "**Sources**: list immediately after design decision",
+          "commenting": "Use comments to highlight key differences within code",
+          "runnable": "All code examples should be syntactically correct and runnable"
+        },
+        "terminology": {
+          "english_terms": "Keep technical terms in English (goroutine, async/await, actor)",
+          "korean_explanation": "Explanations in Korean",
+          "first_mention": "Format as `English (Korean)` on first use"
+        },
+        "validation": {
+          "reject_conditions": [
+            "Missing any required section",
+            "Code blocks without language specification",
+            "Ellipsis (...) in comparison tables",
+            "Empty cells without N/A justification",
+            "Single source object instead of sources array"
+          ]
+        }
+      }
+    },
+
+    "comparison_framework": {
+      "description": "Systematic framework for comparing concepts across languages",
+      "required_axes_per_category": {
+        "basics": ["syntax", "type_system", "default_value", "mutability", "philosophy", "tradeoff"],
+        "functions": ["definition_syntax", "parameter_handling", "return_mechanism", "invocation_syntax", "first_class_support", "closures", "philosophy", "tradeoff"],
+        "data_structures": ["creation_syntax", "access_pattern", "mutation_operation", "iteration_method", "immutability_support", "philosophy", "tradeoff"],
+        "error_handling": ["error_model", "propagation_mechanism", "recovery_pattern", "panic_vs_exception", "result_type", "philosophy", "tradeoff"],
+        "concurrency": ["concurrency_model", "scheduling_mechanism", "synchronization_primitive", "shared_state_approach", "async_syntax", "philosophy", "tradeoff"],
+        "abstraction": ["definition_syntax", "implementation_mechanism", "inheritance_model", "polymorphism_type", "extension_method", "philosophy", "tradeoff"],
+        "modules": ["module_structure", "visibility_control", "dependency_syntax", "namespace_mechanism", "import_export", "philosophy", "tradeoff"],
+        "memory": ["allocation_mechanism", "deallocation_strategy", "ownership_model", "lifecycle_management", "gc_vs_manual", "philosophy", "tradeoff"]
+      },
+      "universal_required_axes": ["syntax", "philosophy", "tradeoff"],
+      "completeness_rules": {
+        "all_languages_required": true,
+        "ellipsis_forbidden": true,
+        "na_allowed_conditions": [
+          "Feature does not exist in language specification",
+          "Concept is fundamentally incompatible with language paradigm",
+          "Language provides alternative approach that makes feature obsolete"
+        ],
+        "na_format": "N/A (Brief explanation of why and what alternative exists)"
+      },
+      "concept_categories": [
+        {
+          "category": "basics",
+          "concepts": [
+            {"id": "variable_declaration", "name": "Variable Declaration", "prerequisites": [], "related": ["type_system", "mutability"]},
+            {"id": "type_system", "name": "Type System", "prerequisites": ["variable_declaration"], "related": ["type_inference", "generics"]},
+            {"id": "operators", "name": "Operators", "prerequisites": ["variable_declaration"], "related": ["operator_overloading"]},
+            {"id": "control_flow", "name": "Control Flow", "prerequisites": ["variable_declaration", "operators"], "related": ["pattern_matching"]}
+          ]
+        },
+        {
+          "category": "functions",
+          "concepts": [
+            {"id": "function_definition", "name": "Function Definition", "prerequisites": ["variable_declaration"], "related": ["parameters", "return_values"]},
+            {"id": "parameters", "name": "Parameters & Arguments", "prerequisites": ["function_definition"], "related": ["default_values", "variadic"]},
+            {"id": "closures", "name": "Closures", "prerequisites": ["function_definition"], "related": ["capturing", "escaping"]},
+            {"id": "methods", "name": "Methods", "prerequisites": ["function_definition", "structs_classes"], "related": ["receivers", "self"]}
+          ]
+        },
+        {
+          "category": "data_structures",
+          "concepts": [
+            {"id": "arrays_slices", "name": "Arrays & Slices/Lists", "prerequisites": ["variable_declaration"], "related": ["iteration", "comprehensions"]},
+            {"id": "maps_dicts", "name": "Maps & Dictionaries", "prerequisites": ["variable_declaration"], "related": ["hashing", "iteration"]},
+            {"id": "structs_classes", "name": "Structs & Classes", "prerequisites": ["variable_declaration", "function_definition"], "related": ["methods", "encapsulation"]},
+            {"id": "enums", "name": "Enumerations", "prerequisites": ["variable_declaration"], "related": ["pattern_matching", "associated_values"]}
+          ]
+        },
+        {
+          "category": "error_handling",
+          "concepts": [
+            {"id": "error_types", "name": "Error Types", "prerequisites": ["function_definition"], "related": ["error_propagation"]},
+            {"id": "error_propagation", "name": "Error Propagation", "prerequisites": ["error_types"], "related": ["error_wrapping"]},
+            {"id": "optionals_nullability", "name": "Optionals & Nullability", "prerequisites": ["type_system"], "related": ["unwrapping", "nil_coalescing"]}
+          ]
+        },
+        {
+          "category": "concurrency",
+          "concepts": [
+            {"id": "async_await", "name": "Async/Await", "prerequisites": ["function_definition", "closures"], "related": ["goroutines", "tasks"]},
+            {"id": "channels_streams", "name": "Channels & Streams", "prerequisites": ["async_await"], "related": ["csp_model"]},
+            {"id": "synchronization", "name": "Synchronization", "prerequisites": ["async_await"], "related": ["locks", "actors"]}
+          ]
+        },
+        {
+          "category": "abstraction",
+          "concepts": [
+            {"id": "interfaces_protocols", "name": "Interfaces & Protocols", "prerequisites": ["methods"], "related": ["composition", "duck_typing"]},
+            {"id": "generics", "name": "Generics", "prerequisites": ["type_system", "interfaces_protocols"], "related": ["type_constraints"]},
+            {"id": "extensions", "name": "Extensions", "prerequisites": ["structs_classes", "interfaces_protocols"], "related": ["protocol_extensions"]}
+          ]
+        },
+        {
+          "category": "modules",
+          "concepts": [
+            {"id": "packages", "name": "Packages & Modules", "prerequisites": [], "related": ["imports", "visibility"]},
+            {"id": "visibility", "name": "Visibility & Access Control", "prerequisites": ["packages"], "related": ["encapsulation"]},
+            {"id": "dependencies", "name": "Dependency Management", "prerequisites": ["packages"], "related": ["versioning"]}
+          ]
+        },
+        {
+          "category": "memory",
+          "concepts": [
+            {"id": "value_vs_reference", "name": "Value vs Reference Types", "prerequisites": ["structs_classes"], "related": ["copying", "mutation"]},
+            {"id": "garbage_collection", "name": "Garbage Collection & ARC", "prerequisites": ["value_vs_reference"], "related": ["memory_leaks", "retain_cycles"]}
+          ]
+        }
+      ],
+      "comparison_axes": [
+        {"axis_id": "syntax", "name": "Syntax", "description": "Concrete notation differences", "how_to_compare": "Show same operation with different syntax, highlight keywords and structure"},
+        {"axis_id": "semantics", "name": "Semantics", "description": "Runtime behavior differences", "how_to_compare": "Explain what happens at runtime, memory model, evaluation order"},
+        {"axis_id": "philosophy", "name": "Philosophy", "description": "Design values and principles", "how_to_compare": "Connect to core language principles, cite creators and design docs"},
+        {"axis_id": "performance", "name": "Performance", "description": "Speed, memory, compilation characteristics", "how_to_compare": "Discuss compile-time vs runtime costs, memory overhead, optimization opportunities"},
+        {"axis_id": "idiom", "name": "Idiom", "description": "Community-preferred patterns", "how_to_compare": "Show idiomatic code for each language, explain community conventions"},
+        {"axis_id": "type_system", "name": "Type System Implications", "description": "How the type system affects this feature", "how_to_compare": "Contrast static/dynamic, inference, constraints"},
+        {"axis_id": "mutability", "name": "Mutability", "description": "Data mutability/immutability handling model", "how_to_compare": "Compare default mutability, explicit immutable declarations, enforcement"},
+        {"axis_id": "default_value", "name": "Default Value", "description": "How default values are handled for variables/fields", "how_to_compare": "Compare zero values, nil, undefined, required initialization"},
+        {"axis_id": "definition_syntax", "name": "Definition Syntax", "description": "Syntax for defining functions/methods/types", "how_to_compare": "Show func/def/fn keywords, parameter syntax, return type placement"},
+        {"axis_id": "parameter_handling", "name": "Parameter Handling", "description": "How parameters are passed and processed", "how_to_compare": "Value vs reference, ownership transfer, default parameters"},
+        {"axis_id": "return_mechanism", "name": "Return Mechanism", "description": "How return values are handled", "how_to_compare": "Explicit return, last expression, multiple returns, tuples"},
+        {"axis_id": "invocation_syntax", "name": "Invocation Syntax", "description": "Syntax for calling functions/methods", "how_to_compare": "Show call syntax, named arguments, method chaining"},
+        {"axis_id": "first_class_support", "name": "First-Class Support", "description": "Whether functions are first-class citizens", "how_to_compare": "Compare passing functions as arguments, returning functions, storing in variables"},
+        {"axis_id": "closures", "name": "Closures", "description": "Closure capture semantics and syntax", "how_to_compare": "Compare capture lists, implicit vs explicit capture, escaping closures"},
+        {"axis_id": "creation_syntax", "name": "Creation Syntax", "description": "Syntax for creating data structures", "how_to_compare": "Compare literal syntax, constructor patterns, initialization"},
+        {"axis_id": "access_pattern", "name": "Access Pattern", "description": "How elements are accessed in data structures", "how_to_compare": "Compare indexing, key access, iteration patterns"},
+        {"axis_id": "mutation_operation", "name": "Mutation Operation", "description": "How data structures are modified", "how_to_compare": "Compare in-place mutation, copy-on-write, immutable operations"},
+        {"axis_id": "iteration_method", "name": "Iteration Method", "description": "How to iterate over data structures", "how_to_compare": "Compare for loops, iterators, comprehensions, functional methods"},
+        {"axis_id": "immutability_support", "name": "Immutability Support", "description": "Built-in support for immutable data structures", "how_to_compare": "Compare const/let, frozen objects, persistent data structures"},
+        {"axis_id": "error_model", "name": "Error Model", "description": "Language-level error handling model", "how_to_compare": "Result/Option vs Exception vs Error Code approaches"},
+        {"axis_id": "propagation_mechanism", "name": "Propagation Mechanism", "description": "How errors propagate to callers", "how_to_compare": "Compare ? operator, throw, return err patterns"},
+        {"axis_id": "recovery_pattern", "name": "Recovery Pattern", "description": "Patterns for error recovery", "how_to_compare": "Compare try-catch, match, if let, guard patterns"},
+        {"axis_id": "panic_vs_exception", "name": "Panic vs Exception", "description": "Handling unrecoverable errors", "how_to_compare": "Compare panic!, panic, raise for fatal errors"},
+        {"axis_id": "result_type", "name": "Result Type", "description": "Explicit error type usage (Result/Option)", "how_to_compare": "Compare Result<T,E>, (value, error), Optional patterns"},
+        {"axis_id": "concurrency_model", "name": "Concurrency Model", "description": "Fundamental concurrency paradigm", "how_to_compare": "Compare CSP, actors, async/await, threads"},
+        {"axis_id": "scheduling_mechanism", "name": "Scheduling Mechanism", "description": "How concurrent tasks are scheduled", "how_to_compare": "Compare M:N scheduling, event loops, OS threads"},
+        {"axis_id": "synchronization_primitive", "name": "Synchronization Primitive", "description": "Primitives for coordinating concurrent access", "how_to_compare": "Compare channels, locks, actors, semaphores"},
+        {"axis_id": "shared_state_approach", "name": "Shared State Approach", "description": "How shared state is handled in concurrent code", "how_to_compare": "Compare message passing, synchronized access, isolation"},
+        {"axis_id": "async_syntax", "name": "Async Syntax", "description": "Syntax for asynchronous operations", "how_to_compare": "Compare async/await, goroutines, promises, callbacks"},
+        {"axis_id": "implementation_mechanism", "name": "Implementation Mechanism", "description": "How abstractions are implemented", "how_to_compare": "Compare interface satisfaction, protocol conformance, class inheritance"},
+        {"axis_id": "inheritance_model", "name": "Inheritance Model", "description": "Approach to inheritance and code reuse", "how_to_compare": "Compare single/multiple inheritance, composition, embedding"},
+        {"axis_id": "polymorphism_type", "name": "Polymorphism Type", "description": "Type of polymorphism supported", "how_to_compare": "Compare structural, nominal, duck typing, generics"},
+        {"axis_id": "extension_method", "name": "Extension Method", "description": "Ability to extend existing types", "how_to_compare": "Compare extensions, categories, monkey patching"},
+        {"axis_id": "module_structure", "name": "Module Structure", "description": "How code is organized into modules", "how_to_compare": "Compare packages, modules, namespaces, files"},
+        {"axis_id": "visibility_control", "name": "Visibility Control", "description": "Access modifiers and encapsulation", "how_to_compare": "Compare public/private/internal, exported/unexported"},
+        {"axis_id": "dependency_syntax", "name": "Dependency Syntax", "description": "Syntax for declaring dependencies", "how_to_compare": "Compare import statements, require, use"},
+        {"axis_id": "namespace_mechanism", "name": "Namespace Mechanism", "description": "How namespaces prevent naming conflicts", "how_to_compare": "Compare package paths, module names, aliasing"},
+        {"axis_id": "import_export", "name": "Import/Export", "description": "How symbols are imported and exported", "how_to_compare": "Compare selective imports, re-exports, wildcard imports"},
+        {"axis_id": "allocation_mechanism", "name": "Allocation Mechanism", "description": "How memory is allocated", "how_to_compare": "Compare stack vs heap, value vs reference types"},
+        {"axis_id": "deallocation_strategy", "name": "Deallocation Strategy", "description": "How memory is freed", "how_to_compare": "Compare GC, ARC, manual free, RAII"},
+        {"axis_id": "ownership_model", "name": "Ownership Model", "description": "Who owns allocated memory", "how_to_compare": "Compare ownership, borrowing, reference counting"},
+        {"axis_id": "lifecycle_management", "name": "Lifecycle Management", "description": "How object lifecycles are managed", "how_to_compare": "Compare destructors, deinit, finalizers, defer"},
+        {"axis_id": "gc_vs_manual", "name": "GC vs Manual", "description": "Memory management approach", "how_to_compare": "Compare GC, ARC, manual management, ownership"},
+        {"axis_id": "tradeoff", "name": "Tradeoff", "description": "Pros and cons analysis of the design", "how_to_compare": "Analyze safety vs convenience, performance vs abstraction"}
+      ],
+      "idiomatic_patterns": {
+        "go": [
+          {"pattern": "if err != nil", "usage": "Error checking at every call site", "philosophy": "Explicit error handling"},
+          {"pattern": "defer cleanup()", "usage": "Resource cleanup", "philosophy": "Cleanup close to acquisition"},
+          {"pattern": "go func() {}()", "usage": "Spawning concurrent work", "philosophy": "Lightweight concurrency"},
+          {"pattern": "ch := make(chan T)", "usage": "Channel communication", "philosophy": "Share by communicating"},
+          {"pattern": "type T struct { OtherType }", "usage": "Embedding for composition", "philosophy": "Composition over inheritance"}
+        ],
+        "python": [
+          {"pattern": "[x for x in items]", "usage": "List transformation", "philosophy": "Readable, declarative"},
+          {"pattern": "with resource:", "usage": "Context management", "philosophy": "Automatic cleanup"},
+          {"pattern": "try: ... except:", "usage": "Error handling", "philosophy": "EAFP"},
+          {"pattern": "def func(*args, **kwargs):", "usage": "Flexible arguments", "philosophy": "Duck typing flexibility"},
+          {"pattern": "if hasattr(obj, 'method'):", "usage": "Duck typing check", "philosophy": "Behavior over type"}
+        ],
+        "swift": [
+          {"pattern": "guard let x = optional else { return }", "usage": "Early exit on nil", "philosophy": "Safety through unwrapping"},
+          {"pattern": "if let x = optional { }", "usage": "Optional binding", "philosophy": "Explicit nil handling"},
+          {"pattern": "array.map { $0.property }", "usage": "Functional transformation", "philosophy": "Expressive closures"},
+          {"pattern": "protocol P { }; extension P { }", "usage": "Protocol with default implementation", "philosophy": "Protocol-oriented"},
+          {"pattern": "async let x = fetch()", "usage": "Concurrent binding", "philosophy": "Structured concurrency"}
+        ],
+        "typescript": [
+          {"pattern": "const x: Type = value", "usage": "Type annotation", "philosophy": "Explicit types for clarity"},
+          {"pattern": "async function f(): Promise<T>", "usage": "Async function with typed return", "philosophy": "Type-safe async"},
+          {"pattern": "type Result<T> = { ok: true; value: T } | { ok: false; error: Error }", "usage": "Discriminated union for Result", "philosophy": "Type-safe error handling"},
+          {"pattern": "interface I { method(): void }", "usage": "Interface definition", "philosophy": "Structural contracts"},
+          {"pattern": "arr.filter((x): x is T => ...)", "usage": "Type guard in filter", "philosophy": "Narrowing with predicates"}
+        ]
+      }
+    },
+
+    "dynamic_context": {
+      "description": "Protocol for generating feature-specific design philosophy explanations",
+      "principle": "Not fixed philosophy statements, but dynamically generated explanations based on the specific feature being discussed",
+      "explanation_components": [
+        {
+          "component": "historical_context",
+          "description": "When and why this feature was introduced",
+          "prompt_template": "When was {feature} introduced in {language}? What problem in earlier versions or other languages motivated this design?",
+          "sources": ["Language evolution proposals", "Creator interviews", "Version history"],
+          "cacheable": true,
+          "ttl_seconds": 604800
+        },
+        {
+          "component": "problem_solved",
+          "description": "Specific pain points addressed by this design",
+          "prompt_template": "What specific pain points does {feature} in {language} solve? What issues would arise without this design?",
+          "sources": ["Design rationale documents", "RFC/PEP/Swift Evolution"],
+          "cacheable": true,
+          "ttl_seconds": 259200
+        },
+        {
+          "component": "alternative_comparison",
+          "description": "How other languages approach the same problem",
+          "prompt_template": "How do Go, Python, and Swift handle {concept} differently? What tradeoffs did each language make?",
+          "sources": ["Cross-language comparison articles", "Language documentation"],
+          "cacheable": true,
+          "ttl_seconds": 43200
+        },
+        {
+          "component": "tradeoffs",
+          "description": "What was gained and sacrificed with this design choice",
+          "prompt_template": "What are the advantages and disadvantages of {feature} in {language}? What did the language designers sacrifice?",
+          "sources": ["Design documents", "Community discussions", "Creator statements"],
+          "cacheable": true,
+          "ttl_seconds": 259200
+        },
+        {
+          "component": "practical_impact",
+          "description": "How this design affects day-to-day coding",
+          "prompt_template": "How does {feature} in {language} change the way you write code compared to alternatives?",
+          "sources": ["Style guides", "Best practices", "Real-world examples"],
+          "cacheable": true,
+          "ttl_seconds": 86400
+        }
+      ],
+      "generation_protocol": {
+        "steps": [
+          {"step": 0, "action": "cache_lookup", "input": "language:concept:component:schema_version", "output": "cached_data or cache_miss", "on_hit": "Skip to step 8 with cached data", "on_miss": "Continue to step 1"},
+          {"step": 1, "action": "concept_extraction", "input": "User question", "output": "Identified concept"},
+          {"step": 2, "action": "language_approach_retrieval", "input": "Concept + languages", "output": "Each language's implementation"},
+          {"step": 3, "action": "historical_context_lookup", "input": "Concept + language", "output": "Evolution timeline"},
+          {"step": 4, "action": "design_rationale_synthesis", "input": "Approach + history", "output": "Why this design"},
+          {"step": 5, "action": "comparative_analysis", "input": "All 3 rationales", "output": "Side-by-side comparison"},
+          {"step": 6, "action": "depth_adjustment", "input": "User level indicator", "output": "Adjusted explanation"},
+          {"step": 7, "action": "code_example_generation", "input": "Concept + approaches", "output": "Parallel code examples"},
+          {"step": 8, "action": "explanation_assembly", "input": "All components", "output": "Final dynamic explanation"},
+          {"step": 9, "action": "cache_store", "input": "Generated components", "output": "Cache updated for future requests"}
+        ]
+      },
+      "caching_strategy": {
+        "enabled": true,
+        "backend": "redis",
+        "default_ttl_seconds": 86400,
+
+        "key_strategy": {
+          "format": "{language}:{concept}:{component}:v{schema_version}",
+          "schema_version": 1,
+          "separator": ":",
+          "field_definitions": {
+            "language": "Programming language identifier (e.g., python, go, swift)",
+            "concept": "Concept name in snake_case (e.g., async_await, error_handling)",
+            "component": "Component type being cached (from cacheable_components)",
+            "schema_version": "Content schema version for cache invalidation"
+          },
+          "examples": [
+            "python:async_await:historical_context:v1",
+            "go:error_handling:design_rationale:v1",
+            "swift:optionals:comparative_analysis:v1"
+          ]
+        },
+
+        "ttl_constants": {
+          "HOUR": 3600,
+          "DAY": 86400,
+          "WEEK": 604800
+        },
+
+        "cacheable_components": {
+          "historical_context": {
+            "cacheable": true,
+            "ttl_seconds": 604800,
+            "category": "static",
+            "description": "Historical background and context of the feature"
+          },
+          "design_rationale": {
+            "cacheable": true,
+            "ttl_seconds": 604800,
+            "category": "static",
+            "description": "Design decisions and reasoning behind the feature"
+          },
+          "evolution_timeline": {
+            "cacheable": true,
+            "ttl_seconds": 604800,
+            "category": "static",
+            "description": "Evolution history of the concept across versions"
+          },
+          "idiomatic_patterns": {
+            "cacheable": true,
+            "ttl_seconds": 259200,
+            "category": "semi-static",
+            "description": "Idiomatic usage patterns for the feature"
+          },
+          "problem_solved": {
+            "cacheable": true,
+            "ttl_seconds": 259200,
+            "category": "semi-static",
+            "description": "Problems this concept solves"
+          },
+          "tradeoffs": {
+            "cacheable": true,
+            "ttl_seconds": 259200,
+            "category": "semi-static",
+            "description": "Tradeoffs and considerations"
+          },
+          "comparative_analysis": {
+            "cacheable": true,
+            "ttl_seconds": 86400,
+            "category": "dynamic",
+            "description": "Comparison with other languages"
+          },
+          "practical_impact": {
+            "cacheable": true,
+            "ttl_seconds": 86400,
+            "category": "dynamic",
+            "description": "Practical impact on day-to-day coding"
+          },
+          "alternative_comparison": {
+            "cacheable": true,
+            "ttl_seconds": 43200,
+            "category": "highly-dynamic",
+            "description": "Alternative approaches comparison"
+          }
+        },
+
+        "non_cacheable_components": ["current_user_code_context", "personalized_learning_adjustments"],
+
+        "invalidation_rules": {
+          "on_schema_change": {
+            "action": "invalidate_all",
+            "pattern": "*:*:*:v{old_version}",
+            "description": "Invalidate all caches with old schema version"
+          },
+          "on_language_update": {
+            "action": "invalidate_by_pattern",
+            "pattern": "{language}:*:*:*",
+            "description": "Invalidate all caches for specific language"
+          },
+          "on_concept_update": {
+            "action": "invalidate_by_pattern",
+            "pattern": "{language}:{concept}:*:*",
+            "description": "Invalidate all components for specific concept"
+          },
+          "on_ttl_expiry": {
+            "action": "auto_delete",
+            "mechanism": "redis_expire",
+            "description": "Automatic deletion via cache backend TTL"
+          }
+        },
+
+        "implementation": {
+          "in_context": "Use conversation history for single-session caching",
+          "external": "Redis or SQLite for cross-session persistence",
+          "hybrid": "L1 (in-context) + L2 (external) for optimal performance"
+        }
+      },
+      "quality_criteria": [
+        {"criterion": "accuracy", "check": "Based on official docs, proposals, or creator statements?"},
+        {"criterion": "relevance", "check": "Directly addresses the specific feature asked about?"},
+        {"criterion": "depth", "check": "Goes beyond surface to explain 'why'?"},
+        {"criterion": "comparability", "check": "User can understand all 3 languages' approaches?"},
+        {"criterion": "practicality", "check": "Includes concrete code differences?"}
+      ],
+      "fallback_rules": [
+        {"condition": "No official rationale found", "action": "Use community consensus from authoritative sources, mark as 'community understanding'"},
+        {"condition": "Feature exists in only 1-2 languages", "action": "Explain why other language(s) chose NOT to implement it"},
+        {"condition": "Design changed over time", "action": "Present timeline: original → criticism → evolution → current"},
+        {"condition": "Deprecated feature asked", "action": "Explain original rationale + why replaced + what replaced it"}
+      ]
+    }
+  },
+
+  "depth_selection": {
+    "default_level": "beginner",
+    "override_param": "level",
+    "allowed_levels": ["beginner", "intermediate", "advanced"],
+    "auto_detection": {
+      "keyword_matching": {
+        "beginner_indicators": ["what is", "how to", "basic", "simple", "explain", "introduce", "tutorial", "getting started", "first time", "new to", "beginner", "learn", "understand"],
+        "intermediate_indicators": ["why", "difference between", "compare", "best practice", "should i", "when to use", "pros and cons", "alternative", "versus", "better than", "recommend", "common patterns"],
+        "advanced_indicators": ["internals", "implementation", "performance", "optimize", "under the hood", "deep dive", "architecture", "trade-offs", "edge cases", "scalability", "memory layout", "algorithm complexity", "bytecode", "compiler", "runtime"]
+      },
+      "complexity_signals": [
+        {"signal": "nested_concepts", "description": "Question contains multiple technical concepts in hierarchy", "level_bump": "intermediate → advanced"},
+        {"signal": "conditional_logic", "description": "Question includes conditional reasoning", "level_bump": "beginner → intermediate"},
+        {"signal": "implementation_focus", "description": "Question asks about how something works internally", "level_bump": "intermediate → advanced"},
+        {"signal": "comparison_request", "description": "Question compares multiple approaches", "level_bump": "beginner → intermediate"}
+      ],
+      "context_signals": [
+        {"signal": "previous_advanced_questions", "action": "Set minimum level to intermediate"},
+        {"signal": "jargon_used_correctly", "action": "Bump level by 1 if beginner"},
+        {"signal": "code_snippet_provided", "action": "Minimum level: intermediate"},
+        {"signal": "asks_about_tradeoffs", "action": "Set level to advanced"}
+      ]
+    },
+    "selection_algorithm": {
+      "priority_order": ["explicit_override", "advanced_signals", "intermediate_signals", "context_signals", "default"],
+      "steps": [
+        {"step": 1, "action": "Check for explicit level override parameter"},
+        {"step": 2, "action": "Scan question for advanced indicators (2+ keywords → advanced)"},
+        {"step": 3, "action": "Scan question for intermediate indicators (2+ keywords → intermediate)"},
+        {"step": 4, "action": "Check context signals"},
+        {"step": 5, "action": "Apply default level (beginner)"}
+      ]
+    },
+    "level_response_differences": {
+      "beginner": {
+        "include": ["Simple problem statement", "Direct solution", "Line-by-line code explanation", "Visual analogies"],
+        "exclude": ["Historical context (unless essential)", "Alternative solutions", "Performance considerations", "Edge cases"],
+        "depth_percentage": 30
+      },
+      "intermediate": {
+        "include": ["Problem context", "Primary solution + 1-2 alternatives", "When to use each", "Common pitfalls", "Basic trade-offs"],
+        "exclude": ["Full historical evolution", "Deep implementation details", "Advanced edge cases"],
+        "depth_percentage": 60
+      },
+      "advanced": {
+        "include": ["Complete historical evolution", "All major alternatives", "Comprehensive trade-off analysis", "Implementation details", "Performance characteristics", "Edge cases", "Design decision rationale"],
+        "exclude": ["Over-simplified analogies"],
+        "depth_percentage": 100
+      }
+    }
+  },
+
+  "code_validation": {
+    "global": {
+      "default_mode": "light",
+      "continue_on_error": true,
+      "timeout_seconds": 5
+    },
+
+    "languages": {
+      "go": {
+        "light": {
+          "enabled": true,
+          "command": "gofmt -e {file}",
+          "fallback": "echo 'package main' | cat - {file} > /tmp/go_temp.go && gofmt -e /tmp/go_temp.go",
+          "exit_on_error": false,
+          "description": "Format check + syntax errors, no module required",
+          "prerequisites": ["Go SDK (gofmt included)"],
+          "skip_patterns": ["// NOVALIDATE"]
+        },
+        "strict": {
+          "enabled": false,
+          "command": "go vet {file}",
+          "fallback": "go build -o /dev/null {file}",
+          "exit_on_error": true,
+          "description": "Full static analysis, requires go.mod",
+          "prerequisites": ["Go SDK", "go.mod in project"],
+          "requires": ["go.mod"]
+        }
+      },
+      "python": {
+        "light": {
+          "enabled": true,
+          "command": "python3 -m py_compile {file}",
+          "fallback": "python3 -c \"import ast; ast.parse(open('{file}').read())\"",
+          "exit_on_error": false,
+          "description": "Syntax check only, no imports verified",
+          "prerequisites": ["Python 3.x"],
+          "skip_patterns": ["# NOVALIDATE", "^\\s*\\.\\.\\."]
+        },
+        "strict": {
+          "enabled": false,
+          "command": "pylint {file} --errors-only",
+          "fallback": "pyflakes {file}",
+          "exit_on_error": true,
+          "description": "Error-level lint, requires pylint",
+          "prerequisites": ["Python 3.x", "pylint or pyflakes"],
+          "requires": ["pylint"]
+        }
+      },
+      "swift": {
+        "light": {
+          "enabled": true,
+          "command": "swiftc -parse {file}",
+          "fallback": "echo 'import Foundation' | cat - {file} > /tmp/swift_temp.swift && swiftc -parse /tmp/swift_temp.swift",
+          "exit_on_error": false,
+          "description": "Parse only, no compilation",
+          "prerequisites": ["Swift SDK"],
+          "skip_patterns": ["// NOVALIDATE"]
+        },
+        "strict": {
+          "enabled": false,
+          "command": "swiftc {file} -o /tmp/swift_out",
+          "exit_on_error": true,
+          "description": "Full compilation",
+          "prerequisites": ["Swift SDK", "Required frameworks"],
+          "requires": ["swiftc"]
+        }
+      },
+      "typescript": {
+        "light": {
+          "enabled": true,
+          "command": "npx tsc --noEmit --skipLibCheck {file}",
+          "fallback": "npx tsc --noEmit --skipLibCheck --isolatedModules {file}",
+          "exit_on_error": false,
+          "description": "Type check without emit, skip lib for speed",
+          "prerequisites": ["Node.js", "typescript (npx auto-installs)"],
+          "skip_patterns": ["// NOVALIDATE", "// @ts-nocheck"]
+        },
+        "strict": {
+          "enabled": false,
+          "command": "npx tsc --noEmit --strict {file}",
+          "fallback": "npx tsc --noEmit {file}",
+          "exit_on_error": true,
+          "description": "Full strict type checking",
+          "prerequisites": ["Node.js", "typescript"],
+          "requires": ["tsconfig.json"]
+        }
+      }
+    },
+
+    "context_modes": {
+      "snippet_example": "light",
+      "tutorial_code": "light",
+      "production_code": "strict",
+      "test_code": "strict"
+    },
+
+    "error_handling": {
+      "log_level": "warning",
+      "retry_count": 0,
+      "fallback_to_next_tool": true,
+      "on_all_fail": "warn_and_continue"
+    },
+
+    "placeholder_rules": {
+      "forbidden_patterns": ["{VARIABLE}", "TODO", "...", "TBD", "PLACEHOLDER", "YOUR_CODE_HERE"],
+      "detection_regex": "\\{[A-Z_]+\\}|TODO|\\.\\.\\.[^.]|TBD|PLACEHOLDER"
+    },
+
+    "minimal_example_requirements": {
+      "go": {"requires_package": "auto-added for snippets", "requires_main": "for standalone", "imports_allowed": "stdlib only"},
+      "python": {"requires_imports": "explicit", "requires_main": false},
+      "swift": {"requires_import": "Foundation auto-added for snippets", "requires_main": false},
+      "typescript": {"requires_imports": "explicit", "requires_main": false, "module_system": "esm or commonjs"}
+    }
+  },
+
+  "example_explanations": {
+    "variable_declaration": {
+      "go": {
+        "syntax": "name := \"Alice\" (short) or var name string = \"Alice\" (explicit)",
+        "design_decision": "':=' provides brevity for obvious types while 'var' signals intent for zero values. Two syntaxes serve different purposes.",
+        "historical_context": "Influenced by Pascal/Modula. Short declaration added to reduce repetition without losing type safety.",
+        "tradeoff": "Two ways to declare can confuse beginners, but both have clear use cases.",
+        "sources": [
+          {"title": "A Tour of Go - Variables", "url": "https://go.dev/tour/basics/8", "type": "official_doc", "language": "go"},
+          {"title": "Effective Go - Names", "url": "https://go.dev/doc/effective_go#names", "type": "official_doc", "language": "go"}
+        ]
+      },
+      "python": {
+        "syntax": "name = \"Alice\" (dynamic) or name: str = \"Alice\" (with hint)",
+        "design_decision": "No type declaration required - duck typing prioritizes rapid development. Type hints (PEP 484) added later for tooling, not runtime.",
+        "historical_context": "Always dynamic since Python 1.0. Type hints added in 3.5 without changing runtime semantics.",
+        "tradeoff": "Maximum flexibility traded for potential runtime type errors. Type hints are optional, leading to inconsistent adoption.",
+        "sources": [
+          {"title": "PEP 484 - Type Hints", "url": "https://peps.python.org/pep-0484/", "type": "pep", "language": "python"}
+        ]
+      },
+      "swift": {
+        "syntax": "let name = \"Alice\" (immutable) or var count = 0 (mutable)",
+        "design_decision": "Explicit let/var distinction makes mutability a conscious choice. Compiler warns if var never mutated.",
+        "historical_context": "Influenced by ML/Haskell. Immutability-first design from Swift 1.0 for safety.",
+        "tradeoff": "Must decide mutability upfront. Value types + let enables compiler optimizations.",
+        "sources": [
+          {"title": "The Swift Programming Language - Constants and Variables", "url": "https://docs.swift.org/swift-book/LanguageGuide/TheBasics.html", "type": "official_doc", "language": "swift"}
+        ]
+      },
+      "typescript": {
+        "syntax": "const name: string = 'Alice' or let count: number = 0",
+        "design_decision": "const/let from ES6 for mutability. Type annotations optional due to inference. Structural typing for flexibility.",
+        "historical_context": "TypeScript 1.0 (2014) added types to JavaScript. Inference reduces annotation burden while maintaining type safety.",
+        "tradeoff": "Types erased at runtime - no runtime type checking. 'any' type can undermine type safety if overused.",
+        "sources": [
+          {"title": "TypeScript Handbook - Basic Types", "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html", "type": "official_doc", "language": "typescript"}
+        ]
+      }
+    },
+    "error_handling": {
+      "go": {
+        "syntax": "result, err := func(); if err != nil { return err }",
+        "design_decision": "Errors as values, not exceptions. Every error site is visible. 'Errors are values' philosophy.",
+        "creator_quote": "Don't just check errors, handle them gracefully. - Rob Pike",
+        "historical_context": "Deliberate rejection of exceptions from C++/Java. Ken Thompson: exceptions coupled to control flow make code complex.",
+        "tradeoff": "Verbose (if err != nil everywhere) but control flow is always explicit.",
+        "sources": [
+          {"title": "Errors are values", "url": "https://go.dev/blog/errors-are-values", "type": "official_doc", "language": "go"},
+          {"title": "Error handling and Go", "url": "https://go.dev/blog/error-handling-and-go", "type": "official_doc", "language": "go"}
+        ]
+      },
+      "python": {
+        "syntax": "try: result = func() except ValueError as e: handle(e)",
+        "design_decision": "EAFP (Easier to Ask Forgiveness than Permission). Exceptions separate happy path from error handling.",
+        "zen_connection": "Errors should never pass silently. Unless explicitly silenced.",
+        "historical_context": "Exception-based from Python 1.0. Integral to duck typing - don't check types, catch exceptions.",
+        "tradeoff": "Clean happy path but hidden control flow. Easy to over-catch with bare 'except'.",
+        "sources": [
+          {"title": "Errors and Exceptions", "url": "https://docs.python.org/3/tutorial/errors.html", "type": "official_doc", "language": "python"}
+        ]
+      },
+      "swift": {
+        "syntax": "do { let data = try func() } catch FileError.notFound { handle() }",
+        "design_decision": "'try' keyword makes throwing visible at call site. Compiler enforces handling.",
+        "evolution": "Swift 2.0 introduced throws. Swift 5.0 added Result type. Swift 6.0 added typed throws (SE-0413).",
+        "historical_context": "Learned from Go's visibility and traditional exception ergonomics. Unmarked propagation is nasty.",
+        "tradeoff": "'try' everywhere adds visual noise, but all error sites are visible.",
+        "sources": [
+          {"title": "Error Handling", "url": "https://docs.swift.org/swift-book/LanguageGuide/ErrorHandling.html", "type": "official_doc", "language": "swift"},
+          {"title": "SE-0413: Typed throws", "url": "https://github.com/apple/swift-evolution/blob/main/proposals/0413-typed-throws.md", "type": "swift_evolution", "language": "swift"}
+        ]
+      },
+      "typescript": {
+        "syntax": "try { const data = await func(); } catch (e) { if (e instanceof Error) handle(e); }",
+        "design_decision": "JavaScript exceptions + union types for Result pattern. No checked exceptions, but discriminated unions enable type-safe error handling.",
+        "historical_context": "Inherited JavaScript exceptions. Community patterns like neverthrow provide Result<T, E> with full type inference.",
+        "tradeoff": "Flexible but no compiler enforcement. Unknown catch type requires type narrowing.",
+        "sources": [
+          {"title": "TypeScript Handbook - Narrowing", "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html", "type": "official_doc", "language": "typescript"}
+        ]
+      }
+    },
+    "concurrency": {
+      "go": {
+        "syntax": "go func() { ch <- result }()",
+        "design_decision": "CSP model: goroutines + channels. 'Do not communicate by sharing memory; share memory by communicating.'",
+        "creator_quote": "Concurrency is not parallelism. - Rob Pike",
+        "historical_context": "Based on Hoare's CSP (1978). Go made it practical with M:N scheduler.",
+        "tradeoff": "Simple syntax (just add 'go') but cannot control OS thread mapping directly.",
+        "sources": [
+          {"title": "Go Concurrency Patterns", "url": "https://go.dev/blog/pipelines", "type": "official_doc", "language": "go"},
+          {"title": "Share Memory By Communicating", "url": "https://go.dev/blog/codelab-share", "type": "official_doc", "language": "go"}
+        ]
+      },
+      "python": {
+        "syntax": "async def fetch(): data = await request()",
+        "design_decision": "GIL limits threading, so asyncio provides cooperative concurrency for I/O. Multiprocessing for CPU-bound.",
+        "historical_context": "Threading since 1.5 (1997), asyncio since 3.4 (2014). Multiple models for different needs.",
+        "tradeoff": "Three concurrency models (threading/asyncio/multiprocessing) - flexible but fragmented.",
+        "sources": [
+          {"title": "asyncio - Asynchronous I/O", "url": "https://docs.python.org/3/library/asyncio.html", "type": "official_doc", "language": "python"}
+        ]
+      },
+      "swift": {
+        "syntax": "Task { let data = await fetch() }",
+        "design_decision": "Structured concurrency + actors. Compiler prevents data races.",
+        "creator_quote": "Actors naturally represent real-world concepts. - Swift Concurrency Manifesto",
+        "historical_context": "Pre-5.5: GCD/completion handlers. Swift 5.5 introduced async/await + actors for safety.",
+        "tradeoff": "Safety through isolation, but reentrancy can be surprising. Actor isolation has learning curve.",
+        "sources": [
+          {"title": "Swift Concurrency", "url": "https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html", "type": "official_doc", "language": "swift"},
+          {"title": "SE-0306: Actors", "url": "https://github.com/apple/swift-evolution/blob/main/proposals/0306-actors.md", "type": "swift_evolution", "language": "swift"}
+        ]
+      },
+      "typescript": {
+        "syntax": "async function fetch(): Promise<Data> { return await api.get(); }",
+        "design_decision": "async/await syntax sugar over Promises. Single-threaded event loop model inherited from JavaScript.",
+        "historical_context": "TypeScript 1.7 (2015) added async/await for ES6 targets. TypeScript 4.5 added Awaited<T> utility type for better inference.",
+        "tradeoff": "Clean syntax but single-threaded. CPU-bound work blocks event loop. Web Workers for parallelism.",
+        "sources": [
+          {"title": "TypeScript 1.7 Release Notes", "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-1-7.html", "type": "official_doc", "language": "typescript"},
+          {"title": "TypeScript 4.5 - Awaited Type", "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-5.html", "type": "official_doc", "language": "typescript"}
+        ]
+      }
+    }
+  },
+
+  "usage_instructions": {
+    "for_llm": [
+      "1. When user asks about a concept, identify which concept_category it belongs to",
+      "2. Run depth_selection algorithm to determine explanation depth",
+      "3. Check caching_strategy for cached components before generating",
+      "4. Follow the response_structure.template to format your answer",
+      "5. Include all required_axes for the concept's category in comparison_matrix",
+      "6. Use dynamic_context.generation_protocol to generate feature-specific philosophy",
+      "7. Always include all 4 languages (Go, Python, Swift, TypeScript) in fixed order",
+      "8. Add sources array with proper citations for all referenced information",
+      "9. Validate code examples against code_validation rules (no placeholders, use light mode for snippets)",
+      "10. Connect every feature to its design philosophy - never just show syntax"
+    ],
+    "for_human_reviewer": [
+      "Verify accuracy against official documentation",
+      "Check that tradeoffs are balanced (not biased toward one language)",
+      "Ensure code examples are syntactically correct and idiomatic",
+      "Confirm sources are arrays with all required fields (title, type, language)",
+      "Validate comparison tables have all required axes per category"
+    ],
+    "for_dashboard": [
+      "Parse JSON to extract languages_metadata for UI configuration",
+      "Use depth_selection.allowed_levels for user preference dropdown",
+      "Render response sections in ordering specified in template",
+      "Highlight sources with appropriate styling based on type",
+      "Use code_validation.context_modes to select validation level"
+    ]
+  },
+
+  "json_schema_validation": {
+    "top_level_required": ["protocol_name", "version", "sections", "usage_instructions", "languages_metadata", "compatibility", "definitions"],
+    "section_required": {
+      "core_philosophy": ["description", "languages", "comparison_axes"],
+      "response_structure": ["description", "template", "formatting_guidelines"],
+      "comparison_framework": ["description", "required_axes_per_category", "concept_categories", "comparison_axes", "idiomatic_patterns"],
+      "dynamic_context": ["description", "explanation_components", "generation_protocol", "caching_strategy"]
+    },
+    "language_required_fields": ["id", "display_name", "code_fence_lang", "order", "enabled", "added_version", "doc_sources"],
+    "source_required_fields": ["title", "type", "language"],
+    "source_conditional_fields": {
+      "url_required_for": ["official_doc", "pep", "swift_evolution", "go_proposal", "blog", "repository", "specification", "article"],
+      "author_required_for": ["creator_interview", "creator_talk", "video", "book"],
+      "year_required_for": ["book"]
+    },
+    "validation_command": "npx ajv -c ajv-formats validate -s universal_code_learning_protocol_schema.json -d universal_code_learning_protocol_v2.json --all-errors",
+    "schema_reference": "See definitions section for $ref-able schemas (definitions.source, definitions.language_entry, definitions.comparison_axis)"
+  },
+
+  "authoritative_sources": {
+    "go": [
+      {"title": "Go Documentation", "url": "https://go.dev/doc/", "type": "official_doc"},
+      {"title": "Go Blog", "url": "https://go.dev/blog/", "type": "official_doc"},
+      {"title": "Go Talks", "url": "https://go.dev/talks/", "type": "creator_talk"},
+      {"title": "Go Proposals", "url": "https://github.com/golang/proposal", "type": "go_proposal"}
+    ],
+    "python": [
+      {"title": "Python Documentation", "url": "https://docs.python.org/", "type": "official_doc"},
+      {"title": "Python Enhancement Proposals", "url": "https://peps.python.org/", "type": "pep"},
+      {"title": "Real Python", "url": "https://realpython.com/", "type": "community"}
+    ],
+    "swift": [
+      {"title": "Swift Documentation", "url": "https://docs.swift.org/", "type": "official_doc"},
+      {"title": "Swift Evolution", "url": "https://github.com/apple/swift-evolution", "type": "swift_evolution"},
+      {"title": "Apple Developer Documentation", "url": "https://developer.apple.com/documentation/swift", "type": "official_doc"},
+      {"title": "Swift by Sundell", "url": "https://www.swiftbysundell.com/", "type": "community"}
+    ],
+    "typescript": [
+      {"title": "TypeScript Documentation", "url": "https://www.typescriptlang.org/docs/", "type": "official_doc"},
+      {"title": "TypeScript Design Goals", "url": "https://github.com/Microsoft/TypeScript/wiki/TypeScript-Design-Goals", "type": "official_doc"},
+      {"title": "TypeScript GitHub Wiki", "url": "https://github.com/microsoft/TypeScript/wiki", "type": "official_doc"},
+      {"title": "TypeScript Deep Dive", "url": "https://basarat.gitbook.io/typescript/", "type": "community"}
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "concept_id": "operators",
+  "name": "Operators",
+  "category": "basics",
+  "prerequisites": [
+    "variable_declaration"
+  ],
+  "related_concepts": [
+    "operator_overloading"
+  ]
+}

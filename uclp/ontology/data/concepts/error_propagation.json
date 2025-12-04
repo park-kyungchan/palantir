@@ -1,0 +1,11 @@
+{
+  "concept_id": "error_propagation",
+  "name": "Error Propagation",
+  "category": "error_handling",
+  "prerequisites": [
+    "error_types"
+  ],
+  "related_concepts": [
+    "error_wrapping"
+  ]
+}

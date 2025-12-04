@@ -1,0 +1,10 @@
+{
+  "impl_id": "bc1a91dc-cf5c-46c1-9a88-fa5917b6a2e9",
+  "concept_id": "error_handling",
+  "language_id": "python",
+  "syntax_template": "try: result = func() except ValueError as e: handle(e)",
+  "design_rationale": "EAFP (Easier to Ask Forgiveness than Permission). Exceptions separate happy path from error handling.",
+  "sources": [
+    {}
+  ]
+}

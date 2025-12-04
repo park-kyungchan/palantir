@@ -1,0 +1,28 @@
+.venv
+node_modules
+__pycache__
+.DS_Store
+.env
+dist
+build
+coverage
+.orion/codebase_index
+logs
+*.log
+.history
+
+# System & Cache
+.local
+.cache
+.npm
+.pnpm
+.bun
+.config
+.vscode-server
+.wget-hsts
+.bash_history
+
+# IDE & Tools
+.antigravity-server
+.gemini
+.nvm

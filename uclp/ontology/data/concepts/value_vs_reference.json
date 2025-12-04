@@ -1,0 +1,12 @@
+{
+  "concept_id": "value_vs_reference",
+  "name": "Value vs Reference Types",
+  "category": "memory",
+  "prerequisites": [
+    "structs_classes"
+  ],
+  "related_concepts": [
+    "copying",
+    "mutation"
+  ]
+}

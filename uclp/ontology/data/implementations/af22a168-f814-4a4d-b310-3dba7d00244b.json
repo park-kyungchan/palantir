@@ -1,0 +1,15 @@
+{
+  "impl_id": "af22a168-f814-4a4d-b310-3dba7d00244b",
+  "concept_id": "variable_declaration",
+  "language_id": "python",
+  "syntax_template": "name = \"Alice\" (dynamic) or name: str = \"Alice\" (with hint)",
+  "design_rationale": "No type declaration required - duck typing prioritizes rapid development. Type hints (PEP 484) added later for tooling, not runtime.",
+  "sources": [
+    {
+      "title": "PEP 484 - Type Hints",
+      "url": "https://peps.python.org/pep-0484/",
+      "type": "pep",
+      "language": "python"
+    }
+  ]
+}

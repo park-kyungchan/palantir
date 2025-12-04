@@ -1,0 +1,15 @@
+{
+  "impl_id": "7ac41c09-6191-40e6-9ee4-160aaf78f4c0",
+  "concept_id": "error_handling",
+  "language_id": "python",
+  "syntax_template": "try: result = func() except ValueError as e: handle(e)",
+  "design_rationale": "EAFP (Easier to Ask Forgiveness than Permission). Exceptions separate happy path from error handling.",
+  "sources": [
+    {
+      "title": "Errors and Exceptions",
+      "url": "https://docs.python.org/3/tutorial/errors.html",
+      "type": "official_doc",
+      "language": "python"
+    }
+  ]
+}

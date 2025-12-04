@@ -1,0 +1,28 @@
+{
+    "plan_id": "e2e-golden-path",
+    "objective": "Implement Data Ingestion Pipeline",
+    "ontology_impact": [
+        "DataPipeline",
+        "IngestJob"
+    ],
+    "jobs": [
+        {
+            "id": "job_1",
+            "role": "Researcher",
+            "task": "Map Dependency Graph",
+            "input_context": [
+                "/home/palantir/.bashrc"
+            ],
+            "evidence": "Required to identify environment constraints."
+        },
+        {
+            "id": "job_2",
+            "role": "Forge",
+            "task": "Scaffold DataIngest.ts",
+            "input_context": [
+                "/home/palantir/.bashrc"
+            ],
+            "evidence": "Implementation of Spec v1.0, Section 3."
+        }
+    ]
+}

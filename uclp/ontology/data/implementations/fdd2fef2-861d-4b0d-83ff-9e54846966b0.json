@@ -1,0 +1,11 @@
+{
+  "impl_id": "fdd2fef2-861d-4b0d-83ff-9e54846966b0",
+  "concept_id": "concurrency",
+  "language_id": "typescript",
+  "syntax_template": "async function fetch(): Promise<Data> { return await api.get(); }",
+  "design_rationale": "async/await syntax sugar over Promises. Single-threaded event loop model inherited from JavaScript.",
+  "sources": [
+    {},
+    {}
+  ]
+}

@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Orion Execution Plan Schema",
+    "type": "object",
+    "properties": {
+        "plan_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "objective": {
+            "type": "string"
+        },
+        "ontology_impact": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "List of Ontology Objects affected (e.g., Employee, Ticket)"
+        },
+        "jobs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "Master",
+                            "Worker",
+                            "Auditor",
+                            "Researcher",
+                            "Architect",
+                            "QA",
+                            "Forge",
+                            "Cipher",
+                            "Aura"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "input_context": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "evidence": {
+                        "type": "string",
+                        "description": "CRITICAL: Quote the file/line that justifies this task. Prevents hallucination."
+                    }
+                },
+                "required": [
+                    "id",
+                    "role",
+                    "description",
+                    "evidence"
+                ]
+            }
+        }
+    },
+    "required": [
+        "plan_id",
+        "objective",
+        "ontology_impact",
+        "jobs"
+    ]
+}

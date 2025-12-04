@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "protocol_name": "Wrong Name",
+  "version": "1.0",
+  "description": "Test",
+  "target_llms": ["invalid-llm"],
+  "languages": ["go", "python"],
+  "sections": {
+    "core_philosophy": {
+      "description": "Test"
+    }
+  }
+}

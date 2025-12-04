@@ -1,0 +1,12 @@
+{
+  "concept_id": "optionals_nullability",
+  "name": "Optionals & Nullability",
+  "category": "error_handling",
+  "prerequisites": [
+    "type_system"
+  ],
+  "related_concepts": [
+    "unwrapping",
+    "nil_coalescing"
+  ]
+}

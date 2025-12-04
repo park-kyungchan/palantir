@@ -1,0 +1,11 @@
+{
+  "impl_id": "cee2771b-8faa-41ef-96e9-5a6bba44b460",
+  "concept_id": "error_handling",
+  "language_id": "go",
+  "syntax_template": "result, err := func(); if err != nil { return err }",
+  "design_rationale": "Errors as values, not exceptions. Every error site is visible. 'Errors are values' philosophy.",
+  "sources": [
+    {},
+    {}
+  ]
+}

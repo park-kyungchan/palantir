@@ -1,0 +1,11 @@
+{
+  "concept_id": "error_types",
+  "name": "Error Types",
+  "category": "error_handling",
+  "prerequisites": [
+    "function_definition"
+  ],
+  "related_concepts": [
+    "error_propagation"
+  ]
+}

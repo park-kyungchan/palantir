@@ -1,0 +1,12 @@
+{
+  "concept_id": "closures",
+  "name": "Closures",
+  "category": "functions",
+  "prerequisites": [
+    "function_definition"
+  ],
+  "related_concepts": [
+    "capturing",
+    "escaping"
+  ]
+}

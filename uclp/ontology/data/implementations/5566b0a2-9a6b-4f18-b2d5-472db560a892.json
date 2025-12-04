@@ -1,0 +1,21 @@
+{
+  "impl_id": "5566b0a2-9a6b-4f18-b2d5-472db560a892",
+  "concept_id": "concurrency",
+  "language_id": "go",
+  "syntax_template": "go func() { ch <- result }()",
+  "design_rationale": "CSP model: goroutines + channels. 'Do not communicate by sharing memory; share memory by communicating.'",
+  "sources": [
+    {
+      "title": "Go Concurrency Patterns",
+      "url": "https://go.dev/blog/pipelines",
+      "type": "official_doc",
+      "language": "go"
+    },
+    {
+      "title": "Share Memory By Communicating",
+      "url": "https://go.dev/blog/codelab-share",
+      "type": "official_doc",
+      "language": "go"
+    }
+  ]
+}

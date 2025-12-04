@@ -1,0 +1,12 @@
+{
+  "concept_id": "extensions",
+  "name": "Extensions",
+  "category": "abstraction",
+  "prerequisites": [
+    "structs_classes",
+    "interfaces_protocols"
+  ],
+  "related_concepts": [
+    "protocol_extensions"
+  ]
+}

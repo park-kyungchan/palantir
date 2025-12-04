@@ -1,0 +1,10 @@
+{
+  "concept_id": "packages",
+  "name": "Packages & Modules",
+  "category": "modules",
+  "prerequisites": [],
+  "related_concepts": [
+    "imports",
+    "visibility"
+  ]
+}

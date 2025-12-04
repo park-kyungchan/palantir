@@ -1,0 +1,11 @@
+{
+  "concept_id": "channels_streams",
+  "name": "Channels & Streams",
+  "category": "concurrency",
+  "prerequisites": [
+    "async_await"
+  ],
+  "related_concepts": [
+    "csp_model"
+  ]
+}

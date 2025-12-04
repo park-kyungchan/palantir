@@ -1,0 +1,11 @@
+{
+  "impl_id": "a437e7a5-3edb-4bf9-928c-a403d0ab5ec2",
+  "concept_id": "concurrency",
+  "language_id": "swift",
+  "syntax_template": "Task { let data = await fetch() }",
+  "design_rationale": "Structured concurrency + actors. Compiler prevents data races.",
+  "sources": [
+    {},
+    {}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "concept_id": "dependencies",
+  "name": "Dependency Management",
+  "category": "modules",
+  "prerequisites": [
+    "packages"
+  ],
+  "related_concepts": [
+    "versioning"
+  ]
+}

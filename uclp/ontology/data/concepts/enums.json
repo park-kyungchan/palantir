@@ -1,0 +1,12 @@
+{
+  "concept_id": "enums",
+  "name": "Enumerations",
+  "category": "data_structures",
+  "prerequisites": [
+    "variable_declaration"
+  ],
+  "related_concepts": [
+    "pattern_matching",
+    "associated_values"
+  ]
+}

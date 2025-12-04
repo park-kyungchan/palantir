@@ -1,0 +1,21 @@
+{
+  "impl_id": "29d254a7-09cd-4df3-8a5b-9c0bc4564b7e",
+  "concept_id": "concurrency",
+  "language_id": "swift",
+  "syntax_template": "Task { let data = await fetch() }",
+  "design_rationale": "Structured concurrency + actors. Compiler prevents data races.",
+  "sources": [
+    {
+      "title": "Swift Concurrency",
+      "url": "https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html",
+      "type": "official_doc",
+      "language": "swift"
+    },
+    {
+      "title": "SE-0306: Actors",
+      "url": "https://github.com/apple/swift-evolution/blob/main/proposals/0306-actors.md",
+      "type": "swift_evolution",
+      "language": "swift"
+    }
+  ]
+}

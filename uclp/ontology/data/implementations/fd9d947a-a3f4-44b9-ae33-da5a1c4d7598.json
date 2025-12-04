@@ -1,0 +1,10 @@
+{
+  "impl_id": "fd9d947a-a3f4-44b9-ae33-da5a1c4d7598",
+  "concept_id": "error_handling",
+  "language_id": "typescript",
+  "syntax_template": "try { const data = await func(); } catch (e) { if (e instanceof Error) handle(e); }",
+  "design_rationale": "JavaScript exceptions + union types for Result pattern. No checked exceptions, but discriminated unions enable type-safe error handling.",
+  "sources": [
+    {}
+  ]
+}

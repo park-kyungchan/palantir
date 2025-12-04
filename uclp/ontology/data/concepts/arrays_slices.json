@@ -1,0 +1,12 @@
+{
+  "concept_id": "arrays_slices",
+  "name": "Arrays & Slices/Lists",
+  "category": "data_structures",
+  "prerequisites": [
+    "variable_declaration"
+  ],
+  "related_concepts": [
+    "iteration",
+    "comprehensions"
+  ]
+}

@@ -1,0 +1,712 @@
+{
+  "section": "comparison_framework",
+  "metadata": {
+    "version": "1.0.0",
+    "purpose": "Universal Code Learning Protocol - Three Language Comparison Framework",
+    "languages": ["Go", "Python", "Swift"],
+    "created": "2025-11-29"
+  },
+  "concept_categories": [
+    {
+      "category": "fundamentals",
+      "name": "기초 개념",
+      "description": "프로그래밍의 기본 구성 요소",
+      "concepts": [
+        {
+          "concept_id": "variables",
+          "name": "변수와 상수",
+          "description": "데이터를 저장하고 참조하는 메커니즘",
+          "prerequisites": [],
+          "related_concepts": ["types", "memory_management"]
+        },
+        {
+          "concept_id": "types",
+          "name": "타입 시스템",
+          "description": "데이터의 종류와 제약을 정의하는 시스템",
+          "prerequisites": ["variables"],
+          "related_concepts": ["type_inference", "generics"]
+        },
+        {
+          "concept_id": "operators",
+          "name": "연산자",
+          "description": "값을 조작하는 기호 및 키워드",
+          "prerequisites": ["variables", "types"],
+          "related_concepts": ["expressions", "operator_overloading"]
+        },
+        {
+          "concept_id": "control_flow",
+          "name": "제어 흐름",
+          "description": "프로그램 실행 순서를 제어하는 구문",
+          "prerequisites": ["operators"],
+          "related_concepts": ["loops", "conditionals", "pattern_matching"]
+        }
+      ]
+    },
+    {
+      "category": "functions",
+      "name": "함수와 메서드",
+      "description": "코드 재사용과 추상화의 기본 단위",
+      "concepts": [
+        {
+          "concept_id": "function_definition",
+          "name": "함수 정의",
+          "description": "함수를 선언하고 정의하는 방법",
+          "prerequisites": ["types", "control_flow"],
+          "related_concepts": ["scope", "namespaces"]
+        },
+        {
+          "concept_id": "parameters",
+          "name": "파라미터와 인자",
+          "description": "함수에 데이터를 전달하는 메커니즘",
+          "prerequisites": ["function_definition"],
+          "related_concepts": ["named_parameters", "variadic_functions", "default_values"]
+        },
+        {
+          "concept_id": "return_values",
+          "name": "반환값",
+          "description": "함수의 결과를 반환하는 방법",
+          "prerequisites": ["function_definition"],
+          "related_concepts": ["multiple_returns", "error_handling"]
+        },
+        {
+          "concept_id": "closures",
+          "name": "클로저와 람다",
+          "description": "환경을 캡처하는 익명 함수",
+          "prerequisites": ["function_definition", "scope"],
+          "related_concepts": ["first_class_functions", "higher_order_functions"]
+        },
+        {
+          "concept_id": "methods",
+          "name": "메서드",
+          "description": "타입에 연결된 함수",
+          "prerequisites": ["function_definition", "structs_classes"],
+          "related_concepts": ["receivers", "self", "method_dispatch"]
+        }
+      ]
+    },
+    {
+      "category": "data_structures",
+      "name": "데이터 구조",
+      "description": "데이터를 조직화하고 저장하는 방법",
+      "concepts": [
+        {
+          "concept_id": "arrays",
+          "name": "배열과 슬라이스",
+          "description": "순차적 데이터 컬렉션",
+          "prerequisites": ["types"],
+          "related_concepts": ["indexing", "slicing", "iteration"]
+        },
+        {
+          "concept_id": "maps",
+          "name": "맵과 딕셔너리",
+          "description": "키-값 쌍의 컬렉션",
+          "prerequisites": ["types", "arrays"],
+          "related_concepts": ["hashing", "key_types"]
+        },
+        {
+          "concept_id": "structs_classes",
+          "name": "구조체와 클래스",
+          "description": "사용자 정의 복합 타입",
+          "prerequisites": ["types"],
+          "related_concepts": ["value_vs_reference", "initialization", "properties"]
+        },
+        {
+          "concept_id": "enums",
+          "name": "열거형",
+          "description": "관련된 값들의 집합",
+          "prerequisites": ["types"],
+          "related_concepts": ["associated_values", "pattern_matching"]
+        }
+      ]
+    },
+    {
+      "category": "error_handling",
+      "name": "에러 처리",
+      "description": "예외적 상황을 다루는 메커니즘",
+      "concepts": [
+        {
+          "concept_id": "error_types",
+          "name": "에러 타입",
+          "description": "에러를 표현하는 타입 시스템",
+          "prerequisites": ["types", "return_values"],
+          "related_concepts": ["error_interface", "custom_errors"]
+        },
+        {
+          "concept_id": "error_propagation",
+          "name": "에러 전파",
+          "description": "에러를 상위 호출자에게 전달하는 방법",
+          "prerequisites": ["error_types", "function_definition"],
+          "related_concepts": ["error_wrapping", "error_chain"]
+        },
+        {
+          "concept_id": "error_recovery",
+          "name": "에러 복구",
+          "description": "에러 상황을 처리하고 복구하는 전략",
+          "prerequisites": ["error_types"],
+          "related_concepts": ["try_catch", "defer", "panic_recover"]
+        },
+        {
+          "concept_id": "optional_handling",
+          "name": "옵셔널 처리",
+          "description": "값의 부재를 안전하게 다루는 방법",
+          "prerequisites": ["types"],
+          "related_concepts": ["nil_safety", "optional_chaining", "unwrapping"]
+        }
+      ]
+    },
+    {
+      "category": "concurrency",
+      "name": "동시성",
+      "description": "동시에 여러 작업을 실행하는 메커니즘",
+      "concepts": [
+        {
+          "concept_id": "threads_tasks",
+          "name": "스레드와 태스크",
+          "description": "동시 실행의 기본 단위",
+          "prerequisites": ["function_definition"],
+          "related_concepts": ["thread_safety", "race_conditions"]
+        },
+        {
+          "concept_id": "async_await",
+          "name": "비동기 프로그래밍",
+          "description": "비동기 작업을 동기적으로 작성하는 패턴",
+          "prerequisites": ["threads_tasks", "closures"],
+          "related_concepts": ["futures", "promises", "coroutines"]
+        },
+        {
+          "concept_id": "channels",
+          "name": "채널과 메시지 전달",
+          "description": "동시성 작업 간 통신 메커니즘",
+          "prerequisites": ["threads_tasks"],
+          "related_concepts": ["csp", "select", "buffered_channels"]
+        },
+        {
+          "concept_id": "synchronization",
+          "name": "동기화 프리미티브",
+          "description": "공유 자원 접근을 제어하는 도구",
+          "prerequisites": ["threads_tasks"],
+          "related_concepts": ["mutexes", "semaphores", "atomic_operations"]
+        }
+      ]
+    },
+    {
+      "category": "abstraction",
+      "name": "추상화 메커니즘",
+      "description": "코드의 재사용성과 확장성을 높이는 기법",
+      "concepts": [
+        {
+          "concept_id": "interfaces",
+          "name": "인터페이스와 프로토콜",
+          "description": "타입이 구현해야 하는 계약 정의",
+          "prerequisites": ["structs_classes", "methods"],
+          "related_concepts": ["duck_typing", "structural_typing", "nominal_typing"]
+        },
+        {
+          "concept_id": "generics",
+          "name": "제네릭과 파라메트릭 다형성",
+          "description": "타입에 독립적인 코드 작성",
+          "prerequisites": ["types", "interfaces"],
+          "related_concepts": ["type_constraints", "type_parameters"]
+        },
+        {
+          "concept_id": "inheritance_composition",
+          "name": "상속과 합성",
+          "description": "코드 재사용을 위한 관계 설정",
+          "prerequisites": ["structs_classes"],
+          "related_concepts": ["embedding", "delegation", "mixins"]
+        },
+        {
+          "concept_id": "extensions",
+          "name": "확장과 프로토콜 익스텐션",
+          "description": "기존 타입에 기능 추가",
+          "prerequisites": ["structs_classes", "interfaces"],
+          "related_concepts": ["retroactive_modeling", "default_implementations"]
+        }
+      ]
+    },
+    {
+      "category": "module_system",
+      "name": "모듈 시스템",
+      "description": "코드를 조직화하고 네임스페이스를 관리하는 방법",
+      "concepts": [
+        {
+          "concept_id": "packages",
+          "name": "패키지와 모듈",
+          "description": "관련 코드를 그룹화하는 단위",
+          "prerequisites": [],
+          "related_concepts": ["module_structure", "package_manager"]
+        },
+        {
+          "concept_id": "imports",
+          "name": "임포트와 의존성",
+          "description": "다른 모듈의 코드를 사용하는 방법",
+          "prerequisites": ["packages"],
+          "related_concepts": ["import_resolution", "circular_dependencies"]
+        },
+        {
+          "concept_id": "visibility",
+          "name": "가시성과 접근 제어",
+          "description": "코드의 공개 범위를 제어하는 메커니즘",
+          "prerequisites": ["packages"],
+          "related_concepts": ["encapsulation", "public_private", "internal"]
+        }
+      ]
+    },
+    {
+      "category": "memory_management",
+      "name": "메모리 관리",
+      "description": "메모리 할당과 해제를 관리하는 방법",
+      "concepts": [
+        {
+          "concept_id": "value_reference",
+          "name": "값 타입과 참조 타입",
+          "description": "데이터 전달 방식의 차이",
+          "prerequisites": ["types"],
+          "related_concepts": ["copying", "sharing", "mutation"]
+        },
+        {
+          "concept_id": "ownership",
+          "name": "소유권과 생명주기",
+          "description": "메모리 소유권을 관리하는 시스템",
+          "prerequisites": ["value_reference"],
+          "related_concepts": ["borrowing", "move_semantics", "arc"]
+        },
+        {
+          "concept_id": "garbage_collection",
+          "name": "가비지 컬렉션",
+          "description": "자동 메모리 관리 메커니즘",
+          "prerequisites": ["value_reference"],
+          "related_concepts": ["mark_sweep", "reference_counting", "memory_leaks"]
+        }
+      ]
+    }
+  ],
+  "comparison_axes": [
+    {
+      "axis_id": "syntax",
+      "name": "문법적 차이",
+      "description": "코드를 작성하는 구체적인 표기법과 구문 규칙",
+      "how_to_compare": "동일한 개념을 표현할 때 각 언어가 사용하는 키워드, 기호, 구조적 패턴을 비교. 예: 함수 정의 시 'func'(Go), 'def'(Python), 'func'(Swift)",
+      "examples": [
+        "키워드 선택 (var vs let vs const)",
+        "중괄호 vs 들여쓰기",
+        "타입 어노테이션 위치 (접미사 vs 접두사)",
+        "세미콜론 필수 여부"
+      ]
+    },
+    {
+      "axis_id": "semantics",
+      "name": "의미적 차이",
+      "description": "동일한 문법 구조가 실행 시 갖는 의미와 동작 방식",
+      "how_to_compare": "같은 구문이 런타임에 어떻게 다르게 동작하는지 비교. 예: 슬라이싱이 복사를 만드는지(Python), 뷰를 반환하는지(Go)",
+      "examples": [
+        "값 전달 vs 참조 전달",
+        "얕은 복사 vs 깊은 복사",
+        "지연 평가 vs 즉시 평가",
+        "타입 변환 규칙"
+      ]
+    },
+    {
+      "axis_id": "philosophy",
+      "name": "설계 철학적 차이",
+      "description": "언어가 특정 방식으로 설계된 근본적인 이유와 가치관",
+      "how_to_compare": "각 언어가 추구하는 핵심 가치와 트레이드오프를 비교. 예: 명시성(Go) vs 간결성(Python) vs 안전성(Swift)",
+      "examples": [
+        "명시적 vs 암묵적",
+        "단순성 vs 표현력",
+        "컴파일 타임 안전성 vs 개발 속도",
+        "하나의 정답 vs 다양한 방법"
+      ],
+      "language_philosophies": {
+        "go": "Simplicity, explicitness, composition over inheritance. 'Do not communicate by sharing memory; instead, share memory by communicating.'",
+        "python": "Readability, one obvious way, batteries included. 'There should be one-- and preferably only one --obvious way to do it.'",
+        "swift": "Safety, clarity, performance. Protocol-oriented programming, value types by default, progressive disclosure of complexity."
+      }
+    },
+    {
+      "axis_id": "performance",
+      "name": "성능 특성 차이",
+      "description": "실행 속도, 메모리 사용량, 컴파일 시간 등의 차이",
+      "how_to_compare": "동일한 작업의 성능 특성을 비교. 예: 컴파일 언어(Go, Swift) vs 인터프리터 언어(Python)",
+      "examples": [
+        "컴파일 vs 인터프리터",
+        "정적 vs 동적 디스패치",
+        "스택 vs 힙 할당",
+        "최적화 전략"
+      ],
+      "characteristics": {
+        "go": "Fast compilation, efficient runtime, low memory overhead, GC pauses",
+        "python": "Slow execution (CPython), high memory usage, dynamic typing overhead, but rapid prototyping",
+        "swift": "Near C-level performance, ARC overhead, aggressive compiler optimizations, large binary size"
+      }
+    },
+    {
+      "axis_id": "idiom",
+      "name": "관용적 패턴 차이",
+      "description": "각 언어 커뮤니티에서 선호되는 코딩 스타일과 패턴",
+      "how_to_compare": "같은 문제를 해결할 때 각 언어 커뮤니티가 선호하는 접근법을 비교. 예: 에러 처리 시 if err != nil(Go) vs try/except(Python) vs guard let(Swift)",
+      "examples": [
+        "에러 처리 패턴",
+        "null/nil 안전성 처리",
+        "컬렉션 조작 방법",
+        "동시성 패턴"
+      ]
+    },
+    {
+      "axis_id": "type_system",
+      "name": "타입 시스템 차이",
+      "description": "타입을 다루는 방식과 타입 안전성 수준",
+      "how_to_compare": "타입 체킹 시점, 타입 추론 능력, 타입 안전성 보장 수준을 비교",
+      "examples": [
+        "정적 vs 동적 타입",
+        "타입 추론 수준",
+        "구조적 vs 명목적 타입",
+        "덕 타이핑 지원"
+      ],
+      "characteristics": {
+        "go": "Static, structural typing for interfaces, minimal type inference, no generics until 1.18",
+        "python": "Dynamic, duck typing, optional type hints (PEP 484), runtime type checking with protocols",
+        "swift": "Static, powerful type inference, protocol-oriented, nominal typing with structural interface conformance"
+      }
+    }
+  ],
+  "idiomatic_patterns": {
+    "go": [
+      {
+        "pattern_id": "error_handling",
+        "name": "명시적 에러 체크",
+        "description": "모든 에러를 명시적으로 확인하고 처리",
+        "example": "if err != nil { return err }",
+        "rationale": "에러를 값으로 취급하여 제어 흐름을 명확하게 유지",
+        "references": ["https://www.djamware.com/post/6926eda9eca0e67f5e7d5d34/error-handling-in-go-idiomatic-patterns-for-clean-code"]
+      },
+      {
+        "pattern_id": "goroutine_patterns",
+        "name": "고루틴과 채널",
+        "description": "경량 스레드와 CSP 기반 동시성",
+        "example": "go func() { ch <- result }()",
+        "rationale": "메모리를 공유하지 말고 통신으로 공유하라",
+        "references": ["https://medium.com/techhappily/go-concurrency-2-2-patterns-and-idioms-error-handling-c18e4e083a74"]
+      },
+      {
+        "pattern_id": "interface_composition",
+        "name": "작은 인터페이스 합성",
+        "description": "단일 메서드 인터페이스를 조합하여 큰 인터페이스 구성",
+        "example": "io.Reader, io.Writer → io.ReadWriter",
+        "rationale": "구조적 타이핑을 활용한 유연한 추상화",
+        "references": ["https://ayada.dev/go-roadmap/idiomatic-design-patterns-in-go/"]
+      },
+      {
+        "pattern_id": "defer_cleanup",
+        "name": "Defer를 이용한 리소스 정리",
+        "description": "함수 종료 시 자동으로 실행되는 정리 코드",
+        "example": "defer file.Close()",
+        "rationale": "리소스 획득과 해제를 가까이 배치하여 누수 방지"
+      },
+      {
+        "pattern_id": "errgroup",
+        "name": "ErrGroup 패턴",
+        "description": "여러 고루틴의 에러를 동시에 처리",
+        "example": "golang.org/x/sync/errgroup",
+        "rationale": "동시성 에러 처리를 관리 가능하게 유지",
+        "references": ["https://bostonc.dev/blog/go-errgroup/"]
+      }
+    ],
+    "python": [
+      {
+        "pattern_id": "list_comprehension",
+        "name": "리스트 컴프리헨션",
+        "description": "간결한 리스트 생성 문법",
+        "example": "[x*2 for x in range(10) if x % 2 == 0]",
+        "rationale": "함수형 프로그래밍과 가독성의 균형",
+        "references": ["https://devblogs.microsoft.com/python/idiomatic-python-comprehensions/"]
+      },
+      {
+        "pattern_id": "context_manager",
+        "name": "컨텍스트 매니저",
+        "description": "with 문을 이용한 자동 리소스 관리",
+        "example": "with open('file.txt') as f: ...",
+        "rationale": "리소스 획득과 해제를 자동화하여 안전성 향상",
+        "references": ["https://victorpierre.dev/learning/programming/python/language-concepts/"]
+      },
+      {
+        "pattern_id": "duck_typing",
+        "name": "덕 타이핑",
+        "description": "타입보다 인터페이스(메서드)에 의존",
+        "example": "hasattr(obj, 'read') and callable(obj.read)",
+        "rationale": "유연성과 다형성을 타입 계층 없이 달성",
+        "references": ["https://realpython.com/duck-typing-python/"]
+      },
+      {
+        "pattern_id": "generator_expression",
+        "name": "제너레이터 표현식",
+        "description": "지연 평가를 통한 메모리 효율적 반복",
+        "example": "(x*2 for x in range(1000000))",
+        "rationale": "큰 데이터셋을 메모리 효율적으로 처리",
+        "references": ["https://www.freshblurbs.com/blog/2019/05/07/Python-List-Comprehensions-Generators.html"]
+      },
+      {
+        "pattern_id": "protocols",
+        "name": "프로토콜 (PEP 544)",
+        "description": "정적 덕 타이핑",
+        "example": "from typing import Protocol",
+        "rationale": "타입 체커가 구조적 타입을 검증 가능하게 함",
+        "references": ["https://www.turingtaco.com/static-duck-typing-with-pythons-protocols/"]
+      }
+    ],
+    "swift": [
+      {
+        "pattern_id": "optional_chaining",
+        "name": "옵셔널 체이닝",
+        "description": "안전한 nil 처리를 위한 체이닝",
+        "example": "user?.address?.street",
+        "rationale": "nil 체크를 간결하게 표현하면서 안전성 유지",
+        "references": ["https://docs.swift.org/swift-book/LanguageGuide/OptionalChaining.html"]
+      },
+      {
+        "pattern_id": "protocol_extensions",
+        "name": "프로토콜 익스텐션",
+        "description": "프로토콜에 기본 구현 제공",
+        "example": "extension Collection where Element: Equatable { ... }",
+        "rationale": "코드 재사용과 기본 동작을 타입 계층 없이 달성",
+        "references": ["https://vikramios.medium.com/optional-protocol-in-swift-5fd3b2dff274"]
+      },
+      {
+        "pattern_id": "value_types",
+        "name": "값 타입 우선",
+        "description": "struct를 기본으로 사용",
+        "example": "struct Point { var x: Int; var y: Int }",
+        "rationale": "불변성과 스레드 안전성을 기본으로 제공",
+        "references": ["https://www.swiftbysundell.com/articles/extending-optionals-in-swift/"]
+      },
+      {
+        "pattern_id": "guard_let",
+        "name": "Guard Let 패턴",
+        "description": "조기 종료를 통한 에러 처리",
+        "example": "guard let value = optional else { return }",
+        "rationale": "정상 경로를 들여쓰기 없이 명확하게 유지"
+      },
+      {
+        "pattern_id": "result_type",
+        "name": "Result 타입",
+        "description": "성공/실패를 명시적으로 표현",
+        "example": "Result<Success, Error>",
+        "rationale": "에러 처리를 타입 안전하게 만듦"
+      }
+    ]
+  },
+  "concept_mapping": {
+    "error_handling": {
+      "go": {
+        "syntax": "if err := doSomething(); err != nil { return err }",
+        "idiom": "Multiple return values with explicit error checking at every call site",
+        "philosophy": "Errors are values. Handle them explicitly where they occur.",
+        "type_system": "error interface with Error() string method",
+        "references": ["https://www.djamware.com/post/6926eda9eca0e67f5e7d5d34/error-handling-in-go-idiomatic-patterns-for-clean-code"]
+      },
+      "python": {
+        "syntax": "try:\n    do_something()\nexcept ValueError as e:\n    handle_error(e)",
+        "idiom": "EAFP (Easier to Ask for Forgiveness than Permission) - try/except blocks",
+        "philosophy": "Exceptions for exceptional cases. Duck typing means try and handle failures.",
+        "type_system": "Exception class hierarchy, dynamic typing",
+        "references": ["https://realpython.com/duck-typing-python/"]
+      },
+      "swift": {
+        "syntax": "do {\n    try doSomething()\n} catch {\n    handleError(error)\n}",
+        "idiom": "Throwing functions with do-catch, or Result type for functional style",
+        "philosophy": "Explicit error propagation with type safety. Optionals for missing values.",
+        "type_system": "Error protocol, throws keyword, Result<Success, Failure>",
+        "references": ["https://docs.swift.org/swift-book/LanguageGuide/OptionalChaining.html"]
+      }
+    },
+    "optional_handling": {
+      "go": {
+        "syntax": "var ptr *int = nil\nif ptr != nil { value := *ptr }",
+        "idiom": "Explicit nil checks, pointers can be nil",
+        "philosophy": "No special syntax for optionality. Nil is a valid value.",
+        "type_system": "Pointers can be nil, zero values for non-pointer types"
+      },
+      "python": {
+        "syntax": "value = None\nif value is not None: use(value)",
+        "idiom": "None checks, or duck typing (hasattr checks)",
+        "philosophy": "None is a singleton object. Optional type hints via typing.Optional.",
+        "type_system": "Dynamic typing with None, type hints with Optional[T]",
+        "references": ["https://realpython.com/duck-typing-python/"]
+      },
+      "swift": {
+        "syntax": "var value: Int? = nil\nif let unwrapped = value { use(unwrapped) }",
+        "idiom": "Optional chaining (?.), guard let, if let, nil coalescing (??)",
+        "philosophy": "Optionality is explicit in the type system. Compiler enforces safe unwrapping.",
+        "type_system": "Optional<T> enum with .some and .none cases",
+        "references": ["https://docs.swift.org/swift-book/LanguageGuide/OptionalChaining.html"]
+      }
+    },
+    "concurrency": {
+      "go": {
+        "syntax": "go func() { ch <- compute() }()\nresult := <-ch",
+        "idiom": "Goroutines and channels (CSP model), select for multiplexing",
+        "philosophy": "Don't communicate by sharing memory; share memory by communicating.",
+        "type_system": "Built-in goroutines, typed channels",
+        "references": ["https://medium.com/techhappily/go-concurrency-2-2-patterns-and-idioms-error-handling-c18e4e083a74"]
+      },
+      "python": {
+        "syntax": "async def fetch():\n    return await http_get(url)\nawait fetch()",
+        "idiom": "async/await with asyncio, or threading/multiprocessing for parallelism",
+        "philosophy": "Cooperative multitasking with event loop. GIL limits true parallelism.",
+        "type_system": "Coroutines, Futures, asyncio library"
+      },
+      "swift": {
+        "syntax": "Task {\n    let result = await fetchData()\n}",
+        "idiom": "async/await with structured concurrency, Actors for data isolation",
+        "philosophy": "Structured concurrency prevents data races. Actors for safe state.",
+        "type_system": "async functions, Task, Actor types, @MainActor"
+      }
+    },
+    "interfaces_protocols": {
+      "go": {
+        "syntax": "type Reader interface { Read([]byte) (int, error) }",
+        "idiom": "Small interfaces (often single method), implicit implementation",
+        "philosophy": "Interfaces are satisfied implicitly. Composition over inheritance.",
+        "type_system": "Structural typing for interfaces",
+        "references": ["https://ayada.dev/go-roadmap/idiomatic-design-patterns-in-go/"]
+      },
+      "python": {
+        "syntax": "class Readable(Protocol):\n    def read(self) -> str: ...",
+        "idiom": "Duck typing (if it quacks like a duck...), ABCs for formal interfaces",
+        "philosophy": "Flexibility through duck typing. Formal interfaces optional.",
+        "type_system": "Duck typing, Protocol (PEP 544) for static checking",
+        "references": ["https://www.turingtaco.com/static-duck-typing-with-pythons-protocols/"]
+      },
+      "swift": {
+        "syntax": "protocol Readable { func read() -> String }",
+        "idiom": "Protocol-oriented programming, protocol extensions for default implementations",
+        "philosophy": "Start with protocols, not classes. Retroactive modeling.",
+        "type_system": "Nominal typing with protocols, structural conformance checking",
+        "references": ["https://vikramios.medium.com/optional-protocol-in-swift-5fd3b2dff274"]
+      }
+    },
+    "collections": {
+      "go": {
+        "syntax": "slice := []int{1, 2, 3}\nfor i, v := range slice { ... }",
+        "idiom": "Slices (dynamic views), maps, simple iteration with range",
+        "philosophy": "Simple, explicit, built-in types. No method chaining on collections.",
+        "type_system": "Built-in array (fixed), slice (dynamic), map types"
+      },
+      "python": {
+        "syntax": "items = [1, 2, 3]\nsquares = [x**2 for x in items]",
+        "idiom": "List/dict/set comprehensions, generator expressions, rich methods",
+        "philosophy": "Expressive, functional-style transformations. Batteries included.",
+        "type_system": "list, dict, set, tuple - dynamic with rich built-in methods",
+        "references": ["https://devblogs.microsoft.com/python/idiomatic-python-comprehensions/"]
+      },
+      "swift": {
+        "syntax": "let array = [1, 2, 3]\nlet squares = array.map { $0 * $0 }",
+        "idiom": "Functional methods (map, filter, reduce), value semantics by default",
+        "philosophy": "Immutable by default (let), functional transformations, copy-on-write.",
+        "type_system": "Array<T>, Dictionary<K,V>, Set<T> - generic value types",
+        "references": ["https://www.swiftbysundell.com/articles/extending-optionals-in-swift/"]
+      }
+    },
+    "memory_management": {
+      "go": {
+        "syntax": "No manual memory management. GC handles everything.",
+        "idiom": "Escape analysis determines stack vs heap allocation",
+        "philosophy": "Developer focuses on logic, not memory. GC pauses are acceptable.",
+        "type_system": "Automatic garbage collection (mark-and-sweep)",
+        "references": []
+      },
+      "python": {
+        "syntax": "No manual memory management. Reference counting + GC.",
+        "idiom": "Context managers for resource cleanup",
+        "philosophy": "Developer convenience over performance. High-level abstractions.",
+        "type_system": "Reference counting + cycle detector",
+        "references": ["https://victorpierre.dev/learning/programming/python/language-concepts/"]
+      },
+      "swift": {
+        "syntax": "weak var delegate: Delegate?\nunowned let parent: Parent",
+        "idiom": "ARC with weak/unowned for breaking cycles. Value types by default.",
+        "philosophy": "Predictable, deterministic deallocation. Balance safety and performance.",
+        "type_system": "Automatic Reference Counting (ARC) for classes, value semantics for structs",
+        "references": []
+      }
+    }
+  },
+  "learning_paths": {
+    "beginner_to_intermediate": [
+      "variables",
+      "types",
+      "control_flow",
+      "function_definition",
+      "arrays",
+      "structs_classes",
+      "error_types",
+      "interfaces",
+      "packages"
+    ],
+    "intermediate_to_advanced": [
+      "closures",
+      "generics",
+      "async_await",
+      "channels",
+      "extensions",
+      "ownership",
+      "optional_handling"
+    ]
+  },
+  "cross_language_gotchas": [
+    {
+      "topic": "Zero Values",
+      "go": "All types have zero values (0, false, nil, empty string)",
+      "python": "No concept of zero values. Variables must be assigned before use.",
+      "swift": "Optionals are nil by default, but non-optionals must be initialized"
+    },
+    {
+      "topic": "Slicing",
+      "go": "Slices are views into arrays (references), not copies",
+      "python": "Slicing creates shallow copies of sequences",
+      "swift": "Slicing creates new arrays (value semantics with copy-on-write)"
+    },
+    {
+      "topic": "Method Receivers",
+      "go": "Methods can have pointer or value receivers, affects mutability",
+      "python": "self is always a reference, methods mutate the object",
+      "swift": "Methods on structs must be marked 'mutating' to modify self"
+    },
+    {
+      "topic": "Inheritance",
+      "go": "No inheritance. Use composition and interfaces.",
+      "python": "Full class inheritance with multiple inheritance and MRO",
+      "swift": "Single class inheritance, but protocol conformance can be added via extensions"
+    },
+    {
+      "topic": "Visibility",
+      "go": "Capitalized names are exported (public), lowercase are package-private",
+      "python": "No true private. _name is convention, __name is name mangled",
+      "swift": "Explicit keywords: public, internal (default), fileprivate, private"
+    }
+  ],
+  "tool_recommendations": {
+    "go": {
+      "formatter": "gofmt / goimports",
+      "linter": "golangci-lint",
+      "package_manager": "go modules (built-in)",
+      "testing": "go test (built-in)",
+      "documentation": "godoc"
+    },
+    "python": {
+      "formatter": "black / autopep8",
+      "linter": "pylint / flake8 / ruff",
+      "package_manager": "pip / poetry / uv",
+      "testing": "pytest / unittest",
+      "documentation": "sphinx",
+      "type_checker": "mypy / pyright"
+    },
+    "swift": {
+      "formatter": "swift-format",
+      "linter": "SwiftLint",
+      "package_manager": "Swift Package Manager",
+      "testing": "XCTest",
+      "documentation": "DocC"
+    }
+  }
+}

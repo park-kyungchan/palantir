@@ -1,0 +1,11 @@
+{
+  "impl_id": "c908e7b6-1c6d-4a83-b8be-eb0112032d1b",
+  "concept_id": "error_handling",
+  "language_id": "swift",
+  "syntax_template": "do { let data = try func() } catch FileError.notFound { handle() }",
+  "design_rationale": "'try' keyword makes throwing visible at call site. Compiler enforces handling.",
+  "sources": [
+    {},
+    {}
+  ]
+}

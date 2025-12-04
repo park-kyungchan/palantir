@@ -1,0 +1,12 @@
+{
+  "concept_id": "synchronization",
+  "name": "Synchronization",
+  "category": "concurrency",
+  "prerequisites": [
+    "async_await"
+  ],
+  "related_concepts": [
+    "locks",
+    "actors"
+  ]
+}

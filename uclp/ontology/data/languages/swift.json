@@ -1,0 +1,32 @@
+{
+  "language_id": "swift",
+  "name": "Swift",
+  "philosophy_summary": "Derived from patterns",
+  "idiomatic_patterns": [
+    {
+      "pattern": "guard let x = optional else { return }",
+      "usage": "Early exit on nil",
+      "philosophy": "Safety through unwrapping"
+    },
+    {
+      "pattern": "if let x = optional { }",
+      "usage": "Optional binding",
+      "philosophy": "Explicit nil handling"
+    },
+    {
+      "pattern": "array.map { $0.property }",
+      "usage": "Functional transformation",
+      "philosophy": "Expressive closures"
+    },
+    {
+      "pattern": "protocol P { }; extension P { }",
+      "usage": "Protocol with default implementation",
+      "philosophy": "Protocol-oriented"
+    },
+    {
+      "pattern": "async let x = fetch()",
+      "usage": "Concurrent binding",
+      "philosophy": "Structured concurrency"
+    }
+  ]
+}

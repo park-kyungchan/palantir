@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Implementation Schema",
+    "type": "object",
+    "properties": {
+        "impl_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "concept_id": {
+            "type": "string"
+        },
+        "language_id": {
+            "type": "string"
+        },
+        "syntax_template": {
+            "type": "string",
+            "description": "Code template showing the implementation pattern"
+        },
+        "design_rationale": {
+            "type": "string",
+            "description": "Why this pattern is idiomatic in this language"
+        },
+        "sources": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": true
+            }
+        }
+    },
+    "required": [
+        "impl_id",
+        "concept_id",
+        "language_id",
+        "syntax_template",
+        "design_rationale"
+    ]
+}

@@ -1,0 +1,12 @@
+{
+  "concept_id": "function_definition",
+  "name": "Function Definition",
+  "category": "functions",
+  "prerequisites": [
+    "variable_declaration"
+  ],
+  "related_concepts": [
+    "parameters",
+    "return_values"
+  ]
+}

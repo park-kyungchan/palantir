@@ -1,0 +1,12 @@
+{
+  "session_id": "math-project-alpha-01",
+  "current_persona": "ORION",
+  "workflow_stage": "PLANNING",
+  "active_task_id": "TASK-001-INIT",
+  "last_handoff": {
+    "from": "SYSTEM",
+    "to": "ORION",
+    "reason": "Session Initialization",
+    "timestamp": "2025-12-03T23:35:00+09:00"
+  }
+}

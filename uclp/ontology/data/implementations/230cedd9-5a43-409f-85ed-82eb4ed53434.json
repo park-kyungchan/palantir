@@ -1,0 +1,10 @@
+{
+  "impl_id": "230cedd9-5a43-409f-85ed-82eb4ed53434",
+  "concept_id": "variable_declaration",
+  "language_id": "typescript",
+  "syntax_template": "const name: string = 'Alice' or let count: number = 0",
+  "design_rationale": "const/let from ES6 for mutability. Type annotations optional due to inference. Structural typing for flexibility.",
+  "sources": [
+    {}
+  ]
+}

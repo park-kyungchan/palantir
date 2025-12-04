@@ -1,0 +1,10 @@
+{
+  "impl_id": "ac64c650-107d-4441-a0ef-7b866d9b6a18",
+  "concept_id": "concurrency",
+  "language_id": "python",
+  "syntax_template": "async def fetch(): data = await request()",
+  "design_rationale": "GIL limits threading, so asyncio provides cooperative concurrency for I/O. Multiprocessing for CPU-bound.",
+  "sources": [
+    {}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "impl_id": "b25daf49-782a-433e-aeea-7a91ad40507b",
+  "concept_id": "error_handling",
+  "language_id": "swift",
+  "syntax_template": "do { let data = try func() } catch FileError.notFound { handle() }",
+  "design_rationale": "'try' keyword makes throwing visible at call site. Compiler enforces handling.",
+  "sources": [
+    {
+      "title": "Error Handling",
+      "url": "https://docs.swift.org/swift-book/LanguageGuide/ErrorHandling.html",
+      "type": "official_doc",
+      "language": "swift"
+    },
+    {
+      "title": "SE-0413: Typed throws",
+      "url": "https://github.com/apple/swift-evolution/blob/main/proposals/0413-typed-throws.md",
+      "type": "swift_evolution",
+      "language": "swift"
+    }
+  ]
+}

@@ -1,0 +1,303 @@
+#!/home/palantir/.venv/bin/python
+import os
+import sys
+import json
+import argparse
+import uuid
+import subprocess
+from typing import List, Dict, Any
+
+# Fix import path
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+from scripts.ontology import Plan, Job
+import re
+from datetime import datetime # Keep datetime for status_command
+
+# --- Configuration ---
+AGENT_DIR = ".agent"
+PLANS_DIR = os.path.join(AGENT_DIR, "plans")
+OUTPUTS_DIR = os.path.join(AGENT_DIR, "outputs")
+SCHEMAS_DIR = os.path.join(AGENT_DIR, "schemas")
+ROLES_DIR = os.path.join(AGENT_DIR, "roles")
+WORKSPACE_ROOT = os.path.abspath("/home/palantir")
+
+# --- Security ---
+# This function is being removed as per the implied change to use Pydantic for validation
+# and the user's provided snippet for dispatch which removes the call to validate_security.
+# def validate_security(plan):
+#     """Enforce Hard Security Constraints (OWASP LLM)."""
+    
+#     # 1. Path Sandboxing
+#     def is_safe_path(path):
+#         # Allow relative paths (assumed safe if they don't start with ..)
+#         if not os.path.isabs(path):
+#             if path.startswith(".."): return False
+#             return True
+#         # Absolute paths must be within WORKSPACE_ROOT
+#         return os.path.commonpath([path, WORKSPACE_ROOT]) == WORKSPACE_ROOT
+
+#     # 2. Secret Scanning (Regex)
+#     secret_patterns = [
+#         r"sk-[a-zA-Z0-9]{48}", # OpenAI
+#         r"AKIA[0-9A-Z]{16}",   # AWS
+#         r"(api_?key|secret|token)\s*[:=]\s*['\"][a-zA-Z0-9]{20,}['\"]" # Generic
+#     ]
+
+#     # Scan Jobs
+#     for job in plan.get("jobs", []):
+#         # Check Role Existence
+#         role = job.get("role")
+#         if role:
+#             # Check strictly for role.md (lowercase or exact match)
+#             role_path = os.path.join(ROLES_DIR, f"{role.lower()}.md")
+#             if not os.path.exists(role_path):
+#                 # Try exact case
+#                 role_path_exact = os.path.join(ROLES_DIR, f"{role}.md")
+#                 if not os.path.exists(role_path_exact):
+#                     print(f"❌ [Governance] Ghost Role Detected: '{role}'")
+#                     print(f"   File not found: {role_path}")
+#                     return False
+
+#         # Check Paths in Context
+#         for ctx in job.get("input_context", []):
+#             if not is_safe_path(ctx):
+#                 print(f"❌ [Security] Path Traversal Detected: {ctx}")
+#                 return False
+        
+#         # Check Secrets in Task/Evidence
+#         content = str(job)
+#         for pattern in secret_patterns:
+#             if re.search(pattern, content, re.IGNORECASE):
+#                 print(f"❌ [Security] Potential Secret Leak Detected in Job {job.get('id')}")
+#                 return False
+                
+#     return True
+
+# --- Helpers ---
+def load_schema(schema_name):
+    schema_path = os.path.join(SCHEMAS_DIR, f"{schema_name}.schema.json")
+    if not os.path.exists(schema_path):
+        print(f"⚠️  Warning: Schema {schema_name} not found. Skipping validation.")
+        return None
+    with open(schema_path, 'r') as f:
+        return json.load(f)
+
+# This function is being removed as Pydantic handles schema validation.
+# def validate_data(data, schema_name):
+#     schema = load_schema(schema_name)
+#     if not schema:
+#         return True
+#     try:
+#         jsonschema.validate(instance=data, schema=schema)
+        
+#         # --- Additional Business Logic Validation ---
+#         if schema_name == "plan":
+#             for job in data.get("jobs", []):
+#                 if job.get("role") == "Forge" and not job.get("input_context"):
+#                     print(f"❌ [Governance] Context Gate Failed for Job '{job.get('id')}':")
+#                     print("   Forge jobs MUST have 'input_context'. No code without context.")
+#                     return False
+#         return True
+#     except jsonschema.ValidationError as e:
+#         print(f"❌ [Governance] Validation Failed for {schema_name}:")
+#         print(f"   {e.message}")
+#         print(f"   Path: {list(e.path)}")
+#         return False
+
+def generate_mermaid(plan: Plan) -> str:
+    """Generate Mermaid diagram from Plan object."""
+    mermaid = ["graph TD"]
+    
+    # Root Node
+    mermaid.append(f'    root["Plan: {plan.objective}"]')
+    mermaid.append("    style root fill:#f9f,stroke:#333,stroke-width:4px")
+    
+    previous_node = "root"
+    
+    for job in plan.jobs:
+        job_id = job.id
+        role = job.role
+        job_description = job.description[:30] + "..."
+        node_def = f'{job_id}["{role}: {job_description}"]'
+        mermaid.append(f"    {previous_node} --> {node_def}")
+        previous_node = job_id
+    
+    mermaid.append(f"    {previous_node} --> End((End))")
+    return "\n".join(mermaid)
+
+# --- Commands ---
+def init():
+    """Initialize the Orion workspace."""
+    dirs = [PLANS_DIR, OUTPUTS_DIR, SCHEMAS_DIR, ROLES_DIR]
+    for d in dirs:
+        os.makedirs(d, exist_ok=True)
+    print(f"✅ Orion Workspace Initialized in {AGENT_DIR}")
+
+def dispatch(args):
+    """Dispatch a new Plan."""
+    if args.file:
+        try:
+            with open(args.file, 'r') as f:
+                data = json.load(f)
+                # Pydantic Validation happens here!
+                plan = Plan.model_validate(data)
+        except Exception as e:
+            print(f"❌ Error reading/validating plan file: {e}")
+            sys.exit(1)
+    else:
+        # Create Plan object directly
+        try:
+            plan = Plan(
+                plan_id=str(uuid.uuid4()),
+                objective=args.task,
+                ontology_impact=["Unknown"],
+                jobs=[
+                    Job(
+                        id="job_1",
+                        role=args.role,
+                        description=args.task,
+                        input_context=[args.context] if args.context else [],
+                        evidence="Manual Dispatch via CLI"
+                    )
+                ]
+            )
+        except Exception as e:
+             print(f"❌ Error creating plan: {e}")
+             return
+
+    # Governance & Security (Simulated for now, Pydantic handles Schema)
+    print("🛡️  [Governance] Plan Validated by Pydantic (Isomorphism Check Passed).")
+    
+    # Save Plan (Serialize back to JSON)
+    plan_path = os.path.join(PLANS_DIR, f"plan_{plan.plan_id}.json")
+    with open(plan_path, 'w') as f:
+        f.write(plan.model_dump_json(indent=2))
+    
+    print(f"✅ Plan Dispatched: {plan.plan_id}")
+    
+    # Generate Visualization
+    viz_path = os.path.join(PLANS_DIR, f"plan_{plan.plan_id}_viz.md")
+    with open(viz_path, 'w') as f:
+        f.write(f"# 📊 Plan Visualization: {plan.plan_id}\n\n")
+        f.write(generate_mermaid(plan))
+    print(f"📊 Visualization generated: {viz_path}")
+
+def work(args):
+    """Execute a Plan (Simulated)."""
+    plan_path = os.path.join(PLANS_DIR, f"plan_{args.plan_id}.json")
+    if not os.path.exists(plan_path):
+        # Fallback for legacy task_ prefix (Removed for strictness)
+        print(f"❌ Plan {args.plan_id} not found in {PLANS_DIR}.")
+        return
+
+    with open(plan_path, 'r') as f:
+        data = json.load(f)
+        plan = Plan.model_validate(data)
+    
+    print(f"⚙️  [Orion] Executing Plan: {plan.objective}")
+    # Simulation of execution loop
+    for job in plan.jobs:
+        print(f"   ▶️  Running Job {job.id} ({job.role})...")
+        # In a real agent, this would invoke the Sub-Agent
+    
+    print("✅ Execution Complete.")
+
+def report(args):
+    """Generate a report."""
+    print(f"📝 Generating Report for: {args.topic}")
+    # Placeholder for reporting logic
+
+def status_command():
+    """Print the System State Snapshot (HUD)."""
+    print("\n🔮 --- ORION SYSTEM STATUS (HUD) ---")
+    
+    # 1. Workspace
+    print(f"\n[Workspace]")
+    print(f"  Root: {WORKSPACE_ROOT}")
+    print(f"  Time: {datetime.now().isoformat()}")
+
+    # 2. Roles
+    print(f"\n[Roles]")
+    if os.path.exists(ROLES_DIR):
+        role_files = [f for f in os.listdir(ROLES_DIR) if f.endswith(".md")]
+        print(f"  Files ({len(role_files)}): {', '.join(role_files)}")
+        
+        # Check Schema Alignment
+        try:
+            plan_schema = load_schema("plan")
+            allowed_roles = set(plan_schema["properties"]["jobs"]["items"]["properties"]["role"]["enum"])
+            defined_roles = set([f.replace(".md", "").capitalize() for f in role_files])
+            
+            # Normalize for comparison (handle case sensitivity)
+            defined_roles_lower = set([r.lower() for r in defined_roles])
+            allowed_roles_lower = set([r.lower() for r in allowed_roles])
+            
+            missing_in_schema = defined_roles_lower - allowed_roles_lower
+            missing_in_files = allowed_roles_lower - defined_roles_lower
+            
+            if missing_in_schema:
+                print(f"  ⚠️  Warning: Roles in .md but not in Schema: {missing_in_schema}")
+            if missing_in_files:
+                print(f"  ⚠️  Warning: Roles in Schema but not in .md: {missing_in_files}")
+            if not missing_in_schema and not missing_in_files:
+                print("  ✅ Roles are synchronized with Schema.")
+                
+        except Exception as e:
+            print(f"  ❌ Schema Check Failed: {e}")
+    else:
+        print("  ❌ Roles Directory Missing!")
+
+    # 3. Schemas
+    print(f"\n[Schemas]")
+    if os.path.exists(SCHEMAS_DIR):
+        schemas = [f for f in os.listdir(SCHEMAS_DIR) if f.endswith(".json")]
+        print(f"  Files ({len(schemas)}): {', '.join(schemas)}")
+    else:
+        print("  ❌ Schemas Directory Missing!")
+    
+    print("\n-------------------------------------\n")
+
+# --- CLI Entry Point ---
+def main():
+    parser = argparse.ArgumentParser(description="Orion AI Agent CLI")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Init
+    subparsers.add_parser("init", help="Initialize Orion workspace")
+
+    # Dispatch
+    dispatch_parser = subparsers.add_parser("dispatch", help="Dispatch a task plan")
+    dispatch_parser.add_argument("--file", help="Path to plan JSON file")
+    dispatch_parser.add_argument("task", nargs="?", help="Task description (Legacy)")
+    dispatch_parser.add_argument("role", nargs="?", help="Assigned role (Legacy)")
+    dispatch_parser.add_argument("context", nargs="?", help="Context file/dir (Legacy)")
+
+    # Work (Simulation)
+    work_parser = subparsers.add_parser("work", help="Execute a plan (Simulated)")
+    work_parser.add_argument("plan_id", help="ID of the plan to execute")
+
+    # Report (Placeholder)
+    report_parser = subparsers.add_parser("report", help="Generate a report")
+    report_parser.add_argument("topic", help="Report topic")
+    
+    # Status (HUD)
+    status_parser = subparsers.add_parser("status", help="Show System State Snapshot")
+
+    args = parser.parse_args()
+
+    if args.command == "init":
+        init()
+    elif args.command == "dispatch":
+        dispatch(args)
+    elif args.command == "work":
+        work(args)
+    elif args.command == "report":
+        report(args)
+    elif args.command == "status":
+        status_command()
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()

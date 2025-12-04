@@ -1,0 +1,12 @@
+{
+  "concept_id": "type_system",
+  "name": "Type System",
+  "category": "basics",
+  "prerequisites": [
+    "variable_declaration"
+  ],
+  "related_concepts": [
+    "type_inference",
+    "generics"
+  ]
+}
