@@ -11,7 +11,7 @@ from datetime import datetime
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 from scripts.ontology import Plan
-from scripts.actions import ActionRegistry
+from scripts.action_registry import ActionRegistry
 
 # --- Configuration ---
 AGENT_DIR = ".agent"
@@ -60,7 +60,7 @@ def dispatch(args):
     else:
         try:
             # 1. Try Router first (Rule-Based)
-            from scripts.router import RequestRouter
+            from scripts.intent_router import RequestRouter
             router = RequestRouter()
             plan = router.route(args.task)
             
@@ -98,6 +98,29 @@ def dispatch(args):
     from scripts.governance import ActionDispatcher
     from scripts.ontology_actions import PersistPlanAction, PersistPlanParams
     
+    # --- PHASE 5: MEMORY RECALL (Orion V3) ---
+    try:
+        from scripts.memory.manager import MemoryManager
+        print("🧠 [Memory] Accessing Semantic Knowledge (Sparse Access)...")
+        mm = MemoryManager()
+        # Retrieve context relevant to the task
+        retrieved_context = mm.search(args.task, limit=3)
+        
+        if retrieved_context:
+            print(f"✨ [Memory] Recalled {len(retrieved_context)} relevant insights/patterns.")
+            # Injecting into Plan (Updating the dummy plan's input context for now)
+            # In a real LLM scenario, this list is appended to the System Prompt.
+            for item in retrieved_context:
+                snippet = item.get('content', {}).get('summary') or item.get('structure', {}).get('trigger')
+                print(f"   - 💡 {item['type']}: {snippet}")
+                if plan.jobs:
+                    plan.jobs[0].input_context.append(f"Memory Retrieval: {snippet}")
+        else:
+            print("🌑 [Memory] No relevant memories found (Cold Start).")
+            
+    except Exception as e:
+        print(f"⚠️ [Memory] Recall failed (Non-blocking): {e}")
+
     dispatcher = ActionDispatcher(WORKSPACE_ROOT)
     action = PersistPlanAction(PersistPlanParams(plan=plan, is_new=True))
     
@@ -117,6 +140,11 @@ def dispatch(args):
         CodeContent=viz_content
     )
     print(f"📊 Visualization generated: {viz_path}")
+    
+    # Validation Fix for Consolidation
+    # Explicitly end the trace so it is flushed to disk
+    from scripts.observer import Observer
+    Observer.end_trace()
 
 def work(args):
     plan_path = os.path.join(PLANS_DIR, f"plan_{args.plan_id}.json")

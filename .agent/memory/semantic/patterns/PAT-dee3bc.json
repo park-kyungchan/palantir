@@ -1,0 +1,21 @@
+{
+  "id": "PAT-dee3bc",
+  "type": "Pattern",
+  "meta": {
+    "created_at": "2025-12-06T21:16:09.069801",
+    "updated_at": "2025-12-06T21:16:09.069815",
+    "frequency_count": 2,
+    "success_rate": 0.0,
+    "last_used": "2025-12-06T21:16:09.069817"
+  },
+  "structure": {
+    "trigger": "System Error",
+    "steps": [],
+    "anti_patterns": [
+      "event=ERROR",
+      "has_error=True",
+      "component=Executor"
+    ],
+    "insight": "FileNotFoundError: /bad/path not found"
+  }
+}

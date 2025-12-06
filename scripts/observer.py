@@ -35,7 +35,7 @@ class Observer:
             meta_version=1,
             task_id=task_id,
             start_time=datetime.now().isoformat(),
-            status=StatusEnum.IN_PROGRESS,
+            status=StatusEnum.RUNNING,
             tags=tags
         )
         cls._events = []
@@ -62,32 +62,40 @@ class Observer:
         
         # Real-time console feedback
         icon = "ℹ️"
-        if event.event_type == "ERROR" or event.type == "ActionFailed": icon = "❌"
-        elif "Started" in event.type or "Drafted" in event.type: icon = "▶️"
-        elif "Completed" in event.type or "Committed" in event.type: icon = "✅"
+        # Convert Enum to string for safety if needed, or comparsion
+        et = event.event_type
+        # Assuming et is an Enum member
+        
+        from scripts.ontology import EventType
+        if et == EventType.ERROR: icon = "❌"
+        elif et == EventType.ACTION_START: icon = "▶️"
+        elif et == EventType.ACTION_END: icon = "✅"
         
         # Parse content for nice log
-        details = str(event.content if hasattr(event, "content") else event.details)
-        print(f"   {icon} [{event.source if hasattr(event, 'source') else event.component}] {event.type or event.event_type}: {details[:100]}")
+        details = str(event.details)
+        print(f"   {icon} [{event.component}] {et}: {details[:100]}")
 
     @classmethod
-    def log_event(cls, event_type: str, component: str, details: Dict[str, Any]):
+    def log_event(cls, event_type: Any, component: str, details: Dict[str, Any]):
         """Legacy helper for simple logging."""
+        # Ensure event_type is Enum if possible, otherwise cast?
+        # For now assume legacy strings might come in, but strictly we need Enum
+        from scripts.ontology import EventType
+        
+        # Simple mapping for legacy calls (if any)
+        et = EventType.STATE_CHANGE 
+        
         event = Event(
-            id=str(uuid.uuid4()),
-            type="Event",
-            created_at=datetime.now().isoformat(),
-            meta_version=1,
-            trace_id=cls._current_trace.id if cls._current_trace else None,
+            trace_id=cls._current_trace.id if cls._current_trace else "TRACE-LEGACY",
             timestamp=datetime.now().isoformat(),
-            event_type=event_type,
+            event_type=et,
             component=component,
             details=details
         )
         cls.emit(event)
 
     @classmethod
-    def end_trace(cls, status: str = "COMPLETED"):
+    def end_trace(cls, status=StatusEnum.COMPLETED):
         """Ends the current trace and persists data."""
         if not cls._current_trace:
             return
@@ -97,9 +105,9 @@ class Observer:
         
         # Persist to JSON
         trace_data = {
-            "trace": cls._current_trace.model_dump(),
-            "events": [e.model_dump() for e in cls._events],
-            # "metrics": [m.model_dump() for m in cls._metrics] # Metrics integration pending
+            "trace": cls._current_trace.model_dump(mode='json'),
+            "events": [e.model_dump(mode='json') for e in cls._events],
+            # "metrics": [m.model_dump(mode='json') for m in cls._metrics] # Metrics integration pending
         }
         
         filename = os.path.join(TRACE_DIR, f"{cls._current_trace.id}.json")

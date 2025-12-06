@@ -1,0 +1,84 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Pattern Object",
+    "description": "A recurring logic structure or workflow representing procedural knowledge.",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique Identifier (PAT-{uuid})"
+        },
+        "type": {
+            "type": "string",
+            "const": "Pattern"
+        },
+        "meta": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "frequency_count": {
+                    "type": "integer",
+                    "description": "Number of times this pattern has been observed/used"
+                },
+                "success_rate": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "last_used": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "required": [
+                "frequency_count",
+                "success_rate",
+                "last_used"
+            ]
+        },
+        "structure": {
+            "type": "object",
+            "properties": {
+                "trigger": {
+                    "type": "string",
+                    "description": "Condition or Intent that triggers this pattern"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "High-level steps of the workflow"
+                },
+                "anti_patterns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Negative knowledge (what NOT to do)"
+                }
+            },
+            "required": [
+                "trigger",
+                "steps"
+            ]
+        },
+        "code_snippet_ref": {
+            "type": "string",
+            "description": "Path to a script or template file implementing this pattern"
+        }
+    },
+    "required": [
+        "id",
+        "type",
+        "meta",
+        "structure"
+    ]
+}

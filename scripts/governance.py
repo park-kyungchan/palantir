@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, Any, Dict
 from pydantic import BaseModel
 from scripts.observer import Observer
-from scripts.ontology import Event
+from scripts.ontology import Event, EventType
 
 # Mimic Palantir's UserFacingError
 class UserFacingError(Exception):
@@ -95,10 +95,10 @@ class ActionDispatcher:
 
             # 3. Notification (Observer)
             Observer.emit(Event(
-                id=str(uuid.uuid4()),
-                type="ActionDrafted",
-                source="ActionDispatcher",
-                content={"action_id": action.action_id, "type": action.action_type},
+                trace_id=f"TRACE-{action.action_id}", # Link trace to action
+                event_type=EventType.ACTION_START,
+                component="ActionDispatcher",
+                details={"action_id": action.action_id, "type": action.action_type},
                 timestamp=datetime.now().isoformat()
             ))
 
@@ -109,10 +109,10 @@ class ActionDispatcher:
             self._update_ledger_success(action.action_id, result)
 
             Observer.emit(Event(
-                id=str(uuid.uuid4()),
-                type="ActionCommitted",
-                source="ActionDispatcher",
-                content={"action_id": action.action_id, "result": result},
+                trace_id=f"TRACE-{action.action_id}",
+                event_type=EventType.ACTION_END,
+                component="ActionDispatcher",
+                details={"action_id": action.action_id, "result": result},
                 timestamp=datetime.now().isoformat()
             ))
             

@@ -3,7 +3,7 @@ import time
 import traceback
 from typing import Dict, Any, List
 from scripts.ontology import Plan
-from scripts.actions import ActionRegistry
+from scripts.action_registry import ActionRegistry
 from scripts.observer import EventBus
 from scripts.governance import ActionDispatcher, OrionAction
 

@@ -23,7 +23,7 @@ class Trace(BaseModel):
     """
     Represents a logical execution flow (Chain of Thought).
     """
-
+    id: str = Field(..., description='Unique Queryable ID of the trace')
     task_id: str = Field(..., description='ID of the Task this trace belongs to.')
     start_time: str = Field(..., description='ISO 8601 timestamp.')
     end_time: Optional[str] = Field(None, description='ISO 8601 timestamp.')

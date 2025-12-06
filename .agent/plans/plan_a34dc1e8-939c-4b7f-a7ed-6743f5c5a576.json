@@ -1,0 +1,22 @@
+{
+  "id": "plan_852199f9",
+  "type": "Plan",
+  "created_at": null,
+  "meta_version": 1,
+  "plan_id": "a34dc1e8-939c-4b7f-a7ed-6743f5c5a576",
+  "objective": "verification",
+  "ontology_impact": [
+    "Unknown"
+  ],
+  "jobs": [
+    {
+      "id": "job_1",
+      "action_name": "unknown_action",
+      "action_args": {},
+      "description": "verification",
+      "input_context": [],
+      "evidence": "Manual Dispatch via CLI",
+      "role": null
+    }
+  ]
+}

@@ -27,3 +27,10 @@ logs
 .gemini
 !.gemini/antigravity/brain/
 .nvm
+
+# Orion V3 Memory Architecture
+.agent/indexes/*.db
+.agent/logs/*.db
+.agent/memory/working/*
+!.agent/memory/working/.gitkeep
+.gemini/

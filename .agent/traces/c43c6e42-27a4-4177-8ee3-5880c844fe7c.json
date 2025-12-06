@@ -1,0 +1,35 @@
+{
+  "trace": {
+    "id": "c43c6e42-27a4-4177-8ee3-5880c844fe7c",
+    "task_id": "system_adhoc",
+    "start_time": "2025-12-06T21:11:16.590862",
+    "end_time": "2025-12-06T21:11:18.967523",
+    "status": "COMPLETED",
+    "tags": []
+  },
+  "events": [
+    {
+      "trace_id": "TRACE-6d7ba6e9-8ed0-4785-b2ff-5e7efa426071",
+      "timestamp": "2025-12-06T21:11:16.590587",
+      "event_type": "ACTION_START",
+      "component": "ActionDispatcher",
+      "details": {
+        "action_id": "6d7ba6e9-8ed0-4785-b2ff-5e7efa426071",
+        "type": "persist_plan"
+      }
+    },
+    {
+      "trace_id": "TRACE-6d7ba6e9-8ed0-4785-b2ff-5e7efa426071",
+      "timestamp": "2025-12-06T21:11:18.967075",
+      "event_type": "ACTION_END",
+      "component": "ActionDispatcher",
+      "details": {
+        "action_id": "6d7ba6e9-8ed0-4785-b2ff-5e7efa426071",
+        "result": {
+          "path": "/home/palantir/.agent/plans/plan_a1fcff08-549d-4466-814d-c3085cc74c63.json",
+          "bytes": 444
+        }
+      }
+    }
+  ]
+}

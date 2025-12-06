@@ -1,39 +1,34 @@
 ---
-description: Create and Dispatch a Governed Plan (Tier 1 Action)
+description: Dispatch a Natural Language Task to the Orion Agent
 ---
 
-# 📋 Workflow: Ontology Planning
+# ⚡ Workflow 01: Task Dispatch & Planning
 
-## 1. Concept
-In Orion V3 (Palantir ODA), you do not "just run code". You create a **Plan Object** (Digital Twin of Intent) and dispatch it to the Governance Funnel.
+## 1. Objective
+Transform a high-level user intent (Natural Language) into a **Governed Ontology Plan**, leveraging **Semantic Memory** for context awareness.
 
-## 2. Schema Definition
-Your Plan must conform to `.agent/schemas/plan.schema.json`.
+## 2. The Loop
+1.  **Recall**: Engine queries `MemoryManager` (FTS5) for relevant Insights/Patterns.
+2.  **Plan Generation**: (Currently Rule-Based/Stub) Creates a `Plan` object.
+3.  **Governance**: Validates `Plan` against Pydantic Models.
+4.  **Audit**: Logs `ACTION_START` event to `ontology.db` and `Observer`.
+5.  **Execution**: Dispatches the plan.
 
-```json
-{
-  "id": "UUID",
-  "plan_id": "human-readable-id",
-  "objective": "Task Goal",
-  "jobs": [
-    {
-      "id": "job_1",
-      "action_name": "run_command",
-      "action_args": { "CommandLine": "ls -la", "SafeToAutoRun": true }
-    }
-  ]
-}
-```
+## 3. Execution Commands
 
-## 3. Dispatch
-Use the CLI to validate and persist the plan.
-
+### Natural Language Dispatch
+// turbo
 ```bash
-./scripts/orion dispatch --file path/to/plan.json
+/home/palantir/.venv/bin/python scripts/engine.py dispatch "Your task description here"
 ```
 
-## 4. Governance Check
-The engine will:
-1. Validate against Pydantic Schema.
-2. Log the intent to `.agent/logs/ontology_ledger.jsonl`.
-3. Persist the file to `.agent/plans/`.
+### File-Based Dispatch (Legacy/Specific)
+```bash
+/home/palantir/.venv/bin/python scripts/engine.py dispatch --file /path/to/plan.json
+```
+
+## 4. Observability
+Watch the console for:
+*   `🧠 [Memory] Accessing Semantic Knowledge...` (Recall Check)
+*   `✨ [Memory] Recalled X relevant insights` (If context found)
+*   `✅ Plan Committed to Ontology` (Governance Pass)

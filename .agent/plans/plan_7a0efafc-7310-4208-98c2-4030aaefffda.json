@@ -1,0 +1,22 @@
+{
+  "id": "plan_68dfd43b",
+  "type": "Plan",
+  "created_at": null,
+  "meta_version": 1,
+  "plan_id": "7a0efafc-7310-4208-98c2-4030aaefffda",
+  "objective": "echo trace1",
+  "ontology_impact": [
+    "Unknown"
+  ],
+  "jobs": [
+    {
+      "id": "job_1",
+      "action_name": "unknown_action",
+      "action_args": {},
+      "description": "echo trace1",
+      "input_context": [],
+      "evidence": "Manual Dispatch via CLI",
+      "role": null
+    }
+  ]
+}
