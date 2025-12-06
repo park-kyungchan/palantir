@@ -1,48 +1,39 @@
 ---
-description: Define the Ontology and Pipeline Architecture (AIP Style)
+description: Create and Dispatch a Governed Plan (Tier 1 Action)
 ---
-# 🏗️ Workflow: Ontology & Pipeline Definition
 
-## 🎯 Objective
-Transform a raw "User Request" into a validated **Implementation Blueprint**.
-This workflow ensures that no code is written without a clear understanding of the **System Ontology**.
+# 📋 Workflow: Ontology Planning
 
-## 🔄 Algorithmic Steps
+## 1. Concept
+In Orion V3 (Palantir ODA), you do not "just run code". You create a **Plan Object** (Digital Twin of Intent) and dispatch it to the Governance Funnel.
 
-### Phase 1: Context & Ontology Mapping
-1.  **Trigger:** User Request received.
-2.  **Action:** Use `codebase_investigator` or `grep` to map the **Dependency Graph**.
-    - Identify **Source Nodes** (Existing files).
-    - Identify **Target Nodes** (New/Modified files).
-    - Identify **Edges** (Imports, Calls, API dependencies).
+## 2. Schema Definition
+Your Plan must conform to `.agent/schemas/plan.schema.json`.
 
-### Phase 2: Deep Research & Architecture Design
-1.  **Action:** Use `sequential-thinking` to perform **Deep Research**.
-    - **Tech Stack Verification:** Is the request compatible with the current stack (e.g., React 19)?
-    - **Pattern Matching:** Are there existing patterns (e.g., AIP Logic) to reuse?
-    - **Security Audit:** Does this introduce vulnerabilities?
+```json
+{
+  "id": "UUID",
+  "plan_id": "human-readable-id",
+  "objective": "Task Goal",
+  "jobs": [
+    {
+      "id": "job_1",
+      "action_name": "run_command",
+      "action_args": { "CommandLine": "ls -la", "SafeToAutoRun": true }
+    }
+  ]
+}
+```
 
-### Phase 3: Blueprint Generation (JSON)
-1.  **Action:** Generate a **JSON Blueprint** defining the pipeline.
-    - **Schema:**
-      ```json
-      {
-        "blueprint_version": "1.0",
-        "target_ontology": "uclp",
-        "changes": [
-          { "type": "CREATE", "path": "src/agents/Orion.ts", "desc": "..." },
-          { "type": "MODIFY", "path": "src/config.ts", "desc": "..." }
-        ],
-        "validation_steps": ["npm test", "lint"]
-      }
-      ```
+## 3. Dispatch
+Use the CLI to validate and persist the plan.
 
-### Phase 4: Governance Review
-1.  **Action:** Self-Critique the Blueprint.
-    - **Check:** Does it violate Layer 0 constraints (e.g., Absolute Paths)?
-    - **Check:** Is it scalable?
-    - **Check:** Is it maintainable?
+```bash
+./scripts/orion dispatch --file path/to/plan.json
+```
 
-### Phase 5: Commit & Dispatch
-1.  **Action:** Save the Blueprint to `.agent/tasks/task_{uuid}.json`.
-2.  **Action:** Dispatch execution jobs using `scripts/orion dispatch`.
+## 4. Governance Check
+The engine will:
+1. Validate against Pydantic Schema.
+2. Log the intent to `.agent/logs/ontology_ledger.jsonl`.
+3. Persist the file to `.agent/plans/`.

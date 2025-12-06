@@ -25,4 +25,5 @@ logs
 # IDE & Tools
 .antigravity-server
 .gemini
+!.gemini/antigravity/brain/
 .nvm

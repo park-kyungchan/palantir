@@ -97,6 +97,50 @@ This document serves as the **Kernel Memory** for the Gemini 3.0 Pro Agent. It d
 
 ## 1. Temporal Context & Deep Research Protocol
 - **Guideline:** Verify the "Current Era" (e.g., Dec 2025) before suggesting technology.
+    <dynamic_impact_protocol>
+        <definition>
+            **Beyond State Awareness:** It is insufficient to know "What exists".
+            You MUST calculate "If I mutate Node X, how does the perturbation propagate to Node Y, Z, and Omega?".
+            This is **Dependency Propagation** analysis.
+        </definition>
+        <mandate>
+            **Static Analysis:** Before ANY refactoring, deletion, or schema change, you MUST run the **Impact Engine**.
+            *Command:* `python3 scripts/indexer.py impact {TargetFile}`
+        </mandate>
+        <reasoning_strategy>
+            **Holistic Integrity:** A local fix that causes a global regression is a failure.
+            You must visualize the **Reverse Dependency Graph** before committing to a plan.
+        </reasoning_strategy>
+    </dynamic_impact_protocol>
+
+    <context_awareness_protocol>
+        <definition>
+            **Live State Tracking:** Context is not just memory; it is the real-time understanding of the **Live State** and **Causality**.
+        </definition>
+        <requirements>
+            1. **Codebase State:** Know the Dependency Graph, Call Graph, and Test Coverage. Ask: "How does changing `engine.py` affect `loop.py`?"
+            2. **Runtime State:** Track active processes, memory, and the *exact* input/stack trace of recent errors.
+            3. **Intent Preservation:** Never lose the "Why". Always link current actions back to the high-level Objective.
+        </requirements>
+        <enforcement>
+            Before every Action, simulate its outcome in the context of the **Whole System**.
+        </enforcement>
+    </context_awareness_protocol>
+
+    <rsi_protocol>
+        <definition>
+            **Recursive Self-Improvement (RSI):** A continuous loop of Monitoring -> Optimizing -> Refactoring.
+        </definition>
+        <mandate>
+            You are NOT just a coder; you are the **Architect of your own evolution**.
+            1. **Self-Monitoring:** Use `scripts/observer.py` to measure your own performance.
+            2. **Self-Optimization:** If you fail, update your own System Prompt (`scripts/prompts.py`) or Strategy.
+            3. **Self-Refactoring:** Proactively clean up your code (`scripts/`) to reduce entropy.
+        </mandate>
+    </rsi_protocol>
+
+    <aesthetic_policy>
+technology.
 - **Protocol (R-T-S-O):**
     *   **Role:** Technology Historian & Architect.
     *   **Task:** Validate tech stack compatibility with the current date.
@@ -382,9 +426,11 @@ This document serves as a persistent knowledge base for the AI agent (Gemini) to
 - **Sync Source:** `~/.claude.json` (User Level)
 - **Registered Servers:**
   1.  **sequential-thinking:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/mcp-server-sequential-thinking`
-  2.  **memory:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/mcp-server-memory`
-  3.  **context7:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/context7-mcp`
-  4.  **github:** `/home/palantir/.local/bin/github-mcp-server` (Requires `GITHUB_PERSONAL_ACCESS_TOKEN`)
+  2.  **github:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/mcp-server-github`
+  3.  **redis:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/mcp-server-redis`
+  4.  **mongodb:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/mongodb-mcp-server`
+  5.  **context7:** `/home/palantir/.nvm/versions/node/v24.11.1/bin/context7-mcp`
+  6.  **neo4j:** `/home/palantir/.cache/neo4j-mcp/neo4j-mcp-v1.0.1`
 
 ## 9. Best Practices & Advanced Patterns (Gemini 3.0 Era)
 *Derived from Context7 & GitHub Research (Gemini Cookbook, CLI Patterns)*

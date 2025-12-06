@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Job",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique Job ID"
+        },
+        "action_name": {
+            "type": "string",
+            "description": "Name of the action to execute"
+        },
+        "action_args": {
+            "type": "object",
+            "description": "Arguments for the action",
+            "default": {}
+        },
+        "description": {
+            "type": "string",
+            "description": "Description of the job"
+        },
+        "input_context": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Context files/dirs",
+            "default": []
+        },
+        "evidence": {
+            "type": "string",
+            "description": "Reasoning/Evidence for this job"
+        },
+        "role": {
+            "type": "string",
+            "description": "Role responsible for this job"
+        }
+    },
+    "required": [
+        "id",
+        "action_name"
+    ]
+}
