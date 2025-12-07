@@ -1,42 +1,49 @@
 
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, JSON, MetaData, Table
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import QueuePool
 import os
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, JSON, Text
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-# --- Configuration ---
-WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-AGENT_DIR = os.path.join(WORKSPACE_ROOT, ".agent")
-if not os.path.exists(AGENT_DIR):
-    os.makedirs(AGENT_DIR)
-    
-DB_PATH = os.path.join(AGENT_DIR, "orion_ontology.db")
+# Database Path - leveraging the existing Orion artifacts directory
+DB_PATH = os.path.abspath("/home/palantir/.agent/orion_ontology.db")
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# --- SQLAlchemy Setup ---
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+metadata = MetaData()
 
-class Base(DeclarativeBase):
-    pass
+# The Universal Object Table (Phonograph Pattern)
+# Instead of one table per type, we use a document-store pattern for flexibility,
+# backed by indices for performance.
+objects_table = Table(
+    "objects",
+    metadata,
+    Column("id", String, primary_key=True),  # UUIDv7
+    Column("type", String, index=True, nullable=False),  # e.g., 'Server', 'Incident'
+    Column("version", Integer, default=1),  # Optimistic Locking
+    Column("created_at", DateTime, nullable=False),
+    Column("updated_at", DateTime, nullable=False),
+    Column("data", JSON, nullable=False),  # The full Pydantic dump
+    Column("fts_content", Text, nullable=True)  # Flattened text for FTS5 search
+)
 
-class ObjectTable(Base):
-    """
-    Universal Table for all OrionObjects.
-    Uses JSON column for flexible schema storage.
-    """
-    __tablename__ = "objects"
-
-    id = Column(String, primary_key=True, index=True)
-    type = Column(String, index=True)
-    version = Column(Integer, default=1)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    
-    # The Payload
-    data = Column(JSON)
-    
-    # FTS Optimization (Redundant text for searching)
-    fts_content = Column(Text, nullable=True)
+# Initialize Engine
+# Enable Write-Ahead Logging (WAL) for concurrency
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args={"check_same_thread": False},
+    poolclass=QueuePool,
+    pool_size=5,
+    max_overflow=10
+)
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    """Idempotent initialization of the database schema."""
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    
+    # Enable WAL mode explicitly
+    with engine.connect() as conn:
+        conn.exec_driver_sql("PRAGMA journal_mode=WAL;")
+        
+    metadata.create_all(engine)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

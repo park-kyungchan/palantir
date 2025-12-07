@@ -1,98 +1,124 @@
 
-import os
-import json
-from typing import Type, TypeVar, Optional, List, Dict, Any
+from typing import Type, TypeVar, Optional, List, Dict
 from sqlalchemy.orm import Session
+from sqlalchemy import select, text
 from scripts.ontology.core import OrionObject
-from scripts.ontology.db import init_db, ObjectTable, SessionLocal, DB_PATH
+from scripts.ontology.db import init_db, SessionLocal, DB_PATH, objects_table
+from scripts.ontology.schemas.governance import OrionActionLog
 
 T = TypeVar("T", bound=OrionObject)
 
 class ObjectManager:
     """
-    The Singleton Kernel for managing Living Objects.
-    Handles: Hydration, Persistence, Write-Back, Transaction Management.
+    The Gatekeeper for the Ontology.
+    Implements the 'Phonograph' pattern:
+    - Write-Back Caching
+    - Optimistic Locking
+    - Session Scope Management (Supports Transactional Workflows)
     """
     
-    def __init__(self):
-        # Ensure DB schema exists
-        if not os.path.exists(DB_PATH):
-            init_db()
-        else:
-            # Idempotent init (create tables if missing)
-            init_db()
-            
+    _instance = None
+    _listeners = []
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(ObjectManager, cls).__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
+        init_db()
+        # The 'Default' session for interactive use or legacy scripts.
+        # Actions should provide their own scoped session.
+        self.default_session: Session = SessionLocal()
+        self._listeners = []
         # Registry of known types for hydration
         self.type_registry: Dict[str, Type[T]] = {
-            "OrionObject": OrionObject
+            "OrionObject": OrionObject,
+            "OrionActionLog": OrionActionLog
         }
-        
-        # Observers for Event Bus
-        self._subscribers = []
-        
-        # Create a default session for simple operations
-        self.default_session = SessionLocal()
 
     def subscribe(self, callback):
-        """Register a callback for object changes (save/delete)."""
-        self._subscribers.append(callback)
+        """Subscribe to object mutation events (save/delete)."""
+        self._listeners.append(callback)
 
     def unsubscribe(self, callback):
-        try:
-            self._subscribers.remove(callback)
-        except ValueError:
-            pass
+        if callback in self._listeners:
+            self._listeners.remove(callback)
 
-    def _notify(self, event_type: str, result: Any):
-        """Notify subscribers of changes."""
-        for callback in self._subscribers:
-            callback(event_type, result)
+    def _notify(self, event_type: str, obj: OrionObject):
+        for callback in self._listeners:
+            callback(event_type, obj)
 
     def register_type(self, cls: Type[T]):
         """Register a Pydantic model for hydration."""
         self.type_registry[cls.__name__] = cls
 
+    def create_session(self) -> Session:
+        """Create a new independent session (e.g., for Audit logging)."""
+        return SessionLocal()
+
     def get(self, cls: Type[T], obj_id: str, session: Optional[Session] = None) -> Optional[T]:
-        """Retrieve an object by ID from SQLite."""
-        active_session = session or self.default_session
+        """
+        Fetches an object by ID.
+        :param session: Optional SQLAlchemy session (for transaction isolation). 
+                       If None, uses the default global session.
+        """
+        active_session = session if session else self.default_session
         
-        row = active_session.query(ObjectTable).filter_by(id=obj_id).first()
+        stmt = select(objects_table).where(objects_table.c.id == obj_id)
+        row = active_session.execute(stmt).fetchone()
+        
         if not row:
             return None
             
+        # Validate Type
+        stored_type = row.type
+        if stored_type != cls.__name__:
+            raise ValueError(f"Type Mismatch: ID {obj_id} is {stored_type}, expected {cls.__name__}")
+
         # Hydrate
-        data = row.data # JSON Dict
-        # Determine strict class
-        target_cls = self.type_registry.get(row.type, cls)
+        data = row.data
+        obj = cls(**data)
         
-        obj = target_cls(**data)
-        obj.mark_clean() # Loaded from DB, so clean
+        # Sync metadata
+        obj.version = row.version
+        obj.created_at = row.created_at
+        obj.updated_at = row.updated_at
+        obj.mark_clean()
+        
         return obj
 
-    def save(self, obj: OrionObject, session: Optional[Session] = None, commit: bool = True):
+    def save(self, obj: OrionObject, session: Optional[Session] = None, commit: Optional[bool] = None):
         """
-        Persist object to SQLite.
-        If session is provided (Transactional), it uses that session.
-        If commit=True (default), it commits immediately.
+        Saves a Living Object.
+        :param session: External session (Transactional).
+        :param commit: Explicit commit override.
+                       - If session is None: Defaults to True (Auto-Commit)
+                       - If session is Provided: Defaults to False (UnitOfWork handles commit)
         """
-        active_session = session or self.default_session
-        objects_table = ObjectTable.__table__
+        active_session = session if session else self.default_session
         
-        # Notify subscribers (Phase 3 Simulation Capture)
-        # We do this BEFORE commit to capture the dirty state/intent.
-        # But actually for simulation we want to capture 'ChangeEvents'.
-        self._notify("save", obj)
+        # Determine Commit Strategy
+        if session is None:
+            # Interactive/Global Session -> Default Commit
+            should_commit = (commit is not False)
+        else:
+            # Transactional Session -> Default Flush Only
+            should_commit = (commit is True)
 
-        # Check if exists (Upsert logic using SQLAlchemy Core for speed)
-        # We can implement a naive check first
-        exists = active_session.query(ObjectTable.id).filter_by(id=obj.id).scalar() is not None
-        
+        if not obj.is_dirty() and obj.version > 1:
+            return
+
         type_name = obj.__class__.__name__
 
-        if exists:
+        # Check if exists (in DB)
+        stmt = select(objects_table.c.version).where(objects_table.c.id == obj.id)
+        existing = active_session.execute(stmt).fetchone()
+
+        if existing:
             # UPDATE
-            # Only update if dirty (Optimization)
-            # But client might force save.
+            obj.version += 1
             
             update_data = {
                 "version": obj.version,
@@ -121,31 +147,16 @@ class ObjectManager:
             
             insert_stmt = objects_table.insert().values(**insert_data)
             active_session.execute(insert_stmt)
-            
-        if commit:
+
+        # Notify Listeners (e.g. Simulation Diff)
+        self._notify("save", obj)
+
+        if should_commit:
             active_session.commit()
             obj.mark_clean()
         else:
-            active_session.flush() # Ensure ID availability/constraints but don't commit
-            # Do NOT mark clean yet? Or do we?
-            # If we don't commit, we shouldn't mark clean if we rely on is_dirty for retry.
-            # But usually flush means "sent to DB".
-            # Let's say we mark clean AFTER the transaction wraps up.
-            # But UnitOfWork might handle that.
-            pass
-
-    def delete(self, obj_id: str, session: Optional[Session] = None, commit: bool = True):
-        active_session = session or self.default_session
-        objects_table = ObjectTable.__table__
-        
-        # Notify
-        self._notify("delete", obj_id)
-
-        delete_stmt = objects_table.delete().where(objects_table.c.id == obj_id)
-        active_session.execute(delete_stmt)
-        
-        if commit:
-            active_session.commit()
+            active_session.flush()
+            obj.mark_clean()
 
     def close(self):
         self.default_session.close()

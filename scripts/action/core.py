@@ -1,132 +1,187 @@
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional, Type
-from pydantic import BaseModel
+from typing import List, Optional, Any, Dict, Type
+from datetime import datetime
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from scripts.ontology.manager import ObjectManager, OrionObject
-
-# --- Phase 2: Action Definition ---
+from scripts.ontology.schemas.governance import OrionActionLog
+from scripts.ontology.db import SessionLocal
 
 class ActionContext(BaseModel):
-    """Context for a single action execution."""
-    job_id: str
-    parameters: Dict[str, Any]
-    # Transient runtime state
-    manager: Optional[Any] = None # Injected at runtime (ObjectManager)
-    session: Optional[Any] = None # Injected at runtime (SQLAlchemy Session)
+    """
+    Runtime context for an Action Execution.
+    Holds the Transactional Session and Parameters.
+    """
+    job_id: str = Field(..., description="Traceability ID")
+    parameters: Dict[str, Any] = Field(default_factory=dict)
     
+    # Runtime Objects (will be injected by ActionRunner)
+    session: Optional[Session] = None
+    manager: Optional[ObjectManager] = None
+
     class Config:
         arbitrary_types_allowed = True
 
+class UnitOfWork:
+    """
+    Manages the Transaction Lifecycle.
+    Supports Session Injection for Simulation via Nested Transactions.
+    """
+    def __init__(self, manager: ObjectManager, session: Optional[Session] = None):
+        self.manager = manager
+        self.transaction = None
+        if session:
+            self.session = session
+            self.owns_session = False
+            # Safety: Wrap injected session in a nested transaction
+            # This ensures 'commit' only merges to the parent Savepoint, 
+            # keeping the ScenarioFork Savepoint alive.
+            self.transaction = self.session.begin_nested()
+        else:
+            self.session = SessionLocal()
+            self.owns_session = True
+        self.committed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            if exc_type:
+                # Exception occurred -> Rollback
+                print(f"[UnitOfWork] Exception detected: {exc_val}. Rolling back...")
+                try:
+                    if self.transaction:
+                        self.transaction.rollback()
+                    else:
+                        self.session.rollback()
+                except Exception as e:
+                    print(f"[UnitOfWork] Rollback ignored (already closed?): {e}")
+                    # CRITICAL: If nested rollback fails, the session is likely inconsistent.
+                    # We must force a full rollback to prevent 'own-write' visibility.
+                    try:
+                        self.session.rollback()
+                    except Exception as rollback_err:
+                        print(f"[UnitOfWork] Session rollback failed: {rollback_err}. Closing session.")
+                        self.session.close()
+            else:
+                # Success -> Commit
+                if not self.committed: 
+                    if self.transaction:
+                        self.transaction.commit()
+                    else:
+                        try:
+                            self.session.commit()
+                        except Exception as e:
+                            self.session.rollback()
+                            raise e
+        finally:
+            if self.owns_session:
+                self.session.close()
+
 class ActionDefinition(ABC):
     """
-    Abstract Base Class for all Kinetic Actions.
-    Enforces the Validate -> Apply lifecycle.
+    The Base Class for Kinetic Actions.
     """
     
     @classmethod
     @abstractmethod
     def action_id(cls) -> str:
-        """Unique Identifier (e.g., 'server.restart')."""
+        """Unique Identifier (e.g., 'server.reboot')."""
         pass
-    
+        
     @abstractmethod
     def validate(self, ctx: ActionContext) -> bool:
         """
-        Pure Logic Check.
-        Returns True if action CAN proceed.
-        Raises ValueError or returns False if not.
+        Pure logic check.
+        MUST NOT mutate state.
+        Returns check result. Raise error for specific feedback.
         """
         pass
 
     @abstractmethod
     def apply(self, ctx: ActionContext):
         """
-        State Mutation.
-        Modifies OrionObjects in memory/session.
-        Does NOT commit directly.
+        Mutate state via ctx.manager (passing ctx.session).
         """
         pass
 
-    def describe_side_effects(self, ctx: ActionContext) -> List[str]:
-        """Optional description of external effects."""
-        return []
-
-# --- Phase 2: Transaction Management ---
-
-class UnitOfWork:
-    """
-    Atomic Wrapper for Action Execution.
-    Manages the Transaction Lifecycle:
-    Evaluate -> Flush -> Commit (success) or Rollback (failure).
-    """
-    def __init__(self, manager: ObjectManager, session: Optional[Session] = None):
-        self.manager = manager
-        # If session is injected (e.g. from Simulation), use it.
-        # Otherwise, create a new one.
-        if session:
-            self.session = session
-            self.owns_session = False
-        else:
-            self.session = manager.default_session # Or manager.create_session() if we wanted new connections per action
-            # Actually, manager.default_session is shared. We might want a dedicated session for true isolation?
-            # For now, let's use default_session but begin_nested() if we wanted internal savepoints.
-            # But standard UoW usually implies a full transaction.
-            # Let's assume we use the manager's active session mechanism.
-            self.owns_session = False # We don't close manager's session usually.
-
-    def __enter__(self):
-        # We might want to start a SAVEPOINT if we are already in a transaction?
-        # Use begin_nested() just in case to allow recursive actions or simulation wrapping.
-        # This is CRITICAL for Phase 3 Simulation.
-        if self.session.in_transaction():
-             self.transaction = self.session.begin_nested()
-        else:
-             self.transaction = self.session.begin()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            # Failure
-            print(f"[UnitOfWork] Exception detected: {exc_val}. Rolling back...")
-            self.transaction.rollback()
-            # Propagate exception
-            return False
-            
-        # Success path
-        try:
-            self.transaction.commit()
-            # Note: Commit releases the savepoint or the transaction.
-        except Exception as e:
-            print(f"[UnitOfWork] Commit failed: {e}")
-            self.transaction.rollback()
-            raise e
-        finally:
-            if self.owns_session:
-                self.session.close()
-
 class ActionRunner:
     """
-    The Engine that runs Actions.
+    Executes Actions within a UnitOfWork.
     """
     def __init__(self, manager: ObjectManager, session: Optional[Session] = None):
         self.manager = manager
-        self.session = session # Injected session for Simulation
+        self.session_override = session
 
+    
     def execute(self, action: ActionDefinition, ctx: ActionContext):
         # Inject Dependencies
         ctx.manager = self.manager
-        ctx.session = self.session or self.manager.default_session
+        ctx.session = self.session_override or self.manager.default_session
         
         print(f"[ActionRunner] Executing {action.action_id()} (Session ID: {id(ctx.session)})")
 
-        # Lifecycle
-        with UnitOfWork(self.manager, session=ctx.session):
-            # 1. Validate
-            if not action.validate(ctx):
-                raise ValueError(f"Validation Failed for {action.action_id()}")
+        # --- Phase 5: Audit Logging ---
+        start_time = datetime.now()
+        log_entry = OrionActionLog(
+            action_type=action.action_id(),
+            parameters=ctx.parameters,
+            trace_id=ctx.job_id,
+            status="PENDING",
+            agent_id="Orion-Kernel" # Placeholder
+        )
+
+        try:
+            # Lifecycle
+            with UnitOfWork(self.manager, session=ctx.session):
+                # 1. Validate
+                if not action.validate(ctx):
+                    raise ValueError(f"Validation Failed for {action.action_id()}")
+                
+                # 2. Apply
+                action.apply(ctx)
+                
+                # 3. Commit handled by Context Manager __exit__
             
-            # 2. Apply
-            action.apply(ctx)
+            log_entry.status = "SUCCESS"
             
-            # 3. Commit handled by Context Manager __exit__
+        except Exception as e:
+            log_entry.status = "FAILURE"
+            log_entry.error = str(e)
+            raise e
+            
+        finally:
+            # Finalize Log Metadata
+            end_time = datetime.now()
+            log_entry.duration_ms = int((end_time - start_time).total_seconds() * 1000)
+            
+            # Persist Log
+            self._persist_log(log_entry, ctx)
+
+    def _persist_log(self, log_entry: OrionActionLog, ctx: ActionContext):
+        """
+        Persists the Audit Log.
+        Handles the 'Dual-Transaction' requirement:
+        - If Reality (Default Session): Use a FRESH session to ensure log survives rollback.
+        - If Simulation: Log to the Sandbox (Ctx Session).
+        """
+        is_simulation = (ctx.session != self.manager.default_session) and (ctx.session is not None)
+        
+        if is_simulation:
+            # In Simulation, we just save to the sandbox.
+            # It will be captured in the diff and discarded on rollback.
+            # This is correct behavior (don't pollute reality with sim logs).
+            self.manager.save(log_entry, session=ctx.session)
+        else:
+            # In Reality, we MUST persist the log, even if the action failed.
+            # We open a dedicated Audit Session.
+            # In Reality, we MUST persist the log, even if the action failed.
+            # We reuse the default session to avoid SQLite Locking contention (single writer).
+            # Since we rolled back the business transaction, the session should be clean.
+            try:
+                # Force commit for the log
+                self.manager.save(log_entry, session=self.manager.default_session, commit=True)
+            except Exception as e:
+                print(f"[ActionRunner] CRITICAL: Failed to write Audit Log! {e}")

@@ -1,57 +1,64 @@
 
-import logging
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any, Optional, Set, Type, TypeVar
 from datetime import datetime
-from uuid import uuid4
-import uuid_utils
-from pydantic import BaseModel, PrivateAttr, Field
+import uuid6
+from pydantic import BaseModel, Field, PrivateAttr, model_validator, ConfigDict
 
-# Ensure logging constraint: Only use standard logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+T = TypeVar("T", bound="OrionObject")
 
 class OrionObject(BaseModel):
     """
     The Base Class for all Living Objects in Orion.
     Features:
-    - UUIDv7 Identity (Time-sorted)
-    - Dirty Tracking (for Write-Back)
-    - Versioning
+    - UUIDv7 Identity (Time-sortable, Distributed-safe)
+    - Dirty Checking (Tracks changes for efficient Write-Back)
+    - Versioning (Optimistic Locking support)
     """
-    id: str = Field(default_factory=lambda: str(uuid_utils.uuid7()))
-    type: str = Field(default="OrionObject")
-    version: int = 1
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
     
-    # Private attributes for tracking state changes logic
+    # Standard Fields
+    id: str = Field(default_factory=lambda: str(uuid6.uuid7()), description="UUIDv7 Primary Key")
+    created_at: datetime = Field(default_factory=datetime.now, description="Creation Timestamp")
+    updated_at: datetime = Field(default_factory=datetime.now, description="Last Update Timestamp")
+    version: int = Field(default=1, description="Optimistic Locking Version")
+    
+    # Internal State for Dirty Checking
     _is_dirty: bool = PrivateAttr(default=False)
     _original_state: Dict[str, Any] = PrivateAttr(default_factory=dict)
+    
+    # Pydantic V2 Configuration
+    model_config = ConfigDict(
+        validate_assignment=True,  # Validate on set
+        extra="ignore"            # Allow extra fields in DB but ignore in Model (Forward Compat)
+    )
 
     def __init__(self, **data):
         super().__init__(**data)
-        # Snapshot state after initialization
-        if not self.type or self.type == "OrionObject":
-            self.type = self.__class__.__name__
         self._snapshot_state()
 
     def _snapshot_state(self):
-        """Captures the current state as 'original' for dirty checking."""
+        """Captures the current state as the baseline."""
         self._original_state = self.model_dump()
         self._is_dirty = False
 
-    def __setattr__(self, name, value):
-        # Handle PrivateAttrs first to avoid recursion during init
-        if name.startswith('_'):
-            return super().__setattr__(name, value)
+    def __setattr__(self, name: str, value: Any):
+        """Intercepts attribute setting to track dirty state."""
+        # Allow private attributes or initialization to pass through
+        if name.startswith("_"):
+            super().__setattr__(name, value)
+            return
+
+        # Prevent Recursion: Don't track changes to modification metadata
+        if name in {"updated_at", "version"}:
+            super().__setattr__(name, value)
+            return
+
+        # Check for change
+        current_value = getattr(self, name, None)
+        if current_value != value:
+            super().__setattr__(name, value)
+            self._is_dirty = True
             
-        super().__setattr__(name, value)
-        
-        # Check against original state if initialized
-        if hasattr(self, "_original_state") and name in self._original_state:
-            if self._original_state[name] != value:
-                self._is_dirty = True
-                # Update timestamp without triggering recursion
+            # Update timestamp without triggering recursion
             super().__setattr__("updated_at", datetime.now())
 
     def is_dirty(self) -> bool:
