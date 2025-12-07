@@ -1,34 +1,51 @@
 ---
-description: Dispatch a Natural Language Task to the Orion Agent
+description: Transform User Intent into a Governed Ontology Plan
 ---
 
-# ⚡ Workflow 01: Task Dispatch & Planning
+# ⚡ Workflow 01: Ontology-Driven Planning
 
 ## 1. Objective
-Transform a high-level user intent (Natural Language) into a **Governed Ontology Plan**, leveraging **Semantic Memory** for context awareness.
+Transform `UserIntent` (Natural Language) into a **Governed Ontology Plan**, leveraging **Semantic Memory** for context awareness.
+This workflow enforces the "Think, Model, Act" cycle.
 
-## 2. The Loop
-1.  **Recall**: Engine queries `MemoryManager` (FTS5) for relevant Insights/Patterns.
-2.  **Plan Generation**: (Currently Rule-Based/Stub) Creates a `Plan` object.
-3.  **Governance**: Validates `Plan` against Pydantic Models.
-4.  **Audit**: Logs `ACTION_START` event to `ontology.db` and `Observer`.
-5.  **Execution**: Dispatches the plan.
+## 2. The Cognitive Pipeline
 
-## 3. Execution Commands
+### Step 2.1: Recursive Thinking
+Use `sequential-thinking` to decompose the user's request.
+**Mandatory Hypothesis**:
+- What Ontology Concepts are involved?
+- What `Actions` are required?
+- Does this violate any Safety Rules?
 
-### Natural Language Dispatch
-// turbo
-```bash
-/home/palantir/.venv/bin/python scripts/engine.py dispatch "Your task description here"
+### Step 2.2: Context & Schema Alignment
+Check `scripts/ontology/plan.py` and `scripts/ontology/job.py`.
+Construct a JSON object that strictly adheres to the schema:
+```python
+Plan(
+  objective="...",
+  jobs=[
+    Job(action_name="read_file", action_args={"path": "..."}),
+    ...
+  ]
+)
 ```
 
-### File-Based Dispatch (Legacy/Specific)
+### Step 2.3: Persist Plan
+Write the JSON plan to a file.
 ```bash
-/home/palantir/.venv/bin/python scripts/engine.py dispatch --file /path/to/plan.json
+/home/palantir/.venv/bin/python scripts/action_registry.py write_to_file --TargetFile /home/palantir/.agent/plans/current_plan.json --CodeContent 'JSON_STRING'
+```
+*(Note: Use the Agent Tool `write_to_file` directly if available)*
+
+## 3. Execution (Dispatch)
+Once the plan is saved, dispatch it to the Orion Engine for Governance Validation and Execution.
+
+// turbo
+```bash
+/home/palantir/.venv/bin/python scripts/engine.py dispatch --file /home/palantir/.agent/plans/current_plan.json
 ```
 
 ## 4. Observability
 Watch the console for:
-*   `🧠 [Memory] Accessing Semantic Knowledge...` (Recall Check)
-*   `✨ [Memory] Recalled X relevant insights` (If context found)
 *   `✅ Plan Committed to Ontology` (Governance Pass)
+*   `⚙️ Executing Job [1/N]...`
