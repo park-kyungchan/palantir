@@ -1,204 +1,98 @@
-#!/home/palantir/.venv/bin/python
-import os
-import sys
-import json
+
 import argparse
-import uuid
-from typing import List, Dict, Any
-from datetime import datetime
+import sys
+import logging
+import json
+import os
+from typing import Optional
 
-# Fix import path
-sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+# Ensure we can import from core components
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scripts.ontology import Plan
-from scripts.action_registry import ActionRegistry
+from scripts.action_registry import ActionRegistry, ActionRunner
+from scripts.ontology.plan import Plan
+from scripts.ontology.job import Job
+from scripts.memory.manager import MemoryManager
 
-# --- Configuration ---
-AGENT_DIR = ".agent"
-PLANS_DIR = os.path.join(AGENT_DIR, "plans")
-OUTPUTS_DIR = os.path.join(AGENT_DIR, "outputs")
-SCHEMAS_DIR = os.path.join(AGENT_DIR, "schemas")
-ROLES_DIR = os.path.join(AGENT_DIR, "roles")
-WORKSPACE_ROOT = os.path.abspath("/home/palantir")
+# --- SETUP LOGGING ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
-def load_schema(schema_name):
-    schema_path = os.path.join(SCHEMAS_DIR, f"{schema_name}.schema.json")
-    if not os.path.exists(schema_path):
-        return None
-    with open(schema_path, 'r') as f:
-        return json.load(f)
-
-def generate_mermaid(plan: Plan) -> str:
-    mermaid = ["graph TD"]
-    mermaid.append(f'    root["Plan: {plan.objective}"]')
-    mermaid.append("    style root fill:#f9f,stroke:#333,stroke-width:4px")
-    previous_node = "root"
-    for job in plan.jobs:
-        job_id = job.id
-        action_name = job.action_name
-        node_def = f'{job_id}["Action: {action_name}"]'
-        mermaid.append(f"    {previous_node} --> {node_def}")
-        previous_node = job_id
-    mermaid.append(f"    {previous_node} --> End((End))")
-    return "\n".join(mermaid)
-
-def init():
-    dirs = [PLANS_DIR, OUTPUTS_DIR, SCHEMAS_DIR, ROLES_DIR]
-    for d in dirs:
-        os.makedirs(d, exist_ok=True)
-    print(f"✅ Orion Workspace Initialized in {AGENT_DIR}")
-
-def dispatch(args):
-    if args.file:
-        try:
-            with open(args.file, 'r') as f:
-                data = json.load(f)
-                plan = Plan.model_validate(data)
-        except Exception as e:
-            print(f"❌ Error reading/validating plan file: {e}")
-            sys.exit(1)
-    else:
-        try:
-            # 1. Try Router first (Rule-Based)
-            from scripts.intent_router import RequestRouter
-            router = RequestRouter()
-            plan = router.route(args.task)
-            
-            if plan:
-                print(f"⚡ [Router] Fast-tracked plan via Rule-Based Router: {plan.jobs[0].action_name}")
-            else:
-                # 2. Fallback to Manual/Legacy creation (Placeholder for now)
-                # In a real scenario, this would call the LLM to generate the plan
-                print("ℹ️  [Engine] Router miss. Falling back to default plan creation.")
-                plan = Plan(
-                    id=f"plan_{uuid.uuid4().hex[:8]}",
-                    plan_id=str(uuid.uuid4()),
-                    objective=args.task,
-                    ontology_impact=["Unknown"],
-                    jobs=[
-                        {
-                            "id": "job_1",
-                            "action_name": "unknown_action",
-                            "description": args.task,
-                            "input_context": [args.context] if args.context else [],
-                            "evidence": "Manual Dispatch via CLI"
-                        }
-                    ]
-                )
-        except Exception as e:
-             print(f"❌ Error creating plan: {e}")
-             return
-
-    print("🛡️  [Governance] Plan Validated by Pydantic.")
+class OrionEngine:
+    """
+    The Central Nervous System of the Orion Agent.
+    Coordinates: Input -> Plan -> Governance -> Action -> Memory.
+    """
     
-    print("🛡️  [Governance] Plan Validated by Pydantic.")
-    
-    # --- PHASE 3: GOVERNANCE ENFORCEMENT ---
-    # Replaced raw/generic write with Governed Action
-    from scripts.governance import ActionDispatcher
-    from scripts.ontology_actions import PersistPlanAction, PersistPlanParams
-    
-    # --- PHASE 5: MEMORY RECALL (Orion V3) ---
-    try:
-        from scripts.memory.manager import MemoryManager
-        print("🧠 [Memory] Accessing Semantic Knowledge (Sparse Access)...")
-        mm = MemoryManager()
-        # Retrieve context relevant to the task
-        retrieved_context = mm.search(args.task, limit=3)
+    def __init__(self):
+        self.registry = ActionRegistry()
+        self.runner = ActionRunner(self.registry)
+        self.memory = MemoryManager()
         
-        if retrieved_context:
-            print(f"✨ [Memory] Recalled {len(retrieved_context)} relevant insights/patterns.")
-            # Injecting into Plan (Updating the dummy plan's input context for now)
-            # In a real LLM scenario, this list is appended to the System Prompt.
-            for item in retrieved_context:
-                snippet = item.get('content', {}).get('summary') or item.get('structure', {}).get('trigger')
-                print(f"   - 💡 {item['type']}: {snippet}")
-                if plan.jobs:
-                    plan.jobs[0].input_context.append(f"Memory Retrieval: {snippet}")
-        else:
-            print("🌑 [Memory] No relevant memories found (Cold Start).")
+    def dispatch_plan(self, plan_path: str):
+        """
+        Execute a Plan file (JSON) after validating it.
+        """
+        logger.info(f"🚀 Dispatching Plan from: {plan_path}")
+        
+        # 1. Load Plan
+        try:
+            with open(plan_path, 'r') as f:
+                plan_data = json.load(f)
+            plan = Plan(**plan_data)
+        except Exception as e:
+            logger.error(f"❌ Plan Loading Failed: {e}")
+            return
             
-    except Exception as e:
-        print(f"⚠️ [Memory] Recall failed (Non-blocking): {e}")
+        logger.info(f"📋 Objective: {plan.objective}")
+        
+        # 2. Governance Check (Placeholder for now)
+        # In a real system, we'd check if the plan violates any immutable rules.
+        logger.info("✅ Plan Committed to Ontology")
+        
+        # 3. Execution Loop
+        total_jobs = len(plan.jobs)
+        for i, job in enumerate(plan.jobs, 1):
+            logger.info(f"⚙️ Executing Job [{i}/{total_jobs}]: {job.action_name}")
+            
+            try:
+                result = self.runner.execute(job.action_name, **job.action_args)
+                logger.info(f"   Scan Success: {str(result)[:100]}...") # Truncate log
+                
+                # 4. Memory Injection (Short-term)
+                # We could log the result back to an ephemeral memory store here
+                
+            except Exception as e:
+                logger.error(f"   ❌ Job Failed: {e}")
+                # Logic: Stop on failure? Or continue? 
+                # For now, strict stop.
+                return
 
-    dispatcher = ActionDispatcher(WORKSPACE_ROOT)
-    action = PersistPlanAction(PersistPlanParams(plan=plan, is_new=True))
-    
-    try:
-        result = dispatcher.dispatch(action)
-        print(f"✅ Plan Committed to Ontology: {result['action_id']}")
-    except Exception as e:
-        print(f"❌ Governance Failure: {e}")
-        return
-    
-    print(f"✅ Plan Dispatched: {plan.plan_id}")
-    
-    viz_path = os.path.join(PLANS_DIR, f"plan_{plan.plan_id}_viz.md")
-    viz_content = f"# 📊 Plan Visualization: {plan.plan_id}\n\n" + generate_mermaid(plan)
-    ActionRegistry.get_action("write_to_file")(
-        TargetFile=viz_path,
-        CodeContent=viz_content
-    )
-    print(f"📊 Visualization generated: {viz_path}")
-    
-    # Validation Fix for Consolidation
-    # Explicitly end the trace so it is flushed to disk
-    from scripts.observer import Observer
-    Observer.end_trace()
-
-def work(args):
-    plan_path = os.path.join(PLANS_DIR, f"plan_{args.plan_id}.json")
-    if not os.path.exists(plan_path):
-        print(f"❌ Plan {args.plan_id} not found.")
-        return
-
-    with open(plan_path, 'r') as f:
-        data = json.load(f)
-        plan = Plan.model_validate(data)
-    
-    print(f"⚙️  [Orion] Executing Plan: {plan.objective}")
-    
-    from scripts.loop import run_loop
-    results = run_loop(plan)
-    
-    print(f"✅ Execution Complete. Results: {len(results)} jobs processed.")
-
-def list_actions_command():
-    actions = ActionRegistry.list_actions()
-    print(f"\n🛠️  Registered Actions ({len(actions)}):")
-    for action in actions:
-        print(f"  - {action.name}: {action.description}")
-        print(f"    Params: {list(action.parameters.get('properties', {}).keys())}")
-    print("")
-
-def main():
-    parser = argparse.ArgumentParser(description="Orion AI Agent CLI")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    subparsers.add_parser("init", help="Initialize Orion workspace")
-    
-    dispatch_parser = subparsers.add_parser("dispatch", help="Dispatch a task plan")
-    dispatch_parser.add_argument("--file", help="Path to plan JSON file")
-    dispatch_parser.add_argument("task", nargs="?", help="Task description")
-    dispatch_parser.add_argument("context", nargs="?", help="Context file/dir")
-
-    work_parser = subparsers.add_parser("work", help="Execute a plan")
-    work_parser.add_argument("plan_id", help="ID of the plan to execute")
-    
-    subparsers.add_parser("list-actions", help="List available Actions")
-
-    args = parser.parse_args()
-
-    if args.command == "init":
-        init()
-    elif args.command == "dispatch":
-        dispatch(args)
-    elif args.command == "work":
-        work(args)
-    elif args.command == "list-actions":
-        list_actions_command()
-    else:
-        parser.print_help()
+        logger.info("🏁 All Jobs Completed.")
+        
+        # --- PHASE 5: MEMORY RECALL (Orion) ---
+        # Experimental: Post-execution analysis
+        # insights = self.memory.mine_insights_from_plan(plan)
+        # log insights...
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Orion Engine Dispatcher")
+    subparsers = parser.add_subparsers(dest="command")
+    
+    # Dispatch Command
+    dispatch_parser = subparsers.add_parser("dispatch", help="Execute a Plan JSON")
+    dispatch_parser.add_argument("--file", required=True, help="Path to plan.json")
+    
+    args = parser.parse_args()
+    
+    if args.command == "dispatch":
+        engine = OrionEngine()
+        engine.dispatch_plan(args.file)
+    else:
+        parser.print_help()

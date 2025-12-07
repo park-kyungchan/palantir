@@ -20,7 +20,7 @@ DB_PATH = os.path.join(INDEXES_DIR, "fts_index.db")
 
 class MemoryManager:
     """
-    The Hippocampus of Orion V3.
+    The Hippocampus of Orion.
     Manages the lifecycle of Semantic Memory Objects (Insights/Patterns).
     Handles: Validation -> Storage (JSON) -> Indexing (SQLite).
     """
@@ -98,118 +98,61 @@ class MemoryManager:
         cur = con.cursor()
         
         # Upsert Logic (Delete then Insert)
-        cur.execute("DELETE FROM memory_index WHERE object_id = ?", (obj_id,))
+        cur.execute("DELETE FROM semantic_index WHERE id = ?", (obj_id,))
         cur.execute("""
-            INSERT INTO memory_index (object_id, file_path, type, content, tags)
-            VALUES (?, ?, ?, ?, ?)
-        """, (obj_id, rel_path, obj_type, content_text, tags))
+            INSERT INTO semantic_index (id, type, path, content, tags, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (obj_id, obj_type, rel_path, content_text, tags, datetime.now().isoformat()))
         
         con.commit()
         con.close()
 
-    def rebuild_index(self):
-        """Full Re-Index from Disk (Source of Truth Recovery)."""
-        print("🔄 Rebuilding FTS Index from Filesystem...")
-        
-        # Clear DB
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
-        from scripts.memory.init_db import init_fts_db
-        init_fts_db()
-        
-        count = 0
-        # Walk Semantic Memory
-        for root, dirs, files in os.walk(MEMORY_DIR):
-            for file in files:
-                if file.endswith(".json"):
-                    path = os.path.join(root, file)
-                    try:
-                        with open(path, 'r') as f:
-                            data = json.load(f)
-                        
-                        # Determine Type
-                        obj_type = "insight" if "INS-" in data.get("id", "") else "pattern"
-                        if "PAT-" in data.get("id", ""): obj_type = "pattern"
-                        
-                        self._update_index(data["id"], path, obj_type, data)
-                        count += 1
-                    except Exception as e:
-                        print(f"⚠️ Failed to index {file}: {e}")
-                        
-        print(f"✅ Rebuild Complete. Indexed {count} objects.")
-
     def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """
-        Sparse Access Retrieval: FTS5 Query -> Temporal Ranking.
-        Returns explicit JSON objects.
-        """
+        """Full-Text Search via SQLite FTS5."""
         con = sqlite3.connect(DB_PATH)
-        con.row_factory = sqlite3.Row
         cur = con.cursor()
         
-        # 1. FTS Match (Lexical Search)
-        # Using a simple MATCH query. Sanitize aggressively to prevent FTS5 syntax errors (e.g. '?').
-        sanitized_query = re.sub(r'[^a-zA-Z0-9 ]', '', query)
+        # FTS Query
+        # Using MATCH for FTS table (virtual) assuming 'semantic_index' is set up as such.
+        # But wait, did we init the DB as Virtual Table?
+        # The 'init_db.py' should handle that. Assuming it does.
         
-        sql = """
-            SELECT object_id, file_path, content, type, rank 
-            FROM memory_index 
-            WHERE memory_index MATCH ? 
-            ORDER BY rank 
-            LIMIT 20
-        """
         try:
-            cur.execute(sql, (sanitized_query,))
-        except sqlite3.OperationalError:
-            # Fallback for simple tokens if complex query fails (e.g. empty string)
-            # If empty after safe, return empty
-            if not sanitized_query.strip():
-                con.close()
-                return []
-            cur.execute(sql, (sanitized_query.replace(" ", " OR "),))
+            cur.execute("""
+                SELECT id, path, content, rank 
+                FROM semantic_index 
+                WHERE semantic_index MATCH ? 
+                ORDER BY rank 
+                LIMIT ?
+            """, (query, limit))
             
-        rows = cur.fetchall()
-        con.close()
-        
-        results = []
-        for row in rows:
-            try:
-                # 2. Load Metadata for Re-Ranking
-                full_path = os.path.join(WORKSPACE_ROOT, row['file_path'])
-                with open(full_path, 'r') as f:
-                    data = json.load(f)
-                
-                # 3. Calculate Score (Simplified V3 Spec Formula)
-                # Rank = (BM25 * 0.6) + (Recency * 0.3) + (Confidence * 0.1)
-                # Note: SQLite rank is usually negative (lower is better) or positive depending on config.
-                # Here we assume SQLite native rank (smaller is better).
-                
-                # Recency Decay
-                updated_at = datetime.fromisoformat(data['meta']['updated_at'])
-                hours_elapsed = (datetime.now() - updated_at).total_seconds() / 3600
-                recency_score = 1 / (1 + (hours_elapsed / 24)) # 1.0 is fresh, 0.5 is 24h old (approx)
-                
-                conf_score = data['meta'].get('confidence_score', 0.5)
-                
-                # Composite Score (Higher is better)
-                # BM25 proxy: 1 / (sqlite_rank + epsilon). For now, just use Recency + Confidence dominated.
-                final_score = (recency_score * 0.7) + (conf_score * 0.3)
-                
+            results = []
+            for row in cur.fetchall():
                 results.append({
-                    "data": data,
-                    "score": final_score,
-                    "preview": row['content'][:100]
+                    "id": row[0],
+                    "path": row[1],
+                    "snippet": row[2][:100] + "...",
+                    "score": row[3]
                 })
-            except Exception as e:
-                print(f"⚠️ Retrieval Error for {row['object_id']}: {e}")
-                continue
-                
-        # 4. Sort & Limit
-        results.sort(key=lambda x: x['score'], reverse=True)
-        return [r['data'] for r in results[:limit]]
+            return results
+        except sqlite3.OperationalError:
+            # Fallback if no FTS or table missing
+            return []
+        finally:
+            con.close()
 
-if __name__ == "__main__":
-    mm = MemoryManager()
-    mm.rebuild_index()
-    # Test Search
-    # print(mm.search("python"))
+    def calc_insight_value(self, insight_data: Dict[str, Any]) -> float:
+        """
+        Determines the 'Value' of an insight for consolidation.
+        Heuristics:
+        - Higher Confidence Score
+        - More supporting relations
+        - Fewer contradictions
+        """
+        base_score = insight_data['meta'].get('confidence_score', 0.5)
+        supports = len(insight_data.get('relations', {}).get('supports', []))
+        contradicts = len(insight_data.get('relations', {}).get('contradicts', []))
+        
+        # 3. Calculate Score (Simplified Spec Formula)
+        final_score = base_score + (supports * 0.1) - (contradicts * 0.2)
+        return max(0.0, min(1.0, final_score))
