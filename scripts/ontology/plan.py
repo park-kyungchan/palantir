@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -22,3 +22,9 @@ class Plan(BaseModel):
         [], description='Impacted Ontology Concepts'
     )
     jobs: List[Job] = Field(..., description='List of executable jobs')
+    
+    # Research Enforcement
+    research_context: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, 
+        description='Mandatory Preliminary Research Findings (Knowledge Cutoff Mitigation)'
+    )

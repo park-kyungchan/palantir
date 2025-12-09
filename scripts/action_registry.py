@@ -5,6 +5,7 @@ import urllib.request
 import ast
 import difflib
 import uuid
+import jsonschema
 from datetime import datetime
 from typing import Dict, Any, Callable, List, Optional
 from functools import wraps
@@ -50,7 +51,11 @@ class ActionRegistry:
                 from scripts.observer import Observer
                 from scripts.ontology import Event
                 
-                # TODO: Add runtime schema validation for kwargs against parameters
+                # Runtime Schema Validation
+                try:
+                    jsonschema.validate(instance=kwargs, schema=parameters)
+                except jsonschema.ValidationError as e:
+                     raise ValueError(f"Schema Validation Failed for action '{name}': {e.message}")
                 
                 # 3. Governance: Audit Log (Start)
                 try:
