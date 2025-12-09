@@ -1,0 +1,24 @@
+{
+  "name": "palantir",
+  "version": "1.0.0",
+  "description": "The **Orion Framework** is a \"Decision-Centric\" Agentic IDE Architecture, designed to mimic the **Palantir Ontology**.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/park-kyungchan/orion-orchestrator-v2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/park-kyungchan/orion-orchestrator-v2/issues"
+  },
+  "homepage": "https://github.com/park-kyungchan/orion-orchestrator-v2#readme",
+  "dependencies": {
+    "@neobarrientos/neo4j_mcpserver": "^1.0.3"
+  }
+}

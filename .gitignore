@@ -1,3 +1,4 @@
+# --- Dependencies & Build ---
 .venv
 node_modules
 __pycache__
@@ -6,12 +7,10 @@ __pycache__
 dist
 build
 coverage
-.orion/codebase_index
 logs
 *.log
-.history
 
-# System & Cache
+# --- System & Cache ---
 .local
 .cache
 .npm
@@ -21,16 +20,35 @@ logs
 .vscode-server
 .wget-hsts
 .bash_history
+.history
+.orion/codebase_index
 
-# IDE & Tools
+# --- IDE & Tools ---
 .antigravity-server
-.gemini
-!.gemini/antigravity/brain/
 .nvm
+google-chrome-stable_current_amd64.deb
+redis_ca.pem
+bridge.sh
+Neo4j-*.txt
 
-# Orion V3 Memory Architecture
+# --- Antigravity Agent State (Brain) ---
+# Ignore all agent internal state by default
+.gemini/
+
+# Allow specific configuration/persona files
+!.gemini/GEMINI.md
+!.gemini/SYSTEM_PROMPT_LAYER0.md
+!.gemini/antigravity/mcp_config.json
+!.gemini/settings.json
+
+# --- Orion V3 Memory Architecture ---
 .agent/indexes/*.db
 .agent/logs/*.db
 .agent/memory/working/*
 !.agent/memory/working/.gitkeep
-.gemini/
+
+# WSL Zone Identifiers
+*:Zone.Identifier
+
+# Ontology DB
+.agent/orion_ontology.db
