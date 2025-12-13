@@ -22,6 +22,8 @@ class RequestRouter:
             (r"^analyze dependency (.+)$", "analyze_dependency", lambda m: {"TargetFile": m.group(1).strip()}),
             (r"^calculate impact (.+)$", "calculate_impact", lambda m: {"TargetFile": m.group(1).strip()}),
             (r"^grep '([^']+)' in (.+)$", "grep_search", lambda m: {"pattern": m.group(1), "path": m.group(2).strip()}),
+            # --- FDE Learning Mode Integration ---
+            (r".*(fde|interview|study|learn|면접|공부).*(palantir|preparation|prep|도와줘|준비).*", "read_file", lambda m: {"path": "/home/palantir/orion-orchestrator-v2/coding/palantir-fde-learning/SYSTEM_DIRECTIVE.md"}),
         ]
 
     def route(self, user_prompt: str) -> Optional[Plan]:

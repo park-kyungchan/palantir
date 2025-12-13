@@ -1,14 +1,18 @@
 
-from typing import List, Dict, Any, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from scripts.ontology.core import OrionObject
 from scripts.ontology.manager import ObjectManager
 from scripts.action.core import ActionDefinition, ActionContext, ActionRunner
 
 class SimulationDiff(BaseModel):
-    created: List[Dict[str, Any]] = []
-    updated: List[Dict[str, Any]] = []
-    deleted: List[str] = []
+    created: List[Dict[str, Any]] = Field(default_factory=list)
+    updated: List[Dict[str, Any]] = Field(default_factory=list)
+    deleted: List[str] = Field(default_factory=list)
 
 class ScenarioFork:
     """
@@ -17,22 +21,14 @@ class ScenarioFork:
     """
     def __init__(self, manager: ObjectManager, parent_session: Optional[Session] = None):
         self.manager = manager
-        self.session = parent_session or manager.default_session
+        self.session = parent_session or manager.create_session()
+        self._owns_session = parent_session is None
         self.nested_tx = None
         self._diff = SimulationDiff()
         
     def __enter__(self):
         # 1. Begin Savepoint
-        if self.session.in_transaction():
-            self.nested_tx = self.session.begin_nested()
-        else:
-            # If not in transaction, begin one then nest? 
-            # Or just begin(). But we want to ensure rollback doesn't close session.
-            self.session.begin() 
-            self.nested_tx = self.session.begin_nested() # Double wrap to be safe?
-            # Actually session.begin_nested() starts one if auto-commit is off?
-            # Let's rely on begin_nested().
-            pass
+        self.nested_tx = self.session.begin_nested()
             
         # 2. Hook into ObjectManager to capture Event Stream (Observer Pattern)
         # We need to capture what *would* happen.
@@ -51,9 +47,9 @@ class ScenarioFork:
         if self.nested_tx:
             print("[ScenarioFork] Sandbox Rolled Back (Clean State).")
             self.nested_tx.rollback()
-            # If we started a parent tx, rollback that too?
-            # self.session.rollback() # Caution: might affect outer scope?
-            # Usually nested rollback is enough to undo the savepoint.
+        self.session.rollback()
+        if self._owns_session:
+            self.session.close()
         
     def _capture_event(self, event_type: str, result: Any):
         """
@@ -62,11 +58,13 @@ class ScenarioFork:
         # print(f"[Debug] Captured Event: {event_type} - {result}")
         if event_type == "save":
             obj: OrionObject = result
+            if obj.__class__.__name__ == "OrionActionLog":
+                return
             # Naive Diff Logic
             # Note: We duplicate data here because the object might be rolled back.
             change_payload = {
                 "id": obj.id,
-                "type": obj.type,
+                "type": obj.__class__.__name__,
                 "changes": obj.get_changes()
             }
             # Avoid duplicates?

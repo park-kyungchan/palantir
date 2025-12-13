@@ -6,6 +6,7 @@ import ast
 import difflib
 import uuid
 import jsonschema
+import json
 from datetime import datetime
 from typing import Dict, Any, Callable, List, Optional
 from functools import wraps
@@ -49,23 +50,25 @@ class ActionRegistry:
             def wrapper(*args, **kwargs):
                 # Lazy import to avoid circular dependency
                 from scripts.observer import Observer
-                from scripts.ontology import Event
+                from scripts.ontology import Event, EventType
                 
                 # Runtime Schema Validation
                 try:
                     jsonschema.validate(instance=kwargs, schema=parameters)
                 except jsonschema.ValidationError as e:
-                     raise ValueError(f"Schema Validation Failed for action '{name}': {e.message}")
+                    raise ValueError(f"Schema Validation Failed for action '{name}': {e.message}")
                 
                 # 3. Governance: Audit Log (Start)
                 try:
                     event_id = str(uuid.uuid4())
+                    trace_id = f"action:{name}:{event_id}"
                     Observer.emit(Event(
-                        id=event_id,
-                        type="ActionStarted",
-                        source="ActionRegistry",
-                        content={
+                        trace_id=trace_id,
+                        event_type=EventType.ACTION_START,
+                        component="ActionRegistry",
+                        details={
                             "action": name,
+                            "context": kwargs.get("context", "No justification provided"),
                             "params": {k: str(v) for k, v in kwargs.items() if k != "CodeContent"} # Truncate large content in logs
                         },
                         timestamp=datetime.now().isoformat()
@@ -76,10 +79,10 @@ class ActionRegistry:
                     
                     # 5. Governance: Audit Log (Success)
                     Observer.emit(Event(
-                        id=str(uuid.uuid4()),
-                        type="ActionCompleted",
-                        source="ActionRegistry",
-                        content={
+                        trace_id=trace_id,
+                        event_type=EventType.ACTION_END,
+                        component="ActionRegistry",
+                        details={
                             "action": name,
                             "related_event_id": event_id,
                             "status": "success"
@@ -91,10 +94,10 @@ class ActionRegistry:
                 except Exception as e:
                     # 6. Governance: Audit Log (Failure)
                     Observer.emit(Event(
-                        id=str(uuid.uuid4()),
-                        type="ActionFailed",
-                        source="ActionRegistry",
-                        content={
+                        trace_id=trace_id if "trace_id" in locals() else f"action:{name}:unknown",
+                        event_type=EventType.ERROR,
+                        component="ActionRegistry",
+                        details={
                             "action": name,
                             "error": str(e)
                         },
@@ -235,21 +238,6 @@ def calculate_impact(TargetFile: str) -> List[str]:
     analyzer.build_graph()
     return analyzer.get_impact_set(TargetFile)
 
-@ActionRegistry.register(
-    name="read_skeleton",
-    description="Read the skeleton (signatures + docstrings) of a Python file.",
-    parameters={
-        "type": "object",
-        "properties": {
-            "TargetFile": {"type": "string", "description": "Absolute path to the file"}
-        },
-        "required": ["TargetFile"]
-    }
-)
-def read_skeleton(TargetFile: str) -> str:
-    from scripts.context_manager import ContextManager
-    cm = ContextManager(WORKSPACE_ROOT)
-    return cm.generate_skeleton(TargetFile)
 
 # --- Advanced Native Capabilities ---
 
@@ -497,6 +485,38 @@ def visualize_diff(path: str, new_content: str) -> str:
         numlines=5
     )
     return diff
+
+@ActionRegistry.register(
+    name="mcp_preflight_antigravity",
+    description="Preflight Antigravity MCP config and optionally disable failing servers (mitigates IDE retry loops).",
+    parameters={
+        "type": "object",
+        "properties": {
+            "ConfigPath": {"type": "string", "description": "Absolute path to Antigravity mcp_config.json"},
+            "AutoDisableFailed": {"type": "boolean", "description": "If true, mark failing servers as disabled"},
+            "Write": {"type": "boolean", "description": "If true, write changes back to the config file"},
+        },
+        "required": []
+    }
+)
+def mcp_preflight_antigravity(
+    ConfigPath: str = "/home/palantir/.gemini/antigravity/mcp_config.json",
+    AutoDisableFailed: bool = True,
+    Write: bool = False,
+    **kwargs,
+) -> str:
+    safe_path = validate_path(ConfigPath)
+    if not os.path.exists(safe_path):
+        raise FileNotFoundError(f"MCP config not found: {safe_path}")
+
+    from scripts.mcp_preflight import preflight_mcp_config
+
+    result = preflight_mcp_config(
+        safe_path,
+        auto_disable_failed=AutoDisableFailed,
+        write=Write,
+    )
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 @ActionRegistry.register(
     name="generate_project_map",

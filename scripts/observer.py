@@ -1,32 +1,66 @@
+from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Callable
+from typing import Any, Callable, Dict, List
 
-# Standard Interface for Observability
-# This allows 'AutomationLayer' (Phase 3) to subscribe to system events.
+
+class _ObserverBus:
+    """
+    Central observability bus.
+
+    The underlying bus remains string-keyed (`event_type` -> listeners) so it can
+    support both "raw" emits and structured Event objects.
+    """
+
+    def __init__(self) -> None:
+        self._listeners: Dict[str, List[Callable[[Any], None]]] = {}
+
+    def subscribe(self, event_type: str, callback: Callable[[Any], None]) -> None:
+        self._listeners.setdefault(event_type, []).append(callback)
+
+    def emit(self, event_type: str, payload: Any) -> None:
+        for callback in self._listeners.get(event_type, []):
+            try:
+                callback(payload)
+            except Exception:
+                logging.exception("Observer callback error")
+
+
+def _coerce_event_type(event: Any) -> str:
+    event_type = getattr(event, "event_type", None)
+    if event_type is None:
+        return "UNKNOWN"
+    if hasattr(event_type, "value"):
+        return str(event_type.value)
+    return str(event_type)
+
+
+# Global instance for lightweight usage and backwards-compatibility.
+global_observer = _ObserverBus()
+
 
 class Observer:
     """
-    Central Observability Bus.
+    Public facade used by the rest of the codebase.
+
+    Supports:
+    - `Observer.subscribe("ACTION_START", cb)`
+    - `Observer.emit(Event(...))`
+    - `Observer.emit("ACTION_START", payload)` (legacy)
     """
-    def __init__(self):
-        self._listeners: Dict[str, List[Callable]] = {}
 
-    def subscribe(self, event_type: str, callback: Callable):
-        if event_type not in self._listeners:
-            self._listeners[event_type] = []
-        self._listeners[event_type].append(callback)
+    @staticmethod
+    def subscribe(event_type: str, callback: Callable[[Any], None]) -> None:
+        global_observer.subscribe(event_type, callback)
 
-    def emit(self, event_type: str, payload: Any):
-        """
-        Standard Interface: Emits a full Event object.
-        """
-        if event_type in self._listeners:
-            for callback in self._listeners[event_type]:
-                try:
-                    callback(payload)
-                except Exception as e:
-                    logging.error(f"Observer Error: {e}")
-
-# Global instance for lightweight usage
-global_observer = Observer()
+    @staticmethod
+    def emit(*args: Any) -> None:
+        if len(args) == 1:
+            event = args[0]
+            global_observer.emit(_coerce_event_type(event), event)
+            return
+        if len(args) == 2:
+            event_type, payload = args
+            global_observer.emit(str(event_type), payload)
+            return
+        raise TypeError("Observer.emit expects (event) or (event_type, payload)")
