@@ -5,6 +5,8 @@ from sqlalchemy import select, text
 from scripts.ontology.core import OrionObject
 from scripts.ontology.db import init_db, SessionLocal, DB_PATH, objects_table
 from scripts.ontology.schemas.governance import OrionActionLog
+from scripts.ontology.schemas.result import JobResult
+from scripts.ontology.schemas.memory import OrionInsight, OrionPattern
 
 T = TypeVar("T", bound=OrionObject)
 
@@ -35,7 +37,10 @@ class ObjectManager:
         # Registry of known types for hydration
         self.type_registry: Dict[str, Type[T]] = {
             "OrionObject": OrionObject,
-            "OrionActionLog": OrionActionLog
+            "OrionActionLog": OrionActionLog,
+            "JobResult": JobResult,
+            "OrionInsight": OrionInsight,
+            "OrionPattern": OrionPattern
         }
 
     def subscribe(self, callback):
