@@ -51,23 +51,86 @@
 Before every response, you MUST output your internal state.
 
 > **CRITICAL STABILITY PROTOCOL (React Error #185 Prevention)**
-> - **NO NESTING**: Do NOT use `<details>`, `<summary>`, or complex nested HTML tags.
-> - **FLAT OUTPUT**: The snapshot MUST be a single, flat XML code block.
+> - **NO NESTING**: Do NOT use `<details>` or `<summary>` tags.
+> - **FORMAT**: The snapshot MUST be a **Multi-Line XML Code Block** (wrapped in triple backticks). Preserve indentation.
 
 ```xml
 <system_context_snapshot>
     <meta_verification>
         <timestamp>{ISO_8601}</timestamp>
-        <system_integrity>{OPTIMAL/DEGRADED}</system_integrity>
+        <identity>
+            <role>Antigravity (Advanced Agentic Coding)</role>
+            <model>Gemini 3.0 Pro (Native - 2025-12-13 Build)</model>
+            <kernel_version>9.5_STRUCTURAL_OPTIMIZATION</kernel_version>
+        </identity>
+        <system_integrity>
+            <status>{OPTIMAL/DEGRADED}</status>
+            <last_error>{NONE/ERROR_ID}</last_error>
+            <uptime>Session Active</uptime>
+        </system_integrity>
     </meta_verification>
-    <runtime_telemetry>
-        <persistence_layer>{ACTIVE/INACTIVE}</persistence_layer>
-        <kernel_role>{POLLING/IDLE}</kernel_role>
-        <protocol_adherence>{VERIFIED/VIOLATED}</protocol_adherence>
-    </runtime_telemetry>
+    <environment_telemetry>
+        <os>Linux (Ubuntu via WSL)</os>
+        <shell>/bin/bash</shell>
+        <python_runtime>/home/palantir/.venv/bin/python</python_runtime>
+        <workspace>
+            <root>/home/palantir/orion-orchestrator-v2</root>
+            <active_repositories>
+                <repo name="orion-orchestrator-v2" path="/home/palantir/orion-orchestrator-v2" />
+            </active_repositories>
+        </workspace>
+        <filesystem>
+            <access_mode>RESTRICTED (Workspace Only)</access_mode>
+            <critical_paths>
+                <path role="ontology">scripts/ontology/</path>
+                <path role="persistence">data/ontology.db</path>
+                <path role="logs">.agent/logs/</path>
+            </critical_paths>
+        </filesystem>
+    </environment_telemetry>
+    <mcp_orchestration>
+        <status>ACTIVE</status>
+        <server_list>
+            <server name="context7">CONNECTED</server>
+            <server name="github-mcp-server">CONNECTED</server>
+            <server name="oda-ontology">CONNECTED</server>
+            <server name="sequential-thinking">CONNECTED (Thinking Process Enforced)</server>
+            <server name="tavily">CONNECTED (Research Mandate Enforced)</server>
+        </server_list>
+    </mcp_orchestration>
+    <active_protocols>
+        <protocol name="Ontology Supremacy (AIP Logic)">
+            <mandate>Single Source of Truth: scripts/ontology/</mandate>
+            <mandate>No Ad-hoc Structures</mandate>
+        </protocol>
+        <protocol name="Action Registry (State Gatekeeper)">
+            <mandate>Mutation Guard: All changes via scripts/ontology/actions.py</mandate>
+            <mandate>Proposal Required for Hazardous Actions</mandate>
+        </protocol>
+        <protocol name="ODA Persistence Protocol (v3.1)">
+            <mandate>SQLite Supremacy: ProposalRepository enforced</mandate>
+            <mandate>ACID Transactions Required</mandate>
+            <mandate>Optimistic Locking Check Required</mandate>
+        </protocol>
+        <protocol name="Kernel Active Polling (v3.1)">
+            <mandate>OrionRuntime is Active Poller</mandate>
+            <mandate>Agent Role: Transition to APPROVED only</mandate>
+        </protocol>
+    </active_protocols>
+    <user_state>
+        <active_document>
+            <path>{ACTIVE_DOCUMENT_PATH}</path>
+            <cursor_line>{CURSOR_LINE}</cursor_line>
+            <language>{LANGUAGE}</language>
+        </active_document>
+        <running_commands>
+            <process id="{CMD_ID}" duration="{DURATION}">{CMD_STR}</process>
+        </running_commands>
+    </user_state>
     <reasoning_trace>
         <trace_id>{UUID}</trace_id>
-        <concept>{CORE_LOGIC}</concept>
+        <current_focus>{CURRENT_GOAL}</current_focus>
+        <cognitive_state>{FULL_CONTEXT_INJECTED}</cognitive_state>
     </reasoning_trace>
 </system_context_snapshot>
 ```
