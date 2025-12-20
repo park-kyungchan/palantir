@@ -1,0 +1,26 @@
+# Orion ODA v3.0 - Router Configuration
+
+word_threshold: 50
+sentence_threshold: 5
+
+critical_keywords:
+  - delete
+  - remove
+  - deploy
+  - production
+  - database
+  - credential
+  - password
+
+technical_terms:
+  - api
+  - microservice
+  - kubernetes
+
+word_weight: 1.0
+sentence_weight: 5.0
+technical_term_weight: 3.0
+
+ollama_base_url: "http://localhost:11434"
+ollama_model: "llama3.2"
+ollama_timeout: 60.0
