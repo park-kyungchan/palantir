@@ -1,6 +1,1 @@
-#!/bin/bash
-# Orion Operations Wrapper (Palantir AIP Style)
-# Redirects all calls to the Python Engine
-
-# Ensure executable permissions: chmod +x scripts/orion
-python3 $(dirname "$0")/engine.py "$@"
+import sys; import os; sys.path.append(os.getcwd()); from scripts.runtime.kernel import OrionRuntime; import asyncio; asyncio.run(OrionRuntime().start())
