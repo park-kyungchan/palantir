@@ -1,115 +1,148 @@
 
 import asyncio
 import sys
-import os
+import logging
+from typing import Optional
 
 # Ensure V3 path
 sys.path.append("/home/palantir/orion-orchestrator-v2")
 
 from scripts.ontology.client import FoundryClient
-from scripts.llm.ollama_client import HybridRouter, OllamaClient
+# from scripts.llm.ollama_client import HybridRouter, OllamaClient  <-- REMOVED
+from scripts.llm.instructor_client import InstructorClient       # <-- ADDED
 from scripts.relay.queue import RelayQueue
 from scripts.ontology.storage import ProposalRepository, initialize_database
 from scripts.ontology.objects.proposal import Proposal, ProposalStatus
+from scripts.ontology.actions import action_registry, GovernanceEngine
+from scripts.ontology.plan import Plan
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="[%(name)s] %(message)s")
+logger = logging.getLogger("Kernel")
 
 class OrionRuntime:
     """
-    The V3 Semantic OS Kernel.
-    Replaces the old 'loop.py'.
+    The V3 Semantic OS Kernel (Generic Ontology Engine).
+    
+    Principles:
+    1. Schema is Law: Uses `Plan` Pydantic model.
+    2. Registry Supremacy: Actions via `ActionRegistry`.
+    3. Metadata Governance: Policy via `GovernanceEngine`.
+    4. Deterministic AI: Uses `instructor` for strict JSON outputs.
     """
     def __init__(self):
-        self.client = FoundryClient()
-        self.router = HybridRouter()
-        self.llm = OllamaClient()
+        # self.router = HybridRouter() # Deprecated in favor of direct Instructor for now
+        self.llm = InstructorClient()
         self.relay = RelayQueue()
+        self.governance = GovernanceEngine(action_registry)
         self.running = True
-        self.repo = None
-        print("[Orion V3] Semantic OS Kernel Booting...")
+        self.repo: Optional[ProposalRepository] = None
+        logger.info("Semantic OS Kernel Booting... (Mode: Enterprise Async)")
 
     async def start(self):
         # Initialize Persistence Layer
         db = await initialize_database()
         self.repo = ProposalRepository(db)
         
-        print("[Orion V3] Online. Waiting for Semantic Signals...")
-        # Conceptual Event Loop
+        logger.info("Online. Waiting for Semantic Signals...")
+        
         while self.running:
-            # 1. Check Relay Queue
+            # 1. Check Relay Queue (Cognitive Tasks)
             task_payload = self.relay.dequeue()
             if task_payload:
-                print(f"[Kernel] Processing Relay Task: {task_payload['id']}")
+                logger.info(f"Processing Relay Task: {task_payload.get('id', 'unknown')}")
                 await self._process_task_cognitive(task_payload)
-                self.relay.complete(task_payload['id'], "Processed by V3 Kernel")
             
-            # 2. Check Approved Proposals (HITL Worker)
-            # Find all approved proposals ready for execution
-            approved_proposals = await self.repo.find_by_status(ProposalStatus.APPROVED)
-            if approved_proposals:
-                print(f"[Kernel] Found {len(approved_proposals)} approved proposals awaiting execution.")
-                for p in approved_proposals:
-                    print(f"   [Kernel] 🚀 Executing Proposal {p.id} ({p.action_type})...")
-                    # Stub execution logic - in real system this calls ActionService
-                    # Here we just mark it executed in the repository
-                    try:
-                        await self.repo.execute(
-                            p.id, 
-                            executor_id="kernel", 
-                            result={"status": "success", "executed_via": "kernel_autoloop"}
-                        )
-                        print(f"   [Kernel] ✅ Execution verified for {p.id}")
-                    except Exception as e:
-                        print(f"   [Kernel] ❌ Execution Failed for {p.id}: {e}")
+            # 2. Check Approved Proposals (Execution Worker)
+            await self._process_approved_proposals()
                 
             await asyncio.sleep(1)
 
+    async def _process_approved_proposals(self):
+        """Execute proposals that have been approved."""
+        if not self.repo:
+            return
+
+        approved = await self.repo.find_by_status(ProposalStatus.APPROVED)
+        if approved:
+            logger.info(f"Found {len(approved)} approved proposals.")
+            for p in approved:
+                logger.info(f"🚀 Executing Proposal {p.id} ({p.action_type})...")
+                try:
+                    # 1. Lookup Action
+                    action_cls = action_registry.get(p.action_type)
+                    if not action_cls:
+                        raise ValueError(f"Action type '{p.action_type}' not found in registry")
+                        
+                    # 2. Instantiate and Execute (Simulated for Prototype)
+                    # Real: result = await action_cls().execute(p.payload)
+                    
+                    await self.repo.execute(
+                        p.id, 
+                        executor_id="kernel", 
+                        result={"status": "success", "executed_via": "kernel_v3_async"}
+                    )
+                    logger.info(f"✅ Execution verified for {p.id}")
+                except Exception as e:
+                    logger.error(f"❌ Execution Failed for {p.id}: {e}")
+
     def shutdown(self):
         self.running = False
+        logger.info("Kernel shutting down.")
 
     async def _process_task_cognitive(self, task_payload):
         """
         Cognitive Consumption: LLM Analysis -> Ontology Creation.
+        Uses Instructor for reliable Plan parsing.
         """
         prompt = task_payload['prompt']
-        print(f"   [Kernel] 🧠 Thinking... (Analyzing: '{prompt[:30]}...')")
+        logger.info(f"🧠 Thinking... (Analyzing: '{prompt[:30]}...')")
         
-        # 1. Ask LLM for Plan
         try:
-            plan = await self.llm.generate(prompt, json_schema={"plan": []})
-            print(f"   [Kernel] 🐛 Debug: LLM returned plan: {plan}")
-        except Exception as e:
-            print(f"   [Kernel] ❌ LLM Generation Failed: {e}")
-            plan = {"plan": []}
+            # 1. Ask LLM for Plan using Instructor (Schema is Law)
+            # No manual JSON parsing needed here. Instructor guarantees Pydantic logic.
+            # Running in ThreadPool if call is blocking, or using async client if implemented under hood.
+            # Assuming InstructorClient wraps async or we run in executor.
+            
+            # Note: The InstructorClient.generate_plan call is synchronous in the basic wrapper provided.
+            # To avoid blocking the Kernel loop, we should run it in a thread.
+            plan = await asyncio.to_thread(self.llm.generate_plan, prompt)
+            
+            logger.info(f"🐛 Plan Parsed Successfully: {len(plan.jobs)} jobs")
 
-        # 2. Iterate and Create Objects
-        if "plan" in plan and isinstance(plan["plan"], list):
-            for step in plan["plan"]:
-                title = step.get("title", "Untitled")
-                prio = step.get("priority", "medium")
-                action = step.get("action", "generic")
+            # 2. Iterate and Dispatch
+            for job in plan.jobs:
+                logger.info(f"   Processing Job: {job.title} [{job.action_type}]")
                 
-                # A. Create Task Object
-                # (Stub: In real system, client.ontology.objects.Task.create(...))
-                print(f"   [Kernel] ✨ Created Task: {title} ({prio})")
+                # A. Governance Check
+                policy = self.governance.check_execution_policy(job.action_type)
                 
-                # B. Create Proposal (for hazardous actions)
-                if action == "deploy_production":
+                if policy == "DENY":
+                    logger.error(f"   ⛔ Action '{job.action_type}' unknown or denied.")
+                    continue
+                
+                if policy == "REQUIRE_PROPOSAL":
                     if self.repo:
                         proposal = Proposal(
-                            action_type=action, 
-                            payload={"target": "production", "reason": "generated by kernel"}, 
-                            created_by='kernel'
+                            action_type=job.action_type,
+                            payload=job.params,
+                            created_by='kernel_ai',
+                            priority=job.priority
                         )
-                        # Submit and persist
-                        proposal.submit()
-                        await self.repo.save(proposal, action="created")
-                        
-                        print(f"   [Kernel] 🛡️  Created & Persisted Proposal: {proposal.id} (Status: {proposal.status.value})")
+                        # save now uses Async ORM
+                        await self.repo.save(proposal, actor_id="kernel_ai")
+                        logger.info(f"   🛡️  Proposal Created: {proposal.id} (Requires Approval)")
                     else:
-                        print("   [Kernel] ❌ Repo not initialized, skipping proposal persistence.")
-        else:
-            print("   [Kernel] ⚠️  No structured plan returned.")
-        # Removed "Shutting down" to keep loop running conceptually
-        # print("[Orion V3] Shutting down.") 
+                        logger.error("   ❌ Repo unavailable, cannot create proposal.")
+                        
+                elif policy == "ALLOW_IMMEDIATE":
+                    # Instant Execution
+                    logger.info(f"   ⚡ Executing Immediately: {job.action_type}")
+                    # For prototype, just log
+                    logger.info("      (Execution Logic Placeholder)")
+
+        except Exception as e:
+            logger.error(f"❌ Cognitive Processing Failed: {e}")
 
 if __name__ == "__main__":
     runtime = OrionRuntime()

@@ -52,3 +52,4 @@ Neo4j-*.txt
 
 # Ontology DB
 .agent/orion_ontology.db
+!frontend/dist/index.html

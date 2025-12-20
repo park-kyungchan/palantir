@@ -71,6 +71,7 @@ class EditOperation:
     object_type: str
     object_id: str
     changes: Dict[str, Any] = field(default_factory=dict)
+    # Using default_factory for timestamp to ensure it's generated at instantiation
     timestamp: datetime = field(default_factory=utc_now)
     
     def to_dict(self) -> Dict[str, Any]:
@@ -81,6 +82,7 @@ class EditOperation:
             "changes": self.changes,
             "timestamp": self.timestamp.isoformat(),
         }
+
 
 
 # =============================================================================
@@ -566,71 +568,118 @@ class ActionType(ABC, Generic[T]):
 # ACTION REGISTRY
 # =============================================================================
 
+# =============================================================================
+# ACTION REGISTRY & GOVERNANCE
+# =============================================================================
+
+@dataclass
+class ActionMetadata:
+    """Metadata for governance and execution policy."""
+    requires_proposal: bool = False
+    is_dangerous: bool = False
+    description: str = ""
+
 class ActionRegistry:
     """
-    Registry for ActionType discovery and lookup.
+    Registry for ActionType discovery and lookup with Metadata.
     
-    Actions are registered by their api_name for runtime lookup.
-    
-    Usage:
-        ```python
-        registry = ActionRegistry()
-        registry.register(CreateTaskAction)
-        registry.register(DeleteTaskAction)
-        
-        # Lookup by api_name
-        action_class = registry.get("create_task")
-        action = action_class()
-        result = await action.execute(params, context)
-        ```
+    Stores not just the class, but also its governance metadata.
     """
     
     def __init__(self):
-        self._actions: Dict[str, Type[ActionType]] = {}
+        # Mapping: api_name -> (ActionClass, Metadata)
+        self._actions: Dict[str, tuple[Type[ActionType], ActionMetadata]] = {}
     
-    def register(self, action_class: Type[ActionType]) -> None:
-        """Register an ActionType class."""
+    def register(self, action_class: Type[ActionType], **metadata_overrides) -> None:
+        """Register an ActionType class with extracted or overridden metadata."""
         if not hasattr(action_class, "api_name"):
             raise ValueError(f"{action_class.__name__} missing api_name")
         
         api_name = action_class.api_name
+        
+        # Extract metadata from class attributes (Source of Truth)
+        # Priorities: 1. Overrides (Decorator param) -> 2. Class Attribute -> 3. Default False
+        requires_proposal = metadata_overrides.get(
+            "requires_proposal", 
+            getattr(action_class, "requires_proposal", False)
+        )
+        is_dangerous = metadata_overrides.get("is_dangerous", False) # Default for now if not on class
+        
+        metadata = ActionMetadata(
+            requires_proposal=requires_proposal,
+            is_dangerous=is_dangerous,
+            description=action_class.__doc__ or ""
+        )
+
         if api_name in self._actions:
             logger.warning(f"Overwriting action: {api_name}")
         
-        self._actions[api_name] = action_class
-        logger.debug(f"Registered action: {api_name}")
+        self._actions[api_name] = (action_class, metadata)
+        logger.debug(f"Registered action: {api_name} [Proposal:{requires_proposal}]")
     
     def get(self, api_name: str) -> Optional[Type[ActionType]]:
         """Get an ActionType class by api_name."""
-        return self._actions.get(api_name)
+        entry = self._actions.get(api_name)
+        return entry[0] if entry else None
+
+    def get_metadata(self, api_name: str) -> Optional[ActionMetadata]:
+        """Get governance metadata for an action."""
+        entry = self._actions.get(api_name)
+        return entry[1] if entry else None
     
     def list_actions(self) -> List[str]:
         """List all registered action api_names."""
         return list(self._actions.keys())
-    
-    def get_hazardous_actions(self) -> List[str]:
-        """List actions that require proposals."""
-        return [
-            name for name, cls in self._actions.items()
-            if getattr(cls, "requires_proposal", False)
-        ]
 
 
 # Global registry instance
 action_registry = ActionRegistry()
 
 
-def register_action(cls: Type[ActionType]) -> Type[ActionType]:
+def register_action(cls: Type[ActionType] = None, *, requires_proposal: bool = None):
     """
     Decorator to register an ActionType with the global registry.
     
-    Usage:
-        ```python
-        @register_action
-        class CreateTaskAction(ActionType[Task]):
-            api_name = "create_task"
-            ...
-        ```
+    Can be used as:
+    1. Bare decorator: @register_action
+    2. With args: @register_action(requires_proposal=True)
     """
-    action_registry.register(cls)
-    return cls
+    def _register(action_cls):
+        overrides = {}
+        if requires_proposal is not None:
+            overrides["requires_proposal"] = requires_proposal
+            
+        action_registry.register(action_cls, **overrides)
+        return action_cls
+
+    if cls is None:
+        return _register
+    return _register(cls)
+
+
+class GovernanceEngine:
+    """
+    Enforces policies based on ActionMetadata.
+    
+    Centralizes the logic for "Should this run immediately or wait for approval?".
+    """
+    def __init__(self, registry: ActionRegistry):
+        self.registry = registry
+    
+    def check_execution_policy(self, action_name: str) -> str:
+        """
+        Determines execution policy.
+        Returns:
+            "DENY": Action unknown
+            "REQUIRE_PROPOSAL": Needs HITL review
+            "ALLOW_IMMEDIATE": Can run now
+        """
+        meta = self.registry.get_metadata(action_name)
+        if not meta:
+            return "DENY"
+        
+        if meta.requires_proposal:
+            return "REQUIRE_PROPOSAL"
+        
+        return "ALLOW_IMMEDIATE"
+

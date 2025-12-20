@@ -9,7 +9,11 @@ description = "Antigravity ODA Runtime"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0",
-    "sqlalchemy>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite",
+    "instructor",
+    "tenacity",
+    "json_repair",
     "uuid6"
 ]
 
