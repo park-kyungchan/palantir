@@ -1,3 +1,26 @@
+# Refactoring Task A3: `scripts/ontology/objects/proposal.py`
+
+> **Priority**: 🔴 High
+> **Estimated Time**: 1 hour
+> **Dependencies**: `ontology_types.py` (A5 must be applied first)
+
+---
+
+## Instruction
+
+Replace the existing `proposal.py` with the following implementation.
+This refactoring adds:
+1. `ProposalStatus` Enum with all valid states
+2. `VALID_TRANSITIONS` map enforcing state machine rules
+3. `InvalidTransitionError` custom exception
+4. `approve()`, `reject()`, `execute()` methods with validation
+5. Full audit trail support
+
+---
+
+## Complete Implementation
+
+```python
 """
 Orion ODA v3.0 - Proposal Governance Object
 Palantir AIP/Foundry Compliant Governance Workflow
@@ -72,7 +95,6 @@ class ProposalStatus(str, Enum):
     REJECTED = "rejected"
     EXECUTED = "executed"
     CANCELLED = "cancelled"
-    DELETED = "deleted"
 
 
 class ProposalPriority(str, Enum):
@@ -93,23 +115,19 @@ VALID_TRANSITIONS: Dict[ProposalStatus, Set[ProposalStatus]] = {
     ProposalStatus.DRAFT: {
         ProposalStatus.PENDING,
         ProposalStatus.CANCELLED,
-        ProposalStatus.DELETED,
     },
     ProposalStatus.PENDING: {
         ProposalStatus.APPROVED,
         ProposalStatus.REJECTED,
         ProposalStatus.CANCELLED,
-        ProposalStatus.DELETED,
     },
     ProposalStatus.APPROVED: {
         ProposalStatus.EXECUTED,
         ProposalStatus.CANCELLED,  # Can cancel before execution
-        ProposalStatus.DELETED,
     },
-    ProposalStatus.REJECTED: {ProposalStatus.DELETED},  # Terminal state
-    ProposalStatus.EXECUTED: {ProposalStatus.DELETED},  # Terminal state
-    ProposalStatus.CANCELLED: {ProposalStatus.DELETED},  # Terminal state
-    ProposalStatus.DELETED: set(),
+    ProposalStatus.REJECTED: set(),  # Terminal state
+    ProposalStatus.EXECUTED: set(),  # Terminal state
+    ProposalStatus.CANCELLED: set(),  # Terminal state
 }
 
 # Terminal states (no further transitions allowed)
@@ -117,7 +135,6 @@ TERMINAL_STATES: Set[ProposalStatus] = {
     ProposalStatus.REJECTED,
     ProposalStatus.EXECUTED,
     ProposalStatus.CANCELLED,
-    ProposalStatus.DELETED,
 }
 
 
@@ -461,3 +478,55 @@ class Proposal(OntologyObject):
             f"status={self.status.value}, "
             f"priority={self.priority.value})"
         )
+```
+
+---
+
+## Verification Checklist
+
+After applying this refactoring, verify:
+
+- [ ] `ProposalStatus.PENDING.value` returns `"pending"`
+- [ ] `submit()` transitions DRAFT → PENDING
+- [ ] `approve()` requires `reviewer_id`
+- [ ] `reject()` requires both `reviewer_id` and `reason`
+- [ ] Invalid transitions raise `InvalidTransitionError`
+- [ ] Terminal states (REJECTED, EXECUTED, CANCELLED) block further transitions
+
+---
+
+## Test Command
+
+```bash
+python -c "
+from scripts.ontology.objects.proposal import *
+
+# Test State Machine
+p = Proposal(action_type='deploy_service', created_by='agent-001')
+assert p.status == ProposalStatus.DRAFT
+
+# DRAFT → PENDING
+p.submit()
+assert p.status == ProposalStatus.PENDING
+
+# PENDING → APPROVED
+p.approve(reviewer_id='admin-001', comment='Looks good')
+assert p.status == ProposalStatus.APPROVED
+assert p.reviewed_by == 'admin-001'
+
+# APPROVED → EXECUTED
+p.execute(result={'success': True})
+assert p.status == ProposalStatus.EXECUTED
+assert p.is_terminal == True
+
+# Verify invalid transition is blocked
+p2 = Proposal(action_type='test', created_by='x')
+try:
+    p2.approve(reviewer_id='y')  # Can't approve from DRAFT
+    assert False, 'Should have raised InvalidTransitionError'
+except InvalidTransitionError as e:
+    assert 'draft' in str(e).lower()
+
+print('✅ proposal.py verification passed')
+"
+```
