@@ -11,7 +11,7 @@ It indexes the verified "Source of Truth" knowledge bases and enforces the Agile
 
 | Module | Core Topic | Palantir Context (Foundry/Blueprint) |
 |:--- |:--- |:--- |
-| **[00_Architecture](./palantir-fde-learning/knowledge_bases/00_palantir_core_architecture_v2.md)** | **Ontology & OSDK** | Object-Action-Link paradigms, AIP Logic |
+| **[00_Architecture](./palantir-fde-learning/knowledge_bases/00_palantir_core_architecture.md)** | **Ontology & OSDK** | Object-Action-Link paradigms, AIP Logic |
 | **[01_Foundation](./palantir-fde-learning/knowledge_bases/01_language_foundation.md)** | **TS/JS Deep Dive** | Type Safety as Governance, Event Loop |
 | **[02_React](./palantir-fde-learning/knowledge_bases/02_react_ecosystem.md)** | **Component Architecture** | Blueprint Core, Redoodle, React Hooks |
 | **[03_Styling](./palantir-fde-learning/knowledge_bases/03_styling_systems.md)** | **CSS/Sass** | Blueprint Theming, Color Tokens (HSL) |
@@ -20,6 +20,26 @@ It indexes the verified "Source of Truth" knowledge bases and enforces the Agile
 | **[06_Tooling](./palantir-fde-learning/knowledge_bases/06_build_tooling.md)** | **Build & Deploy** | Webpack/Vite optimization for heavy apps |
 | **[07_Git](./palantir-fde-learning/knowledge_bases/07_version_control.md)** | **Collaboration** | Enterprise Branching, Code Review Hygiene |
 | **[08_Advanced](./palantir-fde-learning/knowledge_bases/08_advanced_capabilities.md)** | **Performance/A11y** | Visualization (D3/Plottable), Virtualization |
+
+### 📂 Applied Case Studies
+| Project | Description | Tech Stack |
+|:--- |:--- |:--- |
+| **[Reasoning Lab](./palantir-fde-learning/knowledge_bases/implementation_plan_chapter2.md)** | **Chapter 2 Implementation** | React 18, Konva, S-Pen Integration |
+
+---
+
+## 🚀 Adaptive Tutoring Engine (Phase 5)
+Orion now includes an active AI Tutor that generates personalized curricula based on code complexity.
+
+**Trigger Command:**
+```bash
+python scripts/ontology/learning.py --target . --user <your_id>
+```
+
+**Capabilities:**
+1.  **Metric Engine**: Calculates `TeachingComplexityScore` (TCS) for every file.
+2.  **BKT Tracking**: Remembers your mastery state per concept.
+3.  **ZPD Scoping**: Recommends files that are "Optimal Challenge" (10-30% stretch).
 
 ---
 

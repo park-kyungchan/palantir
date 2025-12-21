@@ -5,7 +5,7 @@
 
 ## 1. INGEST PROTOCOLS (MANDATORY)
 You MUST strictly adhere to the protocols defined in the Master System Prompt.
-**IMMEDIATE ACTION**: Read and memorize the content of: `/home/palantir/orion-orchestrator-v2/GEMINI.md`
+**IMMEDIATE ACTION**: Read and memorize the content of: `/home/palantir/GEMINI.md`
 
 ## 2. RECONSTRUCT CONTEXT
 Since you are in a CLI, you lack IDE context. You MUST perform the following checks immediately to ground yourself:

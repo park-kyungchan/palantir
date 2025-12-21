@@ -56,3 +56,4 @@ Neo4j-*.txt
 *.db-shm
 *.db-wal
 .agent/learning/
+data/learning.db

@@ -4,7 +4,7 @@
 
 
 # ========================================================
-# FILE: /home/palantir/orion-orchestrator-v2/GEMINI.md
+# FILE: /home/palantir/GEMINI.md
 # ========================================================
 # ♾️ GEMINI 3.0 PRO: ORION ORCHESTRATOR PROTOCOL
 > **Role**: Antigravity (Advanced Agentic Coding)

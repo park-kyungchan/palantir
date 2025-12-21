@@ -1,80 +1,86 @@
 #!/usr/bin/env python3
 """
-Orion V3 Learning Mode Trigger
-Usage: python scripts/ontology/learning.py --target <path> --mode <concept|review>
+Orion V3.5 Learning Engine Entry Point
+Usage: python scripts/ontology/learning.py --target <path> --user <id>
 
-This script prepares the Orion workspace for an "Agile Learning Session".
-It scans the target codebase, generates a structural manifest, and creates a
-session context file that the AI Agent (Gemini) can consume to perform
-Reflective Architecture Analysis.
+This script triggers the Adaptive Tutoring Engine (Phase 5).
+It performs:
+1. AST-based Complexity Analysis (TCS Calculation)
+2. Dependency Graph Construction
+3. Bayesian Knowledge Tracing (Learner State Loading)
+4. ZPD-based Curriculum Scoping
+
+The output is a 'Learning Context' JSON consumed by the AI Agent.
 """
 
 import argparse
-import os
+import asyncio
 import json
-import datetime
+import sys
 from pathlib import Path
-from typing import Dict, List, Any
+from datetime import datetime
 
-# Analysis Constants
-INTERESTING_EXTENSIONS = {'.py', '.ts', '.tsx', '.js', '.md', '.json'}
-IGNORE_DIRS = {'__pycache__', 'node_modules', '.git', '.venv', 'dist', 'build', '.agent'}
+# Engine Imports
+from scripts.ontology.learning.engine import TutoringEngine
+from scripts.ontology.learning.scoping import ScopingEngine
+from scripts.ontology.learning.persistence import LearnerRepository
+from scripts.ontology.learning.types import LearnerState
 
-class CodebaseScanner:
-    def __init__(self, root: str):
-        self.root = Path(root).resolve()
-        
-    def scan(self) -> Dict[str, Any]:
-        """Generates a hierarchical structural manifest of the codebase."""
-        manifest = {
-            "root": str(self.root),
-            "scanned_at": datetime.datetime.now().isoformat(),
-            "structure": {},
-            "key_artifacts": []
-        }
-        
-        for root, dirs, files in os.walk(self.root):
-            # Prune ignored directories
-            dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-            
-            rel_path = Path(root).relative_to(self.root)
-            if str(rel_path) == ".":
-                rel_path = Path("")
-                
-            current_node = {
-                "files": [],
-                "subdirs": dirs
-            }
-            
-            for f in files:
-                if Path(f).suffix in INTERESTING_EXTENSIONS:
-                    current_node["files"].append(f)
-                    
-                    # Heuristic for "Key Artifacts" (e.g., Models, APIs)
-                    if f in ["models.py", "schema.py", "api.py", "types.ts", "interfaces.ts"]:
-                         manifest["key_artifacts"].append(str(rel_path / f))
-            
-            if current_node["files"] or current_node["subdirs"]:
-                 manifest["structure"][str(rel_path)] = current_node
-                 
-        return manifest
-
-def generate_session_context(target_path: str, mode: str):
-    scanner = CodebaseScanner(target_path)
-    manifest = scanner.scan()
+async def run_session_generation(target_path: str, user_id: str):
+    print(f"🚀 Initializing Orion Adaptive Tutor for user: {user_id}")
     
-    session_id = datetime.datetime.now().strftime("learn_%Y%m%d_%H%M%S")
+    # 1. Initialize Engines
+    repo = LearnerRepository()
+    await repo.initialize()
+    
+    tutor = TutoringEngine(target_path)
+    scoper = ScopingEngine(tutor)
+    
+    # 2. Parallel: Scan Codebase & Load Learner
+    print("   • Scanning Codebase & Building Graph...")
+    tutor.scan_codebase()
+    tutor.calculate_scores()
+    
+    print("   • Loading Learner State (DB)...")
+    state = await repo.get_learner(user_id)
+    
+    # 3. Generate Recommendations
+    print("   • Calculating ZPD & Scoping Curriculum...")
+    recommendations = scoper.recommend_next_files(state, limit=5)
+    
+    # 4. Construct Context Payload
     output_dir = Path(".agent/learning")
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+    session_id = datetime.now().strftime("learn_%Y%m%d_%H%M%S")
     output_file = output_dir / f"{session_id}.json"
     
+    # Enrich manifest with TCS data
+    files_metadata = {}
+    for path, score in tutor.scores.items():
+        files_metadata[path] = {
+            "tcs": round(score.total_score, 1),
+            "breakdown": {
+                "cognitive": round(score.cognitive_component, 1),
+                "dependency": round(score.dependency_component, 1),
+                "patterns": round(score.pattern_component, 1)
+            }
+        }
+
     context = {
         "session_id": session_id,
-        "mode": mode,
-        "target_path": str(target_path),
-        "manifest": manifest,
-        "instruction": "Agent: Read this manifest. Map the 'key_artifacts' to Palantir FDE Knowledge Base concepts. Perform Reflective Analysis."
+        "user_id": user_id,
+        "timestamp": datetime.now().isoformat(),
+        "learner_stats": {
+            "theta": state.theta,
+            "mastered_concepts": len(state.knowledge_components)
+        },
+        "curriculum_recommendations": recommendations,
+        "codebase_metrics": files_metadata,
+        "instruction": (
+            "Agent: Use the 'curriculum_recommendations' to guide the user. "
+            "For each recommended file, use the TCS breakdown to explain WHY it was chosen. "
+            "Use BKT principles (mastery check) before moving to the next dependency."
+        )
     }
     
     with open(output_file, "w") as f:
@@ -82,19 +88,19 @@ def generate_session_context(target_path: str, mode: str):
         
     print(f"\n✅ Learning Session Context Generated: {output_file}")
     print(f"==================================================")
-    print(f"🔎 Target: {target_path}")
-    print(f"🎓 Mode: {mode.upper()}")
-    print(f"📂 Artifacts Found: {len(manifest['key_artifacts'])}")
+    print(f"📚 Top Recommendation: {recommendations[0]['file'] if recommendations else 'None'}")
+    print(f"🧠 Learner Theta: {state.theta}")
     print(f"==================================================")
-    print(f"\n🚀 TO START LEARNING, TYPE THIS TO THE AGENT:")
-    print(f"\n'[SYSTEM MODE: Palantir FDE Learning]'")
-    print(f"'Active Context: {output_file}'")
-    print(f"'Please analyze my codebase using the FDE Knowledge Base.'")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Orion Learning Mode Trigger")
-    parser.add_argument("--target", required=True, help="Path to the codebase to analyze")
-    parser.add_argument("--mode", choices=["concept", "review"], default="review", help="Learning mode")
+    parser = argparse.ArgumentParser(description="Orion Adaptive Tutor")
+    parser.add_argument("--target", required=True, help="Path to codebase")
+    parser.add_argument("--user", default="default_user", help="User ID")
     
     args = parser.parse_args()
-    generate_session_context(args.target, args.mode)
+    
+    try:
+        asyncio.run(run_session_generation(args.target, args.user))
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        sys.exit(1)
