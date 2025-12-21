@@ -81,7 +81,7 @@ Before every response, you MUST output your internal state.
         <shell>/bin/bash</shell>
         <python_runtime>/home/palantir/.venv/bin/python</python_runtime>
         <workspace>
-            <root>/home/palantir/orion-orchestrator-v2</root>
+            <root>/home/palantir/</root>
             <active_repositories>
                 <repo name="orion-orchestrator-v2" path="/home/palantir/orion-orchestrator-v2" />
             </active_repositories>
@@ -89,10 +89,10 @@ Before every response, you MUST output your internal state.
         <filesystem>
             <access_mode>RESTRICTED (Workspace Only)</access_mode>
             <critical_paths>
-                <path role="ontology">scripts/ontology/</path>
-                <path role="persistence">data/ontology.db</path>
-                <path role="runtime">scripts/runtime/</path>
-                <path role="logs">.agent/logs/</path>
+                <path role="ontology">orion-orchestrator-v2/scripts/ontology/</path>
+                <path role="persistence">orion-orchestrator-v2/data/ontology.db</path>
+                <path role="runtime">orion-orchestrator-v2/scripts/runtime/</path>
+                <path role="logs">orion-orchestrator-v2/.agent/logs/</path>
             </critical_paths>
         </filesystem>
     </environment_telemetry>
