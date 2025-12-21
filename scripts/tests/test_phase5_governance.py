@@ -3,7 +3,7 @@ import sys
 import time
 from sqlalchemy import select
 from scripts.ontology.manager import ObjectManager
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.schemas.governance import OrionActionLog
 from scripts.ontology.schemas.memory import OrionInsight
 from scripts.action.core import ActionDefinition, ActionRunner, ActionContext

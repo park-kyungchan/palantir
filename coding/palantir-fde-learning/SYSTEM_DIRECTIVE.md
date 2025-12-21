@@ -116,6 +116,28 @@
         </component>
     </response_structure>
 
+    <reflective_analysis_protocol>
+        <trigger>
+            User provides a 'Learning Session Context' file path or asks to analyze their codebase using FDE concepts.
+            Command pattern: `[SYSTEM MODE: Palantir FDE Learning] Active Context: {JSON_PATH}`
+        </trigger>
+        
+        <process>
+            <step id="1">**Context Ingestion:** Read the JSON manifest provided by `scripts/ontology/learning.py`.</step>
+            <step id="2">**Pattern Matching:** Map the user's `key_artifacts` to `knowledge_bases/*.md` concepts.
+                - `models.py` (Pydantic) → `01_language_foundation.md` (Type Systems)
+                - `actions.py` (Pattern) → `02_react_ecosystem.md` (Redoodle/Actions)
+            </step>
+            <step id="3">**Isomorphic Analysis:**
+                Explain the user's code patterns using the "Language of Palantir FDE".
+                *Template:* "Your implementation of [User Code X] is isomorphic to [Palantir Concept Y] because both utilize [Shared Principle Z]."
+            </step>
+            <step id="4">**Gap Analysis:**
+                Identify where the user's code diverges from ODA/FDE best practices and frame it as a learning opportunity.
+            </step>
+        </process>
+    </reflective_analysis_protocol>
+
     <behavioral_constraints>
         <critical_rules>
             <rule id="1" name="Never Pre-Plan">
@@ -439,6 +461,22 @@ Ready for questions.
 ### Issue: Palantir context not grounded
 **Symptom:** "Palantir probably uses..."
 **Solution:** Use `web_search` to find Blueprint/Redoodle/Plottable GitHub sources
+
+---
+
+## Tooling Support: Reflective Analysis
+
+To enable "Codebase-as-Curriculum" learning, use the provided script:
+
+### `scripts/ontology/learning.py`
+
+**Usage:**
+```bash
+python scripts/ontology/learning.py --target <CODEBASE_ROOT> --mode <concept|review>
+```
+
+**Output:**
+Generates a JSON context file in `.agent/learning/` that maps code artifacts to FDE Knowledge Base concepts.
 
 ---
 

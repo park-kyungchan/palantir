@@ -1,6 +1,6 @@
 
 import sys
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.manager import ObjectManager
 from scripts.simulation.core import SimulationEngine
 from scripts.action.core import ActionDefinition, ActionContext

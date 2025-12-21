@@ -2,7 +2,7 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pydantic import Field
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 
 class OrionActionLog(OrionObject):
     """

@@ -1,8 +1,10 @@
 
+from typing import Optional
+from datetime import datetime
 from sqlalchemy import String, JSON, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .orm import AsyncOntologyObject
+from .orm import AsyncOntologyObject, Base
 
 class ProposalModel(AsyncOntologyObject):
     """
@@ -28,3 +30,21 @@ class ProposalModel(AsyncOntologyObject):
 
     def __repr__(self):
         return f"<Proposal(id={self.id}, action={self.action_type}, status={self.status}, v={self.version})>"
+
+class ProposalHistoryModel(AsyncOntologyObject):
+    """
+    Audit Log for Proposal changes.
+    """
+    __tablename__ = "proposal_history"
+
+    proposal_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    action: Mapped[str] = mapped_column(String, nullable=False) # created, updated, approved, etc
+    actor_id: Mapped[str] = mapped_column(String, nullable=False)
+    comment: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    previous_status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    new_status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # We use created_at from AsyncOntologyObject as the timestamp
+
+    def __repr__(self):
+        return f"<History(proposal={self.proposal_id}, action={self.action})>"

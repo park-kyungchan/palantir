@@ -2,7 +2,7 @@
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 
 # --- INSIGHT ---
 

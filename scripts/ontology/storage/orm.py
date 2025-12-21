@@ -74,9 +74,10 @@ class AsyncOntologyObject(Base):
     # Object Status (as String enum for storage simplicity)
     status: Mapped[str] = mapped_column(String, default="active", nullable=False)
 
-    __mapper_args__ = {
-        "version_id_col": version
-    }
+    # Manual versioning used in Repository
+    # __mapper_args__ = {
+    #     "version_id_col": version
+    # }
     
     def touch(self):
         """

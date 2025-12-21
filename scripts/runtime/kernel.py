@@ -13,8 +13,9 @@ from scripts.llm.instructor_client import InstructorClient       # <-- ADDED
 from scripts.relay.queue import RelayQueue
 from scripts.ontology.storage import ProposalRepository, initialize_database
 from scripts.ontology.objects.proposal import Proposal, ProposalStatus
-from scripts.ontology.actions import action_registry, GovernanceEngine
+from scripts.ontology.actions import action_registry, GovernanceEngine, ActionContext
 from scripts.ontology.plan import Plan
+from scripts.runtime.marshaler import ToolMarshaler
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO, format="[%(name)s] %(message)s")
@@ -35,6 +36,7 @@ class OrionRuntime:
         self.llm = InstructorClient()
         self.relay = RelayQueue()
         self.governance = GovernanceEngine(action_registry)
+        self.marshaler = ToolMarshaler(action_registry)
         self.running = True
         self.repo: Optional[ProposalRepository] = None
         logger.info("Semantic OS Kernel Booting... (Mode: Enterprise Async)")
@@ -69,18 +71,17 @@ class OrionRuntime:
             for p in approved:
                 logger.info(f"🚀 Executing Proposal {p.id} ({p.action_type})...")
                 try:
-                    # 1. Lookup Action
-                    action_cls = action_registry.get(p.action_type)
-                    if not action_cls:
-                        raise ValueError(f"Action type '{p.action_type}' not found in registry")
-                        
-                    # 2. Instantiate and Execute (Simulated for Prototype)
-                    # Real: result = await action_cls().execute(p.payload)
+                    # Execute via Marshaler
+                    result = await self.marshaler.execute_action(
+                        action_name=p.action_type,
+                        params=p.payload,
+                        context=ActionContext(actor_id=p.reviewed_by or "system")
+                    )
                     
                     await self.repo.execute(
                         p.id, 
                         executor_id="kernel", 
-                        result={"status": "success", "executed_via": "kernel_v3_async"}
+                        result=result.to_dict()
                     )
                     logger.info(f"✅ Execution verified for {p.id}")
                 except Exception as e:
@@ -138,8 +139,13 @@ class OrionRuntime:
                 elif policy == "ALLOW_IMMEDIATE":
                     # Instant Execution
                     logger.info(f"   ⚡ Executing Immediately: {job.action_type}")
-                    # For prototype, just log
-                    logger.info("      (Execution Logic Placeholder)")
+                    result = await self.marshaler.execute_action(
+                        action_name=job.action_type,
+                        params=job.params,
+                        context=ActionContext.system()
+                    )
+                    if not result.success:
+                        logger.error(f"      ❌ Immediate Execution Failed: {result.error}")
 
         except Exception as e:
             logger.error(f"❌ Cognitive Processing Failed: {e}")

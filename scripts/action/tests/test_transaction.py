@@ -2,7 +2,7 @@
 import sys
 # sys.path.append("/home/palantir") # Done by Env usually
 
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.manager import ObjectManager
 from scripts.action.core import ActionDefinition, ActionContext, ActionRunner, UnitOfWork
 

@@ -24,6 +24,7 @@ Run with: pytest tests/e2e/test_full_integration.py -v --asyncio-mode=auto -s
 """
 
 from __future__ import annotations
+from typing import Any, Dict, List, Optional
 
 import asyncio
 import json
@@ -756,7 +757,7 @@ class TestFullIntegrationWorkflow:
         assert "executed" in actions
         
         # Verify chronological order
-        timestamps = [h.timestamp for h in history]
+        timestamps = [h.created_at for h in history]
         assert timestamps == sorted(timestamps)
     
     @pytest.mark.asyncio
@@ -844,7 +845,10 @@ class TestDatabaseIntegrity:
     @pytest.mark.asyncio
     async def test_wal_mode_enabled(self, test_db: Database):
         """Verify WAL mode is active for concurrency."""
-        row = await test_db.fetchone("PRAGMA journal_mode;")
+        from sqlalchemy import text
+        async with test_db.transaction() as session:
+            result = await session.execute(text("PRAGMA journal_mode;"))
+            row = result.fetchone()
         assert row[0] == "wal"
     
     @pytest.mark.asyncio

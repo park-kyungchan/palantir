@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import Field
 from datetime import datetime
 
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.manager import ObjectManager
 from scripts.ontology.db import DB_PATH
 from scripts.ontology.schemas.memory import OrionPattern, PatternStructure

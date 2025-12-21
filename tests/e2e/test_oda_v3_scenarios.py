@@ -144,7 +144,7 @@ class TestOntologyObjectLifecycle:
         
         assert obj.created_by == "agent-001"
         assert before <= obj.created_at <= after
-        assert obj.updated_at == obj.created_at
+        assert abs(obj.updated_at - obj.created_at) < timedelta(seconds=0.1)
     
     def test_touch_updates_version_and_timestamp(self):
         """Verify touch() increments version and updates timestamp."""

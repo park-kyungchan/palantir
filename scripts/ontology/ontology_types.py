@@ -268,3 +268,4 @@ PropertyName = str
 if TYPE_CHECKING:
     from scripts.ontology.objects.core_definitions import Agent, Task
     from scripts.ontology.objects.proposal import Proposal
+OrionObject = OntologyObject

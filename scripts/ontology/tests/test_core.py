@@ -5,7 +5,7 @@ import os
 # Add workspace to path
 sys.path.append(os.getcwd())
 
-from scripts.ontology.core import OrionObject
+from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.manager import ObjectManager
 from pydantic import Field
 

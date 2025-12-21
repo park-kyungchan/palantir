@@ -631,6 +631,13 @@ class ActionRegistry:
         """List all registered action api_names."""
         return list(self._actions.keys())
 
+    def get_hazardous_actions(self) -> List[str]:
+        """Return list of actions that require a proposal."""
+        return [
+            name for name, (cls, meta) in self._actions.items()
+            if meta.requires_proposal
+        ]
+
 
 # Global registry instance
 action_registry = ActionRegistry()

@@ -103,9 +103,22 @@ class Database:
             logger.error(f"Health Check Failed: {e}")
             return False
 
-# Global Helper
+# Global Singleton
+_db_instance: Database | None = None
+
 async def initialize_database(path: Path | str | None = None) -> Database:
+    global _db_instance
     p = path or "/home/palantir/orion-orchestrator-v2/data/ontology.db"
     db = Database(p)
     await db.initialize()
+    _db_instance = db
     return db
+
+def get_database() -> Database:
+    """Get the global database instance."""
+    if _db_instance is None:
+        # Fallback for scripts usage? Or raise?
+        # For now, safe default path if not initialized is risky but convenient?
+        # Better to raise if strict.
+        raise RuntimeError("Database not initialized. Call initialize_database() first.")
+    return _db_instance
