@@ -20,6 +20,7 @@ It indexes the verified "Source of Truth" knowledge bases and enforces the Agile
 | **[06_Tooling](./palantir-fde-learning/knowledge_bases/06_build_tooling.md)** | **Build & Deploy** | Webpack/Vite optimization for heavy apps |
 | **[07_Git](./palantir-fde-learning/knowledge_bases/07_version_control.md)** | **Collaboration** | Enterprise Branching, Code Review Hygiene |
 | **[08_Advanced](./palantir-fde-learning/knowledge_bases/08_advanced_capabilities.md)** | **Performance/A11y** | Visualization (D3/Plottable), Virtualization |
+| **[09_Orion_ODA](./palantir-fde-learning/knowledge_bases/09_orion_system_architecture.md)** | **System Architecture** | **SELF-REFLECTION**: Ontology, Actions, Kernel Loop |
 
 ### 📂 Applied Case Studies
 | Project | Description | Tech Stack |
