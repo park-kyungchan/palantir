@@ -1,0 +1,269 @@
+[
+  {
+    "action_type": "SetLineSpacing",
+    "spacing": 180
+  },
+  {
+    "action_type": "MultiColumn",
+    "count": 2,
+    "same_size": true,
+    "gap": 3000
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 15.0
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": true
+  },
+  {
+    "action_type": "InsertText",
+    "text": "1. 다항식의 연산\n\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 12.0
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": true
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n4. "
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": false
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "x^2 + x - 1 = 0"
+  },
+  {
+    "action_type": "InsertText",
+    "text": " 일 때, 다음 식의 값을 구하시오.\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (1) "
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "(x+2)(x-1)(x+4)(x-3) + 5"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (2) "
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "x^5 - 5x"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 12.0
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": true
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n5. "
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": false
+  },
+  {
+    "action_type": "InsertText",
+    "text": "다음을 만족시키는 n의 값을 구하시오.\n"
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "(2^2+1)(2^4+1)(2^8+1)(2^16+1)(2^32+1) = 1/(2^n - 1) * 64"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 12.0
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": true
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n6. "
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": false
+  },
+  {
+    "action_type": "InsertText",
+    "text": "다음 다항식의 전개식에서 모든 계수의 합을 구하시오.\n"
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "1 + (1+x) + (1+x+x^2)^2 + ... + (1+x+...+x^4)^4"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 12.0
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": true
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n8. "
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": false
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "a + b = 4, ab = 2"
+  },
+  {
+    "action_type": "InsertText",
+    "text": " 일 때, 다음 식의 값을 구하시오. (단, a >= b)\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (1) "
+  },
+  {
+    "action_type": "InsertText",
+    "text": "a - b"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (2) "
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "a^2 - b^2"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (3) "
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "a^3 - b^3"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 12.0
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": true
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n9. "
+  },
+  {
+    "action_type": "SetFontBold",
+    "is_bold": false
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "x + y = 1, x^3 + y^3 = 19"
+  },
+  {
+    "action_type": "InsertText",
+    "text": " 일 때, 다음 식의 값을 구하시오.\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (1) "
+  },
+  {
+    "action_type": "InsertText",
+    "text": "xy"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "SetFontSize",
+    "size": 11.0
+  },
+  {
+    "action_type": "InsertText",
+    "text": "   (2) "
+  },
+  {
+    "action_type": "InsertEquation",
+    "script": "x^2 + y^2"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "\n"
+  },
+  {
+    "action_type": "FileSaveAs",
+    "path": "C:\\Temp\\sample_math_reconstructed.hwpx",
+    "format": "HWPX"
+  }
+]

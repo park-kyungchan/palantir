@@ -1,0 +1,21 @@
+[
+  {
+    "action_type": "InsertText",
+    "text": "Hello from ODA-Compliant Antigravity! (Linux -> Windows)\n"
+  },
+  {
+    "action_type": "InsertText",
+    "text": "This text was defined as a Pydantic object on Ubuntu.\n\n"
+  },
+  {
+    "action_type": "CreateTable",
+    "rows": 3,
+    "cols": 3,
+    "width_type": 2,
+    "height_type": 2
+  },
+  {
+    "action_type": "InsertText",
+    "text": "Table Created via Object Definition."
+  }
+]
