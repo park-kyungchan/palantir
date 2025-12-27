@@ -52,39 +52,20 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# EXCEPTIONS
+# EXCEPTIONS (imported from centralized module)
 # =============================================================================
+
+from scripts.ontology.storage.exceptions import (
+    ConcurrencyError,
+    OptimisticLockError,
+    EntityNotFoundError,
+    ProposalNotFoundError,
+)
+
 
 class RepositoryError(Exception):
     """Base exception for repository operations."""
     pass
-
-
-class EntityNotFoundError(RepositoryError):
-    """Raised when entity is not found."""
-    def __init__(self, entity_type: str, entity_id: str):
-        self.entity_type = entity_type
-        self.entity_id = entity_id
-        super().__init__(f"{entity_type} with id '{entity_id}' not found")
-
-
-class ConcurrencyError(RepositoryError):
-    """
-    Raised on optimistic locking conflicts.
-
-    Attributes:
-        expected_version: The version we expected in DB
-        actual_version: The version we tried to save
-    """
-    def __init__(
-        self,
-        message: str,
-        expected_version: Optional[int] = None,
-        actual_version: Optional[int] = None
-    ):
-        super().__init__(message)
-        self.expected_version = expected_version
-        self.actual_version = actual_version
 
 
 # =============================================================================

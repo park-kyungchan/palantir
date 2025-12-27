@@ -43,7 +43,7 @@ from scripts.ontology.ontology_types import OntologyObject, utc_now
 
 logger = logging.getLogger(__name__)
 
-from scripts.ontology.manager import ConcurrencyError
+from scripts.ontology.storage.exceptions import ConcurrencyError
 
 
 # =============================================================================

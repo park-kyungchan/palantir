@@ -14,23 +14,15 @@ from scripts.ontology.ontology_types import utc_now
 from scripts.ontology.storage.models import ProposalModel
 from scripts.ontology.storage.database import Database
 
+from scripts.ontology.storage.exceptions import (
+    ConcurrencyError,
+    OptimisticLockError,
+    ProposalNotFoundError,
+)
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
-
-class ProposalNotFoundError(Exception):
-    """Raised when proposal is not found."""
-    pass
-
-class ConcurrencyError(Exception):
-    """Raised on optimistic locking failure."""
-    def __init__(self, message: str, expected_version: int = None, actual_version: int = None):
-        super().__init__(message)
-        self.expected_version = expected_version
-        self.actual_version = actual_version
-    
-# Alias for compatibility
-OptimisticLockError = ConcurrencyError
 
 @dataclass
 class ProposalQuery:

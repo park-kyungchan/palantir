@@ -8,6 +8,7 @@ Exports:
 - GenericRepository: Base class for all repositories
 - Domain-specific repositories: ActionLogRepository, JobResultRepository, etc.
 - ORM Models: OrionActionLogModel, JobResultModel, etc.
+- Exceptions: ConcurrencyError, EntityNotFoundError, etc.
 """
 
 from scripts.ontology.storage.database import (
@@ -15,18 +16,21 @@ from scripts.ontology.storage.database import (
     get_database,
     initialize_database,
 )
+from scripts.ontology.storage.exceptions import (
+    ConcurrencyError,
+    OptimisticLockError,
+    EntityNotFoundError,
+    ProposalNotFoundError,
+    ValidationError,
+)
 from scripts.ontology.storage.base_repository import (
     GenericRepository,
-    ConcurrencyError,
-    EntityNotFoundError,
     RepositoryError,
     PaginatedResult,
 )
 from scripts.ontology.storage.proposal_repository import (
     ProposalRepository,
     ProposalQuery,
-    ProposalNotFoundError,
-    OptimisticLockError,
 )
 from scripts.ontology.storage.task_repository import TaskRepository
 from scripts.ontology.storage.repositories import (
@@ -49,17 +53,19 @@ __all__ = [
     "Database",
     "get_database",
     "initialize_database",
+    # Exceptions (centralized)
+    "ConcurrencyError",
+    "OptimisticLockError",
+    "EntityNotFoundError",
+    "ProposalNotFoundError",
+    "ValidationError",
     # Base Repository
     "GenericRepository",
-    "ConcurrencyError",
-    "EntityNotFoundError",
     "RepositoryError",
     "PaginatedResult",
     # Proposal (existing)
     "ProposalRepository",
     "ProposalQuery",
-    "ProposalNotFoundError",
-    "OptimisticLockError",
     "TaskRepository",
     # New Repositories (Sprint 2-3)
     "ActionLogRepository",
