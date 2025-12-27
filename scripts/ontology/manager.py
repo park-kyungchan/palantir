@@ -1,9 +1,60 @@
+"""
+Orion ODA V2 - Object Manager (DEPRECATED)
+==========================================
 
+.. deprecated:: 3.0
+    This module is deprecated and will be removed in a future release.
+    Use the new Repository pattern instead:
+
+    - ActionLogRepository for OrionActionLog
+    - JobResultRepository for JobResult
+    - InsightRepository for OrionInsight
+    - PatternRepository for OrionPattern
+
+    Migration Guide:
+    ----------------
+    # Before (ObjectManager):
+    manager = ObjectManager()
+    manager.save(action_log)
+    obj = manager.get(OrionActionLog, obj_id)
+
+    # After (Repository):
+    from scripts.ontology.storage import ActionLogRepository, initialize_database
+    db = await initialize_database()
+    repo = ActionLogRepository(db)
+    await repo.save(action_log, actor_id="system")
+    obj = await repo.find_by_id(obj_id)
+
+    For Observer pattern (subscribe), use EventBus:
+    from scripts.infrastructure.event_bus import EventBus
+    EventBus.get_instance().subscribe("OrionActionLog.*", callback)
+"""
+
+import warnings
 from typing import Type, TypeVar, Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from scripts.ontology.ontology_types import OntologyObject
 from scripts.ontology.db import init_db, SessionLocal, objects_table
+
+# Emit deprecation warning on import
+warnings.warn(
+    "ObjectManager is deprecated. Use Repository pattern (ActionLogRepository, etc.) instead. "
+    "See scripts/ontology/storage/repositories.py for the new API.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
+
+class ConcurrencyError(Exception):
+    """
+    Raised on optimistic locking failure.
+    Aligned with Palantir's version-based concurrency control pattern.
+    """
+    def __init__(self, message: str, expected_version: int = None, actual_version: int = None):
+        super().__init__(message)
+        self.expected_version = expected_version
+        self.actual_version = actual_version
 # Schemas might be Pydantic models that inherit from different bases, 
 # or they inherit from OntologyObject. We import them for registry.
 from scripts.ontology.schemas.governance import OrionActionLog
@@ -122,14 +173,14 @@ class ObjectManager:
         """
         Persists an object to the database.
         Upsert Logic: Checks existence by ID -> Insert or Update.
-        
-        Optimistic Locking:
-        - If UPDATE: Object version must match DB version (if strictly enforced), 
-          or we simply increment. 
-        - Current Logic: We blindly increment version here on save, assuming the caller's object is strictly linear.
+
+        Optimistic Locking (Palantir AIP/Foundry Compliant):
+        - If UPDATE: Uses Compare-And-Swap (CAS) pattern with version check.
+        - Raises ConcurrencyError if version mismatch detected.
+        - Atomic update via WHERE clause with expected version.
         """
         active_session = session if session else self.default_session
-        
+
         # Determine Commit Strategy
         if session is None:
             # Interactive/Global Session -> Default Commit (True)
@@ -140,33 +191,55 @@ class ObjectManager:
 
         type_name = obj.__class__.__name__
 
-        # Check existence
+        # Check existence and current version
         stmt = select(objects_table.c.version).where(objects_table.c.id == obj.id)
         existing = active_session.execute(stmt).fetchone()
 
         if existing:
-            # UPDATE
-            # In stateless mode, we retrieve the version from the object provided.
-            # If we want to guard against conflicts, we could check existing.version == obj.version.
-            # For this refactor, we keep the previous behavior: Increment and Overwrite.
-            
-            # Note: Ideally, the object should have been 'touched' by business logic before saving.
-            # But the manager guarantees a version bump on persistence.
-            obj.version = (existing.version or 0) + 1
-            obj.updated_at = utc_now_helper() 
-            
+            # UPDATE with Optimistic Concurrency Control
+            db_version = existing.version or 0
+            expected_version = db_version
+            new_version = db_version + 1
+
+            # Version Conflict Detection:
+            # The object's version should match DB version (caller just loaded it)
+            # OR be db_version + 1 (caller already incremented via touch())
+            if obj.version != db_version and obj.version != new_version:
+                raise ConcurrencyError(
+                    f"Object {obj.id} version mismatch. DB={db_version}, Object={obj.version}. "
+                    f"Object may have been modified by another transaction.",
+                    expected_version=db_version,
+                    actual_version=obj.version
+                )
+
+            # Set new version and timestamp
+            obj.version = new_version
+            obj.updated_at = utc_now_helper()
+
             update_data = {
                 "version": obj.version,
                 "updated_at": obj.updated_at,
                 "data": obj.model_dump(mode='json'),
-                "fts_content": self._extract_fts(obj) # Helper for FTS extraction
+                "fts_content": self._extract_fts(obj)
             }
-            
+
+            # Atomic CAS: WHERE clause includes expected version
             update_stmt = objects_table.update().where(
                 objects_table.c.id == obj.id
+            ).where(
+                objects_table.c.version == expected_version  # OCC: Version guard
             ).values(**update_data)
-            
-            active_session.execute(update_stmt)
+
+            result = active_session.execute(update_stmt)
+
+            # Check if update actually modified a row (CAS verification)
+            if result.rowcount == 0:
+                raise ConcurrencyError(
+                    f"Object {obj.id} was modified by another transaction. "
+                    f"Expected version {expected_version}, but row was not updated.",
+                    expected_version=expected_version,
+                    actual_version=obj.version
+                )
             
         else:
             # INSERT

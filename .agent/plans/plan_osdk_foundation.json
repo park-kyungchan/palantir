@@ -1,0 +1,24 @@
+{
+    "plan_id": "plan-osdk-foundation-20251227",
+    "created_at": "2025-12-27T11:05:00+09:00",
+    "objective": "Implement OSDK (Ontology SDK) Core Layer to bridge Critical Gap identified in Gap Analysis",
+    "status": "planned",
+    "jobs": [
+        {
+            "job_id": "job-osdk-001",
+            "title": "OSDK Core Scaffolding",
+            "description": "Create scripts/osdk directory and implement minimal viable Query and Client classes.",
+            "assigned_to": "claude",
+            "dependencies": []
+        },
+        {
+            "job_id": "job-osdk-002",
+            "title": "OSDK Generator Skeleton",
+            "description": "Implement the OSDKGenerator class structure for future code generation.",
+            "assigned_to": "claude",
+            "dependencies": [
+                "job-osdk-001"
+            ]
+        }
+    ]
+}

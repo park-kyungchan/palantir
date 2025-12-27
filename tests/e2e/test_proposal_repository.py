@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import AsyncGenerator, Optional
 
 import pytest
+import pytest_asyncio
 
 from scripts.ontology.objects.proposal import (
     InvalidTransitionError,
@@ -43,7 +44,7 @@ from scripts.ontology.storage.proposal_repository import (
 # FIXTURES
 # =============================================================================
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db() -> AsyncGenerator[Database, None]:
     """Create a temporary database for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -53,7 +54,7 @@ async def db() -> AsyncGenerator[Database, None]:
         yield database
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def repo(db: Database) -> ProposalRepository:
     """Create a repository with the test database."""
     return ProposalRepository(db)

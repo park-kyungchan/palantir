@@ -49,8 +49,8 @@ class OrionRuntime:
         logger.info("Online. Waiting for Semantic Signals...")
         
         while self.running:
-            # 1. Check Relay Queue (Cognitive Tasks)
-            task_payload = self.relay.dequeue()
+            # 1. Check Relay Queue (Cognitive Tasks) - Non-blocking async call
+            task_payload = await self.relay.dequeue_async()
             if task_payload:
                 logger.info(f"Processing Relay Task: {task_payload.get('id', 'unknown')}")
                 await self._process_task_cognitive(task_payload)

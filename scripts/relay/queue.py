@@ -1,3 +1,4 @@
+import asyncio
 import sqlite3
 import uuid
 from typing import Optional, Dict
@@ -56,3 +57,30 @@ class RelayQueue:
         with self._get_conn() as conn:
             conn.execute("UPDATE relay_tasks SET status='completed', response=? WHERE id=?", (response, task_id))
         print(f"[RelayQueue] Completed task {task_id}")
+
+    # =========================================================================
+    # ASYNC WRAPPERS (Palantir AIP Async Compliance)
+    # =========================================================================
+    # These methods wrap sync SQLite operations in asyncio.to_thread()
+    # to prevent blocking the event loop in async contexts like OrionRuntime.
+
+    async def dequeue_async(self) -> Optional[Dict]:
+        """
+        Non-blocking dequeue for async contexts.
+        Wraps sync dequeue() in thread pool executor.
+        """
+        return await asyncio.to_thread(self.dequeue)
+
+    async def enqueue_async(self, prompt: str) -> str:
+        """
+        Non-blocking enqueue for async contexts.
+        Wraps sync enqueue() in thread pool executor.
+        """
+        return await asyncio.to_thread(self.enqueue, prompt)
+
+    async def complete_async(self, task_id: str, response: str) -> None:
+        """
+        Non-blocking complete for async contexts.
+        Wraps sync complete() in thread pool executor.
+        """
+        await asyncio.to_thread(self.complete, task_id, response)

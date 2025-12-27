@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DYNAMIC IMPACT ANALYSIS PROTOCOL v2.1
+  =====================================
+  Target: Any LLM Agent (Claude, Gemini, GPT, Llama, etc.)
+  Purpose: Enforce code-level causal reasoning before modifications
+  Format Strategy: XML for reasoning structure, JSON for output validation
+  Author: Orion ODA Framework
+  Last Updated: 2025-12-27
+
+  CHANGE LOG:
+  - v2.1: Added vocabulary definitions, confidence scoring, CoT template,
+          integration points, error handling, LLM tuning notes
+-->
+
+<protocol name="DYNAMIC_IMPACT_ANALYSIS" version="2.1" priority="BLOCKING">
+
+  <!-- ============================================================
+       SECTION 1: DEFINITION AND VOCABULARY
+       ============================================================ -->
+
+  <definition>
+    <summary>
+      Dynamic Impact Analysis (DIA) is NOT a file listing operation.
+      DIA is CODE-LEVEL CAUSAL REASONING that simulates cascading effects
+      of modifications BEFORE implementation.
+    </summary>
+    <purpose>
+      Prevent cascade failures, maintain architectural integrity,
+      and ensure predictable system behavior after modifications.
+    </purpose>
+    <principle>
+      "Deep Context Awareness" = "Safety"
+      Confidence in code correctness is directly proportional to
+      understanding of existing implementation.
+    </principle>
+  </definition>
+
+  <vocabulary>
+    <!-- Standardized terms for cross-LLM consistency -->
+    <term name="modification">A code delta affecting one or more functions/modules/classes</term>
+    <term name="symbol">Any named code entity: function, class, variable, constant, type</term>
+    <term name="direct_dependency">Code that directly imports, calls, or references the target symbol</term>
+    <term name="transitive_dependency">Code affected through chain: A→B→C means C transitively depends on A</term>
+    <term name="data_flow_risk">State/variable modified by change propagates to unexpected consumers</term>
+    <term name="control_flow_risk">Branching/exception handling altered; downstream logic affected</term>
+    <term name="abort_condition">Critical gate that halts analysis and requires human intervention</term>
+    <term name="impact_radius">Percentage of codebase affected by modification</term>
+    <term name="confidence_score">0.0-1.0 measure of analysis completeness and reliability</term>
+    <term name="cascade_failure">Chain reaction where one change breaks multiple downstream systems</term>
+    <term name="semantic_drift">New code violating original architectural design intent</term>
+    <term name="hidden_coupling">Non-obvious dependency between components</term>
+  </vocabulary>
+
+  <!-- ============================================================
+       SECTION 2: TRIGGER CONDITIONS
+       ============================================================ -->
+
+  <trigger_conditions>
+    <!-- DIA MUST execute when ANY of these conditions are true -->
+    <condition id="C1" category="INTERFACE">Modifying function signature, parameters, or return type</condition>
+    <condition id="C2" category="STRUCTURE">Changing class inheritance, interface contract, or mixin</condition>
+    <condition id="C3" category="SCHEMA">Altering data schema: fields, types, constraints, defaults</condition>
+    <condition id="C4" category="SHARED">Modifying shared utility, helper, or base class</condition>
+    <condition id="C5" category="CONFIG">Changing configuration, registry, environment, or constants</condition>
+    <condition id="C6" category="CORE">Touching files in critical paths: ontology/, storage/, actions/, core/</condition>
+    <condition id="C7" category="API">Modifying public API endpoints, contracts, or serialization</condition>
+    <condition id="C8" category="ASYNC">Changing async/await patterns, concurrency, or transaction logic</condition>
+    <condition id="C9" category="STATE">Modifying global state, singleton, cache, or shared resource</condition>
+  </trigger_conditions>
+
+  <!-- ============================================================
+       SECTION 3: EXECUTION PROTOCOL (5 PHASES)
+       ============================================================ -->
+
+  <execution_protocol>
+
+    <!-- PHASE 1: DEPENDENCY MAPPING -->
+    <phase id="1" name="DEPENDENCY_MAPPING" mandatory="true">
+      <objective>Identify ALL code that depends on or is affected by the target</objective>
+
+      <chain_of_thought>
+        <state>Starting analysis of modification target</state>
+        <hypothesis>Target symbol has N direct dependents discoverable via import/call search</hypothesis>
+        <action>Execute systematic search across codebase</action>
+        <verification>Cross-reference results to ensure completeness</verification>
+      </chain_of_thought>
+
+      <steps>
+        <step id="1.1" action="IDENTIFY">
+          List all symbols (functions, classes, variables) being modified.
+          Record: symbol_name, symbol_type, file_path, line_number
+        </step>
+
+        <step id="1.2" action="SEARCH">
+          For each modified symbol, find ALL usages:
+          - Import statements: "from X import {symbol}" or "import X"
+          - Direct calls: "{symbol}(" or "await {symbol}("
+          - Type references: ": {symbol}" or "-> {symbol}"
+          - Inheritance: "({symbol})" or "class X({symbol})"
+          - Attribute access: ".{symbol}"
+        </step>
+
+        <step id="1.3" action="BUILD_GRAPH">
+          Construct dependency graph:
+          - Nodes: all affected files/modules
+          - Edges: dependency relationships (imports, calls, extends, references)
+          - Direction: caller → callee
+        </step>
+
+        <step id="1.4" action="DETECT_CYCLES">
+          Check for circular dependencies (A → B → C → A).
+          If detected: trigger ABORT condition immediately.
+        </step>
+
+        <step id="1.5" action="MARK_BOUNDARIES">
+          Identify external dependencies (third-party libraries, APIs).
+          Mark as: EXTERNAL (analysis boundary - assume worst case).
+        </step>
+      </steps>
+
+      <output format="structured">
+        <item name="modified_symbols" type="list">Symbols being changed</item>
+        <item name="direct_dependents" type="list">Files that directly use target</item>
+        <item name="indirect_dependents" type="list">Files that use direct dependents</item>
+        <item name="external_boundaries" type="list">Third-party dependencies</item>
+        <item name="dependency_graph" type="graph">Visual/textual representation</item>
+      </output>
+
+      <completion_criteria>
+        All usages of target symbol identified with zero false negatives.
+        Graph covers >= 80% of potentially affected code.
+      </completion_criteria>
+    </phase>
+
+    <!-- PHASE 2: CAUSAL SIMULATION -->
+    <phase id="2" name="CAUSAL_SIMULATION" mandatory="true">
+      <objective>Predict failure modes for each dependent by mental execution</objective>
+
+      <chain_of_thought>
+        <state>Dependency graph complete with N nodes</state>
+        <hypothesis>Each dependent may break in specific, predictable ways</hypothesis>
+        <action>Simulate code execution path through each dependent</action>
+        <verification>Check against risk checklist systematically</verification>
+      </chain_of_thought>
+
+      <steps>
+        <step id="2.1" action="READ_DEPENDENT">
+          For EACH dependent file:
+          - Read the FULL implementation (not just matched lines)
+          - Understand how it uses the modified symbol
+          - Trace data flow through the dependent
+        </step>
+
+        <step id="2.2" action="SIMULATE_EXECUTION">
+          Mentally execute the code path with the modification applied:
+          - What values flow through?
+          - What conditions are evaluated?
+          - What exceptions might be raised?
+          - What side effects occur?
+        </step>
+
+        <step id="2.3" action="CHECK_RISKS">
+          Evaluate against risk checklist (see risk_checklist below)
+        </step>
+      </steps>
+
+      <risk_checklist>
+        <item id="R1" severity="CRITICAL">Type mismatch after modification (runtime TypeError)</item>
+        <item id="R2" severity="CRITICAL">Missing required field/parameter (crash on access)</item>
+        <item id="R3" severity="CRITICAL">Broken inheritance chain (instantiation failure)</item>
+        <item id="R4" severity="CRITICAL">Null/None where not expected (NoneType error)</item>
+        <item id="R5" severity="HIGH">Semantic change in return value (silent wrong behavior)</item>
+        <item id="R6" severity="HIGH">Side effect ordering violation (race condition)</item>
+        <item id="R7" severity="HIGH">Exception type change (uncaught exception)</item>
+        <item id="R8" severity="HIGH">Async/await pattern break (deadlock, hanging)</item>
+        <item id="R9" severity="MEDIUM">Performance characteristic change (timeout, slowdown)</item>
+        <item id="R10" severity="MEDIUM">Serialization format change (data corruption)</item>
+        <item id="R11" severity="LOW">Log format change (monitoring break)</item>
+        <item id="R12" severity="LOW">Documentation inconsistency</item>
+      </risk_checklist>
+
+      <output format="table">
+        | File | Symbol | Risk Level | Failure Mode | Specific Impact | Mitigation |
+      </output>
+    </phase>
+
+    <!-- PHASE 3: ARCHITECTURAL ALIGNMENT -->
+    <phase id="3" name="ARCHITECTURAL_ALIGNMENT" mandatory="true">
+      <objective>Ensure modification respects original design intent</objective>
+
+      <chain_of_thought>
+        <state>Risk assessment complete for all dependents</state>
+        <hypothesis>Modification may introduce semantic drift if not aligned with patterns</hypothesis>
+        <action>Compare new code against established architectural patterns</action>
+        <verification>Check for anti-pattern violations</verification>
+      </chain_of_thought>
+
+      <steps>
+        <step id="3.1" action="READ_ORIGINAL">
+          Read original implementation thoroughly.
+          Extract: design patterns, conventions, invariants.
+        </step>
+
+        <step id="3.2" action="IDENTIFY_INVARIANTS">
+          List architectural invariants that must be preserved:
+          - "All mutations go through ActionType"
+          - "All DB access via Repository pattern"
+          - "All async operations use transaction context"
+        </step>
+
+        <step id="3.3" action="CHECK_ALIGNMENT">
+          Verify new code follows same patterns.
+          Flag any deviations.
+        </step>
+      </steps>
+
+      <anti_patterns>
+        <pattern name="GOVERNANCE_BYPASS" severity="CRITICAL">
+          Direct DB writes without Action/Proposal workflow
+        </pattern>
+        <pattern name="LAYER_VIOLATION" severity="HIGH">
+          UI/API code directly accessing storage layer
+        </pattern>
+        <pattern name="HARDCODED_VALUES" severity="MEDIUM">
+          Magic numbers/strings instead of configuration
+        </pattern>
+        <pattern name="DUPLICATE_LOGIC" severity="MEDIUM">
+          Reimplementing existing utility instead of reusing
+        </pattern>
+        <pattern name="ASYNC_VIOLATION" severity="HIGH">
+          Blocking calls in async context
+        </pattern>
+        <pattern name="TRANSACTION_LEAK" severity="CRITICAL">
+          Database operations outside transaction boundary
+        </pattern>
+      </anti_patterns>
+
+      <output format="checklist">
+        - [ ] Follows existing patterns: {YES/NO - details}
+        - [ ] Respects layer boundaries: {YES/NO - details}
+        - [ ] Uses proper abstractions: {YES/NO - details}
+        - [ ] Preserves invariants: {YES/NO - details}
+      </output>
+    </phase>
+
+    <!-- PHASE 4: SAFE MODIFICATION PLAN -->
+    <phase id="4" name="SAFE_MODIFICATION_PLAN" mandatory="true">
+      <objective>Create ordered, atomic change sequence</objective>
+
+      <chain_of_thought>
+        <state>All impacts identified, alignment verified</state>
+        <hypothesis>Changes can be ordered to minimize breaking intermediate states</hypothesis>
+        <action>Topologically sort modifications by dependency</action>
+        <verification>Each step leaves system in valid state</verification>
+      </chain_of_thought>
+
+      <steps>
+        <step id="4.1" action="ORDER_CHANGES">
+          Order by dependency: modify leaves first, roots last.
+          Leaf = no dependents; Root = most dependents.
+        </step>
+
+        <step id="4.2" action="GROUP_ATOMICS">
+          Identify changes that MUST happen together (co-modifications).
+          Group into atomic units.
+        </step>
+
+        <step id="4.3" action="MARK_BREAKING">
+          Label each change: BREAKING (requires dependent updates) or COMPATIBLE.
+        </step>
+
+        <step id="4.4" action="DEFINE_ROLLBACK">
+          For each step, define rollback strategy.
+        </step>
+      </steps>
+
+      <output format="ordered_list">
+        1. [ ] {file}:{line} - {description} [BREAKING/COMPATIBLE]
+               Co-modify: {related_files} | Rollback: {strategy}
+        2. [ ] {file}:{line} - {description} [COMPATIBLE]
+               Co-modify: none | Rollback: git checkout {file}
+      </output>
+    </phase>
+
+    <!-- PHASE 5: RISK ASSESSMENT AND SCORING -->
+    <phase id="5" name="RISK_ASSESSMENT" mandatory="true">
+      <objective>Quantify risk and evaluate abort conditions</objective>
+
+      <steps>
+        <step id="5.1" action="CALCULATE_IMPACT_RADIUS">
+          impact_radius = (affected_modules / total_modules) * 100
+        </step>
+
+        <step id="5.2" action="CATEGORIZE_CRITICALITY">
+          For each affected module, assign criticality:
+          - CRITICAL: data layer, persistence, transactions, auth
+          - HIGH: core logic, public APIs, shared utilities
+          - MEDIUM: internal helpers, private modules
+          - LOW: tests, documentation, comments
+        </step>
+
+        <step id="5.3" action="COMPUTE_OVERALL_RISK">
+          <algorithm>
+            IF any CRITICAL impact AND affected_module.criticality == CRITICAL:
+              overall_risk = CRITICAL
+            ELIF any HIGH impact AND count(affected) > 10:
+              overall_risk = HIGH
+            ELIF any MEDIUM impact:
+              overall_risk = MEDIUM
+            ELSE:
+              overall_risk = LOW
+          </algorithm>
+        </step>
+
+        <step id="5.4" action="CALCULATE_CONFIDENCE">
+          <formula>
+            confidence = 1.0
+            confidence -= 0.10 * (unresolved_symbols / total_symbols)
+            confidence -= 0.05 * (data_flow_risks / affected_modules)
+            confidence -= 0.15 * (external_dependencies / total_dependencies)
+            confidence -= 0.10 * (1 - graph_coverage)
+            confidence = max(0.0, min(1.0, confidence))
+          </formula>
+        </step>
+
+        <step id="5.5" action="EVALUATE_ABORT_CONDITIONS">
+          Check all abort conditions (see abort_conditions section).
+          If any triggered: HALT immediately.
+        </step>
+      </steps>
+
+      <output format="metrics">
+        - impact_radius: {percentage}%
+        - affected_modules: {count}
+        - risk_level: CRITICAL|HIGH|MEDIUM|LOW
+        - confidence_score: {0.0-1.0}
+        - abort_flags: [{list of triggered conditions}]
+      </output>
+    </phase>
+
+  </execution_protocol>
+
+  <!-- ============================================================
+       SECTION 4: ABORT CONDITIONS
+       ============================================================ -->
+
+  <abort_conditions>
+    <condition id="ABORT_01" name="CIRCULAR_DEPENDENCY" action="HALT">
+      <trigger>Circular dependency detected in dependency graph</trigger>
+      <rationale>Cannot safely order modifications; infinite loop risk</rationale>
+    </condition>
+
+    <condition id="ABORT_02" name="UNRESOLVED_SYMBOLS" action="HALT">
+      <trigger>Symbol binding cannot be resolved (undefined reference)</trigger>
+      <rationale>Cannot analyze what cannot be found</rationale>
+    </condition>
+
+    <condition id="ABORT_03" name="INSUFFICIENT_CONTEXT" action="HALT">
+      <trigger>Graph coverage less than 80% of potentially affected code</trigger>
+      <rationale>Too many unknowns; analysis unreliable</rationale>
+    </condition>
+
+    <condition id="ABORT_04" name="CASCADING_IMPACT" action="HALT">
+      <trigger>impact_radius > 50% OR affected_modules > 100</trigger>
+      <rationale>Change too broad; requires architectural review</rationale>
+    </condition>
+
+    <condition id="ABORT_05" name="CRITICAL_DATA_LAYER" action="HALT">
+      <trigger>Data layer module modified AND impact_radius > 5%</trigger>
+      <rationale>Data corruption risk; requires security review</rationale>
+    </condition>
+
+    <condition id="ABORT_06" name="REASONING_CONFLICT" action="HALT">
+      <trigger>Contradiction in impact analysis (transitive inconsistency)</trigger>
+      <rationale>Analysis logic failure; cannot trust results</rationale>
+    </condition>
+
+    <condition id="ABORT_07" name="LOW_CONFIDENCE" action="PAUSE">
+      <trigger>confidence_score less than 0.6</trigger>
+      <rationale>Analysis uncertain; request additional context</rationale>
+    </condition>
+
+    <condition id="ABORT_08" name="PUBLIC_API_BREAK" action="HALT">
+      <trigger>Public API signature change without explicit approval</trigger>
+      <rationale>External consumers will break</rationale>
+    </condition>
+
+    <on_abort>
+      <step order="1">STOP all modification attempts immediately</step>
+      <step order="2">OUTPUT structured report with abort reason and details</step>
+      <step order="3">REQUEST human review before any further action</step>
+      <step order="4">DO NOT attempt workarounds or partial implementations</step>
+    </on_abort>
+  </abort_conditions>
+
+  <!-- ============================================================
+       SECTION 5: TOOL USAGE MANDATE
+       ============================================================ -->
+
+  <tool_usage_mandate>
+    <!-- These rules are ABSOLUTE and apply to ALL LLM agents -->
+
+    <rule id="RULE_01" severity="BLOCKING" enforcement="ABSOLUTE">
+      <statement>NEVER modify code after only using file listing operations</statement>
+      <rationale>File names reveal nothing about implementation or dependencies</rationale>
+      <required>MUST use Read/Search tools on ALL potentially affected files</required>
+    </rule>
+
+    <rule id="RULE_02" severity="BLOCKING" enforcement="ABSOLUTE">
+      <statement>NEVER assume function behavior from name alone</statement>
+      <rationale>Names mislead; side effects invisible in signatures</rationale>
+      <required>MUST read implementation to understand actual behavior</required>
+    </rule>
+
+    <rule id="RULE_03" severity="HIGH" enforcement="RECOMMENDED">
+      <statement>For large files (>200 lines): use targeted search then contextual read</statement>
+      <rationale>Efficient context window usage while maintaining understanding</rationale>
+      <required>Search to locate, then Read with 5-10 lines context before/after</required>
+    </rule>
+
+    <rule id="RULE_04" severity="BLOCKING" enforcement="ABSOLUTE">
+      <statement>ALWAYS trace complete data flow before modification</statement>
+      <rationale>Data transformations can break silently at any point</rationale>
+      <required>Map: Input → Transformations → Output → All Consumers</required>
+    </rule>
+
+    <rule id="RULE_05" severity="BLOCKING" enforcement="ABSOLUTE">
+      <statement>NEVER guess or assume when uncertain</statement>
+      <rationale>Incorrect assumptions cause subtle, hard-to-debug failures</rationale>
+      <required>When uncertain: READ more code OR ASK for clarification</required>
+    </rule>
+
+    <rule id="RULE_06" severity="HIGH" enforcement="RECOMMENDED">
+      <statement>Document reasoning at each step</statement>
+      <rationale>Enables audit trail and debugging of analysis failures</rationale>
+      <required>Include reasoning_trace in output</required>
+    </rule>
+  </tool_usage_mandate>
+
+  <!-- ============================================================
+       SECTION 6: OUTPUT SCHEMA
+       ============================================================ -->
+
+  <output_schema format="json">
+    <description>
+      Structured output for programmatic consumption.
+      All LLM agents MUST produce output conforming to this schema.
+    </description>
+    <schema><![CDATA[
+{
+  "analysis_id": "uuid",
+  "modification_target": {
+    "file_path": "string",
+    "symbol_name": "string",
+    "symbol_type": "function|class|variable|constant",
+    "change_type": "SIGNATURE|SCHEMA|LOGIC|CONFIG|INTERFACE"
+  },
+  "status": "COMPLETE|HALTED|ESCALATED",
+  "abort_flags": ["list of abort condition IDs"],
+
+  "dependency_graph": {
+    "nodes": ["list of affected modules"],
+    "edges": [
+      {"source": "module_a", "target": "module_b", "type": "imports|calls|extends"}
+    ],
+    "external_boundaries": ["list of external deps"]
+  },
+
+  "impact_matrix": [
+    {
+      "file": "path/to/file.py",
+      "symbol": "function_name",
+      "risk_level": "CRITICAL|HIGH|MEDIUM|LOW",
+      "failure_mode": "description of how it breaks",
+      "mitigation": "required action to fix"
+    }
+  ],
+
+  "metrics": {
+    "impact_radius": 15.3,
+    "affected_modules_count": 12,
+    "criticality_distribution": {
+      "CRITICAL": 2,
+      "HIGH": 5,
+      "MEDIUM": 8,
+      "LOW": 3
+    },
+    "overall_risk": "HIGH",
+    "confidence_score": 0.87
+  },
+
+  "modification_plan": [
+    {
+      "order": 1,
+      "file": "path/to/file.py",
+      "line": 42,
+      "description": "what to change",
+      "breaking": false,
+      "co_modify": [],
+      "rollback": "git checkout path/to/file.py"
+    }
+  ],
+
+  "verification_commands": [
+    "grep -rn 'symbol' scripts/",
+    "pytest tests/affected/ -v",
+    "mypy scripts/modified.py"
+  ],
+
+  "reasoning_trace": [
+    "Step 1: Identified 3 modified symbols in X.py",
+    "Step 2: Found 5 direct dependents via import search",
+    "Step 3: Traced transitive chain to 12 total modules",
+    "Step 4: Risk assessment identified 2 CRITICAL impacts"
+  ],
+
+  "recommendation": "BLOCK|APPROVE_WITH_CAUTION|APPROVE",
+  "human_approval_required": true,
+  "required_validations": ["test_coverage >= 60%", "security_review"]
+}
+    ]]></schema>
+  </output_schema>
+
+  <!-- ============================================================
+       SECTION 7: CHAIN OF THOUGHT TEMPLATE
+       ============================================================ -->
+
+  <chain_of_thought_template>
+    <purpose>
+      Enforce explicit reasoning at each step for auditability and accuracy.
+      Each analysis phase MUST include this structure.
+    </purpose>
+
+    <template>
+      <state>[Current state: what we know so far]</state>
+      <hypothesis>[Expected outcome of this step]</hypothesis>
+      <action>[Specific search/read/verification action]</action>
+      <result>[What we found]</result>
+      <verification>[How we validated the result]</verification>
+      <conclusion>[What we learned; updated state for next step]</conclusion>
+    </template>
+
+    <example><![CDATA[
+<state>Analyzing modification of `create_user()` in auth.py</state>
+<hypothesis>Function is called by API endpoints and possibly background jobs</hypothesis>
+<action>Search: grep -rn "create_user" scripts/ tests/</action>
+<result>Found 8 usages across 5 files: api/users.py, api/admin.py, jobs/sync.py, tests/test_auth.py, tests/test_users.py</result>
+<verification>Cross-checked with import statements; all usages accounted for</verification>
+<conclusion>5 production files depend on create_user(); 2 are API endpoints (HIGH criticality), 1 is background job (MEDIUM)</conclusion>
+    ]]></example>
+  </chain_of_thought_template>
+
+  <!-- ============================================================
+       SECTION 8: ERROR HANDLING
+       ============================================================ -->
+
+  <error_handling>
+    <on_parse_error>
+      <action>Return structured error with specific location</action>
+      <action>Suggest correction based on expected schema</action>
+      <action>Do not continue analysis; wait for fix</action>
+    </on_parse_error>
+
+    <on_reasoning_conflict>
+      <action>Document both conflicting reasoning paths</action>
+      <action>Mark as REASONING_CONFLICT in output</action>
+      <action>Request human arbitration; do not guess resolution</action>
+    </on_reasoning_conflict>
+
+    <on_timeout>
+      <action>Return partial results with coverage_percentage</action>
+      <action>Mark which modules were analyzed vs. timed-out</action>
+      <action>Suggest breaking analysis into smaller subgraphs</action>
+    </on_timeout>
+
+    <on_external_dependency>
+      <action>Mark as EXTERNAL; do not attempt deep analysis</action>
+      <action>Assume worst case: external module may break</action>
+      <action>Lower confidence score by 0.15 per unresolvable external</action>
+    </on_external_dependency>
+
+    <on_file_unreadable>
+      <action>Log as UNREADABLE with reason (permission, encoding, binary)</action>
+      <action>Mark dependent analysis as INCOMPLETE</action>
+      <action>Lower confidence proportionally</action>
+    </on_file_unreadable>
+  </error_handling>
+
+  <!-- ============================================================
+       SECTION 9: INTEGRATION POINTS
+       ============================================================ -->
+
+  <integration_points>
+    <with_oda description="Ontology-Driven Architecture">
+      <action>Register ImpactAnalysisResult in ProposalRepository</action>
+      <action>Link to associated modification_id and job_id</action>
+      <transaction>Use "async with db.transaction()" for atomicity</transaction>
+    </with_oda>
+
+    <with_version_control description="Git integration">
+      <action>Extract modification delta from "git diff"</action>
+      <action>Track which commit/branch triggered analysis</action>
+      <action>Store analysis as immutable artifact for audit trail</action>
+    </with_version_control>
+
+    <with_test_framework description="Test coverage integration">
+      <action>Query test coverage for affected modules</action>
+      <action>Flag modules with coverage less than 60% as HIGH_RISK</action>
+      <action>Recommend running full test suite before approval</action>
+    </with_test_framework>
+
+    <with_ci_cd description="CI/CD pipeline integration">
+      <action>Block merge if DIA returns HALTED status</action>
+      <action>Require explicit override for APPROVE_WITH_CAUTION</action>
+      <action>Log all analysis results for compliance</action>
+    </with_ci_cd>
+  </integration_points>
+
+  <!-- ============================================================
+       SECTION 10: LLM-SPECIFIC TUNING NOTES
+       ============================================================ -->
+
+  <llm_tuning_notes>
+    <note>
+      This protocol is designed to be LLM-agnostic. However, different
+      models may require minor adjustments for optimal performance.
+      The core protocol remains unchanged.
+    </note>
+
+    <model name="Claude" vendor="Anthropic">
+      <strength>Excels at structured XML reasoning</strength>
+      <strength>Large context window for complex dependency graphs</strength>
+      <tip>Use this protocol as-is; Claude parses XML natively</tip>
+    </model>
+
+    <model name="Gemini" vendor="Google">
+      <strength>Token-efficient; handles verbose traces well</strength>
+      <strength>Good at long-context reasoning</strength>
+      <tip>Emphasize abort conditions early; reinforce hard stops</tip>
+    </model>
+
+    <model name="GPT-4" vendor="OpenAI">
+      <strength>Strong function calling for tool-assisted search</strength>
+      <caution>Smaller context; may need phase-by-phase execution</caution>
+      <tip>Provide 2-3 worked examples per phase for best results</tip>
+    </model>
+
+    <model name="Llama/Open" vendor="Meta/Community">
+      <strength>Local execution; no data leaving environment</strength>
+      <caution>May need simpler vocabulary for smaller variants</caution>
+      <tip>Test with your specific variant; adjust complexity as needed</tip>
+    </model>
+  </llm_tuning_notes>
+
+  <!-- ============================================================
+       SECTION 11: AXIOMS (CORE PRINCIPLES)
+       ============================================================ -->
+
+  <axioms>
+    <axiom id="AX1" name="CONTEXT_SAFETY_EQUIVALENCE">
+      "Deep Context Awareness" = "Safety"
+
+      Confidence in code correctness is directly proportional to
+      understanding of existing implementation. Partial understanding
+      leads to partial correctness (i.e., bugs).
+    </axiom>
+
+    <axiom id="AX2" name="NO_GUESSING">
+      Guessing behavior ("it probably works like this") is FORBIDDEN.
+
+      When uncertain:
+      - READ more code
+      - SEARCH for usage patterns
+      - ASK for clarification
+      - NEVER proceed with assumptions
+    </axiom>
+
+    <axiom id="AX3" name="PREDICTABILITY_REQUIREMENT">
+      Code modification confidence requires 100% understanding of:
+      - HOW existing code processes data
+      - WHY it was designed that way
+      - WHAT invariants must be preserved
+      - WHO/WHAT consumes the output
+    </axiom>
+
+    <axiom id="AX4" name="CASCADE_AWARENESS">
+      Every modification has ripple effects.
+
+      The goal is not to avoid all changes, but to PREDICT and PREPARE
+      for all consequences before they manifest as runtime errors.
+    </axiom>
+
+    <axiom id="AX5" name="ABORT_OVER_RISK">
+      When in doubt, HALT.
+
+      It is better to stop and ask for clarification than to proceed
+      with uncertain analysis. False confidence is worse than admitted
+      uncertainty.
+    </axiom>
+  </axioms>
+
+  <!-- ============================================================
+       SECTION 12: METADATA
+       ============================================================ -->
+
+  <metadata>
+    <version>2.1</version>
+    <created>2025-12-27</created>
+    <updated>2025-12-27</updated>
+
+    <compatibility>
+      <agent tested="true">Claude (Anthropic) - All versions</agent>
+      <agent tested="true">Gemini (Google) - 1.5 Pro, 2.0</agent>
+      <agent tested="false">GPT-4 (OpenAI) - Expected compatible</agent>
+      <agent tested="false">Llama (Meta) - Expected compatible</agent>
+      <agent tested="false">Any instruction-following LLM</agent>
+    </compatibility>
+
+    <vocabulary_notes>
+      - Uses standard programming terminology (no vendor-specific terms)
+      - Tool names are generic (Read, Search, Write) - map to specific tools
+      - Risk levels use universal severity scale (CRITICAL > HIGH > MEDIUM > LOW)
+      - All examples use Python but concepts apply to any language
+    </vocabulary_notes>
+
+    <change_log>
+      <change version="2.1" date="2025-12-27">
+        Added vocabulary definitions, confidence scoring algorithm,
+        chain-of-thought template, integration points, error handling,
+        LLM tuning notes, expanded abort conditions
+      </change>
+      <change version="2.0" date="2025-12-27">
+        Initial structured XML protocol
+      </change>
+    </change_log>
+  </metadata>
+
+</protocol>

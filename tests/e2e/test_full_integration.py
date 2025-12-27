@@ -35,6 +35,7 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 
 # ODA Core Imports
 from scripts.ontology.ontology_types import OntologyObject, utc_now
@@ -390,7 +391,7 @@ class IntegrationKernel:
 # FIXTURES
 # =============================================================================
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_db() -> Database:
     """Create a temporary test database."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -400,7 +401,7 @@ async def test_db() -> Database:
         yield db
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def repo(test_db: Database) -> ProposalRepository:
     """Create repository with test database."""
     return ProposalRepository(test_db)
@@ -421,7 +422,7 @@ def mock_llm() -> MockLLMClient:
     return MockLLMClient()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def kernel(
     mock_llm: MockLLMClient,
     test_registry: MockActionRegistry,
