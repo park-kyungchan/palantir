@@ -8,8 +8,10 @@ from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.manager import ObjectManager
 from scripts.ontology.db import DB_PATH
 from scripts.ontology.schemas.memory import OrionPattern, PatternStructure
-from scripts.action.core import ActionDefinition, ActionContext, ActionRunner, UnitOfWork
-from scripts.simulation.core import SimulationEngine
+from scripts.simulation.core import SimulationEngine, ActionRunner
+from scripts.ontology.actions import ActionType, ActionContext, EditOperation, EditType, ActionResult
+from typing import ClassVar, Type, List, Optional, Any, Tuple
+import asyncio
 
 # --- 1. Define Domain Objects ---
 class E2EServer(OrionObject):
@@ -19,36 +21,40 @@ class E2EServer(OrionObject):
     cache_cleared: bool = False
 
 # --- 2. Define Actions ---
-class ClearCacheAction(ActionDefinition):
-    @classmethod
-    def action_id(cls): return "server.clear_cache"
-    
-    def validate(self, ctx): return True
-    
-    def apply(self, ctx):
-        server_id = ctx.parameters["server_id"]
-        server = ctx.manager.get(E2EServer, server_id, session=ctx.session)
-        server.cache_cleared = True
-        ctx.manager.save(server, session=ctx.session)
-        print(f"[Action] Cache Cleared for {server.name}")
+class ClearCacheAction(ActionType[E2EServer]):
+    api_name: ClassVar[str] = "server.clear_cache"
+    object_type: ClassVar[Type[E2EServer]] = E2EServer
 
-class RestartServerAction(ActionDefinition):
-    @classmethod
-    def action_id(cls): return "server.restart"
-    
-    def validate(self, ctx): return True
-    
-    def apply(self, ctx):
-        server_id = ctx.parameters["server_id"]
-        server = ctx.manager.get(E2EServer, server_id, session=ctx.session)
+    async def apply_edits(self, params: dict, context: ActionContext) -> Tuple[Optional[E2EServer], List[EditOperation]]:
+        server_id = params["server_id"]
+        manager = context.metadata["manager"]
+        session = context.metadata.get("session")
+        
+        server = manager.get(E2EServer, server_id, session=session)
+        server.cache_cleared = True
+        manager.save(server, session=session)
+        print(f"[Action] Cache Cleared for {server.name}")
+        return server, []
+
+class RestartServerAction(ActionType[E2EServer]):
+    api_name: ClassVar[str] = "server.restart"
+    object_type: ClassVar[Type[E2EServer]] = E2EServer
+
+    async def apply_edits(self, params: dict, context: ActionContext) -> Tuple[Optional[E2EServer], List[EditOperation]]:
+        server_id = params["server_id"]
+        manager = context.metadata["manager"]
+        session = context.metadata.get("session")
+        
+        server = manager.get(E2EServer, server_id, session=session)
         
         # Constraint: Legacy servers explode if cache not cleared
         if server.server_type == "Legacy" and not server.cache_cleared:
             raise RuntimeError(f"Constraint Violation: Legacy Server {server.name} requires cache clear before restart!")
             
         server.status = "Active"
-        ctx.manager.save(server, session=ctx.session)
+        manager.save(server, session=session)
         print(f"[Action] Server {server.name} Restarted Successfully")
+        return server, []
 
 # --- 3. Test Logic ---
 def run_e2e_test():
@@ -62,15 +68,18 @@ def run_e2e_test():
     print("\n[Step 1] Bootstrapping Data...")
     
     # Create Server
-    srv = E2EServer(id="SRV-E2E-001", name="Alpha-Node", server_type="Legacy")
+    import time
+    srv_id = f"SRV-E2E-{int(time.time())}"
+    srv = E2EServer(id=srv_id, name="Alpha-Node", server_type="Legacy")
     om.save(srv)
     print(f"Created Server: {srv.id} ({srv.server_type})")
     
     # Create Knowledge (Pattern)
+    pat_id = f"PAT-E2E-{int(time.time())}"
     pat = OrionPattern(
-        id="PAT-E2E-MEMLEAK",
+        id=pat_id,
         structure=PatternStructure(
-            trigger="memory_leak detected on legacy systems",
+            trigger=f"memory_leak detected on legacy systems {int(time.time())}", # Unique trigger for FTS
             steps=["clear_cache", "restart_server"],
             anti_patterns=["direct_restart"]
         )
@@ -86,12 +95,12 @@ def run_e2e_test():
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     # Primitive FTS query (LIKE for simplicity in this env, assuming no FTS5 virtual table setup yet)
-    cur.execute("SELECT id FROM objects WHERE type='OrionPattern' AND fts_content LIKE '%memory_leak%'")
+    cur.execute(f"SELECT id FROM objects WHERE type='OrionPattern' AND fts_content LIKE '%memory_leak%' AND id='{pat_id}'")
     rows = cur.fetchall()
     found_ids = [r[0] for r in rows]
     
     print(f"Search Query 'memory_leak' found: {found_ids}")
-    assert "PAT-E2E-MEMLEAK" in found_ids, "FTS Failed to find the pattern!"
+    assert pat_id in found_ids, "FTS Failed to find the pattern!"
     
     recall_opt = om.get(OrionPattern, found_ids[0])
     recommended_steps = recall_opt.structure.steps
@@ -102,22 +111,26 @@ def run_e2e_test():
     sim_engine = SimulationEngine(om)
     
     # Definition: Just Restart
-    ctx_fail = ActionContext(job_id="job-fail", parameters={"server_id": srv.id})
+    ctx_fail = ActionContext(actor_id="system", correlation_id="job-fail", metadata={"params": {"server_id": srv.id}})
+    ctx_fail.parameters = ctx_fail.metadata["params"] # Legacy Compat
     action_restart = RestartServerAction()
     
     # Run
     diff_fail = sim_engine.run_simulation([action_restart], [ctx_fail])
     
     # Assert
-    print(f"Diff Result: {diff_fail}")
+    # print(f"Diff Result: {diff_fail}")
     assert len(diff_fail.updated) == 0, "Simulation A captured changes but should have failed/rolled back!"
     print("Simulation A Correctly Failed (Safe Rollback Confirmed).")
 
     # --- SIMULATION 2: INFORMED SUCCESS ---
     print("\n[Step 4] Simulation B: Semantic Plan (Clear -> Restart)...")
     
-    ctx_success_1 = ActionContext(job_id="job-ok-1", parameters={"server_id": srv.id})
-    ctx_success_2 = ActionContext(job_id="job-ok-2", parameters={"server_id": srv.id})
+    ctx_success_1 = ActionContext(actor_id="system", correlation_id="job-ok-1", metadata={"params": {"server_id": srv.id}})
+    ctx_success_1.parameters = ctx_success_1.metadata["params"]
+    
+    ctx_success_2 = ActionContext(actor_id="system", correlation_id="job-ok-2", metadata={"params": {"server_id": srv.id}})
+    ctx_success_2.parameters = ctx_success_2.metadata["params"]
     
     action_clear = ClearCacheAction()
     

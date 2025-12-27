@@ -41,3 +41,19 @@ class DataConnector(ABC):
     async def get_by_id(self, object_type: Type[T], object_id: str) -> Optional[T]:
         """Fetch a single object by ID."""
         ...
+
+    @abstractmethod
+    async def bulk_get(self, object_type: Type[T], ids: List[str]) -> List[T]:
+        """
+        Retrieve multiple objects by ID in a single query.
+        Palantir Pattern: OSDK supports batch retrieval for performance.
+        """
+        ...
+
+    @abstractmethod
+    async def bulk_create(self, object_type: Type[T], objects: List[T]) -> List[str]:
+        """
+        Create multiple objects in a single transaction.
+        Returns list of created IDs.
+        """
+        ...

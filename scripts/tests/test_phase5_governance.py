@@ -1,12 +1,14 @@
 
 import sys
 import time
+from typing import ClassVar, Type, List, Optional, Tuple, Any
 from sqlalchemy import select
 from scripts.ontology.manager import ObjectManager
 from scripts.ontology.ontology_types import OrionObject
 from scripts.ontology.schemas.governance import OrionActionLog
 from scripts.ontology.schemas.memory import OrionInsight
-from scripts.action.core import ActionDefinition, ActionRunner, ActionContext
+from scripts.simulation.core import ActionRunner
+from scripts.ontology.actions import ActionType, ActionContext, EditOperation
 from scripts.consolidation.miner import ConsolidationMiner
 from scripts.ontology.db import objects_table
 
@@ -14,16 +16,19 @@ from scripts.ontology.db import objects_table
 class GovernanceTestServer(OrionObject):
     state: str = "OK"
 
-class FragileAction(ActionDefinition):
-    @classmethod
-    def action_id(cls): return "test.fragile"
+class FragileAction(ActionType[GovernanceTestServer]):
+    api_name: ClassVar[str] = "test.fragile"
+    object_type: ClassVar[Type[GovernanceTestServer]] = GovernanceTestServer
     
-    def validate(self, ctx): return True
-    
-    def apply(self, ctx):
-        obj = ctx.manager.get(GovernanceTestServer, ctx.parameters["id"], session=ctx.session)
+    async def apply_edits(self, params: dict, context: ActionContext) -> Tuple[Optional[GovernanceTestServer], List[EditOperation]]:
+        manager = context.metadata["manager"]
+        session = context.metadata.get("session")
+        
+        # Access ID from params (expecting it to be there)
+        obj_id = params["id"]
+        obj = manager.get(GovernanceTestServer, obj_id, session=session)
         obj.state = "BROKEN" # State change attempt
-        ctx.manager.save(obj, session=ctx.session)
+        manager.save(obj, session=session)
         
         # EXPLODE
         raise RuntimeError("Planned Explosion")
@@ -37,13 +42,21 @@ def run_test():
     om.register_type(OrionInsight)
     
     # Setup Data
-    srv = GovernanceTestServer(id="SRV-GOV-001")
+    gov_id = f"SRV-GOV-{int(time.time())}"
+    srv = GovernanceTestServer(id=gov_id)
     om.save(srv)
     print("Setup: Server Created.")
     
     runner = ActionRunner(om)
     unique_trace_id = f"job-gov-{int(time.time())}"
-    ctx = ActionContext(job_id=unique_trace_id, parameters={"id": srv.id})
+    
+    # Context creation ODA style + LegacyCompat
+    ctx = ActionContext(
+        actor_id="tester",
+        correlation_id=unique_trace_id, 
+        metadata={"params": {"id": srv.id}}
+    )
+    ctx.parameters = ctx.metadata["params"] # Legacy Compat for Runner
     
     # 1. Execute Fragile Action (Expect Failure)
     print("\n[Step 1] Executing Fragile Action...")
@@ -87,7 +100,8 @@ def run_test():
     # 4. Consolidation (Mining)
     print("\n[Step 2] Running Consolidation Miner...")
     # Trigger 2 more failures to hit threshold (default 2? or 3?)
-    ctx2 = ActionContext(job_id="job-gov-2", parameters={"id": srv.id})
+    ctx2 = ActionContext(actor_id="tester", correlation_id="job-gov-2", metadata={"params": {"id": srv.id}})
+    ctx2.parameters = ctx2.metadata["params"]
     try: runner.execute(FragileAction(), ctx2) 
     except: pass
     

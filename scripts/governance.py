@@ -1,164 +1,104 @@
 
+"""
+Governance Administration Tool (ODA v3.5).
+Provides CLI access to the Proposal System via ProposalRepository.
+"""
+
+import asyncio
+import sys
 import logging
-import uuid
-import json
-import os
-import sqlite3
-from datetime import datetime
-from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Any, Dict
-from pydantic import BaseModel
-from scripts.observer import Observer
-from scripts.ontology import Event, EventType
+from typing import Optional
+import argparse
 
-# Mimic Palantir's UserFacingError
-class UserFacingError(Exception):
-    def __init__(self, message: str, error_name: str = "InvalidAction"):
-        self.message = message
-        self.error_name = error_name
-        super().__init__(f"[{error_name}] {message}")
+# ODA Imports
+from scripts.ontology.storage import ProposalRepository, initialize_database
+from scripts.ontology.objects.proposal import ProposalStatus
 
-class OntologyContext:
-    """Read-Only view of the Ontology for validation."""
-    def __init__(self, workspace_root: str):
-        self.workspace_root = workspace_root
+logging.basicConfig(level=logging.INFO, format="[Governance] %(message)s")
+logger = logging.getLogger("Governance")
 
-TParams = TypeVar("TParams", bound=BaseModel)
+async def list_proposals(status: Optional[str] = None):
+    db = await initialize_database()
+    repo = ProposalRepository(db)
+    
+    filter_status = ProposalStatus(status) if status else ProposalStatus.PENDING
+    
+    proposals = await repo.find_by_status(filter_status)
+    if not proposals:
+        print(f"No proposals found with status: {filter_status}")
+        return
 
-class OrionAction(ABC, Generic[TParams]):
-    """
-    Tier 1 Action: Class-based, Schematized, Deterministic.
-    Use this for Core Ontology Mutations (Plans, Jobs, Objects).
-    """
-    def __init__(self, parameters: TParams):
-        self.params = parameters
-        self.action_id = str(uuid.uuid4())
-        self.timestamp = datetime.now()
+    print(f"\nFound {len(proposals)} {filter_status} proposals:")
+    for p in proposals:
+        print(f"  [{p.id}] {p.action_type} (Priority: {p.priority})")
+        print(f"      Summary: {str(p.payload)[:100]}...")
 
-    @property
-    @abstractmethod
-    def action_type(self) -> str:
-        """Unique API Identifier for the Action."""
-        pass
+async def approve_proposal(proposal_id: str, reviewer: str):
+    db = await initialize_database()
+    repo = ProposalRepository(db)
+    
+    try:
+        # Check if exists
+        p = await repo.find_by_id(proposal_id)
+        if not p:
+            print(f"Proposal {proposal_id} not found.")
+            return
 
-    @abstractmethod
-    def validate(self, ctx: OntologyContext) -> None:
-        """Pure logic validation. Raises UserFacingError."""
-        pass
+        stmt = await repo.update_status(
+            proposal_id, 
+            ProposalStatus.APPROVED, 
+            reviewed_by=reviewer,
+            review_comment="Approved via Governance CLI"
+        )
+        print(f"✅ Proposal {proposal_id} APPROVED by {reviewer}")
+        
+    except Exception as e:
+        print(f"❌ Approval Failed: {e}")
 
-    @abstractmethod
-    def _apply_side_effects(self, ctx: OntologyContext) -> dict:
-        """The actual mutation logic (Privacy: Protected)."""
-        pass
+async def reject_proposal(proposal_id: str, reviewer: str, reason: str):
+    db = await initialize_database()
+    repo = ProposalRepository(db)
+    
+    try:
+        await repo.update_status(
+            proposal_id,
+            ProposalStatus.REJECTED,
+            reviewed_by=reviewer,
+            review_comment=reason
+        )
+        print(f"🚫 Proposal {proposal_id} REJECTED.")
+    except Exception as e:
+        print(f"❌ Rejection Failed: {e}")
 
-class ActionDispatcher:
-    """
-    The Governance Funnel.
-    Enforces Rule 1.1 (Action Mandate) and Rule 4.1 (Audit).
-    """
-    def __init__(self, workspace_root: str):
-        self.ctx = OntologyContext(workspace_root)
-        self.logger = logging.getLogger("OrionGovernance")
-        self._db_path = os.path.join(workspace_root, ".agent", "logs", "ontology.db")
-        os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
-        self._init_db()
+async def main():
+    parser = argparse.ArgumentParser(description="Orion Governance CLI")
+    subparsers = parser.add_subparsers(dest="command")
+    
+    # List
+    list_parser = subparsers.add_parser("list")
+    list_parser.add_argument("--status", default="pending", help="Filter by status")
+    
+    # Approve
+    approve_parser = subparsers.add_parser("approve")
+    approve_parser.add_argument("id", help="Proposal ID")
+    approve_parser.add_argument("--reviewer", default="admin", help="Reviewer ID")
+    
+    # Reject
+    reject_parser = subparsers.add_parser("reject")
+    reject_parser.add_argument("id", help="Proposal ID")
+    reject_parser.add_argument("--reason", required=True, help="Rejection Reason")
+    reject_parser.add_argument("--reviewer", default="admin", help="Reviewer ID")
 
-    def _init_db(self):
-        """Initialize the SQLite Audit Ledger (Immutable Log)."""
-        try:
-            with sqlite3.connect(self._db_path) as conn:
-                conn.execute("""
-                    CREATE TABLE IF NOT EXISTS audit_log (
-                        id TEXT PRIMARY KEY,
-                        timestamp TEXT NOT NULL,
-                        event_type TEXT NOT NULL,
-                        action_type TEXT NOT NULL,
-                        action_id TEXT NOT NULL,
-                        parameters TEXT NOT NULL, -- JSON String
-                        user TEXT NOT NULL,
-                        result TEXT, -- JSON String (Updated on commit)
-                        status TEXT DEFAULT 'PENDING'
-                    )
-                """)
-                conn.commit()
-        except Exception as e:
-            self.logger.critical(f"Failed to initialize Ledger DB: {e}")
-            raise
+    args = parser.parse_args()
+    
+    if args.command == "list":
+        await list_proposals(args.status)
+    elif args.command == "approve":
+        await approve_proposal(args.id, args.reviewer)
+    elif args.command == "reject":
+        await reject_proposal(args.id, args.reviewer, args.reason)
+    else:
+        parser.print_help()
 
-    def dispatch(self, action: OrionAction) -> Dict[str, Any]:
-        try:
-            # 1. Logic / Validation (Rule 1.2)
-            action.validate(self.ctx)
-
-            # 2. Intent Capture (Audit Log - Transaction Start)
-            self._log_intent(action)
-
-            # 3. Notification (Observer)
-            Observer.emit(Event(
-                trace_id=f"TRACE-{action.action_id}", # Link trace to action
-                event_type=EventType.ACTION_START,
-                component="ActionDispatcher",
-                details={"action_id": action.action_id, "type": action.action_type},
-                timestamp=datetime.now().isoformat()
-            ))
-
-            # 4. Side Effect (Mutation)
-            result = action._apply_side_effects(self.ctx)
-
-            # 5. Success (Update Ledger)
-            self._update_ledger_success(action.action_id, result)
-
-            Observer.emit(Event(
-                trace_id=f"TRACE-{action.action_id}",
-                event_type=EventType.ACTION_END,
-                component="ActionDispatcher",
-                details={"action_id": action.action_id, "result": result},
-                timestamp=datetime.now().isoformat()
-            ))
-            
-            return {"status": "success", "action_id": action.action_id, "result": result}
-
-        except UserFacingError as e:
-            self.logger.warning(f"Action Rejected: {e}")
-            self._update_ledger_fail(action.action_id, str(e))
-            raise
-        except Exception as e:
-            self.logger.error(f"System Failure in Action {action.action_id}: {e}")
-            self._update_ledger_fail(action.action_id, str(e))
-            raise RuntimeError("Internal Ontology Error") from e
-
-    def _log_intent(self, action: OrionAction):
-        with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
-                "INSERT INTO audit_log (id, timestamp, event_type, action_type, action_id, parameters, user) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (
-                    str(uuid.uuid4()),
-                    action.timestamp.isoformat(),
-                    "ontology_action_submission",
-                    action.action_type,
-                    action.action_id,
-                    action.params.model_dump_json(),
-                    "local_agent"
-                )
-            )
-            conn.commit()
-
-    def _update_ledger_success(self, action_id: str, result: Dict):
-        with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
-                "UPDATE audit_log SET status = ?, result = ? WHERE action_id = ?",
-                ("COMMITTED", json.dumps(result), action_id)
-            )
-            conn.commit()
-
-    def _update_ledger_fail(self, action_id: str, error: str):
-        try:
-            with sqlite3.connect(self._db_path) as conn:
-                conn.execute(
-                    "UPDATE audit_log SET status = ?, result = ? WHERE action_id = ?",
-                    ("FAILED", json.dumps({"error": error}), action_id)
-                )
-                conn.commit()
-        except:
-            pass # Fail silently if DB is broken
-
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -83,7 +83,7 @@ def extract_summary(unique_sentences: List[str], top_n: int = 1) -> str:
     Input: List of unique sentences/logs.
     Output: Most representative sentence.
     """
-    from scripts.lib.preprocessing import tokenize
+    from scripts.ontology.learning.algorithms.preprocessing import tokenize
     
     n = len(unique_sentences)
     if n == 0: return ""

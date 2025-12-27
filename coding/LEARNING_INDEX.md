@@ -22,10 +22,7 @@ It indexes the verified "Source of Truth" knowledge bases and enforces the Agile
 | **[08_Advanced](./palantir-fde-learning/knowledge_bases/08_advanced_capabilities.md)** | **Performance/A11y** | Visualization (D3/Plottable), Virtualization |
 | **[09_Orion_ODA](./palantir-fde-learning/knowledge_bases/09_orion_system_architecture.md)** | **System Architecture** | **SELF-REFLECTION**: Ontology, Actions, Kernel Loop |
 
-### 📂 Applied Case Studies
-| Project | Description | Tech Stack |
-|:--- |:--- |:--- |
-| **[Reasoning Lab](./palantir-fde-learning/knowledge_bases/implementation_plan_chapter2.md)** | **Chapter 2 Implementation** | React 18, Konva, S-Pen Integration |
+
 
 ---
 
@@ -34,8 +31,9 @@ Orion now includes an active AI Tutor that generates personalized curricula base
 
 **Trigger Command:**
 ```bash
-python scripts/ontology/learning.py --target . --user <your_id>
+python -m scripts.ontology.run_tutor --target scripts/ontology --user palantir_beginner
 ```
+*Note: The `scripts/ontology/` directory serves as the live ODA textbook.*
 
 **Capabilities:**
 1.  **Metric Engine**: Calculates `TeachingComplexityScore` (TCS) for every file.

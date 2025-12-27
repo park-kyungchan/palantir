@@ -27,7 +27,7 @@ async def run_complex_simulation():
     4. Deploy to Kubernetes (Production).
     """
     
-    task_id = queue.enqueue(complex_prompt) # This triggers the "Router -> Relay" path conceptually
+    task_id = await queue.enqueue(complex_prompt) # This triggers the "Router -> Relay" path conceptually
     print(f"📨 [User] Submitted Request ID: {task_id}")
     print(f"📝 Prompt: {complex_prompt.strip()[:50]}...")
     
@@ -37,7 +37,7 @@ async def run_complex_simulation():
     
     # Run kernel process_loop once directly for test deterministic behavior
     # (Extracting logic from start() for granular control)
-    item = queue.dequeue()
+    item = await queue.dequeue()
     if item:
         print(f"   [Kernel] Dequeued Item: {item['id']}")
         
@@ -45,7 +45,7 @@ async def run_complex_simulation():
         # accessing private method for verification
         await kernel._process_task_cognitive(item)
         
-        queue.complete(item['id'], "Simulated Processing")
+        await queue.complete(item['id'], "Simulated Processing")
         print("   [Kernel] Task marked Complete.")
     else:
         print("   [Kernel] No task found!")

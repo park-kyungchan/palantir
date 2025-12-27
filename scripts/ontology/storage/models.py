@@ -211,3 +211,115 @@ class OrionPatternModel(AsyncOntologyObject):
 
     def __repr__(self):
         return f"<Pattern(id={self.id}, freq={self.frequency_count}, success={self.success_rate})>"
+
+
+# =============================================================================
+# LEARNING MODELS (PHASE 5)
+# =============================================================================
+
+class LearnerModel(AsyncOntologyObject):
+    """
+    SQLAlchemy Model for Learners.
+    Maps to: scripts/ontology/objects/learning.py::Learner
+    """
+    __tablename__ = "learners"
+
+    user_id: Mapped[str] = mapped_column(String, index=True, nullable=False, unique=True)
+    theta: Mapped[float] = mapped_column(Float, default=0.0)
+    knowledge_state: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    last_active: Mapped[str] = mapped_column(String, default="")
+    
+    def __repr__(self):
+        return f"<Learner(id={self.id}, user_id={self.user_id}, theta={self.theta})>"
+
+
+# =============================================================================
+# DOMAIN MODELS (Task & Agent)
+# =============================================================================
+
+class AgentModel(AsyncOntologyObject):
+    """
+    SQLAlchemy Model for Agents.
+    Maps to: scripts/ontology/objects/task_actions.py::Agent
+    """
+    __tablename__ = "agents"
+
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[str] = mapped_column(String(50), default="agent")
+    is_active: Mapped[bool] = mapped_column(default=True)
+    capabilities: Mapped[List[str]] = mapped_column(JSON, default=list)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    def __repr__(self):
+        return f"<Agent(id={self.id}, name={self.name})>"
+
+
+class TaskModel(AsyncOntologyObject):
+    """
+    SQLAlchemy Model for Tasks.
+    Maps to: scripts/ontology/objects/task_actions.py::Task
+    """
+    __tablename__ = "tasks"
+
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    priority: Mapped[str] = mapped_column(String(20), default="medium")
+    task_status: Mapped[str] = mapped_column(String(20), default="pending")
+    
+    # FKs
+    assigned_to_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    parent_task_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Metadata
+    tags: Mapped[List[str]] = mapped_column(JSON, default=list)
+    estimated_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    due_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self):
+        return f"<Task(id={self.id}, title={self.title}, status={self.task_status})>"
+
+
+class TaskDependencyLinkModel(AsyncOntologyObject):
+    """
+    Backing datasource for MANY_TO_MANY "task_depends_on_task" relationship.
+    Palantir Pattern: N:N links require explicit backing table.
+    """
+    __tablename__ = "task_dependencies"
+
+    source_task_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    target_task_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    link_type: Mapped[str] = mapped_column(String, default="task_depends_on_task")
+
+    __table_args__ = (
+        Index('idx_task_deps_source', 'source_task_id'),
+        Index('idx_task_deps_target', 'target_task_id'),
+        Index('idx_task_deps_composite', 'source_task_id', 'target_task_id', unique=True),
+    )
+
+    def __repr__(self):
+        return f"<TaskDependency({self.source_task_id} -> {self.target_task_id})>"
+
+
+# =============================================================================
+# RELAY MODELS (PHASE 3)
+# =============================================================================
+
+class RelayTaskModel(AsyncOntologyObject):
+    """
+    SQLAlchemy Model for Relay Queue Tasks.
+    Replaces legacy relay.db SQLite table.
+    """
+    __tablename__ = "relay_tasks"
+
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # We use the inherited 'status' field for: pending, processing, completed
+    
+    __table_args__ = (
+        Index('idx_relay_status', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<RelayTask(id={self.id}, status={self.status})>"

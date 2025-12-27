@@ -30,6 +30,7 @@ from scripts.ontology.ontology_types import (
     ObjectStatus,
     OntologyObject,
     utc_now,
+    Reference,  # Phase 4
 )
 from scripts.ontology.actions import (
     ActionContext,
@@ -85,8 +86,16 @@ class Agent(OntologyObject):
     role: str = Field(default="agent", max_length=50)
     is_active: bool = Field(default=True)
     capabilities: List[str] = Field(default_factory=list)
-    
-    # Computed property for display
+
+    # Reverse link: Tasks assigned to this agent (1:N from Agent's perspective)
+    assigned_tasks: ClassVar[Link["Task"]] = Link(
+        target="Task",
+        link_type_id="agent_assigned_tasks",
+        cardinality=Cardinality.ONE_TO_MANY,
+        reverse_link_id="task_assigned_to_agent",
+        description="Tasks currently assigned to this agent"
+    )
+
     @property
     def display_name(self) -> str:
         return f"{self.name} ({self.role})"
@@ -135,7 +144,9 @@ class Task(OntologyObject):
         link_type_id="task_depends_on_task",
         cardinality=Cardinality.MANY_TO_MANY,
         reverse_link_id="task_blocks",
-        description="Tasks that must be completed before this task"
+        description="Tasks that must be completed before this task",
+        backing_table_name="task_dependencies",  # NEW
+        is_materialized=True,  # NEW
     )
     
     subtasks: ClassVar[Link["Task"]] = Link(
@@ -406,19 +417,27 @@ class AssignTaskAction(ActionType[Task]):
         SlackNotification(channel="#task-assignments"),
     ]
     
+    # Type-safe Reference (New Phase 4)
+    assignee_ref: Optional[Reference[Agent]] = Field(default=None)
+
     async def apply_edits(
         self,
         params: Dict[str, Any],
         context: ActionContext
-    ) -> tuple[None, List[EditOperation]]:
-        """Assign the Task to an Agent."""
+    ) -> tuple[Optional[Task], List[EditOperation]]:
+        """Assign a task to an agent."""
+        # Handle Reference Logic
+        agent_id = params.get("agent_id")
+        if self.assignee_ref and self.assignee_ref.id:
+            agent_id = self.assignee_ref.id
+            
         edits = [
             # Update Task's assigned_to_id
             EditOperation(
                 edit_type=EditType.MODIFY,
                 object_type="Task",
                 object_id=params["task_id"],
-                changes={"assigned_to_id": params["agent_id"]},
+                changes={"assigned_to_id": agent_id},
             ),
             # Create Link record
             EditOperation(

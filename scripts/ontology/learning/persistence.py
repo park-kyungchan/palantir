@@ -1,146 +1,89 @@
 """
-Orion Phase 5 - Learning Persistence & BKT Engine
-Manages learner state storage and Bayesian Knowledge Tracing updates.
+Orion Phase 5 - Learning Persistence Layer
+Refactored to use ODA Storage (SQLAlchemy/Async)
+Acts as an adapter for scripts.ontology.storage.learner_repository
 """
 
-import aiosqlite
-from pathlib import Path
-from typing import Optional, Dict, Tuple
+import logging
+from typing import Optional, Dict, Any
 from datetime import datetime
-import json
 
-from .types import LearnerState, KnowledgeComponentState
+from scripts.ontology.learning.types import LearnerState, KnowledgeComponentState
+from scripts.ontology.storage.learner_repository import LearnerRepository as ODALearnerRepository
+from scripts.ontology.objects.learning import Learner
+from scripts.ontology.storage.database import get_database
 
-# BKT Parameters (Default Population Priors)
-P_L0 = 0.3   # Initial Mastery
-P_T = 0.2    # Learning Rate
-P_G = 0.1    # Guess Probability
-P_S = 0.15   # Slip Probability
-
-DB_PATH = Path("/home/palantir/orion-orchestrator-v2/data/learning.db")
+logger = logging.getLogger(__name__)
 
 class LearnerRepository:
-    def __init__(self, db_path: Path = DB_PATH):
-        self.db_path = db_path
-        self._ensure_db_dir()
+    """
+    Adapter for ODA LearnerRepository to support LearnerState (domain) objects.
+    Replaces direct aiosqlite usage with ODA ORM.
+    """
+    
+    def __init__(self, db_path: str = None):
+        # db_path is ignored, we use global ODA Database
+        self.oda_repo = ODALearnerRepository(get_database())
 
-    def _ensure_db_dir(self):
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    async def initialize(self):
-        """Create tables if they don't exist."""
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS learners (
-                    user_id TEXT PRIMARY KEY,
-                    theta REAL DEFAULT 0.0,
-                    updated_at TIMESTAMP
-                )
-            """)
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS mastery (
-                    user_id TEXT,
-                    concept_id TEXT,
-                    p_mastery REAL,
-                    evidence_count INTEGER,
-                    last_assessed TIMESTAMP,
-                    PRIMARY KEY (user_id, concept_id),
-                    FOREIGN KEY(user_id) REFERENCES learners(user_id)
-                )
-            """)
-            await db.commit()
-
-    async def get_learner(self, user_id: str) -> LearnerState:
-        """Fetch full learner state including all KC masteries."""
-        async with aiosqlite.connect(self.db_path) as db:
-            # 1. Get Learner Base
-            async with db.execute("SELECT theta FROM learners WHERE user_id = ?", (user_id,)) as cursor:
-                row = await cursor.fetchone()
-                if not row:
-                    # New user
-                    return LearnerState(user_id=user_id, theta=0.0)
-                theta = row[0]
-
-            # 2. Get Mastery Records
-            kcs = {}
-            async with db.execute("SELECT concept_id, p_mastery, evidence_count, last_assessed FROM mastery WHERE user_id = ?", (user_id,)) as cursor:
-                async for m_row in cursor:
-                    concept_id, p, count, last = m_row
-                    dt_last = datetime.fromisoformat(last) if last else None
-                    kcs[concept_id] = KnowledgeComponentState(
-                        concept_id=concept_id,
-                        p_mastery=p,
-                        evidence_count=count,
-                        last_assessed=dt_last
-                    )
-
-            return LearnerState(user_id=user_id, theta=theta, knowledge_components=kcs)
-
-    async def save_learner(self, state: LearnerState):
-        """Persist full learner state (upsert)."""
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(
-                "INSERT OR REPLACE INTO learners (user_id, theta, updated_at) VALUES (?, ?, ?)",
-                (state.user_id, state.theta, datetime.now().isoformat())
-            )
-            
-            for kc in state.knowledge_components.values():
-                await db.execute(
-                    """
-                    INSERT OR REPLACE INTO mastery (user_id, concept_id, p_mastery, evidence_count, last_assessed)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (
-                        state.user_id,
-                        kc.concept_id,
-                        kc.p_mastery,
-                        kc.evidence_count,
-                        kc.last_assessed.isoformat() if kc.last_assessed else None
-                    )
-                )
-            await db.commit()
-
-    def update_bkt(self, current_p: float, correct: bool) -> float:
+    async def initialize(self) -> None:
         """
-        Calculates new P(Mastery) using Bayesian Knowledge Tracing.
-        
-        Steps:
-        1. Posterior P(L|Obs) calculation based on correctness
-        2. Transit P(L_t+1) calculation
+        Initialization is now handled by the generic Database.initialize().
+        This method is kept for compatibility.
         """
-        # 1. Likelihood Update (Posterior)
-        if correct:
-            # P(L|Correct) = P(L)*(1-S) / [P(L)*(1-S) + (1-L)*G]
-            numerator = current_p * (1 - P_S)
-            denominator = numerator + (1 - current_p) * P_G
-        else:
-            # P(L|Incorrect) = P(L)*S / [P(L)*S + (1-L)*(1-G)]
-            numerator = current_p * P_S
-            denominator = numerator + (1 - current_p) * (1 - P_G)
-            
-        p_posterior = numerator / denominator if denominator > 0 else 0.0
-        
-        # 2. Transition Update
-        # P(L_next) = P(Posterior) + (1 - P(Posterior)) * T
-        p_next = p_posterior + (1 - p_posterior) * P_T
-        
-        return min(max(p_next, 0.0), 1.0) # Clamp 0-1
+        # Ensure generic DB is initialized
+        await get_database().initialize()
 
-    async def record_interaction(self, user_id: str, concept_id: str, correct: bool):
-        """Transactional update of a single concept mastery."""
-        state = await self.get_learner(user_id)
+    async def get_learner(self, user_id: str) -> Optional[LearnerState]:
+        """
+        Fetch LearnerState using ODA repository.
+        """
+        learner_obj = await self.oda_repo.get_by_user_id(user_id)
         
-        # Get current P (default to L0 if new)
-        kc = state.knowledge_components.get(concept_id)
-        current_p = kc.p_mastery if kc else P_L0
+        if not learner_obj:
+            return None
+            
+        # Map Ontology Object -> LearnerState
+        knowledge_components = {}
+        if learner_obj.knowledge_state:
+            for k, v in learner_obj.knowledge_state.items():
+                if isinstance(v, dict):
+                    knowledge_components[k] = KnowledgeComponentState(**v)
         
-        # Calculate new P
-        new_p = self.update_bkt(current_p, correct)
+        return LearnerState(
+            user_id=learner_obj.user_id,
+            theta=learner_obj.theta,
+            knowledge_components=knowledge_components
+        )
+
+    async def save_learner(self, state: LearnerState) -> None:
+        """
+        Save LearnerState using ODA repository.
+        """
+        # Map LearnerState -> Ontology Object
+        knowledge_state_dict = {
+            k: v.model_dump() for k, v in state.knowledge_components.items()
+        }
         
-        # Update State Object
-        state.update_mastery(concept_id, new_p)
+        learner_obj = Learner(
+            user_id=state.user_id,
+            theta=state.theta,
+            knowledge_state=knowledge_state_dict,
+            last_active=datetime.now().isoformat()
+        )
+        # Note: We don't have the original ID here easily if it's an update,
+        # but ODALearnerRepository.save handles upsert by user_id lookup.
         
-        # Persist
-        await self.save_learner(state)
-        
+        await self.oda_repo.save(learner_obj)
+
+    async def update_mastery(self, user_id: str, concept_id: str, new_p: float) -> Optional[float]:
+        """
+        Update a specific mastery record.
+        """
+        learner = await self.get_learner(user_id)
+        if not learner:
+            logger.warning(f"Learner {user_id} not found for mastery update")
+            return None
+            
+        learner.update_mastery(concept_id, new_p)
+        await self.save_learner(learner)
         return new_p

@@ -12,6 +12,7 @@ This module defines the foundational types for the Ontology-Driven Architecture:
 from __future__ import annotations
 
 import uuid
+from abc import ABC, abstractmethod  # Fixed: Added ABC import
 from datetime import datetime, timezone
 from enum import Enum
 from typing import (
@@ -115,15 +116,20 @@ class Link(Generic[T]):
         cardinality: Cardinality = Cardinality.ONE_TO_MANY,
         reverse_link_id: Optional[str] = None,
         description: Optional[str] = None,
+        backing_table_name: Optional[str] = None,  # NEW
+        is_materialized: bool = True,  # NEW
     ):
         self._validate_link_type_id(link_type_id)
-        
+        self._validate_n_n_backing(cardinality, backing_table_name)  # NEW
+
         self.target = target
         self.link_type_id = link_type_id
         self.cardinality = cardinality
         self.reverse_link_id = reverse_link_id
         self.description = description
-    
+        self.backing_table_name = backing_table_name  # NEW
+        self.is_materialized = is_materialized  # NEW
+
     @staticmethod
     def _validate_link_type_id(link_type_id: str) -> None:
         """Enforce snake_case naming convention for link type IDs."""
@@ -133,13 +139,64 @@ class Link(Generic[T]):
             raise ValueError(
                 f"link_type_id must be snake_case alphanumeric: {link_type_id}"
             )
-    
+
+    @staticmethod
+    def _validate_n_n_backing(cardinality: Cardinality, backing_table: Optional[str]) -> None:
+        """Palantir Pattern: MANY_TO_MANY requires backing_table_name."""
+        if cardinality == Cardinality.MANY_TO_MANY and not backing_table:
+            raise ValueError(
+                "MANY_TO_MANY links require backing_table_name. "
+                "Example: backing_table_name='task_dependencies'"
+            )
+
     def __repr__(self) -> str:
         return (
             f"Link(target={self.target.__name__}, "
             f"cardinality={self.cardinality.value}, "
             f"link_type_id='{self.link_type_id}')"
         )
+
+
+class Reference(Generic[T]):
+    """
+    Type-safe foreign key reference.
+    Palantir Pattern: References should be typed, not raw strings.
+
+    Usage:
+        assigned_to: Reference[Agent] = Reference(Agent)
+    """
+    def __init__(self, target_type: Type[T]):
+        self.target_type = target_type
+        self._id: Optional[str] = None
+
+    @property
+    def id(self) -> Optional[str]:
+        return self._id
+
+    @id.setter
+    def id(self, value: Optional[str]) -> None:
+        self._id = value
+
+    @property
+    def target_type_name(self) -> str:
+        return self.target_type.__name__
+
+    def __repr__(self) -> str:
+        return f"Reference[{self.target_type_name}](id={self._id})"
+
+
+class ObjectSet(Generic[T], ABC):
+    """
+    Represents a lazy, filterable set of objects.
+    Palantir Pattern: Use ObjectSet for chainable filtering logic.
+    """
+    @abstractmethod
+    def where(self, **filters: Any) -> "ObjectSet[T]":
+        ...
+
+    @abstractmethod
+    async def resolve(self) -> List[T]:
+        ...
 
 
 # =============================================================================
@@ -226,6 +283,9 @@ class OntologyObject(BaseModel):
         use_enum_values = False  # Keep Enum objects, not raw values
         validate_assignment = True  # Validate on attribute assignment
         extra = "forbid"  # Reject unknown fields
+        json_schema_extra = {
+            "x-palantir-indexing": ["id", "created_at", "updated_at"]
+        }
     
     def touch(self, updated_by: Optional[str] = None) -> None:
         """

@@ -105,9 +105,9 @@ class OrionRuntime:
             # Running in ThreadPool if call is blocking, or using async client if implemented under hood.
             # Assuming InstructorClient wraps async or we run in executor.
             
-            # Note: The InstructorClient.generate_plan call is synchronous in the basic wrapper provided.
-            # To avoid blocking the Kernel loop, we should run it in a thread.
-            plan = await asyncio.to_thread(self.llm.generate_plan, prompt)
+            # Note: The InstructorClient.generate_plan is now ASYNC (ODA Compliant).
+            # We await it directly.
+            plan = await self.llm.generate_plan(prompt)
             
             logger.info(f"🐛 Plan Parsed Successfully: {len(plan.jobs)} jobs")
 

@@ -16,6 +16,7 @@ This directory serves as the dedicated workspace for your Palantir Frontend Deve
     *   `06_build_tooling.md`: Webpack, Vite, Gradle
     *   `07_version_control.md`: Git Advanced, Monorepos
     *   `08_advanced_capabilities.md`: Visualization, Performance, Offline
+    *   `09_orion_system_architecture.md`: ODA V3 Updates (ToolMarshaler, Repository Pattern)
 *   **/archives**: Historical artifacts from the setup phase (Prompts, Directives).
 
 ## 🚀 How to Use

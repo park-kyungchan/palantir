@@ -324,9 +324,18 @@ class PlanStore:
 
 ## Final verdict
 
-### Architectural accuracy score: **6/10**
+### Architectural accuracy score: **8/10** (Updated 2025-12)
 
-The implementation demonstrates strong conceptual understanding but includes significant over-engineering and one major misconception about SDK architecture.
+**Recent Improvements (v3.0):**
+1. ✅ ObjectManager caching layer DELETED (now DEPRECATED)
+2. ✅ ToolMarshaler ADDED (`scripts/runtime/marshaler.py`)
+3. ✅ Repository pattern IMPLEMENTED
+4. ✅ ConcurrencyError retry logic IMPLEMENTED
+
+**Remaining Gaps:**
+1. ❌ Naming: Still `OrionRuntime` (not `ComputeModule`)
+2. ❌ ProposalRepository uses status workflow (not Apollo Plan-based)
+3. ❌ No real-time subscriptions (TypeScript frontend only)
 
 ### Valid patterns implemented correctly
 
@@ -346,8 +355,8 @@ The implementation demonstrates strong conceptual understanding but includes sig
 
 ### Priority refactoring recommendations
 
-1. **HIGH**: Delete ObjectManager caching layer entirely. Use direct SDK calls.
-2. **HIGH**: Add tool call marshaling layer to Kernel for permission-scoped execution.
+1. ~~**HIGH**: Delete ObjectManager caching layer entirely. Use direct SDK calls.~~ ✅ DONE
+2. ~~**HIGH**: Add tool call marshaling layer to Kernel for permission-scoped execution.~~ ✅ DONE
 3. **MEDIUM**: Rename components to match Palantir terminology (Kernel → ComputeModule).
 4. **MEDIUM**: Refactor ProposalRepository to Plan-based model with declarative constraints.
 5. **LOW**: Consider adding real-time subscriptions if using TypeScript frontend.

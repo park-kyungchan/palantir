@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 from scripts.ontology.storage.database import Database, initialize_database
 from scripts.ontology.storage.proposal_repository import ProposalRepository
 from scripts.ontology.objects.proposal import Proposal, ProposalStatus
-from scripts.ontology.storage.models import ProposalModel
+from scripts.ontology.storage.models import ProposalModel, TaskModel
 from scripts.ontology.actions import (
     ActionRegistry, 
     ActionContext, 
@@ -30,13 +30,6 @@ from scripts.ontology.storage.orm import AsyncOntologyObject
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer
 
-# Define a concrete Model for Testing
-class TaskModel(AsyncOntologyObject):
-    __tablename__ = "tasks"
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    title: Mapped[str] = mapped_column(String)
-    priority: Mapped[str] = mapped_column(String)
-    status: Mapped[str] = mapped_column(String)
 
 # Define OSDK Domain Object
 from pydantic import BaseModel, Field
@@ -44,7 +37,7 @@ class Task(BaseModel):
     id: str
     title: str
     priority: str
-    status: str
+    task_status: str
 
 # Define Action
 @register_action
@@ -62,7 +55,7 @@ class ArchiveTaskAction(ActionType):
                 edit_type=EditType.MODIFY,
                 object_type="Task",
                 object_id=params['task_id'],
-                changes={"status": "Archived"}
+                changes={"task_status": "Archived"}
             )
         ]
         return mock_obj, edits
@@ -93,10 +86,10 @@ async def test_golden_path_data_to_action(tmp_path):
     csv_file = tmp_path / "tasks.csv"
     with open(csv_file, "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["id", "title", "priority", "status", "version", "created_at", "updated_at", "created_by"])
-        writer.writerow(["t1", "Fix Bug", "High", "Completed", 1, "2024-01-01T00:00:00", "2024-01-01T00:00:00", "system"])
-        writer.writerow(["t2", "Feature X", "Low", "In Progress", 1, "2024-01-01T00:00:00", "2024-01-01T00:00:00", "system"])
-        writer.writerow(["t3", "Critical Fix", "High", "Completed", 1, "2024-01-01T00:00:00", "2024-01-01T00:00:00", "system"])
+        writer.writerow(["id", "title", "description", "priority", "task_status", "status", "tags", "version", "created_at", "updated_at", "created_by"])
+        writer.writerow(["t1", "Fix Bug", "Desc 1", "High", "Completed", "active", "[]", 1, "2024-01-01T00:00:00", "2024-01-01T00:00:00", "system"])
+        writer.writerow(["t2", "Feature X", "Desc 2", "Low", "In Progress", "active", "[]", 1, "2024-01-01T00:00:00", "2024-01-01T00:00:00", "system"])
+        writer.writerow(["t3", "Critical Fix", "Desc 3", "High", "Completed", "active", "[]", 1, "2024-01-01T00:00:00", "2024-01-01T00:00:00", "system"])
 
     # 1. DATA INGESTION (ETL)
     # -------------------------------------------------------------------------
@@ -136,7 +129,7 @@ async def test_golden_path_data_to_action(tmp_path):
     # Note: OSDK filters need to match model fields.
     query = ObjectQuery(Task) \
         .where("priority", "eq", "High") \
-        .where("status", "eq", "Completed")
+        .where("task_status", "eq", "Completed")
         
     # Inject connector (usually done globally or via factory)
     connector._model_map["Task"] = TaskModel

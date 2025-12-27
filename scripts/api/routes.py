@@ -13,7 +13,9 @@ from scripts.api.dtos import (
     CreateProposalRequest, 
     ReviewProposalRequest, 
     ProposalResponse,
-    StandardErrorResponse
+    StandardErrorResponse,
+    ExecuteActionRequest,
+    ActionResultResponse
 )
 from scripts.api.dependencies import get_repository
 from scripts.ontology.storage.proposal_repository import (
@@ -80,4 +82,59 @@ async def review_proposal(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Proposal {proposal_id} not found."
+        )
+@router.post("/execute", response_model=ActionResultResponse, status_code=status.HTTP_200_OK)
+async def execute_action_endpoint(
+    req: ExecuteActionRequest,
+    # In a real app, we'd inject marshaler. For simplified DI here:
+):
+    """
+    Directly execute a non-hazardous Action.
+    """
+    from scripts.runtime.marshaler import ToolMarshaler
+    from scripts.ontology.actions import action_registry, ActionContext
+    from datetime import datetime
+    
+    # 1. Governance Check
+    meta = action_registry.get_metadata(req.action_type)
+    if not meta:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Action '{req.action_type}' not found."
+        )
+        
+    if meta.requires_proposal:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Action '{req.action_type}' is hazardous and requires a Proposal. Use POST /proposals instead."
+        )
+
+    # 2. Execute via Marshaler
+    marshaler = ToolMarshaler()
+    context = ActionContext(actor_id="api_user", metadata={"source": "api"})
+    
+    result = await marshaler.execute_action(
+        action_name=req.action_type,
+        params=req.params,
+        context=context
+    )
+    
+    if result.success:
+        # Wrap data if needed
+        res_data = result.data
+        if res_data is not None and not isinstance(res_data, dict):
+            res_data = {"value": res_data}
+            
+        return ActionResultResponse(
+            action_type=result.action_type,
+            success=True,
+            result=res_data,
+            trace_id=context.correlation_id,
+            timestamp=datetime.now()
+        )
+    else:
+        # Action failed business logic
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Action failed: {result.error}",
         )

@@ -32,30 +32,82 @@ class Task(OntologyObject):
 
 ### B. The Logic (Action Registry)
 The "verbs" of the system. Direct database implementation is forbidden. You must define an `ActionType`.
-*Source: `scripts/ontology/actions.py`*
+*Source: `scripts/ontology/actions/__init__.py`*
 
 ```python
-class ActionType(ABC):
-    submission_criteria: List[SubmissionCriterion] = []
+class ActionType(ABC, Generic[T]):
+    """Base class for all ActionTypes in ODA v3.0"""
     
-    async def execute(self, params, context):
-        # 1. Validate
-        self.validate(params)
-        # 2. Mutate (Atomic)
-        obj, edits = await self.apply_edits(params)
-        # 3. Side Effects (Async)
-        await self.run_side_effects()
+    # Class attributes
+    api_name: ClassVar[str]
+    object_type: ClassVar[Type[T]]
+    submission_criteria: ClassVar[List[SubmissionCriterion]] = []
+    side_effects: ClassVar[List[SideEffect]] = []
+    requires_proposal: ClassVar[bool] = False  # Hazardous flag
+
+    async def execute(self, params, context) -> ActionResult:
+        # 1. Validate (SubmissionCriteria)
+        # 2. Apply Edits with ConcurrencyError retry (3x)
+        # 3. Side Effects (async, fire-and-forget)
 ```
+
+### B.1 Built-in Submission Criteria
+- `RequiredField(field_name)`: Essential data validation.
+- `MaxLength(field_name, max)`: String constraints.
+- `AllowedValues(field_name, [values])`: Enum-like validation.
+- `CustomValidator(name, fn, error_msg)`: Arbitrary logic.
+
+### B.2 Built-in Side Effects
+- `LogSideEffect()`: Compliance logging.
+- `WebhookSideEffect(url)`: External system integration.
+- `SlackNotification(channel)`: Operational alerts.
 
 ### C. The Runtime (Kernel Loop)
 The "engine" that drives the system. It uses an **Active Polling** mechanism.
 *Source: `scripts/runtime/kernel.py`*
 
+#### ToolMarshaler
+*Source: `scripts/runtime/marshaler.py`*
+
+The `ToolMarshaler` provides a secure marshaling layer for executing Actions, ensuring that raw permissions are never exposed directly to the LLM.
+
+```python
+class ToolMarshaler:
+    async def execute_action(self, action_name, params, context) -> ActionResult:
+        # 1. Validate Action existence
+        # 2. Instantiate Action (Stateless)
+        # 3. Execute (Delegates to ActionType.execute)
+        return await action_instance.execute(params, context)
+```
+
 1.  **Cognitive Phase**: LLM (Instructor) converts User Intent -> `Plan` (JSON).
 2.  **Governance Phase**: Check `ActionMetadata`.
-    *   Safe? -> Execute Immediately.
+    *   Safe? -> Execute Immediately via `ToolMarshaler`.
     *   Hazardous? -> Create `Proposal` (Wait for Human/Admin).
-3.  **Execution Phase**: `ToolMarshaler` routes the Action to the Registry.
+3.  **Execution Phase**: `ToolMarshaler` handles the safe invocation.
+
+### D. Persistence Layer (NEW)
+*Source: `scripts/ontology/storage/`*
+
+#### D.1 Repository Pattern
+The deprecated `ObjectManager` cached layer has been replaced by explicit, domain-specific repositories.
+- `ProposalRepository`: Async ORM, audit history, status workflow.
+- `ActionLogRepository`: Immutable execution logs.
+
+#### D.2 ProposalRepository
+```python
+class ProposalRepository:
+    async def save(self, proposal, actor_id) -> None
+    async def find_by_id(self, id) -> Optional[Proposal]
+    async def approve(self, id, reviewer_id, comment) -> Proposal
+    async def execute(self, id, executor_id, result) -> Proposal
+    async def get_history(self, id) -> List[AuditEntry]
+```
+
+#### D.3 Optimistic Locking
+All repositories enforcement version-based concurrency control:
+- `ConcurrencyError` raised on version mismatch.
+- `ActionType.execute()` includes automatic retry (3x with exponential backoff).
 
 ---
 

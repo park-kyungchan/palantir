@@ -86,6 +86,63 @@ class InstructorClient:
                  # In future: manually fetch raw content -> repair_json -> model_validate
             raise
 
-    def generate_plan(self, prompt: str, model_name: str = "llama3.2") -> Plan:
-        """Specialized method for Plan generation."""
-        return self.generate(prompt, Plan, model_name=model_name)
+    async def generate_plan(self, prompt: str, model_name: str = "llama3.2") -> Plan:
+        """
+        Specialized method for Plan generation.
+        Uses ODA 'GeneratePlanAction' for full auditing.
+        """
+        from scripts.ontology.actions.llm_actions import GeneratePlanAction
+        from scripts.simulation.core import ActionRunner, ActionContext
+        from scripts.ontology.manager import ObjectManager # Shim
+        
+        # ODA Action Execution
+        action = GeneratePlanAction()
+        
+        # Shim Manager (until Phase 3 migration of ActionRunner)
+        # Note: We rely on the ActionRunner to handle the execution mechanics
+        runner = ActionRunner(ObjectManager(), session=None)
+        
+        ctx = ActionContext(
+            actor_id="instructor_client",
+            correlation_id=None,
+            metadata={"model": model_name}
+        )
+        ctx.parameters = {"goal": prompt, "model": model_name}
+        
+        # Execute (This returns (Plan, edits)) based on our implementation in llm_actions.py
+        # Wait, ActionRunner.execute returns ActionResult.
+        # Check ActionRunner implementation... 
+        # result = await self.execute(...) returns ActionResult.
+        
+        result = await runner.execute(action, ctx)
+        
+        if not result.success:
+             raise RuntimeError(f"Plan Generation Failed: {result.error}")
+             
+        # Extract Plan from result
+        # Our implementation of GeneratePlanAction returns (Plan, edits) to the Runner.
+        # But Runner wraps it in ActionResult.
+        # We need to extract the Plan object back.
+        # ActionResult does NOT store the return value of apply_edits directly?
+        # Check ActionRunner implementation or ActionResult definition (scripts/ontology/actions.py)
+        
+        # ActionResult has: created_ids, modified_ids, edits.
+        # It does NOT have a 'data' payload field.
+        # However, for ephemeral actions like 'Plan Generation', we usually want the object.
+        
+        # Workaround: The Plan is not persisted to DB, so 'created_ids' might be empty?
+        # In GeneratePlanAction apply_edits, I returned (plan, [edit]).
+        # ActionRunner logic: obj, edits = await action.apply_edits(...) 
+        # It doesn't seem to store 'obj' in the result unless it's in created_ids.
+        
+        # Logic Hole in ODA: How to get return values from Actions?
+        # Usually we read the DB using the created_id.
+        # But Plan is not saved to DB in that Action.
+        
+        # Temporary Fix: Re-instantiate Plan from the 'changes' in the EditOperation.
+        if result.edits:
+            changes = result.edits[0].changes
+            return Plan(**changes)
+            
+        raise RuntimeError("No Plan returned in Action Result")
+

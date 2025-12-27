@@ -10,7 +10,7 @@ from datetime import datetime
 WORKSPACE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(WORKSPACE_ROOT)
 
-from scripts.lib.preprocessing import flatten_json
+from scripts.ontology.learning.algorithms.preprocessing import flatten_json
 from scripts.lib.fpgrowth import FPTree
 from scripts.lib.textrank import extract_summary
 from scripts.memory.manager import MemoryManager
@@ -80,7 +80,7 @@ def transform_to_transactions(traces: List[Dict[str, Any]]) -> List[List[str]]:
             
     return transactions
 
-def consolidate():
+async def consolidate():
     print("🧠 [Consolidation Engine] Waking up...")
     
     # 1. Ingest
@@ -108,6 +108,7 @@ def consolidate():
     
     # 4. Synthesize & Persist
     mm = MemoryManager()
+    await mm.initialize()
     
     for pattern, support in patterns:
         if len(pattern) < 2: continue # Skip single items
@@ -139,24 +140,18 @@ def consolidate():
             # 6. Save as Pattern
             pat_obj = {
                 "id": f"PAT-{uuid.uuid4().hex[:6]}",
-                "type": "Pattern",
-                "meta": {
-                    "created_at": datetime.now().isoformat(),
-                    "updated_at": datetime.now().isoformat(),
-                    "frequency_count": support,
-                    "success_rate": 0.0, # Anti-pattern
-                    "last_used": datetime.now().isoformat(),
-                    # "source": "ConsolidationEngine" # Source not in schema, safe to remove or keep if schema allows extras? Schema usually strict.
-                },
+                "frequency_count": support,
+                "success_rate": 0.0, # Anti-pattern
                 "structure": {
                     "trigger": "System Error",
-                    "steps": [],
-                    "anti_patterns": list(pattern),
-                    "insight": summary
+                    "steps": [], # Steps not mined yet
+                    "anti_patterns": list(pattern)
                 }
             }
-            mm.save_object("pattern", pat_obj)
+            # ODA Compliance: Await the async save
+            await mm.save_object("pattern", pat_obj)
             print("      💾 Saved to Memory.")
 
 if __name__ == "__main__":
-    consolidate()
+    import asyncio
+    asyncio.run(consolidate())

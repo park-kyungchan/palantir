@@ -28,6 +28,7 @@ from scripts.ontology.storage.proposal_repository import (
     ProposalNotFoundError,
     OptimisticLockError,
 )
+from scripts.ontology.storage.task_repository import TaskRepository
 from scripts.ontology.storage.repositories import (
     ActionLogRepository,
     JobResultRepository,
@@ -59,6 +60,7 @@ __all__ = [
     "ProposalQuery",
     "ProposalNotFoundError",
     "OptimisticLockError",
+    "TaskRepository",
     # New Repositories (Sprint 2-3)
     "ActionLogRepository",
     "JobResultRepository",

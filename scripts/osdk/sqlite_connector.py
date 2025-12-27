@@ -12,7 +12,8 @@ from scripts.ontology.storage.models import (
     OrionActionLogModel, 
     JobResultModel,
     OrionInsightModel,
-    OrionPatternModel
+    OrionPatternModel,
+    LearnerModel
 )
 # Note: We need to import the Domain Objects to map them to Models.
 # However, to avoid circular imports if those files import OSDK, we might pass types at runtime.
@@ -43,6 +44,7 @@ class SQLiteConnector(DataConnector):
             "JobResult": JobResultModel,
             "OrionInsight": OrionInsightModel,
             "OrionPattern": OrionPatternModel,
+            "Learner": LearnerModel,
             # Fallbacks or aliases
             "proposal": ProposalModel,
         }
@@ -94,11 +96,26 @@ class SQLiteConnector(DataConnector):
                     conditions.append(col > f.value)
                 elif f.operator == "lt":
                     conditions.append(col < f.value)
+                elif f.operator == "gte":  # NEW
+                    conditions.append(col >= f.value)
+                elif f.operator == "lte":  # NEW
+                    conditions.append(col <= f.value)
+                elif f.operator == "between":  # NEW
+                    conditions.append(col.between(f.value[0], f.value[1]))
                 elif f.operator == "contains":
                     conditions.append(col.contains(f.value))
+                elif f.operator == "startsWith":  # NEW
+                    conditions.append(col.startswith(f.value))
+                elif f.operator == "endsWith":  # NEW
+                    conditions.append(col.endswith(f.value))
                 elif f.operator == "in":
                     conditions.append(col.in_(f.value))
-                # Add more operators as needed
+                elif f.operator == "is_null":  # NEW
+                    conditions.append(col.is_(None) if f.value else col.isnot(None))
+                elif f.operator == "regex":  # NEW
+                    conditions.append(col.regexp_match(f.value))
+                else:
+                    logger.warning(f"Unknown operator: {f.operator}")
             
             if conditions:
                 stmt = stmt.where(and_(*conditions))
@@ -133,3 +150,30 @@ class SQLiteConnector(DataConnector):
             if instance:
                 return self._to_domain(instance, object_type)
             return None
+
+    async def bulk_get(self, object_type: Type[T], ids: List[str]) -> List[T]:
+        """Retrieve multiple objects by ID."""
+        model_class = self._get_model_class(object_type)
+        if not model_class:
+            return []
+
+        async with self.db.transaction() as session:
+            stmt = select(model_class).where(model_class.id.in_(ids))
+            result = await session.execute(stmt)
+            models = result.scalars().all()
+            return [self._to_domain(m, object_type) for m in models]
+
+    async def bulk_create(self, object_type: Type[T], objects: List[T]) -> List[str]:
+        """Create multiple objects in single transaction."""
+        model_class = self._get_model_class(object_type)
+        if not model_class:
+            raise ValueError(f"No model mapping for {object_type.__name__}")
+
+        created_ids = []
+        async with self.db.transaction() as session:
+            for obj in objects:
+                model = model_class(**obj.model_dump())
+                session.add(model)
+                created_ids.append(obj.id)
+
+        return created_ids

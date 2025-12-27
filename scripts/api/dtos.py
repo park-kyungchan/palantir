@@ -75,3 +75,21 @@ class StandardErrorResponse(BaseModel):
     code: str
     message: str
     details: Optional[Dict[str, Any]] = None
+
+class ExecuteActionRequest(BaseModel):
+    """
+    Direct execution request for non-hazardous actions.
+    """
+    action_type: str = Field(..., description="API Name of the action")
+    params: Dict[str, Any] = Field(default_factory=dict, description="Action parameters")
+
+class ActionResultResponse(BaseModel):
+    """
+    Result of an action execution.
+    """
+    action_type: str
+    success: bool
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    trace_id: Optional[str] = None
+    timestamp: datetime

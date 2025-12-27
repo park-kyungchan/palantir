@@ -1,86 +1,88 @@
 import asyncio
-import sqlite3
-import uuid
+import logging
 from typing import Optional, Dict
+from datetime import datetime, timezone
+
+from scripts.ontology.storage.database import get_database
+from scripts.ontology.storage.relay_repository import RelayRepository
+from scripts.ontology.storage.models import RelayTaskModel
+# Import domain object if needed, or use dict for compat
+
+logger = logging.getLogger(__name__)
 
 class RelayQueue:
     """
-    Production-Ready SQLite Queue.
-    Features: WAL Mode, 30s Timeout, RowFactory.
+    ODA-Compliant Async Relay Queue.
+    Backed by RelayRepository (Postgres/SQLite via SQLAlchemy Async).
     """
-    def __init__(self, db_path="relay.db"):
-        self.db_path = db_path
-        self._init_db()
+    def __init__(self):
+        # Initialize Repo. Note: get_database() might need await in some contexts?
+        # get_database() is sync accessor for singleton.
+        self.db = get_database()
+        self.repo = RelayRepository(self.db)
+        # Ensure 'relay_tasks' table exists? Base.metadata.create_all handles it on boot.
 
-    def _get_conn(self):
-        conn = sqlite3.connect(self.db_path, timeout=30.0)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _init_db(self):
-        with self._get_conn() as conn:
-            # Enable WAL for concurrency
-            conn.execute("PRAGMA journal_mode=WAL;")
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS relay_tasks (
-                    id TEXT PRIMARY KEY,
-                    prompt TEXT,
-                    status TEXT DEFAULT 'pending',
-                    response TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_status ON relay_tasks(status);")
-
-    def enqueue(self, prompt: str) -> str:
+    async def enqueue(self, prompt: str) -> str:
+        """
+        Enqueue a task asynchronously.
+        Returns task_id.
+        """
+        # Create domain object or use model directly via repo specific methods?
+        # RelayRepository relies on RelayTask domain object.
+        # Let's import RelayTask from repository file (helper)
+        from scripts.ontology.storage.relay_repository import RelayTask as RelayTaskDomain
+        import uuid
+        
         task_id = str(uuid.uuid4())
-        with self._get_conn() as conn:
-            conn.execute("INSERT INTO relay_tasks (id, prompt) VALUES (?, ?)", (task_id, prompt))
-            # Auto-commit via context manager
-        print(f"[RelayQueue] Enqueued task {task_id}")
+        task = RelayTaskDomain(
+            id=task_id,
+            prompt=prompt,
+            status="pending",
+            created_at=datetime.now(timezone.utc), # Pydantic will handle this? Repo model defaults.
+            updated_at=datetime.now(timezone.utc),
+            version=1,
+            response=None
+        )
+        
+        await self.repo.save(task)
+        logger.info(f"[RelayQueue] Enqueued task {task_id}")
         return task_id
 
-    def dequeue(self) -> Optional[Dict]:
+    async def dequeue(self) -> Optional[Dict]:
         """
         Atomic Dequeue: Find pending -> Mark processing.
+        Returns dict for compatibility.
         """
-        with self._get_conn() as conn:
-            # Simple lock strategy for now (SQLite single-writer handles this via timeout)
-            cursor = conn.execute("SELECT id, prompt FROM relay_tasks WHERE status='pending' LIMIT 1")
-            row = cursor.fetchone()
-            if row:
-                conn.execute("UPDATE relay_tasks SET status='processing' WHERE id=?", (row['id'],))
-                return dict(row)
+        task = await self.repo.dequeue_pending()
+        if task:
+            return task.model_dump()
         return None
 
-    def complete(self, task_id: str, response: str):
-        with self._get_conn() as conn:
-            conn.execute("UPDATE relay_tasks SET status='completed', response=? WHERE id=?", (response, task_id))
-        print(f"[RelayQueue] Completed task {task_id}")
+    async def complete(self, task_id: str, response: str):
+        """
+        Mark task as completed.
+        """
+        # Repo doesn't have partial update easily unless we fetch first.
+        # But we can use repo.save() with updated fields.
+        task = await self.repo.find_by_id(task_id)
+        if task:
+            task.status = "completed"
+            task.response = response
+            task.version += 1
+            await self.repo.save(task)
+            logger.info(f"[RelayQueue] Completed task {task_id}")
+        else:
+            logger.warning(f"[RelayQueue] Task {task_id} not found for completion.")
 
     # =========================================================================
-    # ASYNC WRAPPERS (Palantir AIP Async Compliance)
+    # ASYNC WRAPPERS (Aliases for Compatibility)
     # =========================================================================
-    # These methods wrap sync SQLite operations in asyncio.to_thread()
-    # to prevent blocking the event loop in async contexts like OrionRuntime.
+    
+    async def enqueue_async(self, prompt: str) -> str:
+        return await self.enqueue(prompt)
 
     async def dequeue_async(self) -> Optional[Dict]:
-        """
-        Non-blocking dequeue for async contexts.
-        Wraps sync dequeue() in thread pool executor.
-        """
-        return await asyncio.to_thread(self.dequeue)
-
-    async def enqueue_async(self, prompt: str) -> str:
-        """
-        Non-blocking enqueue for async contexts.
-        Wraps sync enqueue() in thread pool executor.
-        """
-        return await asyncio.to_thread(self.enqueue, prompt)
+        return await self.dequeue()
 
     async def complete_async(self, task_id: str, response: str) -> None:
-        """
-        Non-blocking complete for async contexts.
-        Wraps sync complete() in thread pool executor.
-        """
-        await asyncio.to_thread(self.complete, task_id, response)
+        await self.complete(task_id, response)
