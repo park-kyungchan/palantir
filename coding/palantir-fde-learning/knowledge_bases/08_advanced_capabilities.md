@@ -235,3 +235,146 @@ Success relies on a hierarchy of competencies:
 4.  **Inclusivity:** deeply integrating Accessibility standards through Blueprint's specialized tooling to serve all users effectively.
 
 By mastering these architectural patterns, engineers can construct interfaces that do not merely display data but empower users to derive intelligence from chaos.
+
+---
+
+## 10. Practice Exercise
+
+**Difficulty**: Advanced
+
+**Challenge**: Build a Real-Time Data Visualization with Web Workers and WebSockets
+
+You are tasked with building a high-performance scatter plot that displays 100,000 real-time data points streamed via WebSocket. The visualization must remain responsive (60fps) while processing incoming data at 100 messages per second.
+
+**Your Task**:
+1. Implement a Web Worker to handle data parsing and LTTB downsampling
+2. Set up WebSocket connection with automatic reconnection and exponential backoff
+3. Use `requestAnimationFrame` to batch state updates and prevent React reconciliation storms
+4. Render the scatter plot using Canvas (not SVG) for performance
+5. Implement a spatial index (Quadtree) for efficient hover detection on 100k points
+
+**Acceptance Criteria**:
+- Main thread must never be blocked for more than 16ms (maintain 60fps)
+- WebSocket reconnection must use exponential backoff (1s, 2s, 4s, 8s, max 30s)
+- Downsampling must reduce 100k points to 1000 points using LTTB algorithm
+- Hover detection must identify the nearest point within 5ms
+- Memory usage must remain stable (no leaks) after 10 minutes of streaming
+- The solution must work in a cross-origin isolated context (SharedArrayBuffer ready)
+
+**Starter Code**:
+```typescript
+// workers/dataProcessor.worker.ts
+self.onmessage = (event: MessageEvent) => {
+  const { type, payload } = event.data;
+
+  switch (type) {
+    case 'PROCESS_BATCH':
+      // TODO: Parse incoming data
+      // TODO: Apply LTTB downsampling
+      // TODO: Build/update Quadtree for spatial indexing
+      // TODO: Post processed data back to main thread
+      break;
+    case 'FIND_NEAREST':
+      // TODO: Use Quadtree to find nearest point to coordinates
+      break;
+  }
+};
+
+// Largest-Triangle-Three-Buckets Algorithm
+function lttbDownsample(data: Point[], threshold: number): Point[] {
+  // TODO: Implement LTTB
+  // 1. Always include first and last points
+  // 2. Divide remaining data into (threshold - 2) buckets
+  // 3. For each bucket, select point that forms largest triangle
+  //    with previously selected point and average of next bucket
+  return data;
+}
+```
+
+```typescript
+// hooks/useRealtimeData.ts
+import { useEffect, useRef, useCallback } from 'react';
+
+interface UseRealtimeDataOptions {
+  url: string;
+  onData: (points: Point[]) => void;
+}
+
+export function useRealtimeData({ url, onData }: UseRealtimeDataOptions) {
+  const wsRef = useRef<WebSocket | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const bufferRef = useRef<any[]>([]);
+  const retryCountRef = useRef(0);
+
+  // TODO: Initialize Web Worker
+  // TODO: Set up WebSocket with reconnection logic
+  // TODO: Buffer incoming messages
+  // TODO: Use requestAnimationFrame to batch updates
+
+  const connect = useCallback(() => {
+    // TODO: Implement WebSocket connection
+    // TODO: On message, push to buffer (don't setState!)
+    // TODO: On close, schedule reconnection with exponential backoff
+  }, [url]);
+
+  useEffect(() => {
+    // RAF loop for batched updates
+    let rafId: number;
+    const flushBuffer = () => {
+      if (bufferRef.current.length > 0) {
+        // TODO: Send batch to worker for processing
+        bufferRef.current = [];
+      }
+      rafId = requestAnimationFrame(flushBuffer);
+    };
+    rafId = requestAnimationFrame(flushBuffer);
+
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  return { connect, disconnect: () => wsRef.current?.close() };
+}
+```
+
+```typescript
+// components/ScatterPlot.tsx
+import { useRef, useEffect, useCallback } from 'react';
+
+interface ScatterPlotProps {
+  points: Point[];
+  onHover: (point: Point | null) => void;
+}
+
+export function ScatterPlot({ points, onHover }: ScatterPlotProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const quadtreeRef = useRef<Quadtree | null>(null);
+
+  // TODO: Render points to Canvas using 2D context
+  // TODO: Implement mouse move handler that queries Quadtree
+  // TODO: Highlight hovered point without full re-render
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // TODO: Get canvas-relative coordinates
+    // TODO: Query worker for nearest point (via postMessage)
+    // TODO: Call onHover with result
+  }, [onHover]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={800}
+      height={600}
+      onMouseMove={handleMouseMove}
+      style={{ cursor: 'crosshair' }}
+    />
+  );
+}
+```
+
+---
+
+## 11. Adaptive Next Steps
+
+- **If you understood this module**: You have completed the core curriculum. Proceed to build a **Capstone Project** that integrates all modules: a real-time graph visualization with comprehensive test coverage, optimized build pipeline, and clean Git history
+- **If you need more practice**: Review [Module 05: Testing Pyramid](./05_testing_pyramid.md) to learn how to test Web Workers and WebSocket connections using Jest mocking and Playwright network interception
+- **For deeper exploration**: Explore **WebGPU** for next-generation GPU-accelerated rendering, investigate **Comlink** for simplified Web Worker communication, study **Apache Arrow** for efficient columnar data transfer between workers, and dive into **OffscreenCanvas** for rendering in worker threads

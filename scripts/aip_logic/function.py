@@ -9,8 +9,10 @@ Output = TypeVar("Output", bound=BaseModel)
 
 class LogicContext(BaseModel):
     """Execution context for a Logic Function (e.g. current user, loaded objects)."""
-    # Placeholder for context variables
-    pass
+    llm: Optional[InstructorClient] = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
 class LogicFunction(ABC, Generic[Input, Output]):
     """

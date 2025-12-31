@@ -394,3 +394,111 @@ Mastering the testing pyramid is not merely about learning syntax; it is about a
 *   **Interview Frequency:** 5/5 (Debugging/Re-engineering is 100% guaranteed)
 *   **Palantir Criticality:** 5/5 (Quality is paramount; "It works on my machine" is unacceptable)
 *   **Depth Required:** 4/5 (Must understand why things fail, not just syntax; deep knowledge of the Event Loop and DOM is required for advanced debugging)
+
+---
+
+## 11. Practice Exercise
+
+**Difficulty**: Intermediate
+
+**Challenge**: Build a Comprehensive Test Suite for a Data Fetching Component
+
+You are given a `<DataGrid />` component that fetches data from an API, displays it in a Blueprint Table, and allows users to filter, sort, and paginate. The component has a bug: when rapidly changing filters, stale data sometimes overwrites fresh data (a race condition).
+
+**Your Task**:
+1. Write a failing Jest/RTL test that reproduces the race condition bug
+2. Fix the bug using an `AbortController` pattern
+3. Write a Playwright E2E test that verifies the filter interaction works correctly
+4. Ensure accessibility compliance using `jest-axe`
+
+**Acceptance Criteria**:
+- The reproduction test must fail before the fix and pass after
+- The fix must use `AbortController` to cancel stale requests in the `useEffect` cleanup
+- The E2E test must wait for network idle before asserting DOM state
+- All tests must pass accessibility audit with zero violations
+- Test coverage for the component must exceed 80% branch coverage
+
+**Starter Code**:
+```typescript
+// DataGrid.tsx - The buggy component
+import { useState, useEffect } from 'react';
+import { HTMLTable, Spinner } from '@blueprintjs/core';
+
+interface DataGridProps {
+  endpoint: string;
+}
+
+export const DataGrid = ({ endpoint }: DataGridProps) => {
+  const [data, setData] = useState<any[]>([]);
+  const [filter, setFilter] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    // BUG: No cancellation of stale requests
+    fetch(`${endpoint}?filter=${filter}`)
+      .then(res => res.json())
+      .then(json => {
+        setData(json.results);
+        setLoading(false);
+      });
+  }, [endpoint, filter]);
+
+  return (
+    <div>
+      <input
+        aria-label="Filter data"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
+      {loading ? <Spinner /> : (
+        <HTMLTable>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={i}><td>{row.name}</td></tr>
+            ))}
+          </tbody>
+        </HTMLTable>
+      )}
+    </div>
+  );
+};
+
+// __tests__/DataGrid.test.tsx - Write your tests here
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { axe } from 'jest-axe';
+import { DataGrid } from '../DataGrid';
+
+// Mock fetch
+global.fetch = jest.fn();
+
+describe('DataGrid', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('should not display stale data when filters change rapidly', async () => {
+    // TODO: Implement race condition reproduction test
+  });
+
+  it('should be accessible', async () => {
+    // TODO: Implement accessibility test
+  });
+});
+
+// e2e/datagrid.spec.ts - Playwright test
+import { test, expect } from '@playwright/test';
+
+test('filter interaction updates grid correctly', async ({ page }) => {
+  // TODO: Implement E2E test with network interception
+});
+```
+
+---
+
+## 12. Adaptive Next Steps
+
+- **If you understood this module**: Proceed to [Module 06: Build Tooling](./06_build_tooling.md) to learn how Webpack and Vite optimize your tested code for production deployment
+- **If you need more practice**: Review [Module 03: React Fundamentals](./03_react_fundamentals.md) to strengthen your understanding of hooks and effects before tackling advanced mocking patterns
+- **For deeper exploration**: Explore **Mutation Testing with Stryker** to validate the quality of your test assertions, and investigate **Contract Testing with Pact** for API integration testing in microservices architectures

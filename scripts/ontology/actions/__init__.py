@@ -43,7 +43,7 @@ from scripts.ontology.ontology_types import OntologyObject, utc_now
 
 logger = logging.getLogger(__name__)
 
-from scripts.ontology.storage.exceptions import ConcurrencyError
+# ConcurrencyError is imported lazily in execute() to avoid circular imports
 
 
 # =============================================================================
@@ -251,6 +251,7 @@ class ActionContext:
     actor_id: str  # User or Agent ID
     timestamp: datetime = field(default_factory=utc_now)
     correlation_id: Optional[str] = None  # For distributed tracing
+    session: Optional[Any] = None  # Explicit AsyncSession injection
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     @classmethod
@@ -417,21 +418,25 @@ class ActionType(ABC, Generic[T]):
                 )
                 break  # Success, exit retry loop
                 
-            except ConcurrencyError as e:
-                last_error = e
-                if attempt < MAX_RETRIES - 1:
-                    wait_time = BACKOFF_BASE * (2 ** attempt)
-                    logger.warning(f"ConcurrencyError on {self.api_name}, retry {attempt+1}/{MAX_RETRIES} in {wait_time}s")
-                    await asyncio.sleep(wait_time)
-                else:
-                    logger.error(f"All retries exhausted for {self.api_name}")
-                    return ActionResult(
-                        action_type=self.api_name,
-                        success=False,
-                        error=f"Concurrency conflict after {MAX_RETRIES} retries",
-                        error_details={"exception": str(e)},
-                    )
             except Exception as e:
+                # Lazy import to avoid circular dependency
+                from scripts.ontology.storage.exceptions import ConcurrencyError
+                if isinstance(e, ConcurrencyError):
+                    last_error = e
+                    if attempt < MAX_RETRIES - 1:
+                        wait_time = BACKOFF_BASE * (2 ** attempt)
+                        logger.warning(f"ConcurrencyError on {self.api_name}, retry {attempt+1}/{MAX_RETRIES} in {wait_time}s")
+                        await asyncio.sleep(wait_time)
+                        continue  # Continue to next retry attempt
+                    else:
+                        logger.error(f"All retries exhausted for {self.api_name}")
+                        return ActionResult(
+                            action_type=self.api_name,
+                            success=False,
+                            error=f"Concurrency conflict after {MAX_RETRIES} retries",
+                            error_details={"exception": str(e)},
+                        )
+                # Not a ConcurrencyError - handle as regular exception
                 logger.exception(f"Action {self.api_name} failed")
                 return ActionResult(
                     action_type=self.api_name,

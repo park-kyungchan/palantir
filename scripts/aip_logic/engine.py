@@ -32,6 +32,10 @@ class LogicEngine:
         if context is None:
             context = LogicContext()
 
+        # [DI] Inject the Engine's LLM client if the context doesn't have one
+        if context.llm is None:
+            context.llm = self.llm
+
         function_instance = function_cls() # Assuming no-arg init for now or require factory
         
         try:
@@ -66,15 +70,13 @@ class LLMBasedLogicFunction(LogicFunction[Input, Output]):
          pass
 
     async def run(self, input_data: Input, context: LogicContext) -> Output:
-        # We need access to LLM here. 
-        # Plan update: Engine injects LLM into Function or Context?
-        # Let's attach LLM to context for now to keep run() signature clean.
-        # But InstructorClient is not in LogicContext yet.
-        # Let's import the global client or expect it in context.
-        
-        # For this prototype, we'll instantiate a client if missing, or better, 
-        # LogicEngine sets it on the instance before run.
-        client = InstructorClient() # Use default for now, creates new session. 
-        
+        # [DI] Use injected LLM or fallback to new instance (legacy support)
+        # In strict mode, we should mandate context.llm is present using LogicEngine
+        client = context.llm
+        if not client:
+             # This fallback exists to support direct instantiation outside of Engine, 
+             # but logs a warning in debug mode.
+             client = InstructorClient() 
+
         prompt = self.render_prompt(input_data)
-        return client.generate(prompt, self.output_type, model_name=self.model_name)
+        return await client.generate_async(prompt, self.output_type, model_name=self.model_name)

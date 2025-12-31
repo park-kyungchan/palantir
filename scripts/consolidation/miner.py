@@ -1,68 +1,73 @@
+"""
+Consolidation Miner: Turns Action History into Wisdom.
 
+Migrated to ODA V3.0 (Async Repository Pattern).
+"""
+
+import asyncio
 import logging
-from sqlalchemy import select, func
-from scripts.ontology.manager import ObjectManager
-from scripts.ontology.db import objects_table
-from scripts.ontology.schemas.governance import OrionActionLog
+from typing import Optional
+
+from scripts.ontology.storage import (
+    initialize_database,
+    ActionLogRepository,
+    InsightRepository,
+    Database,
+)
 from scripts.ontology.schemas.memory import OrionInsight, InsightContent, InsightProvenance
 
 logger = logging.getLogger("ConsolidationEngine")
 logging.basicConfig(level=logging.INFO)
 
+
 class ConsolidationMiner:
     """
     Phase 5 Engine: Turns Action History into Wisdom.
+    
+    ODA V3.0 Migration: Uses async Repository pattern instead of ObjectManager.
     """
-    def __init__(self, manager: ObjectManager):
-        self.manager = manager
+    
+    def __init__(self, db: Database):
+        self._db = db
+        self._action_log_repo = ActionLogRepository(db)
+        self._insight_repo = InsightRepository(db)
         
-    def mine_failures(self):
+    async def mine_failures(self) -> None:
         """
         Scan for repeated failures to generate Anti-Patterns.
         """
-        session = self.manager.default_session
-        
-        # SQL: Select error, count(*) from objects where type='OrionActionLog' and status='FAILURE' group by error
-        # Since 'data' is JSON, querying detailed stats is hard in pure SQL without JSON extension enabled properly.
-        # But we can query all FAILURE logs and process in memory for MVP.
-        
-        # 1. Fetch all Failure Logs
-        # Limitation: This fetches ALL rows. V4 needs pagination/filtering by timestamp.
-        stmt = select(objects_table).where(
-            objects_table.c.type == "OrionActionLog"
-        )
-        rows = session.execute(stmt).fetchall()
+        # Fetch all action logs via repository
+        logs = await self._action_log_repo.find_all()
         
         failures = []
-        for row in rows:
-            data = row.data
-            if data.get("status") == "FAILURE":
-                failures.append(data)
+        for log in logs:
+            if log.status == "FAILURE":
+                failures.append(log)
                 
         logger.info(f"[Miner] Found {len(failures)} failed actions.")
         
-        # 2. Cluster by Error Message
-        error_clusters = {}
+        # Cluster by Error Message
+        error_clusters: dict[str, int] = {}
         for f in failures:
-            msg = f.get("error")
-            action = f.get("action_type")
+            msg = f.error or "Unknown"
+            action = f.action_type or "Unknown"
             key = f"{action}::{msg}"
             error_clusters[key] = error_clusters.get(key, 0) + 1
             
-        # 3. Generate Insights for clusters > threshold
+        # Generate Insights for clusters > threshold
         THRESHOLD = 2
         for key, count in error_clusters.items():
             if count >= THRESHOLD:
-                self._generate_anti_pattern(key, count)
+                await self._generate_anti_pattern(key, count)
 
-    def _generate_anti_pattern(self, key: str, count: int):
+    async def _generate_anti_pattern(self, key: str, count: int) -> None:
         action, error = key.split("::", 1)
         
-        # Check if Insight already exists? (De-duplication)
-        # For MVP, we'll just create one and let the user merge/dedupe later or use a deterministic ID.
+        # Deterministic ID for de-duplication
         insight_id = f"INSIGHT-FAIL-{abs(hash(key))}"
         
-        existing = self.manager.get(OrionInsight, insight_id)
+        # Check if Insight already exists
+        existing = await self._insight_repo.find_by_id(insight_id)
         if existing:
             logger.info(f"[Miner] Insight {insight_id} already exists. Skipping.")
             return
@@ -79,12 +84,18 @@ class ConsolidationMiner:
             ),
             provenance=InsightProvenance(
                 method="mining",
-                source_episodic_ids=[] # We could link the ActionLog IDs here
+                source_episodic_ids=[]
             )
         )
-        self.manager.save(insight)
+        await self._insight_repo.save(insight, actor_id="consolidation-engine")
+
+
+async def main() -> None:
+    """Entry point for consolidation mining."""
+    db = await initialize_database()
+    miner = ConsolidationMiner(db)
+    await miner.mine_failures()
+
 
 if __name__ == "__main__":
-    om = ObjectManager()
-    miner = ConsolidationMiner(om)
-    miner.mine_failures()
+    asyncio.run(main())

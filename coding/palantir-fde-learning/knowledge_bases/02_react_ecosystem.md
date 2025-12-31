@@ -368,4 +368,92 @@ The candidate should articulate a mindset of "mission-critical engineering." In 
 
 ## 7. Conclusion
 
-Success in the Palantir Frontend Engineering interview requires demonstrating that one is not just a "React developer," but a systems engineer who works in the browser. The integration of React 18’s concurrent capabilities, Blueprint’s rigorous virtualization and accessibility standards, and Redoodle’s strict type safety creates a powerful triad. For the candidate building the "Universal Tutor," translating their background in AI/ML and mathematics into these specific architectural patterns—viewing the UI as a function of state that must be optimized, virtualized, and strictly typed—is the key to securing the role.
+Success in the Palantir Frontend Engineering interview requires demonstrating that one is not just a "React developer," but a systems engineer who works in the browser. The integration of React 18's concurrent capabilities, Blueprint's rigorous virtualization and accessibility standards, and Redoodle's strict type safety creates a powerful triad. For the candidate building the "Universal Tutor," translating their background in AI/ML and mathematics into these specific architectural patterns—viewing the UI as a function of state that must be optimized, virtualized, and strictly typed—is the key to securing the role.
+
+---
+
+## 8. Practice Exercise
+
+**Difficulty**: Intermediate
+
+**Challenge**: Build a custom `useDebounceSearch` hook that demonstrates mastery of React hooks, `useTransition`, and proper cleanup patterns for a search input that queries a large dataset.
+
+**Acceptance Criteria**:
+- Must use `useState` and `useEffect` with proper cleanup to prevent memory leaks
+- Must implement `useTransition` to keep the input responsive while filtering
+- Must handle the "stale closure" problem correctly
+- Must return `isPending` state for loading indicators
+- Must cancel pending operations when the component unmounts
+
+**Starter Code**:
+```typescript
+import { useState, useEffect, useTransition, useCallback } from 'react';
+
+interface UseDebounceSearchOptions<T> {
+  data: T[];
+  filterFn: (item: T, query: string) => boolean;
+  debounceMs?: number;
+}
+
+interface UseDebounceSearchResult<T> {
+  query: string;
+  setQuery: (q: string) => void;
+  filteredData: T[];
+  isPending: boolean;
+}
+
+function useDebounceSearch<T>({
+  data,
+  filterFn,
+  debounceMs = 300,
+}: UseDebounceSearchOptions<T>): UseDebounceSearchResult<T> {
+  // TODO: Implement the hook
+  // 1. Create state for the immediate input value (query)
+  // 2. Create state for the filtered results
+  // 3. Use useTransition for non-blocking filtering
+  // 4. Use useEffect with debounce logic and cleanup
+  // 5. Handle the stale closure issue with useCallback or refs
+
+  throw new Error('Not implemented');
+}
+
+// Test component:
+interface Student {
+  id: string;
+  name: string;
+  gpa: number;
+}
+
+const StudentSearch = ({ students }: { students: Student[] }) => {
+  const { query, setQuery, filteredData, isPending } = useDebounceSearch({
+    data: students,
+    filterFn: (student, q) =>
+      student.name.toLowerCase().includes(q.toLowerCase()),
+    debounceMs: 250,
+  });
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search students..."
+      />
+      {isPending && <span>Loading...</span>}
+      <ul style={{ opacity: isPending ? 0.7 : 1 }}>
+        {filteredData.map((s) => (
+          <li key={s.id}>{s.name} - GPA: {s.gpa}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+---
+
+## 9. Adaptive Next Steps
+
+- **If you understood this module**: Proceed to [03_styling_systems.md](./03_styling_systems.md) to learn how Blueprint's Sass architecture and theming system integrate with the React components covered here.
+- **If you need more practice**: Review [01_language_foundation.md](./01_language_foundation.md) to solidify your understanding of closures and the event loop, as these are fundamental to understanding why stale closures occur in React hooks.
+- **For deeper exploration**: Explore the React 18 Working Group discussions on GitHub and the Fiber architecture deep-dives to understand the internal mechanics of concurrent rendering and how it enables interruptible work units.

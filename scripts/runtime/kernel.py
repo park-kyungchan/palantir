@@ -16,6 +16,7 @@ from scripts.ontology.objects.proposal import Proposal, ProposalStatus
 from scripts.ontology.actions import action_registry, GovernanceEngine, ActionContext
 from scripts.ontology.plan import Plan
 from scripts.runtime.marshaler import ToolMarshaler
+from scripts.aip_logic.engine import LogicEngine  # [AIP Logic Integration]
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO, format="[%(name)s] %(message)s")
@@ -30,10 +31,12 @@ class OrionRuntime:
     2. Registry Supremacy: Actions via `ActionRegistry`.
     3. Metadata Governance: Policy via `GovernanceEngine`.
     4. Deterministic AI: Uses `instructor` for strict JSON outputs.
+    5. Logic Injection: Centralized AI Logic Engine.
     """
     def __init__(self):
         # self.router = HybridRouter() # Deprecated in favor of direct Instructor for now
         self.llm = InstructorClient()
+        self.logic_engine = LogicEngine(self.llm)  # [DI] Centralized Logic Engine
         self.relay = RelayQueue()
         self.governance = GovernanceEngine(action_registry)
         self.marshaler = ToolMarshaler(action_registry)

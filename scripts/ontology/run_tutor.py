@@ -67,8 +67,8 @@ async def run_session_generation(target_path: str, user_id: str):
     print(f"==================================================")
     if recommendations:
         top = recommendations[0]
-        print(f"📚 Top Recommendation: {top['file_path']}")
-        print(f"   - Score: {top['score']['total_score']} (Stretch: {top['stretch_index']})")
+        print(f"📚 Top Recommendation: {top['file']}")
+        print(f"   - Score: {top['tcs']} (ZPD: {top['zpd_score']})")
     else:
         print("📚 No suitable lessons found in ZPD.")
     print(f"🧠 Learner Theta: {learner['theta']}")

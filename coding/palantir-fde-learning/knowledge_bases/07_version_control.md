@@ -355,3 +355,116 @@ The "Universal Tutor" is not just a project; it is the proving ground. Every git
 | **Syncing** | `git pull --rebase origin main` | Update local feature branch with latest main changes without creating a merge bubble. |
 
 This playbook serves as the definitive guide for mastering the Version Control & Collaboration domain for the Palantir interview.
+
+---
+
+## 9. Practice Exercise
+
+**Difficulty**: Intermediate
+
+**Challenge**: Master Git History Manipulation and Regression Hunting
+
+You are working on a feature branch for the "Universal Tutor" graph visualization component. After 2 weeks of development, you have 15 commits with a messy history including "WIP", "fix typo", and "debugging" commits. Additionally, a performance regression has been reported in the graph rendering, and you need to find when it was introduced.
+
+**Your Task**:
+1. Clean up the commit history using interactive rebase to create 4 atomic, semantic commits
+2. Use `git bisect` with an automated test script to find the commit that introduced the regression
+3. Create a fixup commit for a code review change without manually rebasing
+4. Recover from a simulated disaster where you accidentally reset your branch
+
+**Acceptance Criteria**:
+- Final history must have exactly 4 commits with conventional commit messages (feat:, fix:, refactor:, test:)
+- Each commit must be atomic (builds and tests pass independently)
+- The bisect script must exit with code 0 for good commits and 1 for bad commits
+- You must demonstrate recovery using `git reflog` after a simulated `git reset --hard`
+- All commits must be GPG signed
+
+**Starter Code**:
+```bash
+#!/bin/bash
+# setup-exercise.sh - Creates a messy git history for practice
+
+git init universal-tutor-exercise
+cd universal-tutor-exercise
+
+# Simulate 15 messy commits
+echo "// Graph component v1" > Graph.tsx
+git add . && git commit -m "initial"
+
+echo "// Add force simulation" >> Graph.tsx
+git commit -am "wip"
+
+echo "// Fix centering" >> Graph.tsx
+git commit -am "fix stuff"
+
+echo "// Add zoom handler" >> Graph.tsx
+git commit -am "WIP zoom"
+
+echo "// Optimize render - BUG INTRODUCED HERE" >> Graph.tsx
+echo "const SLOW_LOOP = true;" >> Graph.tsx  # Performance regression
+git commit -am "trying something"
+
+echo "// Add pan gesture" >> Graph.tsx
+git commit -am "more wip"
+
+echo "// Fix typo in variable" >> Graph.tsx
+git commit -am "typo"
+
+echo "// Add node selection" >> Graph.tsx
+git commit -am "selection maybe working"
+
+echo "// Debug logging" >> Graph.tsx
+git commit -am "debugging"
+
+echo "// Remove debug" >> Graph.tsx
+git commit -am "remove debug"
+
+echo "// Add edge rendering" >> Graph.tsx
+git commit -am "edges"
+
+echo "// Style updates" >> Graph.tsx
+git commit -am "css"
+
+echo "// Add tests" > Graph.test.tsx
+git add . && git commit -m "tests wip"
+
+echo "// More tests" >> Graph.test.tsx
+git commit -am "more tests"
+
+echo "// Final cleanup" >> Graph.tsx
+git commit -am "cleanup"
+
+echo "Setup complete. Your task: clean this history!"
+```
+
+```bash
+#!/bin/bash
+# test-performance.sh - Bisect script to find regression
+
+# Check if the performance bug marker exists
+if grep -q "SLOW_LOOP" Graph.tsx; then
+    echo "FAIL: Performance regression detected"
+    exit 1  # Bad commit
+else
+    echo "PASS: No regression"
+    exit 0  # Good commit
+fi
+```
+
+```bash
+# Commands to practice (in order):
+# 1. git log --oneline  # View messy history
+# 2. git rebase -i HEAD~15  # Start interactive rebase
+# 3. git bisect start && git bisect bad HEAD && git bisect good <first-commit>
+# 4. git bisect run ./test-performance.sh
+# 5. git commit --fixup <target-sha>  # For code review changes
+# 6. git reflog  # After simulated disaster
+```
+
+---
+
+## 10. Adaptive Next Steps
+
+- **If you understood this module**: Proceed to [Module 08: Advanced Capabilities](./08_advanced_capabilities.md) to learn about Web Workers, WebSockets, and advanced browser APIs that require careful version control of complex, multi-threaded code
+- **If you need more practice**: Review [Module 02: Development Environment](./02_development_environment.md) to ensure your Git configuration, GPG signing, and shell aliases are properly set up for efficient workflows
+- **For deeper exploration**: Explore **Git Internals** to understand the object model (blobs, trees, commits), investigate **Gerrit** for enterprise code review workflows used in large organizations, and study **Conventional Commits** with **semantic-release** for automated versioning pipelines

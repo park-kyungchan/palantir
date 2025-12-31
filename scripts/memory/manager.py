@@ -28,11 +28,6 @@ class MemoryManager:
         """Async initialization of database connection."""
         self._db = await initialize_database()
         
-    def _ensure_manager_facade(self):
-        """Temporary shim to provide ObjectManager to ActionRunner."""
-        from scripts.ontology.manager import ObjectManager
-        return ObjectManager()
-
     async def save_object(self, obj_type: str, data: Dict[str, Any]) -> str:
         """
         Persist object via ODA Action.
@@ -41,8 +36,8 @@ class MemoryManager:
         if self._db is None:
             await self.initialize()
             
-        # Instantiate ActionRunner with the shim
-        runner = ActionRunner(self._ensure_manager_facade(), session=None)
+        # Instantiate ActionRunner with Database
+        runner = ActionRunner(self._db)
         
         # Select Action
         if obj_type == "insight":

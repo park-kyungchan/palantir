@@ -554,3 +554,80 @@ This code demonstrates knowledge of:
 ## 10. Conclusion
 
 For the "Universal Tutor" project, the styling system is a foundational architectural component that dictates the user experience. By leveraging Sass for its compile-time performance and Blueprint UI for its robust enterprise patterns, the development team can build an interface that remains fluid and responsive even under the load of massive datasets and complex AI visualizations. The path forward involves embracing the `sass-embedded` compiler for build performance, adopting CSS Variables for runtime theming flexibility, and rigorously enforcing Accessibility standards through Blueprint's specialized utilities. This combination ensures that the application meets the rigorous engineering standards expected within the Palantir ecosystem.
+
+---
+
+## 11. Practice Exercise
+
+**Difficulty**: Intermediate
+
+**Challenge**: Create a Sass-based theming system for a "Universal Tutor" dashboard that supports light/dark modes and customizable accent colors using Blueprint's variable override pattern.
+
+**Acceptance Criteria**:
+- Must use the `!default` pattern to allow theme overrides before Blueprint import
+- Must implement a tiered token system (primitives -> semantics -> components)
+- Must use Sass maps and `@each` loops to generate utility classes programmatically
+- Must support runtime theme switching via CSS Custom Properties
+- Must include proper dark mode containment using the `.bp4-dark` pattern
+
+**Starter Code**:
+```scss
+// _tutor-tokens.scss
+// TODO: Define your design token architecture
+
+// Tier 1: Primitives - Raw color values
+$tutor-colors-primitive: (
+  "blue": (
+    "100": #E1F5FE,
+    "500": #2196F3,
+    "900": #0D47A1
+  ),
+  "green": (
+    "100": #E8F5E9,
+    "500": #4CAF50,
+    "900": #1B5E20
+  )
+  // TODO: Add more color scales
+);
+
+// Tier 2: Semantic - Intent-based tokens
+// TODO: Map primitives to semantic meanings
+// Example: $tutor-action-primary, $tutor-feedback-success, etc.
+
+// Tier 3: Component - Specific UI element tokens
+// TODO: Map semantic tokens to component-specific variables
+// Example: $tutor-card-background, $tutor-button-primary-bg, etc.
+
+// Blueprint Integration
+// TODO: Override Blueprint variables BEFORE importing
+// $pt-intent-primary: ???;
+// @import "~@blueprintjs/core/lib/scss/variables";
+
+// CSS Custom Properties Export
+// TODO: Create a mixin that exports tokens as CSS variables
+@mixin export-theme-variables($theme-name) {
+  // Generate --tutor-* CSS custom properties
+}
+
+// Utility Class Generation
+// TODO: Use @each to generate utility classes from maps
+// Example output: .tutor-bg-blue-500, .tutor-text-green-900, etc.
+
+// Dark Mode Support
+// TODO: Implement dark mode overrides using .bp4-dark containment
+.tutor-card {
+  background: var(--tutor-surface-background);
+
+  .bp4-dark & {
+    // Dark mode overrides
+  }
+}
+```
+
+---
+
+## 12. Adaptive Next Steps
+
+- **If you understood this module**: Proceed to [04_data_layer.md](./04_data_layer.md) to learn how the styled components integrate with data fetching, caching, and the OSDK to build complete, performant interfaces.
+- **If you need more practice**: Review [02_react_ecosystem.md](./02_react_ecosystem.md) to understand how Blueprint components are composed in React, which will help contextualize when and where these styles are applied.
+- **For deeper exploration**: Explore the Blueprint source code on GitHub (specifically `packages/core/src/common/_variables.scss`) to see how Palantir structures their token architecture, and study the CSS Custom Properties specification for advanced runtime theming patterns.

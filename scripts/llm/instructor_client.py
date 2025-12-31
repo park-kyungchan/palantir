@@ -93,14 +93,9 @@ class InstructorClient:
         """
         from scripts.ontology.actions.llm_actions import GeneratePlanAction
         from scripts.simulation.core import ActionRunner, ActionContext
-        from scripts.ontology.manager import ObjectManager # Shim
-        
-        # ODA Action Execution
+        # ODA Action Execution - ActionRunner uses get_database() by default
         action = GeneratePlanAction()
-        
-        # Shim Manager (until Phase 3 migration of ActionRunner)
-        # Note: We rely on the ActionRunner to handle the execution mechanics
-        runner = ActionRunner(ObjectManager(), session=None)
+        runner = ActionRunner()  # Uses Database pattern internally
         
         ctx = ActionContext(
             actor_id="instructor_client",

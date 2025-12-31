@@ -51,6 +51,17 @@ class ToolMarshaler:
         """
         logger.info(f"Marshaling execution for action: {action_name}")
         
+        # 0. Context Integrity Check
+        if not context or not context.actor_id:
+            msg = "Invalid ActionContext: Missing actor_id"
+            logger.error(msg)
+            return ActionResult(
+                action_type=action_name,
+                success=False,
+                error=msg,
+                error_details={"code": "INVALID_CONTEXT"}
+            )
+        
         # 1. Lookup Action
         action_cls: Type[ActionType] = self.registry.get(action_name)
         if not action_cls:

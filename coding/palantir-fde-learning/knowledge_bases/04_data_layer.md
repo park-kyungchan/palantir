@@ -387,3 +387,130 @@ This section maps the technical knowledge to specific interview questions likely
 ## Conclusion
 
 Success in the Palantir Frontend Engineering interview requires demonstrating a synthesis of theoretical computer science foundations and pragmatic enterprise engineering. By mastering the OSDK as the bridge between the semantic Ontology and the responsive React Query cache, and by deploying advanced techniques like Virtualization, Web Workers, and Optimistic Updates, the candidate proves their ability to build the "operating systems for the modern enterprise." The convergence of graph data modeling with robust, type-safe frontend tooling represents the cutting edge of this domain, and the "Universal Tutor" project serves as the ideal narrative vessel to showcase this expertise.
+
+---
+
+## 11. Practice Exercise
+
+**Difficulty**: Intermediate
+
+**Challenge**: Build a React Query-based data layer for a "Student Gradebook" feature that demonstrates proper caching, optimistic updates, and pagination patterns.
+
+**Acceptance Criteria**:
+- Must implement `useQuery` with proper `staleTime` and `gcTime` configuration
+- Must implement `useMutation` with optimistic updates and rollback on error
+- Must use `useInfiniteQuery` for paginated student list with "Load More" functionality
+- Must implement proper query invalidation after mutations
+- Must handle loading, error, and empty states appropriately
+
+**Starter Code**:
+```typescript
+import {
+  useQuery,
+  useMutation,
+  useInfiniteQuery,
+  useQueryClient,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
+
+// Types
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+  gpa: number;
+  grades: Record<string, number>;
+}
+
+interface StudentPage {
+  students: Student[];
+  nextCursor: string | null;
+  totalCount: number;
+}
+
+interface UpdateGradePayload {
+  studentId: string;
+  subject: string;
+  grade: number;
+}
+
+// Mock API functions (simulate OSDK calls)
+const api = {
+  fetchStudent: async (id: string): Promise<Student> => {
+    // Simulate network delay
+    await new Promise((r) => setTimeout(r, 500));
+    // TODO: Return mock data
+    throw new Error('Not implemented');
+  },
+
+  fetchStudentPage: async (cursor?: string): Promise<StudentPage> => {
+    // TODO: Return paginated mock data
+    throw new Error('Not implemented');
+  },
+
+  updateGrade: async (payload: UpdateGradePayload): Promise<Student> => {
+    // TODO: Simulate grade update
+    throw new Error('Not implemented');
+  },
+};
+
+// TODO: Implement custom hooks
+
+/**
+ * Hook to fetch a single student with proper caching
+ */
+function useStudent(studentId: string) {
+  // TODO: Implement with useQuery
+  // - Set appropriate staleTime (5 minutes recommended)
+  // - Enable refetch on window focus for real-time collaboration
+  // - Handle the case where studentId might be undefined
+}
+
+/**
+ * Hook to fetch paginated student list for gradebook
+ */
+function useStudentList() {
+  // TODO: Implement with useInfiniteQuery
+  // - Use cursor-based pagination
+  // - Implement getNextPageParam to extract cursor
+  // - Flatten pages into a single array for easy consumption
+}
+
+/**
+ * Hook to update a student's grade with optimistic update
+ */
+function useUpdateGrade() {
+  const queryClient = useQueryClient();
+
+  // TODO: Implement with useMutation
+  // - Implement onMutate for optimistic update:
+  //   1. Cancel outgoing refetches
+  //   2. Snapshot previous value
+  //   3. Optimistically update the cache
+  // - Implement onError to rollback on failure
+  // - Implement onSettled to invalidate queries
+}
+
+// Test Component
+const GradebookPage = () => {
+  const { data, fetchNextPage, hasNextPage, isLoading } = useStudentList();
+  const updateGrade = useUpdateGrade();
+
+  // TODO: Render the gradebook UI
+  // - Show loading state
+  // - Map over paginated data
+  // - Include "Load More" button
+  // - Handle grade updates inline
+
+  return <div>Implement Gradebook UI</div>;
+};
+```
+
+---
+
+## 12. Adaptive Next Steps
+
+- **If you understood this module**: You have completed the core technical knowledge base. Proceed to practice integrating all four modules by building a complete feature that combines TypeScript types, React components, Blueprint styling, and React Query data fetching.
+- **If you need more practice**: Review [01_language_foundation.md](./01_language_foundation.md) to reinforce your understanding of async/await and Promises, which are fundamental to understanding React Query's internal mechanics.
+- **For deeper exploration**: Explore the TanStack Query documentation's advanced patterns section, particularly the sections on [Parallel Queries](https://tanstack.com/query/latest/docs/react/guides/parallel-queries) and [Dependent Queries](https://tanstack.com/query/latest/docs/react/guides/dependent-queries), and study the OSDK documentation for Palantir-specific data fetching patterns.

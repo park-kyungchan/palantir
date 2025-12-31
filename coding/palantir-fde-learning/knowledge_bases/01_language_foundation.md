@@ -448,3 +448,60 @@ A: "First, I'd reproduce the leak using the '3-snapshot technique' in Chrome Dev
 
 **Q: "What is the `satisfies` operator in TypeScript 5, and when would you use it?"**
 A: "The `satisfies` operator validates that an expression matches a type but preserves the most specific type of that expression, preventing type widening. For example, if I have a config object where keys can be strings or numbers, assigning it to `Record<string, string | number>` widens all values to the union. Using `satisfies`, I get validation that I conform to the Record, but TypeScript still knows that `config.timeout` is specifically the number 500. This is crucial for configuration objects in Blueprint or OSDK to maintain strict type safety and autocomplete."
+
+---
+
+## 11. Practice Exercise
+
+**Difficulty**: Beginner
+
+**Challenge**: Implement a `debounce` function with proper TypeScript typing that demonstrates understanding of closures, the event loop, and generic types.
+
+**Acceptance Criteria**:
+- The function must use closures to maintain timer state across invocations
+- Must be fully typed with TypeScript generics to preserve argument and return types
+- Must handle `this` context correctly for method binding
+- Must include a `cancel()` method on the returned function to clear pending executions
+
+**Starter Code**:
+```typescript
+/**
+ * Creates a debounced version of a function that delays execution
+ * until after `wait` milliseconds have elapsed since the last call.
+ *
+ * @param fn - The function to debounce
+ * @param wait - Milliseconds to delay
+ * @returns A debounced function with a cancel() method
+ */
+type DebouncedFunction<T extends (...args: any[]) => any> = {
+  (...args: Parameters<T>): void;
+  cancel: () => void;
+};
+
+function debounce<T extends (...args: any[]) => any>(
+  fn: T,
+  wait: number
+): DebouncedFunction<T> {
+  // TODO: Implement using closures and setTimeout
+  // Hint: Use a closure variable to store the timer ID
+  // Hint: Clear the previous timer on each call
+  // Hint: Preserve 'this' context using .apply()
+}
+
+// Test your implementation:
+const expensiveSearch = (query: string) => console.log(`Searching: ${query}`);
+const debouncedSearch = debounce(expensiveSearch, 300);
+
+debouncedSearch("h");
+debouncedSearch("he");
+debouncedSearch("hel");
+debouncedSearch("hello"); // Only this should execute after 300ms
+```
+
+---
+
+## 12. Adaptive Next Steps
+
+- **If you understood this module**: Proceed to [02_react_ecosystem.md](./02_react_ecosystem.md) to learn how these JavaScript/TypeScript foundations apply in React's component architecture and concurrent rendering model.
+- **If you need more practice**: Review the MDN documentation on [Closures](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures) and [Event Loop](https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop), then attempt the polyfill exercises in Section 2.5 before moving forward.
+- **For deeper exploration**: Explore the V8 blog's articles on [TurboFan optimization](https://v8.dev/blog) and the TC39 proposals repository to understand upcoming JavaScript features that will impact enterprise development.

@@ -307,3 +307,103 @@ Some AI libraries (like LangChain.js) might rely on Node.js internals (crypto, s
 ## 8. Conclusion
 
 The build system is the nexus where code quality, developer experience, and deployment reliability converge. For a Palantir Frontend Engineer, proficiency extends beyond configuring a bundler; it requires an architectural mindset to orchestrate complex dependencies across languages and environments. By demonstrating mastery of Webpack's graph mechanics for the Blueprint ecosystem, Vite's modern velocity for new tools, and Gradle's hermetic integration for the broader backend infrastructure, the candidate positions themselves not just as a coder, but as a systems engineer capable of delivering the next generation of data-dense, mission-critical applications like the "Universal Tutor." This technical depth is the hallmark of the engineering culture at Palantir.
+
+---
+
+## 9. Practice Exercise
+
+**Difficulty**: Advanced
+
+**Challenge**: Optimize a Webpack Build for a Data Visualization Monorepo
+
+You are tasked with optimizing the build configuration for a monorepo containing:
+- A core visualization library (`packages/viz-core`) using D3.js
+- A React component library (`packages/viz-react`) consuming the core
+- A demo application (`apps/demo`) showcasing the components
+
+The current build has the following problems:
+1. Initial bundle size is 2.8MB (target: <500KB initial, lazy-load the rest)
+2. Cold build time is 45 seconds (target: <15 seconds)
+3. HMR takes 8 seconds per change (target: <1 second)
+4. D3.js is duplicated across chunks
+
+**Your Task**:
+1. Configure `SplitChunksPlugin` to create optimal vendor chunks
+2. Implement dynamic imports for route-based code splitting
+3. Set up persistent caching to improve rebuild performance
+4. Configure tree-shaking for D3.js modular imports
+5. Add Bundle Analyzer to verify optimization results
+
+**Acceptance Criteria**:
+- Initial bundle must be under 500KB gzipped
+- D3.js must appear in exactly one vendor chunk, not duplicated
+- Cold build time must be under 15 seconds with caching enabled
+- HMR must complete in under 2 seconds
+- All TypeScript must compile without errors
+- Lighthouse Performance score must be 90+ on the demo app
+
+**Starter Code**:
+```javascript
+// webpack.config.js - Optimize this configuration
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  mode: 'production',
+  entry: './apps/demo/src/index.tsx',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: '[name].js', // TODO: Add content hash for caching
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js'],
+    alias: {
+      '@viz-core': path.resolve(__dirname, 'packages/viz-core/src'),
+      '@viz-react': path.resolve(__dirname, 'packages/viz-react/src'),
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader', // TODO: Consider babel-loader for speed
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebpackPlugin({ template: './apps/demo/public/index.html' }),
+    // TODO: Add BundleAnalyzerPlugin
+  ],
+  optimization: {
+    // TODO: Configure splitChunks for D3 and React vendors
+    // TODO: Enable tree shaking verification
+  },
+  // TODO: Add persistent caching configuration
+};
+
+// packages/viz-core/src/index.ts - Fix tree-shaking
+// BAD: import * as d3 from 'd3';
+// GOOD: import { forceSimulation, forceLink } from 'd3-force';
+
+// apps/demo/src/routes.tsx - Add code splitting
+// TODO: Use React.lazy() and Suspense for route-based splitting
+```
+
+```json
+// package.json - Ensure sideEffects is configured
+{
+  "name": "@company/viz-core",
+  "sideEffects": ["**/*.css", "**/*.scss"],
+  "module": "dist/esm/index.js",
+  "main": "dist/cjs/index.js"
+}
+```
+
+---
+
+## 10. Adaptive Next Steps
+
+- **If you understood this module**: Proceed to [Module 07: Version Control](./07_version_control.md) to master Git workflows for managing complex build configurations across teams
+- **If you need more practice**: Review [Module 04: TypeScript Deep Dive](./04_typescript_deep_dive.md) to ensure your type definitions are optimally configured for tree-shaking and declaration file generation
+- **For deeper exploration**: Explore **Module Federation** for micro-frontend architectures, investigate **Nx** or **Turborepo** for advanced monorepo caching strategies, and study **esbuild** internals to understand why Vite achieves its speed advantages
