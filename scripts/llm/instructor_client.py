@@ -86,6 +86,35 @@ class InstructorClient:
                  # In future: manually fetch raw content -> repair_json -> model_validate
             raise
 
+    async def generate_async(
+        self,
+        prompt: str,
+        response_model: Type[T],
+        model_name: str = "llama3.2"
+    ) -> T:
+        """
+        Async version of generate for use in async contexts.
+        
+        Wraps the sync generate() in an executor for thread safety.
+        This preserves the tenacity retry logic from the sync version.
+        
+        DIA v2.1: C1 compliant - new interface method
+        
+        Args:
+            prompt: The user prompt.
+            response_model: Pydantic model class to validate against.
+            model_name: LLM model name.
+            
+        Returns:
+            Validated instance of response_model.
+        """
+        import asyncio
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None,  # Default ThreadPoolExecutor
+            lambda: self.generate(prompt, response_model, model_name)
+        )
+
     async def generate_plan(self, prompt: str, model_name: str = "llama3.2") -> Plan:
         """
         Specialized method for Plan generation.
@@ -114,30 +143,9 @@ class InstructorClient:
         if not result.success:
              raise RuntimeError(f"Plan Generation Failed: {result.error}")
              
-        # Extract Plan from result
-        # Our implementation of GeneratePlanAction returns (Plan, edits) to the Runner.
-        # But Runner wraps it in ActionResult.
-        # We need to extract the Plan object back.
-        # ActionResult does NOT store the return value of apply_edits directly?
-        # Check ActionRunner implementation or ActionResult definition (scripts/ontology/actions.py)
-        
-        # ActionResult has: created_ids, modified_ids, edits.
-        # It does NOT have a 'data' payload field.
-        # However, for ephemeral actions like 'Plan Generation', we usually want the object.
-        
-        # Workaround: The Plan is not persisted to DB, so 'created_ids' might be empty?
-        # In GeneratePlanAction apply_edits, I returned (plan, [edit]).
-        # ActionRunner logic: obj, edits = await action.apply_edits(...) 
-        # It doesn't seem to store 'obj' in the result unless it's in created_ids.
-        
-        # Logic Hole in ODA: How to get return values from Actions?
-        # Usually we read the DB using the created_id.
-        # But Plan is not saved to DB in that Action.
-        
-        # Temporary Fix: Re-instantiate Plan from the 'changes' in the EditOperation.
-        if result.edits:
-            changes = result.edits[0].changes
-            return Plan(**changes)
-            
+        # Extract Plan from result.data (populated by ActionRunner)
+        if result.data:
+            return result.data
+
         raise RuntimeError("No Plan returned in Action Result")
 

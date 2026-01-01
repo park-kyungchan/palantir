@@ -268,12 +268,13 @@ class KBReader:
             "foundry": LearningDomain.FOUNDRY,
             "blueprint": LearningDomain.BLUEPRINT,
             "workshop": LearningDomain.WORKSHOP,
-            "react": LearningDomain.REACT,
-            "typescript": LearningDomain.TYPESCRIPT,
             "ontology": LearningDomain.ONTOLOGY,
-            "pipeline": LearningDomain.PIPELINE,
+            "pipeline": LearningDomain.PIPELINE_BUILDER,
             "functions": LearningDomain.FUNCTIONS,
             "actions": LearningDomain.ACTIONS,
+            "aip": LearningDomain.AIP,
+            "quiver": LearningDomain.QUIVER,
+            "slate": LearningDomain.SLATE,
         }
 
         for part in parts:
@@ -328,6 +329,10 @@ class KBReader:
         """
         # Get filename without extension
         topic = file_path.stem.lower().replace("-", "_").replace(" ", "_")
+        
+        # Sanitize: Ensure topic starts with a letter (for Pydantic validation)
+        if topic and topic[0].isdigit():
+            topic = f"topic_{topic}"
 
         # Get domain prefix
         domain_prefix = domain.value if domain else "general"

@@ -13,7 +13,7 @@ import pytest
 import pytest_asyncio
 
 from scripts.ontology.actions import ActionContext
-from scripts.ontology.storage.database import Database
+from scripts.ontology.storage.database import Database, DatabaseManager
 
 
 # =============================================================================
@@ -57,6 +57,54 @@ async def temp_db() -> AsyncGenerator[Database, None]:
         database = Database(db_path)
         await database.initialize()
         yield database
+
+
+@pytest_asyncio.fixture
+async def isolated_db() -> AsyncGenerator[Database, None]:
+    """
+    Create a fully isolated database for testing.
+
+    This fixture not only creates a separate Database instance, but also
+    sets it as the context-local database via DatabaseManager. This means
+    ALL code paths that use get_database() or DatabaseManager.get() will
+    receive this isolated instance.
+
+    Usage:
+        async def test_something(isolated_db):
+            # Any code using get_database() will use isolated_db
+            runner = ActionRunner()  # Uses get_database() internally
+            # runner.db is now isolated_db!
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "isolated_test.db"
+        database = Database(db_path)
+        await database.initialize()
+
+        # Set as context-local database
+        token = DatabaseManager.set_context(database)
+        try:
+            yield database
+        finally:
+            # Reset context after test
+            DatabaseManager.reset_context(token)
+
+
+@pytest_asyncio.fixture
+async def isolated_db_memory() -> AsyncGenerator[Database, None]:
+    """
+    Create an isolated in-memory database for fast tests.
+
+    Same as isolated_db but uses SQLite :memory: for faster execution.
+    Note: In-memory DBs are automatically destroyed when connection closes.
+    """
+    database = Database(":memory:")
+    await database.initialize()
+
+    token = DatabaseManager.set_context(database)
+    try:
+        yield database
+    finally:
+        DatabaseManager.reset_context(token)
 
 
 # =============================================================================

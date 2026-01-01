@@ -152,7 +152,14 @@ class ProposalRepository:
                 )
                 result = await session.execute(stmt)
                 if result.rowcount == 0:
-                     raise ConcurrencyError(f"Proposal {proposal.id} modified by another transaction.")
+                    # I-01 Fix: Include version info in error for debugging
+                    current_stmt = select(ProposalModel.version).where(ProposalModel.id == proposal.id)
+                    current_row = (await session.execute(current_stmt)).scalar_one_or_none()
+                    raise ConcurrencyError(
+                        f"Proposal {proposal.id} was modified by another transaction.",
+                        expected_version=expected_version,
+                        actual_version=current_row
+                    )
             
             # Save History
             # Use passed comment or fallback to proposal review_comment if action is relevant

@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Dict
 from datetime import datetime, timezone
 
-from scripts.ontology.storage.database import get_database
+from scripts.ontology.storage.database import DatabaseManager
 from scripts.ontology.storage.relay_repository import RelayRepository
 from scripts.ontology.storage.models import RelayTaskModel
 # Import domain object if needed, or use dict for compat
@@ -16,10 +16,10 @@ class RelayQueue:
     Backed by RelayRepository (Postgres/SQLite via SQLAlchemy Async).
     """
     def __init__(self):
-        # Initialize Repo. Note: get_database() might need await in some contexts?
-        # get_database() is sync accessor for singleton.
-        self.db = get_database()
+        # V3.1: Use DatabaseManager instead of deprecated get_database()
+        self.db = DatabaseManager.get()
         self.repo = RelayRepository(self.db)
+        # Ensure 'relay_tasks' table exists? Base.metadata.create_all handles it on boot.
         # Ensure 'relay_tasks' table exists? Base.metadata.create_all handles it on boot.
 
     async def enqueue(self, prompt: str) -> str:

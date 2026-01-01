@@ -211,8 +211,8 @@ async def test_golden_path_data_to_action(tmp_path):
     assert result.success is True
     assert p1.payload["task_id"] in result.modified_ids
     
-    # Mark Executed in Repo
-    await proposal_repo.execute(p1.id, executor_id="kernel", result=result.to_dict())
+    # Mark Executed in Repo (use simple dict to avoid MagicMock serialization)
+    await proposal_repo.execute(p1.id, executor_id="kernel", result={"success": True, "modified_ids": list(result.modified_ids)})
     
     # Final State Check
     users_proposal_state = await proposal_repo.find_by_id(p1.id)

@@ -12,13 +12,29 @@ and has no dependencies on any other layer or external libraries
 from palantir_fde_learning.domain.types import (
     DifficultyTier,
     KnowledgeComponentState,
+    LearnerProfile,
     LearningConcept,
     LearningDomain,
 )
+from palantir_fde_learning.domain.bkt import (
+    BKTParameters,
+    BKTState,
+    BKTModel,
+    get_bkt_model,
+    PARAMETER_PRESETS,
+)
 
 __all__ = [
+    # Types
     "DifficultyTier",
     "LearningDomain",
     "LearningConcept",
     "KnowledgeComponentState",
+    "LearnerProfile",
+    # BKT
+    "BKTParameters",
+    "BKTState",
+    "BKTModel",
+    "get_bkt_model",
+    "PARAMETER_PRESETS",
 ]

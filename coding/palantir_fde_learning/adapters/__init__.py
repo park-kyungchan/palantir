@@ -11,6 +11,10 @@ defined in the application layer.
 
 Current adapters:
 - KBReader: Reads and parses Knowledge Base markdown files
+- Repository: Persistence layer for learner state
+
+ODA Alignment: Adapters implement the "Gateway" pattern from Palantir's
+Ontology-Driven Architecture, providing clean interfaces to external systems.
 """
 
 from palantir_fde_learning.adapters.kb_reader import (
@@ -18,9 +22,19 @@ from palantir_fde_learning.adapters.kb_reader import (
     KBSection,
     ParsedKBDocument,
 )
+from palantir_fde_learning.adapters.repository import (
+    Repository,
+    LearnerRepository,
+    SQLiteLearnerRepository,
+)
 
 __all__ = [
+    # KB Reader
     "KBReader",
     "KBSection",
     "ParsedKBDocument",
+    # Repository
+    "Repository",
+    "LearnerRepository",
+    "SQLiteLearnerRepository",
 ]

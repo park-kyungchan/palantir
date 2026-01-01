@@ -7,12 +7,12 @@ Provides Database Sessions and Service instances to Routes.
 
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
-from scripts.ontology.storage.database import get_database, Database
+from scripts.ontology.storage.database import DatabaseManager, Database
 from scripts.ontology.storage.proposal_repository import ProposalRepository
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Yields an active AsyncSession from the global pool."""
-    db: Database = get_database() # Assumes initialized globally on startup
+    db: Database = DatabaseManager.get()  # V3.1: Use DatabaseManager
     async with db.transaction() as session:
         yield session
 
@@ -24,5 +24,6 @@ async def get_repository() -> AsyncGenerator[ProposalRepository, None]:
     
     # Existing Pattern: Repo(db) -> internally uses `async with db.transaction()`
     # We will yield the Repo instance directly.
-    db = get_database()
+    db = DatabaseManager.get()  # V3.1: Use DatabaseManager
     yield ProposalRepository(db)
+

@@ -1,11 +1,17 @@
 
 import asyncio
 import sys
+import os
 import logging
 from typing import Optional
 
-# Ensure V3 path
-sys.path.append("/home/palantir/orion-orchestrator-v2")
+# Ensure V3 path (DIA v2.1 C5 compliant - env var with fallback)
+_PROJECT_ROOT = os.environ.get(
+    "ORION_PROJECT_ROOT",
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from scripts.ontology.client import FoundryClient
 # from scripts.llm.ollama_client import HybridRouter, OllamaClient  <-- REMOVED
@@ -51,6 +57,9 @@ class OrionRuntime:
         
         logger.info("Online. Waiting for Semantic Signals...")
         
+        # P3-03: Configurable poll interval (DIA v2.1 C5 compliant)
+        poll_interval = float(os.environ.get("ORION_POLL_INTERVAL", "1.0"))
+        
         while self.running:
             # 1. Check Relay Queue (Cognitive Tasks) - Non-blocking async call
             task_payload = await self.relay.dequeue_async()
@@ -61,7 +70,7 @@ class OrionRuntime:
             # 2. Check Approved Proposals (Execution Worker)
             await self._process_approved_proposals()
                 
-            await asyncio.sleep(1)
+            await asyncio.sleep(poll_interval)
 
     async def _process_approved_proposals(self):
         """Execute proposals that have been approved."""

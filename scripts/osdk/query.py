@@ -57,8 +57,14 @@ class ObjectQuery(Generic[T]):
         If no connector is set, tries to load the default SQLiteConnector.
         """
         if self.connector is None:
-            from scripts.osdk.sqlite_connector import SQLiteConnector
-            self.connector = SQLiteConnector()
+            try:
+                from scripts.osdk.sqlite_connector import SQLiteConnector
+                self.connector = SQLiteConnector()
+            except ImportError as e:
+                raise ConnectionError(
+                    f"No OSDK connector available. SQLiteConnector failed to load: {e}. "
+                    f"Ensure database is configured or provide a connector explicitly."
+                ) from e
 
         return await self.connector.query(
             object_type=self.object_type,

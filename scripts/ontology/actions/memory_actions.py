@@ -2,7 +2,8 @@ from typing import Any, Dict, Optional
 from scripts.ontology.actions import ActionType, ActionContext, ActionResult, SubmissionCriterion, RequiredField
 from scripts.ontology.ontology_types import ObjectStatus
 from scripts.ontology.schemas.memory import OrionInsight, OrionPattern, InsightContent, InsightProvenance, PatternStructure
-from scripts.ontology.storage import InsightRepository, PatternRepository, get_database
+from scripts.ontology.storage import InsightRepository, PatternRepository
+from scripts.ontology.storage.database import DatabaseManager
 
 class SaveInsightAction(ActionType):
     """
@@ -68,7 +69,7 @@ class SaveInsightAction(ActionType):
         
         # 2. Persist via Repository
         session = context.metadata.get("session")
-        db = get_database()
+        db = DatabaseManager.get()
         
         # Use provided session (UnitOfWork) or new
         # Repository expects 'db' in init. 
@@ -135,7 +136,7 @@ class SavePatternAction(ActionType):
         
         params["id"] = pattern_id
         
-        db = get_database()
+        db = DatabaseManager.get()
         repo = PatternRepository(db)
         await repo.save(pattern, actor_id=context.actor_id)
         

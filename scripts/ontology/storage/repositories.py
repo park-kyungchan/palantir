@@ -526,3 +526,30 @@ class PatternRepository(GenericRepository[OrionPattern, OrionPatternModel]):
         pattern.touch(updated_by=actor_id)
 
         return await self.save(pattern, actor_id=actor_id)
+
+    async def search(self, query: str, limit: int = 50) -> List[OrionPattern]:
+        """
+        Full-text search across patterns (trigger and steps).
+        
+        Matches InsightRepository.search() pattern for consistency.
+        Uses LIKE query; can be upgraded to FTS5 for production.
+        
+        Args:
+            query: Search term to match against fts_content
+            limit: Maximum results to return
+            
+        Returns:
+            List of matching patterns ordered by success_rate
+        """
+        async with self.db.transaction() as session:
+            pattern = f"%{query}%"
+            stmt = (
+                select(self.model_class)
+                .where(self.model_class.fts_content.ilike(pattern))
+                .where(self.model_class.status == "active")
+                .order_by(self.model_class.success_rate.desc())
+                .limit(limit)
+            )
+            result = await session.execute(stmt)
+            return [self._to_domain(m) for m in result.scalars().all()]
+

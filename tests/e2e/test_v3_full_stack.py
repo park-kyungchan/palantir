@@ -66,19 +66,34 @@ class TestV3Migration(unittest.TestCase):
 
     def test_relay_queue(self):
         """Phase 2.5: Relay Queue Persistence"""
-        q = RelayQueue() # In-memory for test
-        tid = q.enqueue("Complex Prompt")
+        import asyncio
+        import tempfile
+        from pathlib import Path
+        from scripts.ontology.storage.database import Database, DatabaseManager
         
-        task = q.dequeue()
-        self.assertIsNotNone(task)
-        self.assertEqual(task['id'], tid)
+        # Initialize database for RelayQueue
+        async def setup_and_test():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                db = Database(Path(tmpdir) / "test_relay.db")
+                await db.initialize()
+                token = DatabaseManager.set_context(db)
+                try:
+                    q = RelayQueue()
+                    tid = await q.enqueue("Complex Prompt")  # await async
+                    
+                    task = await q.dequeue()  # await async
+                    assert task is not None
+                    assert task['id'] == tid
+                    
+                    await q.complete(tid, "Response from Human")  # await async
+                    
+                    # Should be empty now
+                    task2 = await q.dequeue()  # await async
+                    assert task2 is None
+                finally:
+                    DatabaseManager.reset_context(token)
         
-        q.complete(tid, "Response from Human")
-        
-        # Should be empty now
-        task2 = q.dequeue()
-        self.assertIsNone(task2)
-        
+        asyncio.run(setup_and_test())
         print("[Pass] Relay Layer (SQLite Queue) Verified")
 
     def test_semantic_action(self):

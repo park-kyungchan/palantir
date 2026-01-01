@@ -1,0 +1,151 @@
+# Orion ODA V3 - Governance Configuration Example
+# =================================================
+# P-05: Declarative Action Governance via YAML
+
+actions:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Proposal Actions
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  proposal.create:
+    description: "Create a new proposal for hazardous action execution"
+    hazardous: true
+    requires_approval: true
+    tags: ["proposal", "governance"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: action_type
+      - type: RequiredFieldValidator
+        field: payload
+    side_effects:
+      - type: AuditLogSideEffect
+      - type: EventBusSideEffect
+        event_type: proposal.created
+  
+  proposal.approve:
+    description: "Approve a pending proposal"
+    hazardous: true
+    requires_approval: false  # Meta-action, special handling
+    tags: ["proposal", "governance"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: proposal_id
+    side_effects:
+      - type: AuditLogSideEffect
+      - type: EventBusSideEffect
+        event_type: proposal.approved
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Memory Actions
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  memory.save_insight:
+    description: "Save a semantic memory insight"
+    hazardous: false
+    tags: ["memory", "semantic"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: content
+      - type: StringLengthValidator
+        field: content
+        max: 10000
+    side_effects:
+      - type: EventBusSideEffect
+        event_type: memory.insight_saved
+
+  memory.recall:
+    description: "Recall memories by query"
+    hazardous: false
+    tags: ["memory", "semantic", "read"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: query
+      - type: RangeValidator
+        field: limit
+        min: 1
+        max: 100
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Learner Actions
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  learner.create:
+    description: "Create a new learner profile"
+    hazardous: false
+    tags: ["learner", "profile"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: name
+      - type: StringLengthValidator
+        field: name
+        min: 2
+        max: 100
+    side_effects:
+      - type: AuditLogSideEffect
+      - type: EventBusSideEffect
+        event_type: learner.created
+
+  learner.update_mastery:
+    description: "Update learner mastery level"
+    hazardous: false
+    tags: ["learner", "mastery"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: learner_id
+      - type: RequiredFieldValidator
+        field: skill_id
+      - type: RangeValidator
+        field: mastery_level
+        min: 0.0
+        max: 1.0
+    side_effects:
+      - type: EventBusSideEffect
+        event_type: learner.mastery_updated
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # LLM Actions
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  llm.generate_text:
+    description: "Generate text using LLM"
+    hazardous: false
+    tags: ["llm", "generation"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: prompt
+      - type: RangeValidator
+        field: max_tokens
+        min: 1
+        max: 8192
+      - type: RangeValidator
+        field: temperature
+        min: 0.0
+        max: 2.0
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # File System Actions
+  # ─────────────────────────────────────────────────────────────────────────────
+  
+  fs.write_file:
+    description: "Write content to a file"
+    hazardous: true
+    requires_approval: true
+    tags: ["filesystem", "write"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: path
+      - type: RequiredFieldValidator
+        field: content
+    side_effects:
+      - type: AuditLogSideEffect
+
+  fs.delete_file:
+    description: "Delete a file"
+    hazardous: true
+    requires_approval: true
+    tags: ["filesystem", "delete"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: path
+    side_effects:
+      - type: AuditLogSideEffect

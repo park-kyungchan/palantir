@@ -224,6 +224,170 @@ class CustomValidator(SubmissionCriterion):
         return True
 
 
+class ArraySizeValidator(SubmissionCriterion):
+    """
+    Validates array/list field size constraints.
+    
+    Aligns with Palantir Foundry's 'arraySize' constraint type:
+    {"type": "arraySize", "gte": 2, "lte": 4}
+    """
+    
+    def __init__(self, field_name: str, *, min_size: int = None, max_size: int = None):
+        self.field_name = field_name
+        self.min_size = min_size
+        self.max_size = max_size
+    
+    @property
+    def name(self) -> str:
+        constraints = []
+        if self.min_size is not None:
+            constraints.append(f"gte={self.min_size}")
+        if self.max_size is not None:
+            constraints.append(f"lte={self.max_size}")
+        return f"ArraySize({self.field_name}, {', '.join(constraints)})"
+    
+    def validate(self, params: Dict[str, Any], context: "ActionContext") -> bool:
+        value = params.get(self.field_name, [])
+        
+        if value is None:
+            value = []
+        
+        if not isinstance(value, (list, tuple)):
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be an array",
+                details={"field": self.field_name, "value_type": type(value).__name__}
+            )
+        
+        if self.min_size is not None and len(value) < self.min_size:
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must have at least {self.min_size} items (got {len(value)})",
+                details={"field": self.field_name, "size": len(value), "min_size": self.min_size}
+            )
+        
+        if self.max_size is not None and len(value) > self.max_size:
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must have at most {self.max_size} items (got {len(value)})",
+                details={"field": self.field_name, "size": len(value), "max_size": self.max_size}
+            )
+        
+        return True
+
+
+class StringLengthValidator(SubmissionCriterion):
+    """
+    Validates string length with min/max constraints.
+    
+    Aligns with Palantir Foundry's 'STRING_LENGTH' constraint:
+    {"type": "STRING_LENGTH", "minLength": 10, "maxLength": 500}
+    
+    Superset of MaxLength - supports both min and max.
+    """
+    
+    def __init__(self, field_name: str, *, min_length: int = None, max_length: int = None):
+        self.field_name = field_name
+        self.min_length = min_length
+        self.max_length = max_length
+    
+    @property
+    def name(self) -> str:
+        constraints = []
+        if self.min_length is not None:
+            constraints.append(f"min={self.min_length}")
+        if self.max_length is not None:
+            constraints.append(f"max={self.max_length}")
+        return f"StringLength({self.field_name}, {', '.join(constraints)})"
+    
+    def validate(self, params: Dict[str, Any], context: "ActionContext") -> bool:
+        value = params.get(self.field_name, "")
+        
+        if value is None:
+            value = ""
+        
+        if not isinstance(value, str):
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be a string",
+                details={"field": self.field_name, "value_type": type(value).__name__}
+            )
+        
+        if self.min_length is not None and len(value) < self.min_length:
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be at least {self.min_length} characters (got {len(value)})",
+                details={"field": self.field_name, "length": len(value), "min_length": self.min_length}
+            )
+        
+        if self.max_length is not None and len(value) > self.max_length:
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be at most {self.max_length} characters (got {len(value)})",
+                details={"field": self.field_name, "length": len(value), "max_length": self.max_length}
+            )
+        
+        return True
+
+
+class RangeValidator(SubmissionCriterion):
+    """
+    Validates numeric value is within specified range.
+    
+    Aligns with Palantir Foundry's Range constraint:
+    - Valid for: Integer, Float, Decimal
+    - Both min_value and max_value are inclusive
+    
+    Usage:
+        RangeValidator("price", min_value=0, max_value=10000)
+        RangeValidator("age", min_value=0)  # No upper bound
+    """
+    
+    def __init__(self, field_name: str, *, min_value: float = None, max_value: float = None):
+        self.field_name = field_name
+        self.min_value = min_value
+        self.max_value = max_value
+    
+    @property
+    def name(self) -> str:
+        constraints = []
+        if self.min_value is not None:
+            constraints.append(f"min={self.min_value}")
+        if self.max_value is not None:
+            constraints.append(f"max={self.max_value}")
+        return f"Range({self.field_name}, {', '.join(constraints)})"
+    
+    def validate(self, params: Dict[str, Any], context: "ActionContext") -> bool:
+        if self.field_name not in params:
+            return True  # Not our job to check required
+        
+        value = params[self.field_name]
+        
+        if not isinstance(value, (int, float)):
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be numeric, got {type(value).__name__}",
+                details={"field": self.field_name, "value_type": type(value).__name__}
+            )
+        
+        if self.min_value is not None and value < self.min_value:
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be >= {self.min_value}, got {value}",
+                details={"field": self.field_name, "value": value, "min_value": self.min_value}
+            )
+        
+        if self.max_value is not None and value > self.max_value:
+            raise ValidationError(
+                criterion=self.name,
+                message=f"Field '{self.field_name}' must be <= {self.max_value}, got {value}",
+                details={"field": self.field_name, "value": value, "max_value": self.max_value}
+            )
+        
+        return True
+
+
+
 # =============================================================================
 # SIDE EFFECTS
 # =============================================================================
@@ -267,6 +431,24 @@ class ActionResult:
     
     Contains success/failure status, created/modified objects,
     and any error information.
+    
+    Attributes:
+        action_type: The api_name of the executed action.
+        success: True if action completed without errors.
+        data: The primary return value of the action. Convention:
+              - CREATE actions: The newly created OntologyObject
+              - READ/QUERY actions: The queried object(s)  
+              - UPDATE actions: The modified OntologyObject
+              - DELETE actions: None (use deleted_ids instead)
+              - validate_only=True: None (just validation, no object)
+        message: Human-readable status message (e.g., "Validation passed").
+        edits: List of EditOperations for the audit trail.
+        created_ids: IDs of objects created by this action.
+        modified_ids: IDs of objects modified by this action.
+        deleted_ids: IDs of objects deleted by this action.
+        error: Error message if success=False.
+        error_details: Additional error context (e.g., validation_errors).
+        timestamp: When the action completed (UTC).
     """
     action_type: str
     success: bool
@@ -379,9 +561,21 @@ class ActionType(ABC, Generic[T]):
     async def execute(
         self,
         params: Dict[str, Any],
-        context: ActionContext
+        context: ActionContext,
+        validate_only: bool = False  # Palantir OSDK alignment: $validateOnly
     ) -> ActionResult:
-        """Execute the action with full validation, retry on concurrency, and side effects."""
+        """
+        Execute the action with full validation, retry on concurrency, and side effects.
+        
+        Args:
+            params: Action parameters
+            context: Execution context (actor, timestamp, etc.)
+            validate_only: If True, only validate without applying changes (dry-run mode).
+                          Aligns with Palantir OSDK's $validateOnly option.
+        
+        Returns:
+            ActionResult with success/error status and affected objects
+        """
         import asyncio
 
         MAX_RETRIES = 3
@@ -397,6 +591,17 @@ class ActionType(ABC, Generic[T]):
                 error_details={"validation_errors": errors},
             )
         
+        # 2. Validate-Only Mode (Palantir $validateOnly alignment)
+        if validate_only:
+            return ActionResult(
+                action_type=self.api_name,
+                success=True,
+                message="Validation passed (dry-run mode - no changes applied)",
+                data=None,
+                edits=[],
+            )
+        
+        
         # 2. Apply Edits with Retry
         last_error = None
         result = None
@@ -408,6 +613,7 @@ class ActionType(ABC, Generic[T]):
                 result = ActionResult(
                     action_type=self.api_name,
                     success=True,
+                    data=obj,
                     edits=edits,
                     created_ids=[obj.id] if obj and any(
                         e.edit_type == EditType.CREATE for e in edits
@@ -445,15 +651,50 @@ class ActionType(ABC, Generic[T]):
                     error_details={"exception_type": type(e).__name__},
                 )
         
-        # 3. Side Effects (fire-and-forget, errors logged but not raised)
+        # 3. Side Effects with Retry (DIA v2.1 C4 compliant)
         if result and result.success:
             for effect in self.side_effects:
-                try:
-                    await effect.execute(result, context)
-                except Exception as e:
-                    logger.error(f"Side effect {effect.name} failed: {e}")
+                await self._execute_side_effect_with_retry(effect, result, context)
         
         return result
+
+    async def _execute_side_effect_with_retry(
+        self,
+        effect: "SideEffect",
+        result: ActionResult,
+        context: ActionContext,
+        max_attempts: int = 3
+    ) -> None:
+        """
+        Execute side effect with exponential backoff retry.
+        
+        Args:
+            effect: The SideEffect instance to execute
+            result: ActionResult from the main action
+            context: Execution context
+            max_attempts: Maximum retry attempts (default 3)
+            
+        Note: Errors are logged but not raised (fire-and-forget pattern preserved)
+        DIA v2.1: C4 compliant - resilient side effect execution
+        """
+        import asyncio
+        for attempt in range(max_attempts):
+            try:
+                await effect.execute(result, context)
+                logger.debug(f"Side effect {effect.name} succeeded on attempt {attempt + 1}")
+                return
+            except Exception as e:
+                if attempt == max_attempts - 1:
+                    logger.error(
+                        f"Side effect {effect.name} failed after {max_attempts} attempts: {e}"
+                    )
+                else:
+                    wait_time = 0.5 * (2 ** attempt)  # 0.5s, 1s, 2s
+                    logger.warning(
+                        f"Side effect {effect.name} attempt {attempt + 1} failed, "
+                        f"retrying in {wait_time}s: {e}"
+                    )
+                    await asyncio.sleep(wait_time)
     
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(api_name='{self.api_name}')"
@@ -473,11 +714,15 @@ class ActionMetadata:
 class ActionRegistry:
     """
     Registry for ActionType discovery and lookup with Metadata.
+    
+    Args:
+        strict: If True, raise ValueError on duplicate registrations or invalid api_names
     """
     
-    def __init__(self):
+    def __init__(self, strict: bool = False):
         # Mapping: api_name -> (ActionClass, Metadata)
         self._actions: Dict[str, tuple[Type[ActionType], ActionMetadata]] = {}
+        self._strict = strict
     
     def register(self, action_class: Type[ActionType], **metadata_overrides) -> None:
         """Register an ActionType class with extracted or overridden metadata."""
@@ -485,6 +730,18 @@ class ActionRegistry:
             raise ValueError(f"{action_class.__name__} missing api_name")
         
         api_name = action_class.api_name
+        
+        # GAP-02-C: Validate api_name format (namespace.action pattern recommended)
+        import re
+        API_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$')
+        if not API_NAME_PATTERN.match(api_name):
+            msg = (
+                f"ActionType '{action_class.__name__}' has non-standard api_name: '{api_name}'. "
+                f"Recommended format: 'namespace.action_name' (lowercase, dots allowed)"
+            )
+            if self._strict:
+                raise ValueError(msg)
+            logger.warning(msg)
         
         requires_proposal = metadata_overrides.get(
             "requires_proposal", 
@@ -498,8 +755,20 @@ class ActionRegistry:
             description=action_class.__doc__ or ""
         )
 
+        # GAP-02-B: Enhanced duplicate detection with class info
         if api_name in self._actions:
-            logger.warning(f"Overwriting action: {api_name}")
+            existing_cls, _ = self._actions[api_name]
+            if existing_cls != action_class:
+                msg = (
+                    f"ActionType '{api_name}' registered twice with DIFFERENT classes! "
+                    f"Existing: {existing_cls.__module__}.{existing_cls.__name__}, "
+                    f"New: {action_class.__module__}.{action_class.__name__}."
+                )
+                if self._strict:
+                    raise ValueError(msg)
+                logger.warning(f"{msg} Using new definition.")
+            else:
+                logger.debug(f"ActionType '{api_name}' re-registered (same class)")
         
         self._actions[api_name] = (action_class, metadata)
         logger.debug(f"Registered action: {api_name} [Proposal:{requires_proposal}]")
@@ -568,14 +837,47 @@ class GovernanceEngine:
         return "ALLOW_IMMEDIATE"
 
 # Exports from submodules
-# Using try/except to avoid ImportErrors during circular init if needed, 
-# but generally these should work if ActionType is defined above.
+# Expected actions for startup validation
+_EXPECTED_ACTIONS = [
+    "GeneratePlanAction", "RouteTaskAction", "ProcessLLMPromptAction",
+    "SaveInsightAction", "SavePatternAction",
+    "SaveLearnerStateAction",
+    "ExecuteLogicAction"
+]
+
 try:
     from .llm_actions import GeneratePlanAction, RouteTaskAction, ProcessLLMPromptAction
     from .memory_actions import SaveInsightAction, SavePatternAction
     from .learning_actions import SaveLearnerStateAction
     from .logic_actions import ExecuteLogicAction
 except ImportError as e:
-    logger.debug(f"Submodule import failed (likely during initialization): {e}")
-    # We pass, because if this is the first import of actions, submodules might not be ready
-    # depending on their imports.
+    # I-04 Fix: Changed from debug to warning to surface import failures
+    logger.warning(f"Action submodule import failed: {e}")
+    # Continue - don't fail hard during import, but warn
+
+
+def validate_registry() -> bool:
+    """
+    Validate all expected actions are registered.
+    
+    Call this after app startup to ensure action registry integrity.
+    This addresses I-04 (Silent Import Failures) by providing an explicit
+    validation mechanism.
+    
+    Returns:
+        True if all expected actions are registered, False otherwise.
+    
+    Usage:
+        from scripts.ontology.actions import validate_registry
+        if not validate_registry():
+            raise RuntimeError("Action registry incomplete")
+    """
+    registered = action_registry.list_actions()
+    missing = [name for name in _EXPECTED_ACTIONS if name not in registered]
+    
+    if missing:
+        logger.error(f"Missing expected actions in registry: {missing}")
+        return False
+    
+    logger.info(f"Action registry validated: {len(registered)} actions registered")
+    return True
