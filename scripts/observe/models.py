@@ -8,7 +8,7 @@ Maps to IndyDevDan's Watchtower db.ts schema.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
@@ -45,7 +45,7 @@ class HookEvent(Base):
     human_in_the_loop = Column(JSON, nullable=True)
     hitl_status = Column(String(20), nullable=True)  # pending, responded
     model_name = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API response."""
@@ -74,7 +74,7 @@ class HookEvent(Base):
             payload=data["payload"],
             chat=data.get("chat"),
             summary=data.get("summary"),
-            timestamp=data.get("timestamp", int(datetime.utcnow().timestamp() * 1000)),
+            timestamp=data.get("timestamp", int(datetime.now(timezone.utc).timestamp() * 1000)),
             human_in_the_loop=data.get("human_in_the_loop"),
             hitl_status=data.get("hitl_status"),
             model_name=data.get("model_name"),

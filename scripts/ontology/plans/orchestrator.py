@@ -84,7 +84,7 @@ class PlanOrchestrator:
         logger.info(f"▶️ Executing plan: {plan.name} ({len(plan.steps)} steps)")
         
         plan.status = PlanStatus.RUNNING
-        plan.started_at = datetime.utcnow()
+        plan.started_at = datetime.now(timezone.utc)
         
         try:
             # Execute steps in order
@@ -111,7 +111,7 @@ class PlanOrchestrator:
                     await self._compensate(completed_steps, plan.context, actor_id)
                     
                     plan.status = PlanStatus.COMPENSATED
-                    plan.completed_at = datetime.utcnow()
+                    plan.completed_at = datetime.now(timezone.utc)
                     
                     return PlanResult(
                         plan_id=plan.id,
@@ -127,7 +127,7 @@ class PlanOrchestrator:
             
             # All steps completed
             plan.status = PlanStatus.COMPLETED
-            plan.completed_at = datetime.utcnow()
+            plan.completed_at = datetime.now(timezone.utc)
             
             logger.info(f"✅ Plan completed: {plan.name}")
             
@@ -149,7 +149,7 @@ class PlanOrchestrator:
             await self._compensate(completed_steps, plan.context, actor_id)
             
             plan.status = PlanStatus.FAILED
-            plan.completed_at = datetime.utcnow()
+            plan.completed_at = datetime.now(timezone.utc)
             
             return PlanResult(
                 plan_id=plan.id,
@@ -171,7 +171,7 @@ class PlanOrchestrator:
     ) -> bool:
         """Execute a single step."""
         step.status = StepStatus.RUNNING
-        step.started_at = datetime.utcnow()
+        step.started_at = datetime.now(timezone.utc)
         
         logger.info(f"⚡ Executing step: {step.action_type}")
         
@@ -195,7 +195,7 @@ class PlanOrchestrator:
                 step.result = {"simulated": True}
             
             step.status = StepStatus.COMPLETED
-            step.completed_at = datetime.utcnow()
+            step.completed_at = datetime.now(timezone.utc)
             
             logger.info(f"✅ Step completed: {step.action_type}")
             return True
@@ -203,7 +203,7 @@ class PlanOrchestrator:
         except Exception as e:
             step.status = StepStatus.FAILED
             step.error = str(e)
-            step.completed_at = datetime.utcnow()
+            step.completed_at = datetime.now(timezone.utc)
             return False
     
     async def _compensate(

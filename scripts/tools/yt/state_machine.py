@@ -127,7 +127,7 @@ class YouTubeWorkflow:
             
             # Complete
             self._transition(WorkflowState.COMPLETED)
-            self.context.completed_at = datetime.utcnow()
+            self.context.completed_at = datetime.now(timezone.utc)
             
         except Exception as e:
             logger.error(f"Workflow failed: {e}")

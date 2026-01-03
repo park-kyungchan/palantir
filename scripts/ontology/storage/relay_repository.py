@@ -14,7 +14,7 @@ from scripts.ontology.storage.models import RelayTaskModel
 # Actually, GenericRepository expects T (Domain Object) and M (Model).
 # I need a Domain Object.
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
 
 class RelayTask(BaseModel):
@@ -26,8 +26,7 @@ class RelayTask(BaseModel):
     updated_at: datetime
     version: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RelayRepository(GenericRepository[RelayTask, RelayTaskModel]):
     """

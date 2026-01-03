@@ -26,7 +26,7 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 # =============================================================================
@@ -278,14 +278,12 @@ class OntologyObject(BaseModel):
         ge=1
     )
     
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = False  # Keep Enum objects, not raw values
-        validate_assignment = True  # Validate on attribute assignment
-        extra = "forbid"  # Reject unknown fields
-        json_schema_extra = {
-            "x-palantir-indexing": ["id", "created_at", "updated_at"]
-        }
+    model_config = ConfigDict(
+        use_enum_values=False,
+        validate_assignment=True,
+        extra="forbid",
+        json_schema_extra={"x-palantir-indexing": ["id", "created_at", "updated_at"]}
+    )
     
     def touch(self, updated_by: Optional[str] = None) -> None:
         """

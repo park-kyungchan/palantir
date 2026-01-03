@@ -48,6 +48,10 @@ class OrionRuntime:
         self.marshaler = ToolMarshaler(action_registry)
         self.running = True
         self.repo: Optional[ProposalRepository] = None
+        # P1.2: Status counters (IndyDevDan status line pattern)
+        self._pending_count = 0
+        self._executed_count = 0
+        self._blocked_count = 0
         logger.info("Semantic OS Kernel Booting... (Mode: Enterprise Async)")
 
     async def start(self):
@@ -127,14 +131,15 @@ class OrionRuntime:
             for job in plan.jobs:
                 logger.info(f"   Processing Job: {job.title} [{job.action_type}]")
                 
-                # A. Governance Check
-                policy = self.governance.check_execution_policy(job.action_type)
+                # A. Governance Check (P1.1: PolicyResult with reason)
+                policy = self.governance.check_execution_policy(job.action_type, job.params)
                 
-                if policy == "DENY":
-                    logger.error(f"   ⛔ Action '{job.action_type}' unknown or denied.")
+                if policy.is_blocked():
+                    self._blocked_count += 1
+                    logger.error(f"   ⛔ BLOCKED: {policy.reason}")
                     continue
                 
-                if policy == "REQUIRE_PROPOSAL":
+                if policy.decision == "REQUIRE_PROPOSAL":
                     if self.repo:
                         proposal = Proposal(
                             action_type=job.action_type,
@@ -144,11 +149,12 @@ class OrionRuntime:
                         )
                         # save now uses Async ORM
                         await self.repo.save(proposal, actor_id="kernel_ai")
-                        logger.info(f"   🛡️  Proposal Created: {proposal.id} (Requires Approval)")
+                        self._pending_count += 1
+                        logger.info(f"   🛡️  Proposal Created: {proposal.id} ({policy.reason})")
                     else:
                         logger.error("   ❌ Repo unavailable, cannot create proposal.")
                         
-                elif policy == "ALLOW_IMMEDIATE":
+                elif policy.is_allowed():
                     # Instant Execution
                     logger.info(f"   ⚡ Executing Immediately: {job.action_type}")
                     result = await self.marshaler.execute_action(
@@ -156,7 +162,9 @@ class OrionRuntime:
                         params=job.params,
                         context=ActionContext.system()
                     )
-                    if not result.success:
+                    if result.success:
+                        self._executed_count += 1
+                    else:
                         logger.error(f"      ❌ Immediate Execution Failed: {result.error}")
 
         except Exception as e:

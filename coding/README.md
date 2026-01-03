@@ -1,215 +1,57 @@
 # Palantir FDE Learning System
 
-> Personalized interview preparation system for Palantir Frontend Development Engineer (FDE) roles.
-
-[![CI](https://github.com/YOUR_USERNAME/palantir-fde-learning/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/palantir-fde-learning/actions/workflows/ci.yml)
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
-![Coverage](https://img.shields.io/badge/coverage-59%25-yellow)
+> **목적**: 프로그래밍 완전 초보부터 Palantir DS/FDE 면접 수준까지 학습 지원
+> **방식**: 애자일 동적학습 (실시간 프롬프트 기반)
 
 ---
 
-## Features
+## 디렉토리 구조
 
-- **Bayesian Knowledge Tracing (BKT)** - Accurate mastery estimation based on learner responses
-- **Zone of Proximal Development (ZPD)** - Personalized concept recommendations
-- **Knowledge Base Parser** - Structured markdown KB with 7-section format
-- **CLI Tools** - Profile management, recommendations, and KB exploration
-- **Clean Architecture** - Domain-driven design with clear layer separation
-- **ODA Integration** - Connects with Orion Orchestrator via ActionTypes
-
----
-
-## Quick Start
-
-### Installation
-
-```bash
-# Clone and install
-cd palantir-fde-learning
-pip install -e ".[dev]"
-
-# Verify installation
-fde-learn --help
 ```
-
-### Basic Usage
-
-```bash
-# Create a learner profile
-fde-learn profile init my-profile
-
-# Get personalized recommendations
-fde-learn recommend --profile my-profile --count 5
-
-# List knowledge bases
-fde-learn kb list
-
-# View a specific KB
-fde-learn kb show osdk_typescript
-```
-
-### Python API
-
-```python
-from palantir_fde_learning.domain import LearnerProfile, get_bkt_model, BKTState
-
-# Create profile
-profile = LearnerProfile(learner_id="candidate_001")
-
-# Track mastery with BKT
-bkt = get_bkt_model("interview")  # Strict params for FDE prep
-state = BKTState()
-
-# Record attempts
-state = bkt.update(state, correct=True)
-state = bkt.update(state, correct=True)
-state = bkt.update(state, correct=False)
-state = bkt.update(state, correct=True)
-
-print(f"Mastery: {state.mastery:.1%}")  # ~68.7%
-print(f"Mastered: {state.is_mastered}")  # False
+coding/
+├── README.md              ← 이 파일 (학습 가이드)
+├── SYSTEM_DIRECTIVE.md    ← AI 튜터 동작 프로토콜
+└── knowledge_bases/       ← 24개 학습 콘텐츠
+    ├── 00a-00e (초급)     ← 변수, 함수, 타입 기초
+    ├── 01-08 (중급)       ← React, TypeScript, Testing
+    └── 09-18 (고급)       ← System Design, OSDK, Foundry
 ```
 
 ---
 
-## Architecture
+## 학습 수준 (Tier)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        CLI Layer                            │
-│                  (fde-learn commands)                       │
-├─────────────────────────────────────────────────────────────┤
-│                    Application Layer                        │
-│              ScopingEngine, ZPDRecommendation               │
-├─────────────────────────────────────────────────────────────┤
-│                      Domain Layer                           │
-│      LearnerProfile, KnowledgeComponentState, BKTModel      │
-├─────────────────────────────────────────────────────────────┤
-│                     Adapters Layer                          │
-│         SQLiteLearnerRepository, KBReader                   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Clean Architecture Layers
-
-| Layer | Purpose | Dependencies |
-|-------|---------|--------------|
-| **Domain** | Core entities, BKT | None (pure Python) |
-| **Application** | Use cases, ZPD | Domain |
-| **Adapters** | Persistence, KB parsing | Application, Domain |
-| **CLI** | User interface | All layers |
+| Tier | 레벨 | KB 범위 | 키워드 |
+|------|------|---------|--------|
+| **1** | 초급 | 00a-00e | "~가 뭐야?", "기초", "처음" |
+| **2** | 중급 | 01-08 | "어떻게 구현?", "패턴", "비교" |
+| **3** | 고급 | 09-18 | "최적화", "아키텍처", "면접" |
 
 ---
 
-## Knowledge Base Format
+## 사용 방법
 
-KBs use a standardized 7-section markdown format:
-
-```markdown
-# Topic Title
-
-[metadata]
-domain = osdk
-difficulty = intermediate
-estimated_time = 45
-
-## Prerequisites
-- Basic TypeScript knowledge
-
-## Core Concepts
-...
-
-## Examples
-...
-
-## Common Pitfalls
-...
-
-## Best Practices
-...
-
-## References
-...
-```
+1. **질문하기**: 어떤 프로그래밍 질문이든 자유롭게
+2. **자동 라우팅**: AI가 질문 수준 감지 → 적절한 KB 참조
+3. **7-Component 응답**: 모든 답변에 일관된 구조 보장
 
 ---
 
-## BKT Parameter Presets
+## 학습 프로토콜
 
-| Preset | P(L0) | P(T) | P(S) | P(G) | Use Case |
-|--------|-------|------|------|------|----------|
-| `default` | 0.00 | 0.10 | 0.10 | 0.25 | Balanced |
-| `easy` | 0.10 | 0.30 | 0.05 | 0.20 | Easy concepts |
-| `difficult` | 0.00 | 0.05 | 0.15 | 0.10 | Hard concepts |
-| `interview` | 0.00 | 0.08 | 0.12 | 0.10 | FDE preparation |
+AI 튜터는 `SYSTEM_DIRECTIVE.md`에 정의된 프로토콜을 따릅니다:
 
----
-
-## Development
-
-### Setup
-
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest tests/ -v --cov=palantir_fde_learning
-
-# Run linter
-ruff check palantir_fde_learning/
-
-# Run type checker
-mypy palantir_fde_learning/
-```
-
-### Examples
-
-```bash
-# Run example scripts
-python examples/basic_profile.py
-python examples/bkt_mastery.py
-python examples/zpd_recommendations.py
-```
+- **정확성 우선**: 모든 코드는 실행 가능해야 함
+- **외부 검증**: KB + context7/tavily 교차 확인
+- **1차 출처 인용**: Design Philosophy는 원저자 출처만
 
 ---
 
-## Project Structure
+## 시작하기
 
-```
-palantir-fde-learning/
-├── palantir_fde_learning/
-│   ├── domain/          # Core entities & BKT
-│   ├── application/     # Use cases & ZPD
-│   ├── adapters/        # Persistence & KB
-│   └── cli/             # Click commands
-├── knowledge_bases/     # 19 Palantir domain KBs
-├── tests/               # 78 unit tests
-├── examples/            # Usage examples
-└── .github/             # CI/CD workflows
-```
+**예시 질문들**:
+- 초급: "변수가 뭐야?"
+- 중급: "React hooks 어떻게 구현해?"
+- 고급: "OSDK 아키텍처 설명해줘"
 
----
-
-## Integration with Orion ODA
-
-The system integrates with the Orion Orchestrator via ActionTypes:
-
-```python
-# scripts/ontology/fde_learning/actions.py
-@register_action
-class RecordAttemptAction(ActionType[LearnerObject]):
-    api_name = "fde.record_attempt"
-    # ... BKT-based mastery update
-```
-
-Available ActionTypes:
-- `fde.record_attempt` - Record learning attempt
-- `fde.get_recommendation` - Get ZPD recommendations
-- `fde.sync_learner_state` - Sync with Orion (hazardous)
-
----
-
-## License
-
-MIT License - See [LICENSE](LICENSE) for details.
+질문을 던지면 학습이 시작됩니다.

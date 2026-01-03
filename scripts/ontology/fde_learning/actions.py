@@ -165,7 +165,7 @@ class RecordAttemptAction(ActionType[LearnerObject]):
             new_kc = KnowledgeComponentState(
                 concept_id=concept_id,
                 mastery_level=new_bkt_state.mastery,
-                last_accessed=datetime.utcnow(),
+                last_accessed=datetime.now(timezone.utc),
                 practice_count=new_bkt_state.attempts,
                 correct_count=new_bkt_state.correct,
                 streak_current=streak_current,
@@ -184,7 +184,7 @@ class RecordAttemptAction(ActionType[LearnerObject]):
                 overall_mastery=profile.overall_mastery(),
                 concepts_mastered=len(profile.get_mastered_concepts()),
                 total_attempts=sum(s.practice_count for s in profile.knowledge_states.values()),
-                last_activity=datetime.utcnow(),
+                last_activity=datetime.now(timezone.utc),
             )
             
             edits.append(EditOperation(
@@ -392,7 +392,7 @@ class SyncLearnerStateAction(ActionType[LearnerObject]):
                     changes={
                         "sync_direction": sync_direction,
                         "force": force,
-                        "synced_at": datetime.utcnow().isoformat(),
+                        "synced_at": datetime.now(timezone.utc).isoformat(),
                     },
                 ))
                 

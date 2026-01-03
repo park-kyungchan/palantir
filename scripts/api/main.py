@@ -87,27 +87,43 @@ async def health_check():
 # FRONTEND MOUNTING (Monolithic Mode)
 # =============================================================================
 import os
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-FRONTEND_DIST = "/home/palantir/orion-orchestrator-v2/frontend/dist"
+# Use relative path for portability (Smell #2 fix)
+FRONTEND_DIST = Path(__file__).parent.parent.parent / "frontend" / "dist"
 
-if os.path.exists(FRONTEND_DIST):
-    # 1. Mount Static Assets (JS/CSS)
-    # Check if 'static' folder exists inside dist, otherwise mount dist root if simple
-    static_dir = os.path.join(FRONTEND_DIST, "static")
-    if os.path.exists(static_dir):
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Mount static assets if they exist
+static_dir = FRONTEND_DIST / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-    # 2. SPA Catch-All
-    # Must be the LAST route to avoid swallowing API calls
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # Allow API calls to pass through 404 if not found (don't serve HTML for /api)
-        if full_path.startswith("api"):
-            return JSONResponse({"code": "NOT_FOUND", "message": "API Endpoint not found"}, status_code=404)
-            
-        index_path = os.path.join(FRONTEND_DIST, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return JSONResponse({"code": "Construction", "message": "Frontend building..."}, status_code=503)
+# SPA Catch-All - ALWAYS registered (Smell #3 fix)
+# Must be the LAST route to avoid swallowing API calls
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    """
+    Serve SPA frontend or return appropriate error responses.
+    
+    - /api/* paths: Return 404 with {"code": "NOT_FOUND"}
+    - Other paths: Serve index.html or 503 if frontend not built
+    """
+    # API paths should NOT be served by SPA (Smell #4 fix: "api/" not "api")
+    if full_path.startswith("api/") or full_path == "api":
+        return JSONResponse(
+            {"code": "NOT_FOUND", "message": "API Endpoint not found"},
+            status_code=404
+        )
+    
+    # Serve frontend
+    index_path = FRONTEND_DIST / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    
+    # Frontend not built - return 503 Service Unavailable
+    return JSONResponse(
+        {"code": "CONSTRUCTION", "message": "Frontend not built. Run npm build."},
+        status_code=503
+    )
+

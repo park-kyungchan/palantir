@@ -458,6 +458,8 @@ class ActionResult:
     created_ids: List[str] = field(default_factory=list)
     modified_ids: List[str] = field(default_factory=list)
     deleted_ids: List[str] = field(default_factory=list)
+    # GAP-01: Palantir modifiedEntities alignment
+    affected_types: Dict[str, Dict[str, bool]] = field(default_factory=dict)
     error: Optional[str] = None
     error_details: Optional[Dict[str, Any]] = None
     timestamp: datetime = field(default_factory=utc_now)
@@ -471,6 +473,7 @@ class ActionResult:
             "created_ids": self.created_ids,
             "modified_ids": self.modified_ids,
             "deleted_ids": self.deleted_ids,
+            "affected_types": self.affected_types,  # GAP-01: Palantir alignment
             "error": self.error,
             "error_details": self.error_details,
             "timestamp": self.timestamp.isoformat(),
@@ -562,7 +565,8 @@ class ActionType(ABC, Generic[T]):
         self,
         params: Dict[str, Any],
         context: ActionContext,
-        validate_only: bool = False  # Palantir OSDK alignment: $validateOnly
+        validate_only: bool = False,  # Palantir OSDK alignment: $validateOnly
+        return_edits: bool = True     # GAP-02: Palantir OSDK alignment: $returnEdits
     ) -> ActionResult:
         """
         Execute the action with full validation, retry on concurrency, and side effects.
@@ -572,6 +576,8 @@ class ActionType(ABC, Generic[T]):
             context: Execution context (actor, timestamp, etc.)
             validate_only: If True, only validate without applying changes (dry-run mode).
                           Aligns with Palantir OSDK's $validateOnly option.
+            return_edits: If True, include EditOperations in result (default True).
+                         Aligns with Palantir OSDK's $returnEdits option.
         
         Returns:
             ActionResult with success/error status and affected objects
@@ -610,17 +616,20 @@ class ActionType(ABC, Generic[T]):
             try:
                 obj, edits = await self.apply_edits(params, context)
                 
+                # Determine affected object type
+                obj_type_name = obj.__class__.__name__ if obj else self.object_type.__name__
+                has_create = any(e.edit_type == EditType.CREATE for e in edits)
+                has_modify = any(e.edit_type == EditType.MODIFY for e in edits)
+                
                 result = ActionResult(
                     action_type=self.api_name,
                     success=True,
                     data=obj,
-                    edits=edits,
-                    created_ids=[obj.id] if obj and any(
-                        e.edit_type == EditType.CREATE for e in edits
-                    ) else [],
-                    modified_ids=[obj.id] if obj and any(
-                        e.edit_type == EditType.MODIFY for e in edits
-                    ) else [],
+                    edits=edits if return_edits else [],  # GAP-02: conditional
+                    created_ids=[obj.id] if obj and has_create else [],
+                    modified_ids=[obj.id] if obj and has_modify else [],
+                    # GAP-01: Palantir modifiedEntities alignment
+                    affected_types={obj_type_name: {"created": has_create, "modified": has_modify}} if obj else {},
                 )
                 break  # Success, exit retry loop
                 
@@ -802,8 +811,35 @@ action_registry = ActionRegistry()
 def register_action(cls: Type[ActionType] = None, *, requires_proposal: bool = None):
     """
     Decorator to register an ActionType with the global registry.
+    
+    V3.1: Now includes quality gate validation.
     """
     def _register(action_cls):
+        # V3.1: Quality Gate Enforcement
+        try:
+            from scripts.ontology.governance import (
+                CodeQualityGate,
+                QualityGateEnforcement,
+                GovernanceError,
+            )
+            
+            if QualityGateEnforcement.is_enabled():
+                report = CodeQualityGate.validate_action_class(
+                    action_cls,
+                    strict=QualityGateEnforcement.should_block()
+                )
+                
+                if report.violations:
+                    api_name = getattr(action_cls, 'api_name', action_cls.__name__)
+                    for v in report.violations:
+                        logger.warning(f"[QualityGate] {api_name}: {v}")
+                    
+                    if QualityGateEnforcement.should_block() and report.has_errors:
+                        raise GovernanceError(report)
+        except ImportError:
+            # Governance module not available, skip validation
+            pass
+        
         overrides = {}
         if requires_proposal is not None:
             overrides["requires_proposal"] = requires_proposal
@@ -815,26 +851,82 @@ def register_action(cls: Type[ActionType] = None, *, requires_proposal: bool = N
         return _register
     return _register(cls)
 
+@dataclass
+class PolicyResult:
+    """
+    Result of a governance policy check.
+    Aligns with IndyDevDan's PreToolUse hook pattern.
+    """
+    decision: str  # "ALLOW_IMMEDIATE" | "REQUIRE_PROPOSAL" | "BLOCK" | "DENY"
+    reason: str = ""  # Explanation for the decision (shown to Claude/user)
+    
+    def is_allowed(self) -> bool:
+        return self.decision == "ALLOW_IMMEDIATE"
+    
+    def is_blocked(self) -> bool:
+        return self.decision in ("BLOCK", "DENY")
+
 
 class GovernanceEngine:
     """
     Enforces policies based on ActionMetadata.
+    Enhanced with PolicyResult for IndyDevDan PreToolUse pattern.
     """
     def __init__(self, registry: ActionRegistry):
         self.registry = registry
     
-    def check_execution_policy(self, action_name: str) -> str:
+    def check_execution_policy(self, action_name: str, params: Dict[str, Any] = None) -> PolicyResult:
         """
-        Determines execution policy.
+        Determines execution policy with reason feedback.
+        
+        Args:
+            action_name: API name of the action
+            params: Optional parameters for context-aware blocking
+            
+        Returns:
+            PolicyResult with decision and reason
         """
         meta = self.registry.get_metadata(action_name)
         if not meta:
-            return "DENY"
+            return PolicyResult(
+                decision="DENY",
+                reason=f"Action '{action_name}' not found in registry"
+            )
+        
+        # P1.1: Context-aware blocking (IndyDevDan PreToolUse pattern)
+        if params:
+            block_reason = self._check_dangerous_params(action_name, params)
+            if block_reason:
+                return PolicyResult(decision="BLOCK", reason=block_reason)
         
         if meta.requires_proposal:
-            return "REQUIRE_PROPOSAL"
+            return PolicyResult(
+                decision="REQUIRE_PROPOSAL",
+                reason=f"Action '{action_name}' requires governance approval"
+            )
         
-        return "ALLOW_IMMEDIATE"
+        return PolicyResult(decision="ALLOW_IMMEDIATE", reason="")
+    
+    def _check_dangerous_params(self, action_name: str, params: Dict[str, Any]) -> str:
+        """
+        Check for dangerous parameter patterns (IndyDevDan security pattern).
+        Returns block reason if dangerous, empty string if safe.
+        """
+        # Example dangerous patterns (extendable)
+        dangerous_patterns = [
+            ("rm -rf", "Dangerous recursive deletion detected"),
+            ("sudo rm", "Sudo deletion not allowed"),
+            ("chmod 777", "Insecure permissions not allowed"),
+        ]
+        
+        # Stringify params for pattern matching
+        params_str = str(params).lower()
+        
+        for pattern, reason in dangerous_patterns:
+            if pattern in params_str:
+                return reason
+        
+        return ""
 
 # Exports from submodules
 # Expected actions for startup validation

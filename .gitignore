@@ -40,12 +40,19 @@ Neo4j-*.txt
 !.gemini/SYSTEM_PROMPT_LAYER0.md
 !.gemini/antigravity/mcp_config.json
 !.gemini/settings.json
+!.gemini/DYNAMIC_IMPACT_ANALYSIS.xml
 
 # --- Orion V3 Memory Architecture ---
 .agent/indexes/*.db
 .agent/logs/*.db
 .agent/memory/working/*
 !.agent/memory/working/.gitkeep
+
+# --- Antigravity Native Capabilities ---
+!.agent/rules/
+!.agent/rules/**
+!.agent/workflows/
+!.agent/workflows/**
 
 # WSL Zone Identifiers
 *:Zone.Identifier

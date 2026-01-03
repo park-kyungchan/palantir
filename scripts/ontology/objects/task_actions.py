@@ -84,7 +84,7 @@ class Agent(OntologyObject):
     name: str = Field(..., min_length=1, max_length=100)
     email: Optional[str] = Field(default=None, max_length=255)
     role: str = Field(default="agent", max_length=50)
-    is_active: bool = Field(default=True)
+    agent_active: bool = Field(default=True)  # Renamed from is_active to avoid shadowing
     capabilities: List[str] = Field(default_factory=list)
 
     # Reverse link: Tasks assigned to this agent (1:N from Agent's perspective)
@@ -763,7 +763,7 @@ class DeactivateAgentAction(ActionType[Agent]):
             object_type="Agent",
             object_id=params["agent_id"],
             changes={
-                "is_active": False,
+                "agent_active": False,
                 "deactivated_at": utc_now().isoformat(),
                 "deactivation_reason": params["reason"],
                 "deactivated_by": context.actor_id,

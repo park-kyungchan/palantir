@@ -8,7 +8,7 @@ Maps to IndyDevDan's Watchtower db.ts functions.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
 from sqlalchemy import select, desc, distinct
@@ -154,7 +154,7 @@ class EventsRepository:
             event.human_in_the_loop = {
                 **(event.human_in_the_loop or {}),
                 "response": response,
-                "responded_at": int(datetime.utcnow().timestamp() * 1000),
+                "responded_at": int(datetime.now(timezone.utc).timestamp() * 1000),
             }
             
             await session.flush()

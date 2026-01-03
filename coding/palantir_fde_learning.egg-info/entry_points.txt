@@ -1,2 +1,0 @@
-[console_scripts]
-fde-learn = palantir_fde_learning.cli.main:main

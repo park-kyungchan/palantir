@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TypeVar, Generic, Type, Any, Optional
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from scripts.llm.instructor_client import InstructorClient
 
 Input = TypeVar("Input", bound=BaseModel)
@@ -10,9 +10,8 @@ Output = TypeVar("Output", bound=BaseModel)
 class LogicContext(BaseModel):
     """Execution context for a Logic Function (e.g. current user, loaded objects)."""
     llm: Optional[InstructorClient] = None
-
-    class Config:
-        arbitrary_types_allowed = True
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class LogicFunction(ABC, Generic[Input, Output]):
     """
