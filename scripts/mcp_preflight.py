@@ -1,7 +1,26 @@
 #!/usr/bin/env python3
+"""
+MCP Server Preflight Check Tool
+
+This tool performs preflight checks on MCP server configurations to prevent
+IDE retry loops caused by misconfigured or unreachable servers.
+
+Windows Compatibility:
+- Automatically detects Windows and uses appropriate paths (USERPROFILE)
+- Handles Windows absolute path detection (C:\, D:\, UNC paths)
+- Uses reliable process termination for Windows (direct kill vs SIGTERM)
+- Use ORION_WORKSPACE_ROOT environment variable to override default workspace location
+
+Features:
+- Validates command availability and paths
+- Probes server startup to detect early crashes
+- Optionally disables failing servers to prevent retry loops
+- Supports Docker-based servers with daemon accessibility checks
+"""
 
 import json
 import os
+import platform
 import shutil
 import subprocess
 import argparse
@@ -9,7 +28,18 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 
-DEFAULT_ANTIGRAVITY_MCP_CONFIG_PATH = "/home/palantir/.gemini/antigravity/mcp_config.json"
+def _get_default_workspace_root() -> str:
+    """Get platform-appropriate default workspace root."""
+    if platform.system() == "Windows":
+        # Use USERPROFILE on Windows (e.g., C:\Users\username)
+        return os.environ.get("USERPROFILE", os.path.expanduser("~"))
+    else:
+        # Unix-like systems
+        return "/home/palantir"
+
+
+WORKSPACE_ROOT = os.environ.get("ORION_WORKSPACE_ROOT", _get_default_workspace_root())
+DEFAULT_ANTIGRAVITY_MCP_CONFIG_PATH = os.path.join(WORKSPACE_ROOT, ".gemini", "antigravity", "mcp_config.json")
 
 
 @dataclass(frozen=True)
@@ -60,7 +90,19 @@ def _check_docker_access(timeout_s: int = 5) -> Tuple[bool, str]:
 
 
 def _looks_like_abs_path(value: str) -> bool:
-    return value.startswith("/")
+    """Check if a value looks like an absolute path (cross-platform)."""
+    # Unix absolute paths start with /
+    if value.startswith("/"):
+        return True
+    # Windows absolute paths: C:\, D:\, etc. or UNC paths \\server\share
+    if platform.system() == "Windows":
+        # Check for drive letter paths (C:\, D:\, etc.)
+        if len(value) >= 3 and value[1] == ":" and value[2] in ("\\/"):
+            return True
+        # Check for UNC paths (\\server\share)
+        if value.startswith("\\\\"):
+            return True
+    return False
 
 
 def _check_command_and_args(command: str, args: List[str]) -> Tuple[bool, str]:
@@ -129,9 +171,22 @@ def _probe_stdio_startup(
     finally:
         if proc.poll() is None:
             try:
-                proc.terminate()
+                # On Windows, terminate() sends SIGTERM which may not work for all processes
+                if platform.system() == "Windows":
+                    # Try kill directly on Windows for more reliable termination
+                    proc.kill()
+                else:
+                    proc.terminate()
                 proc.wait(timeout=1.0)
+            except subprocess.TimeoutExpired:
+                # Force kill if terminate didn't work
+                try:
+                    proc.kill()
+                    proc.wait(timeout=1.0)
+                except Exception:
+                    pass
             except Exception:
+                # If terminate/kill failed, try kill as last resort
                 try:
                     proc.kill()
                 except Exception:

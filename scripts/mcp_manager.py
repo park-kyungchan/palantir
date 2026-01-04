@@ -6,6 +6,13 @@ Goals:
 - Keep MCP server definitions consistent across multiple agents (Antigravity/Gemini, Claude, etc.)
 - Support installing the GitHub MCP server as a native binary (no Docker dependency)
 - Avoid leaking secrets: never print env values, only env keys
+- Cross-platform support: Works on Linux, macOS, and Windows
+
+Windows Compatibility:
+- Automatically detects Windows and uses appropriate paths (USERPROFILE instead of /home/palantir)
+- Supports both .tar.gz (Unix) and .zip (Windows) archive formats
+- Handles Windows-specific binary names (.exe extension)
+- Use ORION_WORKSPACE_ROOT environment variable to override default workspace location
 
 This module is intentionally stdlib-only so it can run regardless of which LLM/agent invokes it.
 """
@@ -20,11 +27,24 @@ import platform
 import shutil
 import tarfile
 import tempfile
+import zipfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.request import Request, urlopen
 
-WORKSPACE_ROOT = os.environ.get("ORION_WORKSPACE_ROOT", "/home/palantir")
+
+def _get_default_workspace_root() -> str:
+    """Get platform-appropriate default workspace root."""
+    if platform.system() == "Windows":
+        # Use USERPROFILE on Windows (e.g., C:\Users\username)
+        return os.environ.get("USERPROFILE", os.path.expanduser("~"))
+    else:
+        # Unix-like systems
+        return "/home/palantir"
+
+
+WORKSPACE_ROOT = os.environ.get("ORION_WORKSPACE_ROOT", _get_default_workspace_root())
 
 ANTIGRAVITY_MCP_CONFIG_PATH = os.path.join(WORKSPACE_ROOT, ".gemini", "antigravity", "mcp_config.json")
 CLAUDE_CONFIG_PATH = os.path.join(WORKSPACE_ROOT, ".claude.json")
@@ -232,28 +252,43 @@ def install_github_mcp_server(*, install_path: str = DEFAULT_GITHUB_MCP_INSTALL_
         if actual != expected:
             raise RuntimeError(f"Checksum mismatch for {asset_name}: expected {expected}, got {actual}")
 
-        if not asset_name.endswith(".tar.gz"):
-            raise RuntimeError(f"Unsupported archive format for this environment: {asset_name}")
-
         extracted_binary_path: Optional[str] = None
-        with tarfile.open(archive_path, "r:gz") as tar:
-            for member in tar.getmembers():
-                base = os.path.basename(member.name)
-                if member.isfile() and base == "github-mcp-server":
-                    extracted_binary_path = os.path.join(tmp_dir, "github-mcp-server")
-                    extracted = tar.extractfile(member)
-                    if extracted is None:
-                        raise RuntimeError("Failed to read github-mcp-server binary from archive")
-                    with extracted, open(extracted_binary_path, "wb") as out:
-                        shutil.copyfileobj(extracted, out)
-                    break
+        binary_name = "github-mcp-server.exe" if platform.system() == "Windows" else "github-mcp-server"
+
+        if asset_name.endswith(".tar.gz"):
+            # Extract tar.gz (Unix-like systems)
+            with tarfile.open(archive_path, "r:gz") as tar:
+                for member in tar.getmembers():
+                    base = os.path.basename(member.name)
+                    if member.isfile() and (base == "github-mcp-server" or base == "github-mcp-server.exe"):
+                        extracted_binary_path = os.path.join(tmp_dir, base)
+                        extracted = tar.extractfile(member)
+                        if extracted is None:
+                            raise RuntimeError(f"Failed to read {base} binary from archive")
+                        with extracted, open(extracted_binary_path, "wb") as out:
+                            shutil.copyfileobj(extracted, out)
+                        break
+        elif asset_name.endswith(".zip"):
+            # Extract zip (Windows)
+            with zipfile.ZipFile(archive_path, "r") as zf:
+                for member_name in zf.namelist():
+                    base = os.path.basename(member_name)
+                    if base == "github-mcp-server.exe" or base == "github-mcp-server":
+                        extracted_binary_path = os.path.join(tmp_dir, base)
+                        with zf.open(member_name) as extracted, open(extracted_binary_path, "wb") as out:
+                            shutil.copyfileobj(extracted, out)
+                        break
+        else:
+            raise RuntimeError(f"Unsupported archive format: {asset_name}")
 
         if not extracted_binary_path or not os.path.exists(extracted_binary_path):
-            raise RuntimeError("Failed to extract github-mcp-server binary from archive")
+            raise RuntimeError(f"Failed to extract {binary_name} binary from archive")
 
         _ensure_parent_dir(install_path)
         shutil.copy2(extracted_binary_path, install_path)
-        os.chmod(install_path, 0o755)
+        # Set executable permissions (Unix-like systems only)
+        if platform.system() != "Windows":
+            os.chmod(install_path, 0o755)
 
     _append_audit(
         {
