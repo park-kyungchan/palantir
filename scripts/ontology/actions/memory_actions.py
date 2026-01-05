@@ -1,9 +1,12 @@
+import logging
 from typing import Any, Dict, Optional
 from scripts.ontology.actions import ActionType, ActionContext, ActionResult, SubmissionCriterion, RequiredField
 from scripts.ontology.ontology_types import ObjectStatus
 from scripts.ontology.schemas.memory import OrionInsight, OrionPattern, InsightContent, InsightProvenance, PatternStructure
 from scripts.ontology.storage import InsightRepository, PatternRepository
 from scripts.ontology.storage.database import DatabaseManager
+
+logger = logging.getLogger(__name__)
 
 class SaveInsightAction(ActionType):
     """
@@ -35,8 +38,10 @@ class SaveInsightAction(ActionType):
         # Parse Status
         status = ObjectStatus.ACTIVE
         if "status" in params:
-             try: status = ObjectStatus(params["status"])
-             except: pass
+            try:
+                status = ObjectStatus(params["status"])
+            except ValueError as e:
+                logger.warning(f"Invalid status '{params['status']}', using default ACTIVE: {e}")
         
         # Construct Value Objects
         content_data = params.get("content", {})
@@ -115,8 +120,10 @@ class SavePatternAction(ActionType):
             
         status = ObjectStatus.ACTIVE
         if "status" in params:
-             try: status = ObjectStatus(params["status"])
-             except: pass
+            try:
+                status = ObjectStatus(params["status"])
+            except ValueError as e:
+                logger.warning(f"Invalid status '{params['status']}', using default ACTIVE: {e}")
 
         struct_data = params.get("structure", {})
         structure = PatternStructure(

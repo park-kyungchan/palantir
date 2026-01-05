@@ -27,7 +27,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 from pydantic import BaseModel, Field
 
 # Add coding directory to path for FDE Learning imports
-_CODING_PATH = "/home/palantir/orion-orchestrator-v2/coding"
+_CODING_PATH = "/home/palantir/park-kyungchan/palantir/coding"
 if _CODING_PATH not in sys.path:
     sys.path.insert(0, _CODING_PATH)
 
@@ -120,7 +120,7 @@ class RecordAttemptAction(ActionType[LearnerObject]):
             
             # Initialize repository
             # Use a persistent path in the data directory
-            db_path = "/home/palantir/orion-orchestrator-v2/coding/palantir-fde-learning/learner_state.db"
+            db_path = "/home/palantir/park-kyungchan/palantir/coding/palantir-fde-learning/learner_state.db"
             repo = SQLiteLearnerRepository(db_path=db_path)
             
             # Load existing profile or create new
@@ -257,7 +257,7 @@ class GetRecommendationAction(ActionType[LearnerObject]):
             from palantir_fde_learning.adapters.kb_reader import KBReader
             
             # Initialize repository
-            db_path = "/home/palantir/orion-orchestrator-v2/coding/palantir-fde-learning/learner_state.db"
+            db_path = "/home/palantir/park-kyungchan/palantir/coding/palantir-fde-learning/learner_state.db"
             repo = SQLiteLearnerRepository(db_path=db_path)
             
             # Load existing profile or create new
@@ -267,7 +267,7 @@ class GetRecommendationAction(ActionType[LearnerObject]):
             
             # Load Concept Library
             # KB files are in the data directory
-            kb_root = "/home/palantir/orion-orchestrator-v2/coding/palantir-fde-learning/knowledge_bases"
+            kb_root = "/home/palantir/park-kyungchan/palantir/coding/palantir-fde-learning/knowledge_bases"
             reader = KBReader(kb_root=kb_root)
             concepts = reader.build_concept_library()
             

@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 GEMINI_MD = Path.home() / ".gemini" / "GEMINI.md"
-ORION_MEMORY = Path("/home/palantir/orion-orchestrator-v2/.agent/memory/gemini_facts.md")
+ORION_MEMORY = Path("/home/palantir/park-kyungchan/palantir/.agent/memory/gemini_facts.md")
 
 def extract_memories(content: str) -> list[str]:
     """Extract facts from ## Gemini Added Memories section."""

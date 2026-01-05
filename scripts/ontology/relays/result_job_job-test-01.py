@@ -11,7 +11,7 @@ import subprocess
 import asyncio
 
 # Ensure project root is in path
-sys.path.append("/home/palantir/orion-orchestrator-v2")
+sys.path.append("/home/palantir/park-kyungchan/palantir")
 
 from scripts.ontology.schemas.result import JobResult
 from scripts.ontology.storage import initialize_database, JobResultRepository

@@ -8,7 +8,7 @@ P-04: Multi-Action Plans with compensation support.
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -121,7 +121,7 @@ class MultiActionPlan:
     
     # Actor tracking
     created_by: str = ""
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     
     def add_step(
         self,

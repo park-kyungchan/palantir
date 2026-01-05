@@ -3,7 +3,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path("/home/palantir/orion-orchestrator-v2")))
+sys.path.append(str(Path("/home/palantir/park-kyungchan/palantir")))
 from scripts.ontology.learning.persistence import LearnerRepository
 
 async def verify():

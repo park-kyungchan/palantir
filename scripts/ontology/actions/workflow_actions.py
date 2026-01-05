@@ -6,7 +6,7 @@ allowing workflows to be executed as governed Actions.
 """
 from typing import Dict, Any, List, Optional, ClassVar
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 from scripts.ontology.actions import (
     ActionType,
@@ -32,7 +32,7 @@ class WorkflowExecution:
     success_count: int
     failure_count: int
     details: List[Dict[str, Any]] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ExecuteWorkflowAction(ActionType[WorkflowExecution]):

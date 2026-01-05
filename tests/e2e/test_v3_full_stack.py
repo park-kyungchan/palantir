@@ -4,7 +4,7 @@ import sys
 import os
 
 # Add project root to path
-sys.path.append("/home/palantir/orion-orchestrator-v2")
+sys.path.append("/home/palantir/park-kyungchan/palantir")
 
 from scripts.ontology.client import FoundryClient
 from scripts.ontology.objects.core_definitions import Task, Agent

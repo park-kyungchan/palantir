@@ -5,8 +5,8 @@ from datetime import datetime
 from scripts.ontology.plan import Plan
 
 # Configuration
-TEMPLATE_DIR = "/home/palantir/orion-orchestrator-v2/.agent/handoffs/templates"
-PENDING_DIR = "/home/palantir/orion-orchestrator-v2/.agent/handoffs/pending"
+TEMPLATE_DIR = "/home/palantir/park-kyungchan/palantir/.agent/handoffs/templates"
+PENDING_DIR = "/home/palantir/park-kyungchan/palantir/.agent/handoffs/pending"
 PLANS_DIR = "/home/palantir/.agent/plans" # Assuming plans are stored here
 
 def load_template(role: str) -> str:

@@ -23,7 +23,7 @@ USER_LEVEL_RULES = USER_LEVEL_AGENT / "rules"
 KERNEL_V5_RULES = USER_LEVEL_RULES / "kernel_v5"
 
 # Project-Level paths (fallback)
-PROJECT_LEVEL_AGENT = Path("/home/palantir/orion-orchestrator-v2/.agent")
+PROJECT_LEVEL_AGENT = Path("/home/palantir/park-kyungchan/palantir/.agent")
 
 # Use User-Level as primary
 PLANS_DIR = USER_LEVEL_PLANS

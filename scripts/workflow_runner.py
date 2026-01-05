@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 from dataclasses import dataclass
 
-WORKFLOWS_DIR = Path("/home/palantir/orion-orchestrator-v2/.agent/workflows")
+WORKFLOWS_DIR = Path("/home/palantir/park-kyungchan/palantir/.agent/workflows")
 
 
 @dataclass

@@ -2,14 +2,14 @@
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path("/home/palantir/orion-orchestrator-v2")))
+sys.path.append(str(Path("/home/palantir/park-kyungchan/palantir")))
 
 from scripts.ontology.learning.engine import TutoringEngine
 from scripts.ontology.learning.scoping import ScopingEngine
 from scripts.ontology.learning.types import LearnerState, KnowledgeComponentState
 
 def verify():
-    root = "/home/palantir/orion-orchestrator-v2/scripts/ontology"
+    root = "/home/palantir/park-kyungchan/palantir/scripts/ontology"
     print("--- Initializing Engines ---")
     
     tutor = TutoringEngine(root)

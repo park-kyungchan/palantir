@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 # Ensure path
-sys.path.append("/home/palantir/orion-orchestrator-v2")
+sys.path.append("/home/palantir/park-kyungchan/palantir")
 
 from scripts.api.main import app
 

@@ -207,7 +207,7 @@ class DatabaseManager:
         Returns:
             Initialized Database instance
         """
-        default_path = "/home/palantir/orion-orchestrator-v2/data/ontology.db"
+        default_path = "/home/palantir/park-kyungchan/palantir/data/ontology.db"
         p = path or os.getenv("ORION_DB_PATH", default_path)
         db = Database(p)
         await db.initialize()

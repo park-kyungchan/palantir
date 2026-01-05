@@ -927,6 +927,38 @@ class GovernanceEngine:
                 return reason
         
         return ""
+    
+    def check_protocol_compliance(self, action_name: str) -> PolicyResult:
+        """
+        Check if action has completed required 3-Stage Protocol.
+        
+        V3.1: Integrates with scripts/ontology/protocols framework.
+        
+        Returns:
+            PolicyResult with ALLOW_IMMEDIATE, REQUIRE_PROTOCOL, or BLOCK decision
+        """
+        try:
+            from scripts.ontology.protocols.decorators import ProtocolRegistry
+            
+            is_compliant, reason = ProtocolRegistry.is_compliant(action_name)
+            
+            if not is_compliant:
+                return PolicyResult(
+                    decision="BLOCK",
+                    reason=reason or f"Protocol compliance check failed for '{action_name}'"
+                )
+            
+            if reason:  # Warning case
+                return PolicyResult(
+                    decision="ALLOW_IMMEDIATE",
+                    reason=reason
+                )
+            
+            return PolicyResult(decision="ALLOW_IMMEDIATE", reason="")
+            
+        except ImportError:
+            # Protocol framework not available, allow execution
+            return PolicyResult(decision="ALLOW_IMMEDIATE", reason="")
 
 # Exports from submodules
 # Expected actions for startup validation

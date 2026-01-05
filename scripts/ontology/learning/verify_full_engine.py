@@ -2,12 +2,12 @@
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path("/home/palantir/orion-orchestrator-v2")))
+sys.path.append(str(Path("/home/palantir/park-kyungchan/palantir")))
 
 from scripts.ontology.learning.engine import TutoringEngine
 
 def run_verification():
-    root = "/home/palantir/orion-orchestrator-v2/scripts/ontology"
+    root = "/home/palantir/park-kyungchan/palantir/scripts/ontology"
     print(f"Initializing Engine on {root}...")
     
     engine = TutoringEngine(root)

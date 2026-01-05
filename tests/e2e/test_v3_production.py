@@ -6,7 +6,7 @@ import asyncio
 from typing import Dict, Any
 
 # Add project root to path
-sys.path.append("/home/palantir/orion-orchestrator-v2")
+sys.path.append("/home/palantir/park-kyungchan/palantir")
 
 from scripts.ontology.objects.core_definitions import Task, Agent, CreateTaskAction
 from scripts.ontology.objects.proposal import Proposal, ProposalStatus

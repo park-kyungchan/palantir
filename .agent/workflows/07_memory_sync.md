@@ -9,7 +9,7 @@ description: Sync Gemini CLI memories to Orion Semantic Memory
 ### 1. Run Memory Sync
 // turbo
 ```bash
-cd /home/palantir/orion-orchestrator-v2 && source .venv/bin/activate && python scripts/ontology/memory_sync.py
+cd /home/palantir/park-kyungchan/palantir && source .venv/bin/activate && python scripts/ontology/memory_sync.py
 ```
 
 ### 2. Verify Sync

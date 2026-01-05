@@ -1,33 +1,52 @@
 ---
-description: Transform User Intent into a Governed Ontology Plan (Adaptive V2)
+description: Transform User Intent into a Governed Ontology Plan (3-Stage Protocol)
 ---
 
-# 01_plan: TDD-Enhanced Ontology Planning
+# 01_plan: 3-Stage Planning Protocol
 
-> **Source**: Merged from Claude `feature-planner` + ODA Handoff Protocol
+> **Protocol:** `PlanningProtocol` from `scripts/ontology/protocols/planning_protocol.py`
+> **Enforcement:** All planning must pass Stage A → B → C before execution.
 
 ---
 
-## Phase 1: Intent Analysis
+## Stage A: BLUEPRINT (Surface Scan)
 
 ### Goal
-Understand user request and codebase state.
+Establish requirements and remove guesswork.
 
 ### Actions
-1. Use `tavily` for external context if needed
-2. Use `read_file` to understand codebase architecture
-3. Identify dependencies and integration points
-4. Assess complexity: Small (2-3 phases) / Medium (4-5) / Large (6-7)
+1. **Context Check**: Use `tavily` for external docs if needed
+2. **Codebase Scan**: Use `read_file` to understand architecture
+3. **Scope Definition**: Identify boundaries and constraints
+4. **Complexity Assessment**: Small (2-3 phases) / Medium (4-5) / Large (6-7)
+
+### Verification
+- [ ] Requirements documented
+- [ ] Target files identified
+- [ ] Dependencies mapped
+
+### Evidence Required
+```python
+StageResult.evidence = {
+    "files_viewed": [...],
+    "requirements": [...],
+    "complexity": "medium"
+}
+```
 
 ---
 
-## Phase 2: TDD Phase Breakdown
+## Stage B: INTEGRATION TRACE (Logic Analysis)
 
 ### Goal
-Create structured phases with Test-First methodology.
+Prevent integration failures by tracing actual data flow.
 
-### Phase Structure (per phase)
+### Actions
+1. **Import Verification**: Confirm all imports exist
+2. **Signature Matching**: Ensure new code aligns with existing APIs
+3. **TDD Breakdown**: Create test-first phases
 
+### Phase Structure
 ```markdown
 ### Phase N: [Deliverable Name]
 - **Goal**: What working functionality this produces
@@ -35,84 +54,75 @@ Create structured phases with Test-First methodology.
   - [ ] RED: Write failing tests first
   - [ ] GREEN: Minimal code to pass
   - [ ] REFACTOR: Improve quality
-- **Coverage Target**: ≥80% business logic
 - **Quality Gate**: Build + Lint + Tests pass
-- **Rollback**: How to revert if issues
 ```
+
+### Verification
+- [ ] Import paths validated
+- [ ] Signatures matched
+- [ ] Phases defined
 
 ---
 
-## Phase 3: Quality Gates
+## Stage C: QUALITY GATE (Verification)
 
-### Checklist (validate before next phase)
+### Goal
+Ensure plan is ready for execution.
+
+### Quality Checks
 
 **Build & Tests**:
 - [ ] Project builds without errors
 - [ ] All existing tests pass
-- [ ] New tests added for new functionality
-- [ ] Coverage maintained or improved
+- [ ] Test coverage ≥80%
 
 **Code Quality**:
 - [ ] Linting passes
-- [ ] Type checking passes (if applicable)
+- [ ] Type checking passes
 
-**Functionality**:
-- [ ] Manual testing confirms feature works
-- [ ] No regressions
-
----
-
-## Phase 4: Risk Assessment
-
+**Risk Assessment**:
 | Risk Type | Probability | Impact | Mitigation |
 |-----------|-------------|--------|------------|
 | Technical | Low/Med/High | Low/Med/High | Action |
-| Dependency | Low/Med/High | Low/Med/High | Action |
-| Timeline | Low/Med/High | Low/Med/High | Action |
+| Integration | Low/Med/High | Low/Med/High | Action |
+
+### Approval Gate
+- [ ] All Stage A/B/C checks passed
+- [ ] User approval received
 
 ---
 
-## Phase 5: Ontology Plan Definition (ODA)
+## Ontology Plan Definition (ODA)
 
-### Goal
-Create structured `Plan` object for Ontology.
-
-### Actions
+### Actions (after Stage C approval)
 1. Define `Objective` from user intent
 2. Break down into `Jobs`
 3. Assign `Role`: Architect (Claude) / Automation (GPT)
-
----
-
-## Phase 6: Handoff Artifact Generation
-
-### Goal
-Create files for manual agent routing.
 
 ### Command
 ```bash
 python -m scripts.ontology.handoff --plan .agent/plans/plan_[ID].json --job [INDEX]
 ```
 
-### Verify
-Check `.agent/handoffs/pending/` for new file.
+---
+
+## Protocol Enforcement
+
+```python
+from scripts.ontology.protocols.planning_protocol import PlanningProtocol
+from scripts.ontology.protocols import ProtocolContext
+
+async def run_planning():
+    protocol = PlanningProtocol()
+    context = ProtocolContext(target_path="target", actor_id="agent")
+    result = await protocol.execute(context)
+    
+    if not result.passed:
+        raise ValueError("Planning protocol failed")
+    
+    return result
+```
 
 ---
 
-## Phase 7: User Notification
-
-> "Handoff File Created: `.agent/handoffs/pending/job_[ID]_claude.md`"
-> "Please switch to Claude and ask it to read this file."
-
----
-
-## Progress Tracking
-
-**After completing each phase**:
-1. ✅ Check off completed tasks
-2. 🧪 Run quality gate validation
-3. ⚠️ Verify ALL gates pass
-4. 📝 Document learnings
-5. ➡️ Then proceed to next phase
-
-⛔ **DO NOT skip quality gates**
+⛔ **DO NOT skip Stage A, B, or C**

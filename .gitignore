@@ -64,3 +64,9 @@ Neo4j-*.txt
 *.db-wal
 .agent/learning/
 data/learning.db
+
+# Sensitive files - NEVER commit
+.mcp.json
+.claude/
+.antigravity/
+*.jsonl
