@@ -53,7 +53,7 @@ class ExecuteWorkflowAction(ActionType[WorkflowExecution]):
     """
     
     api_name: ClassVar[str] = "execute_workflow"
-    object_type: ClassVar[str] = "WorkflowExecution"
+    object_type: ClassVar[type] = WorkflowExecution
     
     submission_criteria = [
         RequiredField("workflow_name"),
@@ -74,17 +74,15 @@ class ExecuteWorkflowAction(ActionType[WorkflowExecution]):
         turbo_only = params.get("turbo_only", False)
         dry_run = params.get("dry_run", False)
         
-        # Validation only mode
-        if validate_only or dry_run:
-            return ActionResult(
-                action_type=self.api_name,
-                success=True,
-                message=f"Workflow '{workflow_name}' validated (dry_run={dry_run})",
-                data=None,
-            )
-        
-        # Execute workflow
-        result = execute_workflow(workflow_name, turbo_only=turbo_only)
+        workflow_params = params.get("workflow_params", {})
+
+        # Execute workflow (dry_run avoids command execution)
+        result = execute_workflow(
+            workflow_name,
+            turbo_only=turbo_only,
+            params=workflow_params,
+            dry_run=dry_run or validate_only,
+        )
         
         # Parse results
         commands = result.get("commands", [])
@@ -98,6 +96,13 @@ class ExecuteWorkflowAction(ActionType[WorkflowExecution]):
             failure_count=failure_count,
             details=commands,
         )
+
+        if failure_count > 0 and not (dry_run or validate_only):
+            first_failure = next((c for c in commands if c.get("returncode") != 0), {})
+            raise RuntimeError(
+                f"Workflow '{workflow_name}' failed ({failure_count} failures). "
+                f"First failure: {first_failure.get('command')}"
+            )
         
         # Create edit operation for audit trail
         edit = EditOperation(
@@ -109,17 +114,11 @@ class ExecuteWorkflowAction(ActionType[WorkflowExecution]):
                 "turbo_only": turbo_only,
                 "commands_executed": len(commands),
                 "success_count": success_count,
+                "dry_run": dry_run,
             }
         )
         
-        return ActionResult(
-            action_type=self.api_name,
-            success=failure_count == 0,
-            data=execution,
-            message=f"Executed {len(commands)} commands ({success_count} success, {failure_count} failed)",
-            edits=[edit] if return_edits else [],
-            created_ids=[edit.object_id],
-        )
+        return execution, [edit] if return_edits else []
 
 
 # =============================================================================

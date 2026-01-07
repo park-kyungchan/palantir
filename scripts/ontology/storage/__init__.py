@@ -11,68 +11,30 @@ Exports:
 - Exceptions: ConcurrencyError, EntityNotFoundError, etc.
 """
 
-from scripts.ontology.storage.database import (
-    Database,
-    get_database,
-    initialize_database,
-)
-from scripts.ontology.storage.exceptions import (
-    ConcurrencyError,
-    OptimisticLockError,
-    EntityNotFoundError,
-    ProposalNotFoundError,
-    ValidationError,
-)
-from scripts.ontology.storage.base_repository import (
-    GenericRepository,
-    RepositoryError,
-    PaginatedResult,
-)
-from scripts.ontology.storage.proposal_repository import (
-    ProposalRepository,
-    ProposalQuery,
-)
-from scripts.ontology.storage.task_repository import TaskRepository
-from scripts.ontology.storage.repositories import (
-    ActionLogRepository,
-    JobResultRepository,
-    InsightRepository,
-    PatternRepository,
-)
-from scripts.ontology.storage.models import (
-    ProposalModel,
-    ProposalHistoryModel,
-    OrionActionLogModel,
-    JobResultModel,
-    OrionInsightModel,
-    OrionPatternModel,
-)
+from __future__ import annotations
+
+import importlib
+from typing import Dict
 
 __all__ = [
-    # Database
     "Database",
     "get_database",
     "initialize_database",
-    # Exceptions (centralized)
     "ConcurrencyError",
     "OptimisticLockError",
     "EntityNotFoundError",
     "ProposalNotFoundError",
     "ValidationError",
-    # Base Repository
     "GenericRepository",
     "RepositoryError",
     "PaginatedResult",
-    # Proposal (existing)
     "ProposalRepository",
     "ProposalQuery",
     "TaskRepository",
-    # New Repositories (Sprint 2-3)
     "ActionLogRepository",
     "JobResultRepository",
     "InsightRepository",
     "PatternRepository",
-    # ORM Models
     "ProposalModel",
     "ProposalHistoryModel",
     "OrionActionLogModel",
@@ -80,3 +42,38 @@ __all__ = [
     "OrionInsightModel",
     "OrionPatternModel",
 ]
+
+_LAZY_IMPORTS: Dict[str, str] = {
+    "Database": "scripts.ontology.storage.database",
+    "get_database": "scripts.ontology.storage.database",
+    "initialize_database": "scripts.ontology.storage.database",
+    "ConcurrencyError": "scripts.ontology.storage.exceptions",
+    "OptimisticLockError": "scripts.ontology.storage.exceptions",
+    "EntityNotFoundError": "scripts.ontology.storage.exceptions",
+    "ProposalNotFoundError": "scripts.ontology.storage.exceptions",
+    "ValidationError": "scripts.ontology.storage.exceptions",
+    "GenericRepository": "scripts.ontology.storage.base_repository",
+    "RepositoryError": "scripts.ontology.storage.base_repository",
+    "PaginatedResult": "scripts.ontology.storage.base_repository",
+    "ProposalRepository": "scripts.ontology.storage.proposal_repository",
+    "ProposalQuery": "scripts.ontology.storage.proposal_repository",
+    "TaskRepository": "scripts.ontology.storage.task_repository",
+    "ActionLogRepository": "scripts.ontology.storage.repositories",
+    "JobResultRepository": "scripts.ontology.storage.repositories",
+    "InsightRepository": "scripts.ontology.storage.repositories",
+    "PatternRepository": "scripts.ontology.storage.repositories",
+    "ProposalModel": "scripts.ontology.storage.models",
+    "ProposalHistoryModel": "scripts.ontology.storage.models",
+    "OrionActionLogModel": "scripts.ontology.storage.models",
+    "JobResultModel": "scripts.ontology.storage.models",
+    "OrionInsightModel": "scripts.ontology.storage.models",
+    "OrionPatternModel": "scripts.ontology.storage.models",
+}
+
+
+def __getattr__(name: str):
+    module_path = _LAZY_IMPORTS.get(name)
+    if not module_path:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = importlib.import_module(module_path)
+    return getattr(module, name)

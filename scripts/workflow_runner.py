@@ -9,6 +9,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 WORKFLOWS_DIR = Path("/home/palantir/park-kyungchan/palantir/.agent/workflows")
+PROJECT_ROOT = WORKFLOWS_DIR.parent.parent
 
 
 @dataclass
@@ -22,25 +23,40 @@ class WorkflowCommand:
 def extract_commands(workflow_path: Path) -> list[WorkflowCommand]:
     """Extract shell commands from workflow markdown."""
     content = workflow_path.read_text()
-    commands = []
-    
+    commands: list[WorkflowCommand] = []
+
     # Pattern: optional // turbo comment, then ```bash block
     pattern = r"(// turbo\n)?```bash\n(.*?)\n```"
     matches = re.findall(pattern, content, re.DOTALL)
-    
+
     for turbo_marker, cmd_block in matches:
-        for line in cmd_block.strip().split("\n"):
+        block = cmd_block.strip()
+        if "<<'PY'" in block or "<<PY" in block:
+            commands.append(WorkflowCommand(
+                command=block,
+                is_turbo=bool(turbo_marker),
+                description=""
+            ))
+            continue
+        for line in block.split("\n"):
             if line.strip() and not line.startswith("#"):
                 commands.append(WorkflowCommand(
                     command=line.strip(),
                     is_turbo=bool(turbo_marker),
                     description=""
                 ))
-    
+
     return commands
 
 
-def execute_workflow(name: str, turbo_only: bool = False) -> dict:
+def _render_command(command: str, params: dict[str, str]) -> str:
+    rendered = command
+    for key, value in params.items():
+        rendered = rendered.replace(f"${{{key}}}", value)
+    return rendered
+
+
+def execute_workflow(name: str, turbo_only: bool = False, params: dict[str, str] | None = None, dry_run: bool = False) -> dict:
     """
     Execute a workflow by name.
     
@@ -58,21 +74,31 @@ def execute_workflow(name: str, turbo_only: bool = False) -> dict:
     
     commands = extract_commands(workflow_path)
     results = {"workflow": name, "commands": []}
+    params = params or {}
     
     for cmd in commands:
         if turbo_only and not cmd.is_turbo:
             continue
-        
+        rendered_command = _render_command(cmd.command, params)
         try:
+            if dry_run:
+                results["commands"].append({
+                    "command": rendered_command,
+                    "is_turbo": cmd.is_turbo,
+                    "returncode": 0,
+                    "stdout": "DRY_RUN",
+                    "stderr": ""
+                })
+                continue
+
             result = subprocess.run(
-                cmd.command,
-                shell=True,
+                ["bash", "-lc", rendered_command],
                 capture_output=True,
                 text=True,
-                cwd=WORKFLOWS_DIR.parent
+                cwd=PROJECT_ROOT
             )
             results["commands"].append({
-                "command": cmd.command,
+                "command": rendered_command,
                 "is_turbo": cmd.is_turbo,
                 "returncode": result.returncode,
                 "stdout": result.stdout[:500] if result.stdout else "",

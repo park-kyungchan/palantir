@@ -13,7 +13,7 @@ Maps 1:1 with Pydantic domain objects in scripts/ontology/schemas/:
 
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from sqlalchemy import String, JSON, DateTime, Text, Integer, Float, Index
+from sqlalchemy import String, JSON, DateTime, Text, Integer, Float, Index, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .orm import AsyncOntologyObject, Base
@@ -240,13 +240,13 @@ class LearnerModel(AsyncOntologyObject):
 class AgentModel(AsyncOntologyObject):
     """
     SQLAlchemy Model for Agents.
-    Maps to: scripts/ontology/objects/task_actions.py::Agent
+    Maps to: scripts/ontology/objects/task_types.py::Agent
     """
     __tablename__ = "agents"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     role: Mapped[str] = mapped_column(String(50), default="agent")
-    is_active: Mapped[bool] = mapped_column(default=True)
+    agent_active: Mapped[bool] = mapped_column(Boolean, default=True)
     capabilities: Mapped[List[str]] = mapped_column(JSON, default=list)
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
@@ -257,7 +257,7 @@ class AgentModel(AsyncOntologyObject):
 class TaskModel(AsyncOntologyObject):
     """
     SQLAlchemy Model for Tasks.
-    Maps to: scripts/ontology/objects/task_actions.py::Task
+    Maps to: scripts/ontology/objects/task_types.py::Task
     """
     __tablename__ = "tasks"
 

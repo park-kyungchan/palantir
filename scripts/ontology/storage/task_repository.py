@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Dict, Any
 from sqlalchemy import select, update
-from scripts.ontology.objects.task_actions import Task, TaskStatus, TaskPriority
+from scripts.ontology.objects.task_types import Task, TaskStatus, TaskPriority
 from scripts.ontology.storage.models import TaskModel
 from scripts.ontology.storage.database import Database
 from scripts.ontology.actions import EditOperation, EditType

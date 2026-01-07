@@ -1,4 +1,5 @@
 
+import asyncio
 import logging
 import json
 from typing import Dict, Any, Optional, List
@@ -30,23 +31,13 @@ class GeneratePlanAction(ActionType[Plan]):
         # Lazy import to avoid circular dependency
         from scripts.llm.instructor_client import InstructorClient
         
-        # We need an async client preferably, but InstructorClient is currently Sync.
-        # We'll use it synchronously for now, or wrap it in run_in_executor if needed.
-        # Given this is 'apply_edits' (async), blocking here is not ideal but acceptable for Phase 2 
-        # provided we don't have thousands of concurrent plans.
-        
         client = InstructorClient() # Use defaults or env vars
         
         try:
-            # This is currently SYNCHRONOUS. 
-            # In a real async reactor, we should await this in a threadpool.
-            # plan = await asyncio.to_thread(client.generate_plan, prompt, model_name=model)
-            
             # For strict compliance, let's call the low-level generate directly 
             # so we don't recurse if client uses Actions (which we plan to do).
             # We want THIS Action to be the source of truth.
-            
-            plan = client.generate(prompt, Plan, model_name=model)
+            plan = await client.generate_async(prompt, Plan, model_name=model)
             
         except Exception as e:
             return ActionResult(
@@ -108,10 +99,10 @@ class RouteTaskAction(ActionType):
         model = params.get("model", "llama3.2")
         
         client = InstructorClient()
-        route = client.generate(
-            f"Route this request: {req}", 
-            RouterOutput, 
-            model_name=model
+        route = await client.generate_async(
+            f"Route this request: {req}",
+            RouterOutput,
+            model_name=model,
         )
         
         return route, [] # No ontology edits, just a decision
@@ -139,12 +130,13 @@ class ProcessLLMPromptAction(ActionType):
         # Let's say we expect a 'Response' object.
         # For now, let's treat it as a Raw Completion wrapper.
         
-        response = client.client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        
-        content = response.choices[0].message.content
+        def _call_llm():
+            response = client.client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.choices[0].message.content
+
+        content = await asyncio.to_thread(_call_llm)
         
         return content, []
-

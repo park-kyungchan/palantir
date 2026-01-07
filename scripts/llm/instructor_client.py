@@ -15,8 +15,6 @@ from __future__ import annotations
 import logging
 from typing import Type, TypeVar, Any, Dict
 
-import instructor
-from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -26,6 +24,8 @@ except ImportError:
     repair_json = None
 
 from scripts.ontology.plan import Plan
+from scripts.llm.config import LLMBackendConfig, load_llm_config
+from scripts.llm.providers import LLMProvider, build_instructor_client, build_provider
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +37,33 @@ class InstructorClient:
     Supports Ollama and OpenAI-compatible endpoints.
     """
     
-    def __init__(self, base_url: str = "http://localhost:11434/v1", api_key: str = "ollama"):
-        self.base_url = base_url
-        self.api_key = api_key
-        
-        # Patch standard OpenAI client with Instructor
-        self.client = instructor.patch(
-            OpenAI(base_url=base_url, api_key=api_key),
-            mode=instructor.Mode.JSON
-        )
+    def __init__(
+        self,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        model_name: str | None = None,
+        provider: LLMProvider | None = None,
+        config: LLMBackendConfig | None = None,
+    ):
+        resolved_config = config or load_llm_config()
+        if base_url:
+            resolved_config = LLMBackendConfig(
+                provider=resolved_config.provider,
+                base_url=base_url,
+                api_key=api_key or resolved_config.api_key,
+                model=model_name or resolved_config.model,
+            )
+        elif api_key or model_name:
+            resolved_config = LLMBackendConfig(
+                provider=resolved_config.provider,
+                base_url=resolved_config.base_url,
+                api_key=api_key or resolved_config.api_key,
+                model=model_name or resolved_config.model,
+            )
+
+        self.provider = provider or build_provider(resolved_config)
+        self.default_model = model_name or self.provider.default_model()
+        self.client = build_instructor_client(self.provider)
 
     @retry(
         stop=stop_after_attempt(3),
@@ -56,7 +74,7 @@ class InstructorClient:
         self, 
         prompt: str, 
         response_model: Type[T], 
-        model_name: str = "llama3.2"
+        model_name: str | None = None
     ) -> T:
         """
         Generate a structured response from the LLM.
@@ -71,7 +89,7 @@ class InstructorClient:
         """
         try:
             return self.client.chat.completions.create(
-                model=model_name,
+                model=model_name or self.default_model,
                 messages=[{"role": "user", "content": prompt}],
                 response_model=response_model,
                 max_retries=2  # Internal Instructor retry for simple fixups
@@ -90,7 +108,7 @@ class InstructorClient:
         self,
         prompt: str,
         response_model: Type[T],
-        model_name: str = "llama3.2"
+        model_name: str | None = None
     ) -> T:
         """
         Async version of generate for use in async contexts.
@@ -115,7 +133,7 @@ class InstructorClient:
             lambda: self.generate(prompt, response_model, model_name)
         )
 
-    async def generate_plan(self, prompt: str, model_name: str = "llama3.2") -> Plan:
+    async def generate_plan(self, prompt: str, model_name: str | None = None) -> Plan:
         """
         Specialized method for Plan generation.
         Uses ODA 'GeneratePlanAction' for full auditing.
@@ -129,9 +147,9 @@ class InstructorClient:
         ctx = ActionContext(
             actor_id="instructor_client",
             correlation_id=None,
-            metadata={"model": model_name}
+            metadata={"model": model_name or self.default_model}
         )
-        ctx.parameters = {"goal": prompt, "model": model_name}
+        ctx.parameters = {"goal": prompt, "model": model_name or self.default_model}
         
         # Execute (This returns (Plan, edits)) based on our implementation in llm_actions.py
         # Wait, ActionRunner.execute returns ActionResult.
@@ -148,4 +166,3 @@ class InstructorClient:
             return result.data
 
         raise RuntimeError("No Plan returned in Action Result")
-

@@ -22,6 +22,7 @@ from pydantic import Field, field_validator, model_validator
 
 # Import from refactored ontology_types (A5)
 from scripts.ontology.ontology_types import OntologyObject, utc_now
+from scripts.ontology.registry import register_object_type
 
 
 # =============================================================================
@@ -125,6 +126,7 @@ TERMINAL_STATES: Set[ProposalStatus] = {
 # PROPOSAL OBJECT
 # =============================================================================
 
+@register_object_type
 class Proposal(OntologyObject):
     """
     Represents a staged Action awaiting Human Review.

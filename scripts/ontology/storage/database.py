@@ -134,11 +134,21 @@ class Database:
     async def initialize(self) -> None:
         """Create tables if they don't exist."""
         if self._initialized: return
-        
+
+        if os.environ.get("ORION_DB_INIT_MODE") == "sync":
+            from sqlalchemy import create_engine
+            sync_url = self.url.replace("+aiosqlite", "")
+            engine = create_engine(sync_url)
+            Base.metadata.create_all(bind=engine)
+            engine.dispose()
+            logger.info(f"Database Schema Initialized (sync) at {sync_url}")
+            self._initialized = True
+            return
+
         async with self.engine.begin() as conn:
             # In production, use Alembic. For ODA V3 Prototype, create_all is acceptable.
             await conn.run_sync(Base.metadata.create_all)
-            
+
         logger.info(f"Database Schema Initialized at {self.url}")
         self._initialized = True
 
@@ -317,4 +327,3 @@ def get_database() -> Database:
         if _db_instance is not None:
             return _db_instance
         raise RuntimeError("Database not initialized. Call initialize_database() first.")
-

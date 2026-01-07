@@ -39,13 +39,13 @@ def format_as_xml(results: List[Dict[str, Any]]) -> str:
     xml.append("</long_term_memory_injection>")
     return "\n".join(xml)
 
-def recall(query: str, limit: int = 5, verbose: bool = False):
+async def recall(query: str, limit: int = 5, verbose: bool = False):
     if verbose:
         print(f"🧠 [Recall] Searching LTM for: '{query}'")
         
     try:
         mm = MemoryManager()
-        results = mm.search(query, limit=limit)
+        results = await mm.search(query, limit=limit)
         
         xml_output = format_as_xml(results)
         print(xml_output)
@@ -64,4 +64,5 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    recall(args.query, args.limit, args.verbose)
+    import asyncio
+    asyncio.run(recall(args.query, args.limit, args.verbose))

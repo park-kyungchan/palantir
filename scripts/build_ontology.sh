@@ -5,6 +5,10 @@ SCHEMA_DIR=".agent/schemas"
 OUTPUT_DIR="scripts/ontology"
 
 echo "Building Ontology from Schemas in $SCHEMA_DIR..."
+if [ ! -f "$SCHEMA_DIR/plan.schema.json" ]; then
+    echo "Schema files not found. Export the runtime registry with: python -m scripts.ontology.registry"
+    exit 1
+fi
 
 # 1. Plan (Modular, includes Job)
 echo "Generating Plan & Job..."

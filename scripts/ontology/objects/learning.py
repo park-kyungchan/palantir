@@ -2,7 +2,9 @@ from __future__ import annotations
 from typing import ClassVar, List, Optional, Any, Dict
 from pydantic import Field
 from scripts.ontology.ontology_types import OntologyObject, Link, Cardinality
+from scripts.ontology.registry import register_object_type
 
+@register_object_type
 class Learner(OntologyObject):
     """
     ObjectType: Learner

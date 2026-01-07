@@ -1,7 +1,7 @@
 
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from scripts.ontology.ontology_types import OrionObject
 
 # --- INSIGHT ---
@@ -10,10 +10,12 @@ class InsightContent(BaseModel):
     summary: str
     domain: str
     tags: List[str] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 class InsightProvenance(BaseModel):
     source_episodic_ids: List[str] = Field(default_factory=list)
     method: str
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 class OrionInsight(OrionObject):
     """
@@ -41,6 +43,7 @@ class PatternStructure(BaseModel):
     trigger: str
     steps: List[str]
     anti_patterns: List[str] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 class OrionPattern(OrionObject):
     """

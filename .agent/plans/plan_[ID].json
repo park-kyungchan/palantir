@@ -1,0 +1,24 @@
+{
+  "id": "plan-d071f997-77e0-4736-b3a7-745a376a6338",
+  "type": "Plan",
+  "created_at": "2026-01-07T03:20:22.531899Z",
+  "meta_version": 1,
+  "plan_id": "PLAN-E05F0CB2",
+  "objective": "Your requirement",
+  "ontology_impact": [],
+  "jobs": [
+    {
+      "id": "job-c1bb76dc",
+      "action_name": "execute_workflow",
+      "action_args": {},
+      "description": "Your requirement",
+      "input_context": [
+        ".agent/workflows/01_plan.md",
+        "scripts/ontology/handoff.py"
+      ],
+      "evidence": null,
+      "role": "Automation"
+    }
+  ],
+  "research_context": {}
+}

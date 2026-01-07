@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from scripts.ontology.actions import ActionType, ActionContext, ActionMetadata, register_action, EditOperation
 from scripts.ontology.ontology_types import OntologyObject
 from scripts.aip_logic.engine import LogicEngine
+from scripts.aip_logic.registry import get_logic_function
 from scripts.llm.instructor_client import InstructorClient
 
 logger = logging.getLogger(__name__)
@@ -42,24 +43,14 @@ class ExecuteLogicAction(ActionType):
         if not function_name:
             raise ValueError("function_name is required")
 
-        # In a real system, we'd look up the LogicFunction class from a registry.
-        # For prototype, we might implement a simple mapping or just log usage.
-        # Since scripts/aip_logic doesn't have a registry yet, we'll placeholder this.
-        
         logger.info(f"[ExecuteLogicAction] Requesting {function_name} execution.")
-        
-        # Placeholder: If function_name == "GenericLLM", use a dynamic function?
-        # For now, we return a success signal to show connection.
-        
-        result = {
-            "status": "executed",
-            "function": function_name,
-            "mock_output": "Logic execution successful (Integration Placeholder)"
-        }
-        
+
+        function_cls = get_logic_function(function_name)
+        input_model = function_cls.input_type.model_validate(input_data)
+        result = await self.engine.execute(function_cls, input_model)
+
         # Logic execution doesn't inherently mutate ontology unless the function *returns* edits.
-        # We assume it produces data (JobResult style) which is returned.
-        
+        # We return the output model for auditability.
         return result, []
 
 # Register explicitly if decorator didn't work (imports etc)

@@ -5,7 +5,7 @@ The **Orion Framework** is a "Decision-Centric" Agentic IDE Architecture, design
 ## 🏗️ Architecture
 
 ### 1. Conceptual Pillars
-*   **Schema-First**: All code is generated from JSON Schemas (`.agent/schemas/`) via `scripts/build_ontology.sh`.
+*   **Schema-First**: Ontology types are exported from the runtime registry via `python -m scripts.ontology.registry` into `.agent/schemas/ontology_registry.json` (legacy JSON schema generation remains in `scripts/build_ontology.sh`).
 *   **Action Mandate**: State mutation is ONLY allowed via `ActionDispatcher`. Raw `open(..., 'w')` is prohibited for logic.
 *   **Eventual Consistency**: All changes are logged to the Audit Ledger (`.agent/logs/ontology.db`) before execution.
 

@@ -3,6 +3,7 @@ from typing import TypeVar, Generic, Type, Any, Optional
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, ConfigDict
 from scripts.llm.instructor_client import InstructorClient
+from scripts.llm.config import get_default_model
 
 Input = TypeVar("Input", bound=BaseModel)
 Output = TypeVar("Output", bound=BaseModel)
@@ -40,7 +41,7 @@ class LogicFunction(ABC, Generic[Input, Output]):
     @property
     def model_name(self) -> str:
         """Default LLM model to use."""
-        return "gpt-4o"
+        return get_default_model()
 
     @abstractmethod
     async def run(self, input_data: Input, context: LogicContext) -> Output:

@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from scripts.ontology.ontology_types import OrionObject
 
 class Artifact(BaseModel):
@@ -10,6 +10,7 @@ class Artifact(BaseModel):
     description: str = Field(..., description="Description of what this artifact is")
     mime_type: Optional[str] = Field(None, description="MIME type if known")
     checksum: Optional[str] = Field(None, description="Optional SHA256 checksum for integrity")
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 class JobResult(OrionObject):
     """

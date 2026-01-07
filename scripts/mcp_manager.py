@@ -32,6 +32,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.request import Request, urlopen
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _get_default_workspace_root() -> str:
@@ -344,9 +347,9 @@ def init_registry_from_existing(*, write: bool = False) -> Dict[str, Any]:
             if server.get("disabled") is True:
                 entry["disabled"] = True
             servers[server_id] = entry
-    except Exception:
-        # No Antigravity config: ignore
-        pass
+    except Exception as e:
+        # No Antigravity config: log and continue gracefully
+        logger.debug("Failed to load Antigravity MCP config: %s", e)
 
     # Claude source (project scoped)
     try:
@@ -366,8 +369,9 @@ def init_registry_from_existing(*, write: bool = False) -> Dict[str, Any]:
                 if isinstance(env, dict):
                     entry.setdefault("envKeys", sorted(set(map(str, env.keys()))))
                 servers[server_id] = entry
-    except Exception:
-        pass
+    except Exception as e:
+        # No Claude config: log and continue gracefully
+        logger.debug("Failed to load Claude MCP config: %s", e)
 
     registry["servers"] = servers
     if write:
@@ -526,7 +530,8 @@ def status() -> Dict[str, Any]:
     cc = None
     try:
         cc = _load_claude_config()
-    except Exception:
+    except Exception as e:
+        logger.debug("Failed to load Claude config for status: %s", e)
         cc = None
 
     claude_servers: Dict[str, Any] = {}

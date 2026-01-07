@@ -11,7 +11,7 @@ description: Initialize the Orion V3 Workspace and Ontology Layer
 - **Goal**: Ensure all Agent Tools are functional.
 - **Action**: Run MCP Preflight script.
 ```bash
-python3 scripts/mcp_preflight.py --auto-disable-failed
+timeout 30 bash -lc "source .venv/bin/activate && python scripts/mcp_preflight.py --auto-disable-failed"
 ```
 
 ---
@@ -20,7 +20,8 @@ python3 scripts/mcp_preflight.py --auto-disable-failed
 - **Goal**: Ensure SQLite DB is ready and schema is valid.
 - **Action**: Run DB initialization check.
 ```bash
-python3 -c "import asyncio; from scripts.ontology.storage.database import initialize_database; asyncio.run(initialize_database())"
+mkdir -p .agent/tmp
+timeout 30 bash -lc "source .venv/bin/activate && ORION_DB_INIT_MODE=sync ORION_DB_PATH=.agent/tmp/ontology.db python -c \"import asyncio; from scripts.ontology.storage.database import initialize_database; asyncio.run(initialize_database()); print('✅ DB Initialized')\""
 ```
 
 ---
@@ -29,7 +30,7 @@ python3 -c "import asyncio; from scripts.ontology.storage.database import initia
 - **Goal**: Initialize 3-Stage Protocol context for session.
 - **Action**: Verify protocol imports are functional.
 ```bash
-python3 -c "from scripts.ontology.protocols import ThreeStageProtocol, ProtocolContext, Stage; print('✅ Protocol Framework Ready')"
+timeout 30 bash -lc "source .venv/bin/activate && python -c \"from scripts.ontology.protocols import ThreeStageProtocol, ProtocolContext, Stage; print('✅ Protocol Framework Ready')\""
 ```
 - **Context Setup**:
 ```python
@@ -46,7 +47,7 @@ context = ProtocolContext(
 - **Goal**: Load relevant LTM into System Context.
 - **Action**: Scan for recent topics.
 ```bash
-python3 scripts/memory/recall.py "Orion Architecture" --limit 3
+timeout 10 bash -lc "source .venv/bin/activate && python scripts/memory/recall.py \"Orion Architecture\" --limit 3" || true
 ```
 
 ---

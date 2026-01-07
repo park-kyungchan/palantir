@@ -324,6 +324,6 @@ PropertyName = str
 
 # For type hints in Link definitions
 if TYPE_CHECKING:
-    from scripts.ontology.objects.core_definitions import Agent, Task
+    from scripts.ontology.objects.task_types import Agent, Task
     from scripts.ontology.objects.proposal import Proposal
 OrionObject = OntologyObject

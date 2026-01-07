@@ -1,0 +1,24 @@
+{
+  "id": "plan-4aaaa852-8710-4ff2-8829-0b8e7a3a72ed",
+  "type": "Plan",
+  "created_at": "2026-01-07T03:18:48.588645Z",
+  "meta_version": 1,
+  "plan_id": "PLAN-3EC9508C",
+  "objective": "Bundle test for /01_plan",
+  "ontology_impact": [],
+  "jobs": [
+    {
+      "id": "job-05061e4f",
+      "action_name": "execute_workflow",
+      "action_args": {},
+      "description": "Bundle test for /01_plan",
+      "input_context": [
+        ".agent/workflows/01_plan.md",
+        "scripts/ontology/handoff.py"
+      ],
+      "evidence": null,
+      "role": "Automation"
+    }
+  ],
+  "research_context": {}
+}
