@@ -23,15 +23,15 @@ from typing import AsyncGenerator, Tuple
 import pytest
 import pytest_asyncio
 
-from scripts.ontology.objects.proposal import (
+from lib.oda.ontology.objects.proposal import (
     Proposal,
     ProposalPriority,
     ProposalStatus,
 )
-from scripts.ontology.storage.database import Database
-from scripts.ontology.storage.exceptions import ConcurrencyError, OptimisticLockError
-from scripts.ontology.storage.proposal_repository import ProposalRepository
-from scripts.ontology.actions import ActionContext
+from lib.oda.ontology.storage.database import Database
+from lib.oda.ontology.storage.exceptions import ConcurrencyError, OptimisticLockError
+from lib.oda.ontology.storage.proposal_repository import ProposalRepository
+from lib.oda.ontology.actions import ActionContext
 
 
 # =============================================================================

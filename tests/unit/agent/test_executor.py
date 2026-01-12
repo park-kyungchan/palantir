@@ -10,12 +10,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import pytest_asyncio
 
-from scripts.agent.executor import (
+from lib.oda.agent.executor import (
     AgentExecutor,
     TaskResult,
     ExecutionPolicy,
 )
-from scripts.ontology.actions import ActionResult, ActionType
+from lib.oda.ontology.actions import ActionResult, ActionType
 
 
 class TestTaskResult:
@@ -155,14 +155,14 @@ class TestConvenienceFunctions:
 
     @pytest.mark.asyncio
     async def test_get_executor_singleton(self):
-        import scripts.agent.executor as module
+        import lib.oda.agent.executor as module
         module._executor = None
 
         with patch('scripts.agent.executor.initialize_database') as mock_init, \
              patch('scripts.agent.executor.ProposalRepository'):
             mock_init.return_value = MagicMock()
 
-            from scripts.agent.executor import get_executor
+            from lib.oda.agent.executor import get_executor
             exec1 = await get_executor()
             exec2 = await get_executor()
             assert exec1 is exec2

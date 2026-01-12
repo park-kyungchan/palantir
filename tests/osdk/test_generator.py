@@ -1,6 +1,6 @@
 import pytest
 import ast
-from scripts.osdk.generator import OSDKGenerator
+from lib.oda.osdk.generator import OSDKGenerator
 
 def test_generate_simple_query_class():
     generator = OSDKGenerator()

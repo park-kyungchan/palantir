@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 
-from scripts.ontology.actions import ActionContext
-from scripts.ontology.storage.database import Database, DatabaseManager
+from lib.oda.ontology.actions import ActionContext
+from lib.oda.ontology.storage.database import Database, DatabaseManager
 
 
 # =============================================================================
@@ -56,7 +56,10 @@ async def temp_db() -> AsyncGenerator[Database, None]:
         db_path = Path(tmpdir) / "test_ontology.db"
         database = Database(db_path)
         await database.initialize()
-        yield database
+        try:
+            yield database
+        finally:
+            await database.dispose()
 
 
 @pytest_asyncio.fixture
@@ -87,6 +90,7 @@ async def isolated_db() -> AsyncGenerator[Database, None]:
         finally:
             # Reset context after test
             DatabaseManager.reset_context(token)
+            await database.dispose()
 
 
 @pytest_asyncio.fixture
@@ -105,6 +109,7 @@ async def isolated_db_memory() -> AsyncGenerator[Database, None]:
         yield database
     finally:
         DatabaseManager.reset_context(token)
+        await database.dispose()
 
 
 # =============================================================================
@@ -124,5 +129,40 @@ def mock_instructor_client():
 @pytest.fixture
 def clean_registry():
     """Create a fresh ActionRegistry for isolated tests."""
-    from scripts.ontology.actions import ActionRegistry
+    from lib.oda.ontology.actions import ActionRegistry
     return ActionRegistry()
+
+
+# =============================================================================
+# GLOBAL CLEANUP
+# =============================================================================
+
+@pytest_asyncio.fixture(autouse=True)
+async def _cleanup_database_manager():
+    """
+    Prevent aiosqlite worker threads from leaking across tests.
+
+    pytest-asyncio runs with per-test event loops by default; if DB connections
+    survive past the test boundary, background threads may try to signal a closed
+    loop and keep the process alive.
+    """
+    yield
+
+    ctx_db = None
+    try:
+        ctx_db = DatabaseManager._context_db.get()
+    except Exception:
+        ctx_db = None
+
+    default_db = getattr(DatabaseManager, "_default", None)
+
+    for db in {d for d in (ctx_db, default_db) if d is not None}:
+        try:
+            await db.dispose()
+        except Exception:
+            pass
+
+    # Clear references after cleanup
+    if hasattr(DatabaseManager, "_context_db"):
+        DatabaseManager._context_db.set(None)
+    DatabaseManager._default = None

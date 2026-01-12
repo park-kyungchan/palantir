@@ -24,14 +24,14 @@ from typing import AsyncGenerator, Optional
 import pytest
 import pytest_asyncio
 
-from scripts.ontology.objects.proposal import (
+from lib.oda.ontology.objects.proposal import (
     InvalidTransitionError,
     Proposal,
     ProposalPriority,
     ProposalStatus,
 )
-from scripts.ontology.storage.database import Database, initialize_database
-from scripts.ontology.storage.proposal_repository import (
+from lib.oda.ontology.storage.database import Database, initialize_database
+from lib.oda.ontology.storage.proposal_repository import (
     OptimisticLockError,
     PaginatedResult,
     ProposalNotFoundError,

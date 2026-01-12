@@ -11,7 +11,7 @@
 coding/
 ├── README.md              ← 이 파일 (학습 가이드)
 ├── SYSTEM_DIRECTIVE.md    ← AI 튜터 동작 프로토콜
-└── knowledge_bases/       ← 24개 학습 콘텐츠
+└── knowledge_bases/       ← 학습 콘텐츠 (지속 확장)
     ├── 00a-00e (초급)     ← 변수, 함수, 타입 기초
     ├── 01-08 (중급)       ← React, TypeScript, Testing
     └── 09-18 (고급)       ← System Design, OSDK, Foundry
@@ -34,6 +34,8 @@ coding/
 1. **질문하기**: 어떤 프로그래밍 질문이든 자유롭게
 2. **자동 라우팅**: AI가 질문 수준 감지 → 적절한 KB 참조
 3. **7-Component 응답**: 모든 답변에 일관된 구조 보장
+4. **Codebase-as-Curriculum**: 실제 코드베이스를 스캔해(파이썬/TS/JS/Go 혼합 가능) 질문에 맞는 학습 진입점/파일/KB 후보를 추출
+5. **LLM-독립적 계약**: 어떤 LLM이든 `coding/LLM_CONTRACT.md` + `scripts/ontology/run_tutor.py` JSON 컨텍스트로 동일하게 동작
 
 ---
 
@@ -55,3 +57,9 @@ AI 튜터는 `SYSTEM_DIRECTIVE.md`에 정의된 프로토콜을 따릅니다:
 - 고급: "OSDK 아키텍처 설명해줘"
 
 질문을 던지면 학습이 시작됩니다.
+
+### (옵션) 코드베이스를 학습 교보재로 분해하기
+
+```bash
+python scripts/ontology/run_tutor.py --target . --user default_user --db none --prompt "이 시스템의 워크플로우를 진입점부터 학습할거야" --brief
+```

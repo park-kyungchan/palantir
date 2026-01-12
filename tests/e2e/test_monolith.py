@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 # Ensure path
 sys.path.append("/home/palantir/park-kyungchan/palantir")
 
-from scripts.api.main import app
+from lib.oda.api.main import app
 
 @pytest.fixture(scope="module")
 def client():

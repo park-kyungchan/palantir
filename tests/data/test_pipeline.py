@@ -2,7 +2,7 @@ import pytest
 import csv
 import json
 from pathlib import Path
-from scripts.data import DataPipeline, CSVDataSource, JSONDataSource
+from lib.oda.data import DataPipeline, CSVDataSource, JSONDataSource
 
 @pytest.fixture
 def sample_csv(tmp_path):

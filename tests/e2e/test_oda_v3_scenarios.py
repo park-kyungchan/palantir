@@ -25,7 +25,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Import ODA V3 modules
-from scripts.ontology.ontology_types import (
+from lib.oda.ontology.ontology_types import (
     Cardinality,
     Link,
     ObjectStatus,
@@ -33,14 +33,14 @@ from scripts.ontology.ontology_types import (
     PropertyType,
     generate_object_id,
 )
-from scripts.ontology.objects.proposal import (
+from lib.oda.ontology.objects.proposal import (
     InvalidTransitionError,
     Proposal,
     ProposalPriority,
     ProposalStatus,
     VALID_TRANSITIONS,
 )
-from scripts.ontology.actions import (
+from lib.oda.ontology.actions import (
     ActionContext,
     ActionRegistry,
     ActionResult,
@@ -56,7 +56,7 @@ from scripts.ontology.actions import (
     action_registry,
     register_action,
 )
-from scripts.llm.ollama_client import (
+from lib.oda.llm.ollama_client import (
     HybridLLMService,
     HybridRouter,
     OllamaClient,

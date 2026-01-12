@@ -9,8 +9,8 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from scripts.ontology.actions import ActionContext, ActionResult
-from scripts.ontology.actions.memory_actions import SaveInsightAction, SavePatternAction
+from lib.oda.ontology.actions import ActionContext, ActionResult
+from lib.oda.ontology.actions.memory_actions import SaveInsightAction, SavePatternAction
 
 
 class TestSaveInsightAction:

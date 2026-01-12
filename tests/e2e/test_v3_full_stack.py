@@ -6,10 +6,10 @@ import os
 # Add project root to path
 sys.path.append("/home/palantir/park-kyungchan/palantir")
 
-from scripts.ontology.client import FoundryClient
-from scripts.ontology.objects.core_definitions import Task, Agent
-from scripts.llm.ollama_client import HybridRouter, OllamaClient
-from scripts.relay.queue import RelayQueue
+from lib.oda.ontology.client import FoundryClient
+from lib.oda.ontology.objects.core_definitions import Task, Agent
+from lib.oda.llm.ollama_client import HybridRouter, OllamaClient
+from lib.oda.relay.queue import RelayQueue
 
 class TestV3Migration(unittest.TestCase):
     
@@ -69,7 +69,7 @@ class TestV3Migration(unittest.TestCase):
         import asyncio
         import tempfile
         from pathlib import Path
-        from scripts.ontology.storage.database import Database, DatabaseManager
+        from lib.oda.ontology.storage.database import Database, DatabaseManager
         
         # Initialize database for RelayQueue
         async def setup_and_test():
@@ -102,7 +102,7 @@ class TestV3Migration(unittest.TestCase):
 
     def test_proposal_workflow(self):
         """Phase 4: Validate Proposal Object for HITL"""
-        from scripts.ontology.objects.proposal import Proposal, ProposalStatus
+        from lib.oda.ontology.objects.proposal import Proposal, ProposalStatus
         
         # 1. Draft Proposal
         prop = Proposal(

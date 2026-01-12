@@ -1,0 +1,105 @@
+"""
+Orion ODA PAI - Algorithm Module
+
+Universal Algorithm implementation for Current→Ideal task execution.
+
+This module provides the infrastructure for THE ALGORITHM:
+- EffortLevels: Task complexity classification
+- ISC (Ideal State Contract): Success criteria management
+- Capabilities: Executable capability registry
+- UniversalAlgorithm: Core algorithm orchestration
+
+Key Components:
+- EffortLevel: TRIVIAL, QUICK, STANDARD, THOROUGH, DETERMINED
+- ISCTable, ISCRow: Success criteria tracking
+- Capability, CapabilityCategory: Available capabilities
+- UniversalAlgorithm: Main orchestration engine
+
+Usage:
+    ```python
+    from lib.oda.pai.algorithm import (
+        EffortLevel,
+        ISCTable,
+        ISCRow,
+        Capability,
+        CapabilityCategory,
+        UniversalAlgorithm,
+    )
+
+    # Create ISC for a task
+    isc = ISCTable(
+        request="Implement user authentication",
+        effort=EffortLevel.STANDARD,
+    )
+
+    # Run the algorithm
+    algorithm = UniversalAlgorithm(effort=EffortLevel.STANDARD)
+    result = algorithm.execute(isc)
+    ```
+
+Version: 1.0.0
+"""
+
+from lib.oda.pai.algorithm.effort_levels import (
+    EffortLevel,
+    EffortUnlocks,
+)
+
+from lib.oda.pai.algorithm.isc_manager import (
+    ISCTable,
+    ISCRow,
+    ISCPhase,
+    ISCRowStatus,
+    CreateISCAction,
+    AddISCRowAction,
+    UpdateISCStatusAction,
+    SetISCPhaseAction,
+)
+
+from lib.oda.pai.algorithm.capability_registry import (
+    Capability,
+    CapabilityCategory,
+    CapabilityRegistryService,
+    get_capability_registry,
+    register_capability,
+)
+
+from lib.oda.pai.algorithm.universal_algorithm import (
+    UniversalAlgorithm,
+    AlgorithmPhase,
+    AlgorithmContext,
+    AlgorithmResult,
+)
+
+
+__all__ = [
+    # Effort Levels
+    "EffortLevel",
+    "EffortUnlocks",
+
+    # ISC Management
+    "ISCTable",
+    "ISCRow",
+    "ISCPhase",
+    "ISCRowStatus",
+    "CreateISCAction",
+    "AddISCRowAction",
+    "UpdateISCStatusAction",
+    "SetISCPhaseAction",
+
+    # Capability Registry
+    "Capability",
+    "CapabilityCategory",
+    "CapabilityRegistryService",
+    "get_capability_registry",
+    "register_capability",
+
+    # Universal Algorithm
+    "UniversalAlgorithm",
+    "AlgorithmPhase",
+    "AlgorithmContext",
+    "AlgorithmResult",
+]
+
+
+__version__ = "1.0.0"

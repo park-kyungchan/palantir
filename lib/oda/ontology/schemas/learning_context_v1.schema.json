@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "orion://schemas/learning_context_v1.schema.json",
+  "title": "Orion Learning Context (v1)",
+  "type": "object",
+  "required": ["contract", "session_id", "timestamp", "db_mode", "codebase", "curriculum_recommendations"],
+  "additionalProperties": true,
+  "properties": {
+    "contract": {
+      "type": "object",
+      "required": ["name", "version", "schema_path", "spec_path"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "schema_path": { "type": "string" },
+        "spec_path": { "type": "string" }
+      }
+    },
+    "session_id": { "type": "string" },
+    "user_id": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "db_mode": { "type": "string", "enum": ["oda", "none"] },
+    "role": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "requested": { "type": "string" },
+        "effective": { "type": "string" },
+        "rationale": { "type": ["string", "null"] }
+      }
+    },
+    "prompt": { "type": ["string", "null"] },
+    "prompt_scope": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "prompt": { "type": "string" },
+        "terms": { "type": "array", "items": { "type": "string" } },
+        "intent": { "type": "object", "additionalProperties": true },
+        "ranked_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "relevance"],
+            "additionalProperties": true,
+            "properties": {
+              "file": { "type": "string" },
+              "relevance": { "type": "number" },
+              "raw_score": { "type": "number" },
+              "reasons": { "type": "object", "additionalProperties": true }
+            }
+          }
+        },
+        "suggested_entrypoints": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "allowlist": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "kb_matches": {
+      "type": ["array", "object", "null"],
+      "items": {
+        "type": "object",
+        "required": ["path", "title", "score"],
+        "additionalProperties": true,
+        "properties": {
+          "path": { "type": "string" },
+          "title": { "type": ["string", "null"] },
+          "score": { "type": "number" },
+          "matched_terms": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "codebase": {
+      "type": "object",
+      "required": ["root", "files_scanned", "extension_counts"],
+      "additionalProperties": true,
+      "properties": {
+        "root": { "type": "string" },
+        "files_scanned": { "type": "integer" },
+        "extension_counts": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "entrypoints": { "type": "array", "items": { "type": "string" } },
+        "entrypoint_details": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "workflow_artifacts": { "type": ["array", "null"], "items": { "type": "object", "additionalProperties": true } }
+      }
+    },
+    "learner_stats": { "type": ["object", "null"], "additionalProperties": true },
+    "curriculum_recommendations": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "workflow": { "type": ["object", "null"], "additionalProperties": true },
+    "outputs": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "context_json": { "type": ["string", "null"] },
+        "learning_brief_md": { "type": ["string", "null"] }
+      }
+    },
+    "instruction": { "type": "string" }
+  }
+}
+

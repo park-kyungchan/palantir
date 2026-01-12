@@ -5,11 +5,11 @@ from typing import List, Dict, Any, Type
 from unittest.mock import MagicMock, patch
 
 # --- ODA Imports ---
-from scripts.ontology.storage.database import Database, initialize_database
-from scripts.ontology.storage.proposal_repository import ProposalRepository
-from scripts.ontology.objects.proposal import Proposal, ProposalStatus
-from scripts.ontology.storage.models import ProposalModel, TaskModel
-from scripts.ontology.actions import (
+from lib.oda.ontology.storage.database import Database, initialize_database
+from lib.oda.ontology.storage.proposal_repository import ProposalRepository
+from lib.oda.ontology.objects.proposal import Proposal, ProposalStatus
+from lib.oda.ontology.storage.models import ProposalModel, TaskModel
+from lib.oda.ontology.actions import (
     ActionRegistry, 
     ActionContext, 
     ActionType, 
@@ -20,13 +20,13 @@ from scripts.ontology.actions import (
     action_registry,
     GovernanceEngine
 )
-from scripts.osdk import ObjectQuery
-from scripts.osdk.connector import DataConnector
-from scripts.data import DataPipeline, CSVDataSource, SQLAlchemyDataSource
-from scripts.aip_logic import LogicFunction, LogicEngine, LogicContext # Assuming these exist or will use ABC
+from lib.oda.osdk import ObjectQuery
+from lib.oda.osdk.connector import DataConnector
+from lib.oda.data import DataPipeline, CSVDataSource, SQLAlchemyDataSource
+from lib.oda.aip_logic import LogicFunction, LogicEngine, LogicContext # Assuming these exist or will use ABC
 
 # --- Mock Domain Objects ---
-from scripts.ontology.storage.orm import AsyncOntologyObject
+from lib.oda.ontology.storage.orm import AsyncOntologyObject
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer
 
@@ -79,7 +79,7 @@ async def test_golden_path_data_to_action(tmp_path):
     
     # Initialize DB with Schema
     # We need to manually add TaskModel to Base.metadata or ensure it is imported
-    from scripts.ontology.storage.models import Base
+    from lib.oda.ontology.storage.models import Base
     # TaskModel is already defined above, ensuring it's in Base.registry
     
     # Setup Data Source File
@@ -114,7 +114,7 @@ async def test_golden_path_data_to_action(tmp_path):
     # 2. OSDK READ (Query)
     # -------------------------------------------------------------------------
     # Configure OSDK to use our Test DB
-    from scripts.osdk.sqlite_connector import SQLiteConnector
+    from lib.oda.osdk.sqlite_connector import SQLiteConnector
     connector = SQLiteConnector(db)
     
     # We need to register TaskModel to Connector for this ad-hoc test
@@ -197,7 +197,7 @@ async def test_golden_path_data_to_action(tmp_path):
     await proposal_repo.approve(p1.id, reviewer_id="admin")
     
     # Kernel Execution Simulation
-    from scripts.runtime.marshaler import ToolMarshaler
+    from lib.oda.runtime.marshaler import ToolMarshaler
     marshaler = ToolMarshaler(action_registry)
     
     # Execute the action

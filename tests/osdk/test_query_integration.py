@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from scripts.osdk.query import ObjectQuery
-from scripts.osdk.sqlite_connector import SQLiteConnector
-from scripts.ontology.objects.proposal import Proposal
+from lib.oda.osdk.query import ObjectQuery
+from lib.oda.osdk.sqlite_connector import SQLiteConnector
+from lib.oda.ontology.objects.proposal import Proposal
 
 # Mock the database connection for unit testing the Query Builder logic
 # Real integration test would require setting up the full AsyncEngine which is heavy.
