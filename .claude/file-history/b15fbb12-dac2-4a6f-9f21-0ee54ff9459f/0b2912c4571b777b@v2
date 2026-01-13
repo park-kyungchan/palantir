@@ -1,0 +1,224 @@
+"""
+Orion ODA v3.0 - Ontology Registry
+
+Single source of truth for all ObjectType definitions.
+Provides:
+- ObjectType registration via @register_object_type decorator
+- Schema export to JSON with versioning
+- Runtime introspection of registered types
+- Integration with SchemaValidator for mutation validation
+
+Schema Version: 3.0.1
+"""
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, Optional, Type, Union, get_args, get_origin
+
+from pydantic import BaseModel
+
+from scripts.ontology.ontology_types import Link, OntologyObject, PropertyType
+
+# Schema version - increment on schema changes
+SCHEMA_VERSION = "3.0.1"
+SCHEMA_GENERATED_BY = "Orion ODA v3.0"
+
+
+@dataclass(frozen=True)
+class PropertyDefinition:
+    name: str
+    property_type: PropertyType
+    required: bool
+    description: str
+
+
+@dataclass(frozen=True)
+class LinkDefinition:
+    link_type_id: str
+    target: str
+    cardinality: str
+    reverse_link_id: Optional[str]
+    description: Optional[str]
+    backing_table_name: Optional[str]
+    is_materialized: bool
+
+
+@dataclass(frozen=True)
+class ObjectDefinition:
+    name: str
+    description: str
+    properties: Dict[str, PropertyDefinition] = field(default_factory=dict)
+    links: Dict[str, LinkDefinition] = field(default_factory=dict)
+
+
+class OntologyRegistry:
+    def __init__(self) -> None:
+        self._objects: Dict[str, ObjectDefinition] = {}
+
+    def register_object(self, obj_cls: Type[OntologyObject]) -> None:
+        definition = ObjectDefinition(
+            name=obj_cls.__name__,
+            description=(obj_cls.__doc__ or "").strip(),
+            properties=self._extract_properties(obj_cls),
+            links=self._extract_links(obj_cls),
+        )
+        self._objects[obj_cls.__name__] = definition
+
+    def list_objects(self) -> Dict[str, ObjectDefinition]:
+        return dict(self._objects)
+
+    def export_json(self, path: str | Path) -> None:
+        """
+        Export registry to JSON schema file with versioning metadata.
+
+        The exported schema includes:
+        - $schema: JSON Schema draft reference
+        - version: Semantic version for schema tracking
+        - generated_at: ISO timestamp of generation
+        - generated_by: Generator identification
+        - objects: All registered ObjectType definitions
+        """
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+
+        payload = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "version": SCHEMA_VERSION,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_by": SCHEMA_GENERATED_BY,
+            "objects": {
+                name: {
+                    "description": obj.description,
+                    "properties": {
+                        prop.name: {
+                            "type": prop.property_type.value,
+                            "required": prop.required,
+                            "description": prop.description,
+                            "constraints": self._extract_constraints(name, prop.name),
+                        }
+                        for prop in obj.properties.values()
+                    },
+                    "links": {
+                        link_id: {
+                            "target": link.target,
+                            "cardinality": link.cardinality,
+                            "reverse_link_id": link.reverse_link_id,
+                            "description": link.description,
+                            "backing_table_name": link.backing_table_name,
+                            "is_materialized": link.is_materialized,
+                        }
+                        for link_id, link in obj.links.items()
+                    },
+                }
+                for name, obj in sorted(self._objects.items())
+            }
+        }
+        target.write_text(json.dumps(payload, indent=2))
+
+    def _extract_constraints(self, obj_name: str, prop_name: str) -> Dict[str, Any]:
+        """Extract field constraints from Pydantic model for a property."""
+        # This would need access to the original class to extract Field constraints
+        # For now, return empty dict - can be enhanced later
+        return {}
+
+    def _extract_properties(self, obj_cls: Type[OntologyObject]) -> Dict[str, PropertyDefinition]:
+        properties: Dict[str, PropertyDefinition] = {}
+        for name, field in obj_cls.model_fields.items():
+            description = field.description or ""
+            field_type = self._normalize_type(field.annotation)
+            prop_type = self._map_property_type(field_type)
+            properties[name] = PropertyDefinition(
+                name=name,
+                property_type=prop_type,
+                required=field.is_required(),
+                description=description,
+            )
+        return properties
+
+    def _extract_links(self, obj_cls: Type[OntologyObject]) -> Dict[str, LinkDefinition]:
+        links: Dict[str, LinkDefinition] = {}
+        for name, value in obj_cls.__dict__.items():
+            if isinstance(value, Link):
+                target = value.target if isinstance(value.target, str) else value.target.__name__
+                links[name] = LinkDefinition(
+                    link_type_id=value.link_type_id,
+                    target=target,
+                    cardinality=value.cardinality.value,
+                    reverse_link_id=value.reverse_link_id,
+                    description=value.description,
+                    backing_table_name=value.backing_table_name,
+                    is_materialized=value.is_materialized,
+                )
+        return links
+
+    def _normalize_type(self, annotation: Any) -> Any:
+        origin = get_origin(annotation)
+        if origin is None:
+            return annotation
+        args = get_args(annotation)
+        if origin is Union:
+            non_none = [a for a in args if a is not type(None)]
+            return non_none[0] if non_none else args[0]
+        if origin is list:
+            return list
+        if origin is dict:
+            return dict
+        if origin is tuple:
+            return list
+        return origin
+
+    def _map_property_type(self, annotation: Any) -> PropertyType:
+        if annotation in (str,):
+            return PropertyType.STRING
+        if annotation in (int,):
+            return PropertyType.INTEGER
+        if annotation in (float,):
+            return PropertyType.DOUBLE
+        if annotation in (bool,):
+            return PropertyType.BOOLEAN
+        if isinstance(annotation, type) and issubclass(annotation, Enum):
+            return PropertyType.STRING
+        if annotation in (dict,):
+            return PropertyType.STRUCT
+        if annotation in (list,):
+            return PropertyType.ARRAY
+        if getattr(annotation, "__name__", "") in ("datetime",):
+            return PropertyType.TIMESTAMP
+        if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+            return PropertyType.STRUCT
+        return PropertyType.STRING
+
+
+_REGISTRY = OntologyRegistry()
+
+
+def register_object_type(cls: Type[OntologyObject]) -> Type[OntologyObject]:
+    _REGISTRY.register_object(cls)
+    return cls
+
+
+def get_registry() -> OntologyRegistry:
+    return _REGISTRY
+
+
+def load_default_objects() -> None:
+    from scripts.ontology.objects import proposal  # noqa: F401
+    from scripts.ontology.objects import learning  # noqa: F401
+    from scripts.ontology.objects import core_definitions  # noqa: F401
+    from scripts.ontology.objects import task_types  # noqa: F401
+
+
+def export_registry(path: str | Path) -> None:
+    load_default_objects()
+    _REGISTRY.export_json(path)
+
+
+if __name__ == "__main__":
+    from importlib import import_module
+
+    registry_module = import_module("scripts.ontology.registry")
+    registry_module.export_registry(Path(".agent/schemas/ontology_registry.json"))

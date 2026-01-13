@@ -1,0 +1,255 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "HWPX Unified Document Model (UDM)",
+    "description": "Machine-readable document schema based on OWPML KS X 6101 architecture",
+    "version": "1.0",
+    "type": "object",
+    "required": [
+        "document_metadata",
+        "content_structure"
+    ],
+    "properties": {
+        "document_metadata": {
+            "type": "object",
+            "description": "Extracted from content.hpf and header.xml",
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "modified_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "page_count": {
+                    "type": "integer"
+                },
+                "source_file": {
+                    "type": "string"
+                }
+            }
+        },
+        "layout": {
+            "type": "object",
+            "description": "Page and column layout settings",
+            "properties": {
+                "page_width_mm": {
+                    "type": "number"
+                },
+                "page_height_mm": {
+                    "type": "number"
+                },
+                "margins": {
+                    "type": "object",
+                    "properties": {
+                        "left_mm": {
+                            "type": "number"
+                        },
+                        "right_mm": {
+                            "type": "number"
+                        },
+                        "top_mm": {
+                            "type": "number"
+                        },
+                        "bottom_mm": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "columns": {
+                    "type": "integer",
+                    "default": 1
+                },
+                "column_gap_mm": {
+                    "type": "number"
+                },
+                "border": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "Solid",
+                                "Dash",
+                                "Dot",
+                                "None"
+                            ]
+                        },
+                        "width_mm": {
+                            "type": "number"
+                        },
+                        "color_hex": {
+                            "type": "string",
+                            "pattern": "^#[0-9A-Fa-f]{6}$"
+                        }
+                    }
+                }
+            }
+        },
+        "content_structure": {
+            "type": "array",
+            "description": "Ordered list of sections (structural units)",
+            "items": {
+                "$ref": "#/definitions/Section"
+            }
+        }
+    },
+    "definitions": {
+        "Section": {
+            "type": "object",
+            "properties": {
+                "section_index": {
+                    "type": "integer"
+                },
+                "column_index": {
+                    "type": "integer",
+                    "description": "0=left, 1=right for 2-column"
+                },
+                "paragraphs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Paragraph"
+                    }
+                }
+            }
+        },
+        "Paragraph": {
+            "type": "object",
+            "required": [
+                "semantic_type"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Original XML paragraph ID"
+                },
+                "semantic_type": {
+                    "type": "string",
+                    "enum": [
+                        "Heading1",
+                        "Heading2",
+                        "Heading3",
+                        "BodyText",
+                        "ProblemNumber",
+                        "SubProblem",
+                        "Equation",
+                        "Answer",
+                        "Caption",
+                        "Code"
+                    ],
+                    "description": "Semantic role derived from style name analysis"
+                },
+                "text_content": {
+                    "type": "string",
+                    "description": "Flattened text (all runs merged)"
+                },
+                "runs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Run"
+                    }
+                },
+                "controls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Control"
+                    }
+                },
+                "para_style": {
+                    "type": "object",
+                    "properties": {
+                        "align": {
+                            "type": "string",
+                            "enum": [
+                                "Left",
+                                "Center",
+                                "Right",
+                                "Justify"
+                            ]
+                        },
+                        "left_margin_pt": {
+                            "type": "number"
+                        },
+                        "right_margin_pt": {
+                            "type": "number"
+                        },
+                        "indent_pt": {
+                            "type": "number"
+                        },
+                        "line_spacing_percent": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "Run": {
+            "type": "object",
+            "description": "Contiguous text with uniform character style",
+            "properties": {
+                "text": {
+                    "type": "string"
+                },
+                "char_style": {
+                    "type": "object",
+                    "properties": {
+                        "font_family": {
+                            "type": "string"
+                        },
+                        "font_size_pt": {
+                            "type": "number"
+                        },
+                        "is_bold": {
+                            "type": "boolean"
+                        },
+                        "is_italic": {
+                            "type": "boolean"
+                        },
+                        "is_underline": {
+                            "type": "boolean"
+                        },
+                        "color_hex": {
+                            "type": "string",
+                            "pattern": "^#[0-9A-Fa-f]{6}$"
+                        }
+                    }
+                }
+            }
+        },
+        "Control": {
+            "type": "object",
+            "description": "Non-text object: Table, Image, Equation",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "Table",
+                        "Image",
+                        "Equation",
+                        "Shape",
+                        "OLE"
+                    ]
+                },
+                "properties": {
+                    "type": "object",
+                    "description": "Type-specific properties"
+                },
+                "data": {
+                    "description": "Table: 2D array, Equation: LaTeX script, Image: path"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,435 @@
+Artificial Intelligence Platform)의 개념에서 영감을 얻어 설계한 워크플로우 오케스트레이션 시스템의 종합적인 구현 계획을 제시합니다. 이 시스템은 1인 개발자가 개발 및 유지보수하기에 적합하도록 모듈화, 유지보수성, 확장성에 중점을 두어 설계됩니다. 아래에서는 ObjectType, Property, ActionType, LinkType, Schema, AI 에이전트 통합, 코드 아키텍처, 데이터 영속성, 버전 관리 및 거버넌스의 핵심 개념과 구현 전략을 상세히 다룹니다.
+
+ObjectTypes (객체 타입 정의)
+
+정의 및 역할: ObjectType은 현실 세계의 개체나 이벤트를 표현하는 도메인 엔티티의 스키마 정의입니다. 다시 말해 Foundry의 Object Type은 객체 지향 모델링의 클래스 개념에 대응되며, 각 ObjectType은 특정 유형의 실체(예: 센서, 주문, 자산 등)를 표현합니다. ObjectType은 해당 유형의 객체들이 가져야 할 **Properties(속성)**와 **관계(LinkTypes)**에 대한 구조를 포함하고 있습니다. 각 ObjectType에 속하는 실제 데이터 레코드는 그 ObjectType의 **인스턴스(객체)**이며, ObjectType은 이들 객체가 따라야 할 **스키마(구조)**를 정의합니다.
+
+도메인 매핑: 도메인 분석을 통해 식별된 주요 개념마다 ObjectType을 정의합니다. 예를 들어 제조 도메인에서는 Sensor(센서), Asset(설비), Order(주문) 등이 ObjectType이 될 수 있습니다. ObjectType 명은 도메인 개념을 표현하며, 각 ObjectType은 도메인 개념의 **속성(Property)**들과 **관계(Link)**를 반영합니다. 이렇게 함으로써 시스템의 온톨로지(Ontology) 계층이 구축되고, 비즈니스 용어가 곧 시스템 모델로 이어지도록 합니다.
+
+구조 및 스키마 연계: ObjectType 자체가 하나의 스키마 단위로서, 해당 ObjectType에 속한 객체들이 공통으로 가지는 속성과 관계의 정의를 담고 있습니다. ObjectType 정의에는 다음과 같은 요소들이 포함됩니다.
+
+이름(Name): 도메인 개념을 표현하는 ObjectType의 이름 (예: "Sensor", "Order").
+
+스키마 버전(Version): 스키마 변경 시 호환성을 관리하기 위한 버전 정보 (예: 1.0, 1.1 등). 자세한 버전 관리 전략은 아래 버전 관리 및 거버넌스 섹션에서 다룹니다.
+
+속성 목록(Properties): 해당 ObjectType이 가지는 모든 속성의 메타데이터 정의 (이름, 데이터 타입, 필수 여부 등).
+
+관계(LinkTypes): 다른 ObjectType과 맺는 링크/관계 유형 정의 (어떤 ObjectType과 연결되고, 관계명은 무엇인지, cardinality 제약 등).
+
+기타 메타데이터: 설명(description), 기본 정렬 키, 주요 식별자(Primary Key) 등 필요한 부가 정보.
+
+ObjectType은 이렇게 정의된 스키마를 기반으로 Object 인스턴스(실제 데이터를 담은 객체)를 생성하고 검증하는 데 활용됩니다. ObjectType 정의는 JSON 스키마 또는 YAML 등으로 선언적으로 표현할 수 있으며, 예를 들어 Sensor라는 ObjectType을 JSON으로 표현하면 다음과 같습니다:
+
+{
+  "name": "Sensor",
+  "version": "1.0",
+  "properties": [
+    { "name": "sensorId", "type": "string", "required": true },
+    { "name": "status", "type": "enum", "options": ["ACTIVE", "INACTIVE"], "default": "ACTIVE" },
+    { "name": "lastReading", "type": "float", "required": true }
+  ],
+  "links": [
+    { "name": "installedOn", "target": "Asset", "cardinality": "many-to-one", "directed": true }
+  ]
+}
+
+
+위 예시는 Sensor ObjectType이 sensorId, status, lastReading 속성을 가지며, Asset ObjectType과 installedOn이라는 링크 관계(많은 센서 → 한 자산)를 가진다는 것을 나타냅니다.
+
+버전 관리: ObjectType 정의에는 버전 태그를 포함시켜 스키마 변화에 따른 호환성을 유지합니다. 새로운 속성 추가 등 비호환성이 없는 변화는 부 버전(minor)을 올리고, 속성 타입 변경이나 삭제 등의 주요 변경은 주 버전(major)을 올립니다. 시스템에서는 각 ObjectType별로 현재 활성 버전을 트래킹하며, 구버전 스키마로 저장된 객체를 로드할 때는 마이그레이션 또는 하위 호환 로직을 통해 최신 스키마로 변환하거나, 필요시 구버전 스키마를 유지하여 과거 데이터도 조회 가능하도록 설계합니다. 버전 관리는 아래 버전 관리 및 거버넌스에서 더 자세히 설명합니다.
+
+스키마와의 관계: ObjectType 정의는 시스템의 전체 스키마(Ontology 스키마)의 일부를 이룹니다. 여러 ObjectType, LinkType 정의를 합친 것이 전체 시스템의 데이터 모델(schema)이며, 각 ObjectType의 스키마는 해당 부분 스키마로서 역할합니다. ObjectType별로 JSON Schema를 사용하면 각 ObjectType에 대한 유효성 검증 규칙을 독립적으로 관리할 수 있고, 이를 통해 스키마 준수 여부를 자동 검증할 수 있습니다. 예를 들어, Order ObjectType에 대해 JSON Schema를 작성해 두면, 새로운 Order 객체 생성 시 해당 스키마로 검증하여 속성 타입/형식이 올바른지, 필수 필드가 있는지 등을 확인합니다. 이러한 **스키마 계약(schema contract)**을 엄격히 지킴으로써 데이터 무결성을 유지합니다.
+
+Properties (속성을 통한 ObjectType 확장)
+
+정의: **Property(속성)**는 ObjectType이 표현하는 개체의 특징이나 상태 값을 나타내는 필드입니다. Foundry에서 Property는 클래스의 멤버 변수(속성)에 해당하며, ObjectType에 속한 하나의 속성 정의는 곧 해당 ObjectType의 **컬럼(column)**을 정의하는 것과 유사합니다. 각 Property 정의는 속성 이름, 데이터 타입, 제약조건 등을 포함하고, Property 값은 실제 객체 인스턴스에서 그 속성에 설정되는 구체적인 값입니다.
+
+데이터 타입과 지원되는 속성 유형: 속성은 다양한 데이터 타입을 지원하여 현실 세계의 데이터를 표현합니다. 기본적으로 문자열(String), 정수(Integer), 부동소수(Float/Double), 불리언(Boolean), 날짜/타임스탬프(Date/Timestamp) 같은 원시 타입을 지원합니다. 추가로, Enum(열거형) 타입을 지원하여 미리 정의된 선택지 중 하나의 값만 가질 수 있는 속성을 만들 수 있습니다 (예: status 속성은 "Pending", "Shipped", "Cancelled" 중 하나의 값만 허용). 배열(List)이나 구조체(Struct)와 같은 복합 타입도 추후 확장이 가능하도록 설계합니다. 예를 들어 주소(Address)를 표현하기 위해 Address를 Struct 타입으로 정의하고 하위 필드로 street, city 등을 가질 수 있습니다 (단, 초기 구현에서는 복잡성을 낮추기 위해 Struct 같은 중첩 타입은 제외하고, 필요 시 추후 추가하는 식으로 유연하게 설계합니다).
+
+유효성 검증 및 제약: 각 속성에는 자료형 검증이 기본 적용됩니다. 잘못된 타입의 값이 입력될 경우 객체 생성/수정이 거부되거나 오류로 처리됩니다. 추가로 다음과 같은 검증 규칙과 제약조건을 적용할 수 있습니다.
+
+필수 여부 (Required): required: true로 지정된 속성은 객체 생성 시 반드시 값이 제공되어야 합니다. 예를 들어 sensorId나 lastReading는 필수 값으로 정의하여, 이 값 없이는 Sensor 객체를 만들 수 없습니다.
+
+고유성 (Uniqueness): 특정 속성을 전체 ObjectType 범위에서 유일한 값으로 제한할 수 있습니다. 예를 들어 sensorId는 각 Sensor 객체마다 중복되지 않아야 하는 고유 식별자로 볼 수 있습니다. 이 경우 해당 속성에 대해 유니크 제약을 두어 중복값 입력 시 오류를 발생시킵니다.
+
+값 범위 (Value Range) 및 형식 검증: 숫자형 속성의 경우 값의 최소/최대 범위를 설정하거나, 문자열 속성의 경우 정규표현식 패턴을 지정하여 형식을 검증할 수 있습니다. 예를 들어 temperature 속성은 -50 ~ 150 사이의 값만 허용하거나, email 속성은 이메일 정규식에 맞는지 검증하는 식입니다.
+
+기본값 (Default): 값이 주어지지 않았을 때 자동으로 채워질 기본값을 지정할 수 있습니다. 예를 들어 status 속성의 기본값을 "ACTIVE"로 설정하면 객체 생성 시 명시적으로 설정하지 않아도 기본값이 부여됩니다.
+
+읽기전용/계산식 속성: 일부 속성은 직접 설정하지 않고 다른 값에서 **파생(derived)**될 수 있습니다. 예를 들어 fullName 속성은 firstName과 lastName을 합쳐 계산되도록 하여 데이터 저장 시 일관성을 유지합니다. 이러한 파생 속성은 읽기 전용으로 간주하고 DB에 저장하지 않을 수도 있으며, 조회 시 계산되어 제공됩니다. 구현 시에는 Property 정의에 계산 함수를 연결해둘 수 있습니다 (예: fullName = lambda obj: obj["firstName"] + " " + obj["lastName"]).
+
+속성을 통한 ObjectType 확장: Foundry에서는 여러 ObjectType에 공통으로 적용되는 속성을 Shared Property로 정의해 중복 정의를 줄일 수 있습니다. 본 시스템에서도 비슷한 개념을 고려할 수 있습니다. 예를 들어 여러 ObjectType에서 공통으로 사용하는 createdAt(생성 시각), updatedAt(갱신 시각) 등의 속성을 공통 정의로 만들어 두고 각 ObjectType 정의에 포함시켜 일관성을 유지하는 방안을 생각합니다. 또한 상속 개념이 없지만, Interface처럼 속성 세트를 정의해 여러 ObjectType에 구현하게 함으로써 다형성을 일부 제공할 수 있습니다. 다만 초기 버전에서는 이런 고급 개념보다는 각 ObjectType별로 필요한 속성을 명시적으로 정의하는 방식으로 시작하고, 점진적으로 중복이 눈에 띄는 경우 공통화하는 접근을 취합니다.
+
+예시: 예를 들어 Order라는 ObjectType이 있다고 하면, 이 Order는 orderId (string, 필수, 고유), status (enum: ["Pending","Shipped","Cancelled"], 기본 "Pending"), orderDate (date), amount (float) 등의 속성을 가질 수 있습니다. 실제 Order 객체 예로 "주문 #1234"는 orderId = "1234", status = "Pending", orderDate = 2023-10-01, `amount = 99.99 등의 속성값(Property values)을 갖게 됩니다. 이러한 속성값 하나하나는 해당 Order 객체의 필드를 구성하며, 전체적으로 ObjectType의 스키마 규칙을 따르게 됩니다.
+
+ActionTypes (동작/액션 타입 정의)
+
+정의: ActionType은 한 번의 트랜잭션으로 수행되는 객체 변경 작업의 단위를 정의합니다. 쉽게 말해, ActionType은 사용자(또는 에이전트)가 객체에 대해 취할 수 있는 일련의 수정 작업을 미리 정의해 놓은 것입니다. Foundry Ontology에서 Action은 여러 객체와 속성, 링크에 대한 변경을 하나의 원자적 작업으로 묶은 것으로, ActionType은 그러한 액션의 템플릿 혹은 스키마에 해당합니다.
+
+ActionType은 보통 특정 ObjectType(또는 관련 ObjectType들)에 적용되며, 내부에 비즈니스 로직과 변경 내용을 캡슐화합니다. 예를 들어 **"ShipOrder"**라는 ActionType을 정의하고, 이 액션이 실행되면 Order 객체의 status 속성을 "Pending"에서 "Shipped"로 변경하고 shippedDate 속성을 현재 시각으로 설정하도록 만들 수 있습니다. 한 번의 Action으로 여러 객체나 링크를 변경할 수도 있습니다.
+
+ActionType의 구조: 각 ActionType 정의에는 다음과 같은 요소를 포함합니다.
+
+이름(Name): 액션의 이름 (예: "ShipOrder", "AssignEmployee", "DeactivateSensor").
+
+대상 ObjectType 및 범위(Target): 어떤 ObjectType(들)에 대한 액션인지 명시. 예를 들어 ShipOrder는 Order 타입에만 적용되고, AssignEmployee는 Employee 객체에 적용됩니다. 경우에 따라 여러 타입에 걸친 액션일 수도 있습니다 (예: Employee와 Manager 링크를 함께 수정하는 액션 등).
+
+입력 파라미터(Parameters): 액션이 실행될 때 필요한 추가 입력값 정의. 예를 들어 AssignEmployee 액션은 새로운 role을 입력 받아야 하고, 그 값을 Employee 객체의 속성에 반영합니다. 각 파라미터는 타입과 (필요 시) 기본값을 가질 수 있습니다.
+
+내부 로직(Logic): 액션이 수행할 구체적인 동작을 정의합니다. 변경 대상 속성들과 변경 방법, 생성/삭제할 링크 관계, 사이드 이펙트(부가 동작) 등을 포함합니다. 예를 들어 AssignEmployee 액션의 로직에는 Employee.role 속성 값을 변경하고, Employee와 새로운 Manager 객체 사이에 링크를 생성하며, 변경 사항에 대해 알림을 발송하는 내용을 정의할 수 있습니다. 이 로직은 코드 (예: Python 함수 또는 TypeScript 메소드)로 구현됩니다.
+
+검증 및 제약(Validation & Conditions): 액션을 실행하기 전에 만족되어야 할 사전 조건이나 권한 검사 등을 정의합니다. 예를 들어 ShipOrder 액션은 Order의 status가 "Pending"인 경우에만 실행 가능하도록 조건을 둘 수 있고, AssignEmployee 액션은 실행 주체가 HR 부서 권한을 가진 사용자여야 한다는 검증을 포함할 수 있습니다. 이러한 실행 전 검증은 액션의 무결성을 보장하고 비즈니스 규칙을 강제합니다.
+
+결과 및 사이드 이펙트(Side Effects): 액션이 완료된 후 일어나는 추가 처리입니다. 예컨대 주문 출하(ShipOrder) 액션 완료 시 재고 감소 처리를 트리거하거나, 알림 이벤트를 생성하는 것이 사이드 이펙트가 될 수 있습니다. Foundry 예시에서 Assign Employee 액션은 옛 상사와 새 상사에게 알림을 보내는 부가 효과를 설정할 수 있다고 나와 있습니다.
+
+워크플로우 모델링: 단일 ActionType은 하나의 작업 단위를 표현하지만, 이를 조합하여 워크플로우를 구성할 수 있습니다. 워크플로우는 여러 Action들을 순차 혹은 조건적으로 연결하여 특정 비즈니스 프로세스를 자동화한 것입니다. 예를 들어 주문 처리 프로세스를 생각해보면, "주문 확인 → 재고 할당 → 출하 처리"와 같은 일련의 단계를 거치는데, 이를 각각 ConfirmOrder, AllocateInventory, ShipOrder 등의 ActionType으로 구현하고 시퀀스로 엮으면 하나의 주문 처리 워크플로우가 됩니다. 이러한 워크플로우 정의는 별도의 Workflow 엔티티로 다룰 수 있고, JSON이나 YAML로 Action들의 흐름(및 조건)을 기술하거나, 간단히 Python 코드로 시퀀스를 구성할 수도 있습니다. 중요한 것은 ActionType이 워크플로우의 구성 요소로 사용되므로, 재사용 가능한 모듈처럼 잘 설계되어야 한다는 점입니다.
+
+조건부 흐름: 워크플로우 내에서 특정 조건에 따라 어떤 액션을 실행할지 분기할 수 있습니다. 예를 들어 재고 할당 액션에서 재고 부족을 감지하면 BackorderAction을 실행하고, 재고가 있으면 ShipOrder로 넘어가는 로직을 워크플로우에 넣을 수 있습니다. 이러한 조건은 각 Action의 실행 결과나 객체 상태를 검사하여 결정합니다.
+
+에러 처리 및 롤백: 한 액션이 실패할 경우 워크플로우 중단 또는 보정 작업(rollback)을 정의할 수 있습니다. 예를 들어 AllocateInventory 실패 시 이미 수행된 이전 액션(ConfirmOrder)을 취소하는 로직을 포함시키는 것입니다. 초기 구현에서는 단순히 중단하고 오류를 표시하는 것으로 충분할 수 있지만, 확장 시 이러한 보완도 고려합니다.
+
+AI 에이전트에 의한 액션 실행: 정의된 ActionType들은 AI 에이전트가 실행할 수 있는 도구로 노출됩니다. 예를 들어 Palantir AIP의 Agent는 Ontology 상의 액션들을 도구(tool)로 활용해 자동으로 업무를 처리할 수 있습니다. 본 시스템에서도 ActionType들을 AI 에이전트 통합 계층에 등록하여, 에이전트가 필요 시 해당 액션을 호출하도록 합니다. 이를 통해 사람의 개입 없이도 에이전트가 워크플로우를 동적으로 계획 및 실행할 수 있습니다 (자세한 내용은 아래 AI 에이전트 통합 섹션 참조).
+
+예를 들어, AI 에이전트가 "모든 보류 중인 주문을 배송 처리하라"는 목표를 받았다고 합시다. 에이전트는 먼저 Order ObjectType에서 status가 "Pending"인 객체들을 쿼리한 뒤, 각각에 대해 ShipOrder Action을 호출하여 상태를 "Shipped"로 변경할 수 있습니다. 이때 ShipOrder 액션에 미리 정의된 검증 로직이 각 주문에 대해 실행되고, 조건을 만족하는 주문들만 처리됩니다. 이처럼 ActionType은 일종의 비즈니스 기능 API로서, 사람이나 에이전트가 일관된 방식으로 객체를 조작할 수 있게 해줍니다.
+
+예시 코드 (Python): 아래는 Python 스타일로 ActionType을 정의하고 실행하는 간략한 예시입니다. Order 객체의 상태를 "Shipped"로 변경하는 ShipOrder 액션과, Sensor 객체를 비활성화하는 DeactivateSensor 액션을 가정해봅니다.
+
+class ActionType:
+    def __init__(self, name, target_type, func, conditions=None):
+        self.name = name            # 액션 이름
+        self.target_type = target_type  # 대상 ObjectType
+        self.func = func            # 실행 함수 (비즈니스 로직)
+        self.conditions = conditions or []  # 실행 전 조건 목록
+
+    def execute(self, target_object, **params):
+        # 조건 검증
+        for cond in self.conditions:
+            if not cond(target_object):
+                raise Exception(f"Precondition failed for {self.name}")
+        # 액션 로직 실행
+        result = self.func(target_object, **params)
+        # 필요 시 후처리 (예: 로그 남기기 등)
+        return result
+
+# ShipOrder 액션 정의 (Order.status를 Shipped로 변경)
+def ship_order_logic(order_obj, **params):
+    order_obj['status'] = 'Shipped'
+    order_obj['shippedDate'] = params.get('shippedDate', now())
+    return order_obj
+
+ShipOrder = ActionType(
+    name="ShipOrder",
+    target_type="Order",
+    func=ship_order_logic,
+    conditions=[lambda order: order.get('status') == 'Pending']  # 상태가 Pending인 경우만
+)
+
+# DeactivateSensor 액션 정의 (Sensor를 INACTIVE로 설정)
+def deactivate_sensor_logic(sensor_obj, **params):
+    sensor_obj['status'] = 'INACTIVE'
+    sensor_obj['deactivatedAt'] = now()
+    return sensor_obj
+
+DeactivateSensor = ActionType(
+    name="DeactivateSensor",
+    target_type="Sensor",
+    func=deactivate_sensor_logic,
+    conditions=[lambda sensor: sensor.get('status') == 'ACTIVE']
+)
+
+# Action 실행 예시:
+order = {"type": "Order", "orderId": "1234", "status": "Pending"}  # 객체 예시
+ShipOrder.execute(order)  # 조건 만족 시 status -> Shipped, shippedDate 설정
+
+
+위 코드에서 ActionType 클래스는 액션 이름과 대상 타입, 실행 로직 함수, 그리고 사전 조건 리스트를 속성으로 가집니다. execute 메소드는 대상 객체에 대해 모든 조건을 검증한 후 실제 로직을 수행합니다. ShipOrder와 DeactivateSensor는 각각 Order와 Sensor에 대한 액션 타입의 예시이며, 간단한 조건과 로직을 보여줍니다. 실제 구현에서는 데이터베이스 상의 객체를 수정하고 저장하는 부분, 에러 처리, 권한 체크 등이 추가될 것입니다.
+
+LinkTypes (객체 간 관계 모델링)
+
+정의: LinkType은 두 ObjectType 사이의 **관계(Relationship)**를 표현하는 스키마 정의입니다. 쉽게 말해, LinkType은 객체 지향 모델의 **Association(연관관계)**에 해당하며, 한 ObjectType의 인스턴스와 다른 ObjectType의 인스턴스를 연결할 수 있는 링크의 종류를 선언합니다. 하나의 LinkType은 관계의 의미(이름)와 어느 타입이 어느 타입과 연결되는지를 정의하고, 개별 Link는 특정 두 객체 사이의 관계 인스턴스를 나타냅니다.
+
+예를 들어, Foundry Ontology에서는 Sensor와 Asset을 연결하는 InstalledOn이라는 LinkType을 만들 수 있습니다. 이 LinkType은 "Sensor -> Asset" 관계를 의미하며, 실제 Link 인스턴스는 "Sensor #123이 Asset #A56에 설치됨"과 같은 구체적인 관계를 나타냅니다. 또 다른 예로, Employee와 Company 사이에 Employment라는 LinkType을 정의하여 직원과 고용주 간의 관계를 모델링할 수 있습니다. 개별 Link 인스턴스는 "직원 Melissa Chang -> 고용주 Acme Inc." 형태로 존재하게 됩니다.
+
+LinkType 구조: LinkType 정의에는 다음과 같은 정보를 포함합니다.
+
+이름(Name): 관계의 이름을 나타내며 주로 동사구 또는 명사로 표현합니다 (예: "installedOn", "employedAt", "manages").
+
+출발 및 도착 ObjectType(Source, Target): 어떤 ObjectType들 사이의 관계인지를 지정합니다. 예를 들어 installedOn LinkType은 Source가 Sensor, Target이 Asset입니다. employedAt는 Source: Employee, Target: Company처럼 정의합니다.
+
+관계 방향(Direction): **유향(directed)**인지 **무향(undirected)**인지 명시합니다. 대부분의 도메인 관계는 방향성을 가지므로 기본적으로 유향으로 다룹니다 (Sensor -> Asset처럼 관계의 의미가 한쪽 방향으로 읽힙니다). 그러나 무향 관계도 필요할 수 있는데, 예를 들어 소셜 네트워크의 "친구" 관계는 쌍방향 대등한 관계입니다. 이를 무향 LinkType으로 정의하면 Friend 관계 추가 시 양쪽에 자동으로 대칭 링크를 생성하거나, 내부적으로 단일 링크로 취급하되 쿼리 시 양쪽에서 조회 가능하게 처리합니다. 구현 시, LinkType.directed = False로 설정하여 시스템이 이를 확인하고 링크 저장 시 양쪽 Object에 연동되도록 할 수 있습니다.
+
+카디널리티(Cardinality): 관계의 수적 제약을 나타내며, 일대일(1:1), 일대다(1:N), 다대다(M:N) 중 하나로 정의합니다. 카디널리티는 보통 양쪽 ObjectType 각각에 대한 제약으로 표현됩니다. 예를 들어 "Employee -> Company (Employment)" 관계는 한 직원은 한 회사에만 고용되고, 한 회사는 여러 직원을 가질 수 있으므로 Employee측 1, Company측 N의 카디널리티를 가집니다 (1:Ν 관계). 아래 표는 다양한 카디널리티 예시입니다.
+
+LinkType 예시    관계    Cardinality    설명
+Person - Passport    Person 1 ↔ 1 Passport    1:1 유향    한 사람은 한 개의 여권만 소유, 여권도 한 사람에게만 속함 (양측 모두 최대 1).
+Company - Employee    Company 1 ↔ N Employee    1:N 유향    한 회사에 여러 직원, 그러나 직원은 한 회사에만 소속 (출발 1, 대상 N).
+Student - Course    Student N ↔ N Course    N:M (다대다)    한 학생이 여러 과목 수강, 한 과목에 여러 학생이 있음 (다대다 관계).
+Employee - Employee (멘토링)    Employee A ↔ Employee B    0..1:0..1 무향 (자기연결)    직원 간 멘토-멘티 관계: 각 직원은 0 또는 1명의 멘토를 가질 수 있고 멘토도 1명의 멘티만 담당.
+
+위 표의 마지막 행처럼 **자기 자신과의 관계(self-link)**도 가능하며, 이는 ObjectType이 자기 자신을 Target으로 가지는 LinkType으로 모델링합니다. 예를 들어 Employee 내에서 "멘토 ↔ 멘티" 관계를 LinkType Mentorship으로 정의하고, 이것을 Employee와 Employee 사이의 무향 1:1 관계로 설정할 수 있습니다. 이러한 자기참조 관계도 시스템이 올바르게 처리할 수 있도록 (예: 객체 조회 시 자기 자신을 참조하는 링크를 표시 등) 고려합니다.
+
+Link 저장 및 무결성: LinkType에 따라 실제 Link 인스턴스(객체 간 연결)를 저장하는 방식이 달라집니다. 1:1 또는 1:N 관계의 경우, 편의상 종속측 객체에 외부 키(foreign key) 속성을 두어 관계를 표현할 수 있습니다. 예를 들어 Employee -> Company (1:N) 관계라면 Employee 객체에 companyId 속성을 두고 Company의 식별자를 저장하는 식입니다. 반면 N:M (다대다) 관계의 경우, **별도 테이블(or 컬렉션)**을 두어 두 객체의 키 쌍을 저장하는 방식을 사용합니다. 본 시스템에서는 LinkType 정의를 바탕으로 내부적으로:
+
+1:N 또는 1:1 관계면 출발측 ObjectType 테이블에 대상 Object의 ID를 저장하는 컬럼을 생성하거나,
+
+N:M 관계면 링크 전용 테이블(또는 JSON 배열)을 만들어 양측 ID 쌍을 관리하는
+방식을 채택합니다. 이렇게 저장 구조를 정함으로써 질의 효율성과 데이터 일관성을 관리합니다.
+
+또한 카디널리티 제약을 지키기 위해 링크 추가/삭제 시 다음을 검사합니다:
+
+1:1 관계: 이미 한쪽 객체가 다른 링크를 갖고 있다면 새로운 링크를 허용하지 않음 (또는 기존 링크를 대체하도록 로직을 정함). 예: 한 사람에게 이미 여권 링크가 있다면 두 번째 여권 링크 불가.
+
+1:N 관계: "1" 측 객체(위 예에선 Company)가 이미 최대 하나의 "N"측 객체만 허용이라면 (ex: CEO로 지정되는 직원은 한 명만), 추가를 막음. 일반적 1:N은 "1"측 제한이 1, "N"측 제한이 N이므로, "1"측은 검사 필요 없고 "N"측 (직원)은 다른 회사 두 곳에 소속되지 않도록만 검사.
+
+N:M 관계: 제한이 없거나 별도의 unique 제약 없음 (동일 두 객체 쌍 중복 연결만 방지).
+
+비즈니스 규칙에 따른 Link 활용: LinkType은 시스템 내에서 그래프 데이터 모델을 형성하므로, 객체들 간 탐색과 관계 기반 연산에 활용됩니다. 예를 들어, Sensor와 Asset을 연결하는 installedOn 링크가 있다면 자산 객체에서 연결된 모든 센서 목록을 조회하거나, Sensor 객체에서 자신이 달린 Asset 정보를 역으로 조회할 수 있습니다. 이러한 편리한 연관 탐색 기능은 AI 에이전트나 사용자 질의 시 유용하게 쓰입니다. (예: "센서 온도가 80 이상인 Asset 목록" 질의 시, 에이전트는 센서 객체를 찾고 그들의 installedOn 링크를 따라 Asset들을 추출할 수 있음).
+
+예시: LinkType installedOn: Sensor -> Asset (many-to-one, 유향)을 정의하고 Sensor S1과 Asset A1를 링크한다고 하면, Link 인스턴스는 "(S1) --installedOn--> (A1)"로 표현됩니다. 마찬가지로 LinkType employedAt: Employee -> Company (many-to-one, 유향)에서 Employee E1을 Company C1에 연결하면 "(E1) --employedAt--> (C1)" 링크가 생깁니다. 자기 자신과의 관계 예로 Employee E2와 E3 사이에 Mentorship 링크를 맺으면 "(E2) <--> (E3)" (무향) 관계가 설정됩니다.
+
+Schemas (스키마 및 온톨로지 관리)
+
+스키마의 개념: 여기서 말하는 Schema는 시스템 내 모든 ObjectType, Property, LinkType 및 그 제약을 포함한 온톨로지 전체의 메타데이터 스키마를 의미합니다. 개별 ObjectType의 정의가 하나의 부분 스키마라면, 이러한 정의들을 전체적으로 묶은 것이 시스템의 글로벌 스키마입니다. 이 스키마는 일종의 계약(contract) 역할을 하여, 어떤 유형의 객체에 어떤 데이터 필드가 있으며 어떻게 연결될 수 있는지를 엄격히 기술하고, 데이터와 동작의 일관성을 보장합니다.
+
+Schema와 ObjectType의 관계: ObjectType 각각이 자체 버전과 정의를 가지지만, Schema 레벨에서의 버전도 고려해야 합니다. 예를 들어, 새로운 ObjectType을 추가하거나 전반적인 구조 변화가 있을 경우 Schema 버전을 높여 시스템 전체의 호환성을 관리합니다. 그러나 일반적으로는 ObjectType 단위 버전 관리로 충분하고, Schema(온톨로지) 전체에 대한 버전은 대규모 개편 시에만 변경합니다.
+
+스키마 버전 및 유효성 검사: 각 ObjectType 정의에는 버전이 있고, LinkType이나 Property의 변경 역시 해당 ObjectType의 버전을 변화시킵니다. 스키마 진화가 일어날 때, 예컨대 Order ObjectType에 새로운 속성 priority가 추가되었다면 Order의 버전을 1.1로 올리고, Schema 전체 릴리스 노트에 이 변경을 기록합니다. 시스템은 버전 간 호환성을 위해 다음과 같은 원칙을 가집니다:
+
+하위 호환성 유지(Backward compatibility): 가능한 한 기존 데이터나 기능이 깨지지 않도록 변경합니다. 예를 들어 필드를 삭제하기보다는 Deprecated 표시를 해두고 사용되지 않도록 한 뒤 향후 버전에서 제거합니다. 또는 새 필드를 추가하되, 기존 객체에는 기본값을 채워 넣음으로써 구버전 데이터도 새 스키마를 만족하도록 합니다.
+
+스키마 변경 관리: 스키마(특히 ObjectType) 변경 시, 시스템의 마이그레이션 도구를 통해 기존 객체 인스턴스들을 새로운 구조로 업데이트하거나, 새 구조에 맞게 다시 색인(index)하도록 합니다. Foundry Ontology에서도 ObjectType 구조가 바뀌면 데이터 re-indexing 작업이 필요하듯이, 우리 시스템도 Schema 변경 API 호출 시 내부적으로 변경 사항을 반영합니다. 예컨대 priority 속성 추가 시 모든 Order 객체에 priority 필드를 기본값(보통 null 또는 0)으로 채워 넣는 마이그레이션을 수행합니다.
+
+스키마 검증(Validation): 스키마 정의 자체에 대한 유효성 검증도 필요합니다. 예를 들어 잘못된 참조(없는 ObjectType을 LinkType에서 가리킨다든지), 속성 이름 중복, 예약어 사용 등의 오류를 방지합니다. 스키마를 생성/업데이트할 때 이러한 메타데이터를 검증하고 오류를 사전에 차단합니다.
+
+계약 준수: 모든 데이터 입력/수정 경로에 스키마 준수 검증을 추가하여, 정의되지 않은 필드에 값이 들어오거나, 잘못된 타입의 데이터가 저장되지 않도록 합니다. 이것은 일종의 계약 Enforcement로, Schema(계약)를 따르지 않는 동작은 시스템이 거부하도록 합니다. 이 과정은 ObjectType별 JSON Schema 검증기 또는 커스텀 검증 로직을 통해 구현됩니다.
+
+Schema와 API 통합: 시스템이 제공하는 API나 UI는 Schema 메타데이터를 참고하여 동작합니다. 예를 들어 객체 생성 API는 주어진 ObjectType 이름으로 스키마를 조회하고, 필드별로 Validation을 수행합니다. 객체 조회 API는 어떤 링크들을 함께 불러올지 Schema를 참조하여 결정할 수 있습니다 (예: include=links 파라미터가 주어지면 해당 ObjectType의 LinkType 정의를 찾아 관련 객체도 반환). 이처럼 Schema는 단순한 문서가 아니라 런타임에 참조되는 실체로서, 시스템 전반의 동작을 지휘합니다.
+
+Schema 및 Ontology 버전 관리 예시: v1 스키마에서는 ObjectType 5개, LinkType 3개로 구성되어 있었다가, v2에서 새로운 ObjectType 2개와 링크 1개가 추가된 경우를 생각해봅니다. 이 경우 Schema v1과 v2를 각각 JSON 파일로 보관하며, 시스템에는 기본적으로 최신인 v2가 적용됩니다. 기존 v1 데이터가 있다면, v2로 이관하기 위한 마이그레이션 스크립트를 준비합니다. (Solo 개발 환경에서는 수동 스크립트나 임시 코드로 수행하고, 이후 그 스크립트를 저장해 두는 방식으로 관리할 수 있습니다.) 만약 과거 버전 데이터를 계속 읽어야 한다면, 시스템 내부에 v1→v2 변환기를 두고 on-the-fly로 변환하거나, 구버전 Schema를 아카이브 형태로 유지해 필요 시 참조합니다.
+
+AI 에이전트 통합 (AI Agent Integration)
+
+개념: AI 에이전트 통합은 LLM과 같은 AI 모델이 앞서 정의한 Ontology (ObjectTypes, LinkTypes, ActionTypes 등) 메타데이터를 이해하고 활용하여, 동적 의사결정 및 워크플로우 실행을 수행하도록 하는 것을 의미합니다. Palantir AIP의 에이전트는 온톨로지에 대한 사전 지식을 바탕으로 단순한 챗봇을 넘어 목표 지향적인, 온톨로지 인식(Ontology-aware) 시스템으로 동작합니다. 즉, 에이전트는 단순히 텍스트 생성에 그치지 않고, 도메인 지식과 제약을 활용하여 실제 비즈니스 작업을 안전하게 수행합니다.
+
+Ontology 메타데이터를 활용한 이해: 에이전트는 시스템의 스키마(온톨로지) 정보를 콘텍스트로 받아들입니다. Foundry AIP에서는 "콘텍스트가 곧 비즈니스의 구조"라고 할 만큼 온톨로지 기반 콘텍스트에 강조를 둡니다. 예컨데, 새로운 데이터가 들어오면 Foundry는 이를 온톨로지 객체로 변환하고, 객체들 간의 의미, 관계, 제약을 연결시켜 놓습니다. 에이전트는 이러한 구조화된 콘텍스트를 입력받아 추론에 활용함으로써, 단순히 텍스트 상의 의미 추측이 아니라 명시적으로 연결된 지식 그래프 위에서 작동합니다. 예를 들어 에이전트에게 Asset 객체와 그에 연결된 Sensor 및 최근 이벤트(Event 객체)가 주어지면, 해당 에이전트는 자산-센서-이벤트 간 관계와 제약을 모두 알고 reasoning을 수행할 수 있습니다. 이런 방식으로 잘 구조화된 콘텍스트는 에이전트의 정확하고 신뢰성 있는 작동을 이끌어냅니다.
+
+도구(툴) 제공: AI 에이전트가 실제로 시스템을 변경하거나 데이터를 조회하려면 사전에 정의된 도구(Tool) 인터페이스를 통해서만 가능하도록 설계합니다. 이는 LLM의 자유로운 텍스트 생성을 통제하고, 허용된 범위 내에서만 행동하게 하기 위함입니다. 주요 도구들은 다음과 같습니다:
+
+객체 질의(Object Query) 도구: 특정 ObjectType의 객체들을 검색/조회하는 기능입니다. 에이전트는 이 도구를 사용해 데이터베이스상의 객체 목록이나 특정 조건에 맞는 객체를 가져올 수 있습니다. 이 도구는 필터링, 집계, 링크 탐색까지 지원하여, 에이전트가 질의를 통해 필요한 정보를 얻도록 합니다. (예: "status가 'Pending'인 Order 객체 모두 검색" 또는 "Sensor 객체 중 lastReading > 100인 목록과 연결된 Asset 정보 조회")
+
+액션 실행(Action) 도구: 정의된 ActionType을 실행하는 기능입니다. 에이전트는 이 도구를 통해 특정 객체나 파라미터로 액션을 호출하여 실제 변경을 일으킬 수 있습니다. 이때 액션의 사전 조건이나 검증은 내부적으로 적용되므로, 에이전트가 실수로 규칙에 어긋나는 시도를 하더라도 시스템이 막아줍니다. (예: "Order 1234 객체에 ShipOrder 액션 실행")
+
+함수 호출(Function) 도구: 별도로 정의된 Ontology Function이나 기타 유틸리티 함수를 호출하는 기능입니다. 예를 들어 복잡한 계산(평균 온도 계산 등)을 수행하는 함수를 미리 등록해두고 에이전트가 이를 사용할 수 있게 합니다.
+
+기타 도구: 이외에 시스템 상태 업데이트(예: 세션 변수 변경), 사용자에게 확인 요청 등의 보조 도구가 있을 수 있으나, 핵심은 위의 Query와 Action, Function 세 가지입니다.
+
+에이전트는 프롬프트 내에 이러한 도구 사용 방법을 안내받거나, Native Tool Calling 기능을 통해 자동으로 함수를 호출할 수 있습니다. 이를 통해 다중 단계의 작업을 수행할 때도 각 단계를 정확히 이행합니다.
+
+동적 계획 및 워크플로우 실행: AI 에이전트는 주어진 목표나 질의에 따라 즉석에서 실행 계획을 수립합니다. 이때 ObjectType, LinkType, ActionType 메타데이터를 바탕으로 어떤 경로로 문제를 해결할지 결정합니다. 예를 들어 사용자가 "지난 달에 센서 경고(alert)가 발생했던 자산 목록을 조회하고, 그 자산들을 점검(schedule maintenance)하세요"라고 요청했다면:
+
+에이전트는 Alert라는 ObjectType(이벤트성 객체)이 있고 Sensor와 Asset과 연관된 LinkType(raisedBy 등)이 정의되어 있다고 스키마에서 파악합니다.
+
+객체 질의 도구로 지난 달 발생한 Alert 객체들을 필터링하고, 각 Alert가 연결된 Sensor와 Asset 정보를 링크 탐색으로 얻어냅니다 (예: Alert -> Sensor (raisedBy), Sensor -> Asset (installedOn) 관계 traversal).
+
+그 결과 나온 Asset 객체들에 대해, Action 도구를 사용하여 "점검 생성(ScheduleMaintenance)" 액션을 실행합니다. 이 액션은 Asset ObjectType에 대한 ActionType으로, 관련된 유지보수 작업 객체를 생성하거나 Asset의 상태를 갱신하는 로직일 것입니다. 에이전트는 액션 실행 전후 결과를 확인하여 성공적으로 모두 처리됐는지 검증할 수도 있습니다.
+
+이러한 일련의 과정은 에이전트 내부의 논리적 추론 시퀀스로 진행되며, 필요하다면 사용자에게 추가 질문(clarification 요청)을 하거나 중간 결과를 요약해 보여줄 수도 있습니다. 중요한 것은 에이전트가 온톨로지로부터 허용된 작업과 데이터만을 사용하므로, 엉뚱한 작업을 시도하거나 잘못된 가정을 할 확률이 크게 줄어든다는 점입니다. 일반적인 LLM이 맥락을 추측하는 반면, AIP 에이전트는 **미리 정해진 콘텍스트(온톨로지 객체들)**를 받고 그 안에서만 Reasoning하므로 훨씬 신뢰성 있고 정확한 의사결정을 내릴 수 있습니다.
+
+실행 및 확인: 에이전트가 도구를 사용해 액션을 수행할 때, 시스템은 각 단계의 로그와 변경 내역을 기록해 둡니다. Solo 개발환경에서는 이 로그를 콘솔 출력이나 파일에 남겨 디버깅에 활용하고, 프로덕션 환경에서는 보다 구조적인 감사 로그(audit log)로 저장합니다. 또한 에이전트가 내린 의사결정의 근거를 설명하거나 사용자에게 투명하게 보여주기 위해, **에이전트의 추론 과정(reasoning trace)**을 확인할 수 있는 기능도 고려합니다. Palantir AIP에서도 에이전트의 추론 과정을 "View reasoning" 기능으로 제공하듯이, 우리 시스템도 개발 단계에서 프롬프트와 도구 호출 내역을 출력하여 튜닝에 활용할 수 있습니다.
+
+보안 및 권한: 에이전트를 통한 자동화에서는 권한 체계도 중요합니다. 각 ActionType이나 ObjectType 별로 실행 권한을 설정하여, 에이전트가 모든 작업을 멋대로 할 수 없도록 제한합니다. 예를 들어 중요 기능 (데이터 삭제나 외부 시스템 연동 등)은 에이전트가 자동으로 실행하지 못하게 하거나, 사용자 확인 후에만 실행되도록 할 수 있습니다 (AIP에서는 에이전트 액션을 자동 또는 사용자 컨펌 후 실행으로 설정 가능). Solo 개발자 시나리오에서는 우선 큰 제약 없이 구현하고, 향후 다수 사용자나 중요한 작업 추가 시 권한 체크를 도입하는 식의 단계적 접근이 현실적일 것입니다.
+
+요약하면, AI 에이전트 통합을 통해 사용자로부터 자연어로 입력받은 목표를 온톨로지 기반으로 이해하고, 객체 질의와 액션 실행이라는 두 축을 활용하여 스스로 워크플로우를 완성할 수 있습니다. 이때 온톨로지 메타데이터가 에이전트의 가이드레일 역할을 하여, 에이전트는 **잘못된 상상(hallucination)**을 하지 않고 조직의 실제 데이터와 업무 규칙 안에서 안전하게 움직입니다. AIP 개념이 강조하듯, 컨텍스트의 힘을 최대한 활용하여 AI와 시스템을 접목하는 것이 이 설계의 핵심입니다.
+
+Code Architecture (코드 아키텍처 및 모듈 구성)
+
+전체 구조 개요: 시스템을 모놀리식하게 한 프로젝트로 개발하되, 내부를 여러 모듈/폴더로 나누어 **관심사 분리(Separation of Concerns)**를 실현합니다. 1인 개발 환경에서는 복잡한 마이크로서비스보다는 단일 코드베이스 내의 모듈화로 유지보수성을 높이는 것이 유리합니다. 각 개념(ObjectType, ActionType, 등)에 해당하는 기능들을 별도 파이썬 모듈이나 TypeScript 파일로 분리하고, 상호 참조는 명확한 인터페이스를 통해 이루어지도록 설계합니다. 다음은 제안하는 폴더 구조와 각 구성요소의 역할입니다.
+
+폴더/모듈    역할 및 책임
+ontology/ (또는 core/)    온톨로지 메타데이터 정의 모듈. ObjectType, Property, LinkType, ActionType 등의 클래스와 스키마 정의, 및 관련 로직을 포함합니다. 예를 들어 object_type.py, property.py, link_type.py, action_type.py 파일을 두고, 각각 해당 개념을 표현하는 데이터 클래스를 정의합니다.
+models/ (또는 objects/)    실제 객체 인스턴스를 다루는 모듈. 예를 들어 각 ObjectType에 대응되는 Python 클래스(또는 동적 Record 클래스)를 정의하거나, 공통 ObjectInstance 클래스를 통해 타입에 따라 속성을 저장/조회하는 로직을 가집니다. ORM을 사용한다면 여기에 ORM 모델 정의를 둘 수도 있습니다.
+engine/ (또는 workflow/)    워크플로우 엔진 및 액션 실행 로직을 담은 모듈. ActionType 실행을 관리하는 action_executor.py, 워크플로우(다중 액션 시퀀스)를 정의하고 실행하는 workflow_engine.py 등을 포함합니다. 이 레이어에서는 트랜잭션 관리, 액션 사이의 의존성 처리, 오류 발생 시 롤백 등의 오케스트레이션 세부사항을 구현합니다.
+agent/    AI 에이전트 통합 관련 모듈. 에이전트와 LLM을 관리하는 agent_interface.py, 프롬프트 구성과 도구(tool) 래핑을 담당하는 agent_tools.py 등을 포함합니다. OpenAI API나 프롬프트 러너를 호출하는 코드, 그리고 Ontology 메타데이터를 LLM에게 전달하는 로직이 이 계층에 위치합니다.
+storage/    데이터 영속성 계층 모듈. DB 접속 및 쿼리, JSON 파일 입출력 등을 담당합니다. 예를 들어 db.py (SQLite/Postgres 연결 및 기본 CRUD), repository.py (ObjectType별 데이터 접근 클래스) 등을 둘 수 있습니다. 이 모듈을 통해 상위 계층은 구체적인 저장소 종류에 상관없이 데이터 읽기/쓰기 작업을 수행합니다.
+api/ (Optional)    외부 인터페이스(API, CLI 등)를 제공하는 모듈. Flask나 FastAPI 등을 사용한다면 엔드포인트 정의를 여기서 관리합니다. CLI 도구나 스크립트 인터페이스가 있다면 포함합니다.
+main.py    애플리케이션 진입점. 초기화 작업(스키마 로드, DB 연결 설정 등)과 간단한 테스트 시나리오를 실행할 수 있습니다.
+
+계층 간 흐름: 상기한 구조에서 각 계층은 느슨하게 연결됩니다. 예를 들어, **엔티티 정의(ontology)**와 저장소(storage) 사이에 직접적 결합을 피하고 storage 모듈이 ontology의 ObjectType 정의를 참고하여 테이블을 생성하거나 질의 결과를 models의 객체로 변환하는 식으로 동작합니다. engine 모듈은 ontology에 정의된 ActionType 정보를 참조하여 실행하며, 필요시 storage를 통해 데이터 읽기/쓰기를 합니다. agent 모듈은 engine과 ontology의 인터페이스를 이용하여, LLM이 요청한 질의/액션을 실제로 호출합니다. 이러한 구조는 이후에 한 부분의 구현을 교체하더라도(예: storage를 SQLite에서 PostgreSQL로 교체) 다른 부분에 큰 영향을 주지 않도록 합니다.
+
+모듈 구현 예시: 각 개념별 클래스를 정의할 때, Python의 데이터 클래스(@dataclass)를 활용하면 편리합니다. 아래는 간략한 클래스 구조 예시입니다.
+
+# ontology/object_type.py
+@dataclass
+class ObjectTypeDef:
+    name: str
+    version: str
+    properties: List['PropertyDef']
+    links: List['LinkTypeDef']
+    primary_key: str = None
+
+    def validate_instance(self, data: Dict) -> bool:
+        # 전달된 data 딕셔너리가 이 ObjectType의 스키마에 맞는지 검증
+        for prop in self.properties:
+            if prop.name not in data:
+                if prop.required:
+                    raise ValueError(f"Missing required property {prop.name}")
+            else:
+                prop.validate_value(data[prop.name])  # 각 PropertyDef에 개별 검증 로직
+        # 링크 무결성 등 추가 검증 가능
+        return True
+
+    def create_instance(self, data: Dict):
+        self.validate_instance(data)
+        return ObjectInstance(type=self, data=data)
+
+# ontology/property.py
+@dataclass
+class PropertyDef:
+    name: str
+    type: str  # 'string', 'integer', 'enum' 등
+    required: bool = False
+    options: List = None  # enum의 허용 값 등
+    default: Any = None
+
+    def validate_value(self, value: Any) -> bool:
+        # 타입별 검증 로직
+        if value is None:
+            return not self.required  # None 허용 여부는 required로 판단
+        # 각 타입에 따라 isinstance 체크 등
+        # enum 타입의 경우 options 내 값인지 확인
+        if self.type == 'enum':
+            if value not in self.options:
+                raise ValueError(f"{self.name} must be one of {self.options}")
+        # ... 기타 타입 검증 ...
+        return True
+
+# ontology/link_type.py
+@dataclass
+class LinkTypeDef:
+    name: str
+    source_type: str
+    target_type: str
+    cardinality: str  # '1:1', '1:N', 'N:M'
+    directed: bool = True
+
+# models/object_instance.py
+class ObjectInstance:
+    def __init__(self, type: ObjectTypeDef, data: Dict):
+        self.type = type      # ObjectTypeDef 참조
+        self.data = data      # 실제 속성 값 딕셔너리
+        # ObjectInstance 생성 시점에 이미 validate_instance 통과했음.
+
+    def get(self, prop_name):
+        return self.data.get(prop_name)
+
+    def set(self, prop_name, value):
+        # 속성 값을 변경하기 전에 PropertyDef 검증
+        prop_def = next((p for p in self.type.properties if p.name == prop_name), None)
+        if not prop_def:
+            raise AttributeError(f"{prop_name} is not defined for {self.type.name}")
+        prop_def.validate_value(value)
+        self.data[prop_name] = value
+
+
+위 코드는 ObjectType 정의(ObjectTypeDef), Property 정의(PropertyDef), LinkType 정의(LinkTypeDef), 그리고 객체 인스턴스(ObjectInstance)의 개략적인 모습을 보여줍니다. ObjectTypeDef.validate_instance는 주어진 데이터가 스키마와 부합하는지 확인하며, PropertyDef.validate_value는 개별 값의 타입/제약을 체크합니다. ObjectInstance는 실제 객체로, get과 set 메서드를 통해 값을 안전하게 조회/변경할 수 있도록 하였습니다. (참고로, 실제 구현에서는 ObjectInstance를 그냥 dict로 취급하고 ObjectTypeDef에서 제공하는 validate만 써도 되지만, 캡슐화를 돕기 위해 클래스로 표현했습니다.)
+
+동작 예시: 위 구조에서 Sensor와 Asset 타입, 그리고 installedOn 링크를 정의하고 사용하는 예를 들면:
+
+# ObjectType, Property, LinkType 정의 (간략화)
+sensor_type = ObjectTypeDef(name="Sensor", version="1.0", properties=[
+    PropertyDef(name="sensorId", type="string", required=True),
+    PropertyDef(name="status", type="enum", options=["ACTIVE","INACTIVE"], default="ACTIVE"),
+    PropertyDef(name="lastReading", type="float", required=True)
+], links=[LinkTypeDef(name="installedOn", source_type="Sensor", target_type="Asset", cardinality="N:1", directed=True)])
+
+asset_type = ObjectTypeDef(name="Asset", version="1.0", properties=[
+    PropertyDef(name="assetId", type="string", required=True),
+    PropertyDef(name="location", type="string")
+], links=[])
+
+# 객체 생성 및 링크 설정
+sensor_data = {"sensorId": "S-100", "lastReading": 37.5}  # status 생략 -> default "ACTIVE"
+sensor = sensor_type.create_instance(sensor_data)  # 검증 통과 시 ObjectInstance 반환
+
+asset_data = {"assetId": "A-500", "location": "Warehouse"}
+asset = asset_type.create_instance(asset_data)
+
+# Sensor와 Asset 링크 관계 설정 (N:1 관계 -> Sensor에 Asset 참조 추가)
+sensor.data["installedOn"] = asset.data["assetId"]  # 간단한 구현: Sensor 인스턴스에 assetId 저장
+# (실제론 LinkInstance 개념을 두어 관리할 수도 있음)
+
+print(sensor.get("status"))  # "ACTIVE"
+print(sensor.data)  
+# 출력: {"sensorId": "S-100", "status": "ACTIVE", "lastReading": 37.5, "installedOn": "A-500"}
+
+
+위 예시에서는 sensor_type과 asset_type을 정의하고, 각각 인스턴스를 만든 후, Sensor 객체의 installedOn 링크 필드에 Asset의 식별자를 저장하는 방식으로 관계를 맺었습니다. 현실적으로는 LinkInstance를 정의하여 source_id, target_id를 속성으로 갖는 객체로 저장하거나, DB 테이블로 관리하는 것이 좋지만, 간략화하여 Sensor 객체에 외래키를 넣는 식으로 처리한 것입니다. 이후 sensor.get("status")를 호출하면 "ACTIVE"가 나와서 정상적으로 기본값이 채워졌음을 확인할 수 있습니다.
+
+모듈 간 의존성: 코드 구조를 설계할 때, 순환 의존성을 피하고 계층을 명확히 해야 합니다. 예를 들어 ontology 모듈은 storage나 engine에 의존하지 않고 순수하게 메타데이터와 검증 로직만 포함하도록 합니다. engine 모듈은 ontology를 사용하지만, storage도 이용하여 데이터 변경을 커밋합니다. agent 모듈은 engine을 호출하여 액션을 수행하고, ontology 정보를 읽어와 프롬프트에 활용합니다. 이러한 방향성을 지키면 모듈이 서로 얽히지 않아 유지보수하기 쉬워집니다.
+
+타입스크립트 고려: 본 구현 계획은 Python 예시로 설명했지만, TypeScript로 구현할 경우 클래스와 인터페이스를 활용하여 비슷한 구조를 잡을 수 있습니다. 예를 들어 interface ObjectType { name: string; version: string; properties: PropertyDef[]; ... } 형태로 정의하고, 제네릭을 사용하면 타입 안전성을 높일 수 있습니다. TypeScript의 장점은 컴파일 타임에 속성 타입을 체크할 수 있다는 것인데, 이번 설계에서는 런타임 메타데이터 기반으로 검증하는 접근을 택하고 있으므로, 언어와 무관하게 동작 개념은 비슷합니다. Solo 개발 측면에서는 Python이 빠른 프로토타이핑에 유리하고, TypeScript는 이후 프런트엔드 연동이나 브라우저 실행을 고려할 때 장점이 있으므로, 선호와 필요에 따라 선택합니다.
+
+Persistence (메타데이터 및 인스턴스 데이터 영속성)
+
+메타데이터 저장: ObjectType 정의, Property 정의, LinkType 정의와 같은 온톨로지 메타데이터는 개발 및 디버깅의 용이성을 위해 명시적이고 인간이 읽기 쉬운 형식으로 저장됩니다. 이상적인 형식은 JSON 또는 YAML 파일입니다. 예를 들어 ontology/ 폴더 아래에 각 ObjectType별 JSON 파일(Sensor.json, Asset.json 등)을 두어, 해당 ObjectType의 속성, 링크, 버전 정보를 명시합니다. 이러한 파일은 깃(Git) 등의 버전관리 시스템에 포함되어 변경 이력을 추적할 수 있고, 사람이 열어보기에도 편합니다.
+
+동시에 코드 레벨에서는 이 메타데이터를 파싱하여 ObjectTypeDef 객체 등으로 초기화합니다. 즉, 소스 오브젝트(예: JSON) -> 런타임 객체(메모리 상의 ObjectTypeDef 인스턴스) 변환이 애플리케이션 시작 시 이루어집니다. 메타데이터가 변경되면 (예: JSON 파일 수정 후 재배포), 다시 로드하여 반영합니다. Solo 개발 단계에서는 JSON 편집 후 애플리케이션 재시작만으로 새로운 스키마를 시험해볼 수 있으므로 개발 효율성이 높습니다.
+
+또 다른 방법으로는 SQLite 등의 경량 DB에 메타데이터를 저장하는 것입니다. 예를 들어 object_types 테이블에 ObjectType의 기본 정보를 저장하고, properties 테이블에 속성 목록을 저장하는 식입니다. 하지만 이러한 구조는 JSON 파일에 비해 사람에게 한눈에 보이지 않으므로, 투명성 측면에서는 파일 기반이 선호됩니다. 본 계획에서는 기본적으로 JSON/YAML 기반 메타데이터 관리를 권장하고, 데이터량이 늘거나 동적 편집이 필요해지면 DB로 옮기는 것을 고려합니다.
+
+인스턴스 데이터 저장: 실제 도메인 객체 인스턴스(예: Sensor 객체들, Order 객체들)는 영속적 저장소에 보관됩니다. 선택지는 관계형 데이터베이스(SQLite, PostgreSQL 등) 또는 파일 기반 저장(JSON/CSV) 등이 있습니다. 요구사항을 볼 때, 다수의 Object 인스턴스와 그들 간 링크를 효율적으로 질의하고 업데이트해야 하므로 관계형 DB가 적합합니다. Solo 개발의 편의와 배포 간편성을 고려하여 SQLite 데이터베이스를 우선 사용합니다. SQLite는 별도 서버가 필요 없고, 디스크의 단일 파일로 데이터를 저장하여 관리하기 쉬우며, 문제 발생 시 일반 SQLite 뷰어나 CLI로 데이터를 들여다보고 수정하기에도 용이합니다.
+
+데이터베이스 스키마 설계는 ObjectType마다 하나의 테이블을 생성하는 방식으로 접근합니다. 예를 들어 Sensor ObjectType -> sensors 테이블, Asset ObjectType -> assets 테이블, Order -> orders 테이블 등으로 매핑합니다. 각 테이블은 해당 ObjectType의 Property를 컬럼으로 갖고, 필요하면 링크용 외래키 컬럼을 포함합니다. 예를 들어 sensors 테이블에 installed_on 컬럼을 두어 asset의 ID를 참조할 수 있습니다. 다대다 링크의 경우 별도 링크 테이블을 만듭니다 (sensor_asset_links 등, 컬럼: sensor_id, asset_id).
+
+이러한 스키마를 DB에 자동 생성하기 위해, 스키마 메타데이터를 읽어 DDL을 생성하는 기능을 구현할 수 있습니다. 예를 들어 ObjectTypeDef에 정의된 properties를 순회하며 각 컬럼 타입을 SQL 타입으로 매핑(STRING -> TEXT, FLOAT -> REAL 등)하여 CREATE TABLE 문을 구성합니다. Solo 개발 시에는 초기 몇 개 테이블은 수작업으로 만들고, 이후 스키마 변화를 자동화하는 스크립트를 추가해도 됩니다.
+
+트랜잭션 관리: Persistence 레이어에서는 데이터 변경시 트랜잭션을 사용하여 여러 객체와 링크가 함께 변경될 때 원자성을 보장합니다. 예를 들어 한 Action이 Order와 Inventory 두 가지 ObjectType 데이터를 모두 변경한다면, 각각 다른 테이블을 갱신하더라도 하나의 트랜잭션으로 묶어 일관성을 유지합니다.
+
+투명성 및 디버깅 지원: Solo 개발에 있어 투명성은 곧 디버깅 용이성입니다. 이를 위해, 다음과 같은 전략을 취합니다:
+
+직관적인 데이터 조회: DB에 저장된 내용을 쉽게 볼 수 있도록 관리 툴을 활용합니다. SQLite의 경우 DB Browser와 같은 GUI 툴로 테이블 내용을 확인하거나, 시스템 내에 간단한 CLI 명령 (예: print_all_objects("Sensor"))을 제공하여 콘솔에 JSON 형태로 데이터를 출력할 수 있게 합니다.
+
+로그 및 감사 기능: 모든 쓰기 작업(객체 생성/수정/삭제, 링크 추가/삭제, 액션 실행)은 operations.log 같은 로그 파일에 남겨 둡니다. 각 기록에는 타임스탬프, 작업 유형, 대상 ObjectType과 ID, 변경 내용 등이 포함됩니다. 이 로그를 보면 어떤 순서로 무슨 일이 일어났는지 추적할 수 있어, 예상치 못한 동작이나 에이전트의 행동을 분석할 때 도움이 됩니다.
+
+히스토리 보존: 중요 객체에 대해서는 변경 히스토리를 저장하는 방안을 도입할 수 있습니다. 간단히는 객체 테이블에 history라는 JSON 컬럼을 두고, 변경 전 값을 append해 나가는 방식이나, 별도 <object>_history 테이블을 두는 방법이 있습니다. 예를 들어 Order 객체의 status가 변경될 때마다 이전 상태와 시각을 기록해두면, 나중에 에이전트가 "언제 배송 완료되었지?" 같은 질문에 답변하거나, 문제 발생 시 타임라인을 파악하는 데 활용할 수 있습니다. Foundry에서도 객체의 변경 이력을 추적할 수 있는 기능이 있듯이, 우리도 경량으로나마 이를 지원할 수 있습니다. (초기 구현에는 없어도 되지만, 설계에 염두에 둡니다.)
+
+PostgreSQL 등으로 확장: 만약 데이터 규모가 커지거나 다중 사용자 환경으로 전환된다면, SQLite에서 PostgreSQL같은 서버형 DB로의 마이그레이션을 고려합니다. 이를 쉽게 하기 위해 storage 모듈의 DB 접근 로직을 추상화합니다. Python의 경우 SQLAlchemy 등을 사용하면 DB 종류 변경이 비교적 수월하며, repository 패턴으로 특정 DB에 종속되지 않도록 구현할 수 있습니다. Solo 개발 단계에서는 SQLite로 시작하되, SQL 쿼리 작성 시 PostgreSQL 호환 문법을 쓰는 등 향후 이전을 염두에 둔 코딩 습관을 유지합니다.
+
+Versioning and Governance (스키마 버전 관리 및 거버넌스)
+
+스키마 진화(진화) 문제: 시간에 따라 비즈니스 요건이 변하면 온톨로지 스키마(ObjectTypes, Properties, LinkTypes)도 변경이 필요합니다. 새로운 ObjectType이 추가되거나, 기존 ObjectType에 속성이 추가/변경/삭제될 수 있습니다. 이러한 스키마 진화 시 기존 데이터와 애플리케이션 로직에 미치는 영향을 최소화하면서 변경을 적용하는 것이 중요합니다. 이를 위한 전략이 **버전 관리(versioning)**와 거버넌스(governance) 절차입니다.
+
+ObjectType 수준 버전 관리: 앞서 언급했듯이 각 ObjectType 정의는 version 필드를 가집니다. Semantic Versioning 개념을 차용하여, Major.Minor 형태로 버전을 관리합니다.
+
+Minor 버전 업: 하위 호환성을 해치지 않는 변화, 예를 들면 새로운 선택적 속성 추가, 설명 변경 등은 minor 버전을 올립니다 (예: 1.0 -> 1.1). 이 경우 기존 인스턴스들은 새 필드를 갖지 않지만, 기본값 처리 등을 통해 여전히 유효합니다. 시스템은 minor 차이의 스키마는 같은 major로 취급해 크게 구분하지 않고 처리하되, 필요하면 객체를 로드할 때 기본값을 채워주는 식으로 대응합니다.
+
+Major 버전 업: 하위 호환성이 깨질 수 있는 변화, 예를 들면 속성 타입 변경, 속성 제거, 필수 -> 옵션/옵션 -> 필수 변경, 중요한 LinkType 구조 변경 등은 major 버전을 올립니다 (예: 1.x -> 2.0). Major 버전이 바뀌면 해당 ObjectType의 이전 버전과는 공존이 어렵다고 판단하고, 데이터 마이그레이션이나 deprecated 처리를 수반합니다.
+
+스키마 이력 관리: 메타데이터 저장소(예: JSON 파일)에 변경이 발생하면 Git을 통해 diff를 남겨둡니다. Solo 개발자라 해도, 이런 이력을 남기는 것은 나중에 "특정 필드가 언제 추가되었더라?"를 파악하거나, 문제 발생 시 원인을 찾는 데 큰 도움이 됩니다. 거버넌스 측면에서, 코드 리뷰 대신 자기 리뷰라도 할 겸, 중요한 스키마 변경 시 커밋 메시지에 이유와 예상 영향 범위를 기록해 둡니다.
+
+Deprecated 필드 관리: 속성을 제거해야 할 때는 바로 삭제하지 않고 Deprecated로 마크합니다. Deprecated 속성은 더 이상 사용되지 않지만, 일단 시스템 내에 남아있어 기존 데이터 접근에는 문제 없도록 합니다. 예를 들어 temperature 속성을 lastReading으로 이름 바꾸려 할 때, 1.0 버전에서는 temperature 사용, 1.1에서 lastReading을 새로 추가하고 temperature를 deprecated로 표시, 2.0에서 완전히 제거하는 단계를 밟습니다. 이 동안 코드나 에이전트도 deprecated 필드 대신 새 필드를 사용하도록 점진적으로 변경합니다.
+
+Backward Compatibility와 데이터 마이그레이션: 가능한 한 동일 ObjectType의 여러 버전이 공존하는 상황을 피하려고 합니다. 즉, Order 1.0과 Order 2.0 두 가지 버전 스키마의 객체가 동시에 존재하면 처리 로직이 복잡해지므로, Major 버전 업 시 한 번에 마이그레이션하는 방안을 택합니다.
+
+작은 시스템에서는 스키마 변경 시 모든 데이터를 한번에 업데이트하는 게 현실적입니다. 예를 들어 Order 2.0에서 status를 enum ["Pending","Shipped","Cancelled","Returned"]로 확장했다면, 기존 Order 데이터는 새 enum에 없는 값이 없으므로 큰 문제 없겠지만, 반대로 어떤 값이 없어졌다면 (예: "Processing" 상태 제거) 해당 값을 가진 객체들을 다른 값으로 변환하는 스크립트를 실행해야 합니다.
+
+이러한 마이그레이션 스크립트는 migration/ 폴더 등에 버전 쌍으로 관리합니다 (예: mig_order_1_to_2.py 등). Solo 개발 초기에는 수동으로 DB를 수정할 수도 있지만, 미리 스크립트를 작성해 두면 재현성도 높아지고 실수도 줄어듭니다.
+
+거버넌스 (Governance): 대규모 조직이라면 스키마 변경 시 검토위원회나 승인이 필요할 것입니다. 1인 개발에서는 형식적인 절차 대신, 원칙과 체크리스트로 거버넌스를 대신합니다.
+
+변경 전 스스로 다음을 점검합니다: (1) 이 변경이 진짜 필요한가? (요구사항 변화 명확히) (2) 하위 호환은 어떻게 유지할 것인가? (Deprecated 처리 or 즉시 마이그레이션) (3) 에이전트 프롬프트 등 어딘가 이 스키마에 의존하고 있는데 업데이트가 필요한 곳은 없는가? (예: 프롬프트에 특정 속성명을 기술했다면 수정 필요) (4) 사용자 문서나 예제 코드에 영향은 없는가?
+
+이러한 체크를 거쳐 변경을 적용했다면, 테스트를 수행합니다. 특히 ActionType들은 스키마에 의존하는 로직이 많으므로, 관련 액션이 여전히 잘 작동하는지 확인합니다. 가령 Property명을 변경했다면 그걸 사용하던 Action 코드에서도 수정되어야겠죠.
+
+릴리스 노트 작성: 큰 변경의 경우, README나 변경 내역 문서를 업데이트하여 어떤 수정이 있었는지 기록해 둡니다. 향후 자신이 봐도 이해할 수 있도록, 혹은 만약 프로젝트에 다른 협업자가 참여하게 될 경우를 대비하는 차원입니다.
+
+예시 시나리오: Asset ObjectType 1.0에서 location 속성이 단일 문자열이었는데, 2.0에서 location을 구조화된 주소(Struct)로 바꾸기로 했다고 합시다.
+
+1.1 버전: 새로운 Struct 속성 location2 추가 (필드: city, state 등), location은 deprecated 표시.
+
+1.1에서 코드와 에이전트는 가능하면 location2를 사용하도록 업데이트.
+
+2.0 버전: location 필드 제거, location2를 location으로 이름 변경 (최종적으로 Struct 타입으로 대체).
+이러한 단계적 진행 동안, 1.0에 있던 Asset 데이터의 location 문자열 값을 분해하여 1.1 단계에서 location2의 하위 필드에 채워넣는 마이그레이션을 실행합니다. Deprecated 기간 동안에도 과거 데이터는 남아있지만 점차 참조되지 않게 되고, 최종적으로 2.0 전환 시 깔끔하게 정리됩니다.
+
+요약: 버전 관리와 거버넌스는 변화에 대한 안정망입니다. 단일 개발자라도 이를 소홀히 하면 시간이 지나 구조가 꼬이거나 호환성 문제가 발생할 수 있으므로, 작은 변경이라도 버전을 명시하고, 변경 이유와 영향을 고려하며, 가능한 안전한 방식으로 진화시키는 습관이 중요합니다. Palantir Foundry에서도 Ontology를 지속적으로 발전시키는 과정에서 Manage schema changes 가이드를 통해 사용자가 신중히 처리하도록 권고하듯이, 우리 시스템도 명확한 원칙 아래 스키마를 

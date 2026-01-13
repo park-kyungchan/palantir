@@ -1,0 +1,140 @@
+---
+name: quality-check
+description: Run quality gates - E2E tests, Pydantic config check, deprecation warnings
+allowed-tools: Read, Grep, Glob, Bash, Task
+---
+
+# /quality-check Command
+
+$ARGUMENTS
+
+커밋 전 품질 검사를 실행합니다.
+
+---
+
+## 검사 항목
+
+### 1. E2E 테스트
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+pytest tests/ -v --tb=short
+```
+
+### 2. Pydantic V2 설정 검사
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+python -c "
+from pathlib import Path
+import re
+
+# Check for deprecated class Config pattern
+deprecated_pattern = re.compile(r'class\s+Config\s*:')
+files_to_check = list(Path('scripts').rglob('*.py'))
+
+issues = []
+for f in files_to_check:
+    content = f.read_text()
+    if deprecated_pattern.search(content):
+        issues.append(str(f))
+
+if issues:
+    print('⚠️ Deprecated Pydantic Config found in:')
+    for i in issues:
+        print(f'  - {i}')
+    print('Use model_config = ConfigDict(...) instead')
+else:
+    print('✅ No deprecated Pydantic Config patterns')
+"
+```
+
+### 3. Datetime Deprecation 검사
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+python -c "
+from pathlib import Path
+
+deprecated = 'datetime.utcnow()'
+files_to_check = list(Path('scripts').rglob('*.py'))
+
+issues = []
+for f in files_to_check:
+    content = f.read_text()
+    if deprecated in content:
+        issues.append(str(f))
+
+if issues:
+    print('⚠️ Deprecated datetime.utcnow() found in:')
+    for i in issues:
+        print(f'  - {i}')
+    print('Use datetime.now(UTC) instead')
+else:
+    print('✅ No deprecated datetime patterns')
+"
+```
+
+### 4. Type Hint 검사
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+mypy scripts/ --ignore-missing-imports --no-error-summary 2>/dev/null || echo "mypy not installed or type errors found"
+```
+
+### 5. Lint 검사
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+flake8 scripts/ --max-line-length=120 --ignore=E501,W503 2>/dev/null || echo "flake8 not installed or lint errors found"
+```
+
+---
+
+## Parallel Execution Strategy
+
+**Deploy 5 parallel subagents using `run_in_background=true`:**
+
+```python
+workspace = "/home/palantir/park-kyungchan/palantir"
+
+# QC1: E2E Tests
+Task(subagent_type="general-purpose", prompt=f"Run pytest tests/ -v --tb=short in {workspace}",
+     description="QC1: E2E Tests", run_in_background=True)
+
+# QC2: Pydantic Config Check
+Task(subagent_type="Explore", prompt="Search for deprecated 'class Config:' pattern",
+     description="QC2: Pydantic Config", run_in_background=True)
+
+# QC3: Datetime Deprecation Check
+Task(subagent_type="Explore", prompt="Search for deprecated 'datetime.utcnow()' pattern",
+     description="QC3: Datetime Patterns", run_in_background=True)
+
+# QC4: Type Hints (mypy)
+Task(subagent_type="general-purpose", prompt=f"Run mypy scripts/ in {workspace}",
+     description="QC4: Type Hints", run_in_background=True)
+
+# QC5: Lint (flake8)
+Task(subagent_type="general-purpose", prompt=f"Run flake8 scripts/ in {workspace}",
+     description="QC5: Lint", run_in_background=True)
+```
+
+**Result Synthesis:** E2E test failure = BLOCKED, others = WARN
+
+**Performance:** Parallel execution reduces check time by 70-80%
+
+---
+
+## 결과 해석
+
+| 검사 | 통과 조건 |
+|------|----------|
+| E2E Tests | 모든 테스트 통과 |
+| Pydantic | `class Config:` 없음 |
+| Datetime | `datetime.utcnow()` 없음 |
+| Type Hints | mypy 에러 없음 |
+| Lint | flake8 에러 없음 |
+
+---
+
+**커밋 전에 모든 검사가 통과해야 합니다.**

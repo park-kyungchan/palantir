@@ -1,0 +1,27 @@
+{
+  "_comment": "Slack MCP Integration - Boris Cherny Pattern",
+  "_instructions": "Merge this into your .mcp.json to enable Slack notifications",
+  "_setup": [
+    "1. Go to https://api.slack.com/apps and create an app",
+    "2. Enable 'Incoming Webhooks' and create a webhook URL",
+    "3. Add the webhook URL to environment variables",
+    "4. Merge this config into ~/.mcp.json"
+  ],
+  "mcpServers": {
+    "slack": {
+      "type": "http",
+      "url": "https://slack.mcp.anthropic.com/mcp",
+      "_note": "Official Anthropic Slack MCP - requires OAuth setup"
+    },
+    "slack-webhook": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["-e", "require('./slack-mcp-server.js')"],
+      "cwd": "~/.claude/mcp-servers/slack",
+      "env": {
+        "SLACK_WEBHOOK_URL": "${SLACK_WEBHOOK_URL}"
+      },
+      "_note": "Custom webhook-based Slack MCP for simple notifications"
+    }
+  }
+}

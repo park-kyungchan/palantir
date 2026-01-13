@@ -1,0 +1,150 @@
+{
+  "title": "HWPX Reconstruction Pipeline",
+  "summary": "A high-fidelity document conversion and automation suite for Hancom Office 2024. Features an advanced 'Digital Twin' (SVDOM) paradigm. As of January 2026, the 10-phase implementation track is complete, covering HwpUnit precision, complex table merging, BinData management, scientific equation conversion, dynamic typography, page layout, and advanced table formatting (borders, fills, and cursor-based state machine).",
+  "references": [
+    {
+      "type": "conversation_id",
+      "value": "bot-1d2ca5bd-c5c8-4d64-99fe-fcb55d772fa8"
+    },
+    {
+      "type": "conversation_id",
+      "value": "41c96e30-0a27-4240-bb3d-a41e0e1ecccb"
+    },
+    {
+      "type": "conversation_id",
+      "value": "82420427-142c-497d-a1c2-c67d121c0397"
+    },
+    {
+      "type": "conversation_id",
+      "value": "6d46c662-c780-465d-a4cb-e612c9e2105f"
+    },
+    {
+      "type": "conversation_id",
+      "value": "bot-9a70e906-2085-42f9-ae5a-3bddfe7e4d35"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/park-kyungchan/hwpx-automation"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/airmang/python-hwpx"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/ingestors/docling_ingestor.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/ingestors/mathpix_ingestor.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/parsers/markdown_parser.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/compiler.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/builder.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/generator.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/document_builder.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/equation_converter.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/header_manager.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/generators/pdf_generator.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/json_to_hwpx.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/test_owpml.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/schemas/udm_schema.json"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/templates/math_workbook.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/models.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/convert_pipeline.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/docs/hwpx_progrmmatic.md"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/docs/ks-x-6101-owpml.md"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/units.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/unit/test_units.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/fix_builder.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_styles.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/inspect_skeleton_secpr.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/append_page_setup.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_pagesetup.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/inspect_skeleton_borderfill.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/update_builder_phase10.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_table_formatting.py"
+    },
+    {
+      "type": "conversation_id",
+      "value": "0b074a98-fcd1-4091-8848-18eaf396f7f2"
+    }
+  ]
+}

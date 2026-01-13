@@ -1,0 +1,116 @@
+---
+name: memory
+description: Manage semantic memory - inject Insights and Patterns into LTM
+---
+
+# /memory Command
+
+$ARGUMENTS
+
+시맨틱 메모리(Insights, Patterns) 관리 명령어입니다.
+
+---
+
+## 사용법
+
+```
+/memory list              # 저장된 메모리 목록
+/memory add insight       # 새 Insight 추가
+/memory add pattern       # 새 Pattern 추가
+/memory export            # 스키마 내보내기
+```
+
+---
+
+## 메모리 구조
+
+```
+.agent/memory/semantic/
+├── insights/             # 장기 기억 인사이트
+│   └── *.json
+├── patterns/             # 재사용 가능한 패턴
+│   └── *.json
+└──
+```
+
+---
+
+## Insight 스키마
+
+```json
+{
+  "id": "unique-id",
+  "title": "Insight Title",
+  "content": "Detailed insight description",
+  "source": "Where this came from",
+  "tags": ["tag1", "tag2"],
+  "created_at": "2026-01-10T00:00:00Z",
+  "relevance_score": 0.95
+}
+```
+
+---
+
+## Pattern 스키마
+
+```json
+{
+  "id": "unique-id",
+  "name": "Pattern Name",
+  "description": "What this pattern does",
+  "template": "Pattern template or code",
+  "use_cases": ["when to use"],
+  "examples": ["example usage"],
+  "created_at": "2026-01-10T00:00:00Z"
+}
+```
+
+---
+
+## 실행
+
+### 메모리 디렉토리 초기화
+```bash
+mkdir -p /home/palantir/park-kyungchan/palantir/.agent/memory/semantic/insights
+mkdir -p /home/palantir/park-kyungchan/palantir/.agent/memory/semantic/patterns
+mkdir -p /home/palantir/park-kyungchan/palantir/.agent/schemas
+```
+
+### 스키마 내보내기
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+python -c "
+import json
+from pathlib import Path
+from scripts.ontology.schemas.memory import OrionInsight, OrionPattern
+
+out_dir = Path('.agent/schemas')
+out_dir.mkdir(parents=True, exist_ok=True)
+
+(out_dir / 'insight.schema.json').write_text(
+    json.dumps(OrionInsight.model_json_schema(), indent=2)
+)
+(out_dir / 'pattern.schema.json').write_text(
+    json.dumps(OrionPattern.model_json_schema(), indent=2)
+)
+print('Schemas exported to .agent/schemas/')
+"
+```
+
+---
+
+## 예시: Insight 추가
+
+```json
+// .agent/memory/semantic/insights/audit_finding_20260110.json
+{
+  "id": "audit_finding_20260110",
+  "title": "Import Path Validation Critical",
+  "content": "Always verify import paths exist before referencing in code",
+  "source": "deep-audit session 2026-01-10",
+  "tags": ["audit", "imports", "validation"],
+  "created_at": "2026-01-10T00:00:00Z",
+  "relevance_score": 0.9
+}
+```

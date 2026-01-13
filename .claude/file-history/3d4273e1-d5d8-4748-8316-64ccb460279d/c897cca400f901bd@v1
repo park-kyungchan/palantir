@@ -1,0 +1,658 @@
+# LLM-Native Intent Classification Implementation Plan
+
+> **Version:** 1.0 | **Status:** READY FOR IMPLEMENTATION | **Date:** 2026-01-12
+> **Auto-Compact Safe:** This file persists across context compaction
+> **Method:** Dual-path audit synthesis (PAI TypeScript + ODA Python)
+
+---
+
+## Executive Summary
+
+| Item | Value |
+|------|-------|
+| **Goal** | Replace keyword-based intent detection with LLM-native semantic understanding |
+| **Complexity** | Large (5 phases, 47 tasks) |
+| **Files to Create** | 12 |
+| **Files to Modify** | 8 |
+| **Priority** | P0 (STAGE1 Architectural Foundation) |
+| **Benefits** | Paraphrase handling, typo tolerance, semantic synonyms, explainable routing |
+
+---
+
+## Problem Statement
+
+### Current State (Keyword-Based Detection)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│              CURRENT TRIGGER DETECTION (Brittle)                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User Input: "Please review my code changes"                        │
+│                                                                     │
+│  Phase 1: Exact Keyword → keywords=["commit", "git commit"]         │
+│           Result: NO MATCH ❌                                        │
+│                                                                     │
+│  Phase 2: Regex Pattern → patterns=[r"^/commit\s*$"]                │
+│           Result: NO MATCH ❌                                        │
+│                                                                     │
+│  Phase 3: Context Jaccard → context=["code", "review"]              │
+│           intersection={"code"} → 1/7 = 0.14 < 0.7                  │
+│           Result: NO MATCH ❌                                        │
+│                                                                     │
+│  Phase 4: Default Fallback → general skill                          │
+│           Result: POOR ROUTING ⚠️                                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+PROBLEM: User intent is "code review" but keyword matching fails
+```
+
+### Target State (LLM-Native)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│              TARGET INTENT CLASSIFICATION (Semantic)                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User Input: "Please review my code changes"                        │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ LLM Intent Classification                                    │  │
+│  │                                                              │  │
+│  │ System: "Classify this request into skill intents..."       │  │
+│  │ Available skills: [code_review, commit, analyze, ...]       │  │
+│  │                                                              │  │
+│  │ LLM Output:                                                  │  │
+│  │   skill: "code_review"                                       │  │
+│  │   confidence: 0.94                                           │  │
+│  │   reasoning: "User wants code analysis/feedback"             │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  Result: CORRECT ROUTING ✓ with explanation                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Architecture Comparison
+
+### Before: 4-Phase Keyword Detection
+
+| Phase | Method | Confidence | Limitations |
+|-------|--------|------------|-------------|
+| 1 | Exact Keyword | 1.0 | No synonyms, typo-sensitive |
+| 2 | Regex Pattern | 0.9 | Maintenance burden, fragile |
+| 3 | Jaccard Overlap | 0.0-1.0 | No semantic understanding |
+| 4 | Default Fallback | 0.5 | Poor routing |
+
+### After: 2-Phase LLM-Native
+
+| Phase | Method | Confidence | Benefits |
+|-------|--------|------------|----------|
+| 1 | LLM Intent Classification | 0.0-1.0 | Semantic, explainable, adapts |
+| 2 | Embedding Similarity | 0.0-1.0 | Handles novel inputs gracefully |
+
+---
+
+## Phase Overview
+
+| Phase | Name | Tasks | Dependency | Priority |
+|-------|------|-------|------------|----------|
+| 1 | LLM Adapter Layer | 8 | None | P0 |
+| 2 | Intent Classifier | 12 | Phase 1 | P0 |
+| 3 | Semantic Skill Routing | 10 | Phase 2 | P0 |
+| 4 | Agent Composition | 9 | Phase 2 | P1 |
+| 5 | Integration & Testing | 8 | All | P2 |
+
+---
+
+## Phase 1: LLM Adapter Layer (8 tasks)
+
+> **Goal:** Create LLM-agnostic abstraction for intent classification
+
+### 1.1 Create LLMAdapter Base Interface
+- **File:** `lib/oda/llm/intent_adapter.py` (NEW)
+- **Purpose:** Abstract interface for LLM calls
+- **Contents:**
+  ```python
+  class IntentAdapterBase(ABC):
+      @abstractmethod
+      async def classify_intent(
+          self,
+          user_input: str,
+          available_skills: List[SkillDefinition],
+          context: Optional[Dict[str, Any]] = None
+      ) -> IntentClassification: ...
+
+      @abstractmethod
+      async def get_embedding(self, text: str) -> List[float]: ...
+  ```
+- **Status:** [ ] PENDING
+
+### 1.2 Create ClaudeIntentAdapter
+- **File:** `lib/oda/llm/adapters/claude_adapter.py` (NEW)
+- **Purpose:** Claude-specific implementation using Anthropic API
+- **Features:**
+  - Extended thinking for complex intents
+  - Tool use for structured output
+  - Native JSON mode
+- **Status:** [ ] PENDING
+
+### 1.3 Create OpenAIIntentAdapter
+- **File:** `lib/oda/llm/adapters/openai_adapter.py` (NEW)
+- **Purpose:** GPT-4 implementation using OpenAI API
+- **Features:**
+  - Function calling for structured output
+  - JSON mode
+- **Status:** [ ] PENDING
+
+### 1.4 Create GeminiIntentAdapter
+- **File:** `lib/oda/llm/adapters/gemini_adapter.py` (NEW)
+- **Purpose:** Gemini implementation using Google AI API
+- **Features:**
+  - Multimodal support for image-based inputs
+- **Status:** [ ] PENDING
+
+### 1.5 Create LocalLLMAdapter (Optional)
+- **File:** `lib/oda/llm/adapters/local_adapter.py` (NEW)
+- **Purpose:** Ollama/LM Studio support for offline use
+- **Status:** [ ] PENDING
+
+### 1.6 Create IntentClassification ObjectType
+- **File:** `lib/oda/ontology/objects/intent_types.py` (NEW)
+- **Contents:**
+  ```python
+  @register_object_type
+  class IntentClassification(OntologyObject):
+      skill_name: str
+      confidence: float  # 0.0-1.0
+      reasoning: str     # Explainable AI
+      alternatives: List[Dict[str, float]]  # Other possible matches
+      match_type: IntentMatchType  # semantic, fallback, explicit
+  ```
+- **Status:** [ ] PENDING
+
+### 1.7 Create EmbeddingCache
+- **File:** `lib/oda/llm/embedding_cache.py` (NEW)
+- **Purpose:** Cache skill embeddings to avoid repeated API calls
+- **Storage:** SQLite in `.agent/tmp/embedding_cache.db`
+- **Status:** [ ] PENDING
+
+### 1.8 Register Adapters in Factory
+- **File:** `lib/oda/llm/__init__.py` (MODIFY)
+- **Change:** Add adapter factory pattern
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 2: Intent Classifier Module (12 tasks)
+
+> **Goal:** Replace TriggerDetector with LLM-Native IntentClassifier
+
+### 2.1 Create IntentClassifier Core
+- **File:** `lib/oda/pai/skills/intent_classifier.py` (NEW)
+- **Purpose:** Main entry point replacing TriggerDetector
+- **Key Method:**
+  ```python
+  async def classify(
+      self,
+      user_input: str,
+      context: Optional[ClassificationContext] = None
+  ) -> IntentClassification:
+      """
+      2-phase classification:
+      1. LLM Intent Matching (primary)
+      2. Embedding Similarity (fallback)
+      """
+  ```
+- **Status:** [ ] PENDING
+
+### 2.2 Create Few-Shot Prompt Templates
+- **File:** `lib/oda/pai/skills/prompts/intent_prompts.py` (NEW)
+- **Contents:**
+  ```python
+  INTENT_CLASSIFICATION_PROMPT = """
+  You are an intent classifier for a development assistant.
+
+  Available skills:
+  {skill_descriptions}
+
+  User request: "{user_input}"
+
+  Classify this request:
+  1. Which skill best matches the user's intent?
+  2. How confident are you (0.0-1.0)?
+  3. Explain your reasoning in one sentence.
+
+  Output JSON:
+  {"skill": "...", "confidence": 0.0, "reasoning": "..."}
+  """
+  ```
+- **Status:** [ ] PENDING
+
+### 2.3 Create SkillDescription Generator
+- **File:** `lib/oda/pai/skills/skill_describer.py` (NEW)
+- **Purpose:** Generate semantic descriptions from SkillDefinition
+- **Input:** SkillDefinition with keywords, patterns, context_match
+- **Output:** ~100 token semantic summary for LLM context
+- **Status:** [ ] PENDING
+
+### 2.4 Create Classification Context
+- **File:** `lib/oda/pai/skills/classification_context.py` (NEW)
+- **Contents:**
+  ```python
+  @dataclass
+  class ClassificationContext:
+      conversation_history: List[str] = field(default_factory=list)
+      current_file: Optional[str] = None
+      project_type: Optional[str] = None
+      user_preferences: Dict[str, Any] = field(default_factory=dict)
+      previous_skills: List[str] = field(default_factory=list)
+  ```
+- **Status:** [ ] PENDING
+
+### 2.5 Implement Phase 1: LLM Intent Matching
+- **File:** `lib/oda/pai/skills/intent_classifier.py`
+- **Method:** `_classify_with_llm()`
+- **Flow:**
+  1. Build prompt with skill descriptions
+  2. Call LLM adapter
+  3. Parse structured output
+  4. Validate confidence threshold
+- **Status:** [ ] PENDING
+
+### 2.6 Implement Phase 2: Embedding Similarity Fallback
+- **File:** `lib/oda/pai/skills/intent_classifier.py`
+- **Method:** `_classify_with_embeddings()`
+- **Flow:**
+  1. Get user input embedding
+  2. Compare against cached skill embeddings
+  3. Cosine similarity ranking
+  4. Return top match with confidence
+- **Status:** [ ] PENDING
+
+### 2.7 Create IntentClassifierConfig
+- **File:** `lib/oda/pai/skills/intent_classifier.py`
+- **Contents:**
+  ```python
+  @dataclass
+  class IntentClassifierConfig:
+      llm_confidence_threshold: float = 0.7  # Below this, use embeddings
+      embedding_confidence_threshold: float = 0.5  # Below this, fallback
+      max_skills_in_prompt: int = 20  # Limit context size
+      enable_explanation: bool = True  # Include reasoning
+      cache_ttl_hours: int = 24  # Embedding cache duration
+      adapter_type: str = "claude"  # claude, openai, gemini, local
+  ```
+- **Status:** [ ] PENDING
+
+### 2.8 Create Backward Compatibility Layer
+- **File:** `lib/oda/pai/skills/trigger_detector.py` (MODIFY)
+- **Change:** Add `use_llm_classification` flag
+- **Behavior:**
+  - If `use_llm_classification=True`: Delegate to IntentClassifier
+  - If `use_llm_classification=False`: Use existing keyword detection
+- **Status:** [ ] PENDING
+
+### 2.9 Create IntentMatch to TriggerMatch Converter
+- **File:** `lib/oda/pai/skills/intent_classifier.py`
+- **Purpose:** Convert IntentClassification to TriggerMatch for compatibility
+- **Status:** [ ] PENDING
+
+### 2.10 Add Multi-Intent Support
+- **File:** `lib/oda/pai/skills/intent_classifier.py`
+- **Method:** `classify_multi()`
+- **Purpose:** Return ranked list of matching skills
+- **Use Case:** "Write and commit these changes" → [write, commit]
+- **Status:** [ ] PENDING
+
+### 2.11 Create Intent Telemetry
+- **File:** `lib/oda/pai/skills/intent_telemetry.py` (NEW)
+- **Purpose:** Log classification decisions for improvement
+- **Data:** Input, output, confidence, latency, LLM tokens used
+- **Storage:** `.agent/telemetry/intent_classifications.jsonl`
+- **Status:** [ ] PENDING
+
+### 2.12 Create Confidence Calibration
+- **File:** `lib/oda/pai/skills/confidence_calibrator.py` (NEW)
+- **Purpose:** Adjust confidence scores based on historical accuracy
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 3: Semantic Skill Routing (10 tasks)
+
+> **Goal:** Update SkillRouter to use IntentClassifier
+
+### 3.1 Update SkillRouter Integration
+- **File:** `lib/oda/pai/skills/router.py` (MODIFY)
+- **Change:** Replace `_detector.detect()` with `_classifier.classify()`
+- **Status:** [ ] PENDING
+
+### 3.2 Create SemanticRouteResult
+- **File:** `lib/oda/pai/skills/router.py` (MODIFY)
+- **Contents:**
+  ```python
+  @dataclass
+  class SemanticRouteResult:
+      skill: Optional[SkillDefinition]
+      intent: IntentClassification
+      alternatives: List[Tuple[SkillDefinition, float]]
+      requires_clarification: bool  # Low confidence
+  ```
+- **Status:** [ ] PENDING
+
+### 3.3 Add Clarification Flow
+- **File:** `lib/oda/pai/skills/router.py` (MODIFY)
+- **Change:** If confidence < threshold, use AskUserQuestion
+- **Prompt:** "Did you mean X or Y?"
+- **Status:** [ ] PENDING
+
+### 3.4 Create Skill Embedding Index
+- **File:** `lib/oda/pai/skills/skill_index.py` (NEW)
+- **Purpose:** Pre-compute and store skill embeddings at registration
+- **Trigger:** On `SkillRouter.register()` or `SkillRouter.rebuild_index()`
+- **Status:** [ ] PENDING
+
+### 3.5 Implement Dynamic Skill Discovery
+- **File:** `lib/oda/pai/skills/skill_discovery.py` (NEW)
+- **Purpose:** Auto-discover skills from `.claude/skills/` directory
+- **Status:** [ ] PENDING
+
+### 3.6 Update Workflow Execution
+- **File:** `lib/oda/pai/skills/workflow.py` (MODIFY)
+- **Change:** Pass IntentClassification to workflow for context
+- **Status:** [ ] PENDING
+
+### 3.7 Create Routing Metrics
+- **File:** `lib/oda/pai/skills/routing_metrics.py` (NEW)
+- **Purpose:** Track routing accuracy, latency, fallback rate
+- **Status:** [ ] PENDING
+
+### 3.8 Update Skills __init__.py
+- **File:** `lib/oda/pai/skills/__init__.py` (MODIFY)
+- **Change:** Export new IntentClassifier classes
+- **Status:** [ ] PENDING
+
+### 3.9 Create Migration Script
+- **File:** `scripts/migrate_keywords_to_semantic.py` (NEW)
+- **Purpose:** Convert existing SkillTrigger keywords to semantic descriptions
+- **Status:** [ ] PENDING
+
+### 3.10 Update Skill Registration API
+- **File:** `lib/oda/pai/skills/router.py` (MODIFY)
+- **Change:** Add `semantic_description` to SkillDefinition
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 4: Agent Composition Enhancement (9 tasks)
+
+> **Goal:** LLM-based trait inference replacing keyword matching
+
+### 4.1 Create TraitInferencer
+- **File:** `lib/oda/pai/traits/trait_inferencer.py` (NEW)
+- **Purpose:** LLM-based trait selection from task description
+- **Input:** Task description
+- **Output:** List of recommended traits with reasoning
+- **Status:** [ ] PENDING
+
+### 4.2 Create Trait Prompt Template
+- **File:** `lib/oda/pai/traits/prompts/trait_prompts.py` (NEW)
+- **Contents:**
+  ```python
+  TRAIT_INFERENCE_PROMPT = """
+  Given this task: "{task}"
+
+  Select 2-4 traits from each category:
+
+  Expertise: {expertise_options}
+  Personality: {personality_options}
+  Approach: {approach_options}
+
+  Output JSON with reasoning.
+  """
+  ```
+- **Status:** [ ] PENDING
+
+### 4.3 Update AgentFactory
+- **File:** `lib/oda/pai/traits/agent_factory.py` (NEW, migrate from PAI)
+- **Change:** Replace keyword inference with TraitInferencer
+- **Status:** [ ] PENDING
+
+### 4.4 Create Voice Selector
+- **File:** `lib/oda/pai/traits/voice_selector.py` (NEW)
+- **Purpose:** LLM-based voice selection from traits
+- **Status:** [ ] PENDING
+
+### 4.5 Update Named Agents
+- **File:** `lib/oda/pai/traits/named_agents.py` (MODIFY)
+- **Change:** Add semantic trait descriptions
+- **Status:** [ ] PENDING
+
+### 4.6 Create Agent Composition Telemetry
+- **File:** `lib/oda/pai/traits/composition_telemetry.py` (NEW)
+- **Purpose:** Track trait selections and user feedback
+- **Status:** [ ] PENDING
+
+### 4.7 Update Traits __init__.py
+- **File:** `lib/oda/pai/traits/__init__.py` (MODIFY)
+- **Change:** Export new inferencer classes
+- **Status:** [ ] PENDING
+
+### 4.8 Create Trait Embedding Index
+- **File:** `lib/oda/pai/traits/trait_index.py` (NEW)
+- **Purpose:** Embed trait descriptions for similarity matching
+- **Status:** [ ] PENDING
+
+### 4.9 Implement Trait Learning
+- **File:** `lib/oda/pai/traits/trait_learner.py` (NEW)
+- **Purpose:** Learn user preferences over time
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 5: Integration & Testing (8 tasks)
+
+> **Goal:** Complete integration and verification
+
+### 5.1 Create Unit Tests for IntentClassifier
+- **File:** `tests/oda/pai/skills/test_intent_classifier.py` (NEW)
+- **Coverage:**
+  - LLM classification
+  - Embedding fallback
+  - Multi-intent
+  - Low confidence handling
+- **Status:** [ ] PENDING
+
+### 5.2 Create Integration Tests for Router
+- **File:** `tests/oda/pai/skills/test_semantic_router.py` (NEW)
+- **Coverage:**
+  - Full routing flow
+  - Clarification flow
+  - Backward compatibility
+- **Status:** [ ] PENDING
+
+### 5.3 Create E2E Benchmark
+- **File:** `tests/benchmarks/intent_classification_benchmark.py` (NEW)
+- **Purpose:** Compare keyword vs semantic accuracy
+- **Dataset:** 100 sample user inputs with expected skills
+- **Status:** [ ] PENDING
+
+### 5.4 Update CLAUDE.md Documentation
+- **File:** `/home/palantir/.claude/CLAUDE.md` (MODIFY)
+- **Change:** Add LLM-Native Intent Classification section
+- **Status:** [ ] PENDING
+
+### 5.5 Create Reference Documentation
+- **File:** `.claude/references/intent-classification.md` (NEW)
+- **Content:** Full architecture documentation
+- **Status:** [ ] PENDING
+
+### 5.6 Update PAI Integration Reference
+- **File:** `.claude/references/pai-integration.md` (MODIFY)
+- **Change:** Document new IntentClassifier
+- **Status:** [ ] PENDING
+
+### 5.7 Run Full Quality Check
+- **Command:** `/quality-check`
+- **Status:** [ ] PENDING
+
+### 5.8 Create Migration Guide
+- **File:** `.claude/references/intent-migration-guide.md` (NEW)
+- **Content:** How to migrate from keyword to semantic detection
+- **Status:** [ ] PENDING
+
+---
+
+## Progress Tracking
+
+| Phase | Tasks | Completed | Status |
+|-------|-------|-----------|--------|
+| 1 | 8 | 0 | 0% |
+| 2 | 12 | 0 | 0% |
+| 3 | 10 | 0 | 0% |
+| 4 | 9 | 0 | 0% |
+| 5 | 8 | 0 | 0% |
+| **Total** | **47** | **0** | **0%** |
+
+---
+
+## Execution Strategy
+
+### Parallel Execution Groups
+
+**Group A (Independent - can run in parallel):**
+- Phase 1.1-1.8: LLM Adapter Layer (general-purpose subagent)
+- Phase 4.1-4.2: Trait Prompt Templates (general-purpose subagent)
+
+**Group B (Sequential - depends on Group A):**
+- Phase 2.1-2.12: Intent Classifier (depends on Phase 1)
+- Phase 4.3-4.9: Agent Composition (depends on Phase 4.1-4.2)
+
+**Group C (Sequential - depends on Group B):**
+- Phase 3.1-3.10: Semantic Skill Routing (depends on Phase 2)
+
+**Group D (Integration - depends on all):**
+- Phase 5.1-5.8: Integration & Testing
+
+### Subagent Delegation
+
+| Task Group | Subagent Type | Context | Token Budget |
+|------------|---------------|---------|--------------|
+| Phase 1 | general-purpose | fork | 15K |
+| Phase 2.1-2.6 | general-purpose | fork | 15K |
+| Phase 2.7-2.12 | general-purpose | fork | 10K |
+| Phase 3 | Plan | fork | 10K |
+| Phase 4 | general-purpose | fork | 10K |
+| Phase 5 | general-purpose | fork | 15K |
+
+---
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. Read this file: `.agent/plans/llm_native_intent_classification.md`
+2. Check TodoWrite for current task status
+3. Find first PENDING task in sequence
+4. Use subagent delegation pattern from "Execution Strategy" section
+
+---
+
+## Critical File Paths
+
+```yaml
+# Files to create (12)
+create:
+  - lib/oda/llm/intent_adapter.py
+  - lib/oda/llm/adapters/claude_adapter.py
+  - lib/oda/llm/adapters/openai_adapter.py
+  - lib/oda/llm/adapters/gemini_adapter.py
+  - lib/oda/llm/embedding_cache.py
+  - lib/oda/ontology/objects/intent_types.py
+  - lib/oda/pai/skills/intent_classifier.py
+  - lib/oda/pai/skills/prompts/intent_prompts.py
+  - lib/oda/pai/skills/skill_describer.py
+  - lib/oda/pai/skills/classification_context.py
+  - lib/oda/pai/traits/trait_inferencer.py
+  - .claude/references/intent-classification.md
+
+# Files to modify (8)
+modify:
+  - lib/oda/llm/__init__.py
+  - lib/oda/pai/skills/trigger_detector.py
+  - lib/oda/pai/skills/router.py
+  - lib/oda/pai/skills/workflow.py
+  - lib/oda/pai/skills/__init__.py
+  - lib/oda/pai/traits/named_agents.py
+  - lib/oda/pai/traits/__init__.py
+  - /home/palantir/.claude/CLAUDE.md
+
+# Reference files
+reference:
+  - lib/oda/pai/skills/skill_definition.py
+  - lib/oda/pai/traits/trait_composition.py
+  - .claude/references/pai-integration.md
+```
+
+---
+
+## Risk Register
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| LLM API latency increases response time | HIGH | Embedding cache, confidence threshold to skip LLM |
+| LLM costs for every classification | HIGH | Batch classifications, confidence threshold |
+| Embedding cache invalidation | MEDIUM | TTL-based expiry, version hashing |
+| Multi-LLM adapter complexity | MEDIUM | Strict interface contract, adapter tests |
+| Backward compatibility breaks | HIGH | Feature flag, gradual rollout |
+| Context compaction loses state | HIGH | This plan file + TodoWrite persistence |
+
+---
+
+## Comparison: Before vs After
+
+### User Input: "Please review my code changes"
+
+**Before (Keyword Detection):**
+```yaml
+Phase 1 (Exact): NO MATCH
+Phase 2 (Regex): NO MATCH
+Phase 3 (Jaccard): {"code"} / 7 words = 0.14 < 0.7 → NO MATCH
+Phase 4 (Default): general_skill (confidence: 0.5)
+Result: Poor routing to generic skill
+```
+
+**After (LLM-Native):**
+```yaml
+Phase 1 (LLM Classification):
+  Input: "Please review my code changes"
+  Available skills: [code_review, commit, analyze, ...]
+
+  LLM Output:
+    skill: "code_review"
+    confidence: 0.94
+    reasoning: "User wants feedback on code modifications"
+
+Result: Correct routing with explanation
+```
+
+---
+
+## Approval Gate
+
+- [ ] ODA governance passed (no blocked patterns)
+- [ ] Architecture reviewed (follows existing patterns)
+- [ ] User approved
+
+---
+
+> **Generated:** 2026-01-12 by Main Agent Orchestrator
+> **Method:** Synthesis from 3 parallel subagents:
+>   - PAI Directory Audit (TypeScript patterns)
+>   - ODA TriggerDetector Audit (Python implementation)
+>   - Architecture Planning (Plan subagent)
+> **Context:** User requirement for LLM-Native Intent Classification to respect each LLM's unique capabilities

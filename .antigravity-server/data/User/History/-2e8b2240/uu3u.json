@@ -1,0 +1,222 @@
+{
+  "title": "HWPX Reconstruction Pipeline",
+  "summary": "A high-fidelity document conversion suite for Hancom Office 2024. Features an advanced 'Digital Twin' (SVDOM) paradigm and Native OWPML generation. As of January 2026, the pipeline supports a tiered ingestion strategy (Docling, Mathpix, PyMuPDF) with 100% SPEC COMPLIANCE. Includes centralized AI model management (pre-downloading) and structural ZIP normalization for enterprise stability. Legacy HAction/Windows automation is officially deprecated.",
+  "references": [
+    {
+      "type": "conversation_id",
+      "value": "bot-1d2ca5bd-c5c8-4d64-99fe-fcb55d772fa8"
+    },
+    {
+      "type": "conversation_id",
+      "value": "41c96e30-0a27-4240-bb3d-a41e0e1ecccb"
+    },
+    {
+      "type": "conversation_id",
+      "value": "82420427-142c-497d-a1c2-c67d121c0397"
+    },
+    {
+      "type": "conversation_id",
+      "value": "6d46c662-c780-465d-a4cb-e612c9e2105f"
+    },
+    {
+      "type": "conversation_id",
+      "value": "bot-9a70e906-2085-42f9-ae5a-3bddfe7e4d35"
+    },
+    {
+      "type": "conversation_id",
+      "value": "801cf9be-8b15-4ba5-83b8-23424a60951b"
+    },
+    {
+      "type": "conversation_id",
+      "value": "90e09041-3b56-4b10-86d7-fc9ae5a5351b"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/park-kyungchan/hwpx-automation"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/airmang/python-hwpx"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/hancom-io/hwpx-owpml-model"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/mete0r/pyhwp"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/ingestors/docling_ingestor.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/ingestors/mathpix_ingestor.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/parsers/markdown_parser.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/compiler.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/builder.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/generator.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/document_builder.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/equation_converter.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/header_manager.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/generators/pdf_generator.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/json_to_hwpx.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/test_owpml.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/schemas/udm_schema.json"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/templates/math_workbook.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/models.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/convert_pipeline.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/docs/hwpx_progrmmatic.md"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/docs/OWPML_HWPX_technical_reference_for_AI_agent_framework.md"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/docs/ks-x-6101-owpml.md"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/units.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/owpml/package_normalizer.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/unit/test_units.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/fix_builder.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_styles.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/inspect_skeleton_secpr.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/append_page_setup.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_pagesetup.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/inspect_skeleton_borderfill.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/scripts/update_builder_phase10.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_table_formatting.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_nested_tables.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_controls.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/tests/manual_verify_lists.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/main.py"
+    },
+    {
+      "type": "file",
+      "value": "/home/palantir/hwpx/lib/pipeline.py"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/Wonsang222/hwpxParser"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/neolord0/hwpxlib"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/Joonmo-Ahn/hangle-parser"
+    },
+    {
+      "type": "url",
+      "value": "https://github.com/hione0413/hwp-parser"
+    },
+    {
+      "type": "conversation_id",
+      "value": "90e09041-3b56-4b10-86d7-fc9ae5a5351b"
+    },
+    {
+      "type": "conversation_id",
+      "value": "a1f70f95-0151-4061-8906-224e7d6c2996"
+    },
+    {
+      "type": "conversation_id",
+      "value": "bot-a396263b-010e-4734-9788-b7c1cdb210c4"
+    },
+    {
+      "type": "conversation_id",
+      "value": "bot-6085c4df-6908-432e-86d5-624c117b1304"
+    }
+  ]
+}

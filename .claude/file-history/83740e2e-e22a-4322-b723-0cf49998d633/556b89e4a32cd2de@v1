@@ -1,0 +1,389 @@
+"""
+Claude Code Protocol Runner
+
+Executes 3-Stage Protocols using Claude Code native tools (TodoWrite, Subagents).
+Bridges ODA protocol framework with Claude Code CLI capabilities.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+from scripts.claude.evidence_tracker import EvidenceTracker, AntiHallucinationError
+from scripts.claude.todo_sync import TodoTaskSync, TodoStatus
+
+
+class ProtocolStage(str, Enum):
+    """3-Stage Protocol stages."""
+    A_SCAN = "A_SCAN"
+    B_TRACE = "B_TRACE"
+    C_VERIFY = "C_VERIFY"
+
+
+@dataclass
+class StageConfig:
+    """Configuration for a protocol stage."""
+    name: str
+    description: str
+    min_files: int
+    min_line_refs: int
+    min_snippets: int
+    todo_content: str
+    todo_active_form: str
+
+
+# Default stage configurations
+STAGE_CONFIGS: Dict[ProtocolStage, StageConfig] = {
+    ProtocolStage.A_SCAN: StageConfig(
+        name="SCAN",
+        description="Surface analysis - map the landscape",
+        min_files=3,
+        min_line_refs=0,
+        min_snippets=0,
+        todo_content="Stage A: SCAN (Surface Analysis)",
+        todo_active_form="Stage A: SCAN 진행 중",
+    ),
+    ProtocolStage.B_TRACE: StageConfig(
+        name="TRACE",
+        description="Logic analysis - trace data flow and dependencies",
+        min_files=5,
+        min_line_refs=10,
+        min_snippets=0,
+        todo_content="Stage B: TRACE (Logic Analysis)",
+        todo_active_form="Stage B: TRACE 진행 중",
+    ),
+    ProtocolStage.C_VERIFY: StageConfig(
+        name="VERIFY",
+        description="Quality gate - validate and approve",
+        min_files=5,
+        min_line_refs=15,
+        min_snippets=3,
+        todo_content="Stage C: VERIFY (Quality Gate)",
+        todo_active_form="Stage C: VERIFY 진행 중",
+    ),
+}
+
+
+@dataclass
+class StageResult:
+    """Result of executing a protocol stage."""
+    stage: ProtocolStage
+    passed: bool
+    timestamp: str
+    evidence: Dict[str, Any]
+    findings: List[Dict[str, Any]] = field(default_factory=list)
+    message: str = ""
+    error: Optional[str] = None
+
+
+@dataclass
+class ProtocolResult:
+    """Result of executing the full protocol."""
+    protocol_name: str
+    stages: List[StageResult]
+    passed: bool
+    started_at: str
+    completed_at: str
+    evidence: Dict[str, Any]
+
+    @property
+    def duration_seconds(self) -> float:
+        """Calculate duration in seconds."""
+        start = datetime.fromisoformat(self.started_at)
+        end = datetime.fromisoformat(self.completed_at)
+        return (end - start).total_seconds()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Export as dictionary."""
+        return {
+            "protocol_name": self.protocol_name,
+            "passed": self.passed,
+            "started_at": self.started_at,
+            "completed_at": self.completed_at,
+            "duration_seconds": self.duration_seconds,
+            "stages": [
+                {
+                    "stage": s.stage.value,
+                    "passed": s.passed,
+                    "message": s.message,
+                    "findings_count": len(s.findings),
+                }
+                for s in self.stages
+            ],
+            "evidence": self.evidence,
+        }
+
+
+class ClaudeProtocolRunner:
+    """
+    Runs 3-Stage Protocols with Claude Code integration.
+
+    Features:
+    - TodoWrite integration for stage tracking
+    - Evidence collection with anti-hallucination validation
+    - Subagent delegation support
+    - Task synchronization with ODA
+
+    Usage:
+        runner = ClaudeProtocolRunner(
+            protocol_name="audit",
+            target_path="scripts/ontology/",
+        )
+
+        # Register stage handlers
+        runner.register_stage_handler(ProtocolStage.A_SCAN, scan_handler)
+        runner.register_stage_handler(ProtocolStage.B_TRACE, trace_handler)
+        runner.register_stage_handler(ProtocolStage.C_VERIFY, verify_handler)
+
+        # Execute protocol
+        result = await runner.execute()
+    """
+
+    def __init__(
+        self,
+        protocol_name: str,
+        target_path: str,
+        session_id: Optional[str] = None,
+        actor_id: str = "claude_code_agent",
+    ):
+        self.protocol_name = protocol_name
+        self.target_path = Path(target_path)
+        self.session_id = session_id or f"{protocol_name}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        self.actor_id = actor_id
+
+        # Components
+        self.evidence_tracker = EvidenceTracker(
+            session_id=self.session_id,
+            actor_id=actor_id,
+        )
+        self.todo_sync = TodoTaskSync()
+
+        # Stage handlers
+        self._stage_handlers: Dict[ProtocolStage, Callable] = {}
+
+        # Results
+        self._stage_results: List[StageResult] = []
+        self._started_at: Optional[str] = None
+
+    def register_stage_handler(
+        self,
+        stage: ProtocolStage,
+        handler: Callable,
+    ) -> None:
+        """
+        Register a handler function for a protocol stage.
+
+        Args:
+            stage: Protocol stage
+            handler: Async function that executes the stage
+                     Signature: async def handler(context: Dict) -> Dict[str, Any]
+        """
+        self._stage_handlers[stage] = handler
+
+    async def execute(self) -> ProtocolResult:
+        """
+        Execute the full 3-Stage Protocol.
+
+        Returns:
+            ProtocolResult with all stage results
+        """
+        self._started_at = datetime.utcnow().isoformat()
+
+        # Create initial todos for all stages
+        todos = [
+            {
+                "content": config.todo_content,
+                "status": "pending",
+                "activeForm": config.todo_active_form,
+            }
+            for config in STAGE_CONFIGS.values()
+        ]
+
+        # Execute stages sequentially
+        all_passed = True
+        for stage in ProtocolStage:
+            result = await self._execute_stage(stage)
+            self._stage_results.append(result)
+
+            if not result.passed:
+                all_passed = False
+                break  # Stop on first failure
+
+        completed_at = datetime.utcnow().isoformat()
+
+        return ProtocolResult(
+            protocol_name=self.protocol_name,
+            stages=self._stage_results,
+            passed=all_passed,
+            started_at=self._started_at,
+            completed_at=completed_at,
+            evidence=self.evidence_tracker.export(),
+        )
+
+    async def _execute_stage(self, stage: ProtocolStage) -> StageResult:
+        """Execute a single protocol stage."""
+        config = STAGE_CONFIGS[stage]
+        timestamp = datetime.utcnow().isoformat()
+
+        try:
+            # Get handler
+            handler = self._stage_handlers.get(stage)
+
+            if handler:
+                # Execute custom handler
+                context = {
+                    "stage": stage,
+                    "target_path": str(self.target_path),
+                    "evidence_tracker": self.evidence_tracker,
+                    "session_id": self.session_id,
+                }
+                handler_result = await handler(context)
+                findings = handler_result.get("findings", [])
+                message = handler_result.get("message", f"Stage {config.name} completed")
+            else:
+                # Default: just validate evidence
+                findings = []
+                message = f"Stage {config.name} completed (no handler)"
+
+            # Validate evidence
+            validation = self.evidence_tracker.validate(
+                stage=stage.value,
+                strict=False,
+            )
+
+            if not validation["valid"]:
+                return StageResult(
+                    stage=stage,
+                    passed=False,
+                    timestamp=timestamp,
+                    evidence=self.evidence_tracker.export(),
+                    findings=findings,
+                    message=f"Evidence validation failed: {validation['errors']}",
+                    error="AntiHallucinationError",
+                )
+
+            return StageResult(
+                stage=stage,
+                passed=True,
+                timestamp=timestamp,
+                evidence=self.evidence_tracker.export(),
+                findings=findings,
+                message=message,
+            )
+
+        except AntiHallucinationError as e:
+            return StageResult(
+                stage=stage,
+                passed=False,
+                timestamp=timestamp,
+                evidence=self.evidence_tracker.export(),
+                message=str(e),
+                error="AntiHallucinationError",
+            )
+        except Exception as e:
+            return StageResult(
+                stage=stage,
+                passed=False,
+                timestamp=timestamp,
+                evidence=self.evidence_tracker.export(),
+                message=f"Stage failed: {str(e)}",
+                error=type(e).__name__,
+            )
+
+    def generate_todowrite_payload(self) -> List[Dict[str, Any]]:
+        """
+        Generate TodoWrite payload reflecting current protocol state.
+
+        Returns:
+            List of todo items for TodoWrite tool
+        """
+        todos = []
+
+        for stage in ProtocolStage:
+            config = STAGE_CONFIGS[stage]
+
+            # Find result for this stage
+            stage_result = next(
+                (r for r in self._stage_results if r.stage == stage),
+                None
+            )
+
+            if stage_result:
+                if stage_result.passed:
+                    status = "completed"
+                else:
+                    status = "in_progress"  # Failed but attempted
+            else:
+                # Check if previous stage passed
+                prev_stages = list(ProtocolStage)[:list(ProtocolStage).index(stage)]
+                prev_passed = all(
+                    any(r.stage == ps and r.passed for r in self._stage_results)
+                    for ps in prev_stages
+                )
+
+                if prev_passed or not prev_stages:
+                    status = "pending"
+                else:
+                    status = "pending"  # Blocked by previous
+
+            todos.append({
+                "content": config.todo_content,
+                "status": status,
+                "activeForm": config.todo_active_form,
+            })
+
+        return todos
+
+
+# Convenience function for quick protocol execution
+async def run_protocol(
+    protocol_name: str,
+    target_path: str,
+    handlers: Optional[Dict[ProtocolStage, Callable]] = None,
+) -> ProtocolResult:
+    """
+    Quick way to run a protocol.
+
+    Args:
+        protocol_name: Name of the protocol (audit, plan, etc.)
+        target_path: Path to analyze
+        handlers: Optional stage handlers
+
+    Returns:
+        ProtocolResult
+    """
+    runner = ClaudeProtocolRunner(
+        protocol_name=protocol_name,
+        target_path=target_path,
+    )
+
+    if handlers:
+        for stage, handler in handlers.items():
+            runner.register_stage_handler(stage, handler)
+
+    return await runner.execute()
+
+
+# CLI interface
+if __name__ == "__main__":
+    import sys
+
+    async def main():
+        if len(sys.argv) < 3:
+            print("Usage: python protocol_runner.py <protocol_name> <target_path>")
+            print("Example: python protocol_runner.py audit scripts/ontology/")
+            sys.exit(1)
+
+        protocol_name = sys.argv[1]
+        target_path = sys.argv[2]
+
+        result = await run_protocol(protocol_name, target_path)
+        print(json.dumps(result.to_dict(), indent=2))
+
+    asyncio.run(main())

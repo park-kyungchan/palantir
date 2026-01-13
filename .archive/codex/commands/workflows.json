@@ -1,0 +1,62 @@
+[
+  {
+    "name": "00_start",
+    "description": "Initialize the Orion V3 Workspace and Ontology Layer",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/00_start.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 00_start"
+  },
+  {
+    "name": "01_plan",
+    "description": "Transform User Intent into a Governed Ontology Plan (3-Stage Protocol)",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/01_plan.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 01_plan"
+  },
+  {
+    "name": "02_manage_memory",
+    "description": "Manually inject Insights and Patterns into the Semantic Memory",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/02_manage_memory.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 02_manage_memory"
+  },
+  {
+    "name": "03_maintenance",
+    "description": "Maintenance tasks for Database Rebuilding and Schema Validation",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/03_maintenance.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 03_maintenance"
+  },
+  {
+    "name": "04_governance_audit",
+    "description": "Inspect the Immutable Audit Log (Ontology DB)",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/04_governance_audit.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 04_governance_audit"
+  },
+  {
+    "name": "05_consolidate",
+    "description": "Trigger the Consolidation Engine with ExecutionProtocol",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/05_consolidate.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 05_consolidate"
+  },
+  {
+    "name": "06_deprecation_check",
+    "description": "Check for deprecation warnings before commit",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/06_deprecation_check.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 06_deprecation_check"
+  },
+  {
+    "name": "07_memory_sync",
+    "description": "Sync CLI memories to Orion Semantic Memory",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/07_memory_sync.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 07_memory_sync"
+  },
+  {
+    "name": "08_codex_commands",
+    "description": "Sync Codex CLI slash commands from .agent/workflows",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/08_codex_commands.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py 08_codex_commands"
+  },
+  {
+    "name": "deep-audit",
+    "description": "Execute Progressive Deep-Dive Audit with 3-Stage Protocol (ANTIGRAVITY_ARCHITECT_V5.0)",
+    "path": "/home/palantir/park-kyungchan/palantir/.agent/workflows/deep-audit.md",
+    "run": "python /home/palantir/park-kyungchan/palantir/scripts/workflow_runner.py deep-audit"
+  }
+]

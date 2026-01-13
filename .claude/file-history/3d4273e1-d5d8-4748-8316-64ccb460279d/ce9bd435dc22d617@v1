@@ -1,0 +1,433 @@
+# Foundry-Level ODA Upgrade Plan
+
+> **Version:** 1.0 | **Status:** IN_PROGRESS | **Date:** 2026-01-12
+> **Auto-Compact Safe:** This file persists across context compaction
+> **Target:** Palantir Foundry/AIP Level ODA Implementation
+
+---
+
+## Metadata
+
+| Item | Value |
+|------|-------|
+| Complexity | LARGE (5 phases, 80+ tasks) |
+| Total Phases | 5 |
+| Estimated Tasks | 80+ |
+| Current ODA Files | 238 Python files |
+| Current ObjectTypes | 7 |
+| Current ActionTypes | 33+ |
+| Priority | P0 (Major Architecture Upgrade) |
+
+---
+
+## Executive Summary
+
+Upgrade ODA from current state (v3.0.1) to Palantir Foundry/AIP compliance level.
+
+**Current State Analysis:**
+- ✅ Link[T] generic with Cardinality (1:1, 1:N, N:1, N:N)
+- ✅ OntologyRegistry with @register_object_type decorator
+- ✅ ActionRegistry with GovernanceEngine
+- ✅ Async SQLAlchemy with WAL mode
+- ✅ 7 ObjectTypes: Agent, Task, Proposal, AuditLog, Artifact, Insight, Pattern
+- ✅ 33+ ActionTypes covering file, quality, orchestration, memory operations
+
+**Gaps Identified:**
+- ❌ LinkTypeRegistry (centralized link management)
+- ❌ ObjectType property validation framework
+- ❌ ActionType side-effects declaration
+- ❌ Semantic Layer (vector embeddings)
+- ❌ Transaction branching (Foundry commit/checkpoint pattern)
+
+---
+
+## Phase 1: LinkType Implementation (16 tasks)
+
+### Overview
+Implement centralized LinkTypeRegistry for explicit relationship management.
+
+### 1.1 LinkTypeRegistry Core
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 1.1.1 | Create LinkTypeRegistry class | `lib/oda/ontology/link_registry.py` | [ ] PENDING |
+| 1.1.2 | Implement @register_link_type decorator | `lib/oda/ontology/link_registry.py` | [ ] PENDING |
+| 1.1.3 | Add LinkType validation rules | `lib/oda/ontology/link_registry.py` | [ ] PENDING |
+| 1.1.4 | Implement bidirectional link resolution | `lib/oda/ontology/link_registry.py` | [ ] PENDING |
+
+### 1.2 LinkType Metadata
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 1.2.1 | Add LinkTypeMetadata Pydantic model | `lib/oda/ontology/types/link_types.py` | [ ] PENDING |
+| 1.2.2 | Implement constraint validators | `lib/oda/ontology/types/link_types.py` | [ ] PENDING |
+| 1.2.3 | Add cascade delete/update policies | `lib/oda/ontology/types/link_types.py` | [ ] PENDING |
+| 1.2.4 | Implement referential integrity checks | `lib/oda/ontology/types/link_types.py` | [ ] PENDING |
+
+### 1.3 Storage Integration
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 1.3.1 | Create LinkModel for SQLAlchemy | `lib/oda/ontology/storage/models.py` | [ ] PENDING |
+| 1.3.2 | Add LinkRepository | `lib/oda/ontology/storage/repositories.py` | [ ] PENDING |
+| 1.3.3 | Implement M:N join table generator | `lib/oda/ontology/storage/link_tables.py` | [ ] PENDING |
+| 1.3.4 | Add link migration utilities | `lib/oda/ontology/storage/migrations/` | [ ] PENDING |
+
+### 1.4 Registry Integration
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 1.4.1 | Update OntologyRegistry to include links | `lib/oda/ontology/registry.py` | [ ] PENDING |
+| 1.4.2 | Add export_links_json() method | `lib/oda/ontology/registry.py` | [ ] PENDING |
+| 1.4.3 | Create LinkIntrospector utility | `lib/oda/ontology/introspection/links.py` | [ ] PENDING |
+| 1.4.4 | Write unit tests for LinkTypeRegistry | `tests/ontology/test_link_registry.py` | [ ] PENDING |
+
+---
+
+## Phase 2: ObjectType Expansion (18 tasks)
+
+### Overview
+Enhance ObjectType system with property validation, computed properties, and lifecycle hooks.
+
+### 2.1 Property Framework
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 2.1.1 | Create PropertyDefinition model | `lib/oda/ontology/types/property_types.py` | [ ] PENDING |
+| 2.1.2 | Add property constraint validators | `lib/oda/ontology/types/property_types.py` | [ ] PENDING |
+| 2.1.3 | Implement computed property decorator | `lib/oda/ontology/decorators/computed.py` | [ ] PENDING |
+| 2.1.4 | Add property change tracking | `lib/oda/ontology/tracking/changes.py` | [ ] PENDING |
+
+### 2.2 New ObjectTypes
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 2.2.1 | Create Workspace ObjectType | `lib/oda/ontology/objects/workspace.py` | [ ] PENDING |
+| 2.2.2 | Create Session ObjectType | `lib/oda/ontology/objects/session.py` | [ ] PENDING |
+| 2.2.3 | Create Learner ObjectType (expanded) | `lib/oda/ontology/objects/learner.py` | [ ] PENDING |
+| 2.2.4 | Create Course ObjectType | `lib/oda/ontology/objects/course.py` | [ ] PENDING |
+| 2.2.5 | Create Assessment ObjectType | `lib/oda/ontology/objects/assessment.py` | [ ] PENDING |
+| 2.2.6 | Create Resource ObjectType | `lib/oda/ontology/objects/resource.py` | [ ] PENDING |
+
+### 2.3 Lifecycle Hooks
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 2.3.1 | Implement pre_save hook | `lib/oda/ontology/hooks/lifecycle.py` | [ ] PENDING |
+| 2.3.2 | Implement post_save hook | `lib/oda/ontology/hooks/lifecycle.py` | [ ] PENDING |
+| 2.3.3 | Implement pre_delete hook | `lib/oda/ontology/hooks/lifecycle.py` | [ ] PENDING |
+| 2.3.4 | Implement validation hook | `lib/oda/ontology/hooks/lifecycle.py` | [ ] PENDING |
+
+### 2.4 ObjectType Versioning
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 2.4.1 | Add schema version tracking | `lib/oda/ontology/versioning/schema.py` | [ ] PENDING |
+| 2.4.2 | Implement version migration framework | `lib/oda/ontology/versioning/migrate.py` | [ ] PENDING |
+| 2.4.3 | Add backward compatibility layer | `lib/oda/ontology/versioning/compat.py` | [ ] PENDING |
+| 2.4.4 | Write ObjectType expansion tests | `tests/ontology/test_object_types.py` | [ ] PENDING |
+
+---
+
+## Phase 3: ActionType Expansion (16 tasks)
+
+### Overview
+Enhance ActionType system with side-effects declaration, undo support, and batch execution.
+
+### 3.1 Side-Effects Framework
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 3.1.1 | Create SideEffect model | `lib/oda/ontology/actions/side_effects.py` | [ ] PENDING |
+| 3.1.2 | Implement @declares_side_effect decorator | `lib/oda/ontology/actions/side_effects.py` | [ ] PENDING |
+| 3.1.3 | Add side-effect validation in GovernanceEngine | `lib/oda/ontology/actions/__init__.py` | [ ] PENDING |
+| 3.1.4 | Create side-effect audit logging | `lib/oda/ontology/actions/side_effects.py` | [ ] PENDING |
+
+### 3.2 Undo/Rollback Support
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 3.2.1 | Create UndoableAction base class | `lib/oda/ontology/actions/undoable.py` | [ ] PENDING |
+| 3.2.2 | Implement undo() method pattern | `lib/oda/ontology/actions/undoable.py` | [ ] PENDING |
+| 3.2.3 | Add undo history storage | `lib/oda/ontology/storage/undo_history.py` | [ ] PENDING |
+| 3.2.4 | Create rollback orchestrator | `lib/oda/ontology/actions/rollback.py` | [ ] PENDING |
+
+### 3.3 Batch Execution
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 3.3.1 | Create BatchAction executor | `lib/oda/ontology/actions/batch.py` | [ ] PENDING |
+| 3.3.2 | Implement transaction grouping | `lib/oda/ontology/actions/batch.py` | [ ] PENDING |
+| 3.3.3 | Add batch progress reporting | `lib/oda/ontology/actions/batch.py` | [ ] PENDING |
+| 3.3.4 | Implement partial rollback on failure | `lib/oda/ontology/actions/batch.py` | [ ] PENDING |
+
+### 3.4 New ActionTypes
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 3.4.1 | Create WorkspaceAction types | `lib/oda/ontology/actions/workspace_actions.py` | [ ] PENDING |
+| 3.4.2 | Create SessionAction types | `lib/oda/ontology/actions/session_actions.py` | [ ] PENDING |
+| 3.4.3 | Create AssessmentAction types | `lib/oda/ontology/actions/assessment_actions.py` | [ ] PENDING |
+| 3.4.4 | Write ActionType expansion tests | `tests/ontology/test_action_types.py` | [ ] PENDING |
+
+---
+
+## Phase 4: Semantic Layer (15 tasks)
+
+### Overview
+Implement vector embeddings and semantic search for knowledge management.
+
+### 4.1 Embedding Infrastructure
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 4.1.1 | Create EmbeddingProvider interface | `lib/oda/semantic/embedding.py` | [ ] PENDING |
+| 4.1.2 | Implement OpenAI adapter | `lib/oda/semantic/providers/openai.py` | [ ] PENDING |
+| 4.1.3 | Implement local model adapter | `lib/oda/semantic/providers/local.py` | [ ] PENDING |
+| 4.1.4 | Add embedding cache layer | `lib/oda/semantic/cache.py` | [ ] PENDING |
+
+### 4.2 Vector Storage
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 4.2.1 | Create VectorStore interface | `lib/oda/semantic/vector_store.py` | [ ] PENDING |
+| 4.2.2 | Implement SQLite-VSS adapter | `lib/oda/semantic/stores/sqlite_vss.py` | [ ] PENDING |
+| 4.2.3 | Implement ChromaDB adapter | `lib/oda/semantic/stores/chroma.py` | [ ] PENDING |
+| 4.2.4 | Add vector index management | `lib/oda/semantic/indexing.py` | [ ] PENDING |
+
+### 4.3 Semantic Search
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 4.3.1 | Create SemanticQuery model | `lib/oda/semantic/query.py` | [ ] PENDING |
+| 4.3.2 | Implement similarity search | `lib/oda/semantic/search.py` | [ ] PENDING |
+| 4.3.3 | Add hybrid search (keyword + vector) | `lib/oda/semantic/search.py` | [ ] PENDING |
+| 4.3.4 | Create semantic ranking | `lib/oda/semantic/ranking.py` | [ ] PENDING |
+
+### 4.4 Integration
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 4.4.1 | Integrate with Memory subsystem | `lib/oda/memory/semantic_memory.py` | [ ] PENDING |
+| 4.4.2 | Add auto-embedding on object save | `lib/oda/semantic/auto_embed.py` | [ ] PENDING |
+| 4.4.3 | Write Semantic Layer tests | `tests/semantic/test_semantic_search.py` | [ ] PENDING |
+
+---
+
+## Phase 5: Transaction & Branching (15 tasks)
+
+### Overview
+Implement Foundry-style transaction management with branching and checkpoints.
+
+### 5.1 Transaction Framework
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 5.1.1 | Create TransactionManager | `lib/oda/transaction/manager.py` | [ ] PENDING |
+| 5.1.2 | Implement ACID guarantees | `lib/oda/transaction/manager.py` | [ ] PENDING |
+| 5.1.3 | Add isolation level configuration | `lib/oda/transaction/manager.py` | [ ] PENDING |
+| 5.1.4 | Create transaction context decorator | `lib/oda/transaction/decorators.py` | [ ] PENDING |
+
+### 5.2 Branching System
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 5.2.1 | Create Branch ObjectType | `lib/oda/ontology/objects/branch.py` | [ ] PENDING |
+| 5.2.2 | Implement branch creation | `lib/oda/transaction/branching.py` | [ ] PENDING |
+| 5.2.3 | Add branch merge strategy | `lib/oda/transaction/merge.py` | [ ] PENDING |
+| 5.2.4 | Implement conflict resolution | `lib/oda/transaction/conflicts.py` | [ ] PENDING |
+
+### 5.3 Checkpoint System
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 5.3.1 | Create Checkpoint model | `lib/oda/transaction/checkpoint.py` | [ ] PENDING |
+| 5.3.2 | Implement checkpoint creation | `lib/oda/transaction/checkpoint.py` | [ ] PENDING |
+| 5.3.3 | Add checkpoint restore | `lib/oda/transaction/checkpoint.py` | [ ] PENDING |
+| 5.3.4 | Create checkpoint comparison | `lib/oda/transaction/diff.py` | [ ] PENDING |
+
+### 5.4 Integration
+
+| ID | Task | File | Status |
+|----|------|------|--------|
+| 5.4.1 | Integrate with ActionRunner | `lib/oda/simulation/core.py` | [ ] PENDING |
+| 5.4.2 | Add transaction-aware repositories | `lib/oda/ontology/storage/repositories.py` | [ ] PENDING |
+| 5.4.3 | Write Transaction/Branching tests | `tests/transaction/test_branching.py` | [ ] PENDING |
+
+---
+
+## Phase 6: Cleanup & Optimization (BONUS)
+
+### Overview
+Remove obsolete files and optimize directory structure.
+
+### 6.1 File Cleanup
+
+| ID | Task | Action | Status |
+|----|------|--------|--------|
+| 6.1.1 | Audit unused imports | `ruff check --select F401` | [ ] PENDING |
+| 6.1.2 | Remove deprecated modules | TBD after audit | [ ] PENDING |
+| 6.1.3 | Consolidate duplicate utilities | `lib/oda/lib/` | [ ] PENDING |
+| 6.1.4 | Archive legacy code | `.archive/legacy_oda/` | [ ] PENDING |
+
+### 6.2 Directory Optimization
+
+| ID | Task | Action | Status |
+|----|------|--------|--------|
+| 6.2.1 | Standardize __init__.py exports | All packages | [ ] PENDING |
+| 6.2.2 | Create package index documentation | `lib/oda/README.md` | [ ] PENDING |
+| 6.2.3 | Optimize import paths | Circular import resolution | [ ] PENDING |
+| 6.2.4 | Run final quality checks | `pytest && ruff && mypy` | [ ] PENDING |
+
+---
+
+## Progress Tracking
+
+| Phase | Tasks | Completed | Status |
+|-------|-------|-----------|--------|
+| 1: LinkType | 16 | 0 | [ ] PENDING |
+| 2: ObjectType | 18 | 0 | [ ] PENDING |
+| 3: ActionType | 16 | 0 | [ ] PENDING |
+| 4: Semantic | 15 | 0 | [ ] PENDING |
+| 5: Transaction | 15 | 0 | [ ] PENDING |
+| 6: Cleanup | 8 | 0 | [ ] PENDING |
+| **Total** | **88** | **0** | **0%** |
+
+---
+
+## Subagent Delegation Strategy
+
+### Context Window Optimization
+
+Each phase is designed for independent subagent execution to stay within 32K output limit:
+
+| Phase | Subagent Type | Token Budget | Parallel Tasks |
+|-------|---------------|--------------|----------------|
+| 1.1-1.2 | general-purpose | 15K | 2 subagents |
+| 1.3-1.4 | general-purpose | 15K | 2 subagents |
+| 2.1-2.2 | general-purpose | 15K | 2 subagents |
+| 2.3-2.4 | general-purpose | 15K | 2 subagents |
+| 3.1-3.2 | general-purpose | 15K | 2 subagents |
+| 3.3-3.4 | general-purpose | 15K | 2 subagents |
+| 4.1-4.2 | general-purpose | 15K | 2 subagents |
+| 4.3-4.4 | general-purpose | 15K | 2 subagents |
+| 5.1-5.2 | general-purpose | 15K | 2 subagents |
+| 5.3-5.4 | general-purpose | 15K | 2 subagents |
+| 6.1-6.2 | Explore | 5K | 2 subagents |
+
+### Execution Pattern
+
+```python
+# Deploy in parallel for each sub-phase
+Task(subagent_type="general-purpose",
+     prompt="Execute Phase 1.1-1.2 tasks from foundry_level_oda_upgrade.md",
+     run_in_background=True)
+Task(subagent_type="general-purpose",
+     prompt="Execute Phase 1.3-1.4 tasks from foundry_level_oda_upgrade.md",
+     run_in_background=True)
+```
+
+---
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. **Read this file:**
+   ```
+   Read(".agent/plans/foundry_level_oda_upgrade.md")
+   ```
+
+2. **Check TodoWrite for current task status**
+
+3. **Find first PENDING phase/task in Progress Tracking table**
+
+4. **Deploy subagents for that phase using Delegation Strategy**
+
+5. **Update Progress Tracking after completion**
+
+---
+
+## Risk Register
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Schema migration data loss | HIGH | Backup before Phase 5 |
+| Circular import after restructure | MEDIUM | Use TYPE_CHECKING pattern |
+| Vector storage performance | MEDIUM | Benchmark before production |
+| Transaction deadlocks | MEDIUM | Implement timeout + retry |
+| Subagent output truncation | LOW | TaskDecomposer enforced |
+
+---
+
+## Critical File Paths
+
+```yaml
+# Core Files to Modify
+modify:
+  - lib/oda/ontology/registry.py
+  - lib/oda/ontology/ontology_types.py
+  - lib/oda/ontology/actions/__init__.py
+  - lib/oda/ontology/storage/models.py
+  - lib/oda/ontology/storage/repositories.py
+  - lib/oda/memory/manager.py
+  - lib/oda/simulation/core.py
+
+# New Directories to Create
+create:
+  - lib/oda/ontology/types/
+  - lib/oda/ontology/hooks/
+  - lib/oda/ontology/versioning/
+  - lib/oda/ontology/introspection/
+  - lib/oda/semantic/
+  - lib/oda/semantic/providers/
+  - lib/oda/semantic/stores/
+  - lib/oda/transaction/
+
+# Test Files to Create
+tests:
+  - tests/ontology/test_link_registry.py
+  - tests/ontology/test_object_types.py
+  - tests/ontology/test_action_types.py
+  - tests/semantic/test_semantic_search.py
+  - tests/transaction/test_branching.py
+```
+
+---
+
+## Evidence Requirements
+
+Each phase completion requires:
+
+```yaml
+stage_a_evidence:
+  files_viewed: [list of files read]
+  complexity: "large"
+
+stage_b_evidence:
+  imports_verified: [new imports created]
+  signatures_matched: [interface compliance]
+
+stage_c_evidence:
+  quality_checks:
+    - name: "tests"
+      status: "passed"
+    - name: "lint"
+      status: "passed"
+    - name: "typecheck"
+      status: "passed"
+```
+
+---
+
+## Approval Gate
+
+- [ ] User approved this plan
+- [ ] ODA governance validation passed
+- [ ] Architecture reviewed
+
+---
+
+> **Generated:** 2026-01-12 by /plan command
+> **Method:** Dual-path analysis (ODA Protocol + Plan Subagent)
+> **Scope:** Palantir Foundry/AIP Level Upgrade

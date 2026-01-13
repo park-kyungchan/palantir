@@ -1,0 +1,169 @@
+{
+  "model": "opus",
+  "permissions": {
+    "deny": [
+      "Read(.env*)",
+      "Read(**/secrets/**)",
+      "Read(**/*credentials*)",
+      "Read(**/.ssh/id_*)",
+      "Bash(rm:-rf:*)",
+      "Bash(sudo:rm:*)",
+      "Bash(chmod:777:*)"
+    ],
+    "allow": [
+      "Read(/home/palantir/**)",
+      "Edit(/home/palantir/**)",
+      "Bash(python:*)",
+      "Bash(pytest:*)",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
+    ],
+    "additionalDirectories": [
+      "/home/palantir",
+      "/home/palantir/.claude",
+      "/home/palantir/park-kyungchan",
+      "/home/palantir/hwpx",
+      "/home/palantir/lib"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/home/palantir/.claude/statusline-pastel.sh"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/session-start.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/welcome.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/session-end.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/governance-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/palantir/.claude/hooks/orchestrator_enforcement.py",
+            "timeout": 5,
+            "description": "ODA Orchestrator Pattern: Advisory warnings for complex operations that should use Task delegation"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/auto-backup.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/audit-logger.sh",
+            "description": "Evidence tracking for Read/Grep/Glob tool calls"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/auto-format.sh",
+            "description": "Boris Cherny Pattern 10: Auto-format code after modifications"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/session-health.sh",
+            "description": "Boris Cherny Pattern 12: Session health monitoring and dead-end detection"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/parallel-notify.sh",
+            "description": "Boris Cherny Pattern: System notifications for parallel sessions"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/palantir/.claude/hooks/user-prompt-submit/context_injector.py",
+            "timeout": 3,
+            "description": "ODA Orchestrator: Auto-inject orchestration context into every prompt"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/palantir/.claude/hooks/subagent-start/context_sync.py",
+            "timeout": 3,
+            "description": "ODA Orchestrator: Sync governance context to subagents"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "ORION_WORKSPACE_ROOT": "/home/palantir",
+    "ORION_DB_PATH": "/home/palantir/.agent/tmp/ontology.db",
+    "PYTHONPATH": "/home/palantir/park-kyungchan/palantir",
+    "ORION_PROJECTS": "park-kyungchan/palantir,hwpx,lib/owpml",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "100000",
+    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "100000",
+    "MAX_MCP_OUTPUT_TOKENS": "100000",
+    "BASH_MAX_OUTPUT_LENGTH": "200000"
+  }
+}

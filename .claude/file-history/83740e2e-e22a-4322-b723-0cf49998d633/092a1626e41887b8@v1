@@ -1,0 +1,42 @@
+---
+description: Execute ODA 3-Stage Planning Protocol for requirements
+allowed-tools: Read, Grep, Glob, Bash, TodoWrite
+argument-hint: <요구사항>
+---
+
+# /plan Command
+
+Transform user requirements into an ODA-aligned implementation plan.
+
+## Arguments
+$ARGUMENTS - The requirements to plan (in Korean or English)
+
+## Execution Flow
+
+1. **Initialize TodoWrite** with planning stages
+2. **Stage A: BLUEPRINT**
+   - Parse requirements from: $ARGUMENTS
+   - Scan relevant codebase files
+   - Define scope and complexity
+3. **Stage B: INTEGRATION TRACE**
+   - Map to ObjectTypes
+   - Design Actions
+   - Break into phases
+4. **Stage C: QUALITY GATE**
+   - Validate plan
+   - Risk assessment
+   - Request approval
+
+## Evidence Requirements
+- Must read at least 3 relevant files
+- Must reference specific line numbers
+- Must map to existing ObjectTypes
+
+## Output
+Structured implementation plan with phases, tests, and quality gates.
+
+## Example
+```
+/plan 사용자 인증 기능 추가
+/plan Add pagination to task list API
+```

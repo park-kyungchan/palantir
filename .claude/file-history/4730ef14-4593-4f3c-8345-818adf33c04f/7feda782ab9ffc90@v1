@@ -1,0 +1,32 @@
+{
+  "auto_format_enabled": false,
+  "log_formatting_operations": true,
+  "formatters": {
+    "python": {
+      "tool": "black",
+      "args": "--line-length 100 --quiet"
+    },
+    "javascript": {
+      "tool": "prettier",
+      "args": "--write"
+    },
+    "typescript": {
+      "tool": "prettier",
+      "args": "--write"
+    },
+    "json": {
+      "tool": "prettier",
+      "args": "--write"
+    }
+  },
+  "exclude_patterns": [
+    "*.min.js",
+    "*.min.css",
+    "dist/**/*",
+    "build/**/*",
+    "node_modules/**/*",
+    ".venv/**/*",
+    "__pycache__/**/*",
+    "*.pyc"
+  ]
+}

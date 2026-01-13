@@ -1,0 +1,85 @@
+# Native OWPML Generation & Template-Based Reconstruction
+
+This document outlines the technical implementation of native HWPX (OWPML XML) generation, moving beyond win32com automation to a stable, Linux-native pipeline.
+
+## 1. Architectural Evolution
+
+The native OWPML pipeline evolved from manual XML assembly to **Template-Based Reconstruction (TBR)** to handle the extreme complexity of OWPML headers.
+
+### 1.1 The ID-Reference Mechanism
+OWPML uses an ID-Reference system. Formatting entities (Para Shapes, Char Shapes, Borders) are defined in `header.xml` and assigned integer IDs, which are then referenced in `section0.xml` (e.g., `paraPrIDRef="0"`).
+
+## 2. Mandatory OWPML Structure (Anti-Corruption)
+
+Hancom Office 2024 enforces strict validation of both ZIP structure and XML logic.
+
+### 2.1 ZIP Package Integrity
+- **Mimetype**: Must be the first file and uncompressed (`Stored`).
+- **Required Root Files**: `version.xml` (version info), `settings.xml` (cursor state), `META-INF/manifest.xml`.
+- **Logical Linkage**: `META-INF/container.rdf` is mandatory to associate ZIP parts with OWPML roles (`HeaderFile`, `SectionFile`).
+
+### 2.2 Body Integrity (`section0.xml`)
+- **Section Properties (`hp:secPr`)**: The first paragraph **MUST** contain `secPr` in its first run to define paper size/margins.
+- **Layout Cache**: Paragraphs should include a skeletal `hp:linesegarray` for renderer stability.
+
+## 4. Strategy: Template-Based Reconstruction (TBR)
+
+Due to the 40KB+ complexity of `header.xml` (containing multi-language font definitions and nested property tags), the system uses a verified "Golden Template" (e.g., `Skeleton.hwpx`).
+
+1.  **Template Reuse**: The generator copies all metadata, manifests, and complex header structures from the template.
+2.  **Substitution**: Only `Contents/section0.xml` is replaced with dynamically generated OWPML Body XML.
+3.  **Stability**: This approach guarantees 100% compatibility with Hancom 2024's strict rendering engine.
+
+## 5. Phase 10: Community-Driven API Integration (`python-hwpx`)
+
+To move beyond static template substitution, the pipeline is migrating to the **`python-hwpx`** library for dynamic document building.
+
+### 5.1 Architectural Shift
+Instead of manually replacing `section0.xml`, the system uses a high-level API to manipulate document objects:
+- **Dynamic Styling**: Allows creating new paragraph properties (`paraPr`) and character properties (`charPr`) on-the-fly.
+- **Object Mapping**: Maps `HwpAction` (SetParaShape, InsertText) directly to library methods like `add_paragraph()` or `add_table()`.
+
+### 5.2 Technical Constraints & Discovery
+During the integration of `python-hwpx` v1.9, several critical API patterns were identified:
+1.  **Template Requirement**: The `HwpxDocument` constructor requires an existing `HwpxPackage` and a `root` (HwpxOxmlDocument). New documents should be initialized using `hwpx.templates.blank_document_bytes()`.
+2.  **Package Loading**: Use `HwpxPackage.open(path)` to load a template. The document is then instantiated as `HwpxDocument(package, package.get_xml(package.HEADER_PATH))`.
+3.  **Namespace Sensitivity**: The library handles common OWPML namespaces (ha, hp, hs, hh) automatically, but custom attribute injections may require manual namespace registration.
+
+### 5.3 Technical Implementation: `HwpxDocumentBuilder` (Phase 10)
+
+The finalized `HwpxDocumentBuilder` implements a robust workflow using `python-hwpx`:
+1. **Template Bootstrapping**: Uses `hwpx.templates.blank_document_bytes()` to retrieve a valid HWPX skeleton.
+2. **Package Serialization**: Writes the blank bytes to a temporary file (as `HwpxPackage.open()` requires a physical file path) then opens the package.
+3. **Internal Path Resolution**: Accesses active sections via `pkg.section_paths()` (which returns a list of internal ZIP paths).
+4. **XML Modification**: Retrieves the `Contents/section0.xml` tree via `pkg.get_xml()`.
+
+### 5.4 XML Engine Compatibility: `xml.etree.ElementTree`
+A critical discovery during implementation was that `python-hwpx` v1.9 interacts with `xml.etree.ElementTree.Element` objects. Attempts to use `lxml` directly caused type errors during `pkg.set_xml()`.
+- **Backend**: Standard library `xml.etree.ElementTree` (ET).
+- **Tag Formatting**: Uses the universal `{namespace}tag` format (e.g., `{http://www.hancom.co.kr/hwpml/2011/paragraph}p`).
+
+### 5.5 Namespace Helper Pattern
+To maintain readability when manually constructing OWPML tags, a helper pattern was adopted:
+
+```python
+HP_NS = 'http://www.hancom.co.kr/hwpml/2011/paragraph'
+
+def _hp(tag: str) -> str:
+    """Helper to create hp: namespace tag."""
+    return f'{{{HP_NS}}}{tag}'
+
+# Usage:
+p = ET.SubElement(section_elem, _hp('p'), {'id': '1'})
+```
+
+### 5.6 Stability Requirements (Body Construction)
+- **Para ID Management**: Each `<hp:p>` requires a unique `id` attribute. Implementation uses a sequential `para_counter`.
+- **Default Styles**: Newly created paragraphs reference `paraPrIDRef="0"` and `charPrIDRef="0"` from the template.
+- **Line Segment Arrays**: Mandatory for HWP 2024. A skeletal `<hp:lineseg>` is injected into every paragraph; the HWP renderer recalculates precise values on first open.
+
+### 5.7 Verification & Success
+Phase 10 was successfully verified by processing a complex Action set (118 actions):
+- **Stability**: Generated files open in Hancom Office 2024 without corruption errors.
+- **Fidelity**: Paragraph shapes and text flows are correctly preserved via the ID-reference mechanism.
+
+For a detailed analysis of the underlying community standards, refer to [Community Standards Audit](../overview/community_standards_audit.md).

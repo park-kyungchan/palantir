@@ -1,0 +1,102 @@
+---
+name: maintenance
+description: Database rebuild and schema validation (DESTRUCTIVE - requires explicit approval)
+allowed-tools: Bash, Read, AskUserQuestion
+---
+
+# /maintenance Command
+
+$ARGUMENTS
+
+## CRITICAL WARNING
+
+```
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  DESTRUCTIVE OPERATIONS - DATA LOSS POSSIBLE                  !
+!  The 'rebuild' command will DELETE ALL existing data.         !
+!  Explicit user approval via AskUserQuestion is MANDATORY.     !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+---
+
+## 사용법
+
+```
+/maintenance status       # 현재 DB 상태 확인
+/maintenance validate     # 스키마 유효성 검사
+/maintenance rebuild      # DB 재구축 (DESTRUCTIVE)
+/maintenance migrate      # Alembic 마이그레이션 실행
+```
+
+---
+
+## 작업 설명
+
+### status - DB 상태 확인
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+python -c "
+from scripts.ontology.storage.database import Database
+import asyncio
+
+async def check():
+    db = Database()
+    await db.initialize()
+    health = await db.health_check()
+    print('Database Health:', health)
+
+asyncio.run(check())
+"
+```
+
+### validate - 스키마 유효성 검사
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+python -m scripts.ontology.registry
+```
+
+### rebuild - DB 재구축 (DESTRUCTIVE)
+```bash
+# 주의: 기존 데이터가 삭제됩니다!
+cd /home/palantir/park-kyungchan/palantir
+rm -f .agent/tmp/ontology.db
+source .venv/bin/activate
+python -c "
+from scripts.ontology.storage.database import initialize_database
+import asyncio
+asyncio.run(initialize_database())
+print('Database rebuilt successfully')
+"
+```
+
+### migrate - Alembic 마이그레이션
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+alembic upgrade head
+```
+
+---
+
+## 안전 체크리스트
+
+**rebuild 실행 전:**
+- [ ] 현재 DB 백업 완료
+- [ ] 진행 중인 작업 없음 확인
+- [ ] 명시적 승인 획득
+
+---
+
+## 백업 방법
+
+```bash
+# DB 백업
+cp /home/palantir/park-kyungchan/palantir/.agent/tmp/ontology.db \
+   /home/palantir/park-kyungchan/palantir/.agent/tmp/ontology.db.backup.$(date +%Y%m%d_%H%M%S)
+```
+
+---
+
+**이 명령어를 실행하기 전에 반드시 사용자 승인을 받으세요.**

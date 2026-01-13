@@ -1,0 +1,1163 @@
+2026-01-06 17:45:34.374 [info] 
+
+
+
+
+2026-01-06 17:45:34.381 [info] Extension host agent started.
+2026-01-06 17:45:34.595 [info] [127.0.0.1][18921b49][ManagementConnection] New connection established.
+2026-01-06 17:45:34.614 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] New connection established.
+2026-01-06 17:45:34.676 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> Launched Extension Host Process.
+2026-01-06 17:45:34.983 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> Set default auto-select family attempt timeout to 1000ms
+
+2026-01-06 17:45:43.593 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:45:43 [INFO]: Language server started[39m
+
+2026-01-06 17:45:43.673 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:45:43 [INFO]: LS lspClient started successfully[39m
+
+2026-01-06 17:46:55.189 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:46:55 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 17:46:58.266 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:46:58 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 17:47:12.444 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:47:12 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 17:47:13.406 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:47:13 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 17:47:23.911 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:47:23 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir exit code 0[39m
+
+2026-01-06 17:47:23.911 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:47:23 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir exit code 0[39m
+
+2026-01-06 17:47:25.064 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:47:25 [INFO]: [Terminal] Command completed: python3 -c "from scripts.ontology.protocols.audit_protocol import AuditProtocol; print('✅ AuditProtocol Ready')" exit code 1[39m
+
+2026-01-06 17:47:25.064 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:47:25 [INFO]: [Terminal] Command completed: python3 -c "from scripts.ontology.protocols.audit_protocol import AuditProtocol; print('✅ AuditProtocol Ready')" exit code 1[39m
+
+2026-01-06 17:50:21.899 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:50:21 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-06 17:50:21.899 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:50:21 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-06 17:50:23.080 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:50:23 [INFO]: [Terminal] Command completed: python3 -c "import docling; import ultralytics; import pypdf; import fitz; print('✅ Deps Ready')" exit code 1[39m
+
+2026-01-06 17:50:23.081 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:50:23 [INFO]: [Terminal] Command completed: python3 -c "import docling; import ultralytics; import pypdf; import fitz; print('✅ Deps Ready')" exit code 1[39m
+
+2026-01-06 17:50:34.382 [info] New EH opened, aborting shutdown
+2026-01-06 17:55:15.655 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:55:15 [INFO]: [Terminal] Command completed: ls -l /home/palantir/hwpx/sample.pdf exit code 0[39m
+
+2026-01-06 17:55:15.656 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:55:15 [INFO]: [Terminal] Command completed: ls -l /home/palantir/hwpx/sample.pdf exit code 0[39m
+
+2026-01-06 17:55:24.155 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:55:24 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir exit code 0[39m
+
+2026-01-06 17:55:24.155 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:55:24 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir exit code 0[39m
+
+2026-01-06 17:55:25.765 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:55:25 [INFO]: [Terminal] Command completed: python3 -m scripts.ontology.protocols.planning_protocol --stage blueprint exit code 1[39m
+
+2026-01-06 17:55:25.765 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:55:25 [INFO]: [Terminal] Command completed: python3 -m scripts.ontology.protocols.planning_protocol --stage blueprint exit code 1[39m
+
+2026-01-06 17:59:53.024 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:59:53 [INFO]: [Terminal] Command completed: python3 -m scripts.ontology.protocols.planning_protocol --stage quality_gate exit code 1[39m
+
+2026-01-06 17:59:53.024 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 17:59:53 [INFO]: [Terminal] Command completed: python3 -m scripts.ontology.protocols.planning_protocol --stage quality_gate exit code 1[39m
+
+2026-01-06 18:00:40.856 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:00:40 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-06 18:00:40.857 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:00:40 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-06 18:00:41.997 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:00:41 [INFO]: [Terminal] Command completed: python3 scripts/verify_layout.py exit code 1[39m
+
+2026-01-06 18:00:41.997 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:00:41 [INFO]: [Terminal] Command completed: python3 scripts/verify_layout.py exit code 1[39m
+
+2026-01-06 18:01:48.112 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:01:48 [INFO]: [Terminal] Command completed: python3 -c "import sys; sys.path.append('/home/palantir/hwpx'); import lib.layout.detector; print(dir(lib.layout.detector))" exit code 1[39m
+
+2026-01-06 18:01:48.112 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:01:48 [INFO]: [Terminal] Command completed: python3 -c "import sys; sys.path.append('/home/palantir/hwpx'); import lib.layout.detector; print(dir(lib.layout.detector))" exit code 1[39m
+
+2026-01-06 18:05:36.782 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:05:36 [INFO]: [Terminal] Command completed: python3 scripts/verify_layout.py exit code 1[39m
+
+2026-01-06 18:05:36.783 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:05:36 [INFO]: [Terminal] Command completed: python3 scripts/verify_layout.py exit code 1[39m
+
+2026-01-06 18:05:50.947 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:05:50 [INFO]: [Terminal] Command completed: pip list exit code 0[39m
+
+2026-01-06 18:05:50.947 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:05:50 [INFO]: [Terminal] Command completed: pip list exit code 0[39m
+
+2026-01-06 18:05:59.993 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:05:59 [INFO]: [Terminal] Command completed: pip install -r requirements.txt exit code 1[39m
+
+2026-01-06 18:05:59.993 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:05:59 [INFO]: [Terminal] Command completed: pip install -r requirements.txt exit code 1[39m
+
+2026-01-06 18:06:16.688 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:06:16 [INFO]: [Terminal] Command completed: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt exit code 0[39m
+
+2026-01-06 18:06:16.689 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:06:16 [INFO]: [Terminal] Command completed: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt exit code 0[39m
+
+2026-01-06 18:06:30.925 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:06:30 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 1[39m
+
+2026-01-06 18:06:30.926 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:06:30 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 1[39m
+
+2026-01-06 18:07:04.637 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:07:04 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:07:04.638 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:07:04 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:08:04.134 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:08:04 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:08:04.134 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:08:04 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:09:16.564 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:09:16 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:09:16.565 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:09:16 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:10:00.134 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:10:00 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:10:00.134 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:10:00 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:10:37.983 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:10:37 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:10:37.983 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:10:37 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_layout.py exit code 0[39m
+
+2026-01-06 18:19:14.836 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:19:14 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:19:14.836 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:19:14 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:20:03.440 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:20:03 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:20:03.440 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:20:03 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:20:28.001 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:20:28 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:20:28.001 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:20:28 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:21:40.927 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:21:40 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:21:40.927 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:21:40 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:22:29.412 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:22:29 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:22:29.414 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:22:29 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:23:20.605 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:23:20 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:23:20.606 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:23:20 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:24:14.677 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:24:14 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:24:14.678 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:24:14 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:25:43.458 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:25:43 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:25:43.458 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:25:43 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:28:03.692 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:28:03 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:28:03.692 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:28:03 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ocr.py exit code 0[39m
+
+2026-01-06 18:33:53.691 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:33:53 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ir.py exit code 1[39m
+
+2026-01-06 18:33:53.691 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:33:53 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/verify_ir.py exit code 1[39m
+
+2026-01-06 18:34:18.370 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:34:18 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:34:18.370 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:34:18 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:35:07.851 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:35:07 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:35:07.851 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:35:07 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:35:50.830 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:35:50 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:35:50.830 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:35:50 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:36:23.250 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:36:23 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:36:23.250 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:36:23 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:36:54.194 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:36:54 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:36:54.194 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:36:54 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:37:23.024 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:37:23 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 1[39m
+
+2026-01-06 18:37:23.024 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:37:23 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 1[39m
+
+2026-01-06 18:37:49.373 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:37:49 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:37:49.373 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:37:49 [INFO]: [Terminal] Command completed: .venv/bin/python scripts/debug_model.py exit code 0[39m
+
+2026-01-06 18:38:24.584 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:38:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:38:24.584 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:38:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:38:56.306 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:38:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:38:56.306 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:38:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:39:24.515 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:39:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:39:24.516 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:39:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:40:43.108 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:40:43 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:40:43.108 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:40:43 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:41:46.193 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:41:46 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:41:46.193 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:41:46 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:42:29.487 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:42:29 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:42:29.487 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:42:29 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:43:23.889 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:43:23 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:43:23.889 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:43:23 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:44:07.742 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:44:07 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:44:07.742 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:44:07 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:44:51.624 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:44:51 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:44:51.625 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:44:51 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:45:29.960 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:45:29 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:45:29.960 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:45:29 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:46:12.920 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:46:12 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:46:12.921 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:46:12 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:46:52.273 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:46:52 [INFO]: [Terminal] Command completed: cat /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:46:52.274 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:46:52 [INFO]: [Terminal] Command completed: cat /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:47:11.687 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:47:11 [INFO]: [Terminal] Command completed: grep -C 5 "self.dcv =" /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:47:11.687 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:47:11 [INFO]: [Terminal] Command completed: grep -C 5 "self.dcv =" /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:47:56.911 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:47:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:47:56.911 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:47:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:48:11.877 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:48:11 [INFO]: [Terminal] Command completed: find . -name "__pycache__" -type d -exec rm -rf {} + exit code 0[39m
+
+2026-01-06 18:48:11.877 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:48:11 [INFO]: [Terminal] Command completed: find . -name "__pycache__" -type d -exec rm -rf {} + exit code 0[39m
+
+2026-01-06 18:48:41.194 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:48:41 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:48:41.194 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:48:41 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:49:19.299 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:49:19 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/test_patch.py exit code 0[39m
+
+2026-01-06 18:49:19.300 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:49:19 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/test_patch.py exit code 0[39m
+
+2026-01-06 18:50:20.549 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:50:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/test_patch.py exit code 0[39m
+
+2026-01-06 18:50:20.549 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:50:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/test_patch.py exit code 0[39m
+
+2026-01-06 18:50:44.270 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:50:44 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/test_patch.py | grep "dcv |" | head -n 20 exit code 0[39m
+
+2026-01-06 18:50:44.271 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:50:44 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/test_patch.py | grep "dcv |" | head -n 20 exit code 0[39m
+
+2026-01-06 18:51:22.377 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:51:22 [INFO]: [Terminal] Command completed: cp lib/layout/detector.py lib/layout/detector_patched.py exit code 0[39m
+
+2026-01-06 18:51:22.378 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:51:22 [INFO]: [Terminal] Command completed: cp lib/layout/detector.py lib/layout/detector_patched.py exit code 0[39m
+
+2026-01-06 18:51:44.436 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:51:44 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:51:44.436 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:51:44 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:52:55.797 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:52:55 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:52:55.797 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:52:55 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:53:38.577 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:53:38 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:53:38.577 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:53:38 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:53:38.817 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:53:38 [INFO]: [Terminal] Command completed: cat /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:53:38.818 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:53:38 [INFO]: [Terminal] Command completed: cat /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:54:13.834 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:13 [INFO]: [Terminal] Command completed: head -n 50 /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:54:13.835 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:13 [INFO]: [Terminal] Command completed: head -n 50 /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:54:14.495 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:14 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:54:14.495 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:14 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:54:25.707 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:25 [INFO]: [Terminal] Command completed: sed -n '50,150p' /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:54:25.708 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:25 [INFO]: [Terminal] Command completed: sed -n '50,150p' /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:54:56.998 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:56 [INFO]: [Terminal] Command completed: grep "dcv" /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:54:56.998 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:54:56 [INFO]: [Terminal] Command completed: grep "dcv" /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:55:21.434 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:55:21 [INFO]: [Terminal] Command completed: grep "model.model.4.*dcv" /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:55:21.434 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:55:21 [INFO]: [Terminal] Command completed: grep "model.model.4.*dcv" /home/palantir/hwpx/patch_debug.log exit code 0[39m
+
+2026-01-06 18:55:58.970 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:55:58 [INFO]: [Terminal] Command completed: cat /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:55:58.971 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:55:58 [INFO]: [Terminal] Command completed: cat /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:56:15.121 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:56:15 [INFO]: [Terminal] Command completed: grep -A 20 "def dilated_conv" /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:56:15.121 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:56:15 [INFO]: [Terminal] Command completed: grep -A 20 "def dilated_conv" /home/palantir/hwpx/.venv/lib/python3.12/site-packages/doclayout_yolo/nn/modules/g2l_crm.py exit code 0[39m
+
+2026-01-06 18:56:59.575 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:56:59 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:56:59.575 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:56:59 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:58:19.703 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:58:19 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:58:19.703 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:58:19 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:59:21.900 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:59:21 [INFO]: [Terminal] Command completed: rm /home/palantir/hwpx/lib/layout/detector_patched.py /home/palantir/hwpx/patch_debug.log /home/palantir/hwpx/scripts/test_patch.py exit code 0[39m
+
+2026-01-06 18:59:21.900 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:59:21 [INFO]: [Terminal] Command completed: rm /home/palantir/hwpx/lib/layout/detector_patched.py /home/palantir/hwpx/patch_debug.log /home/palantir/hwpx/scripts/test_patch.py exit code 0[39m
+
+2026-01-06 18:59:42.044 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:59:42 [INFO]: [Terminal] Command completed: head -n 20 /home/palantir/hwpx/ir_output.json exit code 0[39m
+
+2026-01-06 18:59:42.045 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:59:42 [INFO]: [Terminal] Command completed: head -n 20 /home/palantir/hwpx/ir_output.json exit code 0[39m
+
+2026-01-06 18:59:46.566 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:59:46 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 18:59:46.567 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 18:59:46 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:08:18.630 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:18 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 1[39m
+
+2026-01-06 19:08:18.631 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:18 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 1[39m
+
+2026-01-06 19:08:18.833 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:18 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:08:18.833 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:18 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:08:49.898 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:49 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:08:49.898 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:49 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:08:53.408 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:53 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:08:53.409 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:08:53 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:09:06.285 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:09:06 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:09:06.285 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:09:06 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:10:17.466 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:10:17 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:10:17.469 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:10:17 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:10:20.328 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:10:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:10:20.328 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:10:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:10:26.437 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:10:26 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:10:26.438 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:10:26 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:21:08.129 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:08 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:21:08.129 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:08 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:21:08.303 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:08 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:21:08.303 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:08 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:21:50.658 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:50 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:21:50.658 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:50 [INFO]: [Terminal] Command completed: grep -E "AnswerBox|ProblemBox" /home/palantir/hwpx/ir_output.json exit code 1[39m
+
+2026-01-06 19:21:53.539 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:53 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:21:53.539 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:21:53 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:26:36.057 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:26:36 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:26:36.057 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:26:36 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:26:58.370 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:26:58 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:26:58.370 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:26:58 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:27:20.693 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:27:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:27:20.693 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:27:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:27:56.647 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:27:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:27:56.648 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:27:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:29:13.507 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:29:13 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:29:13.507 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:29:13 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:29:49.531 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:29:49 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:29:49.532 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:29:49 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:30:56.099 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:30:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:30:56.100 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:30:56 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:31:43.028 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:31:43 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:31:43.029 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:31:43 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_ir.py exit code 0[39m
+
+2026-01-06 19:35:24.141 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:35:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:35:24.142 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:35:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:35:47.151 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:35:47 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:35:47.151 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:35:47 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:35:58.603 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:35:58 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:35:58.603 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:35:58 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:36:19.089 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:36:19 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:36:19.090 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:36:19 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 1[39m
+
+2026-01-06 19:36:36.680 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:36:36 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 0[39m
+
+2026-01-06 19:36:36.680 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:36:36 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_compilation.py exit code 0[39m
+
+2026-01-06 19:37:28.489 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:37:28 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:37:28.489 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:37:28 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:38:09.326 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:38:09 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 19:38:09.326 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:38:09 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 19:38:33.628 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:38:33 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 19:38:33.628 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:38:33 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 19:39:11.559 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:39:11 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 19:39:11.559 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:39:11 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 19:39:50.958 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:39:50 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:39:50.958 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:39:50 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:44:59.847 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:44:59 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_builder.py exit code 0[39m
+
+2026-01-06 19:44:59.847 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:44:59 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/verify_builder.py exit code 0[39m
+
+2026-01-06 19:45:20.375 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:45:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:45:20.376 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:45:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:49:15.855 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:49:15 [INFO]: [Terminal] Command completed: grep -r "zipfile" . exit code 0[39m
+
+2026-01-06 19:49:15.860 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:49:15 [INFO]: [Terminal] Command completed: grep -r "zipfile" . exit code 0[39m
+
+2026-01-06 19:49:15.861 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:49:15 [INFO]: [Terminal] Command completed: grep -r "OWPML" . exit code 0[39m
+
+2026-01-06 19:49:15.861 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:49:15 [INFO]: [Terminal] Command completed: grep -r "OWPML" . exit code 0[39m
+
+2026-01-06 19:49:34.493 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:49:34 [INFO]: [Terminal] Command completed: mkdir -p lib/owpml exit code 0[39m
+
+2026-01-06 19:49:34.494 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:49:34 [INFO]: [Terminal] Command completed: mkdir -p lib/owpml exit code 0[39m
+
+2026-01-06 19:52:30.581 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:52:30 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:52:30.591 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:52:30 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 0[39m
+
+2026-01-06 19:57:51.475 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 19:57:51 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:02:00.732 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:02:00 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:02:03.369 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:02:03 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:02:07.209 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:02:07 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:08:29.605 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:08:29 [INFO]: [Terminal] Command completed: mkdir -p lib/parsers exit code 0[39m
+
+2026-01-06 20:08:29.606 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:08:29 [INFO]: [Terminal] Command completed: mkdir -p lib/parsers exit code 0[39m
+
+2026-01-06 20:14:13.082 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:13 [INFO]: [Terminal] Command completed: curl -v -H "app_id: palantir_test" -H "app_key: 120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" -H "Content-Type: application/json" -d '{"src": "x^2", "formats": ["text"]}' https://api.mathpix.com/v3/text exit code 0[39m
+
+2026-01-06 20:14:13.082 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:13 [INFO]: [Terminal] Command completed: curl -v -H "app_id: palantir_test" -H "app_key: 120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" -H "Content-Type: application/json" -d '{"src": "x^2", "formats": ["text"]}' https://api.mathpix.com/v3/text exit code 0[39m
+
+2026-01-06 20:14:23.334 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:14:23.335 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:14:23.345 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:14:23.346 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:14:23.488 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:23 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+[32m(Antigravity) 2026-01-06 20:14:23 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py exit code 1[39m
+
+2026-01-06 20:14:35.801 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:35 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:14:35.801 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:35 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:14:48.279 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:14:48.279 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:14:48.288 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:14:48.288 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:14:48.340 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:14:48.340 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:14:48.397 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:14:48.397 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:14:48 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:22.941 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:16:22.941 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:16:22.942 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:22.942 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:22.942 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:16:22.943 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:16:22.943 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:16:22.943 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:22 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:16:23.475 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:16:23.475 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:16:23.485 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:16:23.485 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:16:26.487 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:26 [INFO]: [Terminal] Command force exited: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0", with exit code 0[39m
+
+2026-01-06 20:16:26.925 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:26 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:16:26.925 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:26 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:16:26.931 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:26 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:26.931 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:26 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:36.069 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:36 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log exit code 0[39m
+
+2026-01-06 20:16:36.069 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:36 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log exit code 0[39m
+
+2026-01-06 20:16:36.383 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:36 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:36.383 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:36 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:55.377 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:16:55.378 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:16:55.395 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:16:55.395 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:16:55.489 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:16:55.489 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:16:55.611 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log && cat pipeline.log exit code 0[39m
+
+2026-01-06 20:16:55.611 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:16:55 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log && cat pipeline.log exit code 0[39m
+
+2026-01-06 20:17:20.756 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:17:20.757 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:17:20.771 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:17:20.772 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:17:20.924 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:17:20.924 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:17:20.951 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log && cat pipeline.log exit code 0[39m
+
+2026-01-06 20:17:20.951 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:20 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log && cat pipeline.log exit code 0[39m
+
+2026-01-06 20:17:37.817 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:37 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:17:37.817 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:37 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:17:37.935 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:37 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:17:37.935 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:37 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:17:39.414 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:39 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:17:39.414 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:39 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:17:47.929 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:47 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:17:47.929 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:17:47 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:18:04.548 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:18:04.548 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:18:04.565 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:18:04.565 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:18:04.696 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:18:04.697 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:18:04.735 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:18:04.735 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:04 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:18:22.931 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:18:22.931 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:18:23.055 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:18:23.056 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:23 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:18:24.348 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:18:24.348 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:24 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 1[39m
+
+2026-01-06 20:18:30.713 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:30 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:18:30.713 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:30 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:18:52.982 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:52 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:18:52.982 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:52 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:18:52.983 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:52 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:18:52.984 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:18:52 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:19:00.764 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:00 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:19:00.764 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:00 [INFO]: [Terminal] Command completed: PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 exit code 130[39m
+
+2026-01-06 20:19:01.238 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:01 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log && cat pipeline.log exit code 0[39m
+
+2026-01-06 20:19:01.239 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:01 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log && cat pipeline.log exit code 0[39m
+
+2026-01-06 20:19:10.754 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:10 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log exit code 0[39m
+
+2026-01-06 20:19:10.754 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:10 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log exit code 0[39m
+
+2026-01-06 20:19:11.399 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:11 [INFO]: [Terminal] Command completed: tail -n 20 pipeline.log exit code 0[39m
+
+2026-01-06 20:19:11.399 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:11 [INFO]: [Terminal] Command completed: tail -n 20 pipeline.log exit code 0[39m
+
+2026-01-06 20:19:31.774 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:31 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:19:31.774 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:31 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:19:31.847 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:31 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:19:31.847 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:31 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:19:32.259 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:32 [INFO]: [Terminal] Command completed: nohup .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+[32m(Antigravity) 2026-01-06 20:19:32 [INFO]: [Terminal] Command completed: nohup .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:19:42.677 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:42 [INFO]: [Terminal] Command completed: tail -n 30 pipeline.log exit code 0[39m
+
+2026-01-06 20:19:42.677 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:42 [INFO]: [Terminal] Command completed: tail -n 30 pipeline.log exit code 0[39m
+
+2026-01-06 20:19:43.035 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:43 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:19:43.035 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:43 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:19:56.869 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:56 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:19:56.869 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:56 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:19:56.871 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:56 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:19:56.872 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:56 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:19:56.920 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:56 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:19:56.920 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:56 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:19:57.169 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:57 [INFO]: [Terminal] Command completed: tail -n 30 pipeline.log && ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:19:57.169 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:19:57 [INFO]: [Terminal] Command completed: tail -n 30 pipeline.log && ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:20:06.779 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:06 [INFO]: [Terminal] Command completed: ps aux | grep run_pipeline.py exit code 0[39m
+
+2026-01-06 20:20:06.779 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:06 [INFO]: [Terminal] Command completed: ps aux | grep run_pipeline.py exit code 0[39m
+
+2026-01-06 20:20:07.120 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:07 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:20:07.120 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:07 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:20:24.278 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:20:24.278 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:20:24.322 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:20:24.322 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:20:24.326 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:20:24.326 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:20:24.476 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:20:24.477 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:24 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:20:46.827 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:46 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:20:46.827 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:46 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:20:46.830 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:46 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+[32m(Antigravity) 2026-01-06 20:20:46 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:20:46.835 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:46 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:20:46.835 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:46 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:20:47.130 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:47 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:20:47.130 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:20:47 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:21:02.228 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:02 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log exit code 0[39m
+
+2026-01-06 20:21:02.228 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:02 [INFO]: [Terminal] Command completed: ls -l output_actions.json pipeline.log exit code 0[39m
+
+2026-01-06 20:21:02.643 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:02 [INFO]: [Terminal] Command completed: tail -n 50 pipeline.log exit code 0[39m
+
+2026-01-06 20:21:02.644 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:02 [INFO]: [Terminal] Command completed: tail -n 50 pipeline.log exit code 0[39m
+
+2026-01-06 20:21:19.201 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:21:19.201 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:21:19.214 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:21:19.214 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:21:19.261 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:21:19.261 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:21:19.615 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:21:19.615 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:21:19.824 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:21:19.824 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:19 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:21:32.159 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:32 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:21:32.160 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:32 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:21:32.673 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:32 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:21:32.674 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:21:32 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:24:01.361 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:24:01 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:25:01.206 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:25:01 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:25:51.281 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:25:51 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:25:52.346 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:25:52 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:25:53.060 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:25:53 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:25:58.764 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:25:58 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:26:18.330 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:26:18 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:27:14.544 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:27:14.544 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:27:14.552 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:27:14.552 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:27:14.559 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:14 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:27:14.559 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:14 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py > pipeline.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:27:15.707 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:15 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:27:15.707 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:15 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:27:22.670 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:22 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:27:22.671 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:22 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:27:22.835 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:22 [INFO]: [Terminal] Command completed: ls -l output_actions.json images_mathpix/ exit code 2[39m
+
+2026-01-06 20:27:22.835 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:22 [INFO]: [Terminal] Command completed: ls -l output_actions.json images_mathpix/ exit code 2[39m
+
+2026-01-06 20:27:29.463 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:29 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:27:29.463 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:27:29 [INFO]: [Terminal] Command completed: cat pipeline.log exit code 0[39m
+
+2026-01-06 20:35:22.307 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:35:22 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:35:22.308 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:35:22 [INFO]: [Terminal] Command completed: ls -l output_actions.json exit code 0[39m
+
+2026-01-06 20:37:11.083 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:11 [INFO]: [Terminal] Command completed: pandoc --version exit code 127[39m
+
+2026-01-06 20:37:11.083 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:11 [INFO]: [Terminal] Command completed: pandoc --version exit code 127[39m
+
+2026-01-06 20:37:11.424 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:11 [INFO]: [Terminal] Command completed: python -c "import weasyprint; print('weasyprint ok')" exit code 127[39m
+
+2026-01-06 20:37:11.424 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:11 [INFO]: [Terminal] Command completed: python -c "import weasyprint; print('weasyprint ok')" exit code 127[39m
+
+2026-01-06 20:37:11.607 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:11 [INFO]: [Terminal] Command completed: python -c "import reportlab; print('reportlab ok')" exit code 127[39m
+
+2026-01-06 20:37:11.607 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:11 [INFO]: [Terminal] Command completed: python -c "import reportlab; print('reportlab ok')" exit code 127[39m
+
+2026-01-06 20:37:19.556 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:19 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import weasyprint; print('weasyprint ok')" exit code 1[39m
+
+2026-01-06 20:37:19.557 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:19 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import weasyprint; print('weasyprint ok')" exit code 1[39m
+
+2026-01-06 20:37:20.118 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:20 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import reportlab; print('reportlab ok')" exit code 1[39m
+
+2026-01-06 20:37:20.118 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:20 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import reportlab; print('reportlab ok')" exit code 1[39m
+
+2026-01-06 20:37:20.261 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:20 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import fpdf; print('fpdf ok')" exit code 1[39m
+
+2026-01-06 20:37:20.261 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:20 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import fpdf; print('fpdf ok')" exit code 1[39m
+
+2026-01-06 20:37:51.686 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:51 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import matplotlib; print('matplotlib ok')" exit code 0[39m
+
+2026-01-06 20:37:51.686 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:37:51 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import matplotlib; print('matplotlib ok')" exit code 0[39m
+
+2026-01-06 20:38:15.610 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:38:15 [INFO]: [Terminal] Command completed: .venv/bin/python test_converter.py exit code 0[39m
+
+2026-01-06 20:38:15.611 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:38:15 [INFO]: [Terminal] Command completed: .venv/bin/python test_converter.py exit code 0[39m
+
+2026-01-06 20:38:31.882 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:38:31 [INFO]: [Terminal] Command completed: .venv/bin/python test_converter.py exit code 0[39m
+
+2026-01-06 20:38:31.882 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:38:31 [INFO]: [Terminal] Command completed: .venv/bin/python test_converter.py exit code 0[39m
+
+2026-01-06 20:38:49.725 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:38:49 [INFO]: [Terminal] Command completed: .venv/bin/python test_converter.py exit code 0[39m
+
+2026-01-06 20:38:49.725 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:38:49 [INFO]: [Terminal] Command completed: .venv/bin/python test_converter.py exit code 0[39m
+
+2026-01-06 20:39:57.160 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:39:57.161 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:39:57.172 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:39:57.172 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:39:57.192 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:39:57.193 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:39:57.373 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:39:57.373 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:39:57.483 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:39:57.483 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:39:57 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:40:22.961 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:40:22.961 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:40:22.972 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:40:22.973 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:22 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:40:22.975 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:22 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:40:22.975 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:22 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:40:23.160 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:23 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:40:23.160 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:23 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:40:23.269 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:23 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:40:23.269 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:23 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:40:44.123 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:40:44.123 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:40:44.143 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:40:44.143 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:40:44.155 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:40:44.156 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:40:44.347 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:40:44.347 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:40:44.476 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:40:44.476 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:44 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:40:51.481 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:51 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:40:51.481 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:40:51 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:01.157 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:01 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:01.157 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:01 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:14.677 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:41:14.678 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:41:14.703 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:41:14.704 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:14 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:41:14.707 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:14 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:41:14.707 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:14 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:41:15.786 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:15 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:15.786 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:15 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:22.950 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:22 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:22.950 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:22 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:43.083 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:41:43.083 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:41:43.086 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:41:43.086 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:41:43.094 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:41:43.094 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:41:43.105 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:43.105 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:43 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:50.745 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:50 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:50.746 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:50 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:57.274 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:57 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:41:57.275 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:41:57 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:42:13.659 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:13 [INFO]: [Terminal] Command completed: .venv/bin/python debug_pdf_url.py exit code 0[39m
+
+2026-01-06 20:42:13.659 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:13 [INFO]: [Terminal] Command completed: .venv/bin/python debug_pdf_url.py exit code 0[39m
+
+2026-01-06 20:42:30.104 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:30 [INFO]: [Terminal] Command completed: .venv/bin/python debug_pdf_url.py exit code 0[39m
+
+2026-01-06 20:42:30.104 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:30 [INFO]: [Terminal] Command completed: .venv/bin/python debug_pdf_url.py exit code 0[39m
+
+2026-01-06 20:42:42.943 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:42 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:42:42.944 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:42 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:42:42.945 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:42 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:42:42.945 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:42 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:42:42.960 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:42 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:42:42.960 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:42 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:42:43.145 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:43 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:42:43.145 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:43 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:42:48.973 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:48 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:42:48.973 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:48 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:42:49.139 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:49 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:42:49.139 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:49 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 2[39m
+
+2026-01-06 20:42:56.100 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:56 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:42:56.100 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:42:56 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:13.069 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:43:13.069 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: export MATHPIX_APP_ID="palantir_pilot" exit code 0[39m
+
+2026-01-06 20:43:13.120 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:43:13.121 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: export MATHPIX_APP_KEY="120869bee25107f293c726520c24398bc2e4d8941c8b0573adf1aa1c7859eec0" exit code 0[39m
+
+2026-01-06 20:43:13.164 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:43:13.164 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: nohup env PYTHONPATH=. .venv/bin/python -u scripts/run_pipeline.py sample.pdf reconstructed.pdf --pdf > pipeline_pdf.log 2>&1 & exit code 0[39m
+
+2026-01-06 20:43:13.449 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:13.449 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:13 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:20.372 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:20 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:20.372 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:20 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:27.151 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:27 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:27.151 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:27 [INFO]: [Terminal] Command completed: cat pipeline_pdf.log exit code 0[39m
+
+2026-01-06 20:43:37.299 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:37 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 0[39m
+
+2026-01-06 20:43:37.299 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:43:37 [INFO]: [Terminal] Command completed: ls -l reconstructed.pdf exit code 0[39m
+
+2026-01-06 20:45:26.468 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:45:26 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:45:31.095 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:45:31 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:46:02.946 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:46:02 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:46:17.606 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:46:17 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:46:29.731 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:46:29 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 20:46:30.222 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 20:46:30 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-06 21:03:47.296 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:03:47 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python test_owpml.py exit code 0[39m
+
+2026-01-06 21:03:47.296 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:03:47 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python test_owpml.py exit code 0[39m
+
+2026-01-06 21:06:22.684 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:06:22 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:06:22.684 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:06:22 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:06:34.172 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:06:34 [INFO]: [Terminal] Command completed: ls -l output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:06:34.172 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:06:34 [INFO]: [Terminal] Command completed: ls -l output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:13:14.244 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:13:14 [INFO]: [Terminal] Command completed: python3 -c "from lib.models import SetParaShape; print('Imports verified')" exit code 1[39m
+
+2026-01-06 21:13:14.245 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:13:14 [INFO]: [Terminal] Command completed: python3 -c "from lib.models import SetParaShape; print('Imports verified')" exit code 1[39m
+
+2026-01-06 21:13:36.806 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:13:36 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:13:36.806 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:13:36 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:13:58.305 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:13:58 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:13:58.305 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:13:58 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:28:42.074 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:28:42 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:28:42.075 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:28:42 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:33:34.067 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:33:34 [INFO]: [Terminal] Command completed: unzip -v output_actions.hwpx exit code 127[39m
+
+2026-01-06 21:33:34.067 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:33:34 [INFO]: [Terminal] Command completed: unzip -v output_actions.hwpx exit code 127[39m
+
+2026-01-06 21:33:34.199 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:33:34 [INFO]: [Terminal] Command completed: file output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:33:34.200 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:33:34 [INFO]: [Terminal] Command completed: file output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:34:10.919 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:34:10 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:34:10.919 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:34:10 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:47:48.982 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:47:48 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import zipfile; z = zipfile.ZipFile('output_actions.hwpx', 'r'); print('\\n'.join([f'{i.filename} | compress={i.compress_type} | size={i.file_size}' for i in z.infolist()]))" exit code 0[39m
+
+2026-01-06 21:47:48.983 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:47:48 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import zipfile; z = zipfile.ZipFile('output_actions.hwpx', 'r'); print('\\n'.join([f'{i.filename} | compress={i.compress_type} | size={i.file_size}' for i in z.infolist()]))" exit code 0[39m
+
+2026-01-06 21:49:27.494 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:49:27 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:49:27.494 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:49:27 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:49:33.750 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:49:33 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import zipfile; z = zipfile.ZipFile('output_actions.hwpx', 'r'); print('\\n'.join([f'{i.filename} | compress={i.compress_type} | size={i.file_size}' for i in z.infolist()]))" exit code 0[39m
+
+2026-01-06 21:49:33.750 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:49:33 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import zipfile; z = zipfile.ZipFile('output_actions.hwpx', 'r'); print('\\n'.join([f'{i.filename} | compress={i.compress_type} | size={i.file_size}' for i in z.infolist()]))" exit code 0[39m
+
+2026-01-06 21:55:39.875 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:39 [INFO]: [Terminal] Command completed: curl -L -o Skeleton.hwpx "https://raw.githubusercontent.com/airmang/python-hwpx/main/src/hwpx/data/Skeleton.hwpx" exit code 0[39m
+
+2026-01-06 21:55:39.876 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:39 [INFO]: [Terminal] Command completed: curl -L -o Skeleton.hwpx "https://raw.githubusercontent.com/airmang/python-hwpx/main/src/hwpx/data/Skeleton.hwpx" exit code 0[39m
+
+2026-01-06 21:55:48.722 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:48 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:55:48.722 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:48 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:55:51.724 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:51 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:55:59.129 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:59 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:55:59.129 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:55:59 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:56:02.130 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:56:02 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:56:12.623 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:56:12 [INFO]: [Terminal] Command completed: " exit code 0[39m
+[32m(Antigravity) 2026-01-06 21:56:12 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:56:15.624 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:56:15 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:56:15.829 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:56:15 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:56:15.829 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:56:15 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:56:18.830 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:56:18 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:58:11.556 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:11 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:58:11.557 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:11 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:58:14.558 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:14 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:58:21.898 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:21 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:58:21.899 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:21 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:58:24.900 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:24 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:58:37.361 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:37 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:58:37.361 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:37 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 21:58:40.362 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:58:40 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 21:59:53.404 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:59:53 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 21:59:53.404 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 21:59:53 [INFO]: [Terminal] Command completed: env PYTHONPATH=. .venv/bin/python scripts/json_to_hwpx.py output_actions.json output_actions.hwpx exit code 0[39m
+
+2026-01-06 22:00:19.704 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:00:19 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 22:00:19.704 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:00:19 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-06 22:00:22.705 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:00:22 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-06 22:01:06.056 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:06 [INFO]: [Terminal] Command completed: git add -A && git status exit code 0[39m
+
+2026-01-06 22:01:06.056 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:06 [INFO]: [Terminal] Command completed: git add -A && git status exit code 0[39m
+
+2026-01-06 22:01:23.006 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:23 [INFO]: [Terminal] Command completed: - Section0.xml now includes proper secPr and linesegarray elements" exit code 0[39m
+
+2026-01-06 22:01:23.006 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:23 [INFO]: [Terminal] Command completed: - Section0.xml now includes proper secPr and linesegarray elements" exit code 0[39m
+
+2026-01-06 22:01:26.007 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:26 [INFO]: [Terminal] Command force exited: - Section0.xml now includes proper secPr and linesegarray elements", with exit code 0[39m
+
+2026-01-06 22:01:34.974 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:34 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-06 22:01:34.974 [info] [127.0.0.1][3acd5dbc][ExtensionHostConnection] <1682> [32m(Antigravity) 2026-01-06 22:01:34 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-06 22:02:25.013 [info] [127.0.0.1][18921b49][ManagementConnection] The client has disconnected gracefully, so the connection will be disposed.

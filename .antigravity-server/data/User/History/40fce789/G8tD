@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Node
+node_modules/
+
+
+# Temp / Locks
+*.lock
+*.db-shm
+*.db-wal
+.git/
+
+# System / Cache
+.cache/
+.antigravity-server/
+.gemini/
+.landscape/
+.motd_shown
+.vscode/

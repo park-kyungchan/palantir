@@ -1,0 +1,186 @@
+Boris Cherny가 언급한 **Claude Code CLI**의 고급 워크플로우(검증 루프, 권한 우회, Ralph-Wiggum 패턴)를 당신의 **Orion Framework**나 AI Agent 시스템에 즉시 통합할 수 있도록 **구현 레벨의 Snippet**으로 정리해 드립니다.
+
+현재 공식적으로 배포된 `claude-code` CLI가 해당 플래그(`--dangerously-skip-permissions`)를 모두 지원한다고 가정하고, 이를 오케스트레이션(Orchestration)하는 쉘 스크립트와 Python 래퍼(Wrapper)를 제공합니다.
+
+---
+
+### **Architectural Overview: The "Relentless Agent" Pattern**
+
+이 구조는 Palantir AIP의 Logic 처럼 **결정론적(Deterministic)** 결과를 보장하기 위해 고안되었습니다.
+
+1. **Execution (Sandboxed):** 권한 승인 절차 없이 코드를 실행(단, Docker 등 격리된 환경 필수).
+2. **Ralph-Wiggum Loop:** 실패 시 "왜 실패했는지"를 포함하여 즉시 재시도 (무한 루프).
+3. **Stop Hook (Critic):** 작업이 끝났다고 선언하면, 별도의 검증 에이전트가 개입하여 "정말 끝났나?"를 테스트.
+
+---
+
+### **Implementation Snippets**
+
+이 코드는 당신의 WSL2 환경(`/home/palantir/`)에서 바로 실행 가능하도록 작성되었습니다.
+
+#### **1. The Orchestrator (Shell Script)**
+
+이 스크립트는 `claude` CLI를 감싸서 **Ralph-Wiggum(무한 재시도)** 패턴과 **권한 우회**를 구현합니다.
+
+**File:** `~/palantir/bin/run_relentless_agent.sh`
+
+```bash
+#!/bin/bash
+
+# Configuration
+TASK_PROMPT="$1"
+MAX_RETRIES=10 # Ralph-Wiggum limit (or set to -1 for infinite)
+LOG_FILE="./agent_execution.log"
+
+# Function to run verification (The "Stop Hook")
+# Returns 0 if success, 1 if failure
+verify_task() {
+    echo "[Hook] Running Deterministic Verification..."
+    # 여기에 실제 유닛 테스트나 검증 스크립트를 연결합니다.
+    # 예: pytest, npm test, or a Python script checking output files.
+    
+    # 예시: Orion Framework의 검증 에이전트 호출
+    python3 ~/palantir/orion/verify_agent.py
+    return $?
+}
+
+echo "Starting Relentless Agent Task: $TASK_PROMPT" | tee -a $LOG_FILE
+
+count=0
+success=false
+
+while [ "$success" = false ]; do
+    ((count++))
+    if [ "$count" -gt "$MAX_RETRIES" ]; then
+        echo "[Error] Max retries reached via Ralph-Wiggum loop." | tee -a $LOG_FILE
+        exit 1
+    fi
+
+    echo "--- Attempt #$count ---" | tee -a $LOG_FILE
+
+    # 1. Claude Code CLI Execution
+    # --dangerously-skip-permissions: Boris's flag for autonomous execution
+    # --print-architecture: Optional, helps with debugging context
+    claude "$TASK_PROMPT" \
+        --dangerously-skip-permissions \
+        --permission-mode=dontAsk \
+        --verbose >> $LOG_FILE 2>&1
+
+    # 2. Agent Stop Hook (Verification)
+    if verify_task; then
+        echo "[Success] Task Verified via Background Agent." | tee -a $LOG_FILE
+        success=true
+    else
+        echo "[Fail] Verification failed. Re-injecting context to Claude..." | tee -a $LOG_FILE
+        
+        # 3. The Ralph-Wiggum Feedback
+        # 실패 로그를 읽어서 다음 프롬프트에 추가 (Context Injection)
+        ERROR_LOG=$(tail -n 20 $LOG_FILE)
+        TASK_PROMPT="The previous attempt failed validation. Here is the log: \n $ERROR_LOG \n Please fix the code and retry."
+    fi
+done
+
+echo "[Done] Workflow completed successfully."
+
+```
+
+---
+
+#### **2. The Verification Agent (Python)**
+
+위 쉘 스크립트에서 호출하는 `verify_agent.py`입니다. 이것이 **(a) Background Agent** 역할을 수행하여 작업의 완결성을 객관적으로 평가합니다.
+
+**File:** `~/palantir/orion/verify_agent.py`
+
+```python
+import sys
+import os
+# from anthropic import Anthropic # Assuming you use direct API for verification
+
+def check_file_integrity():
+    """
+    Example: Check if specific output files exist and are valid.
+    Modify this logic based on the specific task (e.g., PDF to HWPX conversion result).
+    """
+    required_files = ["./output/result.json", "./output/report.md"]
+    missing_files = [f for f in required_files if not os.path.exists(f)]
+    
+    if missing_files:
+        print(f"FAILED: Missing files: {missing_files}")
+        return False
+    return True
+
+def run_test_suite():
+    """
+    Example: Run a specific test suite programmatically.
+    """
+    import subprocess
+    try:
+        # 실행할 테스트 명령 (예: pytest)
+        result = subprocess.run(
+            ["pytest", "tests/", "-q"], 
+            capture_output=True, 
+            text=True
+        )
+        if result.returncode != 0:
+            print(f"FAILED: Tests failed.\n{result.stderr}")
+            return False
+        return True
+    except Exception as e:
+        print(f"FAILED: Execution error {e}")
+        return False
+
+def main():
+    print(">>> [Verifier] Inspecting Agent Output...")
+    
+    # 1. Deterministic Checks (Files, Syntax)
+    if not check_file_integrity():
+        sys.exit(1) # Return non-zero to trigger retry
+        
+    # 2. Logical Checks (Unit Tests)
+    if not run_test_suite():
+        sys.exit(1)
+
+    # 3. (Optional) Semantic Check using LLM
+    # Use a cheaper model (e.g., Claude 3 Haiku) to read code and confirm logic
+    # ... implementation of LLM critic ...
+
+    print(">>> [Verifier] All Checks Passed.")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
+
+```
+
+---
+
+#### **3. Docker Sandbox Configuration (Safety Layer)**
+
+Boris Cherny가 언급한 `--dangerously-skip-permissions` 옵션을 사용할 때는 **반드시** 샌드박스 환경이어야 합니다. 호스트 머신(`/home/palantir/`)을 보호하기 위한 Docker 실행 커맨드입니다.
+
+**Snippet: Docker Run Command**
+
+```bash
+# Dockerfile이 있는 디렉토리에서 실행
+# 현재 작업 디렉토리($PWD)를 컨테이너에 마운트하여 작업 수행
+
+docker run -it --rm \
+  --name claude-agent-runner \
+  -v "$PWD":/app \
+  -w /app \
+  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  python:3.11-slim \
+  /bin/bash -c "pip install claude-code && ./run_relentless_agent.sh 'Create a FastAPI server with Neo4j connection'"
+
+```
+
+---
+
+### **Implementation Summary for Orion Framework**
+
+1. **`run_relentless_agent.sh`**: 이 스크립트를 Agent의 **Tool**로 등록하십시오. Agent가 긴 작업(Long-running task)을 수행해야 할 때 이 스크립트를 호출합니다.
+2. **Logic Injection**: 만약 Python 내부에서 직접 구현하고 싶다면, `while` 루프 안에서 `claude` 프로세스를 `subprocess`로 호출하고, `stdout/stderr`를 캡처하여 다음 프롬프트에 `f-string`으로 주입하는 방식을 사용하면 됩니다.
+3. **Permission**: `dontAsk` 모드는 반드시 격리된 폴더나 컨테이너에서만 활성화되도록 Orion Framework의 보안 정책(Policy)을 설정하십시오.
+
+이 설정은 Agent가 당신이 자는 동안에도 멈추지 않고(Ralph-Wiggum), 대충 끝내지 않으며(Verifier), 당신을 기다리지 않고(Skip Permissions) 개발을 완료하도록 보장합니다.

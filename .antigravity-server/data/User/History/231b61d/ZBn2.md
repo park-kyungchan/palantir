@@ -1,0 +1,142 @@
+---
+description: Execute Progressive-Deep-Dive-Audit (Kernel v5.0 Protocol)
+---
+# /deep-audit: Full Context Injection Protocol
+
+> **This workflow implements the complete Antigravity IDE Kernel v5.0 audit protocol.**
+> **Replaces the need to paste the 150+ line prompt every time.**
+
+---
+
+## Phase 1: Zero-Trust Acknowledgment
+- **Action**: Acknowledge CONTEXT_NULL state
+- **Output**:
+```
+[STATE] CONTEXT_NULL → Starting Progressive-Deep-Dive-Audit
+[TARGET] {user-specified target or auto-detect from request}
+```
+
+---
+
+## Phase 2: Stage A - Surface Scan (Landscape)
+- **Action**: Scan target directory/file structure
+- **Checks**:
+  - [ ] AIP-KEY remnants (PROHIBITED per DC_02)
+  - [ ] Subscription gate points (REQUIRED per DC_01)
+  - [ ] Domain Invariant compliance (DIA.xml Sec 2.5)
+
+```bash
+# AIP-KEY Check
+grep -rn "AIP[-_]KEY\|api[_-]key" {target} | grep -v ollama | head -20
+```
+
+---
+
+## Phase 3: Stage B - Logic Trace (Deep-Dive)
+- **Tool**: `task_boundary` (Sequential Thinking Mode)
+- **Action**: Break down the logic trace into explicit planning/execution steps using the task boundary tool.
+- **Mandate**: Do NOT proceed without a `task_boundary` call explaining the trace plan.
+- **Output Format**:
+```
+INPUT → MIDDLEWARE → CONTROLLER → SERVICE → DB
+  ↓         ↓            ↓           ↓       ↓
+[source] [validation] [handler] [logic] [persist]
+```
+
+## Phase 3.5: External Verification (Tavily/MCP)
+- **Tool**: `search_web` (Tavily) or `read_resource` (MCP)
+- **Action**: Verify the identified patterns/libraries against external sources.
+- **Mandate**: You MUST search for "best practices" or "security vulnerabilities" related to the code found.
+- **Check**: "Is this `createClient` pattern deprecated?"
+
+
+---
+
+## Phase 4: Stage C - Atomic Quality Audit (Microscope)
+- **Action**: Line-by-line code quality check
+- **Criteria**:
+  - Complexity (cyclomatic)
+  - Safety (null checks, error handling)
+  - Naming conventions
+  - SOLID principles
+  - Clean Architecture layer violations
+
+---
+
+## Phase 5: Holistic Synthesis (Butterfly Effect)
+- **Action**: Simulate impact of proposed changes
+- **Output Format**:
+```
+[State A] → [Mutation X] → [Ripple Effect Y] → [Verdict: SAFE/HIGH_RISK]
+```
+
+---
+
+## Phase 6: Machine-Readable Audit Report
+
+**Output this exact structure:**
+
+```markdown
+### 📠 MACHINE-READABLE AUDIT REPORT (v5.0)
+
+#### 1. DETAILED_ANALYSIS_LOG
+* **Landscape_Scan:**
+    * `AIP-KEY_Status`: [CLEAN/DETECTED]
+    * `Subscription_Gate`: [VALID/INVALID]
+* **Logic_Trace:**
+    * `Critical_Path`: [Detailed Flow]
+* **Quality_Audit_Findings:**
+    * `[File:Line]` : [Severity] - [Issue]
+
+#### 2. HOLISTIC_IMPACT_SIMULATION
+* **Simulation_Target:** [Component]
+* **Execution_Trace:**
+    1. `Initial_State`: [Description]
+    2. `Mutation`: [Proposed Change]
+    3. `Ripple_Effect`: [Affected Modules]
+* **Architectural_Verdict:** [SAFE/HIGH_RISK]
+
+#### 3. XML_V2.2_COMPLIANCE_MATRIX
+* `Domain_Invariants (Sec 2.5)`: [PASS/FAIL]
+* `Layer_Architecture (Sec 3.5)`: [PASS/FAIL]
+
+#### 4. STATUS_CONFIRMATION
+* `Current_State`: **[CONTEXT_INJECTED]**
+* `Ready_to_Execute`: **TRUE/FALSE**
+```
+
+---
+
+## Phase 7: System Halt & User Approval
+- **Action**: Output Korean notification and WAIT
+- **Output**:
+```
+사용자님, **Code-Level-Context-Injected** 상태에 도달하기 위해
+**Deep-Dive Audit**을 완료했습니다.
+
+상세 내용은 위 **Machine-Readable Report**를 참조해주십시오.
+
+[WAIT] - 승인을 기다립니다.
+```
+
+---
+
+## Usage Examples
+
+**Full audit on specific target:**
+```
+/deep-audit scripts/ontology/actions/__init__.py
+```
+
+**Audit before feature implementation:**
+```
+/deep-audit
+Target: scripts/runtime/
+Request: Add new Kernel hook for pre-execution validation
+```
+
+**Quick audit (auto-detect from context):**
+```
+/deep-audit
+[현재 작업 컨텍스트에서 대상 자동 감지]
+```

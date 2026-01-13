@@ -1,0 +1,132 @@
+{
+    "metadata": {
+        "source": "sample.pdf",
+        "parser": "Vision-Native V3.0 (Simulated)",
+        "timestamp": "2026-01-05T22:45:00"
+    },
+    "pages": [
+        {
+            "page_num": 1,
+            "width": 595,
+            "height": 841,
+            "blocks": [
+                {
+                    "type": "Table",
+                    "style": {
+                        "border": "none",
+                        "rows": 3,
+                        "cols": 2,
+                        "width_type": "Variable"
+                    },
+                    "cells": [
+                        {
+                            "row": 0,
+                            "col": 0,
+                            "content": [
+                                {
+                                    "type": "Text",
+                                    "text": "4. ",
+                                    "style": {
+                                        "font_weight": "bold"
+                                    }
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "x^2 + x - 1 = 0"
+                                },
+                                {
+                                    "type": "Text",
+                                    "text": " 일 때, 다음 식의 값을 구하시오."
+                                },
+                                {
+                                    "type": "Text",
+                                    "text": "\n(1) ",
+                                    "style": {
+                                        "font_weight": "bold"
+                                    }
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "(x+2)(x-1)(x+4)(x-3) + 5"
+                                },
+                                {
+                                    "type": "Text",
+                                    "text": "\n(2) ",
+                                    "style": {
+                                        "font_weight": "bold"
+                                    }
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "x^5 - 5x"
+                                }
+                            ]
+                        },
+                        {
+                            "row": 0,
+                            "col": 1,
+                            "content": [
+                                {
+                                    "type": "Text",
+                                    "text": "7. 다항식 "
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "(1 + x + x^2)^2 (1 + x)"
+                                },
+                                {
+                                    "type": "Text",
+                                    "text": " + "
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "(1 - x + x^2 + x^3)^3"
+                                },
+                                {
+                                    "type": "Text",
+                                    "text": " 의 전개식에서 일차항의 계수를 구하시오.\n"
+                                },
+                                {
+                                    "type": "Text",
+                                    "text": "\nAnswer: 16",
+                                    "style": {
+                                        "color": "blue",
+                                        "align": "right"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "row": 1,
+                            "col": 0,
+                            "content": [
+                                {
+                                    "type": "Text",
+                                    "text": "5. 다음을 만족시키는 n의 값을 구하시오."
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "(2^2 + 1)(2^4 + 1)(2^8 + 1)(2^{16} + 1)(2^{32} + 1) = {1 over {2^n - 1}} (2^n - 1)"
+                                }
+                            ]
+                        },
+                        {
+                            "row": 1,
+                            "col": 1,
+                            "content": [
+                                {
+                                    "type": "Text",
+                                    "text": "8. a+b=4, ab=2 일 때, 다음 식의 값을 구하시오."
+                                },
+                                {
+                                    "type": "Equation",
+                                    "script": "a - b"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

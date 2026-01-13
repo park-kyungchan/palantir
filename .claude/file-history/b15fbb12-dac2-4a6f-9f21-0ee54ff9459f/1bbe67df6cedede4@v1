@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "oda-ontology": {
+      "type": "stdio",
+      "command": "/home/palantir/park-kyungchan/palantir/.venv/bin/python",
+      "args": [
+        "-m",
+        "scripts.mcp.ontology_server"
+      ],
+      "cwd": "/home/palantir/park-kyungchan/palantir",
+      "env": {
+        "PYTHONPATH": "/home/palantir/park-kyungchan/palantir",
+        "ORION_DB_PATH": "/home/palantir/park-kyungchan/palantir/.agent/tmp/ontology.db"
+      }
+    },
+    "tavily": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tavily/mcp"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "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"
+      }
+    }
+  }
+}

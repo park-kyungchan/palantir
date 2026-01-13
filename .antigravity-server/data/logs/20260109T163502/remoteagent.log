@@ -1,0 +1,16 @@
+2026-01-09 16:35:02.872 [info] 
+
+
+
+
+2026-01-09 16:35:02.880 [info] Extension host agent started.
+2026-01-09 16:35:03.114 [info] [127.0.0.1][c71c241a][ManagementConnection] New connection established.
+2026-01-09 16:35:03.120 [info] [127.0.0.1][bf95a009][ExtensionHostConnection] New connection established.
+2026-01-09 16:35:03.473 [info] [127.0.0.1][bf95a009][ExtensionHostConnection] <50345> Launched Extension Host Process.
+2026-01-09 16:35:03.770 [info] [127.0.0.1][bf95a009][ExtensionHostConnection] <50345> Set default auto-select family attempt timeout to 1000ms
+
+2026-01-09 16:35:12.199 [info] [127.0.0.1][bf95a009][ExtensionHostConnection] <50345> [32m(Antigravity) 2026-01-09 16:35:12 [INFO]: Language server started[39m
+
+2026-01-09 16:35:12.306 [info] [127.0.0.1][bf95a009][ExtensionHostConnection] <50345> [32m(Antigravity) 2026-01-09 16:35:12 [INFO]: LS lspClient started successfully[39m
+
+2026-01-09 16:37:20.072 [info] [127.0.0.1][c71c241a][ManagementConnection] The client has disconnected gracefully, so the connection will be disposed.

@@ -1,0 +1,221 @@
+---
+description: |
+  Execute ODA 3-Stage Planning Protocol with Plan subagent comparison.
+  Uses dual-path analysis: ODA Protocol + Claude Plan Agent → Optimal synthesis.
+allowed-tools: Read, Grep, Glob, Bash, TodoWrite, Task, AskUserQuestion
+argument-hint: <요구사항>
+---
+
+# /plan Command (Optimized with Plan Subagent)
+
+Transform user requirements into an ODA-aligned implementation plan.
+**Unique feature:** Compares ODA 3-Stage Protocol output with Claude's native Plan subagent for optimal synthesis.
+
+## Arguments
+$ARGUMENTS - The requirements to plan (in Korean or English)
+
+---
+
+## Execution Strategy: Dual-Path Analysis
+
+This command runs **two parallel analyses** and synthesizes the best approach:
+
+### Path 1: ODA 3-Stage Protocol
+Uses internal `oda-plan` skill for schema-first, governance-compliant planning:
+- Stage A: BLUEPRINT (Requirements Analysis)
+- Stage B: INTEGRATION TRACE (Solution Design)
+- Stage C: QUALITY GATE (Plan Validation)
+
+### Path 2: Claude Plan Subagent
+Uses native `Task(subagent_type="Plan")` for architectural analysis:
+- Identifies critical files
+- Considers trade-offs
+- Provides implementation steps
+
+### Synthesis: Best of Both
+Compare outputs and extract:
+- **ODA compliance** from Path 1
+- **Architectural insights** from Path 2
+- **Risk mitigation** from both
+
+---
+
+## Execution Flow
+
+### Step 1: Initialize Tracking
+```
+TodoWrite:
+- [ ] Parse requirements: $ARGUMENTS
+- [ ] Execute ODA 3-Stage Protocol (Path 1)
+- [ ] Execute Plan Subagent analysis (Path 2)
+- [ ] Synthesize optimal approach
+- [ ] Present for user approval
+```
+
+### Step 2: Parallel Analysis
+
+**Launch simultaneously:**
+
+1. **ODA Protocol Path:**
+   ```python
+   # Invoke internal oda-plan skill
+   Skill("oda-plan", args="$ARGUMENTS")
+   ```
+
+2. **Plan Subagent Path:**
+   ```python
+   Task(
+       subagent_type="Plan",
+       prompt="Analyze requirements and design implementation: $ARGUMENTS",
+       description="Plan subagent analysis"
+   )
+   ```
+
+### Step 3: Comparison Matrix
+
+| Aspect | ODA Protocol | Plan Subagent | Optimal |
+|--------|--------------|---------------|---------|
+| Schema alignment | ✓ Primary focus | Secondary | Use ODA |
+| Architectural trade-offs | Basic | ✓ Detailed | Use Plan |
+| Evidence collection | ✓ Mandatory | Optional | Use ODA |
+| Phase breakdown | Rigid 3-stage | ✓ Flexible | Combine |
+| Risk assessment | ✓ Governance-based | Experience-based | Combine |
+
+### Step 4: Synthesis Template
+
+```markdown
+# Synthesized Implementation Plan
+
+## 요구사항 (from $ARGUMENTS)
+[Parsed requirements]
+
+## 1. ODA Protocol Analysis
+### Stage A Findings
+[files_viewed, complexity, scope]
+
+### Stage B Design
+[ObjectTypes, Actions, phases]
+
+### Stage C Quality Gates
+[validation checklist]
+
+## 2. Plan Subagent Insights
+### Critical Files Identified
+[files that will be affected]
+
+### Architectural Considerations
+[trade-offs, patterns, alternatives]
+
+### Recommended Approach
+[subagent's synthesis]
+
+## 3. Optimal Synthesis
+### Why This Approach
+[Rationale combining both analyses]
+
+### Implementation Phases
+| Phase | ODA Compliance | Architectural Fit | Priority |
+|-------|----------------|-------------------|----------|
+| 1     | ✓              | ✓                 | HIGH     |
+
+### Risk Mitigation
+[Combined risk assessment]
+
+## 4. Approval Gate
+- [ ] ODA governance passed
+- [ ] Architecture reviewed
+- [ ] User approved
+```
+
+---
+
+## Usage Examples
+
+### Basic Usage
+```
+/plan 사용자 인증 기능 추가
+```
+
+### With Context
+```
+/plan Add pagination to task list API (must be compatible with existing frontend)
+```
+
+### Complex Requirement
+```
+/plan 다음 기능을 구현:
+1. Task에 태그 추가 기능
+2. 태그별 필터링
+3. 태그 자동완성
+```
+
+---
+
+## Evidence Requirements
+
+This command enforces anti-hallucination:
+
+- **Minimum 3 files** must be read before planning
+- **Specific line references** required for claims
+- **ObjectType mapping** must reference existing schemas
+
+```python
+if len(evidence.files_viewed) < 3:
+    raise AntiHallucinationError("Insufficient file evidence for planning")
+```
+
+---
+
+## Integration with Other Commands
+
+| Scenario | Next Command |
+|----------|--------------|
+| Plan approved | Proceed with implementation |
+| Need deeper analysis | `/deep-audit <target>` |
+| Governance concern | `/governance` |
+| Quality check needed | `/quality-check` |
+
+---
+
+## Native Capability Utilization
+
+This command leverages:
+
+| Capability | Usage |
+|------------|-------|
+| `Task(Plan)` | Architectural analysis subagent |
+| `Skill(oda-plan)` | Internal ODA protocol (user-invocable: false) |
+| `TodoWrite` | Progress tracking |
+| `AskUserQuestion` | Clarification if requirements unclear |
+| `EnterPlanMode` | For very complex multi-phase implementations |
+
+---
+
+## Output Format
+
+Final output follows this structure:
+
+```markdown
+# 📋 Implementation Plan: [Title]
+
+## Summary
+- Complexity: small/medium/large
+- Files affected: N
+- Estimated phases: N
+
+## Approach Comparison
+| Analysis | Recommendation | Confidence |
+|----------|----------------|------------|
+| ODA Protocol | [summary] | HIGH |
+| Plan Subagent | [summary] | HIGH |
+| **Synthesis** | [optimal] | **HIGHEST** |
+
+## Implementation Phases
+[Detailed phases with quality gates]
+
+## Risk Register
+[Combined risk assessment]
+
+## Approval Required
+[ ] Proceed with this plan?
+```

@@ -1,0 +1,593 @@
+[
+    {
+        "_comment": "=== 1. 테두리 박스 시작 (검은 실선) ===",
+        "action_type": "CreateBorderBox",
+        "border_type": "Solid",
+        "border_width": "0.4mm",
+        "border_color": "#000000"
+    },
+    {
+        "_comment": "=== 2. 2단 레이아웃 설정 ===",
+        "action_type": "MultiColumn",
+        "count": 2,
+        "same_size": true,
+        "gap": 850
+    },
+    {
+        "_comment": "=== 왼쪽 단: 문제 4번 ===",
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "4. "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x^{2}+x-1=0"
+    },
+    {
+        "action_type": "InsertText",
+        "text": " 일 때, 다음 식의 값을 구하시오."
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(1) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "(x+2)(x-1)(x+4)(x-3)+5"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "16\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(2) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x^{5}-5 x"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "-3\r\n"
+    },
+    {
+        "_comment": "=== 왼쪽 단: 문제 5번 ===",
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "5. 다음을 만족시키는 "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "n"
+    },
+    {
+        "action_type": "InsertText",
+        "text": " 의 값을 구하시오."
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "\\left(2^{2}+1\\right)\\left(2^{4}+1\\right)\\left(2^{8}+1\\right)\\left(2^{16}+1\\right)\\left(2^{32}+1\\right)=\\frac{1}{3}\\left(2^{n}-1\\right)"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "_comment": "=== 왼쪽 단: 문제 6번 ===",
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "6. 다음 다항식의 전개식에서 모든 계수의 합을 구하시오."
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "1+(1+x)+\\left(1+x+x^{2}\\right)^{2}+\\left(1+x+x^{2}+x^{3}\\right)^{3}"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "+\\left(1+x+x^{2}+x^{3}+x^{4}\\right)^{4}"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetFontBold",
+        "is_bold": true
+    },
+    {
+        "action_type": "SetFontSize",
+        "size": 14.0
+    },
+    {
+        "action_type": "InsertText",
+        "text": "701"
+    },
+    {
+        "action_type": "SetFontBold",
+        "is_bold": false
+    },
+    {
+        "action_type": "SetFontSize",
+        "size": 10.0
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "_comment": "=== 단 나누기 (오른쪽 단으로 이동) ===",
+        "action_type": "BreakColumn"
+    },
+    {
+        "_comment": "=== 오른쪽 단: 문제 7번 ===",
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "7. 다항식 "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "\\left(1+x+x^{2}\\right)^{2}(1+x)+\\left(1-x+x^{2}+x^{3}\\right)^{3}"
+    },
+    {
+        "action_type": "InsertText",
+        "text": " 의 전개식에서 일차항의 계수를 구하시오."
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetFontBold",
+        "is_bold": true
+    },
+    {
+        "action_type": "SetFontSize",
+        "size": 14.0
+    },
+    {
+        "action_type": "InsertText",
+        "text": "0"
+    },
+    {
+        "action_type": "SetFontBold",
+        "is_bold": false
+    },
+    {
+        "action_type": "SetFontSize",
+        "size": 10.0
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "_comment": "=== 오른쪽 단: 문제 8번 ===",
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "8. "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "a+b=4, a b=2"
+    },
+    {
+        "action_type": "InsertText",
+        "text": " 일 때, 다음 식의 값을 구하시오. (단, "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "a \\geq b"
+    },
+    {
+        "action_type": "InsertText",
+        "text": " )"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(1) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "a-b"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "2 \\sqrt{2}"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(2) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "a^{2}-b^{2}"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "8 \\sqrt{2}"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(3) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "a^{3}-b^{3}"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "28 \\sqrt{2}"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "_comment": "=== 오른쪽 단: 문제 9번 ===",
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "9. "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x+y=1, x^{3}+y^{3}=19"
+    },
+    {
+        "action_type": "InsertText",
+        "text": " 일 때, 다음 식의 값을 구하시오."
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(1) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x y"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "-6\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(2) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x^{2}+y^{2}"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "13\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(3) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x^{4}+y^{4}"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "97\r\n"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 20,
+        "right_margin": 0,
+        "indent": -20,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "(4) "
+    },
+    {
+        "action_type": "InsertEquation",
+        "script": "x^{5}+y^{5}"
+    },
+    {
+        "action_type": "SetParaShape",
+        "left_margin": 0,
+        "right_margin": 0,
+        "indent": 0,
+        "line_spacing": 160,
+        "heading_type": "None"
+    },
+    {
+        "action_type": "InsertText",
+        "text": "\r\n"
+    },
+    {
+        "_comment": "=== 2단 레이아웃 종료 (1단으로 복귀) ===",
+        "action_type": "MultiColumn",
+        "count": 1,
+        "same_size": true,
+        "gap": 0
+    }
+]

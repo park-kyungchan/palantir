@@ -1,0 +1,121 @@
+# Orchestrator Enforcement Configuration
+# =======================================
+# Version: 1.0
+# Last Updated: 2026-01-10
+
+# Enforcement Mode
+# ----------------
+# WARN:      Log violations, show warnings, but allow all operations (default)
+# BLOCK:     Block complex operations that should be delegated
+# AUTO_WRAP: Automatically suggest Task delegation wrapper (advisory with template)
+enforcement_mode: BLOCK
+
+# Complexity Thresholds
+# ---------------------
+thresholds:
+  bash_command_length: 150       # Characters - commands longer trigger complexity check (강화: 200→150)
+  bash_pipe_count: 2             # Number of pipes before flagging (강화: 3→2)
+  edit_line_count: 30            # Lines being changed before flagging (강화: 50→30)
+  write_line_count: 80           # Lines being written before flagging (강화: 100→80)
+  multi_function_count: 2        # Functions in a single file write (강화: 3→2)
+
+# Simple Operations (Never flagged)
+# ----------------------------------
+# These patterns are considered simple and will NOT trigger enforcement
+simple_bash_patterns:
+  - ls
+  - pwd
+  - cat
+  - head
+  - tail
+  - wc
+  - git status
+  - git log
+  - git diff
+  - git branch
+  - git add
+  - git commit
+  - pytest
+  - python -c
+  - which
+  - type
+  - echo
+  - mkdir -p
+  - touch
+  - cp
+  - mv
+
+# Allowed Direct Commands (Bypass enforcement)
+# --------------------------------------------
+# These commands are ALWAYS allowed even in BLOCK mode
+allowed_direct_commands:
+  # Read-only operations
+  - "grep"
+  - "find"
+  - "rg"
+  - "fd"
+  # Git read operations
+  - "git status"
+  - "git log"
+  - "git diff"
+  - "git branch"
+  - "git show"
+  # Test execution
+  - "pytest"
+  - "python -m pytest"
+  - "npm test"
+  - "yarn test"
+  # Type checking
+  - "mypy"
+  - "pyright"
+  - "tsc --noEmit"
+  # Linting
+  - "ruff check"
+  - "eslint"
+  - "flake8"
+  # Package info
+  - "pip show"
+  - "npm list"
+  - "pip list"
+
+# Dangerous Patterns (Always flagged regardless of mode)
+# ------------------------------------------------------
+dangerous_patterns:
+  - "rm -rf"
+  - "sudo rm"
+  - "sudo"
+  - "chmod 777"
+  - "find . -exec"
+  - "DROP TABLE"
+  - "DROP DATABASE"
+  - "TRUNCATE"
+  - "DELETE FROM"
+  - "eval("
+  - "exec("
+
+# Auto-Wrap Suggestions
+# ---------------------
+# Mapping of operation types to suggested subagent types
+auto_wrap_suggestions:
+  dangerous_operation: general-purpose
+  complex_analysis: Explore
+  multi_pipe_command: Explore
+  structural_change: Plan
+  multi_file_change: Plan
+  large_write: general-purpose
+  default: general-purpose
+
+# Fallback Behavior
+# -----------------
+# On configuration errors or hook failures, fall back to WARN mode
+fallback_mode: WARN
+fallback_on_error: true
+
+# Logging
+# -------
+logging:
+  enabled: true
+  log_dir: /home/palantir/park-kyungchan/palantir/.agent/logs
+  log_file: orchestrator_violations.log
+  include_tool_input: true     # Log tool input summaries
+  max_summary_length: 100      # Truncate summaries to this length

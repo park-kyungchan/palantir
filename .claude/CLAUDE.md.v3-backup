@@ -1,0 +1,287 @@
+# Orion ODA System Prompt (Claude Code CLI Native)
+
+> **Version:** 3.0 | **Architecture:** Ontology-Driven Architecture (ODA)
+> **Compatibility:** LLM-Agnostic (Palantir AIP/Foundry Pattern)
+
+---
+
+## 1. ODA Kernel Directives
+
+### 1.1 Core Principles
+```
+SCHEMA-FIRST      → ObjectTypes are canonical; mutations follow schema
+ACTION-ONLY       → State changes ONLY through registered Actions
+AUDIT-FIRST       → All operations logged with evidence
+ZERO-TRUST        → Verify files/imports before ANY mutation
+```
+
+### 1.2 Canonical References
+| Resource | Path | Purpose |
+|----------|------|---------|
+| **ObjectTypes** | `scripts/ontology/objects/task_types.py` | Domain entity definitions |
+| **Registry** | `scripts/ontology/registry.py` | Single source of truth |
+| **Schema Export** | `.agent/schemas/ontology_registry.json` | JSON schema for external tools |
+| **Protocols** | `scripts/ontology/protocols/` | 3-Stage governance |
+| **Governance** | `scripts/ontology/governance/` | Quality gates & violations |
+
+### 1.3 Workspace Context
+```yaml
+workspace_root: /home/palantir/park-kyungchan/palantir
+database_path: .agent/tmp/ontology.db
+memory_path: .agent/memory/semantic/
+schemas_path: .agent/schemas/
+```
+
+---
+
+## 2. 3-Stage Protocol (Mandatory for Complex Tasks)
+
+### Stage A: SCAN (Surface Analysis)
+**Goal:** Establish reality before action
+- File analysis and requirements gathering
+- Codebase introspection
+- Scope definition and complexity assessment
+
+**Evidence Required:**
+```python
+StageResult.evidence = {
+    "files_viewed": ["path/to/file1.py", ...],
+    "requirements": ["req1", "req2", ...],
+    "complexity": "small|medium|large"
+}
+```
+
+### Stage B: TRACE (Logic Analysis)
+**Goal:** Prevent integration failures
+- Import verification (confirm all imports exist)
+- Signature matching (align with existing APIs)
+- Data flow tracing
+- TDD breakdown (RED → GREEN → REFACTOR)
+
+**Evidence Required:**
+```python
+StageResult.evidence = {
+    "imports_verified": [...],
+    "signatures_matched": [...],
+    "test_strategy": "..."
+}
+```
+
+### Stage C: VERIFY (Quality Gate)
+**Goal:** Ensure readiness for execution
+- Pattern validation
+- Build & tests pass
+- Code quality checks (lint, type-check)
+- Risk assessment
+
+**Quality Checks:**
+- [ ] Project builds without errors
+- [ ] All existing tests pass
+- [ ] Linting passes
+- [ ] Type checking passes
+
+---
+
+## 3. Claude Code Native Capabilities
+
+### 3.1 Subagent Delegation
+Use native subagents for specialized tasks:
+
+| Subagent | Use Case | Invocation |
+|----------|----------|------------|
+| **Explore** | Stage A SCAN, codebase exploration | `Task(subagent_type="Explore")` |
+| **Plan** | Stage B TRACE, implementation planning | `EnterPlanMode` or `Task(subagent_type="Plan")` |
+| **general-purpose** | Complex multi-step operations | `Task(subagent_type="general-purpose")` |
+
+### 3.2 TodoWrite for Task Tracking
+**Always use TodoWrite** for complex tasks:
+```
+- Map to ODA TaskStatus: pending → PENDING, in_progress → IN_PROGRESS, completed → COMPLETED
+- Track 3-Stage Protocol progress via todos
+- Mark completed IMMEDIATELY after finishing each stage
+```
+
+### 3.3 Evidence Collection
+When using Read/Grep/Glob tools, evidence is automatically tracked:
+- `Read` → adds to `files_viewed`
+- `Grep` → adds matched files and lines to evidence
+- `Glob` → documents file discovery
+
+---
+
+## 4. Governance Rules
+
+### 4.1 Blocked Patterns (ALWAYS DENY)
+```
+rm -rf          → Dangerous recursive deletion
+sudo rm         → Sudo deletion not allowed
+chmod 777       → Insecure permissions
+DROP TABLE      → Database destruction
+```
+
+### 4.2 Anti-Hallucination Enforcement
+**Stages that pass without evidence are INVALID:**
+```python
+if stage.passed and not stage.has_evidence:
+    raise AntiHallucinationError("Stage passed without files_viewed evidence")
+```
+
+### 4.3 Proposal-Required Actions
+The following require explicit approval:
+- Schema modifications
+- Database migrations
+- Security-sensitive changes
+- Destructive operations
+
+---
+
+## 5. Registered ObjectTypes
+
+### Agent
+```yaml
+properties:
+  - name: str (required, 1-100 chars)
+  - email: Optional[str]
+  - role: str (default: "agent")
+  - agent_active: bool (default: true)
+  - capabilities: List[str]
+links:
+  - assigned_tasks: 1:N → Task
+```
+
+### Task
+```yaml
+properties:
+  - title: str (required)
+  - description: str
+  - priority: LOW | MEDIUM | HIGH | CRITICAL
+  - task_status: PENDING | IN_PROGRESS | BLOCKED | COMPLETED | CANCELLED
+  - tags: List[str]
+  - estimated_hours: float
+  - due_date: datetime
+links:
+  - assigned_to: N:1 → Agent
+  - depends_on: N:N → Task
+  - subtasks: 1:N → Task
+```
+
+### Proposal (Governance)
+```yaml
+properties:
+  - action_type: str (required)
+  - payload: Dict
+  - priority: ProposalPriority
+  - status: DRAFT → PENDING → APPROVED/REJECTED → EXECUTED
+```
+
+---
+
+## 6. Execution Rules
+
+### 6.1 Pre-Mutation Checklist
+Before ANY Edit/Write operation:
+1. **Verify file exists:** Read the file first
+2. **Check imports:** Ensure all dependencies are available
+3. **Validate schema:** Mutation must comply with ObjectType
+4. **Collect evidence:** Document files_viewed, lines_referenced
+
+### 6.2 Post-Mutation Audit
+After ANY mutation:
+1. Log to audit trail
+2. Update affected ObjectTypes
+3. Trigger side effects (if configured)
+
+### 6.3 Communication Protocol
+- **Intent:** Korean (사용자 의도 확인)
+- **Execution:** English (code, commands, technical artifacts)
+- **Documentation:** English (schemas, APIs)
+
+---
+
+## 7. Skills & Commands Reference
+
+### Available Skills
+| Skill | Path | Purpose |
+|-------|------|---------|
+| `oda-audit` | `.claude/skills/oda-audit.md` | 3-Stage Protocol Audit |
+| `oda-plan` | `.claude/skills/oda-plan.md` | ODA-aligned Planning |
+| `oda-governance` | `.claude/skills/oda-governance.md` | Governance Check |
+
+### Workflow Commands
+| Command | Description |
+|---------|-------------|
+| `/init` | Initialize workspace with ODA context |
+| `/plan <요구사항>` | Execute 3-Stage Planning Protocol |
+| `/audit <target>` | Run deep audit on target path |
+| `/governance` | Check governance compliance |
+
+---
+
+## 8. LLM-Agnostic Design
+
+This architecture is designed to work with ANY LLM backend:
+
+```python
+# LLM routing abstraction (scripts/llm/config.py)
+class LLMProviderType(str, Enum):
+    CLAUDE_CODE = "claude-code"      # Native CLI
+    ANTIGRAVITY = "antigravity"      # Gemini backend
+    OPENAI_COMPATIBLE = "openai"     # OpenAI API
+    OLLAMA = "ollama"                # Local models
+```
+
+**Key:** Schema definitions (ObjectTypes, Protocols, Governance) are **vendor-neutral**.
+The same ODA works regardless of which LLM processes the requests.
+
+---
+
+## 9. Quick Reference
+
+### Session Initialization
+```bash
+# Verify ontology
+python -m scripts.ontology.registry
+
+# Initialize database
+ORION_DB_PATH=.agent/tmp/ontology.db python -c "
+from scripts.ontology.storage.database import initialize_database
+import asyncio
+asyncio.run(initialize_database())
+"
+
+# Check protocols
+python -c "from scripts.ontology.protocols import ThreeStageProtocol; print('Ready')"
+```
+
+### Evidence Validation
+```python
+from scripts.ontology.protocols import ProtocolContext
+
+context = ProtocolContext(
+    target_path="/home/palantir/park-kyungchan/palantir",
+    actor_id="claude_code_agent"
+)
+context.add_file_evidence("path/to/file.py", lines=[10, 20, 30])
+assert context.get_evidence_dict()["files_viewed"]  # Must not be empty
+```
+
+---
+
+## 10. Behavioral Constraints
+
+### ALWAYS
+- Use TodoWrite for multi-step tasks
+- Collect evidence before passing any Stage
+- Verify files exist before editing
+- Follow 3-Stage Protocol for complex changes
+
+### NEVER
+- Skip Stage A/B/C in protocol
+- Edit files without reading first
+- Execute blocked patterns (rm -rf, sudo rm, chmod 777)
+- Pass Stages without files_viewed evidence
+- Hallucinate file contents or code
+
+---
+
+> **Migration Note:** This CLAUDE.md replaces the previous `.gemini/GEMINI.md` and `.codex/AGENTS.md` configurations. All ODA directives are now native to Claude Code CLI.

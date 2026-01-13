@@ -1,0 +1,493 @@
+---
+description: Main Agent Orchestration Flow for LLM-Agnostic ODA Architecture
+version: "1.0"
+enforcement: ANTIGRAVITY_ARCHITECT_V5.0
+---
+
+# Main Agent Orchestration Flow
+
+> **Architecture:** LLM-Agnostic ODA (Ontology-Driven Architecture)
+> **Purpose:** Ensure ALL mutations pass through ODA Kernel regardless of LLM
+> **Key Principle:** LLM-specific features BEFORE and AFTER ODA Kernel
+
+---
+
+## 1. Orchestration Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    COMPLETE ORCHESTRATION FLOW                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │                   PRE-ODA LAYER                                 │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │ │
+│  │  │ Intent Parse │→ │ Decompose    │→ │ Deploy       │          │ │
+│  │  │ (Skills)     │  │ (TaskDecomp) │  │ (Subagents)  │          │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘          │ │
+│  │  LLM-Specific: Skills, Hooks, context:fork, resume             │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                       │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │                   SUBAGENT EXECUTION                            │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │ │
+│  │  │ Explore      │  │ Plan         │  │ general-     │          │ │
+│  │  │ (Stage A)    │  │ (Stage B)    │  │ purpose      │          │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘          │ │
+│  │  Output: files_to_modify, changes_proposed, evidence           │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                       │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │                   ODA KERNEL (LLM-AGNOSTIC)                     │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │ │
+│  │  │ Proposal     │→ │ Approval     │→ │ Execute      │          │ │
+│  │  │ Creation     │  │ Gate         │  │ Proposal     │          │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘          │ │
+│  │  Actions: file.modify, file.write, file.delete                 │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                       │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │                   STAGE C VERIFICATION                          │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │ │
+│  │  │ Tests        │  │ Lint         │  │ Build        │          │ │
+│  │  │ (stage_c.*)  │  │ (stage_c.*)  │  │ (stage_c.*)  │          │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘          │ │
+│  │  Output: StageCEvidence with all quality checks                │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                       │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │                   POST-ODA LAYER                                │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │ │
+│  │  │ TodoWrite    │  │ Notify User  │  │ Cleanup      │          │ │
+│  │  │ Update       │  │ (Result)     │  │ (Context)    │          │ │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘          │ │
+│  │  LLM-Specific: AskUserQuestion, WebSearch, Notification        │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Pre-ODA Layer (LLM-Specific)
+
+### 2.1 Intent Parsing
+
+Main Agent uses LLM-specific capabilities to understand user request:
+
+| Capability | Claude | GPT-4 | Gemini |
+|------------|--------|-------|--------|
+| Skill Detection | TriggerDetector | Function calling | Native parsing |
+| Hook Events | 10 event types | Custom functions | Event handlers |
+| Context Mode | context:fork | - | - |
+
+### 2.2 Task Decomposition
+
+```python
+from lib.oda.planning.task_decomposer import (
+    TaskDecomposer,
+    SubagentType,
+    should_decompose_task,
+)
+
+# Check if decomposition needed
+if should_decompose_task(user_request, scope_path):
+    subtasks = decompose_task(user_request, scope_path, SubagentType.EXPLORE)
+    # Deploy in parallel
+    for subtask in subtasks:
+        Task(**subtask.to_task_params(), run_in_background=True)
+```
+
+### 2.3 Subagent Deployment
+
+| Subagent | Purpose | Output | Token Budget |
+|----------|---------|--------|--------------|
+| Explore | Stage A - Codebase scan | files_viewed, complexity | 5K |
+| Plan | Stage B - Implementation design | change_plan, imports | 10K |
+| general-purpose | Execution | files_modified, changes | 15K |
+
+---
+
+## 3. Subagent Output Processing
+
+### 3.1 Output Structure
+
+When a subagent returns, its output follows this structure:
+
+```python
+class SubagentOutput(BaseModel):
+    """Standard output from execution subagents."""
+    stage_a_evidence: Optional[StageAEvidence] = None
+    stage_b_evidence: Optional[StageBEvidence] = None
+
+    # File changes proposed (for ODA Kernel)
+    files_to_modify: List[FileModification] = []
+    files_to_create: List[FileCreation] = []
+    files_to_delete: List[str] = []
+
+    # Verification
+    verification_commands: List[str] = []
+
+class FileModification(BaseModel):
+    file_path: str
+    old_content: str  # For verification
+    new_content: str
+    reason: str
+
+class FileCreation(BaseModel):
+    file_path: str
+    content: str
+    reason: str
+```
+
+### 3.2 Main Agent Reception
+
+```python
+# After subagent completes
+output = await get_subagent_output(agent_id)
+
+# Convert to Proposal-ready format
+for modification in output.files_to_modify:
+    await create_file_proposal(modification, output.stage_a_evidence)
+```
+
+---
+
+## 4. ODA Kernel Integration
+
+### 4.1 Proposal Creation (File-Level)
+
+Each file modification becomes a separate Proposal:
+
+```python
+# Using ODA MCP Server
+for file_mod in output.files_to_modify:
+    result = mcp__oda_ontology__create_proposal(
+        action_type="file.modify",
+        payload={
+            "file_path": file_mod.file_path,
+            "old_content": file_mod.old_content,
+            "new_content": file_mod.new_content,
+            "reason": file_mod.reason,
+            "stage_evidence": {
+                "files_viewed": evidence.files_viewed,
+                "imports_verified": evidence.imports_verified,
+            }
+        },
+        priority="high",
+        submit=True,  # Auto-submit for review
+    )
+    proposal_ids.append(result.proposal_id)
+```
+
+### 4.2 Approval Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     APPROVAL DECISION TREE                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Is action hazardous (requires_proposal=true)?                      │
+│  ├── NO  → Auto-approve → Execute immediately                      │
+│  └── YES → Check approval mode                                      │
+│            ├── INTERACTIVE → AskUserQuestion for approval          │
+│            ├── BATCH → Collect all, present summary, bulk approve  │
+│            └── AUTO → Auto-approve with audit log                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 Interactive Approval
+
+For hazardous actions in interactive mode:
+
+```python
+# Present proposal to user
+response = AskUserQuestion(
+    questions=[{
+        "question": f"Approve file modification: {file_path}?",
+        "header": "Proposal",
+        "options": [
+            {"label": "Approve", "description": f"Apply changes to {file_path}"},
+            {"label": "Reject", "description": "Cancel this modification"},
+            {"label": "View Diff", "description": "Show detailed changes"},
+        ],
+        "multiSelect": False,
+    }]
+)
+
+if response == "Approve":
+    mcp__oda_ontology__approve_proposal(proposal_id=proposal_id)
+    mcp__oda_ontology__execute_proposal(proposal_id=proposal_id)
+elif response == "Reject":
+    mcp__oda_ontology__reject_proposal(
+        proposal_id=proposal_id,
+        reason="User rejected"
+    )
+```
+
+### 4.4 Batch Approval
+
+For multiple file changes:
+
+```python
+# Collect all pending proposals
+pending = mcp__oda_ontology__list_pending_proposals(limit=50)
+
+# Present summary
+summary = f"Batch approval for {len(pending)} file changes:\n"
+for p in pending:
+    summary += f"- {p['payload']['file_path']}: {p['payload']['reason']}\n"
+
+response = AskUserQuestion(
+    questions=[{
+        "question": f"Approve all {len(pending)} changes?",
+        "header": "Batch",
+        "options": [
+            {"label": "Approve All", "description": summary[:200]},
+            {"label": "Review Each", "description": "Approve individually"},
+            {"label": "Reject All", "description": "Cancel all changes"},
+        ],
+        "multiSelect": False,
+    }]
+)
+
+if response == "Approve All":
+    for p in pending:
+        mcp__oda_ontology__approve_proposal(proposal_id=p["id"])
+        mcp__oda_ontology__execute_proposal(proposal_id=p["id"])
+```
+
+---
+
+## 5. Stage C Verification
+
+### 5.1 Quality Actions Execution
+
+After file changes are applied:
+
+```python
+# Run Stage C verification
+stage_c_result = mcp__oda_ontology__execute_action(
+    api_name="stage_c.verify",
+    params={
+        "path": workspace_root,
+        "checks_to_run": ["tests", "lint", "build", "typecheck"]
+    }
+)
+
+# Parse StageCEvidence
+evidence = stage_c_result.data
+if evidence.critical_count > 0:
+    # Rollback or fix required
+    raise QualityGateError(evidence.findings)
+```
+
+### 5.2 Quality Gate Decision
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     QUALITY GATE DECISION                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  critical_count > 0?                                                │
+│  ├── YES → BLOCK → Rollback changes → Report to user              │
+│  └── NO  → Continue                                                 │
+│                                                                     │
+│  error_count > 0?                                                   │
+│  ├── YES → WARNING → Notify user → Allow with flag                 │
+│  └── NO  → Continue                                                 │
+│                                                                     │
+│  warning_count > 0?                                                 │
+│  ├── YES → INFO → Log for review                                   │
+│  └── NO  → PASS → Complete successfully                            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 6. Post-ODA Layer (LLM-Specific)
+
+### 6.1 TodoWrite Update
+
+```python
+TodoWrite(todos=[
+    {"content": "Phase 1: File modifications", "status": "completed", "activeForm": "..."},
+    {"content": "Phase 2: Quality verification", "status": "completed", "activeForm": "..."},
+    ...
+])
+```
+
+### 6.2 User Notification
+
+```python
+# Using Notification hook or direct output
+print(f"""
+## Execution Complete
+
+### Files Modified
+{list_modified_files}
+
+### Quality Check Results
+- Tests: {evidence.quality_checks['tests'].status}
+- Lint: {evidence.quality_checks['lint'].status}
+- Build: {evidence.quality_checks['build'].status}
+
+### Audit Trail
+Proposal IDs: {proposal_ids}
+""")
+```
+
+---
+
+## 7. Error Handling
+
+### 7.1 Subagent Failure
+
+```python
+try:
+    output = await get_subagent_output(agent_id)
+except SubagentTimeoutError:
+    # Resume with stored context
+    Task(resume=agent_id, prompt="Continue from last checkpoint")
+except SubagentError as e:
+    # Log and report
+    logger.error(f"Subagent failed: {e}")
+    notify_user(f"Task failed: {e}")
+```
+
+### 7.2 Proposal Rejection
+
+```python
+if proposal.status == "rejected":
+    # Clean up any partial changes
+    for executed_proposal in executed_proposals:
+        # Rollback if possible
+        pass
+
+    # Report to user
+    notify_user(f"Proposal rejected: {proposal.rejection_reason}")
+```
+
+### 7.3 Quality Gate Failure
+
+```python
+if not evidence.can_pass_stage():
+    # Rollback executed proposals
+    for proposal_id in executed_proposals:
+        # Note: ODA doesn't have built-in rollback, need manual revert
+        pass
+
+    # Create fix task
+    Task(
+        subagent_type="general-purpose",
+        prompt=f"Fix quality issues: {evidence.findings}",
+        run_in_background=True,
+    )
+```
+
+---
+
+## 8. Configuration
+
+### 8.1 Approval Mode
+
+```yaml
+# .claude/hooks/config/orchestration_config.yaml
+approval_mode: interactive  # interactive | batch | auto
+
+# Auto-approve thresholds
+auto_approve:
+  max_files: 3
+  max_lines_changed: 100
+  excluded_paths:
+    - "*.env*"
+    - "**/secrets/**"
+    - "**/credentials/**"
+```
+
+### 8.2 Quality Gate Thresholds
+
+```yaml
+# Stage C thresholds
+quality_gate:
+  block_on_critical: true
+  block_on_error: true
+  allow_warnings: true
+  required_coverage: 80
+```
+
+---
+
+## 9. Resume After Auto-Compact
+
+If context is compacted during orchestration:
+
+1. **Read Plan File:** `.agent/plans/llm_agnostic_oda_architecture.md`
+2. **Check Proposal State:**
+   ```python
+   pending = mcp__oda_ontology__list_pending_proposals()
+   stats = mcp__oda_ontology__get_proposal_stats()
+   ```
+3. **Resume from Last Checkpoint:**
+   - If proposals pending → Continue approval flow
+   - If proposals approved → Execute and verify
+   - If Stage C failed → Fix and retry
+
+---
+
+## 10. LLM-Specific Optimizations
+
+### 10.1 Claude-Specific
+
+| Feature | Usage in Orchestration |
+|---------|------------------------|
+| context:fork | Subagent isolation |
+| run_in_background | Parallel execution |
+| resume parameter | Auto-Compact recovery |
+| Skills | Intent parsing |
+| Hooks | Event handling |
+| TodoWrite | Progress tracking |
+
+### 10.2 Future LLM Support
+
+For non-Claude LLMs:
+
+```python
+class LLMAdapter(ABC):
+    """Abstract adapter for LLM-specific features."""
+
+    @abstractmethod
+    def deploy_subagent(self, task: Task) -> AgentId:
+        """Deploy a subagent using LLM-specific mechanism."""
+        pass
+
+    @abstractmethod
+    def get_subagent_output(self, agent_id: AgentId) -> SubagentOutput:
+        """Retrieve subagent output."""
+        pass
+
+    @abstractmethod
+    def request_user_approval(self, question: str, options: List[str]) -> str:
+        """Request user approval using LLM-specific UI."""
+        pass
+
+class ClaudeAdapter(LLMAdapter):
+    """Claude Code V2.1.4 specific adapter."""
+
+    def deploy_subagent(self, task: Task) -> AgentId:
+        result = Task(**task.to_params(), run_in_background=True)
+        return result.agent_id
+
+    def get_subagent_output(self, agent_id: AgentId) -> SubagentOutput:
+        output = Read(f"/tmp/claude/.../tasks/{agent_id}.output")
+        return SubagentOutput.parse(output)
+
+    def request_user_approval(self, question: str, options: List[str]) -> str:
+        return AskUserQuestion(questions=[...])
+```
+
+---
+
+> **Key Principle:** The ODA Kernel is LLM-agnostic. All LLM-specific optimizations happen in the Pre-ODA and Post-ODA layers. This ensures work consistency across different LLM providers while maximizing each LLM's unique capabilities.

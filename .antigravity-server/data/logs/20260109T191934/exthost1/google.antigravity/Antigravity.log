@@ -1,0 +1,229 @@
+2026-01-09 19:19:37.167 [info] 2026/01/09 19:19:37 maxprocs: Leaving GOMAXPROCS=22: CPU quota undefined
+2026-01-09 19:19:37.350 [info] I0109 19:19:37.350070 73331 server.go:1167] Starting language server process with pid 73331
+2026-01-09 19:19:37.350 [info] I0109 19:19:37.350123 73331 server.go:284] Setting GOMAXPROCS to 4
+2026-01-09 19:19:37.352 [info] I0109 19:19:37.352721 73331 server.go:491] Language server will attempt to listen on host 127.0.0.1
+2026-01-09 19:19:37.365 [info] I0109 19:19:37.364876 73331 server.go:506] Language server listening on random port at 45405 for HTTPS
+2026-01-09 19:19:37.374 [info] I0109 19:19:37.374661 73331 server.go:513] Language server listening on random port at 44759 for HTTP
+2026-01-09 19:19:38.190 [info] I0109 19:19:37.907664 73331 server.go:484] Created extension server client at port 44783
+2026-01-09 19:19:38.190 [info] W0109 19:19:37.933561 73331 log_context.go:106] Cache(userInfo): Singleflight refresh failed: You are not logged into Antigravity.
+2026-01-09 19:19:48.322 [info] W0109 19:19:48.319525 73331 client.go:135] failed to set auth token
+2026-01-09 19:19:48.322 [info] W0109 19:19:48.320470 73331 log_context.go:106] Cache(userInfo): Singleflight refresh failed: You are not logged into Antigravity.
+2026-01-09 19:19:48.330 [info] (Antigravity) 2026-01-09 19:19:48.330 [INFO]: Language server started
+2026-01-09 19:19:48.337 [info] I0109 19:19:48.336797 73331 server.go:1496] initialized server successfully
+2026-01-09 19:19:49.023 [info] (Antigravity) 2026-01-09 19:19:49.023 [INFO]: LS lspClient started successfully
+2026-01-09 19:19:51.002 [info] E0109 19:19:51.001701 73331 log.go:362] path is a directory, not a file: /home/palantir/hwpx
+2026-01-09 19:31:04.125 [info] E0109 19:31:04.124394 73331 log.go:354] queryText was truncated because it was longer than the allowed byte length 1500
+2026-01-09 19:31:04.598 [info] E0109 19:31:04.597954 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:31.752 [info] E0109 19:39:31.752159 73331 log.go:354] failed to get merge base with default branch: could not identify default branch
+2026-01-09 19:39:31.864 [info] E0109 19:39:31.863847 73331 log.go:354] encountered conflicting override on experiment: cascade-include-ephemeral-message
+2026-01-09 19:39:31.994 [info] I0109 19:39:31.993933 73331 planner_generator.go:273] Requesting planner with 3 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:39:32.627 [info] E0109 19:39:32.627250 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:32.629 [info] E0109 19:39:32.629721 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:32.631 [info] E0109 19:39:32.630922 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:32.632 [info] E0109 19:39:32.632455 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:35.128 [info] I0109 19:39:35.127826 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x1eccac6e216e68af
+2026-01-09 19:39:42.882 [info] E0109 19:39:42.882352 73331 log.go:354] argument order was not respected: [TaskName Mode PredictedTaskSize] vs [Mode PredictedTaskSize TaskName TaskStatus TaskSummary]
+2026-01-09 19:39:42.902 [info] I0109 19:39:42.901784 73331 planner_generator.go:273] Requesting planner with 5 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:39:43.286 [info] E0109 19:39:43.285851 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:43.288 [info] E0109 19:39:43.288285 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:44.666 [info] I0109 19:39:44.665765 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x4b46b63fca261cde
+2026-01-09 19:39:45.522 [info] E0109 19:39:45.522110 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:45.524 [info] E0109 19:39:45.524344 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:46.168 [info] I0109 19:39:46.168275 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xaf0d1968c55fa7f6
+2026-01-09 19:39:48.450 [info] I0109 19:39:48.441213 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:39:48.461 [info] I0109 19:39:48.460776 73331 planner_generator.go:273] Requesting planner with 9 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:39:48.846 [info] E0109 19:39:48.845885 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:48.848 [info] E0109 19:39:48.847854 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:48.849 [info] E0109 19:39:48.849830 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:48.852 [info] E0109 19:39:48.852526 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:52.544 [info] I0109 19:39:52.544204 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x8ecb1e75a8481874
+2026-01-09 19:39:55.873 [info] E0109 19:39:55.873451 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:55.876 [info] E0109 19:39:55.875888 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:56.511 [info] E0109 19:39:56.511497 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:56.513 [info] E0109 19:39:56.513156 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:56.756 [info] I0109 19:39:56.756746 73331 planner_generator.go:273] Requesting planner with 14 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:39:57.167 [info] E0109 19:39:57.167706 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:57.169 [info] E0109 19:39:57.169574 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:39:59.407 [info] I0109 19:39:59.406595 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x807a7a7cffc21e61
+2026-01-09 19:40:12.234 [info] E0109 19:40:12.234316 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:12.236 [info] E0109 19:40:12.236553 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:12.918 [info] E0109 19:40:12.918366 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:12.920 [info] E0109 19:40:12.920824 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:13.164 [info] I0109 19:40:13.163955 73331 planner_generator.go:273] Requesting planner with 19 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:40:16.685 [info] E0109 19:40:16.685000 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:16.687 [info] E0109 19:40:16.687334 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:17.303 [info] E0109 19:40:17.303787 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:17.305 [info] E0109 19:40:17.305398 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:21.920 [info] E0109 19:40:21.919763 73331 log.go:362] request failed: &{429 Too Many Requests 429 HTTP/1.1 1 1 map[Alt-Svc:[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000] Content-Length:[436] Content-Type:[text/event-stream] Date:[Fri, 09 Jan 2026 10:40:16 GMT] Server:[ESF] Server-Timing:[gfet4t7; dur=824] Vary:[Origin X-Origin Referer] X-Cloudaicompanion-Trace-Id:[823460d6c27ede63] X-Content-Type-Options:[nosniff] X-Frame-Options:[SAMEORIGIN] X-Xss-Protection:[0]] 0x1e6a4515b280 436 [] false false map[] 0x1e6a44fbf180 0x1e6a4aead380}: request failed: &{429 Too Many Requests 429 HTTP/1.1 1 1 map[Alt-Svc:[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000] Content-Length:[436] Content-Type:[text/event-stream] Date:[Fri, 09 Jan 2026 10:40:16 GMT] Server:[ESF] Server-Timing:[gfet4t7; dur=824] Vary:[Origin X-Origin Referer] X-Cloudaicompanion-Trace-Id:[823460d6c27ede63] X-Content-Type-Options:[nosniff] X-Frame-Options:[SAMEORIGIN] X-Xss-Protection:[0]] 0x1e6a4515b280 436 [] false false map[] 0x1e6a44fbf180 0x1e6a4aead380}
+2026-01-09 19:40:21.932 [info] I0109 19:40:21.932198 73331 planner_generator.go:273] Requesting planner with 20 chat messages at model retry attempt 1 and API retry attempt 2
+2026-01-09 19:40:22.252 [info] E0109 19:40:22.251996 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:22.254 [info] E0109 19:40:22.253849 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:24.916 [info] I0109 19:40:24.915950 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xb7c1343de30c3852
+2026-01-09 19:40:30.644 [info] E0109 19:40:30.644013 73331 log.go:354] argument order was not respected: [TaskName Mode PredictedTaskSize] vs [Mode PredictedTaskSize TaskName TaskStatus TaskSummary]
+2026-01-09 19:40:31.039 [info] E0109 19:40:31.039823 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:31.042 [info] E0109 19:40:31.042507 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:31.980 [info] E0109 19:40:31.979963 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:31.982 [info] E0109 19:40:31.982280 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:32.827 [info] E0109 19:40:32.827270 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:32.830 [info] E0109 19:40:32.829881 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:32.969 [info] I0109 19:40:32.969514 73331 planner_generator.go:273] Requesting planner with 1 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:40:32.975 [info] I0109 19:40:32.975204 73331 planner_generator.go:273] Requesting planner with 26 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:40:33.361 [info] E0109 19:40:33.361324 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:33.363 [info] E0109 19:40:33.363616 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:35.640 [info] I0109 19:40:35.640229 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x195f6f82e23e7f02
+2026-01-09 19:40:35.777 [info] I0109 19:40:35.777147 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x51b17595be5dd12d
+2026-01-09 19:40:42.558 [info] I0109 19:40:42.557954 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:40:42.559 [info] I0109 19:40:42.559407 73331 planner_generator.go:273] Requesting planner with 3 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:40:45.825 [info] I0109 19:40:45.825675 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x21969b47cb1872fd
+2026-01-09 19:40:56.124 [info] E0109 19:40:56.124288 73331 log.go:354] argument order was not respected: [TargetFile Overwrite] vs [ArtifactMetadata CodeContent Complexity Description EmptyFile IsArtifact Overwrite TargetFile]
+2026-01-09 19:40:56.654 [info] E0109 19:40:56.654619 73331 log.go:362] failed to update code tracker for document
+2026-01-09 19:40:57.069 [info] E0109 19:40:57.069442 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:57.071 [info] E0109 19:40:57.071552 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:57.798 [info] E0109 19:40:57.798555 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:57.801 [info] E0109 19:40:57.801356 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:58.137 [info] I0109 19:40:58.137053 73331 timestamps.go:48] Touching modified time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:40:58.139 [info] I0109 19:40:58.139695 73331 planner_generator.go:273] Requesting planner with 5 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:40:58.384 [info] I0109 19:40:58.384590 73331 planner_generator.go:273] Requesting planner with 31 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:40:59.452 [info] E0109 19:40:59.452532 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:40:59.454 [info] E0109 19:40:59.454714 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:00.936 [info] I0109 19:41:00.936308 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x74fa3c28b9ca3c94
+2026-01-09 19:41:01.124 [info] I0109 19:41:01.124192 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xc1235b44ee968ff
+2026-01-09 19:41:04.226 [info] E0109 19:41:03.835912 73331 log.go:354] argument order was not respected: [TargetFile] vs [CodeMarkdownLanguage Complexity Description Instruction ReplacementChunks TargetFile]
+2026-01-09 19:41:04.712 [info] E0109 19:41:04.712649 73331 log.go:362] failed to update code tracker for document
+2026-01-09 19:41:04.855 [info] E0109 19:41:04.854927 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:04.857 [info] E0109 19:41:04.857049 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:05.284 [info] I0109 19:41:05.284663 73331 planner_generator.go:273] Requesting planner with 35 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:41:05.984 [info] E0109 19:41:05.983889 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:05.986 [info] E0109 19:41:05.986189 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:06.237 [info] I0109 19:41:06.237810 73331 timestamps.go:48] Touching modified time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:41:06.239 [info] I0109 19:41:06.239502 73331 planner_generator.go:273] Requesting planner with 7 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:41:06.846 [info] E0109 19:41:06.845866 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:06.848 [info] E0109 19:41:06.848136 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:06.893 [info] I0109 19:41:06.893261 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xecd3d6117fbac2ee
+2026-01-09 19:41:07.127 [info] I0109 19:41:07.127075 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xbe63bded1fa450fe
+2026-01-09 19:41:07.204 [info] I0109 19:41:07.204176 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x5a1206c6f339c494
+2026-01-09 19:41:09.306 [info] I0109 19:41:09.088245 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x3c94f3cf296cbdf1
+2026-01-09 19:41:11.182 [info] E0109 19:41:11.181975 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:11.184 [info] E0109 19:41:11.184054 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:11.460 [info] E0109 19:41:11.460032 73331 log.go:362] request failed: &{429 Too Many Requests 429 HTTP/1.1 1 1 map[Alt-Svc:[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000] Content-Length:[436] Content-Type:[text/event-stream] Date:[Fri, 09 Jan 2026 10:41:07 GMT] Server:[ESF] Server-Timing:[gfet4t7; dur=872] Vary:[Origin X-Origin Referer] X-Cloudaicompanion-Trace-Id:[4dd06784761e1e37] X-Content-Type-Options:[nosniff] X-Frame-Options:[SAMEORIGIN] X-Xss-Protection:[0]] 0x1e6a4be6f400 436 [] false false map[] 0x1e6a46ebca00 0x1e6a4d07ac00}: request failed: &{429 Too Many Requests 429 HTTP/1.1 1 1 map[Alt-Svc:[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000] Content-Length:[436] Content-Type:[text/event-stream] Date:[Fri, 09 Jan 2026 10:41:07 GMT] Server:[ESF] Server-Timing:[gfet4t7; dur=872] Vary:[Origin X-Origin Referer] X-Cloudaicompanion-Trace-Id:[4dd06784761e1e37] X-Content-Type-Options:[nosniff] X-Frame-Options:[SAMEORIGIN] X-Xss-Protection:[0]] 0x1e6a4be6f400 436 [] false false map[] 0x1e6a46ebca00 0x1e6a4d07ac00}
+2026-01-09 19:41:11.467 [info] I0109 19:41:11.467678 73331 planner_generator.go:273] Requesting planner with 36 chat messages at model retry attempt 1 and API retry attempt 2
+2026-01-09 19:41:11.853 [info] E0109 19:41:11.853221 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:11.855 [info] E0109 19:41:11.855165 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:13.202 [info] E0109 19:41:13.202320 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:13.204 [info] E0109 19:41:13.204199 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:15.439 [info] E0109 19:41:15.439501 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:15.442 [info] E0109 19:41:15.441848 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:22.862 [info] E0109 19:41:22.862089 73331 log.go:362] request failed: &{429 Too Many Requests 429 HTTP/1.1 1 1 map[Alt-Svc:[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000] Content-Length:[436] Content-Type:[text/event-stream] Date:[Fri, 09 Jan 2026 10:41:14 GMT] Server:[ESF] Server-Timing:[gfet4t7; dur=788] Vary:[Origin X-Origin Referer] X-Cloudaicompanion-Trace-Id:[8c329e9f741112cd] X-Content-Type-Options:[nosniff] X-Frame-Options:[SAMEORIGIN] X-Xss-Protection:[0]] 0x1e6a4f97eac0 436 [] false false map[] 0x1e6a4e450dc0 0x1e6a4e2ecc00}: request failed: &{429 Too Many Requests 429 HTTP/1.1 1 1 map[Alt-Svc:[h3=":443"; ma=2592000,h3-29=":443"; ma=2592000] Content-Length:[436] Content-Type:[text/event-stream] Date:[Fri, 09 Jan 2026 10:41:14 GMT] Server:[ESF] Server-Timing:[gfet4t7; dur=788] Vary:[Origin X-Origin Referer] X-Cloudaicompanion-Trace-Id:[8c329e9f741112cd] X-Content-Type-Options:[nosniff] X-Frame-Options:[SAMEORIGIN] X-Xss-Protection:[0]] 0x1e6a4f97eac0 436 [] false false map[] 0x1e6a4e450dc0 0x1e6a4e2ecc00}
+2026-01-09 19:41:22.874 [info] I0109 19:41:22.873006 73331 planner_generator.go:273] Requesting planner with 37 chat messages at model retry attempt 1 and API retry attempt 3
+2026-01-09 19:41:23.263 [info] E0109 19:41:23.263218 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:23.265 [info] E0109 19:41:23.265457 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:41:29.304 [info] I0109 19:41:29.303343 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xa79681b6c8f07b9e
+2026-01-09 19:41:52.285 [info] E0109 19:41:52.285548 73331 log.go:354] content does not have the expected number of lines: got 1, expected 222 (startLine=0, endLine=221, contentLen=0, containsTrailingNewline=false)
+2026-01-09 19:41:52.286 [info] E0109 19:41:52.285774 73331 log.go:354] failed to convert step to chat messages: failed to convert step output: content does not have the expected number of lines: got 1, expected 222 (startLine=0, endLine=221, contentLen=0, containsTrailingNewline=false)
+2026-01-09 19:41:52.286 [info] E0109 19:41:52.286021 73331 log.go:354] unpaired tool call and tool results detected; count: 1, group tools: true
+2026-01-09 19:41:52.291 [info] I0109 19:41:52.290724 73331 planner_generator.go:273] Requesting planner with 1 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:41:52.343 [info] I0109 19:41:52.343474 73331 planner_generator.go:273] Requesting planner with 42 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:41:55.214 [info] I0109 19:41:55.214385 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xa26e29a2815ca174
+2026-01-09 19:41:55.533 [info] I0109 19:41:55.533159 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x44b188702d9873ce
+2026-01-09 19:42:12.745 [info] E0109 19:42:12.744980 73331 log.go:362] cannot create new artifact, KI hwpx_reconstruction_pipeline already has 20 artifacts. Consolidate artifacts first.
+2026-01-09 19:42:12.748 [info] I0109 19:42:12.748136 73331 planner_generator.go:273] Requesting planner with 3 chat messages at model retry attempt 2 and API retry attempt 1
+2026-01-09 19:42:16.491 [info] I0109 19:42:16.490900 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x753535aa8e32efd4
+2026-01-09 19:42:19.361 [info] I0109 19:42:19.361750 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:42:19.378 [info] I0109 19:42:19.378510 73331 planner_generator.go:273] Requesting planner with 7 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:22.559 [info] I0109 19:42:22.558651 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x187713c8aaa1a61b
+2026-01-09 19:42:24.416 [info] I0109 19:42:24.416298 73331 planner_generator.go:273] Requesting planner with 9 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:28.032 [info] E0109 19:42:28.032008 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:28.034 [info] E0109 19:42:28.033897 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:28.035 [info] E0109 19:42:28.035698 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:28.037 [info] E0109 19:42:28.037348 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:28.038 [info] E0109 19:42:28.038922 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:28.040 [info] E0109 19:42:28.040383 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:28.044 [info] I0109 19:42:28.043784 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x32b78d5172a7aa3c
+2026-01-09 19:42:28.838 [info] E0109 19:42:28.838590 73331 log.go:354] argument order was not respected: [TaskName Mode PredictedTaskSize] vs [Mode PredictedTaskSize TaskName TaskStatus TaskSummary]
+2026-01-09 19:42:28.889 [info] I0109 19:42:28.888756 73331 planner_generator.go:273] Requesting planner with 45 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:29.275 [info] E0109 19:42:29.275062 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:29.277 [info] E0109 19:42:29.277354 73331 log.go:354] while decoding file, failed to detect charset with sufficient confidence
+2026-01-09 19:42:29.609 [info] I0109 19:42:29.608946 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:42:29.611 [info] I0109 19:42:29.610725 73331 planner_generator.go:273] Requesting planner with 12 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:32.674 [info] I0109 19:42:32.674363 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x81ee9740135ad848
+2026-01-09 19:42:33.153 [info] I0109 19:42:33.153536 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x3a56b56ab337a485
+2026-01-09 19:42:36.285 [info] I0109 19:42:36.285462 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:42:36.288 [info] I0109 19:42:36.288057 73331 planner_generator.go:273] Requesting planner with 15 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:39.847 [info] I0109 19:42:39.847693 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xfaf1b54d25b5789d
+2026-01-09 19:42:42.862 [info] I0109 19:42:42.862276 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:42:42.864 [info] I0109 19:42:42.864466 73331 planner_generator.go:273] Requesting planner with 19 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:45.967 [info] I0109 19:42:45.966627 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x218499abef6b382c
+2026-01-09 19:42:51.238 [info] E0109 19:42:51.238427 73331 log.go:362] cannot create new artifact, KI hwpx_reconstruction_pipeline already has 20 artifacts. Consolidate artifacts first.
+2026-01-09 19:42:51.240 [info] I0109 19:42:51.240321 73331 planner_generator.go:273] Requesting planner with 21 chat messages at model retry attempt 2 and API retry attempt 1
+2026-01-09 19:42:54.694 [info] I0109 19:42:54.693917 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x60881f6cfe93759d
+2026-01-09 19:42:54.841 [info] E0109 19:42:54.840787 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:54.841 [info] E0109 19:42:54.841023 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:54.841 [info] E0109 19:42:54.841169 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:54.841 [info] E0109 19:42:54.841310 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:54.841 [info] E0109 19:42:54.841624 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:42:54.842 [info] I0109 19:42:54.842118 73331 planner_generator.go:273] Requesting planner with 22 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:42:55.796 [info] E0109 19:42:55.796103 73331 log.go:354] document not found in cache
+2026-01-09 19:42:55.796 [info] E0109 19:42:55.796461 73331 log.go:354] document not found in cache
+2026-01-09 19:42:55.796 [info] E0109 19:42:55.796690 73331 log.go:354] document not found in cache
+2026-01-09 19:42:55.797 [info] E0109 19:42:55.797007 73331 log.go:354] document not found in cache
+2026-01-09 19:42:58.819 [info] I0109 19:42:58.819313 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xdfbdb83f4850c892
+2026-01-09 19:42:58.820 [info] E0109 19:42:58.820522 73331 log.go:362] /home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline/artifacts/overview/community_standards_audit.md does not exist
+2026-01-09 19:42:58.822 [info] E0109 19:42:58.822092 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:58.822 [info] E0109 19:42:58.822313 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:58.822 [info] E0109 19:42:58.822471 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:58.822 [info] E0109 19:42:58.822623 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:42:58.822 [info] E0109 19:42:58.822908 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:42:58.823 [info] I0109 19:42:58.823381 73331 planner_generator.go:273] Requesting planner with 24 chat messages at model retry attempt 2 and API retry attempt 1
+2026-01-09 19:43:02.491 [info] I0109 19:43:02.317949 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x5930a6ae6866f300
+2026-01-09 19:43:03.439 [info] I0109 19:43:03.439523 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:43:03.441 [info] E0109 19:43:03.441635 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:03.442 [info] E0109 19:43:03.441866 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:03.442 [info] E0109 19:43:03.442031 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:03.442 [info] E0109 19:43:03.442194 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:03.442 [info] E0109 19:43:03.442534 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:43:03.443 [info] I0109 19:43:03.443040 73331 planner_generator.go:273] Requesting planner with 26 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:43:07.006 [info] I0109 19:43:07.006537 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xf0e75ee05ccee4f8
+2026-01-09 19:43:12.219 [info] I0109 19:43:12.219305 73331 timestamps.go:61] Touching accessed time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:43:12.221 [info] E0109 19:43:12.221114 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:12.221 [info] E0109 19:43:12.221590 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:12.222 [info] E0109 19:43:12.221998 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:12.222 [info] E0109 19:43:12.222404 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:12.223 [info] E0109 19:43:12.223139 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:43:12.224 [info] I0109 19:43:12.224255 73331 planner_generator.go:273] Requesting planner with 29 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:43:15.726 [info] I0109 19:43:15.726055 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x95dba5b4ef8f2ac7
+2026-01-09 19:43:19.431 [info] E0109 19:43:19.431153 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:19.431 [info] E0109 19:43:19.431379 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:19.431 [info] E0109 19:43:19.431522 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:19.431 [info] E0109 19:43:19.431667 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:19.432 [info] E0109 19:43:19.431956 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:43:19.432 [info] I0109 19:43:19.432445 73331 planner_generator.go:273] Requesting planner with 31 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:43:22.966 [info] I0109 19:43:22.966327 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x84c39ee304c5ac61
+2026-01-09 19:43:27.718 [info] E0109 19:43:27.718254 73331 log.go:354] argument order was not respected: [TargetFile] vs [CodeMarkdownLanguage Complexity Description Instruction ReplacementChunks TargetFile]
+2026-01-09 19:43:27.781 [info] E0109 19:43:27.781144 73331 log.go:362] failed to update code tracker for document
+2026-01-09 19:43:29.731 [info] I0109 19:43:29.731598 73331 timestamps.go:48] Touching modified time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:43:29.733 [info] E0109 19:43:29.733376 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:29.733 [info] E0109 19:43:29.733577 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:29.733 [info] E0109 19:43:29.733735 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:29.733 [info] E0109 19:43:29.733881 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:29.734 [info] E0109 19:43:29.734155 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:43:29.734 [info] I0109 19:43:29.734648 73331 planner_generator.go:273] Requesting planner with 33 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:43:33.774 [info] I0109 19:43:33.774062 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0x6ace511e12caaeb6
+2026-01-09 19:43:39.381 [info] E0109 19:43:39.381136 73331 log.go:354] argument order was not respected: [TargetFile Overwrite] vs [ArtifactMetadata CodeContent Complexity Description EmptyFile IsArtifact Overwrite TargetFile]
+2026-01-09 19:43:39.462 [info] E0109 19:43:39.462452 73331 log.go:362] failed to update code tracker for document
+2026-01-09 19:43:41.393 [info] I0109 19:43:41.393587 73331 timestamps.go:48] Touching modified time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:43:41.395 [info] E0109 19:43:41.395642 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:41.395 [info] E0109 19:43:41.395862 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:41.396 [info] E0109 19:43:41.396028 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:41.396 [info] E0109 19:43:41.396207 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:41.396 [info] E0109 19:43:41.396536 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:43:41.397 [info] I0109 19:43:41.397105 73331 planner_generator.go:273] Requesting planner with 35 chat messages at model retry attempt 1 and API retry attempt 1
+2026-01-09 19:43:51.544 [info] I0109 19:43:51.543872 73331 http_helpers.go:129] URL: https://daily-cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse Trace: 0xec8ba9157eb50c8e
+2026-01-09 19:43:51.545 [info] E0109 19:43:51.545331 73331 log.go:354] argument order was not respected: [TargetFile Overwrite] vs [ArtifactMetadata CodeContent Complexity Description EmptyFile IsArtifact Overwrite TargetFile]
+2026-01-09 19:43:51.623 [info] E0109 19:43:51.623285 73331 log.go:362] failed to update code tracker for document
+2026-01-09 19:43:53.559 [info] I0109 19:43:53.559666 73331 timestamps.go:48] Touching modified time for KI file:///home/palantir/.gemini/antigravity/knowledge/hwpx_reconstruction_pipeline
+2026-01-09 19:43:53.564 [info] E0109 19:43:53.563975 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:53.564 [info] E0109 19:43:53.564218 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:53.564 [info] E0109 19:43:53.564416 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:53.564 [info] E0109 19:43:53.564562 73331 log.go:354] failed to convert step to chat messages: unknown step type: CORTEX_STEP_TYPE_FILE_CHANGE
+2026-01-09 19:43:53.565 [info] E0109 19:43:53.564905 73331 log.go:354] unpaired tool call and tool results detected; count: 4, group tools: true
+2026-01-09 19:43:53.565 [info] I0109 19:43:53.565493 73331 planner_generator.go:273] Requesting planner with 37 chat messages at model retry attempt 1 and API retry attempt 1

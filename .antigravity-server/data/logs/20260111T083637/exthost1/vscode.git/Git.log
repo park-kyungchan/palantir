@@ -1,0 +1,168 @@
+2026-01-11 08:36:39.884 [info] [main] Log level: Info
+2026-01-11 08:36:39.884 [info] [main] Validating found git in: "git"
+2026-01-11 08:36:39.884 [info] [main] Using git "2.43.0" from "git"
+2026-01-11 08:36:39.884 [info] [Model][doInitialScan] Initial repository scan started
+2026-01-11 08:36:39.884 [info] > git rev-parse --show-toplevel [31ms]
+2026-01-11 08:36:39.886 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [6ms]
+2026-01-11 08:36:39.897 [info] [Model][openRepository] Opened repository (path): /home/palantir
+2026-01-11 08:36:39.897 [info] [Model][openRepository] Opened repository (real path): /home/palantir
+2026-01-11 08:36:39.897 [info] [Model][openRepository] Opened repository (kind): repository
+2026-01-11 08:36:39.907 [info] > git config --get commit.template [4ms]
+2026-01-11 08:36:39.908 [info] > git rev-parse --show-toplevel [3ms]
+2026-01-11 08:36:39.914 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [3ms]
+2026-01-11 08:36:39.914 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:39.921 [info] > git rev-parse --show-toplevel [4ms]
+2026-01-11 08:36:39.933 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [5ms]
+2026-01-11 08:36:39.935 [info] > git rev-parse --show-toplevel [3ms]
+2026-01-11 08:36:39.939 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:39.945 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:39.949 [info] > git rev-parse --show-toplevel [2ms]
+2026-01-11 08:36:39.952 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:39.956 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:39.963 [info] > git rev-parse --show-toplevel [2ms]
+2026-01-11 08:36:39.967 [info] > git rev-parse --show-toplevel [2ms]
+2026-01-11 08:36:39.971 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:39.976 [info] > git rev-parse --show-toplevel [3ms]
+2026-01-11 08:36:39.983 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [5ms]
+2026-01-11 08:36:39.990 [info] [Model][openRepository] Opened repository (path): /home/palantir/.nvm
+2026-01-11 08:36:39.990 [info] [Model][openRepository] Opened repository (real path): /home/palantir/.nvm
+2026-01-11 08:36:39.990 [info] [Model][openRepository] Opened repository (kind): repository
+2026-01-11 08:36:39.998 [info] > git config --get commit.template [2ms]
+2026-01-11 08:36:39.998 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:40.004 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:40.005 [info] > git for-each-ref --format %(refname)%00%(objectname)%00%(*objectname) refs/tags [4ms]
+2026-01-11 08:36:40.013 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [3ms]
+2026-01-11 08:36:40.014 [info] > git rev-parse --show-toplevel [2ms]
+2026-01-11 08:36:40.018 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:40.024 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [3ms]
+2026-01-11 08:36:40.032 [info] [Model][openRepository] Opened repository (path): /home/palantir/PAI
+2026-01-11 08:36:40.032 [info] [Model][openRepository] Opened repository (real path): /home/palantir/PAI
+2026-01-11 08:36:40.032 [info] [Model][openRepository] Opened repository (kind): repository
+2026-01-11 08:36:40.042 [info] > git config --get commit.template [4ms]
+2026-01-11 08:36:40.043 [info] > git rev-parse --show-toplevel [2ms]
+2026-01-11 08:36:40.050 [info] > git rev-parse --show-toplevel [1ms]
+2026-01-11 08:36:40.050 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [4ms]
+2026-01-11 08:36:40.055 [warning] [Git][revParse] Unable to read file: ENOENT: no such file or directory, open '/home/palantir/PAI/.git/refs/remotes/origin/main'
+2026-01-11 08:36:40.056 [info] > git rev-parse --show-toplevel [4ms]
+2026-01-11 08:36:40.057 [info] > git rev-parse refs/remotes/origin/main [2ms]
+2026-01-11 08:36:40.065 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [3ms]
+2026-01-11 08:36:40.066 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [2ms]
+2026-01-11 08:36:40.072 [info] [Model][openRepository] Opened repository (path): /home/palantir/hwpx
+2026-01-11 08:36:40.072 [info] [Model][openRepository] Opened repository (real path): /home/palantir/hwpx
+2026-01-11 08:36:40.072 [info] [Model][openRepository] Opened repository (kind): repository
+2026-01-11 08:36:40.082 [info] > git status -z -uall [75ms]
+2026-01-11 08:36:40.115 [info] > git rev-parse --show-toplevel [34ms]
+2026-01-11 08:36:40.116 [info] > git config --get commit.template [37ms]
+2026-01-11 08:36:40.122 [info] > git config --get commit.template [7ms]
+2026-01-11 08:36:40.124 [info] > git rev-parse --show-toplevel [5ms]
+2026-01-11 08:36:40.127 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/hwpx refs/remotes/hwpx [5ms]
+2026-01-11 08:36:40.129 [info] > git for-each-ref --format %(refname)%00%(objectname)%00%(*objectname) refs/tags [5ms]
+2026-01-11 08:36:40.136 [info] > git rev-parse --show-toplevel [9ms]
+2026-01-11 08:36:40.143 [info] [Model][doInitialScan] Initial repository scan completed - repositories (4), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-01-11 08:36:40.145 [info] > git status -z -uall [14ms]
+2026-01-11 08:36:40.145 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [10ms]
+2026-01-11 08:36:40.158 [info] > git status -z -uall [6ms]
+2026-01-11 08:36:40.158 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [4ms]
+2026-01-11 08:36:40.181 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/hwpx refs/remotes/hwpx [15ms]
+2026-01-11 08:36:40.185 [info] > git config --get commit.template [5ms]
+2026-01-11 08:36:40.185 [info] > git config --get --local branch.hwpx.vscode-merge-base [2ms]
+2026-01-11 08:36:40.192 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/origin/main refs/remotes/origin/main [4ms]
+2026-01-11 08:36:40.197 [info] > git status -z -uall [138ms]
+2026-01-11 08:36:40.204 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/hwpx refs/remotes/hwpx [13ms]
+2026-01-11 08:36:40.207 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [5ms]
+2026-01-11 08:36:40.210 [info] > git merge-base refs/heads/hwpx refs/remotes/origin/hwpx [16ms]
+2026-01-11 08:36:40.216 [info] > git config --get --local branch.main.vscode-merge-base [5ms]
+2026-01-11 08:36:40.216 [warning] [Git][config] git config failed: Failed to execute git
+2026-01-11 08:36:40.218 [info] > git config --get commit.template [11ms]
+2026-01-11 08:36:40.219 [info] > git diff --name-status -z --diff-filter=ADMR 014888d6f6849d574a1167a6f77101d64926fcf1...refs/remotes/origin/hwpx [5ms]
+2026-01-11 08:36:40.227 [info] > git status -z -uall [2ms]
+2026-01-11 08:36:40.227 [info] > git reflog main --grep-reflog=branch: Created from *. [9ms]
+2026-01-11 08:36:40.231 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [4ms]
+2026-01-11 08:36:40.235 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [13ms]
+2026-01-11 08:36:40.239 [warning] [Git][revParse] Unable to read file: ENOENT: no such file or directory, open '/home/palantir/PAI/.git/refs/remotes/origin/main'
+2026-01-11 08:36:40.239 [info] > git symbolic-ref --short refs/remotes/origin/HEAD [9ms]
+2026-01-11 08:36:40.242 [info] > git rev-parse refs/remotes/origin/main [4ms]
+2026-01-11 08:36:40.248 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/origin/main refs/remotes/origin/main [7ms]
+2026-01-11 08:36:40.339 [info] > git status -z -uall [414ms] (cancelled)
+2026-01-11 08:36:40.339 [info] > git status -z -uall [95ms]
+2026-01-11 08:36:40.339 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [93ms]
+2026-01-11 08:36:40.352 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [20ms]
+2026-01-11 08:36:40.358 [info] > git config --add --local branch.main.vscode-merge-base origin/main [106ms]
+2026-01-11 08:36:40.371 [info] > git config --get --local branch.master.vscode-merge-base [16ms]
+2026-01-11 08:36:40.371 [warning] [Git][config] git config failed: Failed to execute git
+2026-01-11 08:36:40.375 [info] > git config --get commit.template [24ms]
+2026-01-11 08:36:41.308 [info] > git reflog master --grep-reflog=branch: Created from *. [932ms]
+2026-01-11 08:36:41.311 [info] > git config --get commit.template [948ms]
+2026-01-11 08:36:41.312 [info] > git fetch [1281ms]
+2026-01-11 08:36:41.312 [info] From https://github.com/danielmiessler/Personal_AI_Infrastructure
+   5296748..14065ad  main       -> origin/main
+2026-01-11 08:36:41.312 [info] > git fetch [1322ms]
+2026-01-11 08:36:41.313 [info] > git fetch [1416ms]
+2026-01-11 08:36:41.314 [info] > git fetch [1242ms]
+2026-01-11 08:36:41.314 [info] Missing or invalid credentials.
+Skip silent fetch commands
+Missing or invalid credentials.
+Skip silent fetch commands
+remote: Repository not found.
+fatal: Authentication failed for 'https://github.com/park-kyungchan/hwpx-automation/'
+2026-01-11 08:36:41.334 [info] > git symbolic-ref --short refs/remotes/origin/HEAD [23ms]
+2026-01-11 08:36:41.335 [info] fatal: ref refs/remotes/origin/HEAD is not a symbolic ref
+2026-01-11 08:36:41.335 [warning] [Repository][getDefaultBranch] Failed to get default branch details: Failed to execute git.
+2026-01-11 08:36:41.353 [info] > git merge-base refs/heads/master refs/remotes/origin/master [14ms]
+2026-01-11 08:36:41.354 [info] > git rev-parse --show-toplevel [23ms]
+2026-01-11 08:36:41.354 [info] > git config --get commit.template [26ms]
+2026-01-11 08:36:41.354 [info] > git config --get commit.template [28ms]
+2026-01-11 08:36:41.354 [info] > git config --get commit.template [31ms]
+2026-01-11 08:36:41.354 [info] > git config --get commit.template [34ms]
+2026-01-11 08:36:41.354 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [36ms]
+2026-01-11 08:36:41.356 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [11ms]
+2026-01-11 08:36:41.370 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [5ms]
+2026-01-11 08:36:41.370 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [7ms]
+2026-01-11 08:36:41.370 [info] > git for-each-ref --format %(refname)%00%(objectname)%00%(*objectname) refs/tags [11ms]
+2026-01-11 08:36:41.383 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/hwpx refs/remotes/hwpx [15ms]
+2026-01-11 08:36:41.384 [info] > git status -z -uall [12ms]
+2026-01-11 08:36:41.384 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [8ms]
+2026-01-11 08:36:41.405 [info] > git merge-base refs/heads/main refs/remotes/origin/main [13ms]
+2026-01-11 08:36:41.407 [info] > git merge-base refs/heads/main refs/remotes/origin/main [19ms]
+2026-01-11 08:36:41.417 [info] > git status -z -uall [4ms]
+2026-01-11 08:36:41.417 [info] > git diff --name-status -z --diff-filter=ADMR 5296748b6af42b0dec508d59562a074b4376c885...refs/remotes/origin/main [10ms]
+2026-01-11 08:36:41.418 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [13ms]
+2026-01-11 08:36:41.418 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [18ms]
+2026-01-11 08:36:41.420 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [4ms]
+2026-01-11 08:36:41.422 [info] > git diff --name-status -z --diff-filter=ADMR 5296748b6af42b0dec508d59562a074b4376c885...refs/remotes/origin/main [12ms]
+2026-01-11 08:36:41.455 [info] > git status -z -uall [53ms]
+2026-01-11 08:36:41.461 [info] > git merge-base refs/heads/main refs/remotes/origin/main [2ms]
+2026-01-11 08:36:41.465 [info] > git diff --name-status -z --diff-filter=ADMR 5296748b6af42b0dec508d59562a074b4376c885...refs/remotes/origin/main [1ms]
+2026-01-11 08:36:41.558 [info] > git status -z -uall [160ms] (cancelled)
+2026-01-11 08:36:42.472 [info] > git rev-parse --show-toplevel [7ms]
+2026-01-11 08:36:43.141 [info] > git check-ignore -v -z --stdin [18ms]
+2026-01-11 08:36:43.143 [info] > git check-ignore -v -z --stdin [17ms]
+2026-01-11 08:36:43.144 [info] > git check-ignore -v -z --stdin [15ms]
+2026-01-11 08:36:43.144 [info] > git check-ignore -v -z --stdin [13ms]
+2026-01-11 08:36:53.657 [info] > git check-ignore -v -z --stdin [2ms]
+2026-01-11 08:36:53.662 [info] > git check-ignore -v -z --stdin [1ms]
+2026-01-11 08:39:38.249 [info] > git fetch [514ms]
+2026-01-11 08:39:38.256 [info] > git config --get commit.template [3ms]
+2026-01-11 08:39:38.256 [info] > git for-each-ref --format %(refname)%00%(objectname)%00%(*objectname) refs/tags [0ms]
+2026-01-11 08:39:38.263 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-01-11 08:39:38.266 [info] > git status -z -uall [7ms]
+2026-01-11 08:39:38.299 [info] > git fetch [492ms]
+2026-01-11 08:39:38.307 [info] > git config --get commit.template [3ms]
+2026-01-11 08:39:38.307 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1ms]
+2026-01-11 08:39:38.313 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [1ms]
+2026-01-11 08:39:38.348 [info] > git status -z -uall [38ms]
+2026-01-11 08:39:38.446 [info] > git fetch [541ms]
+2026-01-11 08:39:38.452 [info] > git config --get commit.template [2ms]
+2026-01-11 08:39:38.453 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [1ms]
+2026-01-11 08:39:38.459 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [1ms]
+2026-01-11 08:39:38.588 [info] > git status -z -uall [132ms] (cancelled)
+2026-01-11 08:39:39.263 [info] > git rev-parse --show-toplevel [3ms]
+2026-01-11 08:39:39.380 [info] > git config --get commit.template [1ms]
+2026-01-11 08:39:39.384 [info] > git for-each-ref --format %(refname)%00%(objectname)%00%(*objectname) refs/tags [0ms]
+2026-01-11 08:39:39.392 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [1ms]
+2026-01-11 08:39:39.395 [info] > git status -z -uall [9ms]
+2026-01-11 08:39:39.434 [info] > git config --get commit.template [4ms]
+2026-01-11 08:39:39.435 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [2ms]
+2026-01-11 08:39:39.445 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-01-11 08:39:39.485 [info] > git status -z -uall [46ms]
+2026-01-11 08:39:39.903 [info] > git rev-parse --show-toplevel [1ms]

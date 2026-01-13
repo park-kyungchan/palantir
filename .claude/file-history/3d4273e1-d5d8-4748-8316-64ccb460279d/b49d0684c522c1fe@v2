@@ -1,0 +1,524 @@
+# Intent Classification Reference (V4.0 LLM-Native)
+
+> **Version:** 4.0.1 | **Date:** 2026-01-13
+> **Architecture:** LLM-Native Intent Classification
+> **Status:** Production
+
+---
+
+## Overview
+
+V4.0 replaces keyword-based TriggerDetector with LLM-Native intent routing.
+
+**User Requirements:**
+- "복잡한 과정 필요없이 LLM에게만 맡기려고 함" (No complex process, just let LLM handle it)
+- "완전 제거" (Complete removal of TriggerDetector)
+- "커스텀 커맨드 고도화" (/ask, /plan, /audit enhancement)
+
+**Key Changes:**
+- Removed: keywords, regex, Jaccard similarity
+- Added: Main Agent direct intent routing (Claude Code)
+- Added: Multi-LLM adapter support (external APIs)
+- Added: Low-confidence clarification flow
+
+---
+
+## Architecture: Two Modes
+
+### Mode 1: Claude Code (Main Agent Direct) - PREFERRED
+
+**In Claude Code, the Main Agent IS the LLM.**
+No external API call needed - Main Agent directly classifies intent.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 CLAUDE CODE ENVIRONMENT                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User: "코드 리뷰해줘"                                          │
+│         │                                                       │
+│         ▼                                                       │
+│  ┌─────────────────────────────────────────┐                   │
+│  │ Main Agent (Claude) ← YOU ARE THE LLM   │                   │
+│  │                                         │                   │
+│  │ Direct Reasoning:                       │                   │
+│  │   "리뷰" → code review → /audit        │                   │
+│  │                                         │                   │
+│  │ Action: Skill(skill="audit")           │                   │
+│  └─────────────────────────────────────────┘                   │
+│                                                                 │
+│  NO API CALL. NO IntentClassifier. JUST REASONING.             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Mode 2: External API (IntentClassifier)
+
+**For scripts, external applications, or non-Claude environments.**
+Uses IntentClassifier with LLM adapter.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 EXTERNAL/API ENVIRONMENT                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User Input ──► IntentClassifier.classify() ──► IntentResult   │
+│                    │                                            │
+│                    ▼                                            │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              LLM Adapter Layer                           │   │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐       │   │
+│  │  │ OpenAI  │ │ Gemini  │ │  Local  │ │ Claude  │       │   │
+│  │  │ Adapter │ │ Adapter │ │ Adapter │ │ (API)   │       │   │
+│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘       │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Low Confidence? ──► ClarificationFlow ──► Return options      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Quick Start
+
+### For Claude Code (Direct Routing)
+
+**No code needed.** Main Agent reads CLAUDE.md and routes directly.
+
+```
+User: "코드 리뷰해줘"
+
+Main Agent Reasoning:
+  1. Parse: "코드 리뷰" = code review request
+  2. Map: code review → /audit skill
+  3. Action: Skill(skill="audit")
+```
+
+### For External APIs (IntentClassifier)
+
+```python
+from lib.oda.pai.skills import (
+    IntentClassifier,
+    IntentClassifierConfig,
+)
+
+# Use OpenAI adapter for external classification
+classifier = IntentClassifier(
+    config=IntentClassifierConfig(adapter_type="openai")
+)
+
+# Classify user input (makes actual API call)
+result = await classifier.classify("코드 리뷰해줘")
+
+print(result.command)     # "/audit"
+print(result.confidence)  # 0.92
+print(result.reasoning)   # "User requests code review"
+```
+
+### Synchronous Usage (External)
+
+```python
+# For non-async contexts
+result = classifier.classify_sync("계획 세워줘")
+# result.command -> "/plan"
+```
+
+### Using SkillRouter
+
+```python
+from lib.oda.pai.skills import SkillRouter, RouteResult
+
+router = SkillRouter(adapter_type="claude")
+
+# Register skills
+router.register(my_skill, command="/my-command")
+
+# Route input
+result = router.route("코드 리뷰해줘")
+
+if result.matched:
+    print(f"Skill: {result.skill_name}")
+    print(f"Confidence: {result.confidence}")
+    print(f"Reasoning: {result.reasoning}")
+```
+
+---
+
+## Core Classes
+
+### IntentClassifier
+
+Main entry point for intent classification.
+
+```python
+class IntentClassifier:
+    def __init__(
+        self,
+        adapter: Optional[IntentAdapter] = None,
+        config: Optional[IntentClassifierConfig] = None,
+        commands: Optional[List[CommandDescription]] = None
+    )
+
+    async def classify(
+        self,
+        user_input: str,
+        commands: Optional[List[CommandDescription]] = None
+    ) -> IntentResult
+
+    def classify_sync(self, user_input: str, ...) -> IntentResult
+
+    def needs_clarification(self, result: IntentResult) -> bool
+
+    def add_command(self, command: CommandDescription)
+    def remove_command(self, name: str)
+```
+
+### IntentClassifierConfig
+
+Configuration options.
+
+```python
+@dataclass
+class IntentClassifierConfig:
+    clarification_threshold: float = 0.7  # Below this, ask user
+    min_confidence: float = 0.3           # Below this, fallback to /ask
+    adapter_type: str = "claude"          # claude, openai, gemini, local
+    enable_telemetry: bool = True
+    use_default_commands: bool = True
+```
+
+### IntentResult
+
+Classification result.
+
+```python
+class IntentResult(BaseModel):
+    command: str           # e.g., "/ask", "/plan", "/audit"
+    confidence: float      # 0.0-1.0
+    reasoning: str         # LLM's explanation
+    match_type: IntentMatchType  # explicit, semantic, fallback
+    raw_input: str         # Original user input
+```
+
+### CommandDescription
+
+Command definition for LLM.
+
+```python
+class CommandDescription(BaseModel):
+    name: str              # e.g., "/audit"
+    description: str       # What the command does
+    examples: List[str] = []  # Example trigger phrases
+```
+
+---
+
+## LLM Adapters
+
+### Adapter Selection
+
+```python
+# By config
+config = IntentClassifierConfig(adapter_type="openai")
+classifier = IntentClassifier(config=config)
+
+# Direct adapter
+from lib.oda.llm.adapters.openai_intent_adapter import OpenAIIntentAdapter
+classifier = IntentClassifier(adapter=OpenAIIntentAdapter())
+```
+
+### Available Adapters
+
+| Adapter | Class | Use Case |
+|---------|-------|----------|
+| Claude | `ClaudeIntentAdapter` | Default for Claude Code |
+| OpenAI | `OpenAIIntentAdapter` | OpenAI API with function calling |
+| Gemini | `GeminiIntentAdapter` | Google Gemini API |
+| Local | `LocalIntentAdapter` | Ollama, LM Studio |
+
+### Claude Adapter (Default)
+
+```python
+from lib.oda.llm.adapters.claude_intent_adapter import ClaudeIntentAdapter
+
+# Embedded mode (default) - uses heuristics inside Claude Code
+adapter = ClaudeIntentAdapter(mode="embedded")
+
+# API mode - makes external API calls
+adapter = ClaudeIntentAdapter(
+    mode="api",
+    api_key="your-key",
+    model="claude-sonnet-4-20250514"
+)
+```
+
+### OpenAI Adapter
+
+```python
+from lib.oda.llm.adapters.openai_intent_adapter import OpenAIIntentAdapter
+
+adapter = OpenAIIntentAdapter(
+    api_key="your-key",  # Or OPENAI_API_KEY env var
+    model="gpt-4o"
+)
+```
+
+### Gemini Adapter
+
+```python
+from lib.oda.llm.adapters.gemini_intent_adapter import GeminiIntentAdapter
+
+# Native API
+adapter = GeminiIntentAdapter(
+    api_key="your-key",  # Or GOOGLE_API_KEY env var
+    model="gemini-2.0-flash"
+)
+
+# OpenAI-compatible endpoint
+adapter = GeminiIntentAdapter(
+    base_url="http://localhost:8000/v1",
+    openai_compatible=True
+)
+```
+
+### Local LLM Adapter
+
+```python
+from lib.oda.llm.adapters.local_intent_adapter import LocalIntentAdapter
+
+# Ollama
+adapter = LocalIntentAdapter(
+    base_url="http://localhost:11434",
+    model="mistral"
+)
+
+# LM Studio
+adapter = LocalIntentAdapter(
+    base_url="http://localhost:1234/v1",
+    model="local-model"
+)
+```
+
+---
+
+## Low-Confidence Clarification
+
+When classification confidence is below threshold, use ClarificationFlow.
+
+### Basic Usage
+
+```python
+from lib.oda.pai.skills import (
+    IntentClassifier,
+    ClarificationFlow,
+)
+
+classifier = IntentClassifier()
+result = await classifier.classify("뭔가 해줘")
+
+if classifier.needs_clarification(result):
+    flow = ClarificationFlow(classifier)
+    request = await flow.create_clarification(result, "뭔가 해줘")
+
+    # Get AskUserQuestion format
+    ask_format = request.to_ask_user_format()
+    # Use with AskUserQuestion tool
+```
+
+### ClarificationRequest
+
+```python
+@dataclass
+class ClarificationRequest:
+    original_input: str
+    top_match: IntentResult
+    alternatives: List[IntentResult]
+    clarification_prompt: str
+    suggested_options: List[str]
+
+    def to_ask_user_format(self) -> Dict[str, Any]:
+        """Returns dict for AskUserQuestion tool."""
+```
+
+---
+
+## Default Commands
+
+Built-in command definitions:
+
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `/ask` | 요구사항 분석 및 명확화 | "도와줘", "이해 안돼" |
+| `/plan` | 구현 계획 수립, 설계 | "계획 세워줘", "설계해줘" |
+| `/audit` | 코드 품질 검사, 리뷰 | "코드 리뷰해줘", "검사해줘" |
+| `/deep-audit` | 심층 분석, RSIL | "깊이 분석해줘" |
+| `/governance` | 거버넌스 준수 확인 | "거버넌스 확인" |
+| `/memory` | 시맨틱 메모리 관리 | "기억해", "저장해" |
+| `/quality-check` | 품질 게이트 실행 | "품질 검사", "테스트 실행" |
+
+### Adding Custom Commands
+
+```python
+from lib.oda.llm.intent_adapter import CommandDescription
+
+classifier.add_command(CommandDescription(
+    name="/my-command",
+    description="My custom command description",
+    examples=["트리거 예시 1", "trigger example 2"]
+))
+```
+
+---
+
+## Prompt Template
+
+The classification prompt used by adapters:
+
+```
+You are an intent classifier for a development assistant.
+
+## Available Commands
+- /ask: 요구사항 분석 및 명확화 (examples: 도와줘, 이해 안돼)
+- /plan: 구현 계획 수립, 설계 (examples: 계획 세워줘)
+...
+
+## User Request
+"{user_input}"
+
+## Task
+Classify this request into ONE of the available commands.
+Return structured JSON with your classification.
+
+## Rules
+1. Consider semantic meaning, not just keywords
+2. Korean and English requests are equally valid
+3. Be confident - if it clearly matches a command, classify it
+4. If truly ambiguous or unrelated, return "none"
+
+## Output Format (JSON only)
+{"command": "/ask", "confidence": 0.95, "reasoning": "Brief explanation"}
+```
+
+---
+
+## Backward Compatibility
+
+For code using old TriggerDetector interface:
+
+```python
+from lib.oda.pai.skills import (
+    convert_to_trigger_match,
+    LegacyTriggerMatch,
+)
+
+# Convert new result to old format
+result = await classifier.classify("코드 리뷰해줘")
+legacy = convert_to_trigger_match(result)
+
+print(legacy.skill_name)     # "audit" (no leading slash)
+print(legacy.confidence)     # 0.92
+print(legacy.matched_keyword)  # None (always None for LLM)
+```
+
+---
+
+## Module Structure
+
+```
+lib/oda/
+├── llm/
+│   ├── intent_adapter.py           # Base interface
+│   └── adapters/
+│       ├── __init__.py
+│       ├── claude_intent_adapter.py
+│       ├── openai_intent_adapter.py
+│       ├── gemini_intent_adapter.py
+│       └── local_intent_adapter.py
+├── ontology/objects/
+│   └── intent_types.py             # ObjectTypes for ODA
+└── pai/skills/
+    ├── intent_classifier.py        # Main classifier
+    ├── router.py                   # SkillRouter (updated)
+    └── prompts/
+        └── intent_prompts.py       # Prompt templates
+```
+
+---
+
+## Migration from TriggerDetector
+
+### Before (V3.x)
+
+```python
+from lib.oda.pai.skills import TriggerDetector
+
+detector = TriggerDetector()
+result = detector.detect("코드 리뷰해줘")
+if result.matched:
+    print(result.skill_name)
+```
+
+### After (V4.0)
+
+```python
+from lib.oda.pai.skills import IntentClassifier
+
+classifier = IntentClassifier()
+result = await classifier.classify("코드 리뷰해줘")
+if result.confidence > 0.3:
+    print(result.command)
+```
+
+### Key Differences
+
+| Aspect | TriggerDetector (V3.x) | IntentClassifier (V4.0) |
+|--------|------------------------|-------------------------|
+| Method | Keywords, regex, Jaccard | LLM semantic understanding |
+| Speed | Fast (~1ms) | Slower (~100-500ms) |
+| Accuracy | Pattern-dependent | Semantic understanding |
+| Multilingual | Requires keyword lists | Native support |
+| Async | No | Yes (with sync wrapper) |
+
+---
+
+## Best Practices
+
+1. **Use async when possible** - Better performance in async contexts
+2. **Handle low confidence** - Use ClarificationFlow for uncertain cases
+3. **Add examples to commands** - Improves LLM classification accuracy
+4. **Use embedded mode in Claude Code** - Faster, no API calls
+5. **Log telemetry** - Enable for debugging and optimization
+
+---
+
+## Troubleshooting
+
+### Low Confidence Results
+
+- Add more examples to CommandDescription
+- Make descriptions more specific
+- Check if command is appropriate for the input
+
+### API Errors
+
+- Verify API key is set correctly
+- Check network connectivity
+- Use local adapter for offline scenarios
+
+### Performance Issues
+
+- Use embedded mode for Claude adapter
+- Consider local LLM for low-latency requirements
+- Cache classification results if inputs repeat
+
+---
+
+## Related References
+
+| Reference | Purpose |
+|-----------|---------|
+| `CLAUDE.md` | Main orchestrator instructions |
+| `.claude/references/native-capabilities.md` | Tool capabilities |
+| `.claude/references/pai-integration.md` | PAI module reference |
+| `lib/oda/pai/skills/router.py` | SkillRouter implementation |

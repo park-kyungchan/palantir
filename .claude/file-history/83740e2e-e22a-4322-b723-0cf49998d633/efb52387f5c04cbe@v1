@@ -1,0 +1,56 @@
+{
+  "model": "opus",
+  "permissions": {
+    "deny": [
+      "Read(.env*)",
+      "Read(**/secrets/**)",
+      "Read(**/*credentials*)",
+      "Read(**/.ssh/id_*)",
+      "Bash(rm:-rf:*)",
+      "Bash(sudo:rm:*)",
+      "Bash(chmod:777:*)"
+    ],
+    "allow": [
+      "Read(/home/palantir/park-kyungchan/palantir/**)",
+      "Edit(/home/palantir/park-kyungchan/palantir/**)",
+      "Bash(python:*)",
+      "Bash(pytest:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
+    ],
+    "additionalDirectories": [
+      "/home/palantir/.claude",
+      "/home/palantir/park-kyungchan"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/governance-check.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "ORION_WORKSPACE_ROOT": "/home/palantir/park-kyungchan/palantir",
+    "ORION_DB_PATH": "/home/palantir/park-kyungchan/palantir/.agent/tmp/ontology.db"
+  }
+}

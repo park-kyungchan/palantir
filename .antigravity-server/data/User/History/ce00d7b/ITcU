@@ -1,0 +1,21 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+
+# HWPX Outputs
+*.hwpx
+*.hwp
+!sample_reconstructed.hwpx
+
+# Temp / Vision
+temp_vision_batch/
+# Keep temp_vision/sample_twin.json as it is a test fixture
+# temp_vision/
+
+# Logs
+*.log
+verification_output/

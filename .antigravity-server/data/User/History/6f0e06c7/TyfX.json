@@ -1,0 +1,58 @@
+{
+    "title": "Orion ODA System and Architecture",
+    "summary": "Comprehensive overview of the Orion Ontology-Driven Architecture (ODA). Covers the transition to Antigravity Kernel v6.0 (Native Edition), featuring RSIL-enforced protocols (Planning, Audit, Execution), and anti-hallucination verification. Includes specialized governance guides for utilizing the 9 ODA workflows, Job-based Handoff (Agent Relay) protocols, a Meta-Level RSIL audit of codebase health (Jan 2026), and a documented 'Memory Lifecycle' (Insight-to-Pattern) for guided recursive self-improvement. Also contains WSL maintenance protocols (~/.profile fixes).",
+    "references": [
+        {
+            "type": "conversation_id",
+            "value": "bot-9a70e906-2085-42f9-ae5a-3bddfe7e4d35"
+        },
+        {
+            "type": "conversation_id",
+            "value": "bot-e100b3c5-4cf6-40f9-a440-9e148ca77869"
+        },
+        {
+            "type": "conversation_id",
+            "value": "00b2da7f-73fc-41d4-b079-b33f24f74f26"
+        },
+        {
+            "type": "conversation_id",
+            "value": "a1f70f95-0151-4061-8906-224e7d6c2996"
+        },
+        {
+            "type": "conversation_id",
+            "value": "bot-a396263b-010e-4734-9788-b7c1cdb210c4"
+        },
+        {
+            "type": "conversation_id",
+            "value": "bot-6085c4df-6908-432e-86d5-624c117b1304"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/mcp_manager.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/analyze_xlsx_structure.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/llm/config.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/ontology/registry.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/.agent/rules/audit/1_layer_audit.md"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/.agent/workflows/01_plan.md"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/.gemini/antigravity/knowledge/orion_oda_system/artifacts/implementation/observability_and_error_handling.md"
+        }
+    ]
+}

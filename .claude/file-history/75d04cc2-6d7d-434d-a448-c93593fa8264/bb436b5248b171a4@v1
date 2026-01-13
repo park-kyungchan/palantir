@@ -1,0 +1,339 @@
+
+from __future__ import annotations
+
+import logging
+import os
+from dataclasses import dataclass
+from typing import List, Optional, Tuple, Dict, Any, Generic, TypeVar
+
+from sqlalchemy import select, update, delete, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.exc import StaleDataError
+
+from lib.oda.ontology.objects.proposal import Proposal, ProposalStatus, ProposalPriority
+from lib.oda.ontology.ontology_types import utc_now
+from lib.oda.ontology.storage.models import ProposalModel
+from lib.oda.ontology.storage.database import Database
+
+from lib.oda.ontology.storage.exceptions import (
+    ConcurrencyError,
+    OptimisticLockError,
+    ProposalNotFoundError,
+)
+
+logger = logging.getLogger(__name__)
+
+# ODA-RISK-011: History retention limit to prevent unbounded growth
+# Configurable via environment variable, default 100 entries per proposal
+MAX_HISTORY_PER_PROPOSAL = int(os.environ.get("ODA_MAX_HISTORY_PER_PROPOSAL", "100"))
+
+T = TypeVar("T")
+
+@dataclass
+class ProposalQuery:
+    """Filter criteria for searching proposals."""
+    status: Optional[ProposalStatus] = None
+    action_type: Optional[str] = None  # MCP compatibility
+    created_by: Optional[str] = None
+    limit: int = 20
+    offset: int = 0
+
+@dataclass
+class PaginatedResult(Generic[T]):
+    """Paginated response wrapper."""
+    items: List[T]
+    total: int
+    limit: int  # MCP compatibility
+    offset: int
+    has_more: bool
+
+class ProposalRepository:
+    """
+    Persistence Layer for Proposal Objects using SQLAlchemy Async ORM.
+    """
+    
+    def __init__(self, db: Database):
+        self.db = db
+
+    def _to_domain(self, model: ProposalModel) -> Proposal:
+        """Convert ORM Model to Domain Object."""
+        p = Proposal(
+            id=model.id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            created_by=model.created_by,
+            updated_by=model.updated_by,
+            status=ProposalStatus(model.status),
+            version=model.version,
+            
+            action_type=model.action_type,
+            payload=model.payload or {},
+            priority=ProposalPriority(model.priority),
+            
+            reviewed_by=model.reviewed_by,
+            reviewed_at=model.reviewed_at,
+            review_comment=model.review_comment,
+            executed_at=model.executed_at,
+        )
+        # Manually attach result if present (as it's generic dict)
+        if model.execution_result:
+            p.execution_result = model.execution_result
+        return p
+
+    async def save(self, proposal: Proposal, actor_id: str = "system", comment: str = None) -> None:
+        """
+        Save a proposal (Create or Update).
+        Handles Optimistic Locking and History Tracking.
+        """
+        async with self.db.transaction() as session:
+            # Check existence and version in DB
+            stmt = select(ProposalModel.version, ProposalModel.status).where(ProposalModel.id == proposal.id)
+            row = (await session.execute(stmt)).first()
+            
+            history_action = "updated"
+            prev_status = None
+            
+            if row is None:
+                # Create
+                history_action = "created"
+                model = ProposalModel(
+                    id=proposal.id,
+                    created_by=proposal.created_by or actor_id,
+                    updated_by=actor_id,
+                    status=proposal.status.value,
+                    action_type=proposal.action_type,
+                    payload=proposal.payload,
+                    priority=proposal.priority.value,
+                    version=proposal.version or 1
+                )
+                session.add(model)
+                new_version = proposal.version or 1
+            else:
+                db_version, db_status = row
+                prev_status = db_status
+                
+                # Update Path
+                if proposal.version == db_version + 1:
+                     # Case A: Normal Sequence (v1 -> v2)
+                     new_version = proposal.version
+                     expected_version = db_version
+                else:
+                     # Case B: Conflict (v2 -> v2) or Stale (v1 -> v3)
+                     raise ConcurrencyError(
+                         f"Proposal {proposal.id} Version Mismatch. DB={db_version}, Obj={proposal.version}",
+                         expected_version=db_version,
+                         actual_version=proposal.version
+                     )
+                
+                # Determine action from status change
+                if proposal.status.value != db_status:
+                    if proposal.status == ProposalStatus.APPROVED:
+                        history_action = "approved"
+                    elif proposal.status == ProposalStatus.REJECTED:
+                        history_action = "rejected"
+                    elif proposal.status == ProposalStatus.EXECUTED:
+                        history_action = "executed"
+                    elif proposal.status == ProposalStatus.PENDING:
+                        history_action = "updated" # Submitted?
+                    else:
+                        history_action = "updated"
+                
+                stmt = (
+                    update(ProposalModel)
+                    .where(ProposalModel.id == proposal.id)
+                    .where(ProposalModel.version == expected_version)
+                    .values(
+                        status=proposal.status.value,
+                        payload=proposal.payload,
+                        priority=proposal.priority.value,
+                        updated_at=proposal.updated_at,
+                        updated_by=actor_id,
+                        execution_result=proposal.execution_result,
+                        reviewed_by=proposal.reviewed_by,
+                        reviewed_at=proposal.reviewed_at,
+                        review_comment=proposal.review_comment,
+                        executed_at=proposal.executed_at,
+                        version=new_version
+                    )
+                    .execution_options(synchronize_session="fetch")
+                )
+                result = await session.execute(stmt)
+                if result.rowcount == 0:
+                    # I-01 Fix: Include version info in error for debugging
+                    current_stmt = select(ProposalModel.version).where(ProposalModel.id == proposal.id)
+                    current_row = (await session.execute(current_stmt)).scalar_one_or_none()
+                    raise ConcurrencyError(
+                        f"Proposal {proposal.id} was modified by another transaction.",
+                        expected_version=expected_version,
+                        actual_version=current_row
+                    )
+            
+            # Save History
+            # Use passed comment or fallback to proposal review_comment if action is relevant
+            history_comment = comment or proposal.review_comment
+            
+            from lib.oda.ontology.storage.models import ProposalHistoryModel # Local import to avoid cycle if any (safe here)
+            
+            history = ProposalHistoryModel(
+                proposal_id=proposal.id,
+                action=history_action,
+                actor_id=actor_id,
+                comment=history_comment,
+                previous_status=prev_status,
+                new_status=proposal.status.value
+                # created_at defaults to utc_now
+            )
+            session.add(history)
+            
+            # Sync local version
+            proposal.version = new_version
+
+    async def get_history(self, proposal_id: str) -> List[Any]:
+        """Retrieve audit history for a proposal."""
+        from lib.oda.ontology.storage.models import ProposalHistoryModel
+        async with self.db.transaction() as session:
+            stmt = (
+                select(ProposalHistoryModel)
+                .where(ProposalHistoryModel.proposal_id == proposal_id)
+                .order_by(ProposalHistoryModel.created_at.asc())
+            )
+            result = await session.execute(stmt)
+            return result.scalars().all()
+
+    async def find_by_id(self, proposal_id: str) -> Optional[Proposal]:
+        async with self.db.transaction() as session:
+            stmt = select(ProposalModel).where(ProposalModel.id == proposal_id)
+            result = await session.execute(stmt)
+            model = result.scalar_one_or_none()
+            if not model:
+                return None
+            return self._to_domain(model)
+
+    async def find_by_status(self, status: ProposalStatus) -> List[Proposal]:
+        async with self.db.transaction() as session:
+            stmt = select(ProposalModel).where(ProposalModel.status == status.value)
+            result = await session.execute(stmt)
+            models = result.scalars().all()
+            return [self._to_domain(m) for m in models]
+
+    async def find_pending(self, limit: Optional[int] = None) -> List[Proposal]:
+        """Find pending proposals with optional limit."""
+        async with self.db.transaction() as session:
+            stmt = select(ProposalModel).where(ProposalModel.status == ProposalStatus.PENDING.value)
+            if limit is not None:
+                stmt = stmt.limit(limit)
+            result = await session.execute(stmt)
+            models = result.scalars().all()
+            return [self._to_domain(m) for m in models]
+
+    async def query(self, query: ProposalQuery) -> PaginatedResult[Proposal]:
+        """Execute complex query."""
+        async with self.db.transaction() as session:
+            stmt = select(ProposalModel)
+
+            # Application filters
+            if query.status:
+                stmt = stmt.where(ProposalModel.status == query.status.value)
+            if query.action_type:
+                stmt = stmt.where(ProposalModel.action_type == query.action_type)
+            if query.created_by:
+                stmt = stmt.where(ProposalModel.created_by == query.created_by)
+
+            # Count total (before pagination) - simplified
+            # Ideal: select(func.count()).select_from(...)
+            # Here we might need a separate count query or window function
+            count_stmt = select(func.count()).select_from(stmt.subquery())
+            total = (await session.execute(count_stmt)).scalar() or 0
+
+            # Pagination
+            stmt = stmt.limit(query.limit).offset(query.offset)
+
+            result = await session.execute(stmt)
+            models = result.scalars().all()
+            items = [self._to_domain(m) for m in models]
+
+            return PaginatedResult(
+                items=items,
+                total=total,
+                limit=query.limit,
+                offset=query.offset,
+                has_more=(query.offset + len(items) < total)
+            )
+
+    async def count_by_status(self) -> Dict[str, int]:
+        """Aggregate counts by status."""
+        async with self.db.transaction() as session:
+            stmt = select(ProposalModel.status, func.count(ProposalModel.id)).group_by(ProposalModel.status)
+            result = await session.execute(stmt)
+            return {status: count for status, count in result.all()}
+            
+    async def approve(self, proposal_id: str, reviewer_id: str, comment: str = None) -> Proposal:
+        """Approve a proposal (Load -> Domain Logic -> Save)."""
+        proposal = await self.find_by_id(proposal_id)
+        if not proposal:
+            raise ProposalNotFoundError(f"Proposal {proposal_id} not found")
+            
+        proposal.approve(reviewer_id, comment)
+        await self.save(proposal, actor_id=reviewer_id)
+        return proposal
+
+    async def reject(self, proposal_id: str, reviewer_id: str, reason: str) -> Proposal:
+        proposal = await self.find_by_id(proposal_id)
+        if not proposal:
+             raise ProposalNotFoundError(f"Proposal {proposal_id} not found")
+             
+        proposal.reject(reviewer_id, reason)
+        await self.save(proposal, actor_id=reviewer_id)
+        return proposal
+
+    async def execute(self, proposal_id: str, executor_id: str, result: Dict[str, Any]) -> Proposal:
+        proposal = await self.find_by_id(proposal_id)
+        if not proposal:
+            raise ProposalNotFoundError(proposal_id)
+            
+        proposal.execute(executor_id, result)
+        await self.save(proposal, actor_id=executor_id)
+        return proposal
+
+    async def delete(self, proposal_id: str, actor_id: str, hard_delete: bool = False) -> bool:
+        """Delete a proposal."""
+        async with self.db.transaction() as session:
+            if hard_delete:
+                stmt = delete(ProposalModel).where(ProposalModel.id == proposal_id)
+                result = await session.execute(stmt)
+                return result.rowcount > 0
+            else:
+                # Soft Delete
+                stmt = (
+                    update(ProposalModel)
+                    .where(ProposalModel.id == proposal_id)
+                    .values(
+                        status=ProposalStatus.DELETED.value,
+                        updated_by=actor_id
+                    )
+                )
+                result = await session.execute(stmt)
+                return result.rowcount > 0
+                
+    async def save_many(self, proposals: List[Proposal], actor_id: str = "system") -> List[Proposal]:
+        """Bulk save (not atomic across all, but efficient)."""
+        for p in proposals:
+            await self.save(p, actor_id)
+        return proposals
+        
+    async def get_with_history(self, proposal_id: str) -> Tuple[Optional[Proposal], List[Any]]:
+        p = await self.find_by_id(proposal_id)
+        h = await self.get_history(proposal_id)
+        return p, h
+    
+    async def find_by_action_type(self, action_type: str) -> List[Proposal]:
+        async with self.db.transaction() as session:
+            stmt = select(ProposalModel).where(ProposalModel.action_type == action_type)
+            result = await session.execute(stmt)
+            return [self._to_domain(m) for m in result.scalars().all()]
+            
+    async def find_by_creator(self, creator_id: str) -> List[Proposal]:
+        async with self.db.transaction() as session:
+             stmt = select(ProposalModel).where(ProposalModel.created_by == creator_id)
+             result = await session.execute(stmt)
+             return [self._to_domain(m) for m in result.scalars().all()]

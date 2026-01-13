@@ -1,0 +1,57 @@
+# Walkthrough: Patching DocLayout-YOLO for IR Generation
+
+This walkthrough details the systematic process used to resolve critical compatibility issues in the `DocLayout-YOLO` model within the HWPX reconstruction pipeline.
+
+## 1. Context: The Blocking Error
+When integrating `DocLayout-YOLO` for semantic region detection (e.g., finding `AnswerBox` regions), the standard `ultralytics` loader fails due to missing attributes and non-standard output formats.
+
+**The Errors:**
+1. `AttributeError: 'Conv' object has no attribute 'bn'`
+2. `AttributeError: 'dict' object has no attribute 'shape'` (in NMS post-processing)
+
+## 2. Phase 1: Identifying the Attribute Gap
+Using deep module inspection (via `named_modules()`), we identified that certain custom convolutional layers (`Conv`) inside the `G2L_CRM` and `DilatedBlock` modules do not have the expected `bn` (Batch Normalization) attribute.
+
+**Diagnosis Technique:**
+```python
+# Inline trace in detector.py
+for name, m in model.named_modules():
+    if "Conv" in m.__class__.__name__ and not hasattr(m, 'bn'):
+        sys.stderr.write(f"DEBUG: Found target: {name}\n")
+```
+
+## 3. Phase 2: Implementation of the "Guaranteed Patch"
+Initial attempts to patch during `_load_model` were sometimes bypassed by Python's module caching or lazy loading in the `docling` pipeline. To ensure execution, we implemented an **Inline Patch** with a state flag.
+
+**Solution:**
+```python
+def detect(self, image):
+    if not hasattr(self, '_patched_flag'):
+        # 1. Load model if needed
+        # 2. Patch 'bn' on all 'Conv' modules
+        # 3. Patch hidden 'dcv.bn' on 'DilatedBlock' / 'DilatedBottleneck'
+        # 4. Wrap model to handle dict output
+        self._patched_flag = True
+    ...
+```
+
+## 4. Phase 3: Solving the Output Format Conflict
+`DocLayout-YOLO` returns a dictionary (containing `'one2one'`), but `ultralytics` expects a Tensor.
+
+**Transparent Wrapper Approach:**
+We created a `DocLayoutWrapper` that:
+1. Extracts the `'one2one'` tensor in the `forward` pass.
+2. Delegates all other calls (like `.fuse()`, `.stride`, `.pt`) to the base model using `__getattr__`.
+
+## 5. Phase 4: Verification in Constrained Environments
+In complex pipelines (like `Docling` -> `Inference`), `stdout` logs are often suppressed. We bypassed this using:
+- **Stderr Logging**: `sys.stderr.write(...)`
+- **File-on-Disk Logging**: Writing a `patch_debug.log` to confirm exact module counts and classes visited.
+
+## 6. Result
+The model now successfully performs inference. While layout analysis is active, it acts as a semantic guide for the `DoclingIngestor` fallback, enabling the identification of specialized workbook regions that are otherwise lost in raw text extraction.
+
+**Key File Locations:**
+- Logic: `lib/layout/detector.py` (also available as `detector_patched.py` for isolation tests)
+- Test Script: `scripts/test_patch.py`
+- Integration: `lib/ingestors/docling_ingestor.py`

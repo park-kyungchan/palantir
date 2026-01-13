@@ -1,0 +1,37 @@
+[
+  {
+    "content": "/maintenance 안전장치 추가 (AskUserQuestion)",
+    "status": "completed",
+    "activeForm": "/maintenance 안전장치 추가 완료"
+  },
+  {
+    "content": "/teleport 구현 확인 및 경고 추가",
+    "status": "completed",
+    "activeForm": "/teleport 구현 확인 완료"
+  },
+  {
+    "content": "/governance 병렬 실행 최적화",
+    "status": "completed",
+    "activeForm": "/governance 병렬 실행 최적화 완료"
+  },
+  {
+    "content": "/quality-check 병렬 실행 최적화",
+    "status": "completed",
+    "activeForm": "/quality-check 병렬 실행 최적화 완료"
+  },
+  {
+    "content": "/init TodoWrite 추가",
+    "status": "completed",
+    "activeForm": "/init TodoWrite 추가 완료"
+  },
+  {
+    "content": "/memory WebSearch 통합 추가",
+    "status": "completed",
+    "activeForm": "/memory WebSearch 통합 추가 완료"
+  },
+  {
+    "content": "ODA Proposal 생성 및 실행",
+    "status": "in_progress",
+    "activeForm": "ODA Proposal 생성 중"
+  }
+]

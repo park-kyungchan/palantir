@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""
+UserPromptSubmit Hook: Orchestration Context Injector
+
+Automatically injects orchestration context into all user prompts.
+Enforces ODA governance rules for proper task delegation.
+
+Reference: CLAUDE.md Section 2.5 (Orchestrator Enforcement)
+Reference: CLAUDE.md Section 2.6 (Pre-Delegation Decomposition)
+
+Version: 2.0.0 - Added 32K compliance and decomposition rules
+"""
+
+import json
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# Log configuration
+LOG_DIR = Path("/home/palantir/park-kyungchan/palantir/.agent/logs")
+LOG_FILE = LOG_DIR / "context_injector.log"
+
+# Large-scope detection patterns
+LARGE_SCOPE_PATTERNS = [
+    r'\b전체\b',      # Korean: "entire"
+    r'\b모든\b',      # Korean: "all"
+    r'\ball\b',       # English
+    r'\bentire\b',
+    r'\bcomplete\b',
+    r'\beverything\b',
+    r'\bwhole\b',
+    r'\bfull\s+scan\b',
+    r'\bfull\s+audit\b',
+    r'\bcodebase\b',
+    r'\brepository\b',
+    r'\bproject-wide\b',
+]
+
+# Audit/scan operation patterns
+AUDIT_PATTERNS = [
+    r'\baudit\b',
+    r'\bscan\b',
+    r'\breview\b',
+    r'\banalyze\b',
+    r'\binspect\b',
+    r'\bcheck\s+all\b',
+]
+
+def log(message: str, level: str = "INFO"):
+    """Write log entry with timestamp."""
+    try:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().isoformat()
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] [{level}] {message}\n")
+    except Exception:
+        pass  # Silently fail logging
+
+
+def detect_large_scope(prompt: str) -> tuple[bool, list[str]]:
+    """Detect if prompt contains large-scope indicators."""
+    prompt_lower = prompt.lower()
+    matched_patterns = []
+
+    for pattern in LARGE_SCOPE_PATTERNS:
+        if re.search(pattern, prompt_lower, re.IGNORECASE):
+            matched_patterns.append(pattern)
+
+    for pattern in AUDIT_PATTERNS:
+        if re.search(pattern, prompt_lower, re.IGNORECASE):
+            matched_patterns.append(pattern)
+
+    is_large_scope = len(matched_patterns) >= 1
+    return is_large_scope, matched_patterns
+
+
+def get_decomposition_rules() -> str:
+    """Generate decomposition rules for large-scope tasks."""
+    return """
+### ⚠️ LARGE-SCOPE TASK DETECTED - Decomposition Required
+
+**32K Token Limit Compliance (MANDATORY)**
+
+Your task appears to involve a large scope. To prevent output truncation:
+
+1. **DO NOT** delegate the entire task to a single subagent
+2. **MUST** decompose into smaller subtasks:
+   - Each Explore subagent: max 5K tokens, < 20 files
+   - Each Plan subagent: max 10K tokens
+   - Each general-purpose: max 15K tokens
+
+3. **Include in ALL subagent prompts:**
+   ```
+   ## Output Constraint
+   MAX OUTPUT: {budget} tokens. Return SUMMARY ONLY.
+   Format: Bullet points with file:line references.
+   NO full file contents. NO verbose explanations.
+   ```
+
+4. **Decomposition Strategy:**
+   - Split by directory/module
+   - Split by concern (security, performance, structure)
+   - Synthesize results in main conversation
+
+**Reference:** CLAUDE.md Section 2.6 (Pre-Delegation Decomposition)
+""".strip()
+
+
+def get_orchestration_context() -> str:
+    """Generate orchestration context to inject into user prompts."""
+    return """
+## Orchestration Context (Auto-Injected)
+
+### Task Delegation Rules
+- **3+ step operations**: MUST delegate to `Task(subagent_type="general-purpose")`
+- **Codebase analysis**: Use `Task(subagent_type="Explore")`
+- **Implementation planning**: Use `Task(subagent_type="Plan")`
+- **Documentation search**: Use `Task(subagent_type="claude-code-guide")`
+
+### Parallel Execution Rules
+- **3+ independent tasks**: Deploy parallel subagents with `run_in_background=true`
+- **10+ files to analyze**: Use Explore with `context: fork`
+- **Multiple research queries**: Parallel WebSearch + Task in single message
+
+### Progress Tracking
+- **ALWAYS** use `TodoWrite` for multi-step tasks
+- Update task status in real-time
+- Mark ONE task as in_progress at a time
+
+### Evidence Collection (MANDATORY)
+- **files_viewed**: Must populate for any file analysis
+- **imports_verified**: Must verify before modifications
+- **tests_passed**: Must verify after changes
+
+### Reference
+See `CLAUDE.md Section 2.5` for complete Orchestrator Enforcement rules.
+""".strip()
+
+
+def main():
+    """Main entry point for the hook."""
+    try:
+        # Read input from stdin
+        input_data = sys.stdin.read()
+
+        if not input_data.strip():
+            log("Empty input received", "WARN")
+            sys.exit(0)
+
+        # Parse JSON input
+        try:
+            data = json.loads(input_data)
+        except json.JSONDecodeError as e:
+            log(f"JSON parse error: {e}", "ERROR")
+            sys.exit(0)
+
+        # Extract user prompt
+        user_prompt = data.get("prompt", data.get("message", ""))
+        hook_type = data.get("hook_type", "user_prompt_submit")
+
+        log(f"Processing {hook_type} hook, prompt length: {len(user_prompt)}")
+
+        # Generate context injection
+        context = get_orchestration_context()
+
+        # Output the context
+        output = {
+            "context": context,
+            "injected_at": datetime.now().isoformat(),
+            "hook": "context_injector",
+            "version": "1.0.0"
+        }
+
+        print(json.dumps(output, ensure_ascii=False))
+        log("Context injection successful")
+
+    except Exception as e:
+        log(f"Unexpected error: {e}", "ERROR")
+        # Always exit 0 to not block operations
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

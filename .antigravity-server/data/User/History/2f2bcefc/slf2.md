@@ -1,0 +1,30 @@
+# HWPX Recursive Improvement Manifesto
+
+## 1. Directive
+As part of the **Meta-Level Recursive-Self-Improvement Loop (RSIL)**, the HWPX reconstruction pipeline is subject to constant structural refinement to ensure maximum maintenance efficiency and visual fidelity.
+
+## 2. Strategic Refactoring Targets
+
+### 2.1 Monolithic Class Decomposition
+The `HwpxDocumentBuilder` currently manages over 20 element types. To prevent regression and improve readability:
+- **Phase A**: Extract `TableBuilder` logic into a dedicated module.
+- **Phase B**: Extract `ControlBuilder` (Images, Shapes, Textboxes) into a dedicated module.
+- **Phase C**: Transition to a **Composition-based Builder** architecture.
+
+### 2.2 Centralized Universal Measurement
+Currently, HWPUNIT conversions are frequently performed inline. 
+- **Standard**: 1 pt = 100 HWPUNIT; 1 mm = 7200/25.4 HWPUNIT.
+- **Target**: Create `lib/owpml/units.py` with standard conversion utility functions.
+
+### 2.3 Automated Ground-Truth Synchronization
+To ensure 100% compliance with Hancom 2024:
+- **Tooling**: Implement a script that triggers Hancom Office (via Windows/Wine or automated export) to generate "Ground Truth" HWPX files.
+- **Validation**: Compare XML diffs between Ground Truth and Pipeline output to identify subtle attribute mismatches.
+
+## 3. Guiding Principles
+1. **Spec-First**: Implementation must align with KS X 6101 technical reference before creative inference.
+2. **Context-Aware**: Maintain precise cursor state using the `_current_container` and `_current_table` stack.
+3. **Deterministic**: Every assembly session must produce identical binary payloads for identical inputs (facilitated by `package_normalizer`).
+
+---
+**Status**: ACTIVE. Directives integrated into the v6.0 ODA governance layer.

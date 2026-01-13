@@ -1,0 +1,153 @@
+---
+name: deep-audit
+description: Execute Progressive Deep-Dive Audit with 3-Stage Protocol (SCAN → TRACE → VERIFY)
+---
+
+# /deep-audit Command
+
+$ARGUMENTS
+
+> **Protocol:** AuditProtocol (BLOCK enforcement)
+> **Method:** RSIL (Recursive Self-Improvement Loop)
+
+---
+
+## Stage A: SURFACE SCAN (Landscape)
+
+### Goal
+Establish Structural Reality & Remove Guesswork.
+
+### Actions
+1. **File Structure Analysis**: Map target directory structure
+2. **Legacy Artifact Sweep**: Check for deprecated paths, AIP-KEY remnants
+3. **Pattern Identification**: Identify key components and modules
+4. **Dependency Check**: Verify imports and external dependencies
+
+### Evidence Required
+```
+files_viewed: [실제 읽은 파일 목록]
+legacy_artifacts: CLEAN / DETECTED
+structure: {디렉토리 구조 맵}
+```
+
+### Verification
+- [ ] All target files identified
+- [ ] Legacy artifacts status confirmed
+- [ ] Structure documented
+
+---
+
+## Stage B: LOGIC TRACE (Deep-Dive)
+
+### Goal
+Prevent Integration Failures by Tracing Actual Data Flow.
+
+### Actions
+1. **Import Path Verification**: Confirm all imports exist
+2. **Call Stack Trace**: Map data flow paths
+3. **Signature Matching**: Verify function signatures align
+4. **Dependency Mapping**: Identify integration points
+
+### Trace Format
+```
+[EntryPoint] function_name() file.py:line
+    │
+    ├── [Dependency] import_path
+    │       ↓
+    │   Called function: signature
+    │
+    └── [Output] return type
+```
+
+### RSIL Trigger
+If signature mismatch found → HALT → CORRECT → RESTART Stage B
+
+### Verification
+- [ ] Import paths validated
+- [ ] Call stack documented
+- [ ] Signatures matched
+
+---
+
+## Stage C: QUALITY GATE (Microscopic Audit)
+
+### Goal
+Ensure Micro-to-Macro Consistency.
+
+### Quality Checks
+1. **Pattern Fidelity**: Does code match ODA patterns?
+2. **Safety Audit**: Type hints, docstrings, null validation
+3. **Clean Architecture**: Layer separation
+4. **SOLID Principles**: Single responsibility, etc.
+
+### Findings Format
+```
+[File:Line] [Severity] - Description
+```
+
+### Severity Levels
+| Level | Action |
+|-------|--------|
+| CRITICAL | Block execution |
+| HIGH | Require fix before merge |
+| MEDIUM | Recommend fix |
+| LOW | Informational |
+
+### Verification
+- [ ] No critical findings
+- [ ] High findings documented
+- [ ] Quality gate: PASS / FAIL
+
+---
+
+## Output Format
+
+```markdown
+### AUDIT REPORT (Deep-Dive)
+
+#### Stage A: SCAN
+- Target Files: [count]
+- Legacy Artifacts: CLEAN/DETECTED
+- Structure: Documented
+
+#### Stage B: TRACE
+- Import Verification: VALID/INVALID
+- Critical Path: Documented
+- Signature Match: PASS/FAIL
+
+#### Stage C: QUALITY
+- Pattern Fidelity: ALIGNED/MISALIGNED
+- Findings: [count by severity]
+- Quality Gate: PASS/FAIL
+
+#### Status
+- Audit Result: PASS/FAIL
+- Duration: X seconds
+```
+
+---
+
+## Execution
+
+```bash
+# Via Python protocol
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate
+python -c "
+from scripts.ontology.protocols.audit_protocol import AuditProtocol
+from scripts.ontology.protocols import ProtocolContext
+import asyncio
+
+async def run():
+    protocol = AuditProtocol()
+    context = ProtocolContext(target_path='$ARGUMENTS', actor_id='claude_code')
+    return await protocol.execute(context)
+
+result = asyncio.run(run())
+print('Passed:', result.passed)
+"
+```
+
+---
+
+**ZERO-TRUST: Do NOT execute code changes until audit passes**

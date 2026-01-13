@@ -1,0 +1,151 @@
+# Teleport: Web ↔ CLI Session Transfer
+
+Transfer your Claude Code session between web interface and CLI.
+
+**Boris Cherny Pattern:** "I run 5-10 Claudes on claude.ai in my browser, using a 'teleport' command to hand off sessions between the web and my local machine."
+
+---
+
+## REQUIREMENTS
+
+```
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  CLAUDE MAX SUBSCRIPTION REQUIRED                                !
+!  This feature requires an active Claude Max subscription         !
+!  to access web session APIs. Without it, teleport will fail.     !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+```
+
+---
+
+## Arguments
+
+- `direction`: Direction of teleport (`in` = web→CLI, `out` = CLI→web)
+- `session_id`: (Optional) Specific session ID to teleport
+
+---
+
+## Usage Examples
+
+```bash
+# Pull web session to CLI
+/teleport in
+
+# Push current session to web (opens in browser)
+/teleport out
+
+# Teleport specific session
+/teleport in abc123
+```
+
+---
+
+## Execution
+
+When teleporting IN (Web → CLI):
+
+1. List available web sessions via Claude Code API
+2. Select session to import
+3. Download session context (todos, evidence, files_viewed)
+4. Restore to current CLI session
+
+When teleporting OUT (CLI → Web):
+
+1. Export current session state
+2. Create web session bundle
+3. Open Claude.ai with session context
+
+---
+
+## Pre-flight Check
+
+Before teleporting, verify:
+- [ ] **Claude Max subscription active** (REQUIRED)
+- [ ] ANTHROPIC_API_KEY is set
+- [ ] Git repository is synced (for file context)
+- [ ] No pending uncommitted changes
+- [ ] Implementation file exists at `lib/oda/claude/session_teleport.py`
+
+---
+
+## Implementation
+
+```bash
+#!/bin/bash
+DIRECTION="${1:-in}"
+SESSION_ID="${2:-}"
+
+# Pre-flight: Check implementation exists
+IMPL_PATH="/home/palantir/park-kyungchan/palantir/lib/oda/claude/session_teleport.py"
+
+if [ ! -f "$IMPL_PATH" ]; then
+    echo "ERROR: Teleport implementation not found at $IMPL_PATH"
+    exit 1
+fi
+
+echo "NOTE: This feature requires Claude Max subscription."
+
+# Teleport implementation
+python3 -c "
+import sys
+sys.path.insert(0, '/home/palantir/park-kyungchan/palantir')
+
+from lib.oda.claude.session_teleport import SessionTeleporter
+
+teleporter = SessionTeleporter()
+
+if '$DIRECTION' == 'in':
+    teleporter.import_from_web('$SESSION_ID' if '$SESSION_ID' else None)
+elif '$DIRECTION' == 'out':
+    teleporter.export_to_web()
+else:
+    print('Usage: /teleport <in|out> [session_id]')
+"
+```
+
+## Error Handling
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| ImportError | Implementation missing | Verify ODA installation |
+| Unauthorized | No Claude Max | Subscribe to Claude Max |
+| API Error | Network/auth issue | Check ANTHROPIC_API_KEY |
+
+---
+
+## Session Bundle Structure
+
+```json
+{
+  "session_id": "uuid",
+  "created_at": "ISO timestamp",
+  "source": "web|cli",
+  "context": {
+    "todos": [...],
+    "evidence": {...},
+    "files_viewed": [...],
+    "conversation_summary": "..."
+  },
+  "git": {
+    "branch": "current-branch",
+    "commit": "HEAD commit hash",
+    "dirty": false
+  }
+}
+```
+
+---
+
+## Notes
+
+- Teleport preserves TodoWrite state
+- Evidence tracker is synchronized
+- File changes are NOT transferred (use git)
+- Conversation history is summarized (context limits)
+
+---
+
+## Claude Max Required
+
+This feature requires Claude Max subscription for web session access.
+$ARGUMENTS will be parsed as: direction [session_id]

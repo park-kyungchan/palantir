@@ -1,0 +1,58 @@
+- [x] Planning: PDF Parsing (Pre-HWPX)
+    - [x] Stage A: Blueprint (Requirements & Scope) <!-- id: 13 -->
+    - [x] Stage B: Integration Trace (Logic & Phases) <!-- id: 14 -->
+    - [x] Stage C: Quality Gate (Risk & Approval) <!-- id: 15 -->
+- [x] Execution: PDF -> IR Implementation <!-- id: 16 -->
+    - [x] Phase 1: Layout Analysis Integration (Verified Fallback) <!-- id: 17 -->
+    - [x] Phase 2: Vision-Native OCR Implementation (Verified EasyOCR) <!-- id: 18 -->
+    - [x] Phase 3: IR Unification & Verification <!-- id: 19 -->
+        - [x] Create `verify_ir.py` script
+        - [x] Implement Vision-Native IR assembly in `DoclingIngestor`
+        - [x] Debug `DocLayout-YOLO` compatibility issues (Solved via Runtime Monkey Patch)
+        - [x] Verify IR output structure (AnswerBox, ProblemBox tagging)
+            - [x] Create `SemanticTagger` logic
+            - [x] Integrate into `DoclingIngestor`
+            - [x] Debug Coordinate Mismatch (IoU failure / Text Extraction flow / Y-Axis Flip)
+    - [x] Phase 3: IR Unification (Integration Layer) <!-- id: 19 -->
+    - [x] Phase 4: HWPX Compilation (Compiler Layer) <!-- id: 20 -->
+        - [x] Add `SetParaShape` to `lib/models.py`
+        - [x] Implement `ProblemBox` mapping (Hanging Indent)
+        - [x] Implement `AnswerBox` mapping (Table Wrap)
+        - [x] Verify compilation with `scripts/verify_compilation.py`
+    - [x] Phase 5: HWPX Builder (Serialization Layer) <!-- id: 21 -->
+        - [x] Implement `lib/builder.py` (HwpAction -> Python Code)
+        - [x] Integrate into `lib/pipeline.py`
+        - [x] Verify with `scripts/verify_builder.py`
+    - [x] Phase 6: Native HWPX Generation (Linux) <!-- id: 25 -->
+        - [x] Create `lib/owpml` package
+        - [x] Implement `HWPXZipper` based on `generate_linux_hwpx.py`
+        - [x] Map `HwpAction` to OWPML XML
+        - [x] Verify by generating valid `.hwpx`
+        - [!] **User Feedback**: "File Damaged" / Low Quality. **ABORTED**.
+    - [x] Phase 7: Mathpix Migration (Ingestion Pivot) <!-- id: 30 -->
+        - [x] Analysis: Cost & API Capability Check
+        - [x] Implement `MathpixIngestor` (API Client)
+        - [x] Implement `MarkdownParser` (MMD -> IR)
+        - [x] Verify End-to-End (`output_actions.py` generation)
+        - [x] Fix: Image Parsing & Downloading (URL -> Local)
+    - [x] Phase 8: PDF Reconstruction (Pipeless) <!-- id: 40 -->
+        - [x] Implement `PDFGenerator` (API MMD -> PDF)
+        - [x] Implement `--pdf` flag in pipeline
+        - [x] Verify `reconstructed.pdf` output
+    - [x] Phase 9: Native HWPX Implementation (OWPML) <!-- id: 50 -->
+        - [x] Design `HeaderManager` (Style ID Management)
+        - [x] Implement `HeaderManager.add_para_shape`
+        - [x] Implement `HeaderManager.generate_xml`
+        - [x] Update `HWPGenerator` to use `HeaderManager`
+        - [x] Implement `SetParaShape` logic in Generator
+        - [x] Verify `header.xml` and `section0.xml` linkage
+    - [x] Phase 10: Community-Driven OWPML Integration <!-- id: 60 -->
+        - [x] Install `python-hwpx` library
+        - [x] Create `HwpxDocumentBuilder` class
+        - [x] Map `SetParaShape` -> `python-hwpx` paraPr API
+        - [x] Map `InsertText` -> paragraph creation API
+        - [x] Map `InsertEquation` -> placeholder text (full support TODO)
+        - [ ] Map `CreateTable` -> `HwpxDocument.add_table()` (TODO)
+        - [x] Update `pipeline.py` to use new builder
+        - [ ] Deprecate template-based `HWPGenerator` (keep as fallback)
+        - [ ] Verify with HWP 2024

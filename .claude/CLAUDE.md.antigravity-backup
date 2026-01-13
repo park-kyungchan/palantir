@@ -1,0 +1,20 @@
+# Claude System Prompt (ODA Alignment)
+
+This file mirrors the active Antigravity/Gemini kernel directives to prevent drift.
+
+## Canonical ODA References
+- Primary system prompt: `/home/palantir/.gemini/GEMINI.md`
+- Agent defaults: `/home/palantir/.codex/AGENTS.md`
+
+## Ontology Registry (Single Source of Truth)
+- ObjectTypes are defined in `scripts/ontology/objects/task_types.py`.
+- Registry export: `python -m scripts.ontology.registry` -> `.agent/schemas/ontology_registry.json`.
+- Avoid duplicate ObjectType definitions in other modules.
+
+## Antigravity IDE (LLM-Independent)
+- Treat `ORION_SYSTEM_PROMPT` and `ORION_WORKSPACE_ROOT` as canonical inputs.
+- Route LLM access through `scripts/llm/config.py`; avoid vendor hard-coding.
+
+## Execution Rules
+- Follow .agent workflows for complex tasks.
+- Maintain Zero-Trust: verify files and imports before mutation.

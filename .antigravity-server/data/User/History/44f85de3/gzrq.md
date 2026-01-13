@@ -1,0 +1,30 @@
+- [x] Planning: PDF Parsing (Pre-HWPX)
+    - [x] Stage A: Blueprint (Requirements & Scope) <!-- id: 13 -->
+    - [x] Stage B: Integration Trace (Logic & Phases) <!-- id: 14 -->
+    - [x] Stage C: Quality Gate (Risk & Approval) <!-- id: 15 -->
+- [x] Execution: PDF -> IR Implementation <!-- id: 16 -->
+    - [x] Phase 1: Layout Analysis Integration (Verified Fallback) <!-- id: 17 -->
+    - [x] Phase 2: Vision-Native OCR Implementation (Verified EasyOCR) <!-- id: 18 -->
+    - [x] Phase 3: IR Unification & Verification <!-- id: 19 -->
+        - [x] Create `verify_ir.py` script
+        - [x] Implement Vision-Native IR assembly in `DoclingIngestor`
+        - [x] Debug `DocLayout-YOLO` compatibility issues (Solved via Runtime Monkey Patch)
+        - [x] Verify IR output structure (AnswerBox, ProblemBox tagging)
+            - [x] Create `SemanticTagger` logic
+            - [x] Integrate into `DoclingIngestor`
+            - [x] Debug Coordinate Mismatch (IoU failure / Text Extraction flow / Y-Axis Flip)
+    - [x] Phase 3: IR Unification (Integration Layer) <!-- id: 19 -->
+    - [x] Phase 4: HWPX Compilation (Compiler Layer) <!-- id: 20 -->
+        - [x] Add `SetParaShape` to `lib/models.py`
+        - [x] Implement `ProblemBox` mapping (Hanging Indent)
+        - [x] Implement `AnswerBox` mapping (Table Wrap)
+        - [x] Verify compilation with `scripts/verify_compilation.py`
+    - [x] Phase 5: HWPX Builder (Serialization Layer) <!-- id: 21 -->
+        - [x] Implement `lib/builder.py` (HwpAction -> Python Code)
+        - [x] Integrate into `lib/pipeline.py`
+        - [x] Verify with `scripts/verify_builder.py`
+    - [x] Phase 6: Native HWPX Generation (Linux) <!-- id: 25 -->
+        - [x] Create `lib/owpml` package
+        - [x] Implement `HWPXZipper` based on `generate_linux_hwpx.py`
+        - [x] Map `HwpAction` to OWPML XML
+        - [x] Verify by generating valid `.hwpx`

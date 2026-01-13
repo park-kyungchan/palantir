@@ -1,0 +1,38 @@
+{
+    "title": "Orion ODA System and Architecture",
+    "summary": "Comprehensive overview of the Orion Ontology-Driven Architecture (ODA). Covers the transition to Antigravity Kernel v6.0 (Native Edition), featuring RSIL-enforced protocols (Planning, Audit, Execution), and anti-hallucination verification. Includes detailed specifications for the 3-Stage Planning Protocol and end-to-end case studies on applying ODA governance to data structural analysis tasks, documenting the full lifecycle from blueprinting to successful isolated verification. Validated against Palantir AIP/Foundry (AI Ultra) standards.",
+    "references": [
+        {
+            "type": "conversation_id",
+            "value": "bot-9a70e906-2085-42f9-ae5a-3bddfe7e4d35"
+        },
+        {
+            "type": "conversation_id",
+            "value": "00b2da7f-73fc-41d4-b079-b33f24f74f26"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/mcp_manager.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/llm/config.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/scripts/ontology/registry.py"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/.agent/rules/audit/1_layer_audit.md"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/park-kyungchan/palantir/.agent/workflows/01_plan.md"
+        },
+        {
+            "type": "file",
+            "value": "/home/palantir/.gemini/antigravity/knowledge/orion_oda_system/artifacts/implementation/observability_and_error_handling.md"
+        }
+    ]
+}

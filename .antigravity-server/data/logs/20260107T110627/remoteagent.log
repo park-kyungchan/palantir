@@ -1,0 +1,454 @@
+2026-01-07 11:06:27.620 [info] 
+
+
+
+
+2026-01-07 11:06:27.629 [info] Extension host agent started.
+2026-01-07 11:06:27.941 [info] [127.0.0.1][98f6aa4b][ManagementConnection] New connection established.
+2026-01-07 11:06:27.953 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] New connection established.
+2026-01-07 11:06:28.040 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> Launched Extension Host Process.
+2026-01-07 11:06:28.524 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> Set default auto-select family attempt timeout to 1000ms
+
+2026-01-07 11:06:47.191 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:06:47 [INFO]: Language server started[39m
+
+2026-01-07 11:06:47.296 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:06:47 [INFO]: LS lspClient started successfully[39m
+
+2026-01-07 11:11:27.631 [info] New EH opened, aborting shutdown
+2026-01-07 11:12:42.176 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:12:42 [INFO]: [Terminal] Command completed: npm install -g @openai/codex exit code 127[39m
+
+2026-01-07 11:12:42.176 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:12:42 [INFO]: [Terminal] Command completed: npm install -g @openai/codex exit code 127[39m
+
+2026-01-07 11:13:22.918 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:22 [INFO]: [Terminal] Command completed: cat /etc/passwd | grep -v nologin | grep -v false exit code 0[39m
+
+2026-01-07 11:13:22.918 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:22 [INFO]: [Terminal] Command completed: cat /etc/passwd | grep -v nologin | grep -v false exit code 0[39m
+
+2026-01-07 11:13:22.982 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:22 [INFO]: [Terminal] Command completed: ls -la /home/ exit code 0[39m
+
+2026-01-07 11:13:22.982 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:22 [INFO]: [Terminal] Command completed: ls -la /home/ exit code 0[39m
+
+2026-01-07 11:13:23.169 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:23 [INFO]: [Terminal] Command completed: wsl.exe -l -v 2>/dev/null || echo "Cannot list WSL distributions from inside WSL" exit code 0[39m
+
+2026-01-07 11:13:23.170 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:23 [INFO]: [Terminal] Command completed: wsl.exe -l -v 2>/dev/null || echo "Cannot list WSL distributions from inside WSL" exit code 0[39m
+
+2026-01-07 11:13:24.144 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:24 [INFO]: [Terminal] Command completed: which codex || find /usr -name "codex" 2>/dev/null || find /home -name "codex" 2>/dev/null exit code 0[39m
+
+2026-01-07 11:13:24.144 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:24 [INFO]: [Terminal] Command completed: which codex || find /usr -name "codex" 2>/dev/null || find /home -name "codex" 2>/dev/null exit code 0[39m
+
+2026-01-07 11:13:35.382 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:35 [INFO]: [Terminal] Command completed: ls -la /mnt/c/Users/*/AppData/Roaming/npm/ 2>/dev/null | head -20 exit code 0[39m
+
+2026-01-07 11:13:35.382 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:35 [INFO]: [Terminal] Command completed: ls -la /mnt/c/Users/*/AppData/Roaming/npm/ 2>/dev/null | head -20 exit code 0[39m
+
+2026-01-07 11:13:35.420 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:35 [INFO]: [Terminal] Command completed: hostname exit code 0[39m
+
+2026-01-07 11:13:35.420 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:13:35 [INFO]: [Terminal] Command completed: hostname exit code 0[39m
+
+2026-01-07 11:14:57.918 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:14:57 [INFO]: [Terminal] Command completed: ls -la ~/.codex/ ~/.nvm/ ~/.npm/ 2>/dev/null | head -30 exit code 0[39m
+
+2026-01-07 11:14:57.918 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:14:57 [INFO]: [Terminal] Command completed: ls -la ~/.codex/ ~/.nvm/ ~/.npm/ 2>/dev/null | head -30 exit code 0[39m
+
+2026-01-07 11:14:59.061 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:14:59 [INFO]: [Terminal] Command completed: cat ~/.bashrc | grep -E "(nvm|npm|node|NVM|codex)" | head -20 exit code 0[39m
+[32m(Antigravity) 2026-01-07 11:14:59 [INFO]: [Terminal] Command completed: cat ~/.bashrc | grep -E "(nvm|npm|node|NVM|codex)" | head -20 exit code 0[39m
+
+2026-01-07 11:14:59.166 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:14:59 [INFO]: [Terminal] Command completed: echo $PATH exit code 0[39m
+[32m(Antigravity) 2026-01-07 11:14:59 [INFO]: [Terminal] Command completed: echo $PATH exit code 0[39m
+
+2026-01-07 11:15:06.623 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:06 [INFO]: [Terminal] Command completed: ls -la ~/.nvm/versions/node/ 2>/dev/null && ls -la ~/.nvm/alias/ 2>/dev/null exit code 0[39m
+
+2026-01-07 11:15:06.624 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:06 [INFO]: [Terminal] Command completed: ls -la ~/.nvm/versions/node/ 2>/dev/null && ls -la ~/.nvm/alias/ 2>/dev/null exit code 0[39m
+
+2026-01-07 11:15:06.668 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:06 [INFO]: [Terminal] Command completed: ls ~/.profile ~/.bash_profile 2>/dev/null && cat ~/.profile 2>/dev/null | head -30 exit code 2[39m
+[32m(Antigravity) 2026-01-07 11:15:06 [INFO]: [Terminal] Command completed: ls ~/.profile ~/.bash_profile 2>/dev/null && cat ~/.profile 2>/dev/null | head -30 exit code 2[39m
+
+2026-01-07 11:15:13.292 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:13 [INFO]: [Terminal] Command completed: ls ~/.nvm/versions/node/v24.12.0/bin/ exit code 0[39m
+
+2026-01-07 11:15:13.293 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:13 [INFO]: [Terminal] Command completed: ls ~/.nvm/versions/node/v24.12.0/bin/ exit code 0[39m
+
+2026-01-07 11:15:34.009 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:34 [INFO]: [Terminal] Command completed: source ~/.bashrc && which node && which npm && node --version exit code 0[39m
+
+2026-01-07 11:15:34.010 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:34 [INFO]: [Terminal] Command completed: source ~/.bashrc && which node && which npm && node --version exit code 0[39m
+
+2026-01-07 11:15:45.134 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:45 [INFO]: [Terminal] Command completed: source ~/.bashrc && npm install -g @openai/codex && which codex exit code 0[39m
+
+2026-01-07 11:15:45.134 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:15:45 [INFO]: [Terminal] Command completed: source ~/.bashrc && npm install -g @openai/codex && which codex exit code 0[39m
+
+2026-01-07 11:20:43.593 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:20:43 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-07 11:20:43.593 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:20:43 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-07 11:20:46.902 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:20:46 [INFO]: [Terminal] Command completed: .venv/bin/pip install python-hwpx exit code 0[39m
+
+2026-01-07 11:20:46.903 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:20:46 [INFO]: [Terminal] Command completed: .venv/bin/pip install python-hwpx exit code 0[39m
+
+2026-01-07 11:20:56.253 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:20:56 [INFO]: [Terminal] Command completed: .venv/bin/python -c "from hwpx import HwpxDocument; doc = HwpxDocument(); print(type(doc)); print(dir(doc))" exit code 1[39m
+
+2026-01-07 11:20:56.253 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:20:56 [INFO]: [Terminal] Command completed: .venv/bin/python -c "from hwpx import HwpxDocument; doc = HwpxDocument(); print(type(doc)); print(dir(doc))" exit code 1[39m
+
+2026-01-07 11:21:03.323 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:03 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import hwpx; print(dir(hwpx))" exit code 0[39m
+
+2026-01-07 11:21:03.323 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:03 [INFO]: [Terminal] Command completed: .venv/bin/python -c "import hwpx; print(dir(hwpx))" exit code 0[39m
+
+2026-01-07 11:21:10.641 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:10 [INFO]: [Terminal] Command completed: .venv/bin/python -c "from hwpx.document import HwpxDocument; doc = HwpxDocument(); print(type(doc)); print([m for m in dir(doc) if not m.startswith('_')])" exit code 1[39m
+
+2026-01-07 11:21:10.641 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:10 [INFO]: [Terminal] Command completed: .venv/bin/python -c "from hwpx.document import HwpxDocument; doc = HwpxDocument(); print(type(doc)); print([m for m in dir(doc) if not m.startswith('_')])" exit code 1[39m
+
+2026-01-07 11:21:24.457 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:24 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:21:24.457 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:24 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:21:27.458 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:27 [INFO]: [Terminal] Command force exited: ", with exit code 1[39m
+
+2026-01-07 11:21:38.493 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:38 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:21:38.493 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:38 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:21:41.494 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:41 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:21:52.488 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:52 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:21:52.488 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:52 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:21:55.489 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:21:55 [INFO]: [Terminal] Command force exited: ", with exit code 1[39m
+
+2026-01-07 11:22:08.959 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:22:08 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:22:08.959 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:22:08 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:22:11.961 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:22:11 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:23:16.088 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:23:16 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:23:16.088 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:23:16 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:23:19.091 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:23:19 [INFO]: [Terminal] Command force exited: ", with exit code 1[39m
+
+2026-01-07 11:24:43.448 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:24:43 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:24:43.449 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:24:43 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:24:46.448 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:24:46 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:25:06.914 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:06 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:25:06.914 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:06 [INFO]: [Terminal] Command completed: " exit code 1[39m
+
+2026-01-07 11:25:09.915 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:09 [INFO]: [Terminal] Command force exited: ", with exit code 1[39m
+
+2026-01-07 11:25:26.151 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:26 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:25:26.152 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:26 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:25:29.153 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:29 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:25:52.402 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:52 [INFO]: [Terminal] Command completed: - Output: output_actions_v10.hwpx" exit code 0[39m
+
+2026-01-07 11:25:52.402 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:52 [INFO]: [Terminal] Command completed: - Output: output_actions_v10.hwpx" exit code 0[39m
+
+2026-01-07 11:25:55.403 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:25:55 [INFO]: [Terminal] Command force exited: - Output: output_actions_v10.hwpx", with exit code 0[39m
+
+2026-01-07 11:26:12.703 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:26:12 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 11:26:12.703 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:26:12 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 11:39:42.447 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:39:42 [INFO]: [Terminal] Command completed: mkdir -p lib/schemas lib/templates exit code 0[39m
+
+2026-01-07 11:39:42.447 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:39:42 [INFO]: [Terminal] Command completed: mkdir -p lib/schemas lib/templates exit code 0[39m
+
+2026-01-07 11:42:24.266 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:42:24 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:42:24.266 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:42:24 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:42:27.266 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:42:27 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:42:41.149 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:42:41 [INFO]: [Terminal] Command completed: - BorderBox → MultiColumn(2) → 4,5,6 → BreakColumn → 7,8,9" exit code 0[39m
+[32m(Antigravity) 2026-01-07 11:42:41 [INFO]: [Terminal] Command completed: - BorderBox → MultiColumn(2) → 4,5,6 → BreakColumn → 7,8,9" exit code 0[39m
+
+2026-01-07 11:42:44.150 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:42:44 [INFO]: [Terminal] Command force exited: - BorderBox → MultiColumn(2) → 4,5,6 → BreakColumn → 7,8,9", with exit code 0[39m
+
+2026-01-07 11:42:45.612 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:42:45 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+[32m(Antigravity) 2026-01-07 11:42:45 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 11:44:49.184 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:44:49 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:44:49.184 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:44:49 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:44:52.186 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:44:52 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:46:10.440 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:46:10 [INFO]: [Terminal] Command completed: " exit code 0[39m
+[32m(Antigravity) 2026-01-07 11:46:10 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:46:13.440 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:46:13 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:46:34.542 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:46:34 [INFO]: [Terminal] Command completed: - Generated sample_fixed.hwpx with 114 actions" exit code 0[39m
+
+2026-01-07 11:46:34.542 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:46:34 [INFO]: [Terminal] Command completed: - Generated sample_fixed.hwpx with 114 actions" exit code 0[39m
+
+2026-01-07 11:46:37.543 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:46:37 [INFO]: [Terminal] Command force exited: - Generated sample_fixed.hwpx with 114 actions", with exit code 0[39m
+
+2026-01-07 11:52:06.688 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:06 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:52:06.690 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:06 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:52:09.690 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:09 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:52:37.233 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:37 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:52:37.233 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:37 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:52:40.235 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:40 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:52:40.438 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:40 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:52:40.438 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:40 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:52:43.443 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:52:43 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:53:02.400 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:02 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:53:02.400 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:02 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:53:05.401 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:05 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:53:05.610 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:05 [INFO]: [Terminal] Command completed: find ~/.venv -name "*.py" -path "*hwpx*" 2>/dev/null | head -5 || find /home/palantir/hwpx/.venv -name "*.py" -path "*hwpx*" 2>/dev/null | head -5 exit code 0[39m
+
+2026-01-07 11:53:05.610 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:05 [INFO]: [Terminal] Command completed: find ~/.venv -name "*.py" -path "*hwpx*" 2>/dev/null | head -5 || find /home/palantir/hwpx/.venv -name "*.py" -path "*hwpx*" 2>/dev/null | head -5 exit code 0[39m
+
+2026-01-07 11:53:08.611 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:08 [INFO]: [Terminal] Command force exited: find ~/.venv -name "*.py" -path "*hwpx*" 2>/dev/null | head -5 || find /home/palantir/hwpx/.venv -name "*.py" -path "*hwpx*" 2>/dev/null | head -5, with exit code 0[39m
+
+2026-01-07 11:53:40.789 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:40 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:53:40.789 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:40 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:53:43.791 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:53:43 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:54:26.406 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:54:26 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:54:26.406 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:54:26 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:54:29.408 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:54:29 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 11:59:18.656 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:18 [INFO]: [Terminal] Command completed: ls -la exit code 0[39m
+[32m(Antigravity) 2026-01-07 11:59:18 [INFO]: [Terminal] Command completed: ls -la exit code 0[39m
+
+2026-01-07 11:59:21.657 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:21 [INFO]: [Terminal] Command force exited: ls -la, with exit code 0[39m
+
+2026-01-07 11:59:35.415 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:35 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-07 11:59:35.416 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:35 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-07 11:59:36.769 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:36 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:59:36.769 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:36 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 11:59:39.770 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 11:59:39 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 12:00:00.191 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:00 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:00:00.192 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:00 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:00:03.191 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:03 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 12:00:04.738 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:04 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:00:04.738 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:04 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:00:07.739 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:07 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 12:00:25.271 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:25 [INFO]: [Terminal] Command completed: " exit code 0[39m
+[32m(Antigravity) 2026-01-07 12:00:25 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:00:28.272 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:00:28 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 12:05:45.222 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:05:45 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:05:45.222 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:05:45 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:05:48.223 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:05:48 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 12:06:12.552 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:12 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:06:12.553 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:12 [INFO]: [Terminal] Command completed: " exit code 0[39m
+
+2026-01-07 12:06:15.554 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:15 [INFO]: [Terminal] Command force exited: ", with exit code 0[39m
+
+2026-01-07 12:06:16.166 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:16 [INFO]: [Terminal] Command completed: - 20+ equations with HWP script syntax" exit code 0[39m
+
+2026-01-07 12:06:16.166 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:16 [INFO]: [Terminal] Command completed: - 20+ equations with HWP script syntax" exit code 0[39m
+
+2026-01-07 12:06:19.169 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:19 [INFO]: [Terminal] Command force exited: - 20+ equations with HWP script syntax", with exit code 0[39m
+
+2026-01-07 12:06:32.581 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:32 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 12:06:32.581 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:06:32 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 12:13:20.577 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:20 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:13:21.159 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:21 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:13:24.379 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:24 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:13:25.602 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:25 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:13:26.002 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:26 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:13:26.478 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:26 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:13:27.248 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:13:27 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:14:07.159 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:07 [INFO]: [Terminal] Command completed: ls -la *.hwpx *.json 2>/dev/null | head -20 exit code 0[39m
+
+2026-01-07 12:14:07.160 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:07 [INFO]: [Terminal] Command completed: ls -la *.hwpx *.json 2>/dev/null | head -20 exit code 0[39m
+
+2026-01-07 12:14:24.720 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: sample_fixed.hwpx sample_fixed_v2.hwpx test_builder_output.hwpx test_output.hwpx exit code 0[39m
+
+2026-01-07 12:14:24.721 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: sample_fixed.hwpx sample_fixed_v2.hwpx test_builder_output.hwpx test_output.hwpx exit code 0[39m
+
+2026-01-07 12:14:24.747 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: sample_actions.json sample_complex_actions.json sample_ir.json work_summary.json exit code 0[39m
+[32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: sample_actions.json sample_complex_actions.json sample_ir.json work_summary.json exit code 0[39m
+
+2026-01-07 12:14:24.841 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: rm -f debug_pdf_url.py test_converter.py test_owpml.py test_reconstruct.py test_output.pdf exit code 0[39m
+[32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: rm -f debug_pdf_url.py test_converter.py test_owpml.py test_reconstruct.py test_output.pdf exit code 0[39m
+
+2026-01-07 12:14:24.853 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: rm -f pipeline.log pipeline_pdf.log exit code 0[39m
+
+2026-01-07 12:14:24.853 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: rm -f pipeline.log pipeline_pdf.log exit code 0[39m
+
+2026-01-07 12:14:24.867 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: rm -rf temp_hwpx_structure temp_vision temp_vision_batch verification_output exit code 0[39m
+
+2026-01-07 12:14:24.868 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:24 [INFO]: [Terminal] Command completed: rm -rf temp_hwpx_structure temp_vision temp_vision_batch verification_output exit code 0[39m
+
+2026-01-07 12:14:25.011 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: find . -name "*.Zone.Identifier" -delete 2>/dev/null exit code 0[39m
+
+2026-01-07 12:14:25.011 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: find . -name "*.Zone.Identifier" -delete 2>/dev/null exit code 0[39m
+
+2026-01-07 12:14:25.030 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: rm -f packages-microsoft-prod.deb exit code 0[39m
+
+2026-01-07 12:14:25.030 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: rm -f packages-microsoft-prod.deb exit code 0[39m
+
+2026-01-07 12:14:25.033 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: echo "=== Remaining files ===" exit code 0[39m
+
+2026-01-07 12:14:25.033 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: echo "=== Remaining files ===" exit code 0[39m
+
+2026-01-07 12:14:25.061 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: ls -la exit code 0[39m
+
+2026-01-07 12:14:25.061 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:25 [INFO]: [Terminal] Command completed: ls -la exit code 0[39m
+
+2026-01-07 12:14:28.062 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:28 [INFO]: [Terminal] Command force exited: ls -la, with exit code 0[39m
+
+2026-01-07 12:14:41.665 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: "한글오토메이션EventHandler추가_2504.pdf:Zone.Identifier" exit code 0[39m
+
+2026-01-07 12:14:41.665 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: "한글오토메이션EventHandler추가_2504.pdf:Zone.Identifier" exit code 0[39m
+
+2026-01-07 12:14:41.730 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: rm -f reconstructed.pdf exit code 0[39m
+[32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: rm -f reconstructed.pdf exit code 0[39m
+
+2026-01-07 12:14:41.772 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: echo "=== PDF files (kept) ===" exit code 0[39m
+
+2026-01-07 12:14:41.772 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: echo "=== PDF files (kept) ===" exit code 0[39m
+
+2026-01-07 12:14:41.775 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: ls -la *.pdf 2>/dev/null || echo "No PDFs in root" exit code 0[39m
+
+2026-01-07 12:14:41.776 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: ls -la *.pdf 2>/dev/null || echo "No PDFs in root" exit code 0[39m
+
+2026-01-07 12:14:41.788 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: echo "" exit code 0[39m
+
+2026-01-07 12:14:41.789 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: echo "" exit code 0[39m
+
+2026-01-07 12:14:41.793 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: echo "=== docs/ PDFs (kept) ===" exit code 0[39m
+
+2026-01-07 12:14:41.793 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: echo "=== docs/ PDFs (kept) ===" exit code 0[39m
+
+2026-01-07 12:14:41.796 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: ls -la docs/*.pdf 2>/dev/null || echo "No PDFs in docs/" exit code 0[39m
+[32m(Antigravity) 2026-01-07 12:14:41 [INFO]: [Terminal] Command completed: ls -la docs/*.pdf 2>/dev/null || echo "No PDFs in docs/" exit code 0[39m
+
+2026-01-07 12:14:44.797 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:44 [INFO]: [Terminal] Command force exited: ls -la docs/*.pdf 2>/dev/null || echo "No PDFs in docs/", with exit code 0[39m
+
+2026-01-07 12:14:55.323 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:55 [INFO]: [Terminal] Command completed: git add -A && git status exit code 0[39m
+
+2026-01-07 12:14:55.324 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:14:55 [INFO]: [Terminal] Command completed: git add -A && git status exit code 0[39m
+
+2026-01-07 12:15:06.666 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:15:06 [INFO]: [Terminal] Command completed: - All PDF documentation" exit code 0[39m
+[32m(Antigravity) 2026-01-07 12:15:06 [INFO]: [Terminal] Command completed: - All PDF documentation" exit code 0[39m
+
+2026-01-07 12:15:09.666 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:15:09 [INFO]: [Terminal] Command force exited: - All PDF documentation", with exit code 0[39m
+
+2026-01-07 12:15:10.867 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:15:10 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 12:15:10.867 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:15:10 [INFO]: [Terminal] Command completed: git push origin hwpx exit code 0[39m
+
+2026-01-07 12:52:58.050 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:52:58 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 12:52:58.960 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 12:52:58 [INFO]: [SupercompleteProvider] No supercomplete response[39m
+
+2026-01-07 14:34:47.609 [info] [127.0.0.1][98f6aa4b][ManagementConnection] The client has reconnected.
+2026-01-07 14:34:50.157 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] The client has reconnected.
+2026-01-07 15:05:12.779 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:05:12 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir exit code 0[39m
+
+2026-01-07 15:05:12.783 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:05:12 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir exit code 0[39m
+
+2026-01-07 15:05:13.847 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:05:13 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && source .venv/bin/activate && python -m py_compile scripts/mcp_manager.py && echo "✅ Syntax OK" exit code 0[39m
+
+2026-01-07 15:05:13.847 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:05:13 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && source .venv/bin/activate && python -m py_compile scripts/mcp_manager.py && echo "✅ Syntax OK" exit code 0[39m
+
+2026-01-07 15:07:53.469 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:07:53 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && git status --short exit code 0[39m
+[32m(Antigravity) 2026-01-07 15:07:53 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && git status --short exit code 0[39m
+
+2026-01-07 15:08:06.783 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:06 [INFO]: [Terminal] Command completed: Quality Gate: PASS (0 Critical, 0 High, 0 Medium findings)" exit code 0[39m
+
+2026-01-07 15:08:06.783 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:06 [INFO]: [Terminal] Command completed: Quality Gate: PASS (0 Critical, 0 High, 0 Medium findings)" exit code 0[39m
+
+2026-01-07 15:08:09.784 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:09 [INFO]: [Terminal] Command force exited: Quality Gate: PASS (0 Critical, 0 High, 0 Medium findings)", with exit code 0[39m
+
+2026-01-07 15:08:21.433 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:21 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && git push exit code 128[39m
+
+2026-01-07 15:08:21.433 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:21 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && git push exit code 128[39m
+
+2026-01-07 15:08:27.539 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:27 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && git push --set-upstream origin palantir exit code 0[39m
+
+2026-01-07 15:08:27.539 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:08:27 [INFO]: [Terminal] Command completed: cd /home/palantir/park-kyungchan/palantir && git push --set-upstream origin palantir exit code 0[39m
+
+2026-01-07 15:20:32.603 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:32 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-07 15:20:32.604 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:32 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx exit code 0[39m
+
+2026-01-07 15:20:33.633 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:33 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && grep -rn "except:" lib/ --include="*.py" 2>/dev/null | head -20 exit code 0[39m
+[32m(Antigravity) 2026-01-07 15:20:33 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && grep -rn "except:" lib/ --include="*.py" 2>/dev/null | head -20 exit code 0[39m
+
+2026-01-07 15:20:34.705 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:34 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && grep -rn "except Exception:" lib/ --include="*.py" | grep -v "as e" | head -20 exit code 0[39m
+
+2026-01-07 15:20:34.705 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:34 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && grep -rn "except Exception:" lib/ --include="*.py" | grep -v "as e" | head -20 exit code 0[39m
+
+2026-01-07 15:20:34.797 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:34 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && source .venv/bin/activate && python -m py_compile lib/compiler.py lib/models.py lib/ir.py lib/pipeline.py && echo "✅ Syntax OK" exit code 0[39m
+
+2026-01-07 15:20:34.797 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:20:34 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && source .venv/bin/activate && python -m py_compile lib/compiler.py lib/models.py lib/ir.py lib/pipeline.py && echo "✅ Syntax OK" exit code 0[39m
+
+2026-01-07 15:21:06.863 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:21:06 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && source .venv/bin/activate && pytest tests/unit/ -v --tb=no -q 2>&1 | tail -30 exit code 0[39m
+
+2026-01-07 15:21:06.864 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:21:06 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && source .venv/bin/activate && pytest tests/unit/ -v --tb=no -q 2>&1 | tail -30 exit code 0[39m
+
+2026-01-07 15:23:53.459 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:23:53 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && source .venv/bin/activate && python -m py_compile lib/compiler.py lib/ingestors/text_action_Ingestor.py && echo "✅ Syntax OK" exit code 0[39m
+
+2026-01-07 15:23:53.460 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:23:53 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && source .venv/bin/activate && python -m py_compile lib/compiler.py lib/ingestors/text_action_Ingestor.py && echo "✅ Syntax OK" exit code 0[39m
+
+2026-01-07 15:33:21.466 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:33:21 [INFO]: [Terminal] Command completed: codex exit code 0[39m
+
+2026-01-07 15:33:21.467 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:33:21 [INFO]: [Terminal] Command completed: codex exit code 0[39m
+
+2026-01-07 15:34:30.947 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:30 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && git remote -v && git status --short exit code 0[39m
+
+2026-01-07 15:34:30.947 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:30 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && git remote -v && git status --short exit code 0[39m
+
+2026-01-07 15:34:40.770 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:40 [INFO]: [Terminal] Command completed: Audit: HWPX Deep Audit (Quality Gate PASS)" exit code 0[39m
+
+2026-01-07 15:34:40.770 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:40 [INFO]: [Terminal] Command completed: Audit: HWPX Deep Audit (Quality Gate PASS)" exit code 0[39m
+
+2026-01-07 15:34:43.772 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:43 [INFO]: [Terminal] Command force exited: Audit: HWPX Deep Audit (Quality Gate PASS)", with exit code 0[39m
+
+2026-01-07 15:34:48.946 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:48 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && git push exit code 128[39m
+
+2026-01-07 15:34:48.946 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:48 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && git push exit code 128[39m
+
+2026-01-07 15:34:57.126 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:57 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && git push --set-upstream origin hwpx exit code 0[39m
+
+2026-01-07 15:34:57.126 [info] [127.0.0.1][7e9096a2][ExtensionHostConnection] <1598> [32m(Antigravity) 2026-01-07 15:34:57 [INFO]: [Terminal] Command completed: cd /home/palantir/hwpx && git push --set-upstream origin hwpx exit code 0[39m
+
+2026-01-07 15:35:06.445 [info] [127.0.0.1][98f6aa4b][ManagementConnection] The client has disconnected gracefully, so the connection will be disposed.

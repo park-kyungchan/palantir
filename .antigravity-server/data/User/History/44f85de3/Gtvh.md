@@ -1,0 +1,8 @@
+- [ ] Planning: PDF Parsing (Pre-HWPX)
+    - [ ] Stage A: Blueprint (Requirements & Scope) <!-- id: 13 -->
+    - [ ] Stage B: Integration Trace (Logic & Phases) <!-- id: 14 -->
+    - [ ] Stage C: Quality Gate (Risk & Approval) <!-- id: 15 -->
+- [ ] Execution: PDF -> IR Implementation <!-- id: 16 -->
+    - [ ] Phase 1: Layout Analysis Integration <!-- id: 17 -->
+    - [ ] Phase 2: Content Extraction (Docling) <!-- id: 18 -->
+    - [ ] Phase 3: IR Mapping & Serialization <!-- id: 19 -->

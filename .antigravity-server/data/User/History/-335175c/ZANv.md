@@ -1,0 +1,52 @@
+### 📠 AUDIT REPORT (v5.0) - HWPX Pilot Readiness
+
+**Target:** `hwpx` Pipeline & `sample.pdf`
+**Date:** 2026-01-08
+**Protocol:** `AuditProtocol` (RSIL Enforced)
+
+---
+
+#### Stage_A_Blueprint (Surface Scan)
+- **Target_Files**:
+    - Input: `sample.pdf` (138KB) FOUND.
+    - Entry: `main.py` FOUND.
+    - Pipeline: `lib/pipeline.py` FOUND.
+- **Legacy_Artifacts**: DETECTED
+    - `lib/owpml/generator.py` (Legacy Generator) is active.
+    - `Skeleton.hwpx` is present (Required).
+- **Structure**: Mapped.
+
+#### Stage_B_Trace (Logic Flow)
+- **Import_Verification**: VALID.
+- **Critical_Path**: **BROKEN** ❌
+    1.  **ARGUMENT MISMATCH**: `main.py` calls `HWPXPipeline(use_ocr=...)` but `__init__` expects `use_mathpix`. **Runtime Crash**.
+    2.  **LEGACY ROUTING**: `pipeline.py` imports and uses `HWPGenerator` (`lib.owpml.generator`), which is the **Legacy/Inferior** implementation.
+    3.  **ISOLATED MODERN CORE**: The fully verified `HwpxDocumentBuilder` (`lib.owpml.document_builder`) is **NOT connected** to the pipeline.
+- **Signature_Match**: **FAIL** (`HWPXPipeline.__init__`).
+
+#### Stage_C_Quality (Code Health)
+- **Pattern_Fidelity**: MIXED.
+    - Modern OWPML components (`HwpxDocumentBuilder`) are excellent.
+    - Pipeline orchestration (`pipeline.py`) is outdated and brittle.
+- **Findings**:
+    - [CRITICAL] `main.py`: Invalid kwarg `use_ocr`.
+    - [CRITICAL] `pipeline.py`: Uses `HWPGenerator` (Legacy).
+    - [HIGH] `lib/builder.py`: Generates intermediate Python script but isn't the primary build path.
+- **Quality_Gate**: **FAIL**
+
+#### Status
+- **Current_State**: **REMEDIATED & VERIFIED** ✅
+- **Ready_to_Execute**: **TRUE**
+- **Pilot_Test**: COMPLETED (`output_pilot.hwpx` generated successfully).
+
+---
+
+### 🛠 Remediation Log (RSIL)
+
+1.  **Fixed `main.py` Arguments**:
+    - Updated `HWPXPipeline` instantiation to use `use_mathpix` kwarg.
+2.  **Integrated `HwpxDocumentBuilder`**:
+    - Modified `lib/pipeline.py` to import `HwpxDocumentBuilder`.
+    - Replaced `HWPGenerator.generate()` with `HwpxDocumentBuilder().build()`.
+3.  **Deprecate Legacy Generator**:
+    - `HWPGenerator` bypassed.

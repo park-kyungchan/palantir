@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orion-orchestrator"
+version = "2.0.0"
+description = "Antigravity ODA Runtime"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite",
+    "instructor",
+    "tenacity",
+    "json_repair",
+    "uuid6"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lib*", "scripts*"]
+namespaces = false
+
+[project.scripts]
+orion = "lib.oda.cli:main"
+orion-api = "lib.oda.api.main:serve"
