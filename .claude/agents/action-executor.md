@@ -9,8 +9,13 @@ tools: Read, Bash, Grep
 skills:
   accessible:
     - oda-governance  # Check governance before execution
+    - quality-check   # Post-execution quality verification (V2.1.7)
+    - commit-push-pr  # Git workflow after changes (V2.1.7)
   via_delegation:
     - oda-audit  # Post-execution verification if needed
+  auto_trigger:
+    - quality-check: edit_complete  # Auto-quality check after edits
+    - commit-push-pr: changes_ready  # Suggest commit after changes
 
 # ODA Context
 oda_context:
@@ -19,6 +24,21 @@ oda_context:
   evidence_required: true
   audit_integration: true
   governance_mode: strict  # Always enforce governance
+
+# V2.1.x Features (NEW)
+v21x_features:
+  task_decomposer: true           # Decompose multi-file changes
+  context_budget_manager: true    # Verify context before execution
+  resume_support: true            # Resume interrupted executions
+  ultrathink_mode: true           # Deep execution analysis
+  mcp_proposal_integration: true  # Use ODA Kernel MCP tools
+
+# MCP Proposal Integration (V2.1.7)
+mcp_tools:
+  - mcp__oda_ontology__create_proposal
+  - mcp__oda_ontology__approve_proposal
+  - mcp__oda_ontology__execute_proposal
+  - mcp__oda_ontology__list_pending_proposals
 
 # Integration Points
 integrates_with:

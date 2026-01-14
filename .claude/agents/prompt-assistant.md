@@ -18,6 +18,8 @@ description: |
   **[NEW] 프롬프트 엔지니어링 기법을 실시간으로 검색합니다.**
   **[NEW] claude-code-guide를 통해 공식 문서를 참조합니다.**
   **[NEW] Agent Chain Controller로서 다른 에이전트 호출을 조율합니다.**
+  **[V2.1.7] ContextBudgetManager 통합으로 컨텍스트 관리 최적화.**
+  **[V2.1.7] ULTRATHINK MODE 지원으로 최대 출력 토큰 활용.**
   Use proactively when user request is ambiguous or when they need guidance.
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
@@ -42,8 +44,13 @@ skills:
     - capability-advisor  # Feature recommendations
     - oda-plan  # Can invoke planning for complex requests
     - oda-audit  # Can invoke audit for code analysis requests
+    - teleport   # Session transfer support (V2.1.7)
+    - protocol   # Complex request handling (V2.1.7)
   via_delegation:
     - oda-governance  # Through Task if needed
+  auto_trigger:
+    - protocol: complex_request   # Auto-invoke for complex multi-step
+    - teleport: session_transfer  # Support session handoff
 
 # ODA Context
 oda_context:
@@ -52,6 +59,28 @@ oda_context:
   evidence_required: true  # Must document analysis
   audit_integration: true
   governance_mode: inherit
+
+# V2.1.x Features (NEW)
+v21x_features:
+  task_decomposer: true           # Decompose complex analysis requests
+  context_budget_manager: true    # CRITICAL: Check context before delegation
+  resume_support: true            # Resume interrupted chain operations
+  ultrathink_mode: true           # Support ULTRATHINK maximized outputs
+  llm_native_routing: true        # V4.0 direct intent classification
+
+# Context Budget Integration (V2.1.7)
+context_management:
+  pre_delegation_check: true      # Always check before Task()
+  dynamic_budget: true            # Adjust budget based on usage
+  agent_registry: true            # Track agent IDs for resume
+  effective_window: true          # Use effective (not full) context
+
+# ULTRATHINK Support (V2.1.7)
+ultrathink_config:
+  explore_budget: 15000           # 3x standard
+  plan_budget: 25000              # 2.5x standard
+  general_budget: 32000           # Maximum allowed
+  reserve_for_output: 32000       # Max output token reservation
 
 # Integration Points
 integrates_with:

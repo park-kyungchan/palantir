@@ -1,15 +1,15 @@
 {
-  "model": "opus",
+  "env": {
+    "ORION_WORKSPACE_ROOT": "/home/palantir",
+    "ORION_DB_PATH": "/home/palantir/.agent/tmp/ontology.db",
+    "PYTHONPATH": "/home/palantir/park-kyungchan/palantir",
+    "ORION_PROJECTS": "park-kyungchan/palantir,hwpx,lib/owpml",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
+    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "100000",
+    "MAX_MCP_OUTPUT_TOKENS": "100000",
+    "BASH_MAX_OUTPUT_LENGTH": "200000"
+  },
   "permissions": {
-    "deny": [
-      "Read(.env*)",
-      "Read(**/secrets/**)",
-      "Read(**/*credentials*)",
-      "Read(**/.ssh/id_*)",
-      "Bash(rm:-rf:*)",
-      "Bash(sudo:rm:*)",
-      "Bash(chmod:777:*)"
-    ],
     "allow": [
       "Read(/home/palantir/**)",
       "Edit(/home/palantir/**)",
@@ -21,6 +21,15 @@
       "Bash(find:*)",
       "Bash(cat:*)"
     ],
+    "deny": [
+      "Read(.env*)",
+      "Read(**/secrets/**)",
+      "Read(**/*credentials*)",
+      "Read(**/.ssh/id_*)",
+      "Bash(rm:-rf:*)",
+      "Bash(sudo:rm:*)",
+      "Bash(chmod:777:*)"
+    ],
     "additionalDirectories": [
       "/home/palantir",
       "/home/palantir/.claude",
@@ -28,10 +37,6 @@
       "/home/palantir/hwpx",
       "/home/palantir/lib"
     ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "/home/palantir/.claude/statusline-pastel.sh"
   },
   "hooks": {
     "SessionStart": [
@@ -64,8 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/pre-tool-use-oda.sh",
-            "description": "ODA Pre-Tool-Use: LLM-Agnostic governance check"
+            "command": "/home/palantir/.claude/hooks/pre-tool-use-oda.sh"
           }
         ]
       },
@@ -79,8 +83,7 @@
           {
             "type": "command",
             "command": "python3 /home/palantir/.claude/hooks/orchestrator_enforcement.py",
-            "timeout": 5,
-            "description": "ODA Orchestrator Pattern: Advisory warnings for complex operations that should use Task delegation"
+            "timeout": 5
           }
         ]
       },
@@ -100,8 +103,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/post-tool-use-audit.sh",
-            "description": "ODA Post-Tool-Use: LLM-Agnostic audit logging"
+            "command": "/home/palantir/.claude/hooks/post-tool-use-audit.sh"
           }
         ]
       },
@@ -110,8 +112,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/audit-logger.sh",
-            "description": "Evidence tracking for Read/Grep/Glob tool calls"
+            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
           }
         ]
       },
@@ -120,8 +121,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/auto-format.sh",
-            "description": "Boris Cherny Pattern 10: Auto-format code after modifications"
+            "command": "/home/palantir/.claude/hooks/auto-format.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/quality-check.sh",
+            "timeout": 10
           }
         ]
       },
@@ -134,8 +139,7 @@
           },
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/session-health.sh",
-            "description": "Boris Cherny Pattern 12: Session health monitoring and dead-end detection"
+            "command": "/home/palantir/.claude/hooks/session-health.sh"
           }
         ]
       }
@@ -145,8 +149,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/parallel-notify.sh",
-            "description": "Boris Cherny Pattern: System notifications for parallel sessions"
+            "command": "/home/palantir/.claude/hooks/parallel-notify.sh"
           }
         ]
       }
@@ -156,8 +159,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/pre-compact.sh",
-            "description": "V2.1.x: Save context state before Auto-Compact for quick resume"
+            "command": "/home/palantir/.claude/hooks/pre-compact.sh"
           }
         ]
       }
@@ -167,8 +169,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/permission-request.sh",
-            "description": "ODA PermissionRequest: LLM-Agnostic permission handling"
+            "command": "/home/palantir/.claude/hooks/permission-request.sh"
           }
         ]
       }
@@ -178,21 +179,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/notification.sh",
-            "description": "ODA Notification: LLM-Agnostic notification routing"
+            "command": "/home/palantir/.claude/hooks/notification.sh"
           }
         ]
       }
     ]
   },
-  "env": {
-    "ORION_WORKSPACE_ROOT": "/home/palantir",
-    "ORION_DB_PATH": "/home/palantir/.agent/tmp/ontology.db",
-    "PYTHONPATH": "/home/palantir/park-kyungchan/palantir",
-    "ORION_PROJECTS": "park-kyungchan/palantir,hwpx,lib/owpml",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "100000",
-    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "100000",
-    "MAX_MCP_OUTPUT_TOKENS": "100000",
-    "BASH_MAX_OUTPUT_LENGTH": "200000"
+  "statusLine": {
+    "type": "command",
+    "command": "/home/palantir/.claude/statusline-pastel.sh"
   }
 }

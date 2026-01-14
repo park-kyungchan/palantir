@@ -18,6 +18,21 @@ oda_context:
   audit_integration: self  # Is the audit system
   governance_mode: inherit
 
+# V2.1.x Features (NEW)
+v21x_features:
+  task_decomposer: false          # Logs don't need decomposition
+  context_budget_manager: true    # Track context in logs
+  resume_support: false           # Logging is atomic
+  ultrathink_mode: false          # Uses haiku for speed
+  context_tracking: true          # Log context usage metrics
+
+# Context Awareness (V2.1.7)
+context_logging:
+  track_usage: true               # Log context_usage per operation
+  track_remaining: true           # Log remaining_tokens
+  warn_threshold: 0.7             # Log warning at 70% usage
+  critical_threshold: 0.85        # Log critical at 85% usage
+
 # Integration Points
 integrates_with:
   agents:

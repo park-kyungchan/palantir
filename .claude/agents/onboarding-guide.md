@@ -23,6 +23,20 @@ oda_context:
   audit_integration: false  # User guidance not audited
   governance_mode: none  # No governance for help
 
+# V2.1.x Features (NEW)
+v21x_features:
+  task_decomposer: false          # Not needed for quick guidance
+  context_budget_manager: false   # User help doesn't consume much context
+  resume_support: false           # Stateless help sessions
+  ultrathink_mode: false          # Uses haiku for fast responses
+  context_tracking: true          # Track when to suggest /compact
+
+# User Context Awareness (V2.1.7)
+context_awareness:
+  suggest_compact_at: 0.70        # Suggest /compact at 70% context usage
+  warn_user_at: 0.85              # Warn about context limits at 85%
+  auto_suggest_shortcuts: true    # Proactively suggest efficiency tips
+
 # Integration Points
 integrates_with:
   agents:
@@ -134,3 +148,26 @@ context: standard  # Quick responses in main context
 
 ### "대화가 너무 길어졌어요"
 → `/compact` 입력
+
+## V2.1.7 새 기능 (NEW)
+
+### Context 관리 (중요!)
+긴 작업 중 "Auto-Compact" 메시지가 뜨면:
+- 작업 품질이 떨어질 수 있음
+- `/compact`를 미리 실행하면 예방 가능
+- 복잡한 작업 전에 `/compact` 권장
+
+### ULTRATHINK 모드
+깊은 분석이 필요할 때:
+```
+> 이 코드 깊이 분석해줘
+> /deep-audit 실행
+```
+- 더 많은 토큰을 사용하여 상세 분석
+- Context 소비가 빠름 - `/compact` 자주 사용
+
+### 작업 이어하기
+긴 작업이 중단되면:
+- Claude가 자동으로 이전 상태 복구 시도
+- "이어서 해줘" 입력하면 계속 진행
+- `.agent/plans/` 폴더에 진행 상황 저장됨

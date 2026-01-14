@@ -9,7 +9,12 @@ tools: Read, Grep, Glob, Bash
 skills:
   accessible:
     - capability-advisor  # Can recommend capabilities based on findings
+    - memory             # Inject important patterns (V2.1.7)
+    - memory-sync        # Sync evidence to LTM (V2.1.7)
   via_delegation: []  # Primarily a support agent, doesn't invoke other skills
+  auto_trigger:
+    - memory-sync: session_end   # Auto-sync evidence at session end
+    - consolidate: memory_threshold  # Auto-consolidate when memory high
 
 # ODA Context
 oda_context:
@@ -18,6 +23,13 @@ oda_context:
   evidence_required: true  # Self-enforcing
   audit_integration: true
   governance_mode: inherit
+
+# V2.1.x Features (NEW)
+v21x_features:
+  task_decomposer: true           # Decompose large evidence collection
+  context_budget_manager: true    # Track context usage during collection
+  resume_support: true            # Resume interrupted evidence collection
+  ultrathink_mode: true           # Deep evidence for ULTRATHINK
 
 # Integration Points
 integrates_with:

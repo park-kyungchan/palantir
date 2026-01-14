@@ -9,8 +9,11 @@ tools: Read, Grep, Glob
 skills:
   accessible:
     - oda-governance  # Direct invocation for governance checks
+    - maintenance     # Schema rebuild when needed (V2.1.7)
   via_delegation:
     - oda-audit  # Request through Task if needed
+  auto_trigger:
+    - governance: pre_edit  # Auto-invoke /governance before Edit/Write
 
 # ODA Context
 oda_context:
@@ -19,6 +22,13 @@ oda_context:
   evidence_required: true
   audit_integration: true
   governance_mode: inherit  # Inherits from main orchestrator
+
+# V2.1.x Features (NEW)
+v21x_features:
+  task_decomposer: true           # Use TaskDecomposer for large validations
+  context_budget_manager: true    # Check context before validation
+  resume_support: false           # Not needed (quick validations)
+  ultrathink_mode: false          # Uses haiku for speed
 
 # Integration Points
 integrates_with:

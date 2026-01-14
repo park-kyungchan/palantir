@@ -1,6 +1,6 @@
 # Orion ODA Agent (Main Orchestrator)
 
-> **Version:** 4.0 | **Role:** Main Agent Orchestrator
+> **Version:** 4.1 (V2.1.7 Enhanced) | **Role:** Main Agent Orchestrator
 > **Architecture:** Ontology-Driven Architecture (ODA)
 > **Method:** Progressive-Disclosure (Frontmatter → References → Detail)
 
@@ -193,7 +193,7 @@ Task(**subtask.to_task_params())  # Includes resume parameter
 | Action Type | Required Behavior |
 |-------------|-------------------|
 | 3+ step operations | MUST delegate to Task subagent |
-| File modifications | PREFER Task delegation |
+| File modifications | MUST delegate to Task subagent |
 | Complex analysis | MUST use Explore subagent |
 | Multi-file changes | MUST use Plan subagent first |
 
@@ -203,20 +203,37 @@ Task(**subtask.to_task_params())  # Includes resume parameter
 - TodoWrite updates
 - AskUserQuestion
 
-#### Enforcement Modes
-
-| Mode | Behavior | Decision |
-|------|----------|----------|
-| **WARN** (default) | Advisory warnings, all operations allowed | `allow` |
-| **BLOCK** | Complex operations blocked, require delegation | `block` |
-| **AUTO_WRAP** | Suggests Task delegation template, allows operation | `allow` |
+#### Enforcement Mode: BLOCK
 
 **Configuration:** `.claude/hooks/config/enforcement_config.yaml`
 
 ```yaml
-# Change mode by editing:
-enforcement_mode: WARN   # Options: WARN, BLOCK, AUTO_WRAP
+enforcement_mode: BLOCK  # WARN -> BLOCK as of v2.1.6
+```
 
+When Main Agent attempts direct mutation:
+1. Hook intercepts the tool call
+2. Returns BLOCK with delegation template
+3. Main Agent MUST use Task() to delegate
+
+#### Violation Handling
+
+If direct mutation attempted:
+- Log to `.agent/logs/orchestrator_violations.log`
+- Return error with correct delegation pattern
+- Block execution until proper delegation
+
+#### Enforcement Modes Reference
+
+| Mode | Behavior | Decision |
+|------|----------|----------|
+| **WARN** | Advisory warnings, all operations allowed | `allow` |
+| **BLOCK** (default as of v2.1.6) | Complex operations blocked, require delegation | `block` |
+| **AUTO_WRAP** | Suggests Task delegation template, allows operation | `allow` |
+
+**Full Configuration Options:**
+
+```yaml
 # Key settings:
 thresholds:
   bash_command_length: 200
@@ -230,6 +247,9 @@ allowed_direct_commands:
   - "ruff check"
   # ... see config for full list
 ```
+
+**Agent Chaining Protocol:** `.claude/references/agent-chaining-protocol.md`
+**Agent Registry:** `.agent/config/agent_registry.yaml`
 
 #### Enforcement Categories
 
@@ -477,6 +497,103 @@ for change in subagent_output["proposals"]:
 | `mcp__oda_ontology__list_pending_proposals` | View proposals awaiting review |
 
 **Full Documentation:** `.claude/references/llm-agnostic-architecture.md`
+
+### 2.10 Context-Aware Delegation (V2.1.7)
+
+**Effective Context Window Management for ULTRATHINK Mode:**
+
+The V2.1.7 fix ensures context window blocking limit uses effective_window (full_window - max_output_tokens) instead of full_window.
+
+#### ContextBudgetManager Module
+
+**Location:** `lib/oda/planning/context_budget_manager.py`
+
+```python
+from lib.oda.planning.context_budget_manager import (
+    ContextBudgetManager,
+    ThinkingMode,
+    DelegationDecision,
+)
+
+# Initialize with ULTRATHINK mode
+manager = ContextBudgetManager(thinking_mode=ThinkingMode.ULTRATHINK)
+
+# Check before delegation
+decision = manager.check_before_delegation(
+    subagent_type="Explore",
+    estimated_tokens=10000
+)
+
+if decision == DelegationDecision.PROCEED:
+    Task(subagent_type="Explore", ...)
+elif decision == DelegationDecision.REDUCE_SCOPE:
+    # Decompose task first
+    subtasks = decompose_task(...)
+```
+
+#### Thinking Modes and Budgets
+
+| Mode | Max Output | Effective Window | Use Case |
+|------|------------|------------------|----------|
+| **STANDARD** | 8K | 192K | Normal operations |
+| **EXTENDED** | 16K | 184K | Deep analysis |
+| **ULTRATHINK** | 64K | 136K | Maximum depth, Opus 4.5 full capacity |
+
+#### ULTRATHINK Mode Subagent Budgets
+
+| Subagent | Standard Budget | ULTRATHINK Budget | Multiplier |
+|----------|-----------------|-------------------|------------|
+| Explore | 5K | 15K | 3x |
+| Plan | 10K | 25K | 2.5x |
+| general-purpose | 15K | 32K (max) | 2.1x |
+
+#### Delegation Decision Matrix
+
+| Context Usage | Decision | Action |
+|--------------|----------|--------|
+| < 50% | `PROCEED` | Safe to delegate |
+| 50-70% | `REDUCE_SCOPE` | Decompose task, reduce budget |
+| 70-85% | `DEFER` | Wait or trigger `/compact` |
+| > 85% | `ABORT` | Do not delegate, critical |
+
+#### Integration with TaskDecomposer
+
+```python
+# ULTRATHINK mode auto-enables aggressive decomposition
+if manager.thinking_mode == ThinkingMode.ULTRATHINK:
+    decomposer = TaskDecomposer(
+        file_threshold=15,      # Lower threshold (default: 20)
+        dir_threshold=4,        # Lower threshold (default: 5)
+        max_budget=32000        # Maximum budget for ULTRATHINK
+    )
+```
+
+#### Agent Registry for Resume
+
+```python
+# Register agent for potential resume after Auto-Compact
+manager.register_agent(
+    agent_id="a1b2c3d",
+    subagent_type="Explore",
+    description="Phase 1 analysis",
+    token_budget=15000
+)
+
+# Check if agent can be resumed
+if manager.can_resume("a1b2c3d"):
+    Task(resume="a1b2c3d", ...)
+```
+
+#### Auto-Compact Trigger
+
+When context usage exceeds thresholds:
+```
+[CONTEXT] Usage: 72% (144000/200000 effective)
+[WARNING] Consider running /compact before next delegation
+[ACTION] Reducing subagent budgets by 30%
+```
+
+**Reference:** `lib/oda/planning/context_budget_manager.py`
 
 ---
 
@@ -757,7 +874,10 @@ SecurityRule bypass    → ALWAYS DENY
 | PAI Integration | `.claude/references/pai-integration.md` | PAI module reference |
 | Delegation Patterns | `.claude/references/delegation-patterns.md` | Orchestrator templates |
 | Skill Dependencies | `.claude/references/skill-dependencies.md` | Skill invocation order |
+| **Agent Chaining Protocol** | `.claude/references/agent-chaining-protocol.md` | Main Agent -> Subagent delegation rules (v2.1.6) |
+| **Agent Registry** | `.agent/config/agent_registry.yaml` | Task type to subagent mapping |
 | **TaskDecomposer** | `lib/oda/planning/task_decomposer.py` | Automatic task splitting |
+| **ContextBudgetManager** | `lib/oda/planning/context_budget_manager.py` | V2.1.7 effective context + ULTRATHINK |
 | **Plan Files** | `.agent/plans/*.md` | Persistent plan storage for Auto-Compact recovery |
 | **EvidenceCollector** | `lib/oda/ontology/evidence/collector.py` | Evidence tracking with @auto_evidence |
 | **IntentClassifier** | `lib/oda/pai/skills/intent_classifier.py` | LLM-Native intent classification (V4.0) |
