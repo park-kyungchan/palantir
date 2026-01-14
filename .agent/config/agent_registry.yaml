@@ -1,0 +1,94 @@
+# ODA Agent Registry
+# Maps task types to required subagent delegation
+
+version: "2.1.6"
+date: "2026-01-13"
+
+# Task type to subagent mapping
+task_routing:
+  analysis:
+    subagent: Explore
+    context: fork
+    budget: 5000
+    proposal_required: false
+
+  planning:
+    subagent: Plan
+    context: fork
+    budget: 10000
+    proposal_required: false
+
+  modification:
+    subagent: general-purpose
+    context: fork
+    budget: 15000
+    proposal_required: true
+
+  execution:
+    subagent: general-purpose
+    context: fork
+    budget: 15000
+    proposal_required: true
+
+  verification:
+    subagent: Explore
+    context: standard
+    budget: 5000
+    proposal_required: false
+
+# Main Agent restrictions
+main_agent:
+  allowed_tools:
+    - Read
+    - Grep
+    - Glob
+    - TodoWrite
+    - AskUserQuestion
+    - TaskOutput
+    - Skill
+
+  blocked_tools:
+    - Edit
+    - Write
+    - NotebookEdit
+
+  conditional_tools:
+    Bash:
+      simple_allowed: true
+      complex_blocked: true
+      simple_patterns:
+        - "^git (status|diff|log|branch)"
+        - "^pytest"
+        - "^ruff"
+        - "^mypy"
+        - "^ls"
+        - "^pwd"
+
+# Subagent capabilities
+subagents:
+  Explore:
+    can_read: true
+    can_write: false
+    can_execute: true  # Bash for analysis
+    proposal_mode: none
+
+  Plan:
+    can_read: true
+    can_write: false
+    can_execute: false
+    proposal_mode: optional
+
+  general-purpose:
+    can_read: true
+    can_write: true  # Through Proposals
+    can_execute: true
+    proposal_mode: required
+
+# Chaining rules
+chaining:
+  max_depth: 3
+  parallel_limit: 5
+  require_evidence: true
+  auto_decompose_threshold:
+    files: 20
+    directories: 5

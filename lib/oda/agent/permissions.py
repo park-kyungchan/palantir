@@ -129,6 +129,9 @@ class AgentIdentity(BaseModel):
     # Roles
     roles: List[str] = Field(default_factory=list, description="Assigned role IDs")
 
+    # Teams (Phase 3.2.1: Team-based RBAC)
+    team_ids: List[str] = Field(default_factory=list, description="Team IDs the agent belongs to")
+
     # Direct permissions (override role permissions)
     direct_permissions: List[ActionPermission] = Field(default_factory=list)
 
@@ -154,6 +157,24 @@ class AgentIdentity(BaseModel):
         if self.expires_at and utc_now() > self.expires_at:
             return False
         return True
+
+    def add_team(self, team_id: str) -> bool:
+        """Add agent to a team."""
+        if team_id not in self.team_ids:
+            self.team_ids.append(team_id)
+            return True
+        return False
+
+    def remove_team(self, team_id: str) -> bool:
+        """Remove agent from a team."""
+        if team_id in self.team_ids:
+            self.team_ids.remove(team_id)
+            return True
+        return False
+
+    def has_team(self, team_id: str) -> bool:
+        """Check if agent belongs to a team."""
+        return team_id in self.team_ids
 
 
 @dataclass

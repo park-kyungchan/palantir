@@ -18,6 +18,7 @@ from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
     Generic,
     List,
@@ -278,6 +279,11 @@ class OntologyObject(BaseModel):
         ge=1
     )
     
+    # Interface Support (Phase 1 - Palantir-style Polymorphism)
+    # Tracks which interfaces this ObjectType implements
+    _implements: ClassVar[List[str]] = []
+    _interface_validated_at: ClassVar[Optional[str]] = None
+
     model_config = ConfigDict(
         use_enum_values=False,
         validate_assignment=True,

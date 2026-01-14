@@ -88,6 +88,24 @@ from lib.oda.transaction.diff import (
     FieldChange,
 )
 
+# Schema Conflicts (Phase 4.2)
+from lib.oda.transaction.schema_conflict import (
+    SchemaConflictType,
+    SchemaConflictSeverity,
+    SchemaConflict,
+    SchemaConflictBatch,
+    SchemaConflictDetector,
+)
+
+# Cherry-pick (Phase 4.2)
+from lib.oda.transaction.cherry_pick import (
+    CherryPickStatus,
+    CherryPickConflictResolution,
+    CherryPickChange,
+    CherryPickResult,
+    CherryPicker,
+)
+
 __all__ = [
     # Manager
     "TransactionManager",
@@ -141,4 +159,16 @@ __all__ = [
     "DiffEngine",
     "DiffMode",
     "FieldChange",
+    # Schema Conflicts (Phase 4.2)
+    "SchemaConflictType",
+    "SchemaConflictSeverity",
+    "SchemaConflict",
+    "SchemaConflictBatch",
+    "SchemaConflictDetector",
+    # Cherry-pick (Phase 4.2)
+    "CherryPickStatus",
+    "CherryPickConflictResolution",
+    "CherryPickChange",
+    "CherryPickResult",
+    "CherryPicker",
 ]

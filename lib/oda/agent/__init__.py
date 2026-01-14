@@ -104,9 +104,12 @@ from lib.oda.agent.trace import (
     TraceLogger,
     TraceStore,
     TraceEvent,
-    EventType,
+    TraceEventType,
     TraceLevel,
 )
+
+# Backward compatibility alias
+EventType = TraceEventType
 
 from lib.oda.agent.confirmation import (
     ConfirmationManager,
@@ -198,7 +201,8 @@ __all__ = [
     "TraceLogger",
     "TraceStore",
     "TraceEvent",
-    "EventType",
+    "TraceEventType",
+    "EventType",  # Backward compatibility alias
     "TraceLevel",
     # Phase 7.3: Confirmation
     "ConfirmationManager",
