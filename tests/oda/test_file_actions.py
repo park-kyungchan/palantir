@@ -16,19 +16,12 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
 from lib.oda.ontology.actions import (
     ActionContext,
-    ActionRegistry,
-    ActionResult,
     GovernanceEngine,
-    PolicyResult,
-    ValidationError,
     action_registry,
 )
 from lib.oda.ontology.actions.file_actions import (
@@ -219,9 +212,9 @@ class TestFileValidators:
         assert validate_stage_evidence(params, user_context) is True
 
     def test_validate_stage_evidence_none(self, user_context: ActionContext) -> None:
-        """Test None stage evidence is allowed (optional)."""
+        """Test missing stage evidence fails validation."""
         params = {}
-        assert validate_stage_evidence(params, user_context) is True
+        assert validate_stage_evidence(params, user_context) is False
 
 
 # =============================================================================
@@ -295,6 +288,7 @@ class TestFileModifyAction:
                 "old_content": "original content",
                 "new_content": "modified content",
                 "reason": "test modification",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
         )
@@ -307,7 +301,10 @@ class TestFileModifyAction:
         """Test file.modify validation fails with missing required fields."""
         action = FileModifyAction()
         errors = action.validate(
-            params={"file_path": str(existing_file)},
+            params={
+                "file_path": str(existing_file),
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
+            },
             context=user_context,
         )
         assert len(errors) > 0
@@ -324,6 +321,7 @@ class TestFileModifyAction:
                 "file_path": str(temp_dir / "nonexistent.txt"),
                 "new_content": "new content",
                 "reason": "test",
+                "stage_evidence": {"files_viewed": ["/path/to/file.py"]},
             },
             context=user_context,
         )
@@ -342,6 +340,7 @@ class TestFileModifyAction:
                 "old_content": "wrong content",
                 "new_content": "new content",
                 "reason": "test",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
         )
@@ -360,6 +359,7 @@ class TestFileModifyAction:
                 "old_content": "original content",
                 "new_content": "modified content",
                 "reason": "test modification",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
         )
@@ -398,6 +398,7 @@ class TestFileWriteAction:
                 "file_path": str(new_file),
                 "content": "new file content",
                 "reason": "create new file",
+                "stage_evidence": {"files_viewed": [str(new_file)]},
             },
             context=user_context,
         )
@@ -420,6 +421,7 @@ class TestFileWriteAction:
                 "file_path": str(new_file),
                 "content": "content in deep dir",
                 "reason": "create nested file",
+                "stage_evidence": {"files_viewed": [str(new_file)]},
             },
             context=user_context,
         )
@@ -439,6 +441,7 @@ class TestFileWriteAction:
                 "file_path": str(existing_file),
                 "content": "overwritten content",
                 "reason": "overwrite file",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
         )
@@ -471,6 +474,7 @@ class TestFileDeleteAction:
             params={
                 "file_path": str(existing_file),
                 "reason": "cleanup test file",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
         )
@@ -489,6 +493,7 @@ class TestFileDeleteAction:
             params={
                 "file_path": str(temp_dir / "nonexistent.txt"),
                 "reason": "delete",
+                "stage_evidence": {"files_viewed": ["/path/to/file.py"]},
             },
             context=user_context,
         )
@@ -575,6 +580,7 @@ class TestProposalLifecycle:
                 "old_content": "old",
                 "new_content": "new",
                 "reason": "test modification",
+                "stage_evidence": {"files_viewed": ["/tmp/test.txt"]},
             },
             created_by="agent-001",
             priority=ProposalPriority.MEDIUM,
@@ -593,6 +599,7 @@ class TestProposalLifecycle:
                 "file_path": "/tmp/new_file.txt",
                 "content": "new content",
                 "reason": "create new file",
+                "stage_evidence": {"files_viewed": ["/tmp/new_file.txt"]},
             },
             created_by="agent-001",
             priority=ProposalPriority.HIGH,
@@ -625,6 +632,7 @@ class TestProposalLifecycle:
             payload={
                 "file_path": "/important/config.json",
                 "reason": "cleanup",
+                "stage_evidence": {"files_viewed": ["/important/config.json"]},
             },
             created_by="agent-001",
         )
@@ -641,7 +649,7 @@ class TestProposalLifecycle:
         """Test proposal cancellation by creator."""
         proposal = Proposal(
             action_type="file.modify",
-            payload={"file_path": "/tmp/file.txt"},
+            payload={"file_path": "/tmp/file.txt", "stage_evidence": {"files_viewed": ["/tmp/file.txt"]}},
             created_by="agent-001",
         )
 
@@ -752,6 +760,7 @@ class TestEdgeCases:
                 "old_content": original_content,
                 "new_content": "should not be written",
                 "reason": "dry run test",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
             validate_only=True,
@@ -775,6 +784,7 @@ class TestEdgeCases:
                 "old_content": "original content",
                 "new_content": "modified content",
                 "reason": "test",
+                "stage_evidence": {"files_viewed": [str(existing_file)]},
             },
             context=user_context,
             return_edits=False,

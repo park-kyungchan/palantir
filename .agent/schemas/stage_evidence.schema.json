@@ -1,0 +1,49 @@
+{
+  "description": "Evidence collected during 3-Stage Protocol execution.\nRequired for hazardous file operations to ensure audit trail.",
+  "properties": {
+    "files_viewed": {
+      "description": "List of files viewed during Stage A (SCAN)",
+      "items": {
+        "type": "string"
+      },
+      "title": "Files Viewed",
+      "type": "array"
+    },
+    "imports_verified": {
+      "description": "List of imports verified during Stage B (TRACE)",
+      "items": {
+        "type": "string"
+      },
+      "title": "Imports Verified",
+      "type": "array"
+    },
+    "complexity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Complexity classification: small|medium|large",
+      "title": "Complexity"
+    },
+    "protocol_stage": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Current protocol stage: A|B|C",
+      "title": "Protocol Stage"
+    }
+  },
+  "title": "StageEvidence",
+  "type": "object"
+}

@@ -12,7 +12,7 @@ import asyncio
 import os
 import json
 import logging
-from typing import Optional, List
+from typing import Optional
 
 from lib.oda.llm.instructor_client import InstructorClient
 from lib.oda.relay.queue import RelayQueue
@@ -206,18 +206,44 @@ class OrionRuntime:
                             "__plan_id": getattr(plan, "plan_id", None),
                             "__job_id": job.id,
                         }
+
+                        validation_errors: list[str] = []
+                        action_cls = action_registry.get(action_name)
+                        if action_cls is None:
+                            validation_errors = [f"Action '{action_name}' not found in registry"]
+                        else:
+                            try:
+                                validation_errors = action_cls().validate(
+                                    proposal_payload,
+                                    ActionContext(actor_id="kernel_ai"),
+                                )
+                            except Exception as e:
+                                validation_errors = [f"Validation exception: {type(e).__name__}: {e}"]
+
                         proposal = Proposal(
                             action_type=action_name,
                             payload=proposal_payload,
                             created_by="kernel_ai",
                             priority=ProposalPriority.MEDIUM,
                         )
-                        proposal.submit()
+                        if not validation_errors:
+                            proposal.submit(submitter_id="kernel_ai")
                         # save now uses Async ORM
-                        await self.repo.save(proposal, actor_id="kernel_ai", comment=policy.reason)
-                        self._pending_count += 1
+                        await self.repo.save(
+                            proposal,
+                            actor_id="kernel_ai",
+                            comment=(
+                                policy.reason
+                                if not validation_errors
+                                else f"{policy.reason} | validation_errors={validation_errors}"
+                            ),
+                        )
                         proposals_created += 1
-                        logger.info(f"   🛡️  Proposal Created: {proposal.id} ({policy.reason})")
+                        if proposal.status == ProposalStatus.PENDING:
+                            self._pending_count += 1
+                            logger.info(f"   🛡️  Proposal Created: {proposal.id} ({policy.reason})")
+                        else:
+                            logger.error(f"   🛡️  Proposal Saved as Draft (validation failed): {validation_errors}")
                     else:
                         logger.error("   ❌ Repo unavailable, cannot create proposal.")
                         

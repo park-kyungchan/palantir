@@ -1,0 +1,194 @@
+{
+  "$defs": {
+    "ProposalPriority": {
+      "description": "Priority levels for proposal review ordering.",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "ProposalPriority",
+      "type": "string"
+    },
+    "ProposalStatus": {
+      "description": "Proposal lifecycle states.\n\n- DRAFT: Initial state, can be edited\n- PENDING: Submitted for review, awaiting approval\n- APPROVED: Approved by reviewer, ready for execution\n- REJECTED: Rejected by reviewer (terminal state)\n- EXECUTED: Successfully executed (terminal state)\n- CANCELLED: Cancelled by creator before review (terminal state)",
+      "enum": [
+        "draft",
+        "pending",
+        "approved",
+        "rejected",
+        "executed",
+        "cancelled",
+        "deleted"
+      ],
+      "title": "ProposalStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Represents a staged Action awaiting Human Review.\n\nA Proposal encapsulates:\n- The action to be performed (action_type + payload)\n- The creator (created_by from OntologyObject)\n- The reviewer (reviewed_by)\n- Full audit trail (timestamps, comments)\n\nUsage:\n    ```python\n    # Create a proposal\n    proposal = Proposal(\n        action_type=\"deploy_to_production\",\n        payload={\"service\": \"checkout\", \"version\": \"2.1.0\"},\n        created_by=\"agent-001\",\n        priority=ProposalPriority.HIGH\n    )\n    \n    # Submit for review\n    proposal.submit()\n    \n    # Approve (by human reviewer)\n    proposal.approve(reviewer_id=\"admin-001\", comment=\"LGTM\")\n    \n    # Execute\n    proposal.execute()\n    ```\n\nAttributes:\n    action_type: The ActionType API name to execute\n    payload: Parameters for the action\n    status: Current lifecycle state\n    priority: Review priority\n    reviewed_by: ID of the reviewer\n    reviewed_at: Timestamp of review decision\n    review_comment: Reviewer's comment\n    executed_at: Timestamp of execution\n    execution_result: Result of execution (success/error details)",
+  "properties": {
+    "id": {
+      "description": "Primary Key (UUIDv4 string)",
+      "immutable": true,
+      "title": "Id",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "Creation timestamp (UTC)",
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "description": "Last update timestamp (UTC)",
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "created_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the user/agent who created this object",
+      "title": "Created By"
+    },
+    "updated_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the user/agent who last updated this object",
+      "title": "Updated By"
+    },
+    "status": {
+      "$ref": "#/$defs/ProposalStatus",
+      "default": "draft",
+      "description": "Current lifecycle state"
+    },
+    "version": {
+      "default": 1,
+      "description": "Version number for optimistic locking",
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "action_type": {
+      "description": "The ActionType API name to execute (e.g., 'deploy_to_production')",
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Action Type",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "description": "Parameters for the action",
+      "title": "Payload",
+      "type": "object"
+    },
+    "priority": {
+      "$ref": "#/$defs/ProposalPriority",
+      "default": "medium",
+      "description": "Review priority"
+    },
+    "reviewed_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the reviewer who approved/rejected",
+      "title": "Reviewed By"
+    },
+    "reviewed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Timestamp of review decision",
+      "title": "Reviewed At"
+    },
+    "review_comment": {
+      "anyOf": [
+        {
+          "maxLength": 2000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Reviewer's comment or reason",
+      "title": "Review Comment"
+    },
+    "executed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Timestamp of execution",
+      "title": "Executed At"
+    },
+    "execution_result": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Result of execution (success/error details)",
+      "title": "Execution Result"
+    },
+    "tags": {
+      "description": "Tags for categorization and filtering",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    }
+  },
+  "required": [
+    "action_type"
+  ],
+  "title": "Proposal",
+  "type": "object",
+  "x-palantir-indexing": [
+    "id",
+    "created_at",
+    "updated_at"
+  ]
+}

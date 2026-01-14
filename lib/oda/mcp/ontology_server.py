@@ -19,7 +19,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from mcp.server import Server
@@ -70,7 +69,6 @@ async def log_action_audit(
         return
 
     import json
-    from pathlib import Path
 
     audit_log = AuditLog.create(
         operation_type=AuditOperationType.EXECUTE,
@@ -176,7 +174,7 @@ async def list_tools() -> List[Tool]:
                     "actor_id": {
                         "type": "string",
                         "description": "ID of the actor executing the action",
-                        "default": "gemini-agent"
+                        "default": "agent"
                     }
                 },
                 "required": ["api_name", "params"]
@@ -192,6 +190,11 @@ async def list_tools() -> List[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
+                    "actor_id": {
+                        "type": "string",
+                        "description": "ID of the actor creating the proposal",
+                        "default": "agent"
+                    },
                     "action_type": {
                         "type": "string",
                         "description": "The action type API name"
@@ -204,6 +207,11 @@ async def list_tools() -> List[Tool]:
                         "type": "string",
                         "enum": ["low", "medium", "high", "critical"],
                         "default": "medium"
+                    },
+                    "validate": {
+                        "type": "boolean",
+                        "description": "If true, validate payload against action criteria before submitting",
+                        "default": True
                     },
                     "submit": {
                         "type": "boolean",
@@ -286,7 +294,7 @@ async def list_tools() -> List[Tool]:
                     "reviewer_id": {
                         "type": "string",
                         "description": "ID of the reviewer",
-                        "default": "gemini-agent"
+                        "default": "agent"
                     },
                     "comment": {
                         "type": "string",
@@ -309,7 +317,7 @@ async def list_tools() -> List[Tool]:
                     "reviewer_id": {
                         "type": "string",
                         "description": "ID of the reviewer",
-                        "default": "gemini-agent"
+                        "default": "agent"
                     },
                     "reason": {
                         "type": "string",
@@ -332,7 +340,7 @@ async def list_tools() -> List[Tool]:
                     "executor_id": {
                         "type": "string",
                         "description": "ID of the executor",
-                        "default": "gemini-agent"
+                        "default": "agent"
                     }
                 },
                 "required": ["proposal_id"]
@@ -431,7 +439,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     elif name == "execute_action":
         api_name = arguments["api_name"]
         params = arguments["params"]
-        actor_id = arguments.get("actor_id", "gemini-agent")
+        actor_id = arguments.get("actor_id", "agent")
 
         action_cls = action_registry.get(api_name)
         if not action_cls:
@@ -486,17 +494,41 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     # =========================================================================
     
     elif name == "create_proposal":
+        actor_id = arguments.get("actor_id", "agent")
+        action_type = arguments["action_type"]
+        payload = arguments["payload"]
+        validate = arguments.get("validate", True)
+        submit = arguments.get("submit", True)
+
+        validation_errors: List[str] = []
+        if validate:
+            action_cls = action_registry.get(action_type)
+            if action_cls is None:
+                return [TextContent(type="text", text=json.dumps({
+                    "error": "ACTION_NOT_FOUND",
+                    "message": f"Action '{action_type}' not found"
+                }))]
+            try:
+                action = action_cls()
+                validation_errors = action.validate(payload, ActionContext(actor_id=actor_id))
+            except Exception as e:
+                validation_errors = [f"Validation exception: {type(e).__name__}: {e}"]
+
         proposal = Proposal(
-            action_type=arguments["action_type"],
-            payload=arguments["payload"],
+            action_type=action_type,
+            payload=payload,
             priority=ProposalPriority(arguments.get("priority", "medium")),
-            created_by="gemini-agent",
+            created_by=actor_id,
         )
         
-        if arguments.get("submit", True):
-            proposal.submit()
+        if submit and not validation_errors:
+            proposal.submit(submitter_id=actor_id)
         
-        await repo.save(proposal, actor_id="gemini-agent")
+        await repo.save(
+            proposal,
+            actor_id=actor_id,
+            comment="Validation failed; saved as draft" if (submit and validation_errors) else None,
+        )
         
         result = {
             "success": True,
@@ -505,12 +537,13 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             "status": proposal.status.value,
             "priority": proposal.priority.value,
             "message": f"Proposal created and {'submitted for review' if proposal.status == ProposalStatus.PENDING else 'saved as draft'}",
+            "validation_errors": validation_errors,
             "next_steps": [
                 f"View: get_proposal('{proposal.id}')",
                 f"Approve: approve_proposal('{proposal.id}')",
                 f"Reject: reject_proposal('{proposal.id}', reason='...')",
             ] if proposal.status == ProposalStatus.PENDING else [
-                f"Submit: Use list_proposals to find and submit"
+                "Submit: Use list_proposals to find and submit"
             ]
         }
         
@@ -616,7 +649,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     
     elif name == "approve_proposal":
         proposal_id = arguments["proposal_id"]
-        reviewer_id = arguments.get("reviewer_id", "gemini-agent")
+        reviewer_id = arguments.get("reviewer_id", "agent")
         comment = arguments.get("comment")
         
         try:
@@ -644,7 +677,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     
     elif name == "reject_proposal":
         proposal_id = arguments["proposal_id"]
-        reviewer_id = arguments.get("reviewer_id", "gemini-agent")
+        reviewer_id = arguments.get("reviewer_id", "agent")
         reason = arguments["reason"]
         
         try:
@@ -672,7 +705,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     
     elif name == "execute_proposal":
         proposal_id = arguments["proposal_id"]
-        executor_id = arguments.get("executor_id", "gemini-agent")
+        executor_id = arguments.get("executor_id", "agent")
 
         try:
             # Get the proposal

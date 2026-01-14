@@ -17,11 +17,10 @@ from __future__ import annotations
 import logging
 import os
 import re
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from lib.oda.ontology.actions import (
     ActionContext,
@@ -33,7 +32,7 @@ from lib.oda.ontology.actions import (
     RequiredField,
     register_action,
 )
-from lib.oda.ontology.ontology_types import OntologyObject, utc_now
+from lib.oda.ontology.ontology_types import OntologyObject
 
 logger = logging.getLogger(__name__)
 
@@ -163,16 +162,14 @@ def validate_stage_evidence(params: Dict[str, Any], context: ActionContext) -> b
     evidence = params.get("stage_evidence")
 
     if evidence is None:
-        return True  # Optional for now, can be made required later
+        return False
 
-    if isinstance(evidence, dict):
-        files_viewed = evidence.get("files_viewed", [])
-        return isinstance(files_viewed, list)
+    try:
+        parsed = evidence if isinstance(evidence, StageEvidence) else StageEvidence.model_validate(evidence)
+    except Exception:
+        return False
 
-    if isinstance(evidence, StageEvidence):
-        return True
-
-    return False
+    return bool(parsed.files_viewed)
 
 
 # =============================================================================
@@ -307,7 +304,7 @@ class FileModifyAction(ActionType[FileOperationResult]):
         old_content: Expected current content (for verification)
         new_content: New content to write
         reason: Human-readable reason for the modification
-        stage_evidence: Optional 3-Stage Protocol evidence
+        stage_evidence: 3-Stage Protocol evidence (required)
 
     Returns:
         FileOperationResult with operation details
@@ -320,6 +317,7 @@ class FileModifyAction(ActionType[FileOperationResult]):
         RequiredField("file_path"),
         RequiredField("new_content"),
         RequiredField("reason"),
+        RequiredField("stage_evidence"),
         CustomValidator(
             name="ValidFilePath",
             validator_fn=validate_file_path,
@@ -351,7 +349,6 @@ class FileModifyAction(ActionType[FileOperationResult]):
         file_path = params["file_path"]
         new_content = params["new_content"]
         reason = params["reason"]
-        old_content = params.get("old_content")
         stage_evidence = params.get("stage_evidence")
 
         try:
@@ -427,7 +424,7 @@ class FileWriteAction(ActionType[FileOperationResult]):
         file_path: Absolute path to the file to write
         content: Content to write
         reason: Human-readable reason for the write operation
-        stage_evidence: Optional 3-Stage Protocol evidence
+        stage_evidence: 3-Stage Protocol evidence (required)
 
     Returns:
         FileOperationResult with operation details
@@ -440,6 +437,7 @@ class FileWriteAction(ActionType[FileOperationResult]):
         RequiredField("file_path"),
         RequiredField("content"),
         RequiredField("reason"),
+        RequiredField("stage_evidence"),
         CustomValidator(
             name="ValidFilePath",
             validator_fn=validate_file_path,
@@ -537,7 +535,7 @@ class FileDeleteAction(ActionType[FileOperationResult]):
     Parameters:
         file_path: Absolute path to the file to delete
         reason: Human-readable reason for the deletion
-        stage_evidence: Optional 3-Stage Protocol evidence
+        stage_evidence: 3-Stage Protocol evidence (required)
 
     Returns:
         FileOperationResult with operation details
@@ -549,6 +547,7 @@ class FileDeleteAction(ActionType[FileOperationResult]):
     submission_criteria = [
         RequiredField("file_path"),
         RequiredField("reason"),
+        RequiredField("stage_evidence"),
         CustomValidator(
             name="ValidFilePath",
             validator_fn=validate_file_path,

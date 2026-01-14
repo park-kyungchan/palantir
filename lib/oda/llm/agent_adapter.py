@@ -18,40 +18,33 @@ Architecture:
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Protocol, Type, Union
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from lib.oda.agent.planner import (
-    AgentPlanner,
     Observation,
     PlannedAction,
-    PlannerConfig,
     PlannerIteration,
     Thought,
     ThoughtType,
 )
-from lib.oda.agent.trace import TraceLogger, TraceLevel
-from lib.oda.llm.adapters.base import (
-    AdapterCapabilities,
-    BaseActionAdapter,
-    ExecutionMode,
-    LLMActionAdapter,
-)
+from lib.oda.agent.trace import TraceLevel
 from lib.oda.llm.providers import (
     LLMProvider,
     LLMProviderType,
-    ProviderRegistry,
     build_provider,
 )
-from lib.oda.ontology.actions import ActionContext, ActionResult, action_registry
+from lib.oda.ontology.actions import ActionContext, ActionResult, GovernanceEngine, action_registry
+from lib.oda.ontology.objects.proposal import Proposal, ProposalPriority
+from lib.oda.ontology.storage.database import initialize_database
+from lib.oda.ontology.storage.proposal_repository import ProposalRepository
 
 logger = logging.getLogger(__name__)
 
@@ -156,9 +149,17 @@ class AgentLLMAdapter(ABC):
         self._trace_level = trace_level
         self._tools: Dict[str, AgentTool] = {}
         self._logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self._governance = GovernanceEngine(action_registry)
+        self._proposal_repo: Optional[ProposalRepository] = None
 
         # Register default ODA action tools
         self._register_default_tools()
+
+    async def _get_proposal_repo(self) -> ProposalRepository:
+        if self._proposal_repo is None:
+            db = await initialize_database()
+            self._proposal_repo = ProposalRepository(db)
+        return self._proposal_repo
 
     @property
     def provider(self) -> LLMProvider:
@@ -310,6 +311,63 @@ class AgentLLMAdapter(ABC):
         if tool.action_type:
             action_cls = action_registry.get(tool.action_type)
             if action_cls:
+                policy = self._governance.check_execution_policy(tool.action_type, arguments)
+                if policy.is_blocked():
+                    return ToolCallResult(
+                        call_id="",
+                        tool_name=tool_name,
+                        success=False,
+                        error=policy.reason or "Blocked by governance policy",
+                    )
+
+                if policy.decision == "REQUIRE_PROPOSAL":
+                    try:
+                        validation_context = ActionContext(actor_id=actor_id)
+                        validation_errors = action_cls().validate(arguments, validation_context)
+                    except Exception as e:
+                        validation_errors = [f"Validation exception: {type(e).__name__}: {e}"]
+
+                    if validation_errors:
+                        return ToolCallResult(
+                            call_id="",
+                            tool_name=tool_name,
+                            success=False,
+                            result={
+                                "success": False,
+                                "action_type": tool.action_type,
+                                "policy": policy.decision,
+                                "reason": policy.reason,
+                                "validation_errors": validation_errors,
+                            },
+                            error="Action parameters failed validation; collect Stage A/B evidence and retry.",
+                        )
+
+                    repo = await self._get_proposal_repo()
+                    proposal = Proposal(
+                        action_type=tool.action_type,
+                        payload=arguments,
+                        priority=ProposalPriority.MEDIUM,
+                        created_by=actor_id,
+                    )
+                    proposal.submit(submitter_id=actor_id)
+                    await repo.save(proposal, actor_id=actor_id, comment=policy.reason)
+
+                    return ToolCallResult(
+                        call_id="",
+                        tool_name=tool_name,
+                        success=True,
+                        result={
+                            "success": True,
+                            "proposal_id": proposal.id,
+                            "action_type": proposal.action_type,
+                            "status": proposal.status.value,
+                            "requires_approval": True,
+                            "policy": policy.decision,
+                            "reason": policy.reason,
+                        },
+                        error=None,
+                    )
+
                 try:
                     action = action_cls()
                     context = ActionContext(actor_id=actor_id)
@@ -418,7 +476,7 @@ Respond with a JSON array of actions in this format:
                 for a in actions_data[:max_actions]
             ]
 
-        except Exception as e:
+        except Exception:
             self._logger.exception("Failed to generate plan")
             return []
 
@@ -658,10 +716,15 @@ def build_agent_adapter(
         provider = build_provider()
         provider_type = provider.provider_type()
     else:
-        from lib.oda.llm.config import load_llm_config, LLMBackendConfig
+        from lib.oda.llm.config import LLMBackendConfig, load_llm_config
         config = load_llm_config()
-        config.provider_type = provider_type
-        provider = build_provider(config)
+        forced = LLMBackendConfig(
+            provider=provider_type.value,
+            base_url=config.base_url,
+            api_key=config.api_key,
+            model=config.model,
+        )
+        provider = build_provider(forced)
 
     if provider_type == LLMProviderType.CLAUDE_CODE:
         return ClaudeCodeAgentAdapter(provider, trace_level)
