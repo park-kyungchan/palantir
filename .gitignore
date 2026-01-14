@@ -45,6 +45,7 @@ Neo4j-*.txt
 # --- Orion V3 Memory Architecture ---
 .agent/indexes/*.db
 .agent/logs/*.db
+.agent/tmp/
 .agent/memory/working/*
 !.agent/memory/working/.gitkeep
 
