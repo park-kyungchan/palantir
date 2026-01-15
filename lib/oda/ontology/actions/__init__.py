@@ -1084,6 +1084,10 @@ _EXPECTED_ACTIONS = [
     "orchestration.execute_batch",
     "orchestration.rollback",
     "orchestration.status",
+    # Mathpix Pipeline Actions (Phase 4.3.4)
+    "alignment.blocker_detected",
+    "semantic.resolve_ambiguity",
+    "pipeline.advance_stage",
 ]
 
 try:
@@ -1107,6 +1111,12 @@ try:
         ExecuteProposalBatchAction,
         RollbackProposalsAction,
         GetOrchestrationStatusAction,
+    )
+    # Phase 4.3.4: Mathpix Pipeline Actions
+    from .pipeline_actions import (
+        AlignmentBlockerDetectedAction,
+        SemanticResolveAmbiguityAction,
+        PipelineAdvanceStageAction,
     )
 except ImportError as e:
     # I-04 Fix: Changed from debug to warning to surface import failures

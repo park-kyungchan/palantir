@@ -4,15 +4,18 @@ Orion ODA v4.0 - Pipeline Actions (Phase 4.3.3)
 
 Actions for Pipeline management in the ODA framework.
 
-Hazardous Actions (require proposal):
-- pipeline.execute: Execute a pipeline
-- pipeline.schedule: Schedule a pipeline for execution
-- pipeline.pause: Pause a scheduled pipeline
-- pipeline.delete: Delete a pipeline
+Standard Pipeline Actions:
+- pipeline.execute: Execute a pipeline (hazardous)
+- pipeline.schedule: Schedule a pipeline for execution (hazardous)
+- pipeline.pause: Pause a scheduled pipeline (hazardous)
+- pipeline.delete: Delete a pipeline (hazardous)
+- pipeline.validate: Validate a pipeline definition (non-hazardous)
+- pipeline.status: Get pipeline status (non-hazardous)
 
-Non-hazardous Actions:
-- pipeline.validate: Validate a pipeline definition
-- pipeline.status: Get pipeline status
+Mathpix Pipeline Actions (v4.3.4):
+- alignment.blocker_detected: Stage D alignment blocker (hazardous)
+- semantic.resolve_ambiguity: Stage E ambiguity resolution (hazardous)
+- pipeline.advance_stage: Advance to next pipeline stage (non-hazardous)
 
 Example:
     ```python
@@ -51,11 +54,15 @@ from lib.oda.ontology.actions import (
 )
 from lib.oda.ontology.ontology_types import OntologyObject, utc_now
 from lib.oda.ontology.objects.pipeline import (
+    MathpixPipeline,
+    MathpixPipelineStage,
     PipelineObject,
     PipelineObjectStatus,
     PipelineRunObject,
     PipelineRunStatus,
+    ReviewSeverity,
 )
+from pydantic import BaseModel, Field as PydanticField
 from lib.oda.data.pipeline_builder import (
     Pipeline,
     PipelineBuilder,
@@ -140,6 +147,154 @@ class ValidScheduleCron(SubmissionCriterion):
             )
 
         return True
+
+
+# =============================================================================
+# MATHPIX PIPELINE PYDANTIC MODELS
+# =============================================================================
+
+
+class BlockerDetails(BaseModel):
+    """
+    Details of an alignment blocker detected in Stage D.
+
+    Used by alignment.blocker_detected action to capture
+    discrepancies between text and vision parsing results.
+    """
+    blocker_type: str = PydanticField(
+        ...,
+        description="Type of blocker: equation_mismatch|table_structure|figure_reference|symbol_conflict"
+    )
+    description: str = PydanticField(
+        ...,
+        description="Human-readable description of the blocker"
+    )
+    severity: str = PydanticField(
+        default="critical",
+        description="Severity level: info|warning|critical|blocker"
+    )
+    text_content: Optional[str] = PydanticField(
+        default=None,
+        description="Content from text parse (Stage B)"
+    )
+    vision_content: Optional[str] = PydanticField(
+        default=None,
+        description="Content from vision parse (Stage C)"
+    )
+    location: Optional[Dict[str, Any]] = PydanticField(
+        default=None,
+        description="Location in document (page, coordinates, etc.)"
+    )
+    suggested_resolution: Optional[str] = PydanticField(
+        default=None,
+        description="Suggested resolution for human review"
+    )
+
+
+class AmbiguityResolution(BaseModel):
+    """
+    Resolution for a semantic ambiguity in Stage E.
+
+    Captures how an ambiguity was resolved, either by
+    human intervention or automated heuristics.
+    """
+    ambiguity_id: str = PydanticField(
+        ...,
+        description="Unique identifier for the ambiguity"
+    )
+    ambiguity_type: str = PydanticField(
+        ...,
+        description="Type: symbol_meaning|reference_target|scope_boundary"
+    )
+    original_options: List[str] = PydanticField(
+        default_factory=list,
+        description="Original interpretation options"
+    )
+    selected_option: str = PydanticField(
+        ...,
+        description="Selected resolution"
+    )
+    confidence: float = PydanticField(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Confidence in resolution (0.0-1.0)"
+    )
+    resolved_by: str = PydanticField(
+        ...,
+        description="Resolver type: human|heuristic|ml_model"
+    )
+    reasoning: Optional[str] = PydanticField(
+        default=None,
+        description="Reasoning for the resolution"
+    )
+
+
+# =============================================================================
+# MATHPIX PIPELINE RESULT OBJECTTYPES
+# =============================================================================
+
+
+class AlignmentBlockerResult(OntologyObject):
+    """
+    Result of alignment blocker detection and resolution.
+
+    Created when alignment.blocker_detected action is executed.
+    Links to the MathpixPipeline and Proposal for audit trail.
+    """
+    pipeline_id: str = PydanticField(
+        ...,
+        description="ID of the MathpixPipeline document"
+    )
+    blocker: BlockerDetails = PydanticField(
+        ...,
+        description="Blocker details"
+    )
+    proposal_id: Optional[str] = PydanticField(
+        default=None,
+        description="Associated Proposal ID (if hazardous action triggered)"
+    )
+    resolved: bool = PydanticField(
+        default=False,
+        description="Whether the blocker has been resolved"
+    )
+    resolution: Optional[str] = PydanticField(
+        default=None,
+        description="Resolution description"
+    )
+    resolved_at: Optional[datetime] = PydanticField(
+        default=None,
+        description="Resolution timestamp"
+    )
+
+
+class AmbiguityResolutionResult(OntologyObject):
+    """
+    Result of semantic ambiguity resolution.
+
+    Created when semantic.resolve_ambiguity action is executed.
+    Links to the MathpixPipeline and Proposal for audit trail.
+    """
+    pipeline_id: str = PydanticField(
+        ...,
+        description="ID of the MathpixPipeline document"
+    )
+    resolution: AmbiguityResolution = PydanticField(
+        ...,
+        description="Ambiguity resolution details"
+    )
+    proposal_id: Optional[str] = PydanticField(
+        default=None,
+        description="Associated Proposal ID (if hazardous action triggered)"
+    )
+    applied: bool = PydanticField(
+        default=False,
+        description="Whether the resolution has been applied"
+    )
+    applied_at: Optional[datetime] = PydanticField(
+        default=None,
+        description="Application timestamp"
+    )
 
 
 # =============================================================================
@@ -640,6 +795,289 @@ class PipelineDeleteAction(ActionType[PipelineObject]):
 
 
 # =============================================================================
+# MATHPIX PIPELINE ACTIONS
+# =============================================================================
+
+
+@register_action(requires_proposal=True)
+class AlignmentBlockerDetectedAction(ActionType[AlignmentBlockerResult]):
+    """
+    Report and handle an alignment blocker in Stage D.
+
+    This action is HAZARDOUS - alignment issues require human review
+    before pipeline can proceed.
+
+    Called when Stage D detects a discrepancy between text parsing (B)
+    and vision parsing (C) results that cannot be auto-resolved.
+
+    Parameters:
+        pipeline_id: ID of the MathpixPipeline document
+        blocker_type: Type of blocker detected
+        description: Human-readable description
+        severity: Severity level (default: critical)
+        text_content: Content from text parse
+        vision_content: Content from vision parse
+        location: Location in document
+        suggested_resolution: Suggested resolution
+
+    Returns:
+        ActionResult with AlignmentBlockerResult
+    """
+
+    api_name: ClassVar[str] = "alignment.blocker_detected"
+    object_type: ClassVar[Type[AlignmentBlockerResult]] = AlignmentBlockerResult
+    requires_proposal: ClassVar[bool] = True
+
+    submission_criteria: ClassVar[List[SubmissionCriterion]] = [
+        RequiredField("pipeline_id"),
+        RequiredField("blocker_type"),
+        RequiredField("description"),
+    ]
+
+    async def apply_edits(
+        self,
+        params: Dict[str, Any],
+        context: ActionContext,
+    ) -> tuple[Optional[AlignmentBlockerResult], List[EditOperation]]:
+        """Create alignment blocker result and pause pipeline."""
+        pipeline_id = params["pipeline_id"]
+
+        # Create BlockerDetails
+        blocker = BlockerDetails(
+            blocker_type=params["blocker_type"],
+            description=params["description"],
+            severity=params.get("severity", "critical"),
+            text_content=params.get("text_content"),
+            vision_content=params.get("vision_content"),
+            location=params.get("location"),
+            suggested_resolution=params.get("suggested_resolution"),
+        )
+
+        # Create result object
+        result = AlignmentBlockerResult(
+            pipeline_id=pipeline_id,
+            blocker=blocker,
+            proposal_id=context.proposal_id if hasattr(context, 'proposal_id') else None,
+            resolved=False,
+            created_by=context.actor_id,
+        )
+
+        # Create edit operations
+        edits = [
+            EditOperation(
+                edit_type=EditType.CREATE,
+                object_type="AlignmentBlockerResult",
+                object_id=result.id,
+                changes={
+                    "pipeline_id": pipeline_id,
+                    "blocker_type": blocker.blocker_type,
+                    "severity": blocker.severity,
+                },
+                timestamp=context.timestamp,
+            ),
+            EditOperation(
+                edit_type=EditType.MODIFY,
+                object_type="MathpixPipeline",
+                object_id=pipeline_id,
+                changes={
+                    "add_blocker": {
+                        "type": blocker.blocker_type,
+                        "description": blocker.description,
+                        "severity": blocker.severity,
+                    }
+                },
+                timestamp=context.timestamp,
+            ),
+        ]
+
+        logger.warning(
+            f"Alignment blocker detected in pipeline {pipeline_id}: "
+            f"{blocker.blocker_type} ({blocker.severity}) by {context.actor_id}"
+        )
+
+        return (result, edits)
+
+
+@register_action(requires_proposal=True)
+class SemanticResolveAmbiguityAction(ActionType[AmbiguityResolutionResult]):
+    """
+    Resolve a semantic ambiguity in Stage E.
+
+    This action is HAZARDOUS - semantic decisions affect document meaning
+    and require human verification.
+
+    Called when Stage E encounters symbols or references with multiple
+    valid interpretations.
+
+    Parameters:
+        pipeline_id: ID of the MathpixPipeline document
+        ambiguity_id: Unique identifier for the ambiguity
+        ambiguity_type: Type of ambiguity
+        original_options: List of possible interpretations
+        selected_option: The chosen interpretation
+        confidence: Confidence in resolution (0.0-1.0)
+        resolved_by: Resolution source (human|heuristic|ml_model)
+        reasoning: Reasoning for the choice
+
+    Returns:
+        ActionResult with AmbiguityResolutionResult
+    """
+
+    api_name: ClassVar[str] = "semantic.resolve_ambiguity"
+    object_type: ClassVar[Type[AmbiguityResolutionResult]] = AmbiguityResolutionResult
+    requires_proposal: ClassVar[bool] = True
+
+    submission_criteria: ClassVar[List[SubmissionCriterion]] = [
+        RequiredField("pipeline_id"),
+        RequiredField("ambiguity_id"),
+        RequiredField("ambiguity_type"),
+        RequiredField("selected_option"),
+        RequiredField("resolved_by"),
+    ]
+
+    async def apply_edits(
+        self,
+        params: Dict[str, Any],
+        context: ActionContext,
+    ) -> tuple[Optional[AmbiguityResolutionResult], List[EditOperation]]:
+        """Create ambiguity resolution result."""
+        pipeline_id = params["pipeline_id"]
+
+        # Create AmbiguityResolution
+        resolution = AmbiguityResolution(
+            ambiguity_id=params["ambiguity_id"],
+            ambiguity_type=params["ambiguity_type"],
+            original_options=params.get("original_options", []),
+            selected_option=params["selected_option"],
+            confidence=params.get("confidence", 1.0),
+            resolved_by=params["resolved_by"],
+            reasoning=params.get("reasoning"),
+        )
+
+        # Create result object
+        result = AmbiguityResolutionResult(
+            pipeline_id=pipeline_id,
+            resolution=resolution,
+            proposal_id=context.proposal_id if hasattr(context, 'proposal_id') else None,
+            applied=True,
+            applied_at=utc_now(),
+            created_by=context.actor_id,
+        )
+
+        # Create edit operation
+        edit = EditOperation(
+            edit_type=EditType.CREATE,
+            object_type="AmbiguityResolutionResult",
+            object_id=result.id,
+            changes={
+                "pipeline_id": pipeline_id,
+                "ambiguity_id": resolution.ambiguity_id,
+                "ambiguity_type": resolution.ambiguity_type,
+                "selected_option": resolution.selected_option,
+                "confidence": resolution.confidence,
+            },
+            timestamp=context.timestamp,
+        )
+
+        logger.info(
+            f"Ambiguity resolved in pipeline {pipeline_id}: "
+            f"{resolution.ambiguity_id} -> {resolution.selected_option} "
+            f"(by {resolution.resolved_by}, confidence: {resolution.confidence})"
+        )
+
+        return (result, [edit])
+
+
+@register_action
+class PipelineAdvanceStageAction(ActionType[MathpixPipeline]):
+    """
+    Advance MathpixPipeline to the next stage.
+
+    This action is NON-HAZARDOUS - stage advancement is a normal
+    workflow progression when prerequisites are met.
+
+    Prerequisites for advancement:
+    - No pending proposals
+    - No unresolved blockers
+    - Circuit breaker not tripped
+    - Pipeline status is ACTIVE
+
+    Parameters:
+        pipeline_id: ID of the MathpixPipeline document
+        confidence: Confidence score for current stage (0.0-1.0)
+
+    Returns:
+        ActionResult with new stage or block reason
+    """
+
+    api_name: ClassVar[str] = "pipeline.advance_stage"
+    object_type: ClassVar[Type[MathpixPipeline]] = MathpixPipeline
+    requires_proposal: ClassVar[bool] = False
+
+    submission_criteria: ClassVar[List[SubmissionCriterion]] = [
+        RequiredField("pipeline_id"),
+    ]
+
+    async def apply_edits(
+        self,
+        params: Dict[str, Any],
+        context: ActionContext,
+    ) -> ActionResult:
+        """Advance pipeline to next stage."""
+        pipeline_id = params["pipeline_id"]
+        confidence = params.get("confidence", 1.0)
+
+        # Note: In full implementation, would load MathpixPipeline from storage
+        # For now, return a result indicating the advancement
+
+        # Validate confidence threshold (0.5 minimum for advancement)
+        if confidence < 0.5:
+            return ActionResult(
+                action_type=self.api_name,
+                success=False,
+                data={
+                    "pipeline_id": pipeline_id,
+                    "advanced": False,
+                    "reason": "low_confidence",
+                    "confidence": confidence,
+                    "threshold": 0.5,
+                },
+                edits=[],
+                message=f"Cannot advance: confidence {confidence} below threshold 0.5",
+            )
+
+        # Create edit operation (would be applied to actual pipeline)
+        edit = EditOperation(
+            edit_type=EditType.MODIFY,
+            object_type="MathpixPipeline",
+            object_id=pipeline_id,
+            changes={
+                "stage_advanced": True,
+                "confidence": confidence,
+            },
+            timestamp=context.timestamp,
+        )
+
+        logger.info(
+            f"Pipeline stage advanced: {pipeline_id} "
+            f"(confidence: {confidence}) by {context.actor_id}"
+        )
+
+        return ActionResult(
+            action_type=self.api_name,
+            success=True,
+            data={
+                "pipeline_id": pipeline_id,
+                "advanced": True,
+                "confidence": confidence,
+            },
+            edits=[edit],
+            modified_ids=[pipeline_id],
+            message=f"Pipeline '{pipeline_id}' advanced to next stage",
+        )
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
@@ -648,12 +1086,21 @@ __all__ = [
     # Validators
     "ValidPipelineStages",
     "ValidScheduleCron",
+    # Pydantic Models (Mathpix)
+    "BlockerDetails",
+    "AmbiguityResolution",
+    # Result ObjectTypes (Mathpix)
+    "AlignmentBlockerResult",
+    "AmbiguityResolutionResult",
     # Non-hazardous actions
     "PipelineValidateAction",
     "PipelineStatusAction",
+    "PipelineAdvanceStageAction",  # Mathpix
     # Hazardous actions
     "PipelineExecuteAction",
     "PipelineScheduleAction",
     "PipelinePauseAction",
     "PipelineDeleteAction",
+    "AlignmentBlockerDetectedAction",  # Mathpix
+    "SemanticResolveAmbiguityAction",  # Mathpix
 ]

@@ -59,11 +59,11 @@ Key ideas:
 
 ## 3. Cross-Stack Comparison
 
-| Concept | Go | Python | Node (TS/JS) |
-|---|---|---|---|
-| Concurrency primitive | goroutine/channel | `asyncio` tasks | event loop + promises |
-| Cancellation | `context.Context` | `asyncio.timeout()` / cancel tasks | abort controller / custom |
-| Server | `net/http` | FastAPI/Flask | Express/Fastify |
+| Concept | Go | Python | Node (TS/JS) | Java/Kotlin (JVM) |
+|---|---|---|---|---|
+| Concurrency primitive | goroutine/channel | `asyncio` tasks | event loop + promises | threads/executors (Java 21+: virtual threads option) |
+| Cancellation | `context.Context` | `asyncio.timeout()` / cancel tasks | abort controller / custom | `Future.cancel(true)` + timeouts (framework scopes) |
+| Server | `net/http` | FastAPI/Flask | Express/Fastify | Spring Boot / JDK `HttpServer` |
 
 ---
 
@@ -97,4 +97,3 @@ For “service thinking” interviews, expect questions like:
 - If you need **gRPC** → learn proto-first APIs and interceptors.
 - If you need **performance** → learn `pprof`, allocations, and contention.
 - If you need **reliability** → learn timeouts, retries, and circuit breaking patterns.
-

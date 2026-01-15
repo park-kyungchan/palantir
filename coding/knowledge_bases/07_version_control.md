@@ -8,11 +8,13 @@ This report provides an exhaustive analysis of the version control and collabora
 
 ### 1.1 The Palantir Engineering Culture: Dev vs. Delta
 
-To master collaboration at Palantir, one must first understand the bifurcation of its engineering force and how git serves as the unifying language between two distinct operational modes: Product Engineering ("Dev") and Forward Deployed Engineering ("Delta" or FDSE).
+To master collaboration at Palantir, one must first understand the bifurcation of its engineering force and how git serves as the unifying language between two distinct operational modes: **Product Development ("Dev")** and **Forward Deployed Engineering ("Delta")**. The key practical implication is that the groups are optimized for different goals and often use different job titles.
 
 #### 1.1.1 The Product Engineer (Dev) Archetype
 
 Product engineers focus on creating **scalable, generalized platforms** such as Foundry, Gotham, and Apollo. Their work environment is characterized by long-term horizons, deep abstraction, and rigorous stability guarantees. In this context, version control is used to enforce architectural purity.
+*   **Job Title / Org (typical):** Software Engineer (SWE) / Product Engineer — Product Development (PD)
+*   **Common Languages (PD/Dev):** Java/Kotlin, TypeScript, Go, Python (confirm against the current SWE/PD posting when needed)
 *   **Workflow:** Heavy reliance on Continuous Integration (CI), monolithic repositories (monorepos), and **trunk-based development** to ensure that the "main" branch remains deployable at all times.
 *   **Code Review Focus:** Reviews prioritize maintainability, API consistency, and preventing technical debt that could impact hundreds of downstream customers.
 *   **Universal Tutor Context:** A "Dev" working on the "Universal Tutor" would focus on building the reusable Blueprint UI components that visualize the knowledge graph, ensuring these components perform efficiently whether rendering 10 nodes or 10,000 nodes.
@@ -20,6 +22,7 @@ Product engineers focus on creating **scalable, generalized platforms** such as 
 #### 1.1.2 The Forward Deployed Engineer (Delta) Archetype
 
 Forward Deployed Software Engineers (FDSEs) embed directly with customers to solve specific, often urgent, operational problems using Palantir's platforms. Their work is characterized by high autonomy, rapid iteration, and pragmatic problem-solving.
+*   **Job Title / Org (typical):** Forward Deployed Software Engineer (FDSE) — Forward Deployed Engineering (FDE)
 *   **Workflow:** FDSEs may work in "forked" realities or short-lived feature branches to hack together custom integrations. They often face the challenge of merging these custom "hacks" back into the core product or maintaining them as bespoke plugins.
 *   **Code Review Focus:** Speed to value, operational correctness, and handling dirty real-world data.
 *   **Universal Tutor Context:** An FDSE might modify the "Universal Tutor" frontend to work with a specific university's legacy authentication system or to visualize a unique, unstructured dataset provided by a research lab on a tight deadline.

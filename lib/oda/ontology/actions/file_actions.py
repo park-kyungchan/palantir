@@ -42,10 +42,53 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 
+class CorrectionPatch(BaseModel):
+    """
+    Represents a correction made during document processing.
+
+    Used by Mathpix pipeline to track text/vision parse corrections
+    that link back to ODA Evidence for audit trail.
+    """
+    patch_id: str = Field(
+        ...,
+        description="Unique identifier for this correction"
+    )
+    original_text: str = Field(
+        ...,
+        description="Original text before correction"
+    )
+    corrected_text: str = Field(
+        ...,
+        description="Text after correction"
+    )
+    correction_type: str = Field(
+        ...,
+        description="Type of correction: ocr_fix|latex_fix|semantic_fix|structural_fix"
+    )
+    confidence: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score for the correction (0.0-1.0)"
+    )
+    source_stage: str = Field(
+        ...,
+        description="Pipeline stage that generated this correction (B|C|D)"
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional correction metadata"
+    )
+
+
 class StageEvidence(BaseModel):
     """
     Evidence collected during 3-Stage Protocol execution.
     Required for hazardous file operations to ensure audit trail.
+
+    Extended for Mathpix pipeline integration:
+    - correction_patches: Links correction_patch objects to evidence
+    - final_confidence: Overall confidence after all stages
     """
     files_viewed: List[str] = Field(
         default_factory=list,
@@ -62,6 +105,17 @@ class StageEvidence(BaseModel):
     protocol_stage: Optional[str] = Field(
         default=None,
         description="Current protocol stage: A|B|C"
+    )
+    # Mathpix Pipeline Extensions
+    correction_patches: List[CorrectionPatch] = Field(
+        default_factory=list,
+        description="Correction patches applied during document processing"
+    )
+    final_confidence: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Overall confidence score after all stages (0.0-1.0)"
     )
 
 

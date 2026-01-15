@@ -37,6 +37,7 @@ Given a user prompt and a context JSON:
    - Use `kb_matches[].path` as the preferred KB documents to read first.
 5. **Across-language is allowed and expected.**
    - Use file-level dependencies (`dependencies`) and workflow artifacts to connect Python↔TS/JS↔Go.
+   - **Network connectivity required:** perform cross-language linking in a network-connected environment so you can validate non-local assumptions (docs/specs/tooling). If network is unavailable, explicitly say so and request a rerun with network access (or limit to static/local analysis only).
 
 Optional outputs:
 - `outputs.learning_brief_md` is a portable, LLM-ready markdown summary of the same context.

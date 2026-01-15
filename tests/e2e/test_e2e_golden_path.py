@@ -42,10 +42,12 @@ class Task(BaseModel):
 # Define Action
 @register_action
 class ArchiveTaskAction(ActionType):
+    """Archive a Task by setting its status to `Archived` (test-only ActionType)."""
     api_name = "archive_task"
     object_type = Task
     
-    async def apply_edits(self, params: Dict[str, Any], context: ActionContext):
+    async def apply_edits(self, params: Dict[str, Any], context: ActionContext) -> tuple[Any, List[EditOperation]]:
+        """Return a mocked object + edit operations for the ODA execution path."""
         # Mocking the object return for marshaler to pick up ID
         mock_obj = MagicMock()
         mock_obj.id = params['task_id']

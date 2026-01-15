@@ -10,6 +10,12 @@ coverage
 logs
 *.log
 
+# --- Secrets (NEVER commit) ---
+.claude/secrets/
+**/api_keys.env
+**/credentials.json
+**/*.pem
+
 # --- System & Cache ---
 .local
 .cache
