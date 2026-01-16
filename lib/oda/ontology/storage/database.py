@@ -228,6 +228,14 @@ class DatabaseManager:
         """
         from lib.oda.paths import get_db_path
         p = path or os.getenv("ORION_DB_PATH") or str(get_db_path())
+
+        if cls._default is not None:
+            try:
+                await cls._default.dispose()
+            except Exception:
+                logger.warning("Failed to dispose previous database engine", exc_info=True)
+            cls._default = None
+
         db = Database(p)
         await db.initialize()
         cls._default = db

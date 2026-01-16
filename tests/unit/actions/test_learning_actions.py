@@ -42,10 +42,11 @@ class TestSaveLearnerStateAction:
 
     @pytest.mark.asyncio
     async def test_apply_edits_saves_learner(self, action, user_context, valid_params):
-        with patch('scripts.ontology.actions.learning_actions.get_database') as mock_get_db, \
-             patch('scripts.ontology.actions.learning_actions.LearnerRepository') as MockRepo:
+        with patch("lib.oda.ontology.actions.learning_actions.DatabaseManager.get") as mock_get_db, \
+             patch("lib.oda.ontology.actions.learning_actions.LearnerRepository") as MockRepo:
             mock_get_db.return_value = MagicMock()
             mock_repo = AsyncMock()
+            mock_repo.get_by_user_id.return_value = None
             mock_repo.save.return_value = MagicMock(id="learner-db-id")
             MockRepo.return_value = mock_repo
 

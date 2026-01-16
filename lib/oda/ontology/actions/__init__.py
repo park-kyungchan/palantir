@@ -645,7 +645,7 @@ class ActionType(ABC, Generic[T]):
             return ActionResult(
                 action_type=self.api_name,
                 success=False,
-                error="Submission criteria failed",
+                error="Validation failed",
                 error_details={"validation_errors": errors},
             )
         
@@ -1096,6 +1096,39 @@ try:
     from .learning_actions import SaveLearnerStateAction
     from .learning_kb_actions import UpdateLearningKBAction, ValidateKBStructureAction
     from .logic_actions import ExecuteLogicAction
+    # Domain Actions (core objects)
+    from .workspace_actions import (
+        WorkspaceAddMemberAction,
+        WorkspaceArchiveAction,
+        WorkspaceCreateAction,
+        WorkspaceDeleteAction,
+        WorkspaceRemoveMemberAction,
+        WorkspaceUpdateAction,
+    )
+    from .session_actions import (
+        SessionCreateAction,
+        SessionEndAction,
+        SessionPauseAction,
+        SessionRecordActivityAction,
+        SessionRecordHintAction,
+        SessionResumeAction,
+        SessionStartAction,
+        SessionUpdateContextAction,
+        SessionUpdateStateAction,
+    )
+    from .assessment_actions import (
+        AssessmentAddFeedbackAction,
+        AssessmentAddItemAction,
+        AssessmentAutoGradeAction,
+        AssessmentCreateAction,
+        AssessmentGradeAction,
+        AssessmentRemoveItemAction,
+        AssessmentRetryAction,
+        AssessmentStartAction,
+        AssessmentSubmitAction,
+        AssessmentSubmitResponseAction,
+    )
+    from .task_actions import CreateTaskAction
     # Phase 1 & 2: LLM-Agnostic ODA Actions
     from .file_actions import FileReadAction, FileModifyAction, FileWriteAction, FileDeleteAction
     from .quality_actions import (

@@ -38,21 +38,24 @@ class TestHookEventTypeEnum:
     @pytest.mark.parametrize("event_name,expected_value", [
         ("SESSION_START", "SessionStart"),
         ("SESSION_END", "SessionEnd"),
+        ("PRE_COMPACT", "PreCompact"),
         ("PRE_TOOL_USE", "PreToolUse"),
         ("POST_TOOL_USE", "PostToolUse"),
         ("STOP", "Stop"),
         ("SUBAGENT_STOP", "SubagentStop"),
         ("USER_PROMPT_SUBMIT", "UserPromptSubmit"),
+        ("PERMISSION_REQUEST", "PermissionRequest"),
+        ("NOTIFICATION", "Notification"),
     ])
     def test_all_event_types_exist(self, event_name: str, expected_value: str):
-        """Verify all 7 HookEventType enum values exist with correct string values."""
+        """Verify all HookEventType enum values exist with correct string values."""
         event = getattr(HookEventType, event_name)
         assert event.value == expected_value
         assert isinstance(event, HookEventType)
 
     def test_enum_count(self):
-        """Verify exactly 7 event types are defined."""
-        assert len(HookEventType) == 7
+        """Verify expected event types are defined."""
+        assert len(HookEventType) == 10
 
     def test_enum_is_str_subclass(self):
         """Verify HookEventType inherits from str for JSON serialization."""
@@ -65,6 +68,9 @@ class TestIsBlockingProperty:
     @pytest.mark.parametrize("event_name,expected", [
         ("PRE_TOOL_USE", True),
         ("USER_PROMPT_SUBMIT", True),
+        ("PRE_COMPACT", True),
+        ("PERMISSION_REQUEST", True),
+        ("NOTIFICATION", False),
         ("POST_TOOL_USE", False),
         ("SESSION_START", False),
         ("SESSION_END", False),
@@ -72,17 +78,19 @@ class TestIsBlockingProperty:
         ("SUBAGENT_STOP", False),
     ])
     def test_is_blocking_returns_correct_value(self, event_name: str, expected: bool):
-        """Only PRE_TOOL_USE and USER_PROMPT_SUBMIT should return True for is_blocking."""
+        """Verify is_blocking classification across events."""
         event = getattr(HookEventType, event_name)
         assert event.is_blocking == expected
 
     def test_blocking_events_count(self):
-        """Verify exactly 2 events are blocking."""
+        """Verify blocking event set."""
         blocking_events = [e for e in HookEventType if e.is_blocking]
-        assert len(blocking_events) == 2
+        assert len(blocking_events) == 4
         assert set(blocking_events) == {
             HookEventType.PRE_TOOL_USE,
             HookEventType.USER_PROMPT_SUBMIT,
+            HookEventType.PRE_COMPACT,
+            HookEventType.PERMISSION_REQUEST,
         }
 
 
@@ -92,24 +100,28 @@ class TestIsLifecycleProperty:
     @pytest.mark.parametrize("event_name,expected", [
         ("SESSION_START", True),
         ("SESSION_END", True),
+        ("PRE_COMPACT", True),
         ("PRE_TOOL_USE", False),
         ("POST_TOOL_USE", False),
         ("STOP", False),
         ("SUBAGENT_STOP", False),
         ("USER_PROMPT_SUBMIT", False),
+        ("PERMISSION_REQUEST", False),
+        ("NOTIFICATION", False),
     ])
     def test_is_lifecycle_returns_correct_value(self, event_name: str, expected: bool):
-        """Only SESSION_START and SESSION_END should return True for is_lifecycle."""
+        """Verify is_lifecycle classification across events."""
         event = getattr(HookEventType, event_name)
         assert event.is_lifecycle == expected
 
     def test_lifecycle_events_count(self):
-        """Verify exactly 2 events are lifecycle events."""
+        """Verify lifecycle event set."""
         lifecycle_events = [e for e in HookEventType if e.is_lifecycle]
-        assert len(lifecycle_events) == 2
+        assert len(lifecycle_events) == 3
         assert set(lifecycle_events) == {
             HookEventType.SESSION_START,
             HookEventType.SESSION_END,
+            HookEventType.PRE_COMPACT,
         }
 
 
@@ -121,9 +133,12 @@ class TestIsToolEventProperty:
         ("POST_TOOL_USE", True),
         ("SESSION_START", False),
         ("SESSION_END", False),
+        ("PRE_COMPACT", False),
         ("STOP", False),
         ("SUBAGENT_STOP", False),
         ("USER_PROMPT_SUBMIT", False),
+        ("PERMISSION_REQUEST", False),
+        ("NOTIFICATION", False),
     ])
     def test_is_tool_event_returns_correct_value(self, event_name: str, expected: bool):
         """Only PRE_TOOL_USE and POST_TOOL_USE should return True for is_tool_event."""
@@ -148,9 +163,12 @@ class TestIsAgentEventProperty:
         ("SUBAGENT_STOP", True),
         ("SESSION_START", False),
         ("SESSION_END", False),
+        ("PRE_COMPACT", False),
         ("PRE_TOOL_USE", False),
         ("POST_TOOL_USE", False),
         ("USER_PROMPT_SUBMIT", False),
+        ("PERMISSION_REQUEST", False),
+        ("NOTIFICATION", False),
     ])
     def test_is_agent_event_returns_correct_value(self, event_name: str, expected: bool):
         """Only STOP and SUBAGENT_STOP should return True for is_agent_event."""
@@ -178,6 +196,9 @@ class TestToEventBusType:
         ("SESSION_START", "Session.started"),
         ("SESSION_END", "Session.ended"),
         ("USER_PROMPT_SUBMIT", "User.prompt_submitted"),
+        ("PRE_COMPACT", "Context.pre_compact"),
+        ("PERMISSION_REQUEST", "Permission.requested"),
+        ("NOTIFICATION", "Notification.sent"),
     ])
     def test_to_event_bus_type_returns_correct_mapping(
         self, event_name: str, expected_bus_type: str
@@ -211,6 +232,9 @@ class TestHookToEventBusMapping:
         ("SESSION_START", "Session.started"),
         ("SESSION_END", "Session.ended"),
         ("USER_PROMPT_SUBMIT", "User.prompt_submitted"),
+        ("PRE_COMPACT", "Context.pre_compact"),
+        ("PERMISSION_REQUEST", "Permission.requested"),
+        ("NOTIFICATION", "Notification.sent"),
     ])
     def test_mapping_values_are_correct(
         self, event_name: str, expected_bus_type: str
@@ -252,6 +276,9 @@ class TestHelperFunctions:
         ("Session.started", "SESSION_START"),
         ("Session.ended", "SESSION_END"),
         ("User.prompt_submitted", "USER_PROMPT_SUBMIT"),
+        ("Context.pre_compact", "PRE_COMPACT"),
+        ("Permission.requested", "PERMISSION_REQUEST"),
+        ("Notification.sent", "NOTIFICATION"),
     ])
     def test_get_hook_event_type_returns_correct_event(
         self, bus_type: str, expected_event_name: str
@@ -270,6 +297,7 @@ class TestHelperFunctions:
         ("PRE_TOOL_USE", "Tool.pre_execute"),
         ("POST_TOOL_USE", "Tool.post_execute"),
         ("STOP", "Agent.stopped"),
+        ("PRE_COMPACT", "Context.pre_compact"),
     ])
     def test_get_event_bus_type_returns_correct_value(
         self, event_name: str, expected_bus_type: str

@@ -8,7 +8,8 @@ from typing import Dict, Any
 # Add project root to path
 sys.path.append("/home/palantir/park-kyungchan/palantir")
 
-from lib.oda.ontology.objects.core_definitions import Task, Agent, CreateTaskAction
+from lib.oda.ontology.objects.core_definitions import Task, Agent
+from lib.oda.ontology.actions.task_actions import CreateTaskAction
 from lib.oda.ontology.objects.proposal import Proposal, ProposalStatus
 from lib.oda.ontology.actions import ActionContext
 from lib.oda.llm.ollama_client import HybridRouter, OllamaClient, RouterConfig

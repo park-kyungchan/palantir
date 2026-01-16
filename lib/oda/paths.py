@@ -19,6 +19,7 @@ import os
 import platform
 from pathlib import Path
 from functools import lru_cache
+import tempfile
 
 
 @lru_cache(maxsize=1)
@@ -97,11 +98,42 @@ def get_db_path() -> Path:
 
     Priority:
         1. ORION_DB_PATH environment variable
-        2. {agent_root}/tmp/ontology.db
+        2. {agent_root}/tmp/ontology.db (when writable)
+        3. {tmpdir}/orion/ontology.db (fallback)
     """
     if env_path := os.environ.get("ORION_DB_PATH"):
         return Path(env_path).resolve()
-    return get_agent_root() / "tmp" / "ontology.db"
+
+    agent_db = get_agent_root() / "tmp" / "ontology.db"
+    agent_db_dir = agent_db.parent
+
+    if _can_create_file(agent_db_dir):
+        return agent_db
+
+    tmp_root = Path(tempfile.gettempdir()) / "orion"
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    return (tmp_root / "ontology.db").resolve()
+
+
+@lru_cache(maxsize=64)
+def _can_create_file(dir_path: Path) -> bool:
+    """
+    Return True if a new file can be created in dir_path.
+
+    Some sandboxed environments allow reading existing files under the repo but
+    deny creating new filesystem entries in certain directories (e.g., `.agent/tmp`).
+    SQLite schema changes require creating journal/WAL files, so we need a safe fallback.
+    """
+    try:
+        dir_path.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        return False
+
+    try:
+        with tempfile.NamedTemporaryFile(dir=dir_path, delete=True):
+            return True
+    except Exception:
+        return False
 
 
 def get_plans_dir() -> Path:
