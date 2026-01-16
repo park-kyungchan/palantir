@@ -15,12 +15,11 @@ Usage:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from lib.oda.ontology.actions import (
     ActionContext,
@@ -29,7 +28,7 @@ from lib.oda.ontology.actions import (
     action_registry,
     GovernanceEngine,
 )
-from lib.oda.ontology.objects.proposal import Proposal, ProposalStatus, ProposalPriority
+from lib.oda.ontology.objects.proposal import Proposal, ProposalPriority
 from lib.oda.ontology.storage import ProposalRepository, initialize_database
 from lib.oda.ontology.ontology_types import utc_now
 
@@ -350,6 +349,22 @@ class AgentExecutor:
     ) -> TaskResult:
         """Create a proposal for a hazardous action."""
         try:
+            action_cls = action_registry.get(action_type)
+            if action_cls:
+                try:
+                    validation_errors = action_cls().validate(params, ActionContext(actor_id=actor_id))
+                except Exception as e:
+                    validation_errors = [f"Validation exception: {type(e).__name__}: {e}"]
+
+                if validation_errors:
+                    return TaskResult(
+                        success=False,
+                        action_type=action_type,
+                        message="Action parameters failed validation; proposal not created.",
+                        error_code="INVALID_PARAMS",
+                        data={"validation_errors": validation_errors},
+                    )
+
             # Map priority string to enum
             priority_map = {
                 "low": ProposalPriority.LOW,

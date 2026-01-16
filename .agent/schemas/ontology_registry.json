@@ -1,4 +1,8 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "4.0.0",
+  "generated_at": "2026-01-14T10:01:26.018924+00:00",
+  "generated_by": "Orion ODA v4.0",
   "objects": {
     "Agent": {
       "description": "Represents an AI Agent or Human User in the system.\n    \n    Agents can be assigned to tasks and execute actions.",
@@ -6,62 +10,74 @@
         "id": {
           "type": "string",
           "required": false,
-          "description": "Primary Key (UUIDv4 string)"
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
         },
         "created_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Creation timestamp (UTC)"
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
         },
         "updated_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Last update timestamp (UTC)"
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
         },
         "created_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who created this object"
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
         },
         "updated_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who last updated this object"
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
         },
         "status": {
           "type": "string",
           "required": false,
-          "description": "Object lifecycle status"
+          "description": "Object lifecycle status",
+          "constraints": {}
         },
         "version": {
           "type": "integer",
           "required": false,
-          "description": "Version number for optimistic locking"
+          "description": "Version number for optimistic locking",
+          "constraints": {}
         },
         "name": {
           "type": "string",
           "required": true,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "email": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "role": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "agent_active": {
           "type": "boolean",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "capabilities": {
           "type": "array",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         }
       },
       "links": {
@@ -81,52 +97,62 @@
         "id": {
           "type": "string",
           "required": false,
-          "description": "Primary Key (UUIDv4 string)"
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
         },
         "created_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Creation timestamp (UTC)"
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
         },
         "updated_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Last update timestamp (UTC)"
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
         },
         "created_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who created this object"
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
         },
         "updated_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who last updated this object"
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
         },
         "status": {
           "type": "string",
           "required": false,
-          "description": "Object lifecycle status"
+          "description": "Object lifecycle status",
+          "constraints": {}
         },
         "version": {
           "type": "integer",
           "required": false,
-          "description": "Version number for optimistic locking"
+          "description": "Version number for optimistic locking",
+          "constraints": {}
         },
         "path": {
           "type": "string",
           "required": true,
-          "description": "Absolute File Path"
+          "description": "Absolute File Path",
+          "constraints": {}
         },
         "type": {
           "type": "string",
           "required": true,
-          "description": "File Type (code, doc, log)"
+          "description": "File Type (code, doc, log)",
+          "constraints": {}
         },
         "produced_by_task_id": {
           "type": "string",
           "required": true,
-          "description": "FK to Task"
+          "description": "FK to Task",
+          "constraints": {}
         }
       },
       "links": {
@@ -140,66 +166,960 @@
         }
       }
     },
-    "Learner": {
-      "description": "ObjectType: Learner\n    Represents a student in the Adaptive Tutoring system.",
+    "Assessment": {
+      "description": "ObjectType: Assessment\n\n    Represents an assessment (test, quiz, exam) with items,\n    scoring configuration, and attempt tracking.\n\n    Features:\n    - Multiple item types support\n    - Adaptive item selection\n    - Time limits and attempts\n    - Detailed scoring and feedback\n\n    Links:\n    - course: Course (Many-to-One)\n    - learner: Learner (Many-to-One)\n    - session: Session (Many-to-One)",
       "properties": {
         "id": {
           "type": "string",
           "required": false,
-          "description": "Primary Key (UUIDv4 string)"
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
         },
         "created_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Creation timestamp (UTC)"
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
         },
         "updated_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Last update timestamp (UTC)"
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
         },
         "created_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who created this object"
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
         },
         "updated_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who last updated this object"
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
         },
         "status": {
           "type": "string",
           "required": false,
-          "description": "Object lifecycle status"
+          "description": "Object lifecycle status",
+          "constraints": {}
         },
         "version": {
           "type": "integer",
           "required": false,
-          "description": "Version number for optimistic locking"
+          "description": "Version number for optimistic locking",
+          "constraints": {}
+        },
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Assessment title",
+          "constraints": {}
+        },
+        "assessment_type": {
+          "type": "string",
+          "required": false,
+          "description": "Type of assessment",
+          "constraints": {}
+        },
+        "assessment_status": {
+          "type": "string",
+          "required": false,
+          "description": "Current status",
+          "constraints": {}
+        },
+        "grading_method": {
+          "type": "string",
+          "required": false,
+          "description": "Grading method",
+          "constraints": {}
+        },
+        "course_id": {
+          "type": "string",
+          "required": false,
+          "description": "Associated course ID",
+          "constraints": {}
+        },
+        "learner_id": {
+          "type": "string",
+          "required": false,
+          "description": "Learner attempting this assessment",
+          "constraints": {}
+        },
+        "session_id": {
+          "type": "string",
+          "required": false,
+          "description": "Session where assessment was taken",
+          "constraints": {}
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Assessment description",
+          "constraints": {}
+        },
+        "instructions": {
+          "type": "string",
+          "required": false,
+          "description": "Instructions for the assessment",
+          "constraints": {}
+        },
+        "items": {
+          "type": "array",
+          "required": false,
+          "description": "Assessment items: [{id, type, content, options, correct_answer, kc_id, points, difficulty}]",
+          "constraints": {}
+        },
+        "item_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of items",
+          "constraints": {}
+        },
+        "item_order": {
+          "type": "array",
+          "required": false,
+          "description": "Order of item IDs (for randomization)",
+          "constraints": {}
+        },
+        "shuffle_items": {
+          "type": "boolean",
+          "required": false,
+          "description": "Shuffle item order",
+          "constraints": {}
+        },
+        "shuffle_options": {
+          "type": "boolean",
+          "required": false,
+          "description": "Shuffle answer options within items",
+          "constraints": {}
+        },
+        "knowledge_components": {
+          "type": "array",
+          "required": false,
+          "description": "Knowledge components tested",
+          "constraints": {}
+        },
+        "total_points": {
+          "type": "double",
+          "required": false,
+          "description": "Total possible points",
+          "constraints": {}
+        },
+        "passing_score": {
+          "type": "double",
+          "required": false,
+          "description": "Minimum passing score percentage",
+          "constraints": {}
+        },
+        "weight": {
+          "type": "double",
+          "required": false,
+          "description": "Weight in course grade",
+          "constraints": {}
+        },
+        "allow_partial_credit": {
+          "type": "boolean",
+          "required": false,
+          "description": "Allow partial credit on items",
+          "constraints": {}
+        },
+        "time_limit_minutes": {
+          "type": "integer",
+          "required": false,
+          "description": "Time limit in minutes (None = unlimited)",
+          "constraints": {}
+        },
+        "started_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Start timestamp",
+          "constraints": {}
+        },
+        "submitted_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Submission timestamp",
+          "constraints": {}
+        },
+        "due_date": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Due date",
+          "constraints": {}
+        },
+        "max_attempts": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum attempts allowed",
+          "constraints": {}
+        },
+        "attempt_number": {
+          "type": "integer",
+          "required": false,
+          "description": "Current attempt number",
+          "constraints": {}
+        },
+        "attempts_used": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of attempts used",
+          "constraints": {}
+        },
+        "best_score": {
+          "type": "double",
+          "required": false,
+          "description": "Best score across attempts",
+          "constraints": {}
+        },
+        "responses": {
+          "type": "struct",
+          "required": false,
+          "description": "Learner responses: {item_id: response}",
+          "constraints": {}
+        },
+        "item_scores": {
+          "type": "struct",
+          "required": false,
+          "description": "Scores per item: {item_id: score}",
+          "constraints": {}
+        },
+        "score": {
+          "type": "double",
+          "required": false,
+          "description": "Total score achieved",
+          "constraints": {}
+        },
+        "score_percentage": {
+          "type": "double",
+          "required": false,
+          "description": "Score as percentage",
+          "constraints": {}
+        },
+        "passed": {
+          "type": "boolean",
+          "required": false,
+          "description": "Whether assessment was passed",
+          "constraints": {}
+        },
+        "feedback": {
+          "type": "struct",
+          "required": false,
+          "description": "Feedback per item: {item_id: feedback}",
+          "constraints": {}
+        },
+        "overall_feedback": {
+          "type": "string",
+          "required": false,
+          "description": "Overall assessment feedback",
+          "constraints": {}
+        },
+        "show_correct_answers": {
+          "type": "boolean",
+          "required": false,
+          "description": "Show correct answers after submission",
+          "constraints": {}
+        },
+        "show_feedback_immediately": {
+          "type": "boolean",
+          "required": false,
+          "description": "Show feedback immediately after each item",
+          "constraints": {}
+        },
+        "average_score": {
+          "type": "double",
+          "required": false,
+          "description": "Average score across all attempts",
+          "constraints": {}
+        },
+        "average_duration_minutes": {
+          "type": "double",
+          "required": false,
+          "description": "Average completion time",
+          "constraints": {}
+        },
+        "completion_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of completions",
+          "constraints": {}
+        },
+        "pass_rate": {
+          "type": "double",
+          "required": false,
+          "description": "Pass rate percentage",
+          "constraints": {}
+        },
+        "is_adaptive": {
+          "type": "boolean",
+          "required": false,
+          "description": "Use adaptive item selection",
+          "constraints": {}
+        },
+        "target_difficulty": {
+          "type": "double",
+          "required": false,
+          "description": "Target difficulty for adaptive selection",
+          "constraints": {}
+        },
+        "theta_estimate": {
+          "type": "double",
+          "required": false,
+          "description": "Current ability estimate (IRT theta)",
+          "constraints": {}
+        },
+        "se_estimate": {
+          "type": "double",
+          "required": false,
+          "description": "Standard error of ability estimate",
+          "constraints": {}
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Assessment tags",
+          "constraints": {}
+        },
+        "settings": {
+          "type": "struct",
+          "required": false,
+          "description": "Additional settings",
+          "constraints": {}
+        }
+      },
+      "links": {
+        "course": {
+          "target": "Course",
+          "cardinality": "N:1",
+          "reverse_link_id": "course_has_assessments",
+          "description": "Parent course",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "learner": {
+          "target": "Learner",
+          "cardinality": "N:1",
+          "reverse_link_id": "learner_has_assessments",
+          "description": "Learner who took this assessment",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "session": {
+          "target": "Session",
+          "cardinality": "N:1",
+          "reverse_link_id": "session_has_assessments",
+          "description": "Session where assessment was taken",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
+    },
+    "Course": {
+      "description": "ObjectType: Course\n\n    Represents a structured learning program with content,\n    assessments, and progress tracking.\n\n    Features:\n    - Hierarchical content structure (modules/lessons)\n    - Knowledge component mapping\n    - Prerequisite requirements\n    - Progress and completion tracking\n\n    Links:\n    - workspace: Workspace (Many-to-One)\n    - learners: Learner[] (Many-to-Many)\n    - assessments: Assessment[] (One-to-Many)\n    - resources: Resource[] (One-to-Many)\n    - prerequisites: Course[] (Many-to-Many, self-referential)",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status",
+          "constraints": {}
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking",
+          "constraints": {}
+        },
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Course title",
+          "constraints": {}
+        },
+        "code": {
+          "type": "string",
+          "required": true,
+          "description": "Course code (e.g., CS101)",
+          "constraints": {}
+        },
+        "course_type": {
+          "type": "string",
+          "required": false,
+          "description": "Type of course delivery",
+          "constraints": {}
+        },
+        "course_status": {
+          "type": "string",
+          "required": false,
+          "description": "Publication status",
+          "constraints": {}
+        },
+        "level": {
+          "type": "string",
+          "required": false,
+          "description": "Difficulty level",
+          "constraints": {}
+        },
+        "workspace_id": {
+          "type": "string",
+          "required": false,
+          "description": "Parent workspace ID",
+          "constraints": {}
+        },
+        "instructor_id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary instructor/author ID",
+          "constraints": {}
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Course description",
+          "constraints": {}
+        },
+        "short_description": {
+          "type": "string",
+          "required": false,
+          "description": "Short description for previews",
+          "constraints": {}
+        },
+        "learning_objectives": {
+          "type": "array",
+          "required": false,
+          "description": "Learning objectives",
+          "constraints": {}
+        },
+        "modules": {
+          "type": "array",
+          "required": false,
+          "description": "Course modules: [{id, title, lessons: [{id, title, content_id}]}]",
+          "constraints": {}
+        },
+        "module_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of modules",
+          "constraints": {}
+        },
+        "lesson_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Total number of lessons",
+          "constraints": {}
+        },
+        "knowledge_components": {
+          "type": "array",
+          "required": false,
+          "description": "Knowledge component IDs covered",
+          "constraints": {}
+        },
+        "kc_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of knowledge components",
+          "constraints": {}
+        },
+        "estimated_hours": {
+          "type": "double",
+          "required": false,
+          "description": "Estimated completion time in hours",
+          "constraints": {}
+        },
+        "published_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Publication timestamp",
+          "constraints": {}
+        },
+        "last_updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last content update timestamp",
+          "constraints": {}
+        },
+        "max_enrollment": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum enrollment (None = unlimited)",
+          "constraints": {}
+        },
+        "enrollment_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Current enrollment count",
+          "constraints": {}
+        },
+        "enrollment_open": {
+          "type": "boolean",
+          "required": false,
+          "description": "Whether enrollment is open",
+          "constraints": {}
+        },
+        "enrollment_start": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Enrollment start date",
+          "constraints": {}
+        },
+        "enrollment_end": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Enrollment end date",
+          "constraints": {}
+        },
+        "passing_score": {
+          "type": "double",
+          "required": false,
+          "description": "Minimum passing score percentage",
+          "constraints": {}
+        },
+        "completion_criteria": {
+          "type": "struct",
+          "required": false,
+          "description": "Completion criteria",
+          "constraints": {}
+        },
+        "completion_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of completions",
+          "constraints": {}
+        },
+        "average_rating": {
+          "type": "double",
+          "required": false,
+          "description": "Average rating (0-5)",
+          "constraints": {}
+        },
+        "rating_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of ratings",
+          "constraints": {}
+        },
+        "average_completion_hours": {
+          "type": "double",
+          "required": false,
+          "description": "Average completion time in hours",
+          "constraints": {}
+        },
+        "language": {
+          "type": "string",
+          "required": false,
+          "description": "Primary language",
+          "constraints": {}
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Course tags",
+          "constraints": {}
+        },
+        "categories": {
+          "type": "array",
+          "required": false,
+          "description": "Course categories",
+          "constraints": {}
+        },
+        "thumbnail_url": {
+          "type": "string",
+          "required": false,
+          "description": "Thumbnail image URL",
+          "constraints": {}
+        },
+        "preview_video_url": {
+          "type": "string",
+          "required": false,
+          "description": "Preview video URL",
+          "constraints": {}
+        },
+        "settings": {
+          "type": "struct",
+          "required": false,
+          "description": "Course settings",
+          "constraints": {}
+        },
+        "is_featured": {
+          "type": "boolean",
+          "required": false,
+          "description": "Featured course flag",
+          "constraints": {}
+        },
+        "is_certified": {
+          "type": "boolean",
+          "required": false,
+          "description": "Offers certificate on completion",
+          "constraints": {}
+        }
+      },
+      "links": {
+        "workspace": {
+          "target": "Workspace",
+          "cardinality": "N:1",
+          "reverse_link_id": "workspace_has_courses",
+          "description": "Parent workspace",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "learners": {
+          "target": "Learner",
+          "cardinality": "N:N",
+          "reverse_link_id": "learner_enrolled_in_courses",
+          "description": "Enrolled learners",
+          "backing_table_name": "learner_enrollments",
+          "is_materialized": true
+        },
+        "assessments": {
+          "target": "Assessment",
+          "cardinality": "1:N",
+          "reverse_link_id": "assessment_belongs_to_course",
+          "description": "Course assessments",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "resources": {
+          "target": "Resource",
+          "cardinality": "1:N",
+          "reverse_link_id": "resource_belongs_to_course",
+          "description": "Course resources",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "prerequisites": {
+          "target": "Course",
+          "cardinality": "N:N",
+          "reverse_link_id": "course_is_prerequisite_for",
+          "description": "Prerequisite courses",
+          "backing_table_name": "course_prerequisites",
+          "is_materialized": true
+        }
+      }
+    },
+    "Learner": {
+      "description": "ObjectType: Learner (Expanded)\n\n    Represents a student in the Adaptive Tutoring system with\n    comprehensive tracking of knowledge state, preferences, and progress.\n\n    Features:\n    - Global proficiency estimate (theta)\n    - Per-KC knowledge state (BKT parameters)\n    - Learning preferences and style\n    - Activity and engagement metrics\n    - Goal tracking\n\n    Links:\n    - sessions: Session[] (One-to-Many)\n    - enrolled_courses: Course[] (Many-to-Many)\n    - assessments: Assessment[] (One-to-Many)",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status",
+          "constraints": {}
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking",
+          "constraints": {}
         },
         "user_id": {
           "type": "string",
           "required": true,
-          "description": "Unique User Identifier"
+          "description": "Unique User Identifier",
+          "constraints": {}
+        },
+        "display_name": {
+          "type": "string",
+          "required": false,
+          "description": "Display name",
+          "constraints": {}
+        },
+        "email": {
+          "type": "string",
+          "required": false,
+          "description": "Email address",
+          "constraints": {}
+        },
+        "learner_status": {
+          "type": "string",
+          "required": false,
+          "description": "Account status",
+          "constraints": {}
+        },
+        "level": {
+          "type": "string",
+          "required": false,
+          "description": "Current proficiency level",
+          "constraints": {}
         },
         "theta": {
           "type": "double",
           "required": false,
-          "description": "Global proficiency estimate"
+          "description": "Global proficiency estimate (IRT theta)",
+          "constraints": {}
+        },
+        "theta_se": {
+          "type": "double",
+          "required": false,
+          "description": "Standard error of theta estimate",
+          "constraints": {}
         },
         "knowledge_state": {
           "type": "struct",
           "required": false,
-          "description": "BKT parameters for KCs"
+          "description": "BKT parameters for each KC: {kc_id: {P_L, P_T, P_G, P_S}}",
+          "constraints": {}
         },
-        "last_active": {
+        "mastered_kcs": {
+          "type": "array",
+          "required": false,
+          "description": "List of mastered knowledge component IDs",
+          "constraints": {}
+        },
+        "struggling_kcs": {
+          "type": "array",
+          "required": false,
+          "description": "List of struggling knowledge component IDs",
+          "constraints": {}
+        },
+        "learning_style": {
           "type": "string",
           "required": false,
-          "description": "ISO formatted timestamp"
+          "description": "Preferred learning style",
+          "constraints": {}
+        },
+        "preferred_language": {
+          "type": "string",
+          "required": false,
+          "description": "Preferred language code",
+          "constraints": {}
+        },
+        "preferred_difficulty": {
+          "type": "double",
+          "required": false,
+          "description": "Preferred difficulty level (0=easy, 1=hard)",
+          "constraints": {}
+        },
+        "enable_hints": {
+          "type": "boolean",
+          "required": false,
+          "description": "Enable hint system",
+          "constraints": {}
+        },
+        "enable_explanations": {
+          "type": "boolean",
+          "required": false,
+          "description": "Enable detailed explanations",
+          "constraints": {}
+        },
+        "adaptive_difficulty": {
+          "type": "boolean",
+          "required": false,
+          "description": "Enable adaptive difficulty adjustment",
+          "constraints": {}
+        },
+        "target_success_rate": {
+          "type": "double",
+          "required": false,
+          "description": "Target success rate for difficulty calibration",
+          "constraints": {}
+        },
+        "last_active": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last activity timestamp",
+          "constraints": {}
+        },
+        "first_login": {
+          "type": "timestamp",
+          "required": false,
+          "description": "First login timestamp",
+          "constraints": {}
+        },
+        "total_learning_time_minutes": {
+          "type": "integer",
+          "required": false,
+          "description": "Total learning time in minutes",
+          "constraints": {}
+        },
+        "total_sessions": {
+          "type": "integer",
+          "required": false,
+          "description": "Total number of sessions",
+          "constraints": {}
+        },
+        "total_questions_answered": {
+          "type": "integer",
+          "required": false,
+          "description": "Total questions answered",
+          "constraints": {}
+        },
+        "total_correct_answers": {
+          "type": "integer",
+          "required": false,
+          "description": "Total correct answers",
+          "constraints": {}
+        },
+        "current_streak": {
+          "type": "integer",
+          "required": false,
+          "description": "Current consecutive correct answer streak",
+          "constraints": {}
+        },
+        "best_streak": {
+          "type": "integer",
+          "required": false,
+          "description": "Best consecutive correct answer streak",
+          "constraints": {}
+        },
+        "login_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Total login count",
+          "constraints": {}
+        },
+        "consecutive_days": {
+          "type": "integer",
+          "required": false,
+          "description": "Consecutive days of activity",
+          "constraints": {}
+        },
+        "last_login_date": {
+          "type": "string",
+          "required": false,
+          "description": "Last login date (YYYY-MM-DD)",
+          "constraints": {}
+        },
+        "daily_goal_minutes": {
+          "type": "integer",
+          "required": false,
+          "description": "Daily learning goal in minutes",
+          "constraints": {}
+        },
+        "weekly_goal_questions": {
+          "type": "integer",
+          "required": false,
+          "description": "Weekly question goal",
+          "constraints": {}
+        },
+        "goals": {
+          "type": "struct",
+          "required": false,
+          "description": "Custom goals: {goal_id: {target, current, type}}",
+          "constraints": {}
+        },
+        "badges": {
+          "type": "array",
+          "required": false,
+          "description": "Earned badge IDs",
+          "constraints": {}
+        },
+        "achievements": {
+          "type": "struct",
+          "required": false,
+          "description": "Achievement progress",
+          "constraints": {}
+        },
+        "xp_points": {
+          "type": "integer",
+          "required": false,
+          "description": "Experience points",
+          "constraints": {}
+        },
+        "settings": {
+          "type": "struct",
+          "required": false,
+          "description": "User settings",
+          "constraints": {}
+        },
+        "notification_preferences": {
+          "type": "struct",
+          "required": false,
+          "description": "Notification preferences",
+          "constraints": {}
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Classification tags",
+          "constraints": {}
         }
       },
-      "links": {}
+      "links": {
+        "sessions": {
+          "target": "Session",
+          "cardinality": "1:N",
+          "reverse_link_id": "session_belongs_to_learner",
+          "description": "Learning sessions",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "enrolled_courses": {
+          "target": "Course",
+          "cardinality": "N:N",
+          "reverse_link_id": "course_has_learners",
+          "description": "Enrolled courses",
+          "backing_table_name": "learner_enrollments",
+          "is_materialized": true
+        },
+        "assessments": {
+          "target": "Assessment",
+          "cardinality": "1:N",
+          "reverse_link_id": "assessment_belongs_to_learner",
+          "description": "Assessment attempts",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
     },
     "Proposal": {
       "description": "Represents a staged Action awaiting Human Review.\n    \n    A Proposal encapsulates:\n    - The action to be performed (action_type + payload)\n    - The creator (created_by from OntologyObject)\n    - The reviewer (reviewed_by)\n    - Full audit trail (timestamps, comments)\n    \n    Usage:\n        ```python\n        # Create a proposal\n        proposal = Proposal(\n            action_type=\"deploy_to_production\",\n            payload={\"service\": \"checkout\", \"version\": \"2.1.0\"},\n            created_by=\"agent-001\",\n            priority=ProposalPriority.HIGH\n        )\n        \n        # Submit for review\n        proposal.submit()\n        \n        # Approve (by human reviewer)\n        proposal.approve(reviewer_id=\"admin-001\", comment=\"LGTM\")\n        \n        # Execute\n        proposal.execute()\n        ```\n    \n    Attributes:\n        action_type: The ActionType API name to execute\n        payload: Parameters for the action\n        status: Current lifecycle state\n        priority: Review priority\n        reviewed_by: ID of the reviewer\n        reviewed_at: Timestamp of review decision\n        review_comment: Reviewer's comment\n        executed_at: Timestamp of execution\n        execution_result: Result of execution (success/error details)",
@@ -207,85 +1127,707 @@
         "id": {
           "type": "string",
           "required": false,
-          "description": "Primary Key (UUIDv4 string)"
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
         },
         "created_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Creation timestamp (UTC)"
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
         },
         "updated_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Last update timestamp (UTC)"
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
         },
         "created_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who created this object"
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
         },
         "updated_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who last updated this object"
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
         },
         "status": {
           "type": "string",
           "required": false,
-          "description": "Current lifecycle state"
+          "description": "Current lifecycle state",
+          "constraints": {}
         },
         "version": {
           "type": "integer",
           "required": false,
-          "description": "Version number for optimistic locking"
+          "description": "Version number for optimistic locking",
+          "constraints": {}
         },
         "action_type": {
           "type": "string",
           "required": true,
-          "description": "The ActionType API name to execute (e.g., 'deploy_to_production')"
+          "description": "The ActionType API name to execute (e.g., 'deploy_to_production')",
+          "constraints": {}
         },
         "payload": {
           "type": "struct",
           "required": false,
-          "description": "Parameters for the action"
+          "description": "Parameters for the action",
+          "constraints": {}
         },
         "priority": {
           "type": "string",
           "required": false,
-          "description": "Review priority"
+          "description": "Review priority",
+          "constraints": {}
         },
         "reviewed_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the reviewer who approved/rejected"
+          "description": "ID of the reviewer who approved/rejected",
+          "constraints": {}
         },
         "reviewed_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Timestamp of review decision"
+          "description": "Timestamp of review decision",
+          "constraints": {}
         },
         "review_comment": {
           "type": "string",
           "required": false,
-          "description": "Reviewer's comment or reason"
+          "description": "Reviewer's comment or reason",
+          "constraints": {}
         },
         "executed_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Timestamp of execution"
+          "description": "Timestamp of execution",
+          "constraints": {}
         },
         "execution_result": {
           "type": "string",
           "required": false,
-          "description": "Result of execution (success/error details)"
+          "description": "Result of execution (success/error details)",
+          "constraints": {}
         },
         "tags": {
           "type": "array",
           "required": false,
-          "description": "Tags for categorization and filtering"
+          "description": "Tags for categorization and filtering",
+          "constraints": {}
         }
       },
       "links": {}
+    },
+    "Resource": {
+      "description": "ObjectType: Resource\n\n    Represents learning materials and content assets.\n    Supports multiple content types with versioning and access tracking.\n\n    Features:\n    - Multiple content types (video, document, etc.)\n    - File storage integration\n    - Version history\n    - Access and view tracking\n    - Knowledge component mapping\n\n    Links:\n    - course: Course (Many-to-One)\n    - related_resources: Resource[] (Many-to-Many, self-referential)",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status",
+          "constraints": {}
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking",
+          "constraints": {}
+        },
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Resource title",
+          "constraints": {}
+        },
+        "resource_type": {
+          "type": "string",
+          "required": true,
+          "description": "Type of resource",
+          "constraints": {}
+        },
+        "resource_status": {
+          "type": "string",
+          "required": false,
+          "description": "Availability status",
+          "constraints": {}
+        },
+        "access_level": {
+          "type": "string",
+          "required": false,
+          "description": "Access level required",
+          "constraints": {}
+        },
+        "course_id": {
+          "type": "string",
+          "required": false,
+          "description": "Parent course ID",
+          "constraints": {}
+        },
+        "author_id": {
+          "type": "string",
+          "required": false,
+          "description": "Author/uploader ID",
+          "constraints": {}
+        },
+        "module_id": {
+          "type": "string",
+          "required": false,
+          "description": "Associated module ID",
+          "constraints": {}
+        },
+        "lesson_id": {
+          "type": "string",
+          "required": false,
+          "description": "Associated lesson ID",
+          "constraints": {}
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Resource description",
+          "constraints": {}
+        },
+        "content_format": {
+          "type": "string",
+          "required": false,
+          "description": "Content format",
+          "constraints": {}
+        },
+        "content_text": {
+          "type": "string",
+          "required": false,
+          "description": "Text content (for text-based resources)",
+          "constraints": {}
+        },
+        "content_url": {
+          "type": "string",
+          "required": false,
+          "description": "URL to content (external or storage)",
+          "constraints": {}
+        },
+        "embed_code": {
+          "type": "string",
+          "required": false,
+          "description": "Embed code for external content",
+          "constraints": {}
+        },
+        "file_name": {
+          "type": "string",
+          "required": false,
+          "description": "Original file name",
+          "constraints": {}
+        },
+        "file_size_bytes": {
+          "type": "integer",
+          "required": false,
+          "description": "File size in bytes",
+          "constraints": {}
+        },
+        "mime_type": {
+          "type": "string",
+          "required": false,
+          "description": "MIME type",
+          "constraints": {}
+        },
+        "file_hash": {
+          "type": "string",
+          "required": false,
+          "description": "File hash (SHA256)",
+          "constraints": {}
+        },
+        "storage_provider": {
+          "type": "string",
+          "required": false,
+          "description": "Storage provider (local, s3, gcs, etc.)",
+          "constraints": {}
+        },
+        "storage_path": {
+          "type": "string",
+          "required": false,
+          "description": "Path in storage system",
+          "constraints": {}
+        },
+        "storage_bucket": {
+          "type": "string",
+          "required": false,
+          "description": "Storage bucket name",
+          "constraints": {}
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "required": false,
+          "description": "Duration for audio/video resources",
+          "constraints": {}
+        },
+        "width": {
+          "type": "integer",
+          "required": false,
+          "description": "Width for images/videos",
+          "constraints": {}
+        },
+        "height": {
+          "type": "integer",
+          "required": false,
+          "description": "Height for images/videos",
+          "constraints": {}
+        },
+        "thumbnail_url": {
+          "type": "string",
+          "required": false,
+          "description": "Thumbnail image URL",
+          "constraints": {}
+        },
+        "version_number": {
+          "type": "integer",
+          "required": false,
+          "description": "Current version number",
+          "constraints": {}
+        },
+        "version_label": {
+          "type": "string",
+          "required": false,
+          "description": "Version label (e.g., '1.0', 'Draft 2')",
+          "constraints": {}
+        },
+        "previous_version_id": {
+          "type": "string",
+          "required": false,
+          "description": "ID of previous version",
+          "constraints": {}
+        },
+        "version_history": {
+          "type": "array",
+          "required": false,
+          "description": "Version history entries",
+          "constraints": {}
+        },
+        "knowledge_components": {
+          "type": "array",
+          "required": false,
+          "description": "Related knowledge component IDs",
+          "constraints": {}
+        },
+        "learning_objectives": {
+          "type": "array",
+          "required": false,
+          "description": "Learning objectives covered",
+          "constraints": {}
+        },
+        "difficulty_level": {
+          "type": "double",
+          "required": false,
+          "description": "Difficulty level (0=easy, 1=hard)",
+          "constraints": {}
+        },
+        "estimated_time_minutes": {
+          "type": "integer",
+          "required": false,
+          "description": "Estimated time to complete/consume",
+          "constraints": {}
+        },
+        "view_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of views",
+          "constraints": {}
+        },
+        "download_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of downloads",
+          "constraints": {}
+        },
+        "completion_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of completions",
+          "constraints": {}
+        },
+        "unique_viewers": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of unique viewers",
+          "constraints": {}
+        },
+        "average_view_duration_seconds": {
+          "type": "double",
+          "required": false,
+          "description": "Average view duration",
+          "constraints": {}
+        },
+        "last_accessed_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last access timestamp",
+          "constraints": {}
+        },
+        "average_rating": {
+          "type": "double",
+          "required": false,
+          "description": "Average rating (0-5)",
+          "constraints": {}
+        },
+        "rating_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of ratings",
+          "constraints": {}
+        },
+        "language": {
+          "type": "string",
+          "required": false,
+          "description": "Content language",
+          "constraints": {}
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Resource tags",
+          "constraints": {}
+        },
+        "keywords": {
+          "type": "array",
+          "required": false,
+          "description": "Search keywords",
+          "constraints": {}
+        },
+        "license": {
+          "type": "string",
+          "required": false,
+          "description": "Content license (e.g., CC-BY-4.0)",
+          "constraints": {}
+        },
+        "attribution": {
+          "type": "string",
+          "required": false,
+          "description": "Attribution text",
+          "constraints": {}
+        },
+        "source_url": {
+          "type": "string",
+          "required": false,
+          "description": "Original source URL",
+          "constraints": {}
+        },
+        "published_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Publication timestamp",
+          "constraints": {}
+        },
+        "expires_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Expiration timestamp",
+          "constraints": {}
+        },
+        "settings": {
+          "type": "struct",
+          "required": false,
+          "description": "Resource-specific settings",
+          "constraints": {}
+        },
+        "is_downloadable": {
+          "type": "boolean",
+          "required": false,
+          "description": "Allow downloads",
+          "constraints": {}
+        },
+        "is_printable": {
+          "type": "boolean",
+          "required": false,
+          "description": "Allow printing",
+          "constraints": {}
+        },
+        "is_required": {
+          "type": "boolean",
+          "required": false,
+          "description": "Required for course completion",
+          "constraints": {}
+        },
+        "order_index": {
+          "type": "integer",
+          "required": false,
+          "description": "Display order within parent",
+          "constraints": {}
+        }
+      },
+      "links": {
+        "course": {
+          "target": "Course",
+          "cardinality": "N:1",
+          "reverse_link_id": "course_has_resources",
+          "description": "Parent course",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "related_resources": {
+          "target": "Resource",
+          "cardinality": "N:N",
+          "reverse_link_id": "resource_related_from_resource",
+          "description": "Related resources",
+          "backing_table_name": "resource_relations",
+          "is_materialized": true
+        }
+      }
+    },
+    "Session": {
+      "description": "ObjectType: Session\n\n    Represents an interactive working session.\n    Tracks user activity, state, and provides analytics.\n\n    Links:\n    - workspace: Workspace (Many-to-One)\n    - learner: Learner (Many-to-One)\n    - assessments: Assessment[] (One-to-Many)",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status",
+          "constraints": {}
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking",
+          "constraints": {}
+        },
+        "session_type": {
+          "type": "string",
+          "required": false,
+          "description": "Type of session",
+          "constraints": {}
+        },
+        "session_status": {
+          "type": "string",
+          "required": false,
+          "description": "Current session status",
+          "constraints": {}
+        },
+        "workspace_id": {
+          "type": "string",
+          "required": false,
+          "description": "Parent workspace ID",
+          "constraints": {}
+        },
+        "learner_id": {
+          "type": "string",
+          "required": false,
+          "description": "Associated learner ID",
+          "constraints": {}
+        },
+        "agent_id": {
+          "type": "string",
+          "required": false,
+          "description": "Assigned agent/tutor ID",
+          "constraints": {}
+        },
+        "started_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Session start time",
+          "constraints": {}
+        },
+        "last_activity_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last activity timestamp",
+          "constraints": {}
+        },
+        "ended_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Session end time",
+          "constraints": {}
+        },
+        "end_reason": {
+          "type": "string",
+          "required": false,
+          "description": "Reason for session end",
+          "constraints": {}
+        },
+        "idle_timeout_minutes": {
+          "type": "integer",
+          "required": false,
+          "description": "Idle timeout in minutes",
+          "constraints": {}
+        },
+        "max_duration_minutes": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum session duration in minutes",
+          "constraints": {}
+        },
+        "state": {
+          "type": "struct",
+          "required": false,
+          "description": "Session state data",
+          "constraints": {}
+        },
+        "context": {
+          "type": "struct",
+          "required": false,
+          "description": "Session context (e.g., course progress)",
+          "constraints": {}
+        },
+        "metadata": {
+          "type": "struct",
+          "required": false,
+          "description": "Additional metadata",
+          "constraints": {}
+        },
+        "interaction_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of user interactions",
+          "constraints": {}
+        },
+        "message_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of messages exchanged",
+          "constraints": {}
+        },
+        "action_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Number of actions performed",
+          "constraints": {}
+        },
+        "questions_answered": {
+          "type": "integer",
+          "required": false,
+          "description": "Questions answered in this session",
+          "constraints": {}
+        },
+        "correct_answers": {
+          "type": "integer",
+          "required": false,
+          "description": "Correct answers in this session",
+          "constraints": {}
+        },
+        "hints_used": {
+          "type": "integer",
+          "required": false,
+          "description": "Hints requested in this session",
+          "constraints": {}
+        },
+        "client_type": {
+          "type": "string",
+          "required": false,
+          "description": "Client type (web, cli, api)",
+          "constraints": {}
+        },
+        "client_version": {
+          "type": "string",
+          "required": false,
+          "description": "Client version",
+          "constraints": {}
+        },
+        "user_agent": {
+          "type": "string",
+          "required": false,
+          "description": "User agent string",
+          "constraints": {}
+        },
+        "ip_address": {
+          "type": "string",
+          "required": false,
+          "description": "Client IP address",
+          "constraints": {}
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Session tags",
+          "constraints": {}
+        }
+      },
+      "links": {
+        "workspace": {
+          "target": "Workspace",
+          "cardinality": "N:1",
+          "reverse_link_id": "workspace_has_sessions",
+          "description": "Parent workspace",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "learner": {
+          "target": "Learner",
+          "cardinality": "N:1",
+          "reverse_link_id": "learner_has_sessions",
+          "description": "Associated learner",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "assessments": {
+          "target": "Assessment",
+          "cardinality": "1:N",
+          "reverse_link_id": "assessment_in_session",
+          "description": "Assessments taken in this session",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
     },
     "Task": {
       "description": "Represents a unit of work in the system.\n    \n    Tasks can be assigned to agents, have priorities, and track progress.\n    Links:\n    - assigned_to: Agent (Many-to-One)\n    - depends_on: Task[] (Many-to-Many, self-referential)\n    - subtasks: Task[] (One-to-Many, self-referential)",
@@ -293,92 +1835,110 @@
         "id": {
           "type": "string",
           "required": false,
-          "description": "Primary Key (UUIDv4 string)"
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
         },
         "created_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Creation timestamp (UTC)"
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
         },
         "updated_at": {
           "type": "timestamp",
           "required": false,
-          "description": "Last update timestamp (UTC)"
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
         },
         "created_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who created this object"
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
         },
         "updated_by": {
           "type": "string",
           "required": false,
-          "description": "ID of the user/agent who last updated this object"
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
         },
         "status": {
           "type": "string",
           "required": false,
-          "description": "Object lifecycle status"
+          "description": "Object lifecycle status",
+          "constraints": {}
         },
         "version": {
           "type": "integer",
           "required": false,
-          "description": "Version number for optimistic locking"
+          "description": "Version number for optimistic locking",
+          "constraints": {}
         },
         "title": {
           "type": "string",
           "required": true,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "description": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "priority": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "task_status": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "assigned_to_id": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "parent_task_id": {
           "type": "string",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "tags": {
           "type": "array",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "estimated_hours": {
           "type": "double",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "actual_hours": {
           "type": "double",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "due_date": {
           "type": "timestamp",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         },
         "completed_at": {
           "type": "timestamp",
           "required": false,
-          "description": ""
+          "description": "",
+          "constraints": {}
         }
       },
       "links": {
@@ -403,6 +1963,193 @@
           "cardinality": "1:N",
           "reverse_link_id": "subtask_of",
           "description": "Child tasks of this task",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
+    },
+    "Workspace": {
+      "description": "ObjectType: Workspace\n\n    Represents a logical environment for organizing work.\n    Workspaces contain Sessions, Agents, and other domain objects.\n\n    Links:\n    - sessions: Session[] (One-to-Many)\n    - members: Agent[] (Many-to-Many)\n    - courses: Course[] (One-to-Many) - for learning workspaces",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)",
+          "constraints": {}
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)",
+          "constraints": {}
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)",
+          "constraints": {}
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object",
+          "constraints": {}
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object",
+          "constraints": {}
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status",
+          "constraints": {}
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking",
+          "constraints": {}
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Workspace display name",
+          "constraints": {}
+        },
+        "workspace_type": {
+          "type": "string",
+          "required": false,
+          "description": "Type of workspace",
+          "constraints": {}
+        },
+        "workspace_status": {
+          "type": "string",
+          "required": false,
+          "description": "Current workspace status",
+          "constraints": {}
+        },
+        "owner_id": {
+          "type": "string",
+          "required": true,
+          "description": "ID of the workspace owner (Agent)",
+          "constraints": {}
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Workspace description",
+          "constraints": {}
+        },
+        "slug": {
+          "type": "string",
+          "required": false,
+          "description": "URL-friendly identifier",
+          "constraints": {}
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Classification tags",
+          "constraints": {}
+        },
+        "icon": {
+          "type": "string",
+          "required": false,
+          "description": "Icon identifier or URL",
+          "constraints": {}
+        },
+        "color": {
+          "type": "string",
+          "required": false,
+          "description": "Theme color (hex)",
+          "constraints": {}
+        },
+        "settings": {
+          "type": "struct",
+          "required": false,
+          "description": "Workspace-specific settings",
+          "constraints": {}
+        },
+        "default_language": {
+          "type": "string",
+          "required": false,
+          "description": "Default language code",
+          "constraints": {}
+        },
+        "timezone": {
+          "type": "string",
+          "required": false,
+          "description": "Workspace timezone",
+          "constraints": {}
+        },
+        "max_sessions": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum concurrent sessions",
+          "constraints": {}
+        },
+        "max_members": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum workspace members",
+          "constraints": {}
+        },
+        "storage_limit_mb": {
+          "type": "integer",
+          "required": false,
+          "description": "Storage limit in megabytes",
+          "constraints": {}
+        },
+        "session_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Current session count",
+          "constraints": {}
+        },
+        "member_count": {
+          "type": "integer",
+          "required": false,
+          "description": "Current member count",
+          "constraints": {}
+        },
+        "storage_used_mb": {
+          "type": "double",
+          "required": false,
+          "description": "Storage currently used (MB)",
+          "constraints": {}
+        },
+        "last_activity_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last activity timestamp",
+          "constraints": {}
+        }
+      },
+      "links": {
+        "sessions": {
+          "target": "Session",
+          "cardinality": "1:N",
+          "reverse_link_id": "session_belongs_to_workspace",
+          "description": "Sessions in this workspace",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "members": {
+          "target": "Agent",
+          "cardinality": "N:N",
+          "reverse_link_id": "agent_member_of_workspaces",
+          "description": "Members of this workspace",
+          "backing_table_name": "workspace_members",
+          "is_materialized": true
+        },
+        "courses": {
+          "target": "Course",
+          "cardinality": "1:N",
+          "reverse_link_id": "course_belongs_to_workspace",
+          "description": "Courses in this workspace",
           "backing_table_name": null,
           "is_materialized": true
         }

@@ -40,7 +40,6 @@ Usage:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -286,6 +285,11 @@ class ProposalManager:
 
         # Build combined stage evidence
         stage_evidence = self._build_stage_evidence(output)
+        if not stage_evidence.get("files_viewed"):
+            raise ValueError(
+                "Missing required Stage A evidence: stage_evidence.files_viewed must be non-empty "
+                "before creating hazardous file proposals."
+            )
 
         # Create proposals for modifications
         for file_mod in output.files_to_modify:
@@ -395,14 +399,37 @@ class ProposalManager:
         )
 
     def _build_stage_evidence(self, output: SubagentOutput) -> Dict[str, Any]:
-        """Build combined stage evidence from output."""
-        evidence = {}
+        """Build StageEvidence (file_actions.StageEvidence) compatible dict."""
+        evidence: Dict[str, Any] = {
+            "files_viewed": [],
+            "imports_verified": [],
+            "complexity": None,
+            "protocol_stage": None,
+        }
+
         if output.stage_a_evidence:
             evidence["stage_a"] = output.stage_a_evidence
+            files_viewed = output.stage_a_evidence.get("files_viewed")
+            if isinstance(files_viewed, list):
+                evidence["files_viewed"] = [str(p) for p in files_viewed]
+            complexity = output.stage_a_evidence.get("complexity")
+            if isinstance(complexity, str) and complexity.strip():
+                evidence["complexity"] = complexity.strip()
+
         if output.stage_b_evidence:
             evidence["stage_b"] = output.stage_b_evidence
+            imports_verified = output.stage_b_evidence.get("imports_verified")
+            if isinstance(imports_verified, list):
+                evidence["imports_verified"] = [str(p) for p in imports_verified]
+
         if output.verification_commands:
             evidence["verification_commands"] = output.verification_commands
+            evidence["protocol_stage"] = "C"
+
+        # Deduplicate while preserving order
+        evidence["files_viewed"] = list(dict.fromkeys(evidence["files_viewed"]))
+        evidence["imports_verified"] = list(dict.fromkeys(evidence["imports_verified"]))
+
         return evidence
 
     # =========================================================================

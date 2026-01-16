@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "4.0.0",
+  "generated_at": "2026-01-14T10:01:26.021743+00:00",
+  "generated_by": "Orion ODA v4.0",
+  "link_types": {},
+  "statistics": {
+    "total": 0,
+    "by_cardinality": {},
+    "materialized": 0,
+    "with_backing_table": 0
+  },
+  "object_graph": {}
+}

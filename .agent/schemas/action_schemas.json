@@ -1,0 +1,601 @@
+{
+  "generated_by": "Orion ODA v4.0",
+  "version": "4.0.0",
+  "actions": {
+    "llm.generate_plan": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "llm.generate_plan",
+        "type": "object",
+        "required": [
+          "goal"
+        ],
+        "properties": {
+          "goal": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Action to generate a Plan using an LLM.\n    Audited and Governed.\n    "
+      },
+      "description": "Action to generate a Plan using an LLM.\n    Audited and Governed."
+    },
+    "llm.route_task": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "llm.route_task",
+        "type": "object",
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "request": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Action to route a user request to a specific Agent or Tool.\n    "
+      },
+      "description": "Action to route a user request to a specific Agent or Tool."
+    },
+    "llm.process_prompt": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "llm.process_prompt",
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Generic audited LLM call.\n    "
+      },
+      "description": "Generic audited LLM call."
+    },
+    "memory.save_insight": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "memory.save_insight",
+        "type": "object",
+        "required": [
+          "content",
+          "provenance"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Action to persist an Insight to the Ontology.\n    Replaces legacy memory_manager.save_object('insight').\n    "
+      },
+      "description": "Action to persist an Insight to the Ontology.\n    Replaces legacy memory_manager.save_object('insight')."
+    },
+    "memory.save_pattern": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "memory.save_pattern",
+        "type": "object",
+        "required": [
+          "structure"
+        ],
+        "properties": {
+          "structure": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Action to persist a Pattern to the Ontology.\n    "
+      },
+      "description": "Action to persist a Pattern to the Ontology."
+    },
+    "learning.save_state": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "learning.save_state",
+        "type": "object",
+        "required": [
+          "user_id",
+          "theta"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "theta": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Action to persist Learner State/Knowledge.\n    "
+      },
+      "description": "Action to persist Learner State/Knowledge."
+    },
+    "learning.update_kb": {
+      "requires_proposal": true,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "learning.update_kb",
+        "type": "object",
+        "required": [
+          "kb_id",
+          "section",
+          "content"
+        ],
+        "properties": {
+          "kb_id": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 50000
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Knowledge Base \ucf58\ud150\uce20 \uc5c5\ub370\uc774\ud2b8 \uc561\uc158.\n\n    Proposal \uc2b9\uc778 \ud6c4 \uc2e4\ud589\ub429\ub2c8\ub2e4.\n    \ubaa8\ub4e0 KB \uc218\uc815\uc740 \uc774 \uc561\uc158\uc744 \ud1b5\ud574 \uc218\ud589\ub418\uc5b4\uc57c \ud569\ub2c8\ub2e4.\n\n    Parameters:\n        kb_id: KB \ud30c\uc77c \uc2dd\ubcc4\uc790 (\uc608: \"01\", \"02\", ...)\n        section: \uc218\uc815\ud560 \uc139\uc158 \uc774\ub984 (\uc608: \"Practice Exercise\")\n        content: \uc0c8\ub85c\uc6b4 \ucf58\ud150\uce20\n\n    Example:\n        >>> action = UpdateLearningKBAction()\n        >>> result = await action.execute({\n        ...     \"kb_id\": \"01\",\n        ...     \"section\": \"Practice Exercise\",\n        ...     \"content\": \"## Practice Exercise\\n\\n...\"\n        ... }, context)\n    "
+      },
+      "description": "Knowledge Base \ucf58\ud150\uce20 \uc5c5\ub370\uc774\ud2b8 \uc561\uc158.\n\n    Proposal \uc2b9\uc778 \ud6c4 \uc2e4\ud589\ub429\ub2c8\ub2e4.\n    \ubaa8\ub4e0 KB \uc218\uc815\uc740 \uc774 \uc561\uc158\uc744 \ud1b5\ud574 \uc218\ud589\ub418\uc5b4\uc57c \ud569\ub2c8\ub2e4.\n\n    Parameters:\n        kb_id: KB \ud30c\uc77c \uc2dd\ubcc4\uc790 (\uc608: \"01\", \"02\", ...)\n        section: \uc218\uc815\ud560 \uc139\uc158 \uc774\ub984 (\uc608: \"Practice Exercise\")\n        content: \uc0c8\ub85c\uc6b4 \ucf58\ud150\uce20\n\n    Example:\n        >>> action = UpdateLearningKBAction()\n        >>> result = await action.execute({\n        ...     \"kb_id\": \"01\",\n        ...     \"section\": \"Practice Exercise\",\n        ...     \"content\": \"## Practice Exercise\\n\\n...\"\n        ... }, context)"
+    },
+    "learning.validate_kb": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "learning.validate_kb",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    KB 7-\ucef4\ud3ec\ub10c\ud2b8 \uad6c\uc870 \uac80\uc99d \uc561\uc158.\n\n    \uc77d\uae30 \uc804\uc6a9 \uc561\uc158\uc73c\ub85c, Proposal \uc5c6\uc774 \uc989\uc2dc \uc2e4\ud589 \uac00\ub2a5\ud569\ub2c8\ub2e4.\n\n    Parameters:\n        kb_path: \uac80\uc99d\ud560 KB \ud30c\uc77c \uacbd\ub85c (\ub610\ub294 glob \ud328\ud134)\n\n    Returns:\n        ActionResult with validation details in edits[0].changes\n\n    Example:\n        >>> result = await ValidateKBStructureAction().execute({\n        ...     \"kb_path\": \"coding/knowledge_bases/01_*.md\"\n        ... }, context)\n        >>> print(result.edits[0].changes[\"missing_sections\"])\n    "
+      },
+      "description": "KB 7-\ucef4\ud3ec\ub10c\ud2b8 \uad6c\uc870 \uac80\uc99d \uc561\uc158.\n\n    \uc77d\uae30 \uc804\uc6a9 \uc561\uc158\uc73c\ub85c, Proposal \uc5c6\uc774 \uc989\uc2dc \uc2e4\ud589 \uac00\ub2a5\ud569\ub2c8\ub2e4.\n\n    Parameters:\n        kb_path: \uac80\uc99d\ud560 KB \ud30c\uc77c \uacbd\ub85c (\ub610\ub294 glob \ud328\ud134)\n\n    Returns:\n        ActionResult with validation details in edits[0].changes\n\n    Example:\n        >>> result = await ValidateKBStructureAction().execute({\n        ...     \"kb_path\": \"coding/knowledge_bases/01_*.md\"\n        ... }, context)\n        >>> print(result.edits[0].changes[\"missing_sections\"])"
+    },
+    "learning.verify_tutor": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "learning.verify_tutor",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    ZPD ScopingEngine \uae30\ub2a5 \uac80\uc99d \uc561\uc158.\n\n    \ud29c\ud130 \uc5d4\uc9c4\uc774 \uc62c\ubc14\ub974\uac8c \uc791\ub3d9\ud558\ub294\uc9c0 \ud14c\uc2a4\ud2b8\ud569\ub2c8\ub2e4.\n\n    Parameters:\n        kb_path: Knowledge Base \ub514\ub809\ud1a0\ub9ac \uacbd\ub85c\n        user_id: \ud14c\uc2a4\ud2b8 \uc0ac\uc6a9\uc790 ID (\uae30\ubcf8\uac12: \"test_user\")\n        limit: \ucd94\ucc9c \uac1c\uc218 (\uae30\ubcf8\uac12: 3)\n\n    Example:\n        >>> result = await VerifyTutorEngineAction().execute({\n        ...     \"kb_path\": \"coding/knowledge_bases\"\n        ... }, context)\n        >>> print(result.edits[0].changes[\"status\"])  # \"PASS\" or \"FAIL\"\n    "
+      },
+      "description": "ZPD ScopingEngine \uae30\ub2a5 \uac80\uc99d \uc561\uc158.\n\n    \ud29c\ud130 \uc5d4\uc9c4\uc774 \uc62c\ubc14\ub974\uac8c \uc791\ub3d9\ud558\ub294\uc9c0 \ud14c\uc2a4\ud2b8\ud569\ub2c8\ub2e4.\n\n    Parameters:\n        kb_path: Knowledge Base \ub514\ub809\ud1a0\ub9ac \uacbd\ub85c\n        user_id: \ud14c\uc2a4\ud2b8 \uc0ac\uc6a9\uc790 ID (\uae30\ubcf8\uac12: \"test_user\")\n        limit: \ucd94\ucc9c \uac1c\uc218 (\uae30\ubcf8\uac12: 3)\n\n    Example:\n        >>> result = await VerifyTutorEngineAction().execute({\n        ...     \"kb_path\": \"coding/knowledge_bases\"\n        ... }, context)\n        >>> print(result.edits[0].changes[\"status\"])  # \"PASS\" or \"FAIL\""
+    },
+    "execute_logic": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "execute_logic",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    Executes a LogicFunction via the AIP Logic Engine.\n    Used for cognitive tasks that need audit logging and governance.\n    "
+      },
+      "description": "Executes a LogicFunction via the AIP Logic Engine.\n    Used for cognitive tasks that need audit logging and governance."
+    },
+    "file.read": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "file.read",
+        "type": "object",
+        "required": [
+          "file_path"
+        ],
+        "properties": {
+          "file_path": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Read file content for audit logging.\n\n    This is a non-hazardous action that only reads file content.\n    All read operations are logged for audit trail.\n\n    Parameters:\n        file_path: Absolute path to the file to read\n\n    Returns:\n        FileOperationResult with file content in data field\n    "
+      },
+      "description": "Read file content for audit logging.\n\n    This is a non-hazardous action that only reads file content.\n    All read operations are logged for audit trail.\n\n    Parameters:\n        file_path: Absolute path to the file to read\n\n    Returns:\n        FileOperationResult with file content in data field"
+    },
+    "file.modify": {
+      "requires_proposal": true,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "file.modify",
+        "type": "object",
+        "required": [
+          "file_path",
+          "new_content",
+          "reason",
+          "stage_evidence"
+        ],
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "new_content": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "stage_evidence": {
+            "description": "Evidence collected during 3-Stage Protocol execution.\nRequired for hazardous file operations to ensure audit trail.",
+            "properties": {
+              "files_viewed": {
+                "description": "List of files viewed during Stage A (SCAN)",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Files Viewed",
+                "type": "array"
+              },
+              "imports_verified": {
+                "description": "List of imports verified during Stage B (TRACE)",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Imports Verified",
+                "type": "array"
+              },
+              "complexity": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Complexity classification: small|medium|large",
+                "title": "Complexity"
+              },
+              "protocol_stage": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Current protocol stage: A|B|C",
+                "title": "Protocol Stage"
+              }
+            },
+            "title": "StageEvidence",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Modify existing file content.\n\n    This is a HAZARDOUS action requiring proposal approval.\n    The old_content parameter provides verification that the file\n    hasn't been modified since it was read (optimistic concurrency).\n\n    Parameters:\n        file_path: Absolute path to the file to modify\n        old_content: Expected current content (for verification)\n        new_content: New content to write\n        reason: Human-readable reason for the modification\n        stage_evidence: 3-Stage Protocol evidence (required)\n\n    Returns:\n        FileOperationResult with operation details\n    "
+      },
+      "description": "Modify existing file content.\n\n    This is a HAZARDOUS action requiring proposal approval.\n    The old_content parameter provides verification that the file\n    hasn't been modified since it was read (optimistic concurrency).\n\n    Parameters:\n        file_path: Absolute path to the file to modify\n        old_content: Expected current content (for verification)\n        new_content: New content to write\n        reason: Human-readable reason for the modification\n        stage_evidence: 3-Stage Protocol evidence (required)\n\n    Returns:\n        FileOperationResult with operation details"
+    },
+    "file.write": {
+      "requires_proposal": true,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "file.write",
+        "type": "object",
+        "required": [
+          "file_path",
+          "content",
+          "reason",
+          "stage_evidence"
+        ],
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "stage_evidence": {
+            "description": "Evidence collected during 3-Stage Protocol execution.\nRequired for hazardous file operations to ensure audit trail.",
+            "properties": {
+              "files_viewed": {
+                "description": "List of files viewed during Stage A (SCAN)",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Files Viewed",
+                "type": "array"
+              },
+              "imports_verified": {
+                "description": "List of imports verified during Stage B (TRACE)",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Imports Verified",
+                "type": "array"
+              },
+              "complexity": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Complexity classification: small|medium|large",
+                "title": "Complexity"
+              },
+              "protocol_stage": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Current protocol stage: A|B|C",
+                "title": "Protocol Stage"
+              }
+            },
+            "title": "StageEvidence",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Write content to a file (create or overwrite).\n\n    This is a HAZARDOUS action requiring proposal approval.\n    Use this for creating new files or complete file replacement.\n    For partial modifications, use file.modify instead.\n\n    Parameters:\n        file_path: Absolute path to the file to write\n        content: Content to write\n        reason: Human-readable reason for the write operation\n        stage_evidence: 3-Stage Protocol evidence (required)\n\n    Returns:\n        FileOperationResult with operation details\n    "
+      },
+      "description": "Write content to a file (create or overwrite).\n\n    This is a HAZARDOUS action requiring proposal approval.\n    Use this for creating new files or complete file replacement.\n    For partial modifications, use file.modify instead.\n\n    Parameters:\n        file_path: Absolute path to the file to write\n        content: Content to write\n        reason: Human-readable reason for the write operation\n        stage_evidence: 3-Stage Protocol evidence (required)\n\n    Returns:\n        FileOperationResult with operation details"
+    },
+    "file.delete": {
+      "requires_proposal": true,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "file.delete",
+        "type": "object",
+        "required": [
+          "file_path",
+          "reason",
+          "stage_evidence"
+        ],
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "stage_evidence": {
+            "description": "Evidence collected during 3-Stage Protocol execution.\nRequired for hazardous file operations to ensure audit trail.",
+            "properties": {
+              "files_viewed": {
+                "description": "List of files viewed during Stage A (SCAN)",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Files Viewed",
+                "type": "array"
+              },
+              "imports_verified": {
+                "description": "List of imports verified during Stage B (TRACE)",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Imports Verified",
+                "type": "array"
+              },
+              "complexity": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Complexity classification: small|medium|large",
+                "title": "Complexity"
+              },
+              "protocol_stage": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Current protocol stage: A|B|C",
+                "title": "Protocol Stage"
+              }
+            },
+            "title": "StageEvidence",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Delete a file.\n\n    This is a HAZARDOUS action requiring proposal approval.\n    The file content is preserved in the audit log before deletion.\n\n    Parameters:\n        file_path: Absolute path to the file to delete\n        reason: Human-readable reason for the deletion\n        stage_evidence: 3-Stage Protocol evidence (required)\n\n    Returns:\n        FileOperationResult with operation details\n    "
+      },
+      "description": "Delete a file.\n\n    This is a HAZARDOUS action requiring proposal approval.\n    The file content is preserved in the audit log before deletion.\n\n    Parameters:\n        file_path: Absolute path to the file to delete\n        reason: Human-readable reason for the deletion\n        stage_evidence: 3-Stage Protocol evidence (required)\n\n    Returns:\n        FileOperationResult with operation details"
+    },
+    "stage_c.run_tests": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "stage_c.run_tests",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    Execute test suite and return QualityCheck result.\n\n    Runs pytest (or specified test command) and captures results.\n    Supports coverage reporting when enabled.\n\n    Parameters:\n        test_path: Path to test directory or file (default: \"tests\")\n        test_pattern: Pattern for test discovery (default: \"test_*.py\")\n        coverage: Enable coverage reporting (default: False)\n        extra_args: Additional arguments to pass to test runner\n\n    Returns:\n        QualityCheck object with test results\n    "
+      },
+      "description": "Execute test suite and return QualityCheck result.\n\n    Runs pytest (or specified test command) and captures results.\n    Supports coverage reporting when enabled.\n\n    Parameters:\n        test_path: Path to test directory or file (default: \"tests\")\n        test_pattern: Pattern for test discovery (default: \"test_*.py\")\n        coverage: Enable coverage reporting (default: False)\n        extra_args: Additional arguments to pass to test runner\n\n    Returns:\n        QualityCheck object with test results"
+    },
+    "stage_c.run_lint": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "stage_c.run_lint",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    Run linting and return QualityCheck result.\n\n    Uses ruff by default, supports auto-fix mode.\n\n    Parameters:\n        path: Path to lint (default: \".\")\n        fix_mode: Enable auto-fix (default: False)\n        extra_args: Additional arguments to pass to linter\n\n    Returns:\n        QualityCheck object with lint results\n    "
+      },
+      "description": "Run linting and return QualityCheck result.\n\n    Uses ruff by default, supports auto-fix mode.\n\n    Parameters:\n        path: Path to lint (default: \".\")\n        fix_mode: Enable auto-fix (default: False)\n        extra_args: Additional arguments to pass to linter\n\n    Returns:\n        QualityCheck object with lint results"
+    },
+    "stage_c.run_build": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "stage_c.run_build",
+        "type": "object",
+        "required": [
+          "build_command"
+        ],
+        "properties": {
+          "build_command": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Execute build command and return QualityCheck result.\n\n    Parameters:\n        build_command: Build command to execute (required)\n        cwd: Working directory for build\n\n    Returns:\n        QualityCheck object with build results\n    "
+      },
+      "description": "Execute build command and return QualityCheck result.\n\n    Parameters:\n        build_command: Build command to execute (required)\n        cwd: Working directory for build\n\n    Returns:\n        QualityCheck object with build results"
+    },
+    "stage_c.run_typecheck": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "stage_c.run_typecheck",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    Run type checking and return QualityCheck result.\n\n    Uses mypy by default for Python type checking.\n\n    Parameters:\n        path: Path to typecheck (default: \".\")\n        extra_args: Additional arguments to pass to type checker\n\n    Returns:\n        QualityCheck object with typecheck results\n    "
+      },
+      "description": "Run type checking and return QualityCheck result.\n\n    Uses mypy by default for Python type checking.\n\n    Parameters:\n        path: Path to typecheck (default: \".\")\n        extra_args: Additional arguments to pass to type checker\n\n    Returns:\n        QualityCheck object with typecheck results"
+    },
+    "stage_c.verify": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "stage_c.verify",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    Orchestrate all Stage C quality checks and aggregate results.\n\n    This is the main entry point for Stage C verification in the 3-Stage Protocol.\n    Runs selected quality checks in parallel and aggregates results into\n    StageCEvidence for the verification gate.\n\n    Parameters:\n        path: Root path for quality checks (default: \".\")\n        checks_to_run: List of checks to run (default: [\"build\", \"tests\", \"lint\"])\n                       Valid values: \"build\", \"tests\", \"lint\", \"typecheck\"\n        build_command: Build command (default: \"python -m py_compile\")\n        test_path: Test directory (default: \"tests\")\n        coverage: Enable test coverage (default: False)\n        fix_mode: Enable lint auto-fix (default: False)\n\n    Returns:\n        StageCEvidence with all quality check results\n    "
+      },
+      "description": "Orchestrate all Stage C quality checks and aggregate results.\n\n    This is the main entry point for Stage C verification in the 3-Stage Protocol.\n    Runs selected quality checks in parallel and aggregates results into\n    StageCEvidence for the verification gate.\n\n    Parameters:\n        path: Root path for quality checks (default: \".\")\n        checks_to_run: List of checks to run (default: [\"build\", \"tests\", \"lint\"])\n                       Valid values: \"build\", \"tests\", \"lint\", \"typecheck\"\n        build_command: Build command (default: \"python -m py_compile\")\n        test_path: Test directory (default: \"tests\")\n        coverage: Enable test coverage (default: False)\n        fix_mode: Enable lint auto-fix (default: False)\n\n    Returns:\n        StageCEvidence with all quality check results"
+    },
+    "orchestration.process_subagent_output": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "orchestration.process_subagent_output",
+        "type": "object",
+        "required": [
+          "agent_id"
+        ],
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "approval_mode": {
+            "enum": [
+              "interactive",
+              "batch",
+              "auto"
+            ]
+          },
+          "priority": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Process subagent output and create file-level proposals.\n\n    This action parses the output from a subagent (Explore, Plan, general-purpose)\n    and creates individual Proposal objects for each file modification.\n\n    Parameters:\n        agent_id: The subagent ID that produced the output\n        output_file: Path to the subagent output file (optional)\n        output_data: Direct output data as dict (optional)\n        approval_mode: \"interactive\" | \"batch\" | \"auto\"\n        priority: Proposal priority level (default: medium)\n\n    Returns:\n        OrchestrationResult with proposal_ids and summary\n\n    Note: Either output_file or output_data must be provided.\n    "
+      },
+      "description": "Process subagent output and create file-level proposals.\n\n    This action parses the output from a subagent (Explore, Plan, general-purpose)\n    and creates individual Proposal objects for each file modification.\n\n    Parameters:\n        agent_id: The subagent ID that produced the output\n        output_file: Path to the subagent output file (optional)\n        output_data: Direct output data as dict (optional)\n        approval_mode: \"interactive\" | \"batch\" | \"auto\"\n        priority: Proposal priority level (default: medium)\n\n    Returns:\n        OrchestrationResult with proposal_ids and summary\n\n    Note: Either output_file or output_data must be provided."
+    },
+    "orchestration.execute_batch": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "orchestration.execute_batch",
+        "type": "object",
+        "required": [
+          "proposal_ids"
+        ],
+        "properties": {
+          "proposal_ids": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Execute a batch of approved proposals.\n\n    This action executes all approved proposals in the specified list,\n    then optionally runs Stage C verification to ensure quality.\n\n    Parameters:\n        proposal_ids: List of proposal IDs to execute\n        verify_after: Run Stage C verification after execution (default: True)\n        stage_c_checks: List of checks to run [\"build\", \"tests\", \"lint\"] (default: all)\n\n    Returns:\n        OrchestrationResult with execution results and Stage C evidence\n    "
+      },
+      "description": "Execute a batch of approved proposals.\n\n    This action executes all approved proposals in the specified list,\n    then optionally runs Stage C verification to ensure quality.\n\n    Parameters:\n        proposal_ids: List of proposal IDs to execute\n        verify_after: Run Stage C verification after execution (default: True)\n        stage_c_checks: List of checks to run [\"build\", \"tests\", \"lint\"] (default: all)\n\n    Returns:\n        OrchestrationResult with execution results and Stage C evidence"
+    },
+    "orchestration.rollback": {
+      "requires_proposal": true,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "orchestration.rollback",
+        "type": "object",
+        "required": [
+          "proposal_ids",
+          "reason"
+        ],
+        "properties": {
+          "proposal_ids": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "\n    Rollback previously executed file proposals.\n\n    This is a HAZARDOUS action requiring proposal approval.\n    It attempts to revert file changes made by previously executed proposals.\n\n    Parameters:\n        proposal_ids: List of proposal IDs to rollback\n        reason: Reason for rollback (required)\n\n    Returns:\n        OrchestrationResult with rollback results\n\n    Warning: Rollback may fail if files have been modified since execution.\n    "
+      },
+      "description": "Rollback previously executed file proposals.\n\n    This is a HAZARDOUS action requiring proposal approval.\n    It attempts to revert file changes made by previously executed proposals.\n\n    Parameters:\n        proposal_ids: List of proposal IDs to rollback\n        reason: Reason for rollback (required)\n\n    Returns:\n        OrchestrationResult with rollback results\n\n    Warning: Rollback may fail if files have been modified since execution."
+    },
+    "orchestration.status": {
+      "requires_proposal": false,
+      "parameters_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "orchestration.status",
+        "type": "object",
+        "required": [],
+        "properties": {},
+        "additionalProperties": false,
+        "description": "\n    Get current orchestration status.\n\n    Returns pending proposals, executed proposals, and Stage C results.\n    Useful for monitoring the orchestration pipeline state.\n\n    Parameters:\n        include_executed: Include recently executed proposals (default: True)\n        include_pending: Include pending proposals (default: True)\n        include_stage_c: Include latest Stage C results (default: True)\n        limit: Maximum number of proposals to return per category (default: 20)\n\n    Returns:\n        OrchestrationResult with status summary\n    "
+      },
+      "description": "Get current orchestration status.\n\n    Returns pending proposals, executed proposals, and Stage C results.\n    Useful for monitoring the orchestration pipeline state.\n\n    Parameters:\n        include_executed: Include recently executed proposals (default: True)\n        include_pending: Include pending proposals (default: True)\n        include_stage_c: Include latest Stage C results (default: True)\n        limit: Maximum number of proposals to return per category (default: 20)\n\n    Returns:\n        OrchestrationResult with status summary"
+    }
+  }
+}

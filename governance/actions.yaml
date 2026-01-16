@@ -149,3 +149,87 @@ actions:
         field: path
     side_effects:
       - type: AuditLogSideEffect
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Mathpix Pipeline Actions (v4.3.4)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  alignment.blocker_detected:
+    description: "Report alignment blocker in Stage D (text vs vision mismatch)"
+    hazardous: true
+    requires_approval: true
+    tags: ["mathpix", "pipeline", "alignment", "blocker"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: pipeline_id
+      - type: RequiredFieldValidator
+        field: blocker_type
+      - type: RequiredFieldValidator
+        field: description
+      - type: AllowedValuesValidator
+        field: severity
+        values: ["info", "warning", "critical", "blocker"]
+    side_effects:
+      - type: AuditLogSideEffect
+      - type: EventBusSideEffect
+        event_type: alignment.blocker_detected
+
+  semantic.resolve_ambiguity:
+    description: "Resolve semantic ambiguity in Stage E"
+    hazardous: true
+    requires_approval: true
+    tags: ["mathpix", "pipeline", "semantic", "ambiguity"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: pipeline_id
+      - type: RequiredFieldValidator
+        field: ambiguity_id
+      - type: RequiredFieldValidator
+        field: ambiguity_type
+      - type: RequiredFieldValidator
+        field: selected_option
+      - type: RequiredFieldValidator
+        field: resolved_by
+      - type: RangeValidator
+        field: confidence
+        min: 0.0
+        max: 1.0
+    side_effects:
+      - type: AuditLogSideEffect
+      - type: EventBusSideEffect
+        event_type: semantic.ambiguity_resolved
+
+  pipeline.advance_stage:
+    description: "Advance Mathpix pipeline to next stage"
+    hazardous: false
+    tags: ["mathpix", "pipeline", "stage"]
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: pipeline_id
+      - type: RangeValidator
+        field: confidence
+        min: 0.0
+        max: 1.0
+    side_effects:
+      - type: EventBusSideEffect
+        event_type: pipeline.stage_advanced
+
+  vision.low_confidence:
+    description: "Auto-trigger for low confidence vision parsing (confidence < 0.5)"
+    hazardous: true
+    requires_approval: true
+    tags: ["mathpix", "pipeline", "vision", "auto-trigger"]
+    auto_trigger:
+      condition: "confidence < 0.5"
+      source_stage: "C"  # Vision Parse stage
+    submission_criteria:
+      - type: RequiredFieldValidator
+        field: pipeline_id
+      - type: RangeValidator
+        field: confidence
+        min: 0.0
+        max: 0.5
+    side_effects:
+      - type: AuditLogSideEffect
+      - type: EventBusSideEffect
+        event_type: vision.low_confidence_detected
