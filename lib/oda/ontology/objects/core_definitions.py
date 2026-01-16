@@ -1,6 +1,8 @@
 """
 Orion ODA v3.0 - Core Object Definitions
 Domain Entities for the Orchestrator.
+
+This module intentionally groups frequently imported core ObjectTypes.
 """
 
 from __future__ import annotations
@@ -11,6 +13,7 @@ from pydantic import Field
 
 from lib.oda.ontology.ontology_types import OntologyObject, Link, Cardinality
 from lib.oda.ontology.registry import register_object_type
+from lib.oda.ontology.objects.task_types import Agent, Task
 
 
 # =============================================================================
@@ -30,8 +33,8 @@ class Artifact(OntologyObject):
     produced_by_task_id: str = Field(..., description="FK to Task")
     
     # Link Definitions
-    produced_by_task: ClassVar[Link["Task"]] = Link(
-        target="Task",
+    produced_by_task: ClassVar[Link[Task]] = Link(
+        target=Task,
         link_type_id="artifact_produced_by_task",
         cardinality=Cardinality.MANY_TO_ONE,
         description="The task that produced this artifact"

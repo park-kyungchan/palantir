@@ -6,7 +6,7 @@ Tests for:
 - ActionExecutorTool
 - FunctionCallTool
 - OntologyContextBuilder
-- AgentPlanner (with mocked LLM)
+- AgentPlanner (models + SimplePlanner)
 - PermissionManager
 - ConfirmationManager
 - ReasoningTrace
@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 
@@ -85,29 +85,29 @@ class TestActionExecutorTool:
         from lib.oda.agent.tools import ExecuteActionInput
 
         input_data = ExecuteActionInput(
-            action_type="CreateTask",
+            action_type="task.create",
             params={"title": "Test Task"}
         )
-        assert input_data.action_type == "CreateTask"
+        assert input_data.action_type == "task.create"
         assert input_data.params["title"] == "Test Task"
 
     def test_get_action_schema_input(self):
         """Test GetActionSchemaInput model."""
         from lib.oda.agent.tools import GetActionSchemaInput
 
-        input_data = GetActionSchemaInput(action_type="CreateTask")
-        assert input_data.action_type == "CreateTask"
+        input_data = GetActionSchemaInput(action_type="task.create")
+        assert input_data.action_type == "task.create"
 
     def test_list_actions_input(self):
         """Test ListActionsInput model."""
         from lib.oda.agent.tools import ListActionsInput
 
         input_data = ListActionsInput(
-            category="task",
-            include_hazardous=False
+            namespace="task",
+            filter_hazardous=False,
         )
-        assert input_data.category == "task"
-        assert input_data.include_hazardous is False
+        assert input_data.namespace == "task"
+        assert input_data.filter_hazardous is False
 
 
 # =============================================================================
@@ -199,23 +199,23 @@ class TestAgentPlanner:
 
         config = PlannerConfig(
             max_iterations=10,
-            thinking_enabled=True,
-            parallel_execution=False
+            enable_reflection=True,
+            require_action_rationale=True,
         )
         assert config.max_iterations == 10
-        assert config.thinking_enabled is True
+        assert config.enable_reflection is True
 
     def test_planned_action(self):
         """Test PlannedAction model."""
         from lib.oda.agent.planner import PlannedAction
 
         action = PlannedAction(
-            action_type="CreateTask",
+            action_type="task.create",
             params={"title": "Test"},
-            reasoning="Creating a task for testing"
+            rationale="Creating a task for testing"
         )
-        assert action.action_type == "CreateTask"
-        assert action.reasoning is not None
+        assert action.action_type == "task.create"
+        assert action.rationale is not None
 
     def test_observation(self):
         """Test Observation model."""
@@ -223,36 +223,30 @@ class TestAgentPlanner:
 
         obs = Observation(
             source="tool_result",
-            content="Task created successfully",
+            content={"message": "Task created successfully"},
             timestamp=datetime.now()
         )
         assert obs.source == "tool_result"
 
     def test_thought(self):
         """Test Thought model."""
-        from lib.oda.agent.planner import Thought
+        from lib.oda.agent.planner import Thought, ThoughtType
 
         thought = Thought(
             content="I should create a task first",
-            reasoning_type="planning"
+            thought_type=ThoughtType.REASONING,
         )
-        assert thought.reasoning_type == "planning"
+        assert thought.thought_type == ThoughtType.REASONING
 
     @pytest.mark.asyncio
-    async def test_simple_planner_plan(self):
-        """Test SimplePlanner.plan() method."""
+    async def test_simple_planner_execute_all(self):
+        """Test SimplePlanner.execute_all() with empty actions."""
         from lib.oda.agent.planner import SimplePlanner, PlannerConfig
 
         config = PlannerConfig(max_iterations=5)
-        planner = SimplePlanner(config=config)
-
-        # Mock the governance check
-        with patch.object(planner, '_governance', create=True) as mock_gov:
-            mock_gov.check_execution_policy.return_value = "ALLOW_IMMEDIATE"
-
-            actions = await planner.plan("Create a test task")
-            # SimplePlanner parses intents - may return empty if no matching patterns
-            assert isinstance(actions, list)
+        planner = SimplePlanner(actions=[], config=config)
+        results = await planner.execute_all()
+        assert results == []
 
 
 # =============================================================================
@@ -275,33 +269,32 @@ class TestReasoningTrace:
 
     def test_trace_event(self):
         """Test TraceEvent model."""
-        from lib.oda.agent.trace import TraceEvent, EventType
+        from lib.oda.agent.trace import TraceEvent, TraceEventType
 
         event = TraceEvent(
-            event_type=EventType.OBSERVATION,
-            content="Observed file change",
+            event_type=TraceEventType.OBSERVATION,
+            content={"message": "Observed file change"},
             metadata={"file": "test.py"}
         )
-        assert event.event_type == EventType.OBSERVATION
+        assert event.event_type == TraceEventType.OBSERVATION
         assert event.metadata["file"] == "test.py"
 
     def test_reasoning_trace(self):
         """Test ReasoningTrace creation and event adding."""
-        from lib.oda.agent.trace import ReasoningTrace, TraceEvent, EventType
+        from lib.oda.agent.trace import ReasoningTrace, TraceEventType
 
         trace = ReasoningTrace(
             trace_id="trace-001",
-            agent_id="test-agent",
-            task_description="Test task"
+            actor_id="test-agent",
+            goal="Test task"
         )
         assert trace.trace_id == "trace-001"
         assert len(trace.events) == 0
 
-        event = TraceEvent(
-            event_type=EventType.THOUGHT,
-            content="Planning next step"
+        trace.add_event(
+            event_type=TraceEventType.THOUGHT,
+            content={"content": "Planning next step"},
         )
-        trace.events.append(event)
         assert len(trace.events) == 1
 
     def test_trace_logger(self):
@@ -309,10 +302,11 @@ class TestReasoningTrace:
         from lib.oda.agent.trace import TraceLogger, TraceLevel
 
         logger = TraceLogger(
-            agent_id="test-agent",
+            actor_id="test-agent",
+            goal="Test task",
             level=TraceLevel.DETAILED
         )
-        assert logger.agent_id == "test-agent"
+        assert logger.trace.actor_id == "test-agent"
         assert logger.level == TraceLevel.DETAILED
 
     @pytest.mark.asyncio
@@ -321,24 +315,21 @@ class TestReasoningTrace:
         from lib.oda.agent.trace import TraceLogger, TraceLevel
 
         logger = TraceLogger(
-            agent_id="test-agent",
+            actor_id="test-agent",
+            goal="Test task",
             level=TraceLevel.DEBUG
         )
 
-        # Start a trace
-        trace = logger.start_trace("Test task")
-        assert trace is not None
-
         # Log various events
-        logger.log_observation("File found", {"path": "/test.py"})
+        logger.log_observation({"message": "File found", "path": "/test.py"}, source="tool_result")
         logger.log_thought("Should read the file")
-        logger.log_action("ReadFile", {"path": "/test.py"})
-        logger.log_result(True, "File content retrieved")
+        logger.log_action_planned("file.read", {"file_path": "/test.py"}, rationale="Need file content")
+        logger.log_action_executed("file.read", {"success": True, "data": {"size": 1}})
 
         # End trace
-        completed_trace = logger.end_trace()
+        completed_trace = logger.complete("completed")
         assert completed_trace is not None
-        assert len(completed_trace.events) >= 4
+        assert len(completed_trace.events) >= 5  # includes session start/end
 
 
 # =============================================================================
@@ -361,105 +352,64 @@ class TestConfirmationManager:
 
     def test_confirmation_request(self):
         """Test ConfirmationRequest model."""
-        from lib.oda.agent.confirmation import ConfirmationRequest
+        from lib.oda.agent.confirmation import ConfirmationRequest, UrgencyLevel
 
         request = ConfirmationRequest(
-            request_id="req-001",
-            action_type="DeleteFile",
-            action_params={"path": "/test.py"},
-            reason="User requested file deletion",
-            risk_level="high"
+            id="req-001",
+            action_type="file.delete",
+            params={"file_path": "/test.py"},
+            rationale="User requested file deletion",
+            risks=["Deletes a file"],
+            urgency=UrgencyLevel.HIGH,
         )
-        assert request.request_id == "req-001"
-        assert request.risk_level == "high"
+        assert request.id == "req-001"
+        assert request.urgency == UrgencyLevel.HIGH
 
     def test_confirmation_response(self):
         """Test ConfirmationResponse model."""
-        from lib.oda.agent.confirmation import (
-            ConfirmationResponse,
-            ConfirmationStatus,
-        )
+        from lib.oda.agent.confirmation import ConfirmationResponse
 
         response = ConfirmationResponse(
             request_id="req-001",
-            status=ConfirmationStatus.APPROVED,
-            approver_id="user-123",
+            approved=True,
+            responder_id="user-123",
             comment="Approved for deletion"
         )
-        assert response.status == ConfirmationStatus.APPROVED
+        assert response.approved is True
 
     @pytest.mark.asyncio
-    async def test_confirmation_manager_request(self):
-        """Test ConfirmationManager.request_confirmation()."""
+    async def test_confirmation_manager_confirm_and_execute_default_deny(self):
+        """Test ConfirmationManager.confirm_and_execute() default console auto-reject."""
+        from lib.oda.agent.confirmation import ConfirmationManager
+
+        manager = ConfirmationManager()
+
+        result = await manager.confirm_and_execute(
+            action_type="file.delete",
+            params={"file_path": "/test.py"},
+            rationale="Test deletion",
+            actor_id="user-123",
+            timeout_seconds=5,
+        )
+        assert result["confirmed"] is False
+        assert result["request"].action_type == "file.delete"
+
+    @pytest.mark.asyncio
+    async def test_confirmation_manager_create_proposal(self):
+        """Test ConfirmationManager.create_proposal()."""
         from lib.oda.agent.confirmation import (
             ConfirmationManager,
-            ConfirmationStatus,
         )
 
         manager = ConfirmationManager()
 
-        request = await manager.request_confirmation(
-            action_type="DeleteFile",
-            action_params={"path": "/test.py"},
-            reason="Test deletion",
-            risk_level="high"
+        request = await manager.create_proposal(
+            action_type="file.delete",
+            params={"file_path": "/test.py"},
+            rationale="Test deletion",
+            actor_id="user-123",
         )
-        assert request is not None
-        assert request.action_type == "DeleteFile"
-
-        # Check that request is pending
-        status = await manager.check_status(request.request_id)
-        assert status == ConfirmationStatus.PENDING
-
-    @pytest.mark.asyncio
-    async def test_confirmation_manager_approve(self):
-        """Test ConfirmationManager.approve()."""
-        from lib.oda.agent.confirmation import (
-            ConfirmationManager,
-            ConfirmationStatus,
-        )
-
-        manager = ConfirmationManager()
-
-        # Create request
-        request = await manager.request_confirmation(
-            action_type="DeleteFile",
-            action_params={"path": "/test.py"},
-            reason="Test deletion"
-        )
-
-        # Approve it
-        response = await manager.approve(
-            request_id=request.request_id,
-            approver_id="user-123",
-            comment="Approved"
-        )
-        assert response.status == ConfirmationStatus.APPROVED
-
-    @pytest.mark.asyncio
-    async def test_confirmation_manager_reject(self):
-        """Test ConfirmationManager.reject()."""
-        from lib.oda.agent.confirmation import (
-            ConfirmationManager,
-            ConfirmationStatus,
-        )
-
-        manager = ConfirmationManager()
-
-        # Create request
-        request = await manager.request_confirmation(
-            action_type="DeleteFile",
-            action_params={"path": "/test.py"},
-            reason="Test deletion"
-        )
-
-        # Reject it
-        response = await manager.reject(
-            request_id=request.request_id,
-            approver_id="user-123",
-            reason="Not authorized"
-        )
-        assert response.status == ConfirmationStatus.REJECTED
+        assert request.proposal_id is not None
 
 
 # =============================================================================
@@ -474,97 +424,73 @@ class TestPermissionManager:
         from lib.oda.agent.permissions import (
             PermissionManager,
             AgentIdentity,
-            AgentRole,
+            RoleType,
             PermissionLevel,
         )
         assert PermissionManager is not None
-        assert AgentRole is not None
+        assert RoleType is not None
 
     def test_agent_identity(self):
         """Test AgentIdentity model."""
-        from lib.oda.agent.permissions import AgentIdentity, AgentRole
+        from lib.oda.agent.permissions import AgentIdentity, RoleType
 
         identity = AgentIdentity(
-            agent_id="agent-001",
+            id="agent-001",
             name="Test Agent",
-            roles=[AgentRole.DEVELOPER]
+            roles=[RoleType.DEVELOPER.value]
         )
-        assert identity.agent_id == "agent-001"
-        assert AgentRole.DEVELOPER in identity.roles
+        assert identity.id == "agent-001"
+        assert RoleType.DEVELOPER.value in identity.roles
 
     def test_permission_level_enum(self):
         """Test PermissionLevel enum values."""
         from lib.oda.agent.permissions import PermissionLevel
 
-        assert PermissionLevel.EXECUTE.value > PermissionLevel.PROPOSE.value
-        assert PermissionLevel.PROPOSE.value > PermissionLevel.VIEW.value
-        assert PermissionLevel.DENY.value == 0
+        assert PermissionLevel.EXECUTE.value == "execute"
+        assert PermissionLevel.PROPOSE.value == "propose"
+        assert PermissionLevel.VIEW.value == "view"
+        assert PermissionLevel.DENY.value == "deny"
 
     def test_agent_role_permissions(self):
-        """Test predefined role permissions."""
-        from lib.oda.agent.permissions import AgentRole
+        """Test predefined role types exist."""
+        from lib.oda.agent.permissions import RoleType
 
         # Verify all roles exist
-        assert AgentRole.ADMIN is not None
-        assert AgentRole.OPERATOR is not None
-        assert AgentRole.DEVELOPER is not None
-        assert AgentRole.AUDITOR is not None
-        assert AgentRole.AGENT is not None
-        assert AgentRole.GUEST is not None
+        assert RoleType.ADMIN is not None
+        assert RoleType.OPERATOR is not None
+        assert RoleType.DEVELOPER is not None
+        assert RoleType.AUDITOR is not None
+        assert RoleType.AGENT is not None
+        assert RoleType.GUEST is not None
 
-    @pytest.mark.asyncio
-    async def test_permission_manager_check(self):
+    def test_permission_manager_check(self):
         """Test PermissionManager.check_permission()."""
-        from lib.oda.agent.permissions import (
-            PermissionManager,
-            AgentIdentity,
-            AgentRole,
-            PermissionLevel,
-        )
+        from lib.oda.agent.permissions import PermissionManager, PermissionLevel, RoleType
 
         manager = PermissionManager()
+        manager.register_agent(agent_id="agent-001", name="Test Agent", roles=[RoleType.DEVELOPER.value])
 
-        # Register an agent
-        identity = AgentIdentity(
-            agent_id="agent-001",
-            name="Test Agent",
-            roles=[AgentRole.DEVELOPER]
-        )
-        await manager.register_agent(identity)
-
-        # Check permission for non-hazardous action
-        result = await manager.check_permission(
-            agent_id="agent-001",
-            action_type="CreateTask"
-        )
+        # Developer can execute safe read actions
+        result = manager.check_permission(agent_id="agent-001", action_type="file.read")
         assert result.allowed is True
+        assert result.level == PermissionLevel.EXECUTE
 
-    @pytest.mark.asyncio
-    async def test_permission_manager_deny_guest(self):
-        """Test that GUEST role has limited permissions."""
-        from lib.oda.agent.permissions import (
-            PermissionManager,
-            AgentIdentity,
-            AgentRole,
-        )
+        # Developer can propose mutations
+        result2 = manager.check_permission(agent_id="agent-001", action_type="file.write")
+        assert result2.allowed is True
+        assert result2.level == PermissionLevel.PROPOSE
+
+    def test_permission_manager_deny_guest(self):
+        """Test that guest role has limited permissions."""
+        from lib.oda.agent.permissions import PermissionManager, PermissionLevel, RoleType
 
         manager = PermissionManager()
+        manager.register_agent(agent_id="guest-001", name="Guest Agent", roles=[RoleType.GUEST.value])
 
-        # Register a guest agent
-        identity = AgentIdentity(
-            agent_id="guest-001",
-            name="Guest Agent",
-            roles=[AgentRole.GUEST]
-        )
-        await manager.register_agent(identity)
-
-        # Guest should not be able to execute hazardous actions
-        result = await manager.check_permission(
-            agent_id="guest-001",
-            action_type="DeleteFile",
-            is_hazardous=True
-        )
+        # Guest cannot execute delete
+        result = manager.check_permission(agent_id="guest-001", action_type="file.delete")
         assert result.allowed is False
+        assert result.level == PermissionLevel.DENY
 
 
 # =============================================================================
@@ -609,28 +535,25 @@ class TestAgentLLMAdapter:
         )
         assert request.tool_name == "create_task"
 
-    def test_build_adapter_openai(self):
+    def test_build_adapter_openai(self, monkeypatch):
         """Test build_agent_adapter for OpenAI."""
-        from lib.oda.llm.agent_adapter import (
-            build_agent_adapter,
-            OpenAIAgentAdapter,
-        )
+        from lib.oda.llm.agent_adapter import build_agent_adapter, OpenAIAgentAdapter
+        from lib.oda.llm.config import LLMProviderType
 
-        adapter = build_agent_adapter(
-            provider="openai",
-            api_key="test-key",
-            model="gpt-4"
-        )
+        # Provide minimal config so OPENAI adapter can be constructed deterministically.
+        monkeypatch.setenv("ORION_LLM_BASE_URL", "http://localhost:9999/v1")
+        monkeypatch.setenv("ORION_LLM_API_KEY", "test-key")
+        monkeypatch.setenv("ORION_LLM_MODEL", "gpt-4o-mini")
+
+        adapter = build_agent_adapter(provider_type=LLMProviderType.OPENAI)
         assert isinstance(adapter, OpenAIAgentAdapter)
 
     def test_build_adapter_claude(self):
         """Test build_agent_adapter for Claude."""
-        from lib.oda.llm.agent_adapter import (
-            build_agent_adapter,
-            ClaudeCodeAgentAdapter,
-        )
+        from lib.oda.llm.agent_adapter import build_agent_adapter, ClaudeCodeAgentAdapter
+        from lib.oda.llm.config import LLMProviderType
 
-        adapter = build_agent_adapter(provider="claude-code")
+        adapter = build_agent_adapter(provider_type=LLMProviderType.CLAUDE_CODE)
         assert isinstance(adapter, ClaudeCodeAgentAdapter)
 
 
@@ -660,7 +583,7 @@ class TestMCPAgentTools:
         assert len(tools) > 0
 
         # Check tool structure
-        tool_names = [t["name"] for t in tools]
+        tool_names = [t.name for t in tools]
         assert "agent_execute" in tool_names
         assert "agent_list_actions" in tool_names
         assert "agent_plan" in tool_names
@@ -677,29 +600,34 @@ class TestMCPAgentTools:
         """Test agent_list_actions handler."""
         from lib.oda.mcp.agent_tools import AgentToolHandlers
 
-        handlers = AgentToolHandlers()
+        mock_executor = MagicMock()
+        mock_executor.initialize = AsyncMock()
+        mock_executor.list_actions.return_value = MagicMock(
+            data={"actions": [{"api_name": "file.read"}], "safe": [], "hazardous": []}
+        )
 
-        # Mock the registry
-        with patch.object(handlers, '_get_action_registry') as mock_registry:
-            mock_registry.return_value = MagicMock()
-            mock_registry.return_value.list_all.return_value = [
-                MagicMock(api_name="CreateTask", description="Create task"),
-                MagicMock(api_name="UpdateTask", description="Update task"),
-            ]
-
-            result = await handlers.handle_list_actions({})
-            assert "actions" in result
+        handlers = AgentToolHandlers(executor=mock_executor)
+        result = await handlers.handle_agent_list_actions({})
+        assert "actions" in result
+        assert result["count"] == 1
 
     @pytest.mark.asyncio
     async def test_handler_check_permission(self):
         """Test agent_check_permission handler."""
         from lib.oda.mcp.agent_tools import AgentToolHandlers
+        from lib.oda.agent.permissions import PermissionCheckResult, PermissionLevel
 
-        handlers = AgentToolHandlers()
+        mock_perm = MagicMock()
+        mock_perm.check_with_governance.return_value = PermissionCheckResult(
+            allowed=True,
+            level=PermissionLevel.EXECUTE,
+            reason="Allowed",
+        )
+        handlers = AgentToolHandlers(permission_manager=mock_perm)
 
-        result = await handlers.handle_check_permission({
+        result = await handlers.handle_agent_check_permission({
             "agent_id": "test-agent",
-            "action_type": "CreateTask"
+            "action_type": "file.read"
         })
         assert "allowed" in result
 
@@ -711,32 +639,14 @@ class TestMCPAgentTools:
 class TestIntegration:
     """Integration tests combining multiple components."""
 
-    @pytest.mark.asyncio
-    async def test_planner_with_permission_check(self):
-        """Test planner respects permission checks."""
-        from lib.oda.agent.planner import SimplePlanner, PlannerConfig
-        from lib.oda.agent.permissions import (
-            PermissionManager,
-            AgentIdentity,
-            AgentRole,
-        )
+    def test_permission_manager_basic_integration(self):
+        """Test permission manager works with default roles."""
+        from lib.oda.agent.permissions import PermissionManager, RoleType
 
-        # Setup permission manager
-        perm_manager = PermissionManager()
-        identity = AgentIdentity(
-            agent_id="test-agent",
-            name="Test Agent",
-            roles=[AgentRole.DEVELOPER]
-        )
-        await perm_manager.register_agent(identity)
-
-        # Setup planner with permission manager
-        config = PlannerConfig(max_iterations=5)
-        planner = SimplePlanner(config=config)
-
-        # Planner should work with valid permissions
-        actions = await planner.plan("Create a task")
-        assert isinstance(actions, list)
+        manager = PermissionManager()
+        manager.register_agent(agent_id="test-agent", roles=[RoleType.DEVELOPER.value])
+        result = manager.check_permission("test-agent", "file.read")
+        assert result.allowed is True
 
     @pytest.mark.asyncio
     async def test_trace_with_confirmation(self):
@@ -744,52 +654,29 @@ class TestIntegration:
         from lib.oda.agent.trace import TraceLogger, TraceLevel
         from lib.oda.agent.confirmation import (
             ConfirmationManager,
-            ConfirmationStatus,
         )
 
         # Setup trace logger
         logger = TraceLogger(
-            agent_id="test-agent",
+            actor_id="test-agent",
+            goal="Delete file with confirmation",
             level=TraceLevel.DETAILED
         )
 
         # Setup confirmation manager
         conf_manager = ConfirmationManager()
 
-        # Start trace
-        trace = logger.start_trace("Delete file with confirmation")
-
         # Log the confirmation request
-        logger.log_action("RequestConfirmation", {
-            "action": "DeleteFile",
-            "path": "/test.py"
-        })
-
-        # Create confirmation
-        request = await conf_manager.request_confirmation(
-            action_type="DeleteFile",
-            action_params={"path": "/test.py"},
-            reason="Test deletion"
+        logger.log_action_planned("file.delete", {"file_path": "/test.py"}, rationale="Test deletion")
+        request = await conf_manager.create_proposal(
+            action_type="file.delete",
+            params={"file_path": "/test.py"},
+            rationale="Test deletion",
+            actor_id="admin",
         )
+        logger.log_observation({"confirmation_request_id": request.id, "proposal_id": request.proposal_id}, source="confirmation")
 
-        logger.log_observation(
-            f"Confirmation requested: {request.request_id}",
-            {"status": "pending"}
-        )
-
-        # Approve
-        response = await conf_manager.approve(
-            request_id=request.request_id,
-            approver_id="admin"
-        )
-
-        logger.log_result(
-            response.status == ConfirmationStatus.APPROVED,
-            "Confirmation approved"
-        )
-
-        # End trace
-        completed_trace = logger.end_trace()
+        completed_trace = logger.complete("completed")
         assert len(completed_trace.events) >= 3
 
 

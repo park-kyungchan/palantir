@@ -372,9 +372,6 @@
             <rule id="AF-4" name="Version Specification">
                 API 버전 명시 필수 (e.g., "TypeScript 5.0+", "React 18")
             </rule>
-            <rule id="AF-5" name="Network Connectivity Required">
-                크로스언어 연결(예: Python↔TS/JS↔Go) 및 외부 검증(context7/tavily/web_search)은 네트워크 연결 상태에서 수행. 네트워크가 없으면 그 사실을 밝히고, 검증/인용이 필요한 항목은 연결 후 재시도 요청(또는 로컬 정적 분석으로 제한).
-            </rule>
         </accuracy_first_mandate>
 
         <level_detection_logic>

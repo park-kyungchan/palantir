@@ -34,11 +34,17 @@ class TestGeneratePlanAction:
     @pytest.mark.asyncio
     async def test_apply_edits_returns_plan(self, action, user_context):
         """Verify apply_edits returns a Plan and EditOperation."""
+        os_environ_patch = {
+            "ORION_PLAN_MODE": "llm",
+            "ORION_LLM_API_KEY": "test-api-key",
+        }
         mock_plan = MagicMock()
         mock_plan.id = "plan-123"
         mock_plan.model_dump.return_value = {"id": "plan-123"}
 
-        with patch("lib.oda.llm.instructor_client.InstructorClient") as MockClient:
+        with patch.dict("os.environ", os_environ_patch, clear=False), patch(
+            "lib.oda.llm.instructor_client.InstructorClient"
+        ) as MockClient:
             MockClient.return_value.generate_async = AsyncMock(return_value=mock_plan)
 
             plan, edits = await action.apply_edits({"goal": "Test"}, user_context)

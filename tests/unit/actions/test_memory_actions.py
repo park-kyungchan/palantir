@@ -53,14 +53,18 @@ class TestSaveInsightAction:
     @pytest.mark.asyncio
     async def test_apply_edits_creates_insight(self, action, user_context, valid_insight_params):
         """Verify apply_edits creates an insight."""
-        with patch('scripts.ontology.actions.memory_actions.get_database') as mock_get_db, \
-             patch('scripts.ontology.actions.memory_actions.InsightRepository') as MockRepo:
+        with patch(
+            "lib.oda.ontology.actions.memory_actions.DatabaseManager.get"
+        ) as mock_get_db, patch(
+            "lib.oda.ontology.actions.memory_actions.InsightRepository"
+        ) as MockRepo:
             mock_get_db.return_value = MagicMock()
-            MockRepo.return_value = AsyncMock()
+            MockRepo.return_value.save = AsyncMock()
 
             result = await action.apply_edits(valid_insight_params, user_context)
             assert isinstance(result, ActionResult)
             assert result.success is True
+            MockRepo.return_value.save.assert_awaited_once()
 
 
 class TestSavePatternAction:
