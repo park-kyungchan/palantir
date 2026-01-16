@@ -35,12 +35,12 @@ The core idea:
 
 ## 3. Cross-Stack Comparison
 
-| Concern | Python | Go | TS/JS (Node) |
-|---|---|---|---|
-| Build artifact | wheel/sdist | static binary | bundled JS + lockfile |
-| Dependency pinning | `requirements.lock`/`uv.lock`/poetry | `go.sum` | `package-lock.json`/`pnpm-lock.yaml` |
-| Typical runtime | container or venv | container or VM | container or serverless |
-| Health checks | HTTP endpoints | HTTP endpoints | HTTP endpoints |
+| Concern | Python | Go | TS/JS (Node) | Java/Kotlin (JVM) |
+|---|---|---|---|---|
+| Build artifact | wheel/sdist | static binary | bundled JS + lockfile | JAR (often container image) |
+| Dependency pinning | `requirements.lock`/`uv.lock`/poetry | `go.sum` | `package-lock.json`/`pnpm-lock.yaml` | Gradle/Maven + dependency locking (e.g., `gradle.lockfile`) |
+| Typical runtime | container or venv | container or VM | container or serverless | container or VM |
+| Health checks | HTTP endpoints | HTTP endpoints | HTTP endpoints | HTTP endpoints |
 
 ---
 
@@ -84,4 +84,3 @@ Given a mixed repo (Python + Go + TS):
 - If you care about **rollouts/rollback** → learn canary vs blue-green, health checks, SLOs.
 - If you care about **monorepo scaling** → learn change detection, build caching, hermetic builds.
 - If you care about **incident response** → learn observability signals and safe deploy patterns.
-

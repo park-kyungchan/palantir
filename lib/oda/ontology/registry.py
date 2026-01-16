@@ -24,22 +24,16 @@ from typing import Any, Dict, List, Optional, Type, Union, get_args, get_origin
 from pydantic import BaseModel
 
 from lib.oda.ontology.ontology_types import Link, OntologyObject, PropertyType
-from lib.oda.ontology.types.link_types import (
-    CascadePolicy,
-    LinkDirection,
-    LinkTypeMetadata,
-)
+from lib.oda.ontology.types.link_types import LinkTypeMetadata
 from lib.oda.ontology.types.interface_types import (
     InterfaceDefinition,
     InterfaceValidationError,
     InterfaceValidationResult,
-    InterfaceImplementation,
     PropertySpec,
     MethodSpec,
 )
 from lib.oda.ontology.types.shared_properties import (
     SharedPropertyDefinition,
-    SharedPropertyUsage,
     SharedPropertyRegistry,
     BUILTIN_SHARED_PROPERTIES,
 )
@@ -730,14 +724,14 @@ class OntologyRegistry:
 
     def _extract_properties(self, obj_cls: Type[OntologyObject]) -> Dict[str, PropertyDefinition]:
         properties: Dict[str, PropertyDefinition] = {}
-        for name, field in obj_cls.model_fields.items():
-            description = field.description or ""
-            field_type = self._normalize_type(field.annotation)
+        for name, model_field in obj_cls.model_fields.items():
+            description = model_field.description or ""
+            field_type = self._normalize_type(model_field.annotation)
             prop_type = self._map_property_type(field_type)
             properties[name] = PropertyDefinition(
                 name=name,
                 property_type=prop_type,
-                required=field.is_required(),
+                required=model_field.is_required(),
                 description=description,
             )
         return properties
@@ -982,22 +976,113 @@ def load_default_link_types() -> None:
     pass  # To be implemented when link definitions are created
 
 
+def _is_scripts_compat_namespace() -> bool:
+    """
+    Detect whether this module is being executed/imported via the legacy
+    `scripts.ontology.*` namespace.
+
+    The repo uses a symlink `scripts/ontology -> lib/oda/ontology`. Importing the
+    same file under two different module names would otherwise create two separate
+    registries. For exports, we treat `lib.oda.ontology.registry` as canonical.
+    """
+    spec = globals().get("__spec__")
+    spec_name = getattr(spec, "name", "") if spec else ""
+    package_name = globals().get("__package__", "") or ""
+    return str(spec_name).startswith("scripts.") or str(package_name).startswith("scripts.")
+
+
 def export_registry(path: str | Path) -> None:
     """Export the full registry to JSON."""
+    if _is_scripts_compat_namespace():
+        from importlib import import_module
+
+        canonical = import_module("lib.oda.ontology.registry")
+        canonical.export_registry(path)
+        return
+
     load_default_objects()
     _REGISTRY.export_json(path)
 
 
 def export_links_registry(path: str | Path) -> None:
     """Export the LinkType registry to JSON."""
+    if _is_scripts_compat_namespace():
+        from importlib import import_module
+
+        canonical = import_module("lib.oda.ontology.registry")
+        canonical.export_links_registry(path)
+        return
+
     load_default_objects()
     load_default_link_types()
     _REGISTRY.export_links_json(path)
 
 
-if __name__ == "__main__":
-    from importlib import import_module
+def export_llm_schemas(output_dir: str | Path) -> None:
+    """
+    Export LLM-facing JSON schemas to disk.
 
-    registry_module = import_module("scripts.ontology.registry")
-    registry_module.export_registry(Path(".agent/schemas/ontology_registry.json"))
-    registry_module.export_links_registry(Path(".agent/schemas/link_registry.json"))
+    These artifacts are intended for any LLM client (Claude/Gemini/Codex/etc.)
+    to reliably construct well-formed Proposals and Action payloads.
+    """
+    target_dir = Path(output_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    # Proposal object schema (Pydantic JSON Schema)
+    from lib.oda.ontology.objects.proposal import Proposal  # local import to avoid cycles
+
+    (target_dir / "proposal.schema.json").write_text(
+        json.dumps(Proposal.model_json_schema(), indent=2),
+        encoding="utf-8",
+    )
+
+    # StageEvidence schema (Pydantic JSON Schema) used by hazardous file actions
+    from lib.oda.ontology.actions.file_actions import StageEvidence  # local import to avoid cycles
+
+    stage_evidence_schema = StageEvidence.model_json_schema()
+    (target_dir / "stage_evidence.schema.json").write_text(
+        json.dumps(stage_evidence_schema, indent=2),
+        encoding="utf-8",
+    )
+
+    # Action payload schemas (derived from ActionType submission criteria)
+    from lib.oda.ontology.actions import action_registry  # noqa: F401 (loads default actions)
+
+    actions: Dict[str, Any] = {}
+    for api_name in action_registry.list_actions():
+        action_cls = action_registry.get(api_name)
+        if action_cls is None:
+            continue
+        meta = action_registry.get_metadata(api_name)
+        schema = action_cls.get_parameter_schema()
+
+        # Improve known structured fields that would otherwise be typed as "string"
+        if isinstance(schema, dict):
+            props = schema.get("properties")
+            if isinstance(props, dict) and "stage_evidence" in props:
+                props["stage_evidence"] = stage_evidence_schema
+
+        actions[api_name] = {
+            "requires_proposal": bool(getattr(meta, "requires_proposal", False)),
+            "parameters_schema": schema,
+            "description": (action_cls.__doc__ or "").strip(),
+        }
+
+    (target_dir / "action_schemas.json").write_text(
+        json.dumps(
+            {
+                "generated_by": SCHEMA_GENERATED_BY,
+                "version": SCHEMA_VERSION,
+                "actions": actions,
+            },
+            indent=2,
+            default=str,
+        ),
+        encoding="utf-8",
+    )
+
+
+if __name__ == "__main__":
+    export_registry(Path(".agent/schemas/ontology_registry.json"))
+    export_links_registry(Path(".agent/schemas/link_registry.json"))
+    export_llm_schemas(Path(".agent/schemas"))

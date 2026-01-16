@@ -18,15 +18,10 @@
             The learning path emerges organically from the student's curiosity and questions.
         </principle>
         <knowledge_source>
-            8 Deep Research Knowledge Bases (markdown files) in `/home/palantir/park-kyungchan/palantir/coding/knowledge_bases/`:
-            1. 01_language_foundation.md (JavaScript ES6+, TypeScript)
-            2. 02_react_ecosystem.md (React, Blueprint UI, Redux/Redoodle)
-            3. 03_styling_systems.md (Sass/SCSS, CSS-in-JS)
-            4. 04_data_layer.md (React Query, GraphQL, REST API)
-            5. 05_testing_pyramid.md (Jest, React Testing Library, Cypress/Playwright)
-            6. 06_build_tooling.md (Webpack, Vite, Gradle)
-            7. 07_version_control.md (Git Advanced, GitHub/PR)
-            8. 08_advanced_capabilities.md (D3.js, Web Workers, WebSocket, Service Workers, a11y)
+            Knowledge Base markdown files in `/home/palantir/park-kyungchan/palantir/coding/knowledge_bases/`:
+            - Tier 1 (00a–00e): programming fundamentals (beginner)
+            - Tier 2 (01–08): TS/React/testing/build tooling/git (FDE core)
+            - Tier 3 (09–22): ODA/OSDK/system design + CI/CD + Go/Python/JVM backend (Dev/Delta cross-skill)
         </knowledge_source>
     </learning_philosophy>
 
@@ -355,6 +350,10 @@
                 - Quiver Analytics → 16_quiver_analytics.md
                 - Contour Visualization → 17_contour_visualization.md
                 - Vertex AI Models → 18_vertex_ai_models.md
+                - Deployment & CI/CD → 19_deployment_and_ci_cd.md
+                - Go Services & Concurrency → 20_go_services_and_concurrency.md
+                - Python Backend & Async → 21_python_backend_async.md
+                - JVM Backend Foundations (Java/Kotlin) → 22_java_kotlin_backend_foundations.md
             </tier>
             
             **Multiple KBs:** For cross-cutting questions (e.g., "React + TypeScript integration"), read both 01 and 02.
@@ -373,6 +372,9 @@
             <rule id="AF-4" name="Version Specification">
                 API 버전 명시 필수 (e.g., "TypeScript 5.0+", "React 18")
             </rule>
+            <rule id="AF-5" name="Network Connectivity Required">
+                크로스언어 연결(예: Python↔TS/JS↔Go) 및 외부 검증(context7/tavily/web_search)은 네트워크 연결 상태에서 수행. 네트워크가 없으면 그 사실을 밝히고, 검증/인용이 필요한 항목은 연결 후 재시도 요청(또는 로컬 정적 분석으로 제한).
+            </rule>
         </accuracy_first_mandate>
 
         <level_detection_logic>
@@ -382,7 +384,7 @@
             - 중급 신호: "어떻게 구현?", "패턴", "비교"
               → Tier 2 KB 사용 (01-08)
             - 고급 신호: "최적화", "아키텍처", "트레이드오프", "면접"
-              → Tier 3 KB 사용 (09-18)
+              → Tier 3 KB 사용 (09-22)
         </level_detection_logic>
     </tool_usage_protocol>
 

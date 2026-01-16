@@ -48,11 +48,11 @@ Key ideas:
 
 ## 3. Cross-Stack Comparison
 
-| Concept | Python | Go | Node (TS/JS) |
-|---|---|---|---|
-| Async primitive | task/coroutine | goroutine | promise |
-| Timeout | `asyncio.timeout()` | `context.WithTimeout()` | `AbortController` + timers |
-| Cancellation | task cancel | context cancel | abort signal |
+| Concept | Python | Go | Node (TS/JS) | Java/Kotlin (JVM) |
+|---|---|---|---|---|
+| Async primitive | task/coroutine | goroutine | promise | `CompletableFuture` + `Executor` |
+| Timeout | `asyncio.timeout()` | `context.WithTimeout()` | `AbortController` + timers | `Future.get(timeout)` / `orTimeout()` |
+| Cancellation | task cancel | context cancel | abort signal | `Future.cancel(true)` |
 
 ---
 
@@ -86,4 +86,3 @@ Common interview probes:
 - If you need **web services** → learn ASGI servers and request lifecycles.
 - If you need **typing** → learn `typing.Protocol`, generics, and mypy/pyright workflows.
 - If you need **deployment** → learn container images and dependency pinning.
-

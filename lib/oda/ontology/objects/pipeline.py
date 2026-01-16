@@ -63,6 +63,38 @@ class StageTypeEnum(str, Enum):
     OUTPUT = "output"
 
 
+class MathpixPipelineStage(str, Enum):
+    """
+    8-stage Mathpix document processing pipeline.
+
+    Each stage represents a distinct processing phase:
+    - A-C: Extraction phases (text, vision)
+    - D: Critical alignment phase (blocker detection)
+    - E-F: Semantic processing
+    - G-H: Human review and export
+    """
+    A_INGESTION = "A"
+    B_TEXTPARSE = "B"
+    C_VISIONPARSE = "C"
+    D_ALIGNMENT = "D"
+    E_SEMANTICGRAPH = "E"
+    F_REGENERATION = "F"
+    G_HUMANREVIEW = "G"
+    H_EXPORT = "H"
+
+
+class ReviewSeverity(str, Enum):
+    """
+    Severity levels for human review items.
+
+    Used by Stage D alignment blocker detection and Stage G review.
+    """
+    INFO = "info"           # Informational, no action required
+    WARNING = "warning"     # May need attention
+    CRITICAL = "critical"   # Blocks pipeline progression
+    BLOCKER = "blocker"     # Requires immediate human intervention
+
+
 # =============================================================================
 # PIPELINE STAGE OBJECT
 # =============================================================================
@@ -512,6 +544,200 @@ class PipelineRunObject(OntologyObject):
 
 
 # =============================================================================
+# MATHPIX PIPELINE OBJECT
+# =============================================================================
+
+
+@register_object_type
+class MathpixPipeline(OntologyObject):
+    """
+    OntologyObject for Mathpix document processing pipeline.
+
+    Implements 8-stage document processing with ODA governance:
+    - Stages A-C: Extraction (text, vision parsing)
+    - Stage D: Alignment with blocker detection (triggers Proposals)
+    - Stage E-F: Semantic processing
+    - Stage G: Human review
+    - Stage H: Export
+
+    Circuit Breaker Pattern:
+        auto_trigger_count tracks automatic proposal generations.
+        If count exceeds MAX_AUTO_TRIGGERS (5), pipeline halts to prevent
+        infinite proposal loops.
+
+    Attributes:
+        document_id: Unique document identifier
+        current_stage: Current processing stage (A-H)
+        stage_confidences: Confidence scores per stage
+        pending_proposals: IDs of pending Proposal objects
+        auto_trigger_count: Circuit breaker counter for auto-proposals
+        blockers: List of detected alignment blockers
+        ambiguities: List of detected semantic ambiguities
+        source_path: Original document path
+        output_path: Generated output path
+    """
+
+    MAX_AUTO_TRIGGERS: int = 5  # Circuit breaker threshold
+
+    document_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Unique document identifier"
+    )
+    current_stage: MathpixPipelineStage = Field(
+        default=MathpixPipelineStage.A_INGESTION,
+        description="Current processing stage"
+    )
+    stage_confidences: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Confidence scores per stage (stage_id -> 0.0-1.0)"
+    )
+    pending_proposals: List[str] = Field(
+        default_factory=list,
+        description="IDs of pending Proposal objects"
+    )
+    auto_trigger_count: int = Field(
+        default=0,
+        ge=0,
+        description="Circuit breaker counter for auto-proposals"
+    )
+    blockers: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Detected alignment blockers"
+    )
+    ambiguities: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Detected semantic ambiguities"
+    )
+    source_path: Optional[str] = Field(
+        default=None,
+        description="Original document path"
+    )
+    output_path: Optional[str] = Field(
+        default=None,
+        description="Generated output path"
+    )
+    pipeline_status: PipelineObjectStatus = Field(
+        default=PipelineObjectStatus.DRAFT,
+        description="Pipeline lifecycle status"
+    )
+
+    @property
+    def is_circuit_breaker_tripped(self) -> bool:
+        """Check if circuit breaker is tripped (too many auto-proposals)."""
+        return self.auto_trigger_count >= self.MAX_AUTO_TRIGGERS
+
+    @property
+    def is_blocked(self) -> bool:
+        """Check if pipeline is blocked by pending proposals or blockers."""
+        return len(self.pending_proposals) > 0 or len(self.blockers) > 0
+
+    @property
+    def can_advance(self) -> bool:
+        """Check if pipeline can advance to next stage."""
+        return (
+            not self.is_blocked
+            and not self.is_circuit_breaker_tripped
+            and self.pipeline_status == PipelineObjectStatus.ACTIVE
+        )
+
+    def increment_auto_trigger(self) -> bool:
+        """
+        Increment auto-trigger counter and check circuit breaker.
+
+        Returns:
+            True if still under threshold, False if circuit breaker tripped
+        """
+        self.auto_trigger_count += 1
+        self.touch()
+        return not self.is_circuit_breaker_tripped
+
+    def reset_auto_trigger(self) -> None:
+        """Reset auto-trigger counter (after human intervention)."""
+        self.auto_trigger_count = 0
+        self.touch()
+
+    def add_blocker(
+        self,
+        blocker_type: str,
+        description: str,
+        severity: str = "critical",
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Add an alignment blocker."""
+        self.blockers.append({
+            "type": blocker_type,
+            "description": description,
+            "severity": severity,
+            "detected_at": utc_now().isoformat(),
+            "metadata": metadata or {},
+        })
+        self.touch()
+
+    def resolve_blocker(self, blocker_index: int, resolution: str) -> None:
+        """Mark a blocker as resolved."""
+        if 0 <= blocker_index < len(self.blockers):
+            self.blockers[blocker_index]["resolved"] = True
+            self.blockers[blocker_index]["resolution"] = resolution
+            self.blockers[blocker_index]["resolved_at"] = utc_now().isoformat()
+            self.touch()
+
+    def set_stage_confidence(self, stage: MathpixPipelineStage, confidence: float) -> None:
+        """Set confidence score for a stage."""
+        if not 0.0 <= confidence <= 1.0:
+            raise ValueError(f"Confidence must be between 0.0 and 1.0, got {confidence}")
+        self.stage_confidences[stage.value] = confidence
+        self.touch()
+
+    def advance_stage(self) -> Optional[MathpixPipelineStage]:
+        """
+        Advance to next stage if allowed.
+
+        Returns:
+            New stage if advanced, None if blocked or at final stage
+        """
+        if not self.can_advance:
+            return None
+
+        stage_order = list(MathpixPipelineStage)
+        current_idx = stage_order.index(self.current_stage)
+
+        if current_idx >= len(stage_order) - 1:
+            return None  # Already at final stage
+
+        self.current_stage = stage_order[current_idx + 1]
+        self.touch()
+        return self.current_stage
+
+    def add_pending_proposal(self, proposal_id: str) -> None:
+        """Add a pending proposal ID."""
+        if proposal_id not in self.pending_proposals:
+            self.pending_proposals.append(proposal_id)
+            self.touch()
+
+    def remove_pending_proposal(self, proposal_id: str) -> None:
+        """Remove a resolved proposal ID."""
+        if proposal_id in self.pending_proposals:
+            self.pending_proposals.remove(proposal_id)
+            self.touch()
+
+    def to_status_summary(self) -> Dict[str, Any]:
+        """Export current pipeline status for monitoring."""
+        return {
+            "document_id": self.document_id,
+            "current_stage": self.current_stage.value,
+            "stage_confidences": self.stage_confidences,
+            "pending_proposals_count": len(self.pending_proposals),
+            "blockers_count": len(self.blockers),
+            "auto_trigger_count": self.auto_trigger_count,
+            "circuit_breaker_tripped": self.is_circuit_breaker_tripped,
+            "can_advance": self.can_advance,
+            "pipeline_status": self.pipeline_status.value,
+        }
+
+
+# =============================================================================
 # EXPORTS
 # =============================================================================
 
@@ -521,8 +747,11 @@ __all__ = [
     "PipelineObjectStatus",
     "PipelineRunStatus",
     "StageTypeEnum",
+    "MathpixPipelineStage",
+    "ReviewSeverity",
     # ObjectTypes
     "PipelineStageObject",
     "PipelineObject",
     "PipelineRunObject",
+    "MathpixPipeline",
 ]

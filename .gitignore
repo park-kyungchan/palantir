@@ -10,6 +10,12 @@ coverage
 logs
 *.log
 
+# --- Secrets (NEVER commit) ---
+.claude/secrets/
+**/api_keys.env
+**/credentials.json
+**/*.pem
+
 # --- System & Cache ---
 .local
 .cache
@@ -45,6 +51,7 @@ Neo4j-*.txt
 # --- Orion V3 Memory Architecture ---
 .agent/indexes/*.db
 .agent/logs/*.db
+.agent/tmp/
 .agent/memory/working/*
 !.agent/memory/working/.gitkeep
 
