@@ -9,8 +9,8 @@ from __future__ import annotations
 from unittest.mock import patch
 import pytest
 
-from scripts.ontology.actions import ActionContext
-from scripts.ontology.actions.logic_actions import ExecuteLogicAction
+from lib.oda.ontology.actions import ActionContext
+from lib.oda.ontology.actions.logic_actions import ExecuteLogicAction
 
 
 class TestExecuteLogicAction:

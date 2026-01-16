@@ -1,0 +1,212 @@
+"""
+Orion ODA v3.0 - LLM Configuration Module
+
+LLM-Agnostic provider configuration supporting:
+- Claude Code (native CLI integration)
+- Antigravity (Gemini backend)
+- OpenAI-compatible APIs
+
+Environment Variables:
+    ORION_LLM_PROVIDER: Provider selection (claude-code|antigravity|openai)
+    ORION_LLM_BASE_URL: API base URL
+    ORION_LLM_API_KEY: API key (not required for Claude Code)
+    ORION_LLM_MODEL: Model name
+"""
+from __future__ import annotations
+
+import json
+import os
+import platform
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, Optional
+
+
+class LLMProviderType(str, Enum):
+    """
+    Supported LLM provider types.
+
+    This enum ensures LLM-agnostic design by explicitly defining
+    all supported providers. Each provider has its own configuration
+    requirements and capabilities.
+
+    Providers:
+    - CLAUDE_CODE: Native Claude Code CLI (AIP-Free, no API key needed)
+    - ANTIGRAVITY: Gemini backend via Antigravity server
+    - OPENAI: OpenAI-compatible APIs (GPT-4, etc.)
+    """
+    CLAUDE_CODE = "claude-code"      # Native Claude Code CLI (no API key needed)
+    ANTIGRAVITY = "antigravity"      # Gemini backend via Antigravity
+    OPENAI = "openai"                # OpenAI-compatible APIs
+
+    @classmethod
+    def from_string(cls, value: str) -> "LLMProviderType":
+        """Parse provider type from string with fallback."""
+        normalized = value.lower().strip().replace("-", "_").replace(" ", "_")
+        mapping = {
+            "claude_code": cls.CLAUDE_CODE,
+            "claude": cls.CLAUDE_CODE,
+            "antigravity": cls.ANTIGRAVITY,
+            "gemini": cls.ANTIGRAVITY,
+            "openai": cls.OPENAI,
+            "openai_compatible": cls.OPENAI,
+            "codex": cls.OPENAI,  # Codex uses OpenAI-compatible API
+        }
+        return mapping.get(normalized, cls.CLAUDE_CODE)  # Default to Claude Code
+
+
+def _get_default_workspace_root() -> str:
+    """Get workspace root from centralized paths module."""
+    from lib.oda.paths import get_workspace_root
+    return str(get_workspace_root())
+
+
+WORKSPACE_ROOT = os.environ.get("ORION_WORKSPACE_ROOT") or _get_default_workspace_root()
+ANTIGRAVITY_MCP_CONFIG_PATH = os.path.join(WORKSPACE_ROOT, ".gemini", "antigravity", "mcp_config.json")
+
+
+@dataclass(frozen=True)
+class LLMBackendConfig:
+    """
+    Configuration for LLM backend connection.
+
+    Attributes:
+        provider: Provider type (claude-code, antigravity, openai)
+        base_url: API base URL (not used for claude-code)
+        api_key: API key (not required for claude-code)
+        model: Model name to use
+        provider_type: Typed enum version of provider
+    """
+    provider: str
+    base_url: str
+    api_key: str
+    model: str
+
+    @property
+    def provider_type(self) -> LLMProviderType:
+        """Get typed provider enum."""
+        return LLMProviderType.from_string(self.provider)
+
+    @property
+    def requires_api_key(self) -> bool:
+        """Check if this provider requires an API key."""
+        return self.provider_type != LLMProviderType.CLAUDE_CODE
+
+    @property
+    def is_cli_native(self) -> bool:
+        """Check if this provider uses CLI-native integration."""
+        return self.provider_type == LLMProviderType.CLAUDE_CODE
+
+
+def _read_json(path: str) -> Dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected JSON object in {path}")
+    return data
+
+
+def _load_antigravity_env_from_mcp(path: str = ANTIGRAVITY_MCP_CONFIG_PATH) -> Dict[str, str]:
+    if not os.path.exists(path):
+        return {}
+    config = _read_json(path)
+    servers = config.get("mcpServers", {})
+    if not isinstance(servers, dict):
+        return {}
+
+    env: Dict[str, str] = {}
+    for server in servers.values():
+        if not isinstance(server, dict):
+            continue
+        server_env = server.get("env")
+        if not isinstance(server_env, dict):
+            continue
+        for key in (
+            "ANTIGRAVITY_LLM_BASE_URL",
+            "ANTIGRAVITY_LLM_API_KEY",
+            "ANTIGRAVITY_LLM_MODEL",
+        ):
+            if key in server_env:
+                env[key] = str(server_env[key])
+    return env
+
+
+def _env_or_fallback(key: str, fallback: str) -> str:
+    value = os.environ.get(key)
+    return value if value else fallback
+
+
+def load_llm_config() -> LLMBackendConfig:
+    """
+    Load LLM configuration from environment variables.
+
+    Provider Detection Priority:
+    1. Explicit ORION_LLM_PROVIDER environment variable
+    2. Antigravity detection (when ANTIGRAVITY_LLM_BASE_URL is set)
+    3. Default to Claude Code (AIP-Free, CLI-native)
+
+    Returns:
+        LLMBackendConfig with provider settings
+    """
+    mcp_env = _load_antigravity_env_from_mcp()
+
+    provider = os.environ.get("ORION_LLM_PROVIDER")
+
+    def _is_claude_code_env() -> bool:
+        return bool(
+            os.environ.get("CLAUDE_CODE")
+            or os.environ.get("CLAUDE_CODE_SESSION")
+            or os.environ.get("CLAUDE_SESSION_ID")
+        )
+
+    # Auto-detect provider if not explicitly set
+    if not provider:
+        # Check for Antigravity configuration
+        if os.environ.get("ANTIGRAVITY_LLM_BASE_URL") or mcp_env.get("ANTIGRAVITY_LLM_BASE_URL"):
+            provider = LLMProviderType.ANTIGRAVITY.value
+        # Default to Claude Code only when actually available
+        elif _is_claude_code_env():
+            provider = LLMProviderType.CLAUDE_CODE.value
+        # Otherwise default to OpenAI-compatible
+        else:
+            provider = LLMProviderType.OPENAI.value
+
+    # Parse provider type
+    provider_type = LLMProviderType.from_string(provider)
+
+    # Configure based on provider type
+    if provider_type == LLMProviderType.CLAUDE_CODE:
+        # Claude Code uses CLI integration, no API needed
+        base_url = ""
+        api_key = ""
+        model = _env_or_fallback("ORION_LLM_MODEL", "claude-opus-4-5-20251101")
+
+    elif provider_type == LLMProviderType.ANTIGRAVITY:
+        base_url = _env_or_fallback(
+            "ANTIGRAVITY_LLM_BASE_URL",
+            mcp_env.get("ANTIGRAVITY_LLM_BASE_URL", ""),
+        )
+        api_key = _env_or_fallback(
+            "ANTIGRAVITY_LLM_API_KEY",
+            mcp_env.get("ANTIGRAVITY_LLM_API_KEY", "antigravity"),
+        )
+        model = _env_or_fallback(
+            "ANTIGRAVITY_LLM_MODEL",
+            mcp_env.get("ANTIGRAVITY_LLM_MODEL", "gemini-3.0-pro"),
+        )
+
+    else:  # OpenAI-compatible (includes Codex)
+        base_url = _env_or_fallback("ORION_LLM_BASE_URL", "https://api.openai.com/v1")
+        api_key = _env_or_fallback("ORION_LLM_API_KEY", "")
+        model = _env_or_fallback("ORION_LLM_MODEL", "gpt-4o")
+
+    return LLMBackendConfig(
+        provider=provider_type.value,
+        base_url=base_url,
+        api_key=api_key,
+        model=model,
+    )
+
+
+def get_default_model() -> str:
+    return load_llm_config().model

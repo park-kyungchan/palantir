@@ -6,11 +6,11 @@ Run: pytest tests/unit/actions/test_llm_actions.py -v --asyncio-mode=auto
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from scripts.ontology.actions import ActionContext, EditType
-from scripts.ontology.actions.llm_actions import GeneratePlanAction, RouteTaskAction
+from lib.oda.ontology.actions import ActionContext, EditType
+from lib.oda.ontology.actions.llm_actions import GeneratePlanAction, RouteTaskAction
 
 
 class TestGeneratePlanAction:
@@ -38,8 +38,8 @@ class TestGeneratePlanAction:
         mock_plan.id = "plan-123"
         mock_plan.model_dump.return_value = {"id": "plan-123"}
 
-        with patch('scripts.llm.instructor_client.InstructorClient') as MockClient:
-            MockClient.return_value.generate.return_value = mock_plan
+        with patch("lib.oda.llm.instructor_client.InstructorClient") as MockClient:
+            MockClient.return_value.generate_async = AsyncMock(return_value=mock_plan)
 
             plan, edits = await action.apply_edits({"goal": "Test"}, user_context)
 

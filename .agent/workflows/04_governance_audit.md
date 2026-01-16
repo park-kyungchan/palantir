@@ -7,8 +7,7 @@ description: Inspect the Immutable Audit Log (Ontology DB)
 - **Goal**: View history of a specific Proposal.
 - **Action**:
 ```bash
-# Usage: python -m scripts.ontology.tools.audit --proposal_id [ID]
-echo "Please provide Proposal ID to inspect."
+source .venv/bin/activate && python -c "from scripts.ontology.objects.proposal import ProposalStatus; print('✅ ProposalStatus Ready')"
 ```
 
 ## 2. Action Trace Inspection
@@ -16,5 +15,6 @@ echo "Please provide Proposal ID to inspect."
 - **Action**:
     - List files in `.agent/traces/`.
 ```bash
+mkdir -p .agent/traces
 ls -lt .agent/traces/ | head -n 10
 ```

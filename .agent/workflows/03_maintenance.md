@@ -8,7 +8,7 @@ description: Maintenance tasks for Database Rebuilding and Schema Validation
 - **Action**:
 ```bash
 # WARNING: This deletes all data!
-echo "y" | python3 scripts/maintenance/rebuild_db.py
+source .venv/bin/activate && printf "y\n" | ORION_DB_INIT_MODE=sync python scripts/maintenance/rebuild_db.py
 ```
 
 ## 2. Schema Validation

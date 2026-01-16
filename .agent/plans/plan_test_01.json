@@ -1,0 +1,22 @@
+{
+  "id": "plan-test-01",
+  "plan_id": "PLAN-TEST-01",
+  "objective": "Validate /01_plan end-to-end handoff generation",
+  "jobs": [
+    {
+      "id": "job_test_01",
+      "action_name": "execute_workflow",
+      "action_args": {
+        "workflow_name": "01_plan",
+        "turbo_only": false,
+        "dry_run": true
+      },
+      "description": "Test handoff generation for /01_plan flow",
+      "input_context": [
+        ".agent/workflows/01_plan.md",
+        "scripts/ontology/handoff.py"
+      ],
+      "role": "Automation"
+    }
+  ]
+}

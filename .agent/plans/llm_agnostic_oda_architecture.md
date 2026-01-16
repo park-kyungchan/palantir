@@ -1,0 +1,458 @@
+# LLM-Agnostic ODA Architecture Implementation Plan
+
+> **Version:** 1.0 | **Status:** COMPLETED | **Date:** 2026-01-12
+> **Auto-Compact Safe:** This file persists across context compaction
+> **Method:** Dual-path analysis (Claude Code V2.1.4 Features + ODA Kernel Integration)
+
+---
+
+## Executive Summary
+
+| Item | Value |
+|------|-------|
+| **Goal** | All operations pass through ODA Kernel regardless of LLM |
+| **Complexity** | Large (6 phases, 32 tasks) |
+| **Files to Create** | 8 |
+| **Files to Modify** | 12 |
+| **Priority** | P0 (Architectural Foundation) |
+
+---
+
+## Problem Statement
+
+### Current State (GAP Analysis)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     CURRENT FLOW (Broken)                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User Request → Main Agent → Subagent → Edit/Write (DIRECT)        │
+│                                    ↓                                │
+│                              [BYPASSES ODA KERNEL]                  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Target State
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     TARGET FLOW (LLM-Agnostic)                      │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ PRE-ODA (LLM-Specific Performance Layer)                     │  │
+│  │ • Claude: Skills, Hooks, context:fork, resume parameter      │  │
+│  │ • GPT-4: Function calling optimization                       │  │
+│  │ • Gemini: Native multimodal processing                       │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                              ↓                                      │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ ODA KERNEL (LLM-Agnostic Core)                               │  │
+│  │ • file.modify Action → Proposal → Approve → Execute          │  │
+│  │ • stage_c.* Actions → Quality Gates                          │  │
+│  │ • ALL mutations through registered Actions                   │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                              ↓                                      │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ POST-ODA (LLM-Specific Performance Layer)                    │  │
+│  │ • Claude: TodoWrite, AskUserQuestion, WebSearch              │  │
+│  │ • Output formatting per LLM capability                       │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Phase Overview
+
+| Phase | Name | Tasks | Dependency | Priority |
+|-------|------|-------|------------|----------|
+| 1 | File Mutation Actions | 6 | None | P0 |
+| 2 | Stage C Quality Actions | 5 | None | P0 |
+| 3 | Orchestration Protocol | 6 | Phase 1 | P0 |
+| 4 | Claude V2.1.4 Integration | 5 | None | P1 |
+| 5 | Hook System Enhancement | 5 | Phase 4 | P1 |
+| 6 | Documentation & Testing | 5 | All | P2 |
+
+---
+
+## Phase 1: File Mutation Actions (6 tasks)
+
+> **Goal:** Register file modification Actions in ODA Kernel
+
+### 1.1 Create FileModifyAction (hazardous: true)
+- **File:** `lib/oda/ontology/actions/file_actions.py` (NEW)
+- **api_name:** `file.modify`
+- **requires_proposal:** `true`
+- **Parameters:**
+  ```python
+  class FileModifyParams(BaseModel):
+      file_path: str
+      old_content: str  # For verification
+      new_content: str
+      reason: str
+      stage_evidence: Dict[str, Any]  # Stage A/B evidence
+  ```
+- **Status:** [ ] PENDING
+
+### 1.2 Create FileWriteAction (hazardous: true)
+- **File:** `lib/oda/ontology/actions/file_actions.py`
+- **api_name:** `file.write`
+- **requires_proposal:** `true`
+- **Status:** [ ] PENDING
+
+### 1.3 Create FileDeleteAction (hazardous: true)
+- **File:** `lib/oda/ontology/actions/file_actions.py`
+- **api_name:** `file.delete`
+- **requires_proposal:** `true`
+- **Status:** [ ] PENDING
+
+### 1.4 Create FileReadAction (hazardous: false)
+- **File:** `lib/oda/ontology/actions/file_actions.py`
+- **api_name:** `file.read`
+- **requires_proposal:** `false`
+- **Purpose:** Audit trail for all file reads
+- **Status:** [ ] PENDING
+
+### 1.5 Register actions in MCP Server
+- **File:** Modify MCP server registration
+- **Change:** Add file.* actions to ODA MCP server
+- **Status:** [ ] PENDING
+
+### 1.6 Update _EXPECTED_ACTIONS
+- **File:** `lib/oda/ontology/actions/__init__.py`
+- **Change:** Add file actions to expected list
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 2: Stage C Quality Actions (5 tasks)
+
+> **Goal:** Register all quality checks as ODA Actions
+
+### 2.1 Create RunTestsAction
+- **File:** `lib/oda/ontology/actions/quality_actions.py` (NEW)
+- **api_name:** `stage_c.run_tests`
+- **requires_proposal:** `false`
+- **Output:** `QualityCheck` schema from `lib/oda/ontology/evidence/quality_checks.py`
+- **Status:** [ ] PENDING
+
+### 2.2 Create RunLintAction
+- **File:** `lib/oda/ontology/actions/quality_actions.py`
+- **api_name:** `stage_c.run_lint`
+- **Status:** [ ] PENDING
+
+### 2.3 Create RunBuildAction
+- **File:** `lib/oda/ontology/actions/quality_actions.py`
+- **api_name:** `stage_c.run_build`
+- **Status:** [ ] PENDING
+
+### 2.4 Create RunTypecheckAction
+- **File:** `lib/oda/ontology/actions/quality_actions.py`
+- **api_name:** `stage_c.run_typecheck`
+- **Status:** [ ] PENDING
+
+### 2.5 Create StageCVerifyAction (orchestrator)
+- **File:** `lib/oda/ontology/actions/quality_actions.py`
+- **api_name:** `stage_c.verify`
+- **Purpose:** Runs all quality checks, aggregates to `StageCEvidence`
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 3: Orchestration Protocol (6 tasks)
+
+> **Goal:** Define how Main Agent orchestrates through ODA Kernel
+
+### 3.1 Create OrchestratorAction
+- **File:** `lib/oda/ontology/actions/orchestrator_actions.py` (NEW)
+- **api_name:** `orchestrator.delegate`
+- **Purpose:** Main Agent delegates to subagent with ODA tracking
+- **Status:** [ ] PENDING
+
+### 3.2 Create SubagentOutputAction
+- **File:** `lib/oda/ontology/actions/orchestrator_actions.py`
+- **api_name:** `orchestrator.receive_output`
+- **Purpose:** Record subagent output for audit trail
+- **Status:** [ ] PENDING
+
+### 3.3 Define Proposal Flow for File Modifications
+- **File:** `.claude/references/orchestration-flow.md` (NEW)
+- **Content:** Step-by-step Proposal lifecycle for subagent file changes
+- **Status:** [ ] PENDING
+
+### 3.4 Implement Auto-Proposal Creation
+- **File:** `lib/oda/claude/proposal_manager.py` (NEW)
+- **Purpose:** Convert subagent Edit/Write outputs to Proposals
+- **Status:** [ ] PENDING
+
+### 3.5 Implement Proposal Approval Hook
+- **File:** `.claude/hooks/proposal-approval.sh` (NEW)
+- **Purpose:** PostToolUse hook to intercept file modifications
+- **Status:** [ ] PENDING
+
+### 3.6 Update Delegation Patterns
+- **File:** `.claude/references/delegation-patterns.md`
+- **Change:** Add ODA Kernel integration patterns
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 4: Claude V2.1.4 Integration (5 tasks)
+
+> **Goal:** Integrate all Claude Code V2.1.4 features
+
+### 4.1 Complete Hook Event Types
+- **File:** `lib/oda/pai/hooks/event_types.py`
+- **Verify:** All 10 hook types present
+  - [x] SessionStart
+  - [x] SessionEnd
+  - [x] PreCompact
+  - [x] PreToolUse
+  - [x] PostToolUse
+  - [x] Stop
+  - [x] SubagentStop
+  - [x] UserPromptSubmit
+  - [x] PermissionRequest
+  - [x] Notification
+- **Status:** [x] COMPLETED (V2.1.x Enhancement)
+
+### 4.2 Implement Resume Parameter Usage
+- **File:** `lib/oda/planning/task_decomposer.py`
+- **Change:** Add `mark_for_resume()` and `resume` in `to_task_params()`
+- **Status:** [x] COMPLETED (V2.1.x Enhancement)
+
+### 4.3 Update PreCompact Hook
+- **File:** `/home/palantir/.claude/hooks/pre-compact.sh`
+- **Purpose:** Save context before Auto-Compact
+- **Status:** [x] COMPLETED (V2.1.x Enhancement)
+
+### 4.4 Document context:fork Usage
+- **File:** `.claude/references/native-capabilities.md`
+- **Change:** Document fork mode for subagent isolation
+- **Status:** [ ] PENDING
+
+### 4.5 Integrate run_in_background Pattern
+- **File:** Update all skills to use background execution
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 5: Hook System Enhancement (5 tasks)
+
+> **Goal:** Enhance hooks to enforce ODA governance
+
+### 5.1 Create PreToolUse ODA Gate Hook
+- **File:** `.claude/hooks/pre-tool-use-oda.sh` (NEW)
+- **Purpose:** Check if tool requires ODA Proposal before execution
+- **Status:** [ ] PENDING
+
+### 5.2 Create PostToolUse Audit Hook
+- **File:** `.claude/hooks/post-tool-use-audit.sh` (NEW)
+- **Purpose:** Log all tool executions to ODA audit trail
+- **Status:** [ ] PENDING
+
+### 5.3 Update PermissionRequest Handler
+- **File:** `.claude/hooks/permission-request.sh` (NEW)
+- **Purpose:** Route hazardous operations to Proposal flow
+- **Status:** [ ] PENDING
+
+### 5.4 Create Notification Hook
+- **File:** `.claude/hooks/notification.sh` (NEW)
+- **Purpose:** Surface ODA events to user
+- **Status:** [ ] PENDING
+
+### 5.5 Update Hook Configuration
+- **File:** `/home/palantir/.claude/settings.json`
+- **Change:** Register all new hooks
+- **Status:** [ ] PENDING
+
+---
+
+## Phase 6: Documentation & Testing (5 tasks)
+
+> **Goal:** Complete documentation and verification
+
+### 6.1 Create LLM-Agnostic Architecture Doc
+- **File:** `.claude/references/llm-agnostic-architecture.md` (NEW)
+- **Content:** Full architecture documentation
+- **Status:** [ ] PENDING
+
+### 6.2 Update CLAUDE.md Orchestration Section
+- **File:** `/home/palantir/.claude/CLAUDE.md`
+- **Change:** Section 2 update for ODA Kernel integration
+- **Status:** [ ] PENDING
+
+### 6.3 Create Integration Tests
+- **File:** `tests/oda/test_file_actions.py` (NEW)
+- **Status:** [ ] PENDING
+
+### 6.4 Create E2E Orchestration Test
+- **File:** `tests/oda/test_orchestration_flow.py` (NEW)
+- **Status:** [ ] PENDING
+
+### 6.5 Run Full Quality Check
+- **Command:** `/quality-check`
+- **Status:** [ ] PENDING
+
+---
+
+## Progress Tracking
+
+| Phase | Tasks | Completed | Status |
+|-------|-------|-----------|--------|
+| 1 | 6 | 6 | COMPLETED |
+| 2 | 5 | 5 | COMPLETED |
+| 3 | 6 | 6 | COMPLETED |
+| 4 | 5 | 5 | COMPLETED |
+| 5 | 5 | 5 | COMPLETED |
+| 6 | 5 | 5 | COMPLETED |
+| **Total** | **32** | **32** | **100%** |
+
+---
+
+## Execution Strategy
+
+### Parallel Execution Groups
+
+**Group A (Independent - can run in parallel):**
+- Phase 1.1-1.4: File Actions (general-purpose subagent)
+- Phase 2.1-2.5: Quality Actions (general-purpose subagent)
+- Phase 4.4-4.5: Documentation updates (Explore subagent)
+
+**Group B (Sequential - depends on Group A):**
+- Phase 3.1-3.6: Orchestration Protocol (depends on Phase 1)
+- Phase 5.1-5.5: Hook Enhancement (depends on Phase 4)
+
+**Group C (Integration - depends on Group B):**
+- Phase 6.1-6.5: Documentation & Testing
+
+### Subagent Delegation
+
+| Task Group | Subagent Type | Context | Token Budget |
+|------------|---------------|---------|--------------|
+| Phase 1 | general-purpose | fork | 15K |
+| Phase 2 | general-purpose | fork | 15K |
+| Phase 3 | Plan | fork | 10K |
+| Phase 4 | general-purpose | fork | 10K |
+| Phase 5 | general-purpose | fork | 10K |
+| Phase 6 | general-purpose | fork | 15K |
+
+---
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. Read this file: `.agent/plans/llm_agnostic_oda_architecture.md`
+2. Check TodoWrite for current task status
+3. Find first PENDING task in sequence
+4. Use subagent delegation pattern from "Execution Strategy" section
+
+---
+
+## Critical File Paths
+
+```yaml
+# Files to create
+create:
+  - lib/oda/ontology/actions/file_actions.py
+  - lib/oda/ontology/actions/quality_actions.py
+  - lib/oda/ontology/actions/orchestrator_actions.py
+  - lib/oda/claude/proposal_manager.py
+  - .claude/references/orchestration-flow.md
+  - .claude/references/llm-agnostic-architecture.md
+  - .claude/hooks/pre-tool-use-oda.sh
+  - .claude/hooks/post-tool-use-audit.sh
+
+# Files to modify
+modify:
+  - lib/oda/ontology/actions/__init__.py
+  - lib/oda/planning/task_decomposer.py
+  - .claude/references/delegation-patterns.md
+  - .claude/references/native-capabilities.md
+  - /home/palantir/.claude/settings.json
+  - /home/palantir/.claude/CLAUDE.md
+
+# Reference files
+reference:
+  - .claude/references/3-stage-protocol.md
+  - lib/oda/ontology/evidence/quality_checks.py
+  - lib/oda/ontology/objects/proposal.py
+```
+
+---
+
+## Risk Register
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Proposal overhead slows development | HIGH | Auto-approve for non-hazardous, batch proposals |
+| Hook execution timeout | MEDIUM | Set timeout limits, async execution |
+| Subagent output truncation (32K limit) | HIGH | TaskDecomposer mandatory, output budget |
+| Context compaction loses state | HIGH | This plan file + TodoWrite persistence |
+| Backward compatibility | MEDIUM | Optional ODA path initially, gradual migration |
+
+---
+
+## Orchestration Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    MAIN AGENT ORCHESTRATION                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. RECEIVE USER REQUEST                                            │
+│     ↓                                                               │
+│  2. PRE-ODA (LLM-Specific)                                         │
+│     • Parse intent (Skills, Hooks)                                  │
+│     • Decompose task (TaskDecomposer)                              │
+│     • Deploy subagents (context:fork, run_in_background)           │
+│     ↓                                                               │
+│  3. SUBAGENT EXECUTION                                              │
+│     • Explore: Stage A evidence                                     │
+│     • Plan: Stage B evidence                                        │
+│     • general-purpose: Implementation (returns file changes)        │
+│     ↓                                                               │
+│  4. ODA KERNEL (LLM-Agnostic)                                       │
+│     • Convert file changes → Proposals                              │
+│     • create_proposal(action_type="file.modify", ...)              │
+│     • For each file: separate Proposal                              │
+│     ↓                                                               │
+│  5. APPROVAL FLOW                                                   │
+│     • hazardous=true → User approval via AskUserQuestion           │
+│     • hazardous=false → Auto-approve                               │
+│     ↓                                                               │
+│  6. EXECUTION                                                       │
+│     • execute_proposal() → Apply file changes                       │
+│     • Audit trail recorded                                          │
+│     ↓                                                               │
+│  7. STAGE C VERIFICATION                                            │
+│     • stage_c.verify Action                                         │
+│     • Tests, Lint, Build, Typecheck                                 │
+│     • Generate StageCEvidence                                       │
+│     ↓                                                               │
+│  8. POST-ODA (LLM-Specific)                                         │
+│     • Update TodoWrite                                              │
+│     • Notify user (Notification hook)                               │
+│     • WebSearch for validation (if needed)                          │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Approval Gate
+
+- [ ] ODA governance passed (no blocked patterns)
+- [ ] Architecture reviewed (follows existing patterns)
+- [ ] User approved
+
+---
+
+> **Generated:** 2026-01-12 by Main Agent Orchestrator
+> **Method:** Synthesis from 3 parallel subagents (Claude Code V2.1.4 audit, ODA integration analysis, Orchestration design)
+> **Context:** User requirement for LLM-Agnostic architecture with work consistency

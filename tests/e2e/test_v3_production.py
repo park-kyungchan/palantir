@@ -8,11 +8,11 @@ from typing import Dict, Any
 # Add project root to path
 sys.path.append("/home/palantir/park-kyungchan/palantir")
 
-from scripts.ontology.objects.core_definitions import Task, Agent, CreateTaskAction
-from scripts.ontology.objects.proposal import Proposal, ProposalStatus
-from scripts.ontology.actions import ActionContext
-from scripts.llm.ollama_client import HybridRouter, OllamaClient, RouterConfig
-from scripts.relay.queue import RelayQueue
+from lib.oda.ontology.objects.core_definitions import Task, Agent, CreateTaskAction
+from lib.oda.ontology.objects.proposal import Proposal, ProposalStatus
+from lib.oda.ontology.actions import ActionContext
+from lib.oda.llm.ollama_client import HybridRouter, OllamaClient, RouterConfig
+from lib.oda.relay.queue import RelayQueue
 
 class TestV3Migration(unittest.TestCase):
     
@@ -52,7 +52,7 @@ class TestV3Migration(unittest.TestCase):
         """Phase 2.5: Relay Queue Persistence"""
         import tempfile
         from pathlib import Path
-        from scripts.ontology.storage.database import Database, DatabaseManager
+        from lib.oda.ontology.storage.database import Database, DatabaseManager
         
         # Initialize database for RelayQueue
         async def setup_and_test():
@@ -122,7 +122,7 @@ class TestV3Migration(unittest.TestCase):
     def test_kernel_boot(self):
         """Phase 5: Verify Kernel Import"""
         try:
-            from scripts.runtime.kernel import OrionRuntime
+            from lib.oda.runtime.kernel import OrionRuntime
             print("[Pass] Kernel V3 Import Successful")
         except ImportError as e:
             self.fail(f"Kernel Move Failed: {e}")

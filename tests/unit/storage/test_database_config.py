@@ -20,7 +20,7 @@ from contextvars import copy_context
 import pytest
 import pytest_asyncio
 
-from scripts.ontology.storage.database import (
+from lib.oda.ontology.storage.database import (
     Database,
     DatabaseManager,
     initialize_database,

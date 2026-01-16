@@ -1,8 +1,8 @@
 # ODA_PHASE: 2. Execution (Relay)
-# 🤖 AGENT HANDOFF: AUTOMATION SPECIALIST (GPT-4/Codex)
+# 🤖 AGENT HANDOFF: AUTOMATION SPECIALIST (Automation Agent)
 > **Role**: Mechanic / Implementer
-> **Source**: Antigravity (Orchestrator)
-> **Target**: Codex (Automation)
+> **Source**: Orchestrator
+> **Target**: Automation Agent
 
 ---
 

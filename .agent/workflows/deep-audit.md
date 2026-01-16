@@ -14,7 +14,7 @@ description: Execute Progressive Deep-Dive Audit with 3-Stage Protocol (ANTIGRAV
 
 ```bash
 # Verify Protocol Framework
-python3 -c "from scripts.ontology.protocols.audit_protocol import AuditProtocol; print('✅ AuditProtocol Ready')"
+source .venv/bin/activate && python -c "from scripts.ontology.protocols.audit_protocol import AuditProtocol; print('✅ AuditProtocol Ready')"
 ```
 
 ---

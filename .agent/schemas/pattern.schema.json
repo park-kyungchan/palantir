@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "ObjectStatus": {
+      "description": "Lifecycle status for OntologyObjects.",
+      "enum": [
+        "active",
+        "archived",
+        "deleted"
+      ],
+      "title": "ObjectStatus",
+      "type": "string"
+    },
+    "PatternStructure": {
+      "additionalProperties": false,
+      "properties": {
+        "trigger": {
+          "title": "Trigger",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "anti_patterns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Anti Patterns",
+          "type": "array"
+        }
+      },
+      "required": [
+        "trigger",
+        "steps"
+      ],
+      "title": "PatternStructure",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A reusable procedural workflow.\nReplaces legacy JSON schema.",
+  "properties": {
+    "id": {
+      "description": "Primary Key (UUIDv4 string)",
+      "immutable": true,
+      "title": "Id",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "Creation timestamp (UTC)",
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "description": "Last update timestamp (UTC)",
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "created_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the user/agent who created this object",
+      "title": "Created By"
+    },
+    "updated_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the user/agent who last updated this object",
+      "title": "Updated By"
+    },
+    "status": {
+      "$ref": "#/$defs/ObjectStatus",
+      "default": "active",
+      "description": "Object lifecycle status"
+    },
+    "version": {
+      "default": 1,
+      "description": "Version number for optimistic locking",
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "frequency_count": {
+      "default": 0,
+      "title": "Frequency Count",
+      "type": "integer"
+    },
+    "success_rate": {
+      "default": 0.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Success Rate",
+      "type": "number"
+    },
+    "last_used": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Used"
+    },
+    "structure": {
+      "$ref": "#/$defs/PatternStructure"
+    },
+    "code_snippet_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Code Snippet Ref"
+    }
+  },
+  "required": [
+    "structure"
+  ],
+  "title": "OrionPattern",
+  "type": "object",
+  "x-palantir-indexing": [
+    "id",
+    "created_at",
+    "updated_at"
+  ]
+}

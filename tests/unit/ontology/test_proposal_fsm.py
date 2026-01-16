@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.ontology.objects.proposal import (
+from lib.oda.ontology.objects.proposal import (
     Proposal,
     ProposalStatus,
     ProposalPriority,
@@ -173,6 +173,15 @@ class TestProposalFSM:
             f"Transition {start_state} -> {action}() should result in {expected}, "
             f"but got {proposal.status}"
         )
+
+
+def test_proposal_action_type_accepts_dotted_api_names() -> None:
+    proposal = Proposal(
+        action_type="learning.update_kb",
+        payload={"kb_id": "01", "section": "Practice Exercise", "content": "x"},
+        created_by="agent-001",
+    )
+    assert proposal.action_type == "learning.update_kb"
 
     # =========================================================================
     # TEST: INVALID TRANSITIONS

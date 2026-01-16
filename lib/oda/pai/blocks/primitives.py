@@ -1,0 +1,489 @@
+"""
+ODA PAI Blocks - Primitive Types
+=================================
+
+Defines the primitive block types for the PAI Block Type System.
+These are the concrete implementations of BlockType for common content types.
+
+ObjectTypes:
+    - TextBlock: Plain or formatted text content
+    - CodeBlock: Source code with syntax information
+    - ImageBlock: Binary image data with metadata
+
+Enums:
+    - ImageMimeType: Supported image MIME types
+"""
+
+from __future__ import annotations
+
+import base64
+import re
+from enum import Enum
+from typing import List, Optional, Tuple
+
+from pydantic import Field, field_validator
+
+from lib.oda.ontology.registry import register_object_type
+
+from .base import BlockKind, BlockType, ContentEncoding, TextFormat
+
+
+# =============================================================================
+# IMAGE MIME TYPE ENUM
+# =============================================================================
+
+
+class ImageMimeType(str, Enum):
+    """
+    Supported image MIME types for ImageBlock.
+
+    - PNG: Portable Network Graphics (lossless)
+    - JPEG: Joint Photographic Experts Group (lossy)
+    - GIF: Graphics Interchange Format (animated)
+    - WEBP: WebP format (modern, efficient)
+    - SVG: Scalable Vector Graphics (vector)
+    """
+
+    PNG = "image/png"
+    JPEG = "image/jpeg"
+    GIF = "image/gif"
+    WEBP = "image/webp"
+    SVG = "image/svg+xml"
+
+    @property
+    def file_extension(self) -> str:
+        """Get the typical file extension for this MIME type."""
+        extensions = {
+            ImageMimeType.PNG: ".png",
+            ImageMimeType.JPEG: ".jpg",
+            ImageMimeType.GIF: ".gif",
+            ImageMimeType.WEBP: ".webp",
+            ImageMimeType.SVG: ".svg",
+        }
+        return extensions[self]
+
+    @property
+    def is_vector(self) -> bool:
+        """Check if this is a vector image format."""
+        return self == ImageMimeType.SVG
+
+    @property
+    def supports_transparency(self) -> bool:
+        """Check if this format supports transparency."""
+        return self in (ImageMimeType.PNG, ImageMimeType.GIF, ImageMimeType.WEBP, ImageMimeType.SVG)
+
+    @classmethod
+    def from_extension(cls, ext: str) -> "ImageMimeType":
+        """
+        Get ImageMimeType from file extension.
+
+        Args:
+            ext: File extension (with or without dot)
+
+        Returns:
+            Corresponding ImageMimeType
+
+        Raises:
+            ValueError: If extension is not recognized
+        """
+        ext = ext.lower().lstrip(".")
+        mapping = {
+            "png": cls.PNG,
+            "jpg": cls.JPEG,
+            "jpeg": cls.JPEG,
+            "gif": cls.GIF,
+            "webp": cls.WEBP,
+            "svg": cls.SVG,
+        }
+        if ext not in mapping:
+            raise ValueError(f"Unsupported image extension: {ext}")
+        return mapping[ext]
+
+
+# =============================================================================
+# TEXT BLOCK
+# =============================================================================
+
+
+@register_object_type
+class TextBlock(BlockType):
+    """
+    Block containing text content.
+
+    TextBlock stores plain or formatted text with associated metadata
+    such as language, character count, and word count.
+    """
+
+    block_kind: BlockKind = Field(
+        default=BlockKind.TEXT,
+        description="The category of this block (always TEXT for TextBlock)",
+    )
+
+    text: str = Field(
+        default="",
+        description="The text content of this block",
+        max_length=100000,
+    )
+
+    format: TextFormat = Field(
+        default=TextFormat.PLAIN,
+        description="The formatting type of the text (PLAIN, MARKDOWN, HTML, RST)",
+    )
+
+    language: Optional[str] = Field(
+        default=None,
+        description="ISO 639-1 language code (e.g., 'en', 'ko', 'ja')",
+        pattern=r"^[a-z]{2}$",
+    )
+
+    char_count: int = Field(
+        default=0,
+        description="Number of characters in the text",
+        ge=0,
+    )
+
+    word_count: int = Field(
+        default=0,
+        description="Number of words in the text",
+        ge=0,
+    )
+
+    @field_validator("text")
+    @classmethod
+    def validate_and_count_text(cls, v: str) -> str:
+        """Validate text and ensure it's a string."""
+        if not isinstance(v, str):
+            raise ValueError("text must be a string")
+        return v
+
+    def model_post_init(self, __context) -> None:
+        """Initialize derived fields after model creation."""
+        self._update_counts()
+
+    def _update_counts(self) -> None:
+        """Update character and word counts."""
+        self.char_count = len(self.text)
+        self.word_count = len(self.text.split()) if self.text else 0
+
+    def encode_content(self) -> bytes:
+        """Encode text content to UTF-8 bytes."""
+        return self.text.encode("utf-8")
+
+    def decode_content(self, data: bytes) -> None:
+        """Decode UTF-8 bytes to text content."""
+        self.text = data.decode("utf-8")
+        self._update_counts()
+
+    def to_markdown(self) -> str:
+        """
+        Convert text to Markdown format.
+
+        Returns:
+            Text in Markdown format (or original if already Markdown)
+        """
+        if self.format == TextFormat.MARKDOWN:
+            return self.text
+        elif self.format == TextFormat.PLAIN:
+            # Escape special Markdown characters
+            escaped = self.text
+            for char in ["\\", "`", "*", "_", "{", "}", "[", "]", "(", ")", "#", "+", "-", ".", "!"]:
+                escaped = escaped.replace(char, f"\\{char}")
+            return escaped
+        elif self.format == TextFormat.HTML:
+            # Simple HTML to Markdown conversion
+            text = self.text
+            text = re.sub(r"<br\s*/?>", "\n", text)
+            text = re.sub(r"<p>(.*?)</p>", r"\1\n\n", text, flags=re.DOTALL)
+            text = re.sub(r"<strong>(.*?)</strong>", r"**\1**", text)
+            text = re.sub(r"<b>(.*?)</b>", r"**\1**", text)
+            text = re.sub(r"<em>(.*?)</em>", r"*\1*", text)
+            text = re.sub(r"<i>(.*?)</i>", r"*\1*", text)
+            text = re.sub(r"<code>(.*?)</code>", r"`\1`", text)
+            text = re.sub(r"<[^>]+>", "", text)  # Remove remaining tags
+            return text.strip()
+        return self.text
+
+    def to_plain(self) -> str:
+        """
+        Convert text to plain format (strip formatting).
+
+        Returns:
+            Plain text without formatting
+        """
+        if self.format == TextFormat.PLAIN:
+            return self.text
+        elif self.format == TextFormat.HTML:
+            # Strip HTML tags
+            return re.sub(r"<[^>]+>", "", self.text)
+        elif self.format == TextFormat.MARKDOWN:
+            # Strip Markdown formatting
+            text = self.text
+            text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)  # Bold
+            text = re.sub(r"\*(.+?)\*", r"\1", text)  # Italic
+            text = re.sub(r"`(.+?)`", r"\1", text)  # Code
+            text = re.sub(r"\[(.+?)\]\(.+?\)", r"\1", text)  # Links
+            text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE)  # Headers
+            return text
+        return self.text
+
+
+# =============================================================================
+# CODE BLOCK
+# =============================================================================
+
+
+@register_object_type
+class CodeBlock(BlockType):
+    """
+    Block containing source code.
+
+    CodeBlock stores source code with associated metadata such as
+    programming language, line counts, and optional file reference.
+    """
+
+    block_kind: BlockKind = Field(
+        default=BlockKind.CODE,
+        description="The category of this block (always CODE for CodeBlock)",
+    )
+
+    code: str = Field(
+        default="",
+        description="The source code content",
+        max_length=500000,
+    )
+
+    language: str = Field(
+        default="text",
+        description="Programming language identifier (e.g., 'python', 'javascript')",
+    )
+
+    line_count: int = Field(
+        default=0,
+        description="Number of lines in the code",
+        ge=0,
+    )
+
+    syntax_valid: bool = Field(
+        default=True,
+        description="Whether the syntax is valid (if validated)",
+    )
+
+    start_line: Optional[int] = Field(
+        default=None,
+        description="Starting line number in source file (1-indexed)",
+        ge=1,
+    )
+
+    end_line: Optional[int] = Field(
+        default=None,
+        description="Ending line number in source file (1-indexed)",
+        ge=1,
+    )
+
+    file_path: Optional[str] = Field(
+        default=None,
+        description="Path to the source file (if applicable)",
+    )
+
+    def model_post_init(self, __context) -> None:
+        """Initialize derived fields after model creation."""
+        self._update_line_count()
+
+    def _update_line_count(self) -> None:
+        """Update line count based on code content."""
+        self.line_count = len(self.code.splitlines()) if self.code else 0
+
+    def encode_content(self) -> bytes:
+        """Encode code content to UTF-8 bytes."""
+        return self.code.encode("utf-8")
+
+    def decode_content(self, data: bytes) -> None:
+        """Decode UTF-8 bytes to code content."""
+        self.code = data.decode("utf-8")
+        self._update_line_count()
+
+    def get_lines(self, start: int = 1, end: Optional[int] = None) -> List[str]:
+        """
+        Get specific lines from the code.
+
+        Args:
+            start: Starting line number (1-indexed)
+            end: Ending line number (1-indexed, inclusive). None for all remaining.
+
+        Returns:
+            List of lines in the specified range
+        """
+        lines = self.code.splitlines()
+        start_idx = max(0, start - 1)
+        end_idx = end if end is not None else len(lines)
+        return lines[start_idx:end_idx]
+
+    def highlight(self, theme: str = "default") -> str:
+        """
+        Return code with syntax highlighting markers.
+
+        This is a placeholder that returns the code wrapped in
+        markdown code fence. Actual highlighting would require
+        a syntax highlighting library.
+
+        Args:
+            theme: Highlighting theme name (unused in this implementation)
+
+        Returns:
+            Code wrapped in markdown code fence with language
+        """
+        return f"```{self.language}\n{self.code}\n```"
+
+    @property
+    def has_file_reference(self) -> bool:
+        """Check if this code block references a source file."""
+        return self.file_path is not None
+
+    @property
+    def line_range(self) -> Optional[Tuple[int, int]]:
+        """Get the line range if both start and end are specified."""
+        if self.start_line is not None and self.end_line is not None:
+            return (self.start_line, self.end_line)
+        return None
+
+
+# =============================================================================
+# IMAGE BLOCK
+# =============================================================================
+
+
+@register_object_type
+class ImageBlock(BlockType):
+    """
+    Block containing binary image data.
+
+    ImageBlock stores images as base64-encoded data with associated
+    metadata such as dimensions and alt text for accessibility.
+    """
+
+    block_kind: BlockKind = Field(
+        default=BlockKind.IMAGE,
+        description="The category of this block (always IMAGE for ImageBlock)",
+    )
+
+    content_encoding: ContentEncoding = Field(
+        default=ContentEncoding.BASE64,
+        description="The encoding format (always BASE64 for ImageBlock)",
+    )
+
+    data: str = Field(
+        default="",
+        description="Base64-encoded image data",
+    )
+
+    mime_type: ImageMimeType = Field(
+        default=ImageMimeType.PNG,
+        description="MIME type of the image",
+    )
+
+    width: Optional[int] = Field(
+        default=None,
+        description="Image width in pixels",
+        ge=1,
+    )
+
+    height: Optional[int] = Field(
+        default=None,
+        description="Image height in pixels",
+        ge=1,
+    )
+
+    alt_text: str = Field(
+        default="",
+        description="Alternative text for accessibility",
+        max_length=1000,
+    )
+
+    @field_validator("data")
+    @classmethod
+    def validate_base64(cls, v: str) -> str:
+        """Validate that data is valid base64."""
+        if not v:
+            return v
+        try:
+            # Check if it's valid base64
+            base64.b64decode(v, validate=True)
+        except Exception:
+            raise ValueError("data must be valid base64-encoded content")
+        return v
+
+    def encode_content(self) -> bytes:
+        """Return the raw binary image data."""
+        if not self.data:
+            return b""
+        return base64.b64decode(self.data)
+
+    def decode_content(self, data: bytes) -> None:
+        """Encode binary data as base64 and store."""
+        self.data = base64.b64encode(data).decode("ascii")
+
+    def to_data_uri(self) -> str:
+        """
+        Generate a data URI for embedding in HTML/CSS.
+
+        Returns:
+            Data URI string (data:image/type;base64,...)
+        """
+        if not self.data:
+            return ""
+        return f"data:{self.mime_type.value};base64,{self.data}"
+
+    def get_dimensions(self) -> Optional[Tuple[int, int]]:
+        """
+        Get image dimensions if available.
+
+        Returns:
+            Tuple of (width, height) or None if not set
+        """
+        if self.width is not None and self.height is not None:
+            return (self.width, self.height)
+        return None
+
+    @property
+    def size_bytes(self) -> int:
+        """Get the approximate size of the image data in bytes."""
+        if not self.data:
+            return 0
+        # Base64 encodes 3 bytes into 4 characters
+        return len(self.data) * 3 // 4
+
+    @property
+    def has_dimensions(self) -> bool:
+        """Check if dimensions are set."""
+        return self.width is not None and self.height is not None
+
+    @classmethod
+    def from_file(cls, file_path: str, alt_text: str = "") -> "ImageBlock":
+        """
+        Create an ImageBlock from a file path.
+
+        Args:
+            file_path: Path to the image file
+            alt_text: Alternative text for accessibility
+
+        Returns:
+            New ImageBlock with the file's content
+
+        Raises:
+            FileNotFoundError: If the file doesn't exist
+            ValueError: If the file extension is not supported
+        """
+        from pathlib import Path
+
+        path = Path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Image file not found: {file_path}")
+
+        mime_type = ImageMimeType.from_extension(path.suffix)
+        data = base64.b64encode(path.read_bytes()).decode("ascii")
+
+        return cls(
+            data=data,
+            mime_type=mime_type,
+            alt_text=alt_text or path.stem,
+        )

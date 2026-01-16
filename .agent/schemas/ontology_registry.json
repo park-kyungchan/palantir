@@ -1,0 +1,412 @@
+{
+  "objects": {
+    "Agent": {
+      "description": "Represents an AI Agent or Human User in the system.\n    \n    Agents can be assigned to tasks and execute actions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)"
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object"
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status"
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        "email": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "role": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "agent_active": {
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        },
+        "capabilities": {
+          "type": "array",
+          "required": false,
+          "description": ""
+        }
+      },
+      "links": {
+        "assigned_tasks": {
+          "target": "Task",
+          "cardinality": "1:N",
+          "reverse_link_id": "task_assigned_to_agent",
+          "description": "Tasks currently assigned to this agent",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
+    },
+    "Artifact": {
+      "description": "ObjectType: Artifact\n    Represents a File or Document produced by a Task.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)"
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object"
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status"
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking"
+        },
+        "path": {
+          "type": "string",
+          "required": true,
+          "description": "Absolute File Path"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "File Type (code, doc, log)"
+        },
+        "produced_by_task_id": {
+          "type": "string",
+          "required": true,
+          "description": "FK to Task"
+        }
+      },
+      "links": {
+        "produced_by_task": {
+          "target": "Task",
+          "cardinality": "N:1",
+          "reverse_link_id": null,
+          "description": "The task that produced this artifact",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
+    },
+    "Learner": {
+      "description": "ObjectType: Learner\n    Represents a student in the Adaptive Tutoring system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)"
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object"
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status"
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking"
+        },
+        "user_id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique User Identifier"
+        },
+        "theta": {
+          "type": "double",
+          "required": false,
+          "description": "Global proficiency estimate"
+        },
+        "knowledge_state": {
+          "type": "struct",
+          "required": false,
+          "description": "BKT parameters for KCs"
+        },
+        "last_active": {
+          "type": "string",
+          "required": false,
+          "description": "ISO formatted timestamp"
+        }
+      },
+      "links": {}
+    },
+    "Proposal": {
+      "description": "Represents a staged Action awaiting Human Review.\n    \n    A Proposal encapsulates:\n    - The action to be performed (action_type + payload)\n    - The creator (created_by from OntologyObject)\n    - The reviewer (reviewed_by)\n    - Full audit trail (timestamps, comments)\n    \n    Usage:\n        ```python\n        # Create a proposal\n        proposal = Proposal(\n            action_type=\"deploy_to_production\",\n            payload={\"service\": \"checkout\", \"version\": \"2.1.0\"},\n            created_by=\"agent-001\",\n            priority=ProposalPriority.HIGH\n        )\n        \n        # Submit for review\n        proposal.submit()\n        \n        # Approve (by human reviewer)\n        proposal.approve(reviewer_id=\"admin-001\", comment=\"LGTM\")\n        \n        # Execute\n        proposal.execute()\n        ```\n    \n    Attributes:\n        action_type: The ActionType API name to execute\n        payload: Parameters for the action\n        status: Current lifecycle state\n        priority: Review priority\n        reviewed_by: ID of the reviewer\n        reviewed_at: Timestamp of review decision\n        review_comment: Reviewer's comment\n        executed_at: Timestamp of execution\n        execution_result: Result of execution (success/error details)",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)"
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object"
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Current lifecycle state"
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking"
+        },
+        "action_type": {
+          "type": "string",
+          "required": true,
+          "description": "The ActionType API name to execute (e.g., 'deploy_to_production')"
+        },
+        "payload": {
+          "type": "struct",
+          "required": false,
+          "description": "Parameters for the action"
+        },
+        "priority": {
+          "type": "string",
+          "required": false,
+          "description": "Review priority"
+        },
+        "reviewed_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the reviewer who approved/rejected"
+        },
+        "reviewed_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Timestamp of review decision"
+        },
+        "review_comment": {
+          "type": "string",
+          "required": false,
+          "description": "Reviewer's comment or reason"
+        },
+        "executed_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Timestamp of execution"
+        },
+        "execution_result": {
+          "type": "string",
+          "required": false,
+          "description": "Result of execution (success/error details)"
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": "Tags for categorization and filtering"
+        }
+      },
+      "links": {}
+    },
+    "Task": {
+      "description": "Represents a unit of work in the system.\n    \n    Tasks can be assigned to agents, have priorities, and track progress.\n    Links:\n    - assigned_to: Agent (Many-to-One)\n    - depends_on: Task[] (Many-to-Many, self-referential)\n    - subtasks: Task[] (One-to-Many, self-referential)",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Primary Key (UUIDv4 string)"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Creation timestamp (UTC)"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp (UTC)"
+        },
+        "created_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who created this object"
+        },
+        "updated_by": {
+          "type": "string",
+          "required": false,
+          "description": "ID of the user/agent who last updated this object"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "Object lifecycle status"
+        },
+        "version": {
+          "type": "integer",
+          "required": false,
+          "description": "Version number for optimistic locking"
+        },
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "priority": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "task_status": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "assigned_to_id": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "parent_task_id": {
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        "tags": {
+          "type": "array",
+          "required": false,
+          "description": ""
+        },
+        "estimated_hours": {
+          "type": "double",
+          "required": false,
+          "description": ""
+        },
+        "actual_hours": {
+          "type": "double",
+          "required": false,
+          "description": ""
+        },
+        "due_date": {
+          "type": "timestamp",
+          "required": false,
+          "description": ""
+        },
+        "completed_at": {
+          "type": "timestamp",
+          "required": false,
+          "description": ""
+        }
+      },
+      "links": {
+        "assigned_to": {
+          "target": "Agent",
+          "cardinality": "N:1",
+          "reverse_link_id": "agent_assigned_tasks",
+          "description": "The agent responsible for this task",
+          "backing_table_name": null,
+          "is_materialized": true
+        },
+        "depends_on": {
+          "target": "Task",
+          "cardinality": "N:N",
+          "reverse_link_id": "task_blocks",
+          "description": "Tasks that must be completed before this task",
+          "backing_table_name": "task_dependencies",
+          "is_materialized": true
+        },
+        "subtasks": {
+          "target": "Task",
+          "cardinality": "1:N",
+          "reverse_link_id": "subtask_of",
+          "description": "Child tasks of this task",
+          "backing_table_name": null,
+          "is_materialized": true
+        }
+      }
+    }
+  }
+}

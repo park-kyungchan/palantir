@@ -2,8 +2,8 @@ import pytest
 from pydantic import BaseModel
 from unittest.mock import MagicMock, patch
 
-from scripts.aip_logic.function import LogicFunction, LogicContext
-from scripts.aip_logic.engine import LogicEngine, LLMBasedLogicFunction, FunctionExecutionError
+from lib.oda.aip_logic.function import LogicFunction, LogicContext
+from lib.oda.aip_logic.engine import LogicEngine, LLMBasedLogicFunction, FunctionExecutionError
 
 # --- Mock Models ---
 class SummarizeInput(BaseModel):

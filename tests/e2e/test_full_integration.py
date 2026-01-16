@@ -38,14 +38,14 @@ import pytest
 import pytest_asyncio
 
 # ODA Core Imports
-from scripts.ontology.ontology_types import OntologyObject, utc_now
-from scripts.ontology.objects.proposal import (
+from lib.oda.ontology.ontology_types import OntologyObject, utc_now
+from lib.oda.ontology.objects.proposal import (
     Proposal,
     ProposalPriority,
     ProposalStatus,
     InvalidTransitionError,
 )
-from scripts.ontology.actions import (
+from lib.oda.ontology.actions import (
     ActionContext,
     ActionRegistry,
     ActionResult,
@@ -58,8 +58,8 @@ from scripts.ontology.actions import (
     register_action,
     action_registry,
 )
-from scripts.ontology.storage.database import Database, initialize_database
-from scripts.ontology.storage.proposal_repository import (
+from lib.oda.ontology.storage.database import Database, initialize_database
+from lib.oda.ontology.storage.proposal_repository import (
     ProposalRepository,
     ProposalNotFoundError,
 )
@@ -145,7 +145,7 @@ class MockActionRegistry:
         # Mock metadata retrieval
         cls = self.get(api_name)
         if not cls: return None
-        from scripts.ontology.actions import ActionMetadata
+        from lib.oda.ontology.actions import ActionMetadata
         return ActionMetadata(
             requires_proposal=getattr(cls, "requires_proposal", False),
             is_dangerous=getattr(cls, "is_dangerous", False),

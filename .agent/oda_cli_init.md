@@ -5,19 +5,21 @@
 
 ## 1. INGEST PROTOCOLS (MANDATORY)
 You MUST strictly adhere to the protocols defined in the Master System Prompt.
-**IMMEDIATE ACTION**: Read and memorize the content of: `/home/palantir/GEMINI.md`
+**IMMEDIATE ACTION**: Read the active system prompt (LLM-independent):
+- Primary: `/home/palantir/.gemini/GEMINI.md`
+- Fallbacks: `/home/palantir/.codex/AGENTS.md`, `/home/palantir/park-kyungchan/palantir/.agent/oda_cli_init.md`
 
 ## 2. RECONSTRUCT CONTEXT
 Since you are in a CLI, you lack IDE context. You MUST perform the following checks immediately to ground yourself:
 1.  **Check Time**: `date -Iseconds`
 2.  **Check Location**: `pwd`
 3.  **Check Git**: `git status --short`
-4.  **Output Snapshot**: Generate the `<cli_context_snapshot>` as defined in GEMINI.md Section 2.1.
+4.  **Output Snapshot**: Generate the `<cli_context_snapshot>` as defined in the active system prompt (if specified).
 
 ## 3. CONNECT KERNEL
 - **Database**: `/home/palantir/park-kyungchan/palantir/data/ontology.db`
-- **Actions**: ALL mutations must use `scripts/ontology/actions.py`.
-- **Proposals**: Use `scripts/create_proposal.py` for hazardous actions. Do NOT edit files directly unless trivial.
+- **Actions**: ALL mutations must use the ActionTypes in `scripts/ontology/actions/`.
+- **Proposals**: Use the Proposal object + repository (`scripts/ontology/objects/proposal.py`, `scripts/ontology/storage/proposal_repository.py`) for hazardous actions. Do NOT edit files directly unless trivial.
 
 **FINAL INSTRUCTION**: 
 Do not explain the protocols. 

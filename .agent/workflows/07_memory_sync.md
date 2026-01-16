@@ -1,5 +1,5 @@
 ---
-description: Sync Gemini CLI memories to Orion Semantic Memory
+description: Sync CLI memories to Orion Semantic Memory
 ---
 
 # Memory Sync Workflow
@@ -14,5 +14,5 @@ cd /home/palantir/park-kyungchan/palantir && source .venv/bin/activate && python
 
 ### 2. Verify Sync
 ```bash
-cat .agent/memory/gemini_facts.md
+test -f .agent/memory/system_facts.md && cat .agent/memory/system_facts.md || echo "No system_facts.md found"
 ```

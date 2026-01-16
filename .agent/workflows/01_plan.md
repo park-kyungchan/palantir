@@ -15,7 +15,7 @@ description: Transform User Intent into a Governed Ontology Plan (3-Stage Protoc
 Establish requirements and remove guesswork.
 
 ### Actions
-1. **Context Check**: Use `tavily` for external docs if needed
+1. **Context Check**: Prefer local docs; use external search only if a configured tool is available
 2. **Codebase Scan**: Use `read_file` to understand architecture
 3. **Scope Definition**: Identify boundaries and constraints
 4. **Complexity Assessment**: Small (2-3 phases) / Medium (4-5) / Large (6-7)
@@ -97,12 +97,16 @@ Ensure plan is ready for execution.
 ### Actions (after Stage C approval)
 1. Define `Objective` from user intent
 2. Break down into `Jobs`
-3. Assign `Role`: Architect (Claude) / Automation (GPT)
+3. Assign `Role`: Architect Agent / Automation Agent
 
 ### Command
 ```bash
-python -m scripts.ontology.handoff --plan .agent/plans/plan_[ID].json --job [INDEX]
+python -m scripts.ontology.handoff --plan ${plan_path} --job ${job_index}
 ```
+**Required params when run via execute_workflow:**
+- `workflow_params.plan_path`
+- `workflow_params.job_index`
+
 
 ---
 

@@ -26,7 +26,7 @@ Run consolidation engine.
 
 ### Action
 ```bash
-python3 scripts/consolidate.py
+source .venv/bin/activate && python scripts/consolidate.py
 ```
 
 ---
@@ -57,5 +57,5 @@ async def run_consolidation():
     if result.passed:
         # Actually run consolidation
         import subprocess
-        subprocess.run(["python3", "scripts/consolidate.py"])
+        subprocess.run(["bash", "-lc", "source .venv/bin/activate && python scripts/consolidate.py"])
 ```
