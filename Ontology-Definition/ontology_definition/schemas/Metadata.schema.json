@@ -1,0 +1,713 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oda.palantir.local/schemas/Metadata.schema.json",
+  "title": "Metadata Definition Schema",
+  "description": "Palantir Foundry-aligned Metadata definitions for ODA system. Covers Ontology-level metadata, audit logging, change tracking, and export/import formats.",
+  "type": "object",
+  "properties": {
+    "$type": {
+      "type": "string",
+      "description": "Discriminator for metadata type.",
+      "enum": ["OntologyMetadata", "AuditLog", "ChangeSet", "ExportMetadata", "ProposalMetadata"]
+    }
+  },
+  "required": ["$type"],
+  "oneOf": [
+    { "$ref": "#/$defs/OntologyMetadata" },
+    { "$ref": "#/$defs/AuditLog" },
+    { "$ref": "#/$defs/ChangeSet" },
+    { "$ref": "#/$defs/ExportMetadata" },
+    { "$ref": "#/$defs/ProposalMetadata" }
+  ],
+  "$defs": {
+    "OntologyMetadata": {
+      "type": "object",
+      "description": "Top-level metadata for the entire Ontology schema.",
+      "properties": {
+        "$type": { "const": "OntologyMetadata" },
+        "ontologyRid": {
+          "type": "string",
+          "description": "Resource ID for this Ontology instance.",
+          "pattern": "^ri\\.ontology\\.[a-z]+\\.[a-zA-Z0-9-]+$"
+        },
+        "apiName": {
+          "type": "string",
+          "description": "Programmatic name for this Ontology.",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-friendly Ontology name."
+        },
+        "description": {
+          "type": "string",
+          "description": "Documentation for this Ontology."
+        },
+        "schemaVersion": {
+          "type": "string",
+          "description": "Semantic version of the schema format.",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "examples": ["4.0.0", "3.2.1"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "createdBy": {
+          "type": "string",
+          "readOnly": true
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "modifiedBy": {
+          "type": "string",
+          "readOnly": true
+        },
+        "version": {
+          "type": "integer",
+          "description": "Ontology version number (increments on each published change).",
+          "minimum": 1,
+          "readOnly": true
+        },
+        "stats": {
+          "$ref": "#/$defs/OntologyStats"
+        },
+        "governance": {
+          "$ref": "#/$defs/GovernanceConfig"
+        },
+        "serviceVersion": {
+          "type": "string",
+          "description": "Ontology Service version (OSv1 legacy or OSv2 current).",
+          "enum": ["OSv1", "OSv2"],
+          "default": "OSv2"
+        }
+      },
+      "required": ["$type", "apiName", "displayName", "schemaVersion"],
+      "additionalProperties": false
+    },
+    "OntologyStats": {
+      "type": "object",
+      "description": "Statistics about the Ontology contents.",
+      "properties": {
+        "objectTypeCount": { "type": "integer", "minimum": 0 },
+        "linkTypeCount": { "type": "integer", "minimum": 0 },
+        "actionTypeCount": { "type": "integer", "minimum": 0 },
+        "interfaceCount": { "type": "integer", "minimum": 0 },
+        "valueTypeCount": { "type": "integer", "minimum": 0 },
+        "structTypeCount": { "type": "integer", "minimum": 0 },
+        "sharedPropertyCount": { "type": "integer", "minimum": 0 },
+        "activeObjectTypeCount": { "type": "integer", "minimum": 0 },
+        "deprecatedObjectTypeCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "GovernanceConfig": {
+      "type": "object",
+      "description": "Governance configuration for the Ontology.",
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "User or team ID that owns this Ontology."
+        },
+        "editors": {
+          "type": "array",
+          "description": "Users/teams with edit permission.",
+          "items": { "type": "string" }
+        },
+        "viewers": {
+          "type": "array",
+          "description": "Users/teams with view permission.",
+          "items": { "type": "string" }
+        },
+        "proposalRequired": {
+          "type": "boolean",
+          "description": "If true, changes require Proposal approval.",
+          "default": true
+        },
+        "endorsementEnabled": {
+          "type": "boolean",
+          "description": "If true, ObjectTypes can be marked as endorsed.",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "AuditLog": {
+      "type": "object",
+      "description": "Immutable audit log entry tracking who/what/when/why for all changes.",
+      "properties": {
+        "$type": { "const": "AuditLog" },
+        "logId": {
+          "type": "string",
+          "description": "Unique identifier for this log entry.",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the operation occurred."
+        },
+        "operationType": {
+          "type": "string",
+          "description": "Type of operation performed.",
+          "enum": [
+            "CREATE",
+            "READ",
+            "UPDATE",
+            "DELETE",
+            "LINK",
+            "UNLINK",
+            "EXECUTE",
+            "APPROVE",
+            "REJECT",
+            "TRANSITION",
+            "EXPORT",
+            "IMPORT"
+          ]
+        },
+        "actor": {
+          "$ref": "#/$defs/ActorInfo",
+          "description": "Who performed the operation."
+        },
+        "target": {
+          "$ref": "#/$defs/TargetInfo",
+          "description": "What was affected."
+        },
+        "actionRef": {
+          "type": "string",
+          "description": "If operation was via ActionType, the action's apiName."
+        },
+        "proposalRef": {
+          "type": "string",
+          "description": "If operation required approval, the Proposal ID."
+        },
+        "reason": {
+          "type": "string",
+          "description": "User-provided reason for the change."
+        },
+        "beforeState": {
+          "type": "object",
+          "description": "State snapshot before the change (for UPDATE/DELETE)."
+        },
+        "afterState": {
+          "type": "object",
+          "description": "State snapshot after the change (for CREATE/UPDATE)."
+        },
+        "changes": {
+          "type": "array",
+          "description": "Detailed list of property changes.",
+          "items": {
+            "$ref": "#/$defs/PropertyChange"
+          }
+        },
+        "success": {
+          "type": "boolean",
+          "description": "Whether the operation succeeded.",
+          "default": true
+        },
+        "errorMessage": {
+          "type": "string",
+          "description": "If failed, the error message."
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "ID linking related log entries (e.g., multi-step operations)."
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Session ID for the actor."
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address of the actor (if applicable).",
+          "format": "ipv4"
+        }
+      },
+      "required": ["$type", "logId", "timestamp", "operationType", "actor", "target"],
+      "additionalProperties": false
+    },
+    "ActorInfo": {
+      "type": "object",
+      "description": "Information about who performed an operation.",
+      "properties": {
+        "actorType": {
+          "type": "string",
+          "enum": ["USER", "AGENT", "SYSTEM", "SERVICE"]
+        },
+        "actorId": {
+          "type": "string",
+          "description": "Unique identifier for the actor."
+        },
+        "actorName": {
+          "type": "string",
+          "description": "Display name of the actor."
+        },
+        "roles": {
+          "type": "array",
+          "description": "Roles the actor had at time of operation.",
+          "items": { "type": "string" }
+        },
+        "permissions": {
+          "type": "array",
+          "description": "Relevant permissions used.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["actorType", "actorId"],
+      "additionalProperties": false
+    },
+    "TargetInfo": {
+      "type": "object",
+      "description": "Information about what was affected by an operation.",
+      "properties": {
+        "targetType": {
+          "type": "string",
+          "description": "Type of target.",
+          "enum": ["OBJECT", "LINK", "OBJECT_TYPE", "LINK_TYPE", "ACTION_TYPE", "PROPERTY", "ONTOLOGY", "PROPOSAL"]
+        },
+        "targetRid": {
+          "type": "string",
+          "description": "RID of the target (if applicable)."
+        },
+        "targetApiName": {
+          "type": "string",
+          "description": "apiName of the target."
+        },
+        "objectTypeApiName": {
+          "type": "string",
+          "description": "For OBJECT targets, the ObjectType."
+        },
+        "primaryKey": {
+          "type": "string",
+          "description": "For OBJECT targets, the primary key value."
+        }
+      },
+      "required": ["targetType"],
+      "additionalProperties": false
+    },
+    "PropertyChange": {
+      "type": "object",
+      "description": "Detail of a single property change.",
+      "properties": {
+        "propertyApiName": {
+          "type": "string"
+        },
+        "oldValue": {
+          "description": "Value before change (null for CREATE)."
+        },
+        "newValue": {
+          "description": "Value after change (null for DELETE)."
+        },
+        "changeType": {
+          "type": "string",
+          "enum": ["SET", "UNSET", "APPEND", "REMOVE", "REPLACE"]
+        }
+      },
+      "required": ["propertyApiName", "changeType"],
+      "additionalProperties": false
+    },
+    "ChangeSet": {
+      "type": "object",
+      "description": "Collection of changes applied together (transaction-like).",
+      "properties": {
+        "$type": { "const": "ChangeSet" },
+        "changeSetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actor": {
+          "$ref": "#/$defs/ActorInfo"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what this change set accomplishes."
+        },
+        "operations": {
+          "type": "array",
+          "description": "Operations in this change set.",
+          "items": {
+            "$ref": "#/$defs/ChangeOperation"
+          },
+          "minItems": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "APPLIED", "ROLLED_BACK", "FAILED"],
+          "default": "PENDING"
+        },
+        "rollbackInfo": {
+          "type": "object",
+          "description": "Information for rolling back this change set.",
+          "properties": {
+            "rollbackable": { "type": "boolean", "default": true },
+            "rollbackDeadline": { "type": "string", "format": "date-time" },
+            "inverseOperations": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/ChangeOperation" }
+            }
+          }
+        }
+      },
+      "required": ["$type", "changeSetId", "timestamp", "actor", "operations"],
+      "additionalProperties": false
+    },
+    "ChangeOperation": {
+      "type": "object",
+      "description": "Single operation within a change set.",
+      "properties": {
+        "operationType": {
+          "type": "string",
+          "enum": [
+            "CREATE_OBJECT_TYPE",
+            "MODIFY_OBJECT_TYPE",
+            "DELETE_OBJECT_TYPE",
+            "CREATE_LINK_TYPE",
+            "MODIFY_LINK_TYPE",
+            "DELETE_LINK_TYPE",
+            "CREATE_ACTION_TYPE",
+            "MODIFY_ACTION_TYPE",
+            "DELETE_ACTION_TYPE",
+            "ADD_PROPERTY",
+            "MODIFY_PROPERTY",
+            "REMOVE_PROPERTY",
+            "CREATE_OBJECT",
+            "MODIFY_OBJECT",
+            "DELETE_OBJECT",
+            "CREATE_LINK",
+            "DELETE_LINK"
+          ]
+        },
+        "targetApiName": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Operation-specific data."
+        },
+        "sequenceNumber": {
+          "type": "integer",
+          "description": "Order within the change set.",
+          "minimum": 0
+        }
+      },
+      "required": ["operationType", "targetApiName"],
+      "additionalProperties": false
+    },
+    "ExportMetadata": {
+      "type": "object",
+      "description": "Metadata for Ontology JSON export (Palantir P2-HIGH requirement).",
+      "properties": {
+        "$type": { "const": "ExportMetadata" },
+        "exportId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "exportedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "exportedBy": {
+          "type": "string"
+        },
+        "sourceOntologyRid": {
+          "type": "string",
+          "description": "RID of the source Ontology."
+        },
+        "sourceOntologyVersion": {
+          "type": "integer",
+          "description": "Version of the source Ontology at export time."
+        },
+        "schemaVersion": {
+          "type": "string",
+          "description": "Schema format version.",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "exportScope": {
+          "type": "string",
+          "description": "What was included in the export.",
+          "enum": ["FULL", "PARTIAL", "DIFF"],
+          "default": "FULL"
+        },
+        "includedTypes": {
+          "type": "object",
+          "description": "What type categories were included.",
+          "properties": {
+            "objectTypes": { "type": "boolean", "default": true },
+            "linkTypes": { "type": "boolean", "default": true },
+            "actionTypes": { "type": "boolean", "default": true },
+            "interfaces": { "type": "boolean", "default": true },
+            "valueTypes": { "type": "boolean", "default": true },
+            "structTypes": { "type": "boolean", "default": true },
+            "sharedProperties": { "type": "boolean", "default": true }
+          }
+        },
+        "filterCriteria": {
+          "type": "object",
+          "description": "Filters applied during export.",
+          "properties": {
+            "statusFilter": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "tagFilter": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "moduleFilter": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "checksums": {
+          "type": "object",
+          "description": "Integrity checksums.",
+          "properties": {
+            "sha256": { "type": "string" },
+            "md5": { "type": "string" }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Warnings generated during export.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["$type", "exportId", "exportedAt", "schemaVersion"],
+      "additionalProperties": false
+    },
+    "ProposalMetadata": {
+      "type": "object",
+      "description": "Metadata for Ontology Proposal workflow.",
+      "properties": {
+        "$type": { "const": "ProposalMetadata" },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "description": "Brief title for the proposal."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of proposed changes."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["DRAFT", "PENDING", "APPROVED", "REJECTED", "EXECUTED", "CANCELLED", "DELETED"],
+          "default": "DRAFT"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+          "default": "MEDIUM"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When moved from DRAFT to PENDING."
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewedBy": {
+          "type": "string"
+        },
+        "reviewComment": {
+          "type": "string"
+        },
+        "executedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "executedBy": {
+          "type": "string"
+        },
+        "actionTypeRef": {
+          "type": "string",
+          "description": "ActionType apiName this proposal is for."
+        },
+        "payload": {
+          "type": "object",
+          "description": "Action parameters for execution."
+        },
+        "changeSet": {
+          "$ref": "#/$defs/ChangeSet",
+          "description": "Changes this proposal will apply."
+        },
+        "validationResults": {
+          "type": "array",
+          "description": "Results of submission criteria validation.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "criterionApiName": { "type": "string" },
+              "passed": { "type": "boolean" },
+              "message": { "type": "string" }
+            }
+          }
+        },
+        "history": {
+          "type": "array",
+          "description": "Status transition history.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fromStatus": { "type": "string" },
+              "toStatus": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "actor": { "type": "string" },
+              "comment": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["$type", "proposalId", "status", "createdAt", "createdBy"],
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "$type": "OntologyMetadata",
+      "ontologyRid": "ri.ontology.main.oda-enterprise",
+      "apiName": "ODAEnterprise",
+      "displayName": "ODA Enterprise Ontology",
+      "description": "Main enterprise ontology for the ODA system.",
+      "schemaVersion": "4.0.0",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "createdBy": "admin",
+      "modifiedAt": "2026-01-17T10:00:00Z",
+      "modifiedBy": "system",
+      "version": 42,
+      "stats": {
+        "objectTypeCount": 25,
+        "linkTypeCount": 18,
+        "actionTypeCount": 45,
+        "interfaceCount": 5,
+        "valueTypeCount": 12,
+        "structTypeCount": 8,
+        "sharedPropertyCount": 15,
+        "activeObjectTypeCount": 22,
+        "deprecatedObjectTypeCount": 3
+      },
+      "governance": {
+        "owner": "ontology-team",
+        "editors": ["dev-team", "data-team"],
+        "viewers": ["all-employees"],
+        "proposalRequired": true,
+        "endorsementEnabled": true
+      },
+      "serviceVersion": "OSv2"
+    },
+    {
+      "$type": "AuditLog",
+      "logId": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2026-01-17T10:30:00Z",
+      "operationType": "UPDATE",
+      "actor": {
+        "actorType": "USER",
+        "actorId": "user-123",
+        "actorName": "John Doe",
+        "roles": ["Developer", "Ontology Editor"]
+      },
+      "target": {
+        "targetType": "OBJECT",
+        "objectTypeApiName": "Employee",
+        "primaryKey": "emp-456"
+      },
+      "actionRef": "updateEmployeeInfo",
+      "reason": "Correcting department assignment",
+      "beforeState": {
+        "department": "Engineering"
+      },
+      "afterState": {
+        "department": "Product"
+      },
+      "changes": [
+        {
+          "propertyApiName": "department",
+          "oldValue": "Engineering",
+          "newValue": "Product",
+          "changeType": "SET"
+        }
+      ],
+      "success": true,
+      "correlationId": "corr-789",
+      "sessionId": "session-abc"
+    },
+    {
+      "$type": "ExportMetadata",
+      "exportId": "660e8400-e29b-41d4-a716-446655440001",
+      "exportedAt": "2026-01-17T11:00:00Z",
+      "exportedBy": "admin",
+      "sourceOntologyRid": "ri.ontology.main.oda-enterprise",
+      "sourceOntologyVersion": 42,
+      "schemaVersion": "4.0.0",
+      "exportScope": "FULL",
+      "includedTypes": {
+        "objectTypes": true,
+        "linkTypes": true,
+        "actionTypes": true,
+        "interfaces": true,
+        "valueTypes": true,
+        "structTypes": true,
+        "sharedProperties": true
+      },
+      "checksums": {
+        "sha256": "abc123def456..."
+      }
+    },
+    {
+      "$type": "ProposalMetadata",
+      "proposalId": "770e8400-e29b-41d4-a716-446655440002",
+      "title": "Add Security Markings to Employee ObjectType",
+      "description": "Adding mandatory control property for row-level security compliance.",
+      "status": "PENDING",
+      "priority": "HIGH",
+      "createdAt": "2026-01-17T09:00:00Z",
+      "createdBy": "security-team",
+      "submittedAt": "2026-01-17T09:30:00Z",
+      "actionTypeRef": "addPropertyToObjectType",
+      "payload": {
+        "objectTypeApiName": "Employee",
+        "property": {
+          "apiName": "securityMarkings",
+          "isMandatoryControl": true
+        }
+      },
+      "validationResults": [
+        {
+          "criterionApiName": "hasOntologyEditorRole",
+          "passed": true,
+          "message": "User has Ontology Editor role"
+        }
+      ],
+      "history": [
+        {
+          "fromStatus": "DRAFT",
+          "toStatus": "PENDING",
+          "timestamp": "2026-01-17T09:30:00Z",
+          "actor": "security-team",
+          "comment": "Ready for review"
+        }
+      ]
+    }
+  ]
+}
