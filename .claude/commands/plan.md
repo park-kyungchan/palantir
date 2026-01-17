@@ -2,8 +2,16 @@
 description: |
   Execute ODA 3-Stage Planning Protocol with Plan subagent comparison.
   Uses dual-path analysis: ODA Protocol + Claude Plan Agent → Optimal synthesis.
+  **[V2.1.9] Progressive-Disclosure Native - Auto L2 generation via PostToolUse Hook**
 allowed-tools: Read, Grep, Glob, Bash, TodoWrite, Task, AskUserQuestion
 argument-hint: <요구사항>
+
+# V2.1.9 Features
+v21x_features:
+  progressive_disclosure: true     # Hook auto-generates L2, returns L1 only
+  suppress_verbose_output: true    # Verbose subagent output hidden from transcript
+  auto_l2_generation: true         # L2 structured reports created automatically
+  context_efficient: true          # Main Agent context stays lean during planning
 ---
 
 # /plan Command (Optimized with Plan Subagent)
@@ -41,6 +49,56 @@ Compare outputs and extract:
 ---
 
 ## Execution Flow
+
+### Step 0: MANDATORY Comprehensive TodoWrite Initialization
+
+**Purpose:** Ensure context preservation across Auto-Compact events.
+
+**Why This Is Required:**
+- Plan files (`.agent/plans/*.md`) persist **structure**
+- TodoWrite persists **dynamic progress state**
+- Together they enable **complete context recovery** after Auto-Compact
+
+**Anti-Context-Loss Rule (HARD REQUIREMENT):**
+```python
+# MANDATORY: Parse requirements into comprehensive task list FIRST
+initial_tasks = parse_requirements_to_tasks("$ARGUMENTS")
+
+# Quality Gate: Validate minimum complexity
+if len(initial_tasks) < 3:
+    # Too simple - may not need /plan command
+    AskUserQuestion([{
+        "question": "요구사항이 간단해 보입니다. /plan을 계속하시겠습니까?",
+        "options": [
+            {"label": "Yes, create plan anyway"},
+            {"label": "No, just implement directly"}
+        ]
+    }])
+
+# MANDATORY: Create comprehensive TodoWrite BEFORE any analysis
+todos = []
+for i, task in enumerate(initial_tasks):
+    todos.append({
+        "content": f"Phase {i+1}: {task.description}",
+        "status": "pending",
+        "activeForm": f"Executing Phase {i+1}: {task.description}",
+    })
+
+# BLOCKS plan execution if fails
+TodoWrite(todos=todos)
+
+# Log for audit trail
+# .agent/logs/plan_audit.log: "[timestamp] Plan initialized with {len(todos)} tasks"
+```
+
+**Failure Handling:**
+- If TodoWrite fails → DO NOT proceed with plan generation
+- If len(tasks) < 3 → Ask user to clarify or proceed with direct implementation
+- All tasks must have: `content`, `status`, `activeForm`
+
+**This step MUST complete before Step 1 begins.**
+
+---
 
 ### Step 1: Initialize Tracking
 ```
@@ -216,9 +274,16 @@ Update plan file progress when:
 - Phase completes
 - Errors occur (add to Findings section)
 
-### Step 2: Parallel Analysis
+### Step 2: Parallel Analysis (V2.1.9 Progressive-Disclosure)
 
 **Prerequisite:** If Step 1.5 triggered decomposition, wait for subtask results before proceeding.
+
+**V2.1.9 Context Efficiency:**
+- PostToolUse Hook (`progressive_disclosure_hook.py`) automatically intercepts Task results
+- Hook writes verbose output to L2 (`.agent/outputs/plan/{agent_id}_structured.md`)
+- Hook returns only L1 headline to Main Agent context
+- Main Agent receives: `✅ Plan[abc123]: 5 phases identified, ready`
+- Full details accessible via `Read(".agent/outputs/plan/{agent_id}_structured.md")`
 
 **Launch simultaneously:**
 
@@ -231,37 +296,60 @@ Update plan file progress when:
 
 2. **Plan Subagent Path:**
    ```python
-   # If NOT decomposed (single-scope task):
+   # V2.1.9: Hook handles output transformation automatically
+   # No need for explicit output budget constraint in prompt
    Task(
        subagent_type="Plan",
        prompt="""Analyze requirements and design implementation: $ARGUMENTS
 
-## Constraint: Output Budget
-YOUR OUTPUT MUST NOT EXCEED 10000 TOKENS.
-Return ONLY: Key findings, critical paths, summary.
-Format: Bullet points with file:line references.""",
+Provide comprehensive analysis including:
+- Critical files affected
+- Architectural considerations
+- Implementation phases
+- Risk assessment""",
        description="Plan subagent analysis"
    )
 
-   # If decomposed (from Step 1.5):
-   # Skip this step - use synthesized results from decomposed subtasks
+   # Hook will:
+   # 1. Intercept the verbose response
+   # 2. Write L2 to .agent/outputs/plan/{agent_id}_structured.md
+   # 3. Return L1 headline: "✅ Plan[id]: summary"
+   # 4. Suppress verbose output from transcript (suppressOutput: true)
    ```
+
+#### V2.1.9 Automatic L2 Access
+
+After Task completes, Main Agent context contains only L1 headline.
+To access details for synthesis:
+
+```python
+# Hook provides L2 path in additionalContext
+# Read L2 when detailed synthesis needed
+l2_content = Read(".agent/outputs/plan/{agent_id}_structured.md")
+```
+
+**Context Cost Comparison:**
+
+| Mode | Main Context Cost | Detail Access |
+|------|-------------------|---------------|
+| **V2.1.8 (old)** | 10,000+ tokens | Inline |
+| **V2.1.9 (new)** | ~100 tokens (L1) | On-demand via L2 |
 
 #### Handling Decomposed Results
 
-If Step 1.5 deployed parallel subagents, synthesize results here:
+If Step 1.5 deployed parallel subagents, all results are auto-transformed:
 
 ```python
-# Collect results from decomposed subtasks
-decomposed_results = [
-    # Results from each subdirectory analysis
-    # Automatically collected from background tasks
-]
+# Each subagent result → L1 headline + L2 report
+# Main context receives only headlines:
+# ✅ Explore[abc123]: Found 15 files, 3 modules
+# ✅ Explore[def456]: Found 8 files, 2 modules
+# ✅ Explore[ghi789]: Found 12 files, 1 module
 
-# Synthesize into unified analysis
-unified_analysis = synthesize_plan_results(decomposed_results)
-
-# Use unified_analysis in Step 3 comparison
+# For synthesis, read L2 reports:
+for agent_id in ["abc123", "def456", "ghi789"]:
+    details = Read(f".agent/outputs/explore/{agent_id}_structured.md")
+    # Synthesize from L2 content
 ```
 
 ### Step 3: Comparison Matrix
@@ -504,3 +592,70 @@ Add this section to plan files for resume tracking:
 - Only `in_progress` tasks can be resumed
 - Agent ID must be less than 1 hour old
 - Context window must have space for resumed output
+
+### 7.6 Progressive-Disclosure Output Integration (V2.1.7)
+
+**3-Layer Output for Context-Efficient Planning:**
+
+```python
+from lib.oda.planning.agent_registry import AgentRegistry
+from lib.oda.planning.output_layer_manager import OutputLayerManager, OutputLayer, TaskType
+
+# Initialize managers
+registry = AgentRegistry()
+output_manager = OutputLayerManager()
+
+# After subagent completion, process output layers
+def process_plan_output(result, agent_type, task_description):
+    # L1: Headline for main context (~50 tokens)
+    headline = output_manager.format_headline(
+        agent_id=result.agent_id,
+        agent_type=agent_type,
+        summary=extract_summary(result.output),
+        status="completed",
+        metrics={"phases": count_phases(result.output)}
+    )
+    # Example: "✅ Plan[a1b2c3d]: 5 phases identified, implementation ready"
+
+    # L2: Write structured report for on-demand access
+    report_path = output_manager.write_structured_report(
+        agent_id=result.agent_id,
+        agent_type=agent_type,
+        task_description=task_description,
+        result=result.output,
+        status="completed"
+    )
+    # Creates: .agent/outputs/plan/{agent_id}_structured.md
+
+    # Mark completion in registry
+    registry.mark_completed(result.agent_id, output_path=report_path)
+
+    return headline, report_path
+```
+
+**Layer Access for Plan Synthesis:**
+
+```python
+# For /plan synthesis, access L2 for detailed comparison
+task_type = output_manager.classify_task_type("$ARGUMENTS")
+decision = output_manager.decide_layer_access(task_type)
+
+# Planning tasks need comprehensive access (L1 + L2)
+if TaskType.PLANNING in [task_type]:
+    # Access ODA Protocol output (L2)
+    oda_analysis = output_manager.read_layer(oda_agent_id, OutputLayer.L2_STRUCTURED)
+
+    # Access Plan Subagent output (L2)
+    plan_analysis = output_manager.read_layer(plan_agent_id, OutputLayer.L2_STRUCTURED)
+
+    # Synthesize optimal approach from both L2 reports
+    synthesis = combine_analyses(oda_analysis, plan_analysis)
+```
+
+**3-Layer Structure for /plan:**
+
+| Layer | Content | Location | When to Access |
+|-------|---------|----------|----------------|
+| **L1 Headline** | `✅ Plan[id]: N phases, ready` | Main Context | Always |
+| **L2 Structured** | Phases, evidence, trade-offs | `.agent/outputs/plan/{id}_structured.md` | Synthesis |
+| **L3 Raw** | Full analysis transcript | `/tmp/claude/.../tasks/{id}.output` | Resume or debug |

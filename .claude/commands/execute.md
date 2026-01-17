@@ -3,8 +3,16 @@ description: |
   Execute approved plan with Orchestrator-mode enforcement.
   Ensures Main Agent delegates all work to Subagents.
   Includes automatic result verification and recovery gate.
+  **[V2.1.9] Progressive-Disclosure Native - Auto L2 generation via PostToolUse Hook**
 allowed-tools: Read, Grep, Glob, Bash, TodoWrite, Task, AskUserQuestion
 argument-hint: [plan-file-path]
+
+# V2.1.9 Features
+v21x_features:
+  progressive_disclosure: true    # Hook auto-generates L2
+  suppress_verbose_output: true   # Verbose output hidden from transcript
+  auto_l2_generation: true        # L2 structured reports created automatically
+  context_efficient: true         # Main Agent context stays lean during execution
 ---
 
 # /execute Command (Orchestrator Enforcement)
@@ -282,48 +290,62 @@ Format: Bullet points with file:line references.
 
 ---
 
-### Step 6: RESULT VERIFICATION (결과 검증) ★ CRITICAL
+### Step 6: RESULT VERIFICATION (결과 검증) ★ V2.1.9 SIMPLIFIED
 
-**Purpose:** Ensure Main Agent has FULL results, not summaries.
+**Purpose:** Ensure Main Agent has access to FULL results via L2.
 
-**Reference:** `lib/oda/planning/output_layer_manager.py`
+**V2.1.9 Change:** `progressive_disclosure_hook.py` automatically generates L2 reports.
+Main Agent no longer needs manual verification - Hook handles this automatically.
 
-**Verification Flow:**
+**Reference:** `.claude/hooks/progressive_disclosure_hook.py`
+
+**V2.1.9 Automatic Flow:**
+```
+Task result → Hook intercepts → L2 written → L1 headline returned
+```
+
+**Main Agent Receives:**
+```
+✅ GeneralPurpose[abc123]: Phase 4 complete, 3 files modified
+
+## Subagent Result (Progressive-Disclosure)
+
+**L1 Headline:**
+✅ GeneralPurpose[abc123]: Phase 4 complete, 3 files modified
+
+**L2 Report Available:**
+Path: `.agent/outputs/general/abc123_structured.md`
+To read full details: `Read(".agent/outputs/general/abc123_structured.md")`
+
+**Agent ID (for resume):** `abc123`
+```
+
+**Verification Flow (Simplified):**
 ```python
-from lib.oda.planning.output_layer_manager import (
-    is_summary_only,
-    verify_subagent_result,
-    OutputLayerManager,
-    OutputLayer
-)
-
 def verify_result(task_result, agent_id, agent_type):
     """
-    CRITICAL: Verify that result is complete, not a summary.
-    If summary detected, automatically access L2/L3.
+    V2.1.9: Hook already generated L2. Just check if L2 exists.
     """
-    output_manager = OutputLayerManager()
+    # Hook provides L2 path in additionalContext
+    l2_path = f".agent/outputs/{agent_type.lower()}/{agent_id}_structured.md"
 
-    # 6.1 Check if result is summary only
-    is_summary, reasons = is_summary_only(task_result)
+    if Path(l2_path).exists():
+        # L2 available - can access if details needed
+        return task_result, "L2_AVAILABLE"
 
-    if not is_summary:
-        # Complete result - proceed
-        return task_result, "COMPLETE"
-
-    # 6.2 Summary detected - access L2
-    l2_content = output_manager.read_layer(agent_id, OutputLayer.L2_STRUCTURED)
-    if l2_content:
-        return l2_content, "L2_RECOVERED"
-
-    # 6.3 L2 not available - access L3
-    l3_content = output_manager.read_layer(agent_id, OutputLayer.L3_RAW)
-    if l3_content:
-        return l3_content, "L3_RECOVERED"
-
-    # 6.4 No detailed content available
-    return None, "NEEDS_RECOVERY"
+    # L2 not found (edge case) - use validate_task_result.py fallback
+    return task_result, "VERIFY_MANUALLY"
 ```
+
+**When to Read L2:**
+- Phase requires detailed results for next phase
+- Synthesis step needs complete information
+- Verification of specific file changes
+
+**When L1 Headline Sufficient:**
+- Progress tracking (TodoWrite update)
+- Simple pass/fail status
+- Moving to next independent phase
 
 **Summary Detection Patterns:**
 ```python

@@ -48,7 +48,13 @@
           },
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/welcome.sh"
+            "command": "/home/palantir/.claude/hooks/welcome.sh",
+            "once": true
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/setup.sh",
+            "once": true
           }
         ]
       }
@@ -104,6 +110,21 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/post-tool-use-audit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/palantir/.claude/hooks/progressive_disclosure_hook.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/palantir/.claude/hooks/validate_task_result.py",
+            "timeout": 10
           }
         ]
       },
