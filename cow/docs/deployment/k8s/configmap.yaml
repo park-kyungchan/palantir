@@ -1,0 +1,172 @@
+# =============================================================================
+# MathpixPipeline - Kubernetes ConfigMap
+# Non-sensitive configuration settings
+# =============================================================================
+#
+# Apply: kubectl apply -f configmap.yaml -n mathpix-pipeline
+#
+# Note: Sensitive values (API keys) should be in Secrets, not ConfigMaps
+#
+# =============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mathpix-pipeline-config
+  namespace: mathpix-pipeline
+  labels:
+    app: mathpix-pipeline
+    app.kubernetes.io/name: mathpix-pipeline
+    app.kubernetes.io/component: config
+data:
+  # -------------------------------------------------------------------------
+  # Pipeline Configuration
+  # -------------------------------------------------------------------------
+
+  # Number of concurrent processing workers
+  # Adjust based on pod resources and expected load
+  # More workers = higher throughput but more memory usage
+  PIPELINE_WORKERS: "4"
+
+  # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  # Use INFO for production, DEBUG for troubleshooting
+  PIPELINE_LOG_LEVEL: "INFO"
+
+  # Cache directory inside the container
+  # Should match the volume mount in deployment.yaml
+  PIPELINE_CACHE_DIR: "/app/.cache/mathpix_pipeline"
+
+  # Cache time-to-live in seconds
+  # 0 = infinite (entries never expire automatically)
+  # 3600 = 1 hour (default)
+  # 86400 = 24 hours
+  PIPELINE_CACHE_TTL: "3600"
+
+  # Maximum disk cache size in megabytes
+  # Older entries are evicted when this limit is reached
+  PIPELINE_CACHE_MAX_SIZE_MB: "500"
+
+  # Maximum items in memory cache
+  # Higher values = faster lookups but more memory usage
+  # Reduce if pods are experiencing OOM
+  PIPELINE_MEMORY_CACHE_ITEMS: "1000"
+
+  # -------------------------------------------------------------------------
+  # Server Configuration
+  # -------------------------------------------------------------------------
+
+  # Server bind address (0.0.0.0 for all interfaces)
+  SERVER_HOST: "0.0.0.0"
+
+  # Server port (should match container port in deployment)
+  SERVER_PORT: "8080"
+
+  # Request timeout in seconds
+  # Increase for large images or complex processing
+  SERVER_REQUEST_TIMEOUT: "300"
+
+  # Maximum request body size in megabytes
+  # Should accommodate largest expected images
+  SERVER_MAX_REQUEST_SIZE_MB: "50"
+
+  # -------------------------------------------------------------------------
+  # Circuit Breaker Configuration
+  # Protects against cascading failures from external APIs
+  # -------------------------------------------------------------------------
+
+  # Number of consecutive failures before circuit opens
+  # Lower = faster failure detection but more sensitive to transient errors
+  CB_FAILURE_THRESHOLD: "5"
+
+  # Number of successes in half-open state to close circuit
+  # Higher = more confidence that service has recovered
+  CB_SUCCESS_THRESHOLD: "2"
+
+  # Time in seconds circuit stays open before transitioning to half-open
+  # Longer = more time for external service to recover
+  CB_TIMEOUT_SECONDS: "60"
+
+  # Maximum concurrent calls allowed in half-open state
+  # Controls how quickly we probe recovering services
+  CB_HALF_OPEN_MAX_CALLS: "1"
+
+  # -------------------------------------------------------------------------
+  # Observability Configuration
+  # -------------------------------------------------------------------------
+
+  # Enable Prometheus metrics at /metrics endpoint
+  PROMETHEUS_ENABLED: "true"
+
+  # OpenTelemetry service name for distributed tracing
+  OTEL_SERVICE_NAME: "mathpix-pipeline"
+
+  # OpenTelemetry exporter endpoint (optional)
+  # Set to your OTEL collector endpoint for distributed tracing
+  # Example: http://otel-collector.monitoring.svc.cluster.local:4317
+  # OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  # -------------------------------------------------------------------------
+  # Feature Flags
+  # -------------------------------------------------------------------------
+
+  # Enable compression for disk cache entries
+  # Reduces disk usage but increases CPU usage
+  CACHE_COMPRESSION_ENABLED: "false"
+
+  # Enable human review stage (Stage G)
+  # Set to true if you have a review queue integration
+  ENABLE_HUMAN_REVIEW: "false"
+
+  # Default export formats (comma-separated)
+  # Options: json, latex, mathml, svg, png
+  DEFAULT_EXPORT_FORMATS: "json"
+
+  # -------------------------------------------------------------------------
+  # Stage-specific Thresholds
+  # -------------------------------------------------------------------------
+
+  # Stage D (Alignment) - Base alignment confidence threshold
+  # Elements below this threshold are flagged for review
+  ALIGNMENT_THRESHOLD: "0.65"
+
+  # Stage E (Semantic Graph) - Node confidence threshold
+  GRAPH_NODE_THRESHOLD: "0.60"
+
+  # Stage E (Semantic Graph) - Edge confidence threshold
+  GRAPH_EDGE_THRESHOLD: "0.55"
+
+  # Stage E - Enable strict validation (fail on any validation error)
+  GRAPH_STRICT_VALIDATION: "false"
+
+  # -------------------------------------------------------------------------
+  # Image Processing
+  # -------------------------------------------------------------------------
+
+  # Minimum image dimension (width or height)
+  IMAGE_MIN_DIMENSION: "50"
+
+  # Maximum image dimension (width or height)
+  IMAGE_MAX_DIMENSION: "4096"
+
+  # Supported image formats (comma-separated)
+  IMAGE_SUPPORTED_FORMATS: "png,jpg,jpeg,webp,gif,bmp,tiff"
+
+  # Enable image preprocessing (normalize, denoise)
+  ENABLE_PREPROCESSING: "true"
+
+  # -------------------------------------------------------------------------
+  # Batch Processing
+  # -------------------------------------------------------------------------
+
+  # Maximum concurrent batch processing
+  BATCH_MAX_CONCURRENT: "4"
+
+  # Batch job priority (lower = higher priority)
+  # Interactive requests should have lower priority values
+  BATCH_DEFAULT_PRIORITY: "10"
+
+  # Enable automatic retry for failed batch jobs
+  BATCH_RETRY_ENABLED: "false"
+
+  # Maximum retry attempts per batch job
+  BATCH_MAX_RETRIES: "3"

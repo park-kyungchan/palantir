@@ -1,0 +1,254 @@
+# =============================================================================
+# MathpixPipeline - Kubernetes Service
+# Exposes the deployment within the cluster and optionally externally
+# =============================================================================
+#
+# Apply: kubectl apply -f service.yaml -n mathpix-pipeline
+#
+# =============================================================================
+
+---
+# =============================================================================
+# ClusterIP Service - Internal cluster access
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mathpix-pipeline
+  namespace: mathpix-pipeline
+  labels:
+    app: mathpix-pipeline
+    app.kubernetes.io/name: mathpix-pipeline
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: mathpix-pipeline
+
+  ports:
+    # HTTP API port
+    - name: http
+      port: 80           # Service port (what clients use)
+      targetPort: 8080   # Container port
+      protocol: TCP
+
+  # Session affinity for stateful requests (optional)
+  # Useful if clients need sticky sessions
+  # sessionAffinity: ClientIP
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 10800  # 3 hours
+
+---
+# =============================================================================
+# Headless Service - For DNS discovery of individual pods
+# Useful for direct pod-to-pod communication or debugging
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mathpix-pipeline-headless
+  namespace: mathpix-pipeline
+  labels:
+    app: mathpix-pipeline
+    app.kubernetes.io/name: mathpix-pipeline
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service
+  selector:
+    app: mathpix-pipeline
+
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+
+---
+# =============================================================================
+# LoadBalancer Service - External access (cloud providers)
+# Use this for direct external access without an Ingress
+# Comment out if using Ingress instead
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mathpix-pipeline-lb
+  namespace: mathpix-pipeline
+  labels:
+    app: mathpix-pipeline
+    app.kubernetes.io/name: mathpix-pipeline
+  annotations:
+    # AWS NLB annotations (if using AWS)
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    # service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    # service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"  # or "internal"
+
+    # GCP annotations (if using GCP)
+    # cloud.google.com/load-balancer-type: "External"  # or "Internal"
+    # cloud.google.com/neg: '{"ingress": true}'
+
+    # Azure annotations (if using Azure)
+    # service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+    pass
+spec:
+  type: LoadBalancer
+  selector:
+    app: mathpix-pipeline
+
+  ports:
+    - name: http
+      port: 80           # External port
+      targetPort: 8080   # Container port
+      protocol: TCP
+
+  # Preserve client IP (optional)
+  # externalTrafficPolicy: Local
+
+  # Load balancer IP (optional - specify a static IP)
+  # loadBalancerIP: "x.x.x.x"
+
+  # Restrict source IPs (optional - for security)
+  # loadBalancerSourceRanges:
+  #   - "10.0.0.0/8"
+  #   - "192.168.1.0/24"
+
+---
+# =============================================================================
+# Ingress - HTTP(S) routing (recommended for production)
+# Requires an Ingress controller (nginx, traefik, etc.)
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mathpix-pipeline-ingress
+  namespace: mathpix-pipeline
+  labels:
+    app: mathpix-pipeline
+  annotations:
+    # NGINX Ingress Controller annotations
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+
+    # Enable CORS (if needed)
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+    # Rate limiting (optional)
+    # nginx.ingress.kubernetes.io/limit-rps: "100"
+    # nginx.ingress.kubernetes.io/limit-connections: "10"
+
+    # TLS/SSL with cert-manager (optional)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # AWS ALB Ingress Controller annotations (alternative)
+    # kubernetes.io/ingress.class: "alb"
+    # alb.ingress.kubernetes.io/scheme: "internet-facing"
+    # alb.ingress.kubernetes.io/target-type: "ip"
+    # alb.ingress.kubernetes.io/healthcheck-path: "/health"
+spec:
+  # TLS configuration (optional but recommended)
+  # tls:
+  #   - hosts:
+  #       - mathpix-pipeline.example.com
+  #     secretName: mathpix-pipeline-tls
+
+  rules:
+    # Replace with your actual domain
+    - host: mathpix-pipeline.example.com
+      http:
+        paths:
+          # Main API path
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mathpix-pipeline
+                port:
+                  number: 80
+
+          # Health check path (for monitoring tools)
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: mathpix-pipeline
+                port:
+                  number: 80
+
+          # Metrics path (restrict access in production)
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: mathpix-pipeline
+                port:
+                  number: 80
+
+---
+# =============================================================================
+# NetworkPolicy - Restrict pod-to-pod communication (optional, recommended)
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mathpix-pipeline-network-policy
+  namespace: mathpix-pipeline
+spec:
+  podSelector:
+    matchLabels:
+      app: mathpix-pipeline
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx  # Adjust based on your ingress namespace
+      ports:
+        - protocol: TCP
+          port: 8080
+
+    # Allow traffic from within the namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Allow HTTPS to external APIs (Mathpix, Anthropic, Google)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
