@@ -1,0 +1,36 @@
+# Layer1/Layer2 Output Architecture Configuration
+# ================================================
+# Version: 1.0.0
+# Purpose: Configure Layer1 validation and Layer2 preservation
+
+# Layer2 Output Handler Configuration
+layer2_output:
+  enabled: true
+  output_dir: ".agent/outputs"
+  file_pattern: "{timestamp}_{description}.md"
+  max_description_length: 50
+  log_file: "index.log"
+
+# Layer1 Validation Configuration (SubagentStop)
+layer1_validation:
+  enabled: true
+  mode: WARN  # WARN (advisory) | BLOCK (enforce)
+
+  required_sections:
+    - pattern: "## Layer1: Summary"
+      description: "High-level summary section"
+      max_tokens: 500
+    - pattern: "## Layer2: Reference"
+      description: "Index/reference section"
+      required_content: ["path", "file", "index", "|"]
+
+  transition:
+    warn_until: "2026-01-25"
+    notify_on_violation: true
+
+# Integration settings
+integration:
+  output_preservation_hook: true
+  validate_task_result: true
+  generate_index: true
+  index_path: ".agent/outputs/index.md"

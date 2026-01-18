@@ -1,0 +1,68 @@
+# Output Preservation Hook Configuration
+# ======================================
+#
+# V2.1.12: Enforces output preservation by detecting summary-only results.
+#
+# Problem Solved:
+#   병렬 Subagent → 대량 Output → Auto-Compact → 요약만 남음 → 데이터 손실
+#
+# Solution:
+#   PostToolUse Hook → Summary detection → L2 write → Guide Main Agent
+
+hook_name: output_preservation
+version: "1.0.0"
+enabled: true
+
+# Trigger configuration
+triggers:
+  - event: PostToolUse
+    tool: Task
+    description: "Intercept Task tool results to detect summaries"
+
+# Detection thresholds (sync with output_verification.py)
+thresholds:
+  min_complete_chars: 500      # Below this = likely summary
+  min_complete_lines: 20       # Below this = likely summary
+  completeness_indicators: 2   # Need 2+ indicators to be "complete"
+
+# Summary indicator patterns
+summary_patterns:
+  - "^\\s*✅\\s+\\w+\\["        # L1 Headline format
+  - "^\\s*⚠️\\s+\\w+\\["
+  - "^\\s*❌\\s+\\w+\\["
+  - "summary\\s*only"
+  - "truncated"
+  - "\\.{3}\\s*$"               # Trailing ellipsis
+  - "see\\s+(L2|L3|full)"       # Reference to detailed layer
+
+# Completeness indicator patterns (positive evidence)
+completeness_patterns:
+  - "files_viewed\\s*[=:]\\s*\\["
+  - "lines_referenced"
+  - "## Critical Findings"
+  - "## Recommendations"
+  - "## Evidence"
+
+# Actions when summary detected
+actions:
+  on_summary_detected:
+    - action: write_l2_report
+      path_template: ".agent/outputs/{agent_type}/{agent_id}_structured.md"
+    - action: inject_guidance
+      template: |
+        ⚠️ Summary detected. Access L2: {l2_path}
+        Agent ID: {agent_id}
+    - action: log_event
+      path: ".agent/logs/output_preservation.log"
+
+# Blocking behavior
+enforcement:
+  mode: GUIDE           # GUIDE (advisory) | BLOCK (hard stop)
+  block_message: |
+    ⛔ BLOCKED: Summary-only result detected.
+    Must access L2/L3 before proceeding.
+
+# Integration with other hooks
+integration:
+  progressive_disclosure: true   # Works with progressive_disclosure_hook
+  validate_task_result: true     # Works with validate_task_result hook
