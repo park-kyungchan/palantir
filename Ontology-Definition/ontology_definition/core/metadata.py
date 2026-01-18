@@ -1,0 +1,473 @@
+"""
+Metadata models for Ontology Definition.
+
+Provides:
+    - AuditMetadata: Tracking creation/modification timestamps and actors
+    - ExportMetadata: Information about schema exports
+    - VersionMetadata: Version control information
+    - TagMetadata: Tagging and categorization
+
+These models are used across all ontology schema types (ObjectType, LinkType, etc.)
+to provide consistent audit trails and metadata tracking.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+def utc_now() -> datetime:
+    """Get current UTC timestamp."""
+    return datetime.now(timezone.utc)
+
+
+class AuditMetadata(BaseModel):
+    """
+    Audit trail metadata for tracking changes.
+
+    Used by all ontology entities to track:
+    - When the entity was created/modified
+    - Who performed the creation/modification
+    - Version history
+
+    This metadata is automatically managed and should not be
+    manually modified except through the provided methods.
+    """
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        description="Timestamp when the entity was created (UTC).",
+        json_schema_extra={"readOnly": True},
+    )
+
+    created_by: str | None = Field(
+        default=None,
+        description="User ID or system identifier that created the entity.",
+        json_schema_extra={"readOnly": True},
+    )
+
+    modified_at: datetime = Field(
+        default_factory=utc_now,
+        description="Timestamp of the last modification (UTC).",
+        json_schema_extra={"readOnly": True},
+    )
+
+    modified_by: str | None = Field(
+        default=None,
+        description="User ID or system identifier that last modified the entity.",
+        json_schema_extra={"readOnly": True},
+    )
+
+    version: int = Field(
+        default=1,
+        description="Version number. Increments on each modification.",
+        ge=1,
+        json_schema_extra={"readOnly": True},
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"x-palantir-audit": True},
+    )
+
+    def touch(self, modified_by: str | None = None) -> AuditMetadata:
+        """
+        Create a new AuditMetadata with updated modification timestamp.
+
+        Returns a new instance (immutable pattern).
+
+        Args:
+            modified_by: User ID performing the modification
+
+        Returns:
+            New AuditMetadata with incremented version
+        """
+        return AuditMetadata(
+            created_at=self.created_at,
+            created_by=self.created_by,
+            modified_at=utc_now(),
+            modified_by=modified_by or self.modified_by,
+            version=self.version + 1,
+        )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        return {
+            "createdAt": self.created_at.isoformat(),
+            "createdBy": self.created_by,
+            "modifiedAt": self.modified_at.isoformat(),
+            "modifiedBy": self.modified_by,
+            "version": self.version,
+        }
+
+    @classmethod
+    def from_foundry_dict(cls, data: dict[str, Any]) -> AuditMetadata:
+        """Create from Foundry JSON format."""
+        return cls(
+            created_at=datetime.fromisoformat(data["createdAt"]) if data.get("createdAt") else utc_now(),
+            created_by=data.get("createdBy"),
+            modified_at=datetime.fromisoformat(data["modifiedAt"]) if data.get("modifiedAt") else utc_now(),
+            modified_by=data.get("modifiedBy"),
+            version=data.get("version", 1),
+        )
+
+
+class ExportMetadata(BaseModel):
+    """
+    Metadata about schema exports.
+
+    Tracks when and how a schema was exported, useful for:
+    - Versioning exported schemas
+    - Tracking export targets
+    - Maintaining export history
+    """
+
+    exported_at: datetime = Field(
+        default_factory=utc_now,
+        description="Timestamp when the schema was exported.",
+    )
+
+    exported_by: str | None = Field(
+        default=None,
+        description="User or system that performed the export.",
+    )
+
+    export_format: str = Field(
+        default="foundry_json",
+        description="Format of the export (foundry_json, json_schema, llm_schema).",
+    )
+
+    export_version: str = Field(
+        default="1.0.0",
+        description="Version of the export format specification.",
+    )
+
+    target_environment: str | None = Field(
+        default=None,
+        description="Target environment for the export (e.g., 'production', 'staging').",
+    )
+
+    includes_examples: bool = Field(
+        default=False,
+        description="Whether the export includes example instances.",
+    )
+
+    checksum: str | None = Field(
+        default=None,
+        description="SHA-256 checksum of the exported content.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to dictionary format."""
+        return {
+            "exportedAt": self.exported_at.isoformat(),
+            "exportedBy": self.exported_by,
+            "exportFormat": self.export_format,
+            "exportVersion": self.export_version,
+            "targetEnvironment": self.target_environment,
+            "includesExamples": self.includes_examples,
+            "checksum": self.checksum,
+        }
+
+
+class VersionMetadata(BaseModel):
+    """
+    Version control metadata for schema evolution.
+
+    Tracks the full version history of a schema definition,
+    supporting rollback and migration scenarios.
+    """
+
+    current_version: str = Field(
+        default="1.0.0",
+        description="Current semantic version (MAJOR.MINOR.PATCH).",
+        pattern=r"^\d+\.\d+\.\d+$",
+    )
+
+    previous_versions: list[str] = Field(
+        default_factory=list,
+        description="List of previous version numbers.",
+    )
+
+    breaking_change: bool = Field(
+        default=False,
+        description="Whether the current version contains breaking changes.",
+    )
+
+    change_log: str | None = Field(
+        default=None,
+        description="Description of changes in the current version.",
+        max_length=4096,
+    )
+
+    deprecated_since: str | None = Field(
+        default=None,
+        description="Version at which this schema was deprecated.",
+    )
+
+    removal_version: str | None = Field(
+        default=None,
+        description="Version at which this schema will be removed.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    def increment_major(self, change_log: str | None = None) -> VersionMetadata:
+        """Increment major version (breaking change)."""
+        parts = self.current_version.split(".")
+        new_version = f"{int(parts[0]) + 1}.0.0"
+        return VersionMetadata(
+            current_version=new_version,
+            previous_versions=[*self.previous_versions, self.current_version],
+            breaking_change=True,
+            change_log=change_log,
+        )
+
+    def increment_minor(self, change_log: str | None = None) -> VersionMetadata:
+        """Increment minor version (new feature, backward compatible)."""
+        parts = self.current_version.split(".")
+        new_version = f"{parts[0]}.{int(parts[1]) + 1}.0"
+        return VersionMetadata(
+            current_version=new_version,
+            previous_versions=[*self.previous_versions, self.current_version],
+            breaking_change=False,
+            change_log=change_log,
+        )
+
+    def increment_patch(self, change_log: str | None = None) -> VersionMetadata:
+        """Increment patch version (bug fix, backward compatible)."""
+        parts = self.current_version.split(".")
+        new_version = f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}"
+        return VersionMetadata(
+            current_version=new_version,
+            previous_versions=[*self.previous_versions, self.current_version],
+            breaking_change=False,
+            change_log=change_log,
+        )
+
+
+class TagMetadata(BaseModel):
+    """
+    Tagging and categorization metadata.
+
+    Supports organizing schemas with:
+    - Free-form tags
+    - Categories
+    - Labels (key-value pairs)
+    """
+
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Free-form tags for categorization.",
+    )
+
+    category: str | None = Field(
+        default=None,
+        description="Primary category (e.g., 'security', 'analytics', 'operations').",
+    )
+
+    labels: dict[str, str] = Field(
+        default_factory=dict,
+        description="Key-value labels for metadata (e.g., {'team': 'platform', 'priority': 'high'}).",
+    )
+
+    owner: str | None = Field(
+        default=None,
+        description="Team or individual responsible for this schema.",
+    )
+
+    documentation_url: str | None = Field(
+        default=None,
+        description="URL to external documentation.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    def add_tag(self, tag: str) -> TagMetadata:
+        """Add a tag if not already present."""
+        if tag not in self.tags:
+            return TagMetadata(
+                tags=[*self.tags, tag],
+                category=self.category,
+                labels=self.labels.copy(),
+                owner=self.owner,
+                documentation_url=self.documentation_url,
+            )
+        return self
+
+    def add_label(self, key: str, value: str) -> TagMetadata:
+        """Add or update a label."""
+        new_labels = self.labels.copy()
+        new_labels[key] = value
+        return TagMetadata(
+            tags=self.tags.copy(),
+            category=self.category,
+            labels=new_labels,
+            owner=self.owner,
+            documentation_url=self.documentation_url,
+        )
+
+
+class ObjectTypeMetadata(BaseModel):
+    """
+    Combined metadata for ObjectType definitions.
+
+    Aggregates all metadata types relevant to ObjectType schemas.
+    """
+
+    audit: AuditMetadata = Field(
+        default_factory=AuditMetadata,
+        description="Audit trail for tracking changes.",
+    )
+
+    version: VersionMetadata = Field(
+        default_factory=VersionMetadata,
+        description="Version control information.",
+    )
+
+    tags: TagMetadata = Field(
+        default_factory=TagMetadata,
+        description="Tagging and categorization.",
+    )
+
+    export_history: list[ExportMetadata] = Field(
+        default_factory=list,
+        description="History of schema exports.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    def touch(self, modified_by: str | None = None) -> ObjectTypeMetadata:
+        """Update audit metadata with new modification timestamp."""
+        return ObjectTypeMetadata(
+            audit=self.audit.touch(modified_by),
+            version=self.version,
+            tags=self.tags,
+            export_history=self.export_history,
+        )
+
+    def record_export(self, export: ExportMetadata) -> ObjectTypeMetadata:
+        """Record a new export in the history."""
+        return ObjectTypeMetadata(
+            audit=self.audit,
+            version=self.version,
+            tags=self.tags,
+            export_history=[*self.export_history, export],
+        )
+
+
+class InterfaceMetadata(BaseModel):
+    """
+    Combined metadata for Interface definitions.
+
+    Aggregates all metadata types relevant to Interface schemas.
+    """
+
+    audit: AuditMetadata = Field(
+        default_factory=AuditMetadata,
+        description="Audit trail for tracking changes.",
+    )
+
+    version: VersionMetadata = Field(
+        default_factory=VersionMetadata,
+        description="Version control information.",
+    )
+
+    tags: TagMetadata = Field(
+        default_factory=TagMetadata,
+        description="Tagging and categorization.",
+    )
+
+    export_history: list[ExportMetadata] = Field(
+        default_factory=list,
+        description="History of schema exports.",
+    )
+
+    # Interface-specific metadata
+    implementer_count: int = Field(
+        default=0,
+        description="Number of ObjectTypes implementing this interface.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    def touch(self, modified_by: str | None = None) -> InterfaceMetadata:
+        """Update audit metadata with new modification timestamp."""
+        return InterfaceMetadata(
+            audit=self.audit.touch(modified_by),
+            version=self.version,
+            tags=self.tags,
+            export_history=self.export_history,
+            implementer_count=self.implementer_count,
+        )
+
+
+class LinkTypeMetadata(BaseModel):
+    """
+    Combined metadata for LinkType definitions.
+
+    Aggregates all metadata types relevant to LinkType schemas.
+    """
+
+    audit: AuditMetadata = Field(
+        default_factory=AuditMetadata,
+        description="Audit trail for tracking changes.",
+    )
+
+    version: VersionMetadata = Field(
+        default_factory=VersionMetadata,
+        description="Version control information.",
+    )
+
+    tags: TagMetadata = Field(
+        default_factory=TagMetadata,
+        description="Tagging and categorization.",
+    )
+
+    export_history: list[ExportMetadata] = Field(
+        default_factory=list,
+        description="History of schema exports.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ActionTypeMetadata(BaseModel):
+    """
+    Combined metadata for ActionType definitions.
+
+    Aggregates all metadata types relevant to ActionType schemas.
+    """
+
+    audit: AuditMetadata = Field(
+        default_factory=AuditMetadata,
+        description="Audit trail for tracking changes.",
+    )
+
+    version: VersionMetadata = Field(
+        default_factory=VersionMetadata,
+        description="Version control information.",
+    )
+
+    tags: TagMetadata = Field(
+        default_factory=TagMetadata,
+        description="Tagging and categorization.",
+    )
+
+    export_history: list[ExportMetadata] = Field(
+        default_factory=list,
+        description="History of schema exports.",
+    )
+
+    # Action-specific metadata
+    execution_count: int = Field(
+        default=0,
+        description="Number of times this action has been executed.",
+    )
+
+    model_config = ConfigDict(extra="forbid")
