@@ -1,0 +1,41 @@
+import asyncio
+from lib.oda.ontology.storage.database import initialize_database
+from lib.oda.ontology.storage.learner_repository import LearnerRepository
+from lib.oda.ontology.objects.learning import Learner
+from lib.oda.ontology.run_tutor import run_session_generation
+
+async def main():
+    print("🎓 Initializing Beginner Learning Path (Theta = -2.0)...")
+    await initialize_database()
+    
+    repo = LearnerRepository()
+    user_id = "palantir_beginner"
+    
+    # Create/Reset Beginner User
+    learner = Learner(
+        user_id=user_id,
+        theta=-2.0, # Novice Level
+        knowledge_state={},
+        last_active=""
+    )
+    await repo.save(learner)
+    print(f"✅ User '{user_id}' set to Novice level.")
+    
+    # Generate Curriculum from ODA Core
+    print(f"📘 Scanning ODA Core (lib/oda/ontology)...")
+    await run_session_generation(
+        target_path="lib/oda/ontology",
+        user_id=user_id,
+        db_mode="oda",
+        limit=3,
+        theta=-2.0,
+        role="auto",
+        entrypoint=None,
+        prompt=None,
+        prompt_limit=12,
+        brief=False,
+        brief_path=None,
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
