@@ -1,0 +1,915 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oda.palantir.local/schemas/Interaction.schema.json",
+  "title": "Interaction Rules Schema",
+  "description": "Defines cross-type interaction rules for ODA system. Specifies how ObjectTypes, LinkTypes, and ActionTypes interact with each other, including validation rules, constraints, and cascade behaviors.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Version of this interaction schema.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "objectTypeToLinkType": {
+      "$ref": "#/$defs/ObjectTypeToLinkTypeRules",
+      "description": "Rules governing ObjectType participation in LinkTypes."
+    },
+    "actionTypeToObjectType": {
+      "$ref": "#/$defs/ActionTypeToObjectTypeRules",
+      "description": "Rules governing ActionType operations on ObjectTypes."
+    },
+    "actionTypeToLinkType": {
+      "$ref": "#/$defs/ActionTypeToLinkTypeRules",
+      "description": "Rules governing ActionType operations on LinkTypes."
+    },
+    "cascadeEffects": {
+      "$ref": "#/$defs/CascadeEffectsRules",
+      "description": "Rules for cascading effects when objects/links are modified or deleted."
+    },
+    "referentialIntegrity": {
+      "$ref": "#/$defs/ReferentialIntegrityRules",
+      "description": "Rules ensuring referential integrity across the ontology."
+    },
+    "securityInteractions": {
+      "$ref": "#/$defs/SecurityInteractionRules",
+      "description": "Rules for security-related interactions (mandatory controls, restricted views)."
+    },
+    "validationOrder": {
+      "$ref": "#/$defs/ValidationOrderRules",
+      "description": "Order in which validations are performed during operations."
+    }
+  },
+  "required": ["schemaVersion", "objectTypeToLinkType", "actionTypeToObjectType", "actionTypeToLinkType"],
+  "additionalProperties": false,
+  "$defs": {
+    "ObjectTypeToLinkTypeRules": {
+      "type": "object",
+      "description": "Rules for how ObjectTypes participate in LinkTypes.",
+      "properties": {
+        "participationRules": {
+          "type": "array",
+          "description": "Rules defining ObjectType participation constraints.",
+          "items": {
+            "$ref": "#/$defs/ParticipationRule"
+          }
+        },
+        "cardinalityEnforcement": {
+          "$ref": "#/$defs/CardinalityEnforcementConfig",
+          "description": "How cardinality constraints are enforced."
+        },
+        "foreignKeyRules": {
+          "$ref": "#/$defs/ForeignKeyRulesConfig",
+          "description": "Rules for foreign key-based links."
+        },
+        "backingTableRules": {
+          "$ref": "#/$defs/BackingTableRulesConfig",
+          "description": "Rules for backing table-based links (N:N)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ParticipationRule": {
+      "type": "object",
+      "description": "Rule defining how an ObjectType can participate in links.",
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "description": "Unique identifier for this rule."
+        },
+        "description": {
+          "type": "string"
+        },
+        "applicableTo": {
+          "type": "string",
+          "description": "What this rule applies to.",
+          "enum": ["ALL_OBJECT_TYPES", "SPECIFIC_OBJECT_TYPES", "OBJECT_TYPES_WITH_TAG"]
+        },
+        "objectTypeFilter": {
+          "type": "array",
+          "description": "For SPECIFIC_OBJECT_TYPES, the apiNames.",
+          "items": { "type": "string" }
+        },
+        "tagFilter": {
+          "type": "array",
+          "description": "For OBJECT_TYPES_WITH_TAG, the required tags.",
+          "items": { "type": "string" }
+        },
+        "constraint": {
+          "type": "object",
+          "properties": {
+            "maxLinksAsSource": {
+              "type": "integer",
+              "description": "Maximum number of LinkTypes where this ObjectType can be source."
+            },
+            "maxLinksAsTarget": {
+              "type": "integer",
+              "description": "Maximum number of LinkTypes where this ObjectType can be target."
+            },
+            "requiredPrimaryKeyType": {
+              "type": "string",
+              "description": "Primary key must be of this type for linking.",
+              "enum": ["STRING", "INTEGER", "LONG", "UUID"]
+            },
+            "selfLinkAllowed": {
+              "type": "boolean",
+              "description": "If false, ObjectType cannot link to itself.",
+              "default": true
+            }
+          }
+        },
+        "enforcement": {
+          "type": "string",
+          "enum": ["STRICT", "WARN", "AUDIT_ONLY"],
+          "default": "STRICT"
+        }
+      },
+      "required": ["ruleId", "applicableTo", "constraint"],
+      "additionalProperties": false
+    },
+    "CardinalityEnforcementConfig": {
+      "type": "object",
+      "description": "Configuration for cardinality constraint enforcement.",
+      "properties": {
+        "oneToOneEnforcement": {
+          "type": "string",
+          "description": "Note: Palantir treats 1:1 as indicator only, not strictly enforced.",
+          "enum": ["STRICT", "INDICATOR_ONLY", "DISABLED"],
+          "default": "INDICATOR_ONLY"
+        },
+        "oneToManyEnforcement": {
+          "type": "string",
+          "enum": ["STRICT", "WARN", "DISABLED"],
+          "default": "STRICT"
+        },
+        "manyToOneEnforcement": {
+          "type": "string",
+          "enum": ["STRICT", "WARN", "DISABLED"],
+          "default": "STRICT"
+        },
+        "manyToManyEnforcement": {
+          "type": "string",
+          "description": "N:N always requires backing table.",
+          "enum": ["STRICT"],
+          "default": "STRICT"
+        },
+        "minCardinalityEnforcement": {
+          "type": "string",
+          "description": "How to enforce minimum cardinality (e.g., sourceMin=1 means at least one link).",
+          "enum": ["ON_CREATE", "ON_COMMIT", "DEFERRED", "DISABLED"],
+          "default": "DEFERRED"
+        },
+        "violationBehavior": {
+          "type": "string",
+          "description": "What happens when cardinality is violated.",
+          "enum": ["REJECT", "WARN_AND_ALLOW", "AUTO_CORRECT"],
+          "default": "REJECT"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ForeignKeyRulesConfig": {
+      "type": "object",
+      "description": "Rules for foreign key-based links (1:1, 1:N, N:1).",
+      "properties": {
+        "nullForeignKeyAllowed": {
+          "type": "boolean",
+          "description": "If true, FK can be null (optional relationship).",
+          "default": true
+        },
+        "orphanedForeignKeyBehavior": {
+          "type": "string",
+          "description": "What happens when FK references non-existent object.",
+          "enum": ["REJECT", "SET_NULL", "CREATE_PLACEHOLDER", "IGNORE"],
+          "default": "REJECT"
+        },
+        "indexingRequired": {
+          "type": "boolean",
+          "description": "If true, FK columns must be indexed.",
+          "default": true
+        },
+        "typeValidation": {
+          "type": "string",
+          "description": "How strictly to validate FK type matches PK type.",
+          "enum": ["STRICT", "COERCIBLE", "DISABLED"],
+          "default": "STRICT"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BackingTableRulesConfig": {
+      "type": "object",
+      "description": "Rules for backing table-based links (N:N).",
+      "properties": {
+        "backingTableRequired": {
+          "type": "boolean",
+          "description": "N:N links MUST have backing table.",
+          "const": true
+        },
+        "duplicateLinkBehavior": {
+          "type": "string",
+          "description": "What happens when duplicate link is created.",
+          "enum": ["REJECT", "MERGE", "ALLOW_DUPLICATE"],
+          "default": "REJECT"
+        },
+        "linkPropertyRequired": {
+          "type": "boolean",
+          "description": "If true, at least one link property must be defined.",
+          "default": false
+        },
+        "auditColumns": {
+          "type": "object",
+          "description": "Audit columns automatically added to backing tables.",
+          "properties": {
+            "createdAt": { "type": "boolean", "default": true },
+            "createdBy": { "type": "boolean", "default": true },
+            "modifiedAt": { "type": "boolean", "default": false },
+            "modifiedBy": { "type": "boolean", "default": false }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ActionTypeToObjectTypeRules": {
+      "type": "object",
+      "description": "Rules for how ActionTypes operate on ObjectTypes.",
+      "properties": {
+        "createRules": {
+          "$ref": "#/$defs/CreateOperationRules"
+        },
+        "modifyRules": {
+          "$ref": "#/$defs/ModifyOperationRules"
+        },
+        "deleteRules": {
+          "$ref": "#/$defs/DeleteOperationRules"
+        },
+        "permissionIntegration": {
+          "$ref": "#/$defs/PermissionIntegrationConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CreateOperationRules": {
+      "type": "object",
+      "description": "Rules for CREATE operations on objects.",
+      "properties": {
+        "primaryKeyGeneration": {
+          "type": "string",
+          "description": "How primary keys are generated for new objects.",
+          "enum": ["MANUAL", "AUTO_INCREMENT", "UUID", "CUSTOM_FUNCTION"],
+          "default": "UUID"
+        },
+        "requiredPropertyValidation": {
+          "type": "string",
+          "description": "When to validate required properties.",
+          "enum": ["IMMEDIATE", "ON_COMMIT", "DEFERRED"],
+          "default": "IMMEDIATE"
+        },
+        "defaultValueApplication": {
+          "type": "string",
+          "description": "When default values are applied.",
+          "enum": ["ON_CREATE", "ON_MISSING_ONLY", "NEVER"],
+          "default": "ON_MISSING_ONLY"
+        },
+        "mandatoryControlValidation": {
+          "type": "string",
+          "description": "Mandatory control properties validation timing.",
+          "enum": ["IMMEDIATE", "ON_COMMIT"],
+          "default": "IMMEDIATE"
+        },
+        "auditCreation": {
+          "type": "boolean",
+          "description": "Automatically set createdAt/createdBy.",
+          "default": true
+        },
+        "statusInitialization": {
+          "type": "string",
+          "description": "Initial status for new objects.",
+          "default": "ACTIVE"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ModifyOperationRules": {
+      "type": "object",
+      "description": "Rules for MODIFY operations on objects.",
+      "properties": {
+        "immutablePropertyEnforcement": {
+          "type": "string",
+          "description": "How immutable properties are protected.",
+          "enum": ["STRICT", "WARN", "DISABLED"],
+          "default": "STRICT"
+        },
+        "versionIncrement": {
+          "type": "boolean",
+          "description": "Automatically increment version on modify.",
+          "default": true
+        },
+        "optimisticLocking": {
+          "type": "boolean",
+          "description": "Use version for optimistic concurrency control.",
+          "default": true
+        },
+        "auditModification": {
+          "type": "boolean",
+          "description": "Automatically set modifiedAt/modifiedBy.",
+          "default": true
+        },
+        "partialUpdateAllowed": {
+          "type": "boolean",
+          "description": "Allow updating subset of properties.",
+          "default": true
+        },
+        "nullifyBehavior": {
+          "type": "string",
+          "description": "What happens when setting property to null.",
+          "enum": ["ALLOWED", "REJECTED_IF_REQUIRED", "CONVERT_TO_DEFAULT"],
+          "default": "REJECTED_IF_REQUIRED"
+        },
+        "mandatoryControlModification": {
+          "type": "string",
+          "description": "Can mandatory control properties be modified?",
+          "enum": ["ALLOWED", "RESTRICTED", "PROHIBITED"],
+          "default": "RESTRICTED"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DeleteOperationRules": {
+      "type": "object",
+      "description": "Rules for DELETE operations on objects.",
+      "properties": {
+        "softDeleteEnabled": {
+          "type": "boolean",
+          "description": "Use soft delete (set status to DELETED) instead of hard delete.",
+          "default": true
+        },
+        "hardDeleteAllowed": {
+          "type": "boolean",
+          "description": "Allow permanent deletion.",
+          "default": false
+        },
+        "linkedObjectBehavior": {
+          "type": "string",
+          "description": "What happens to objects linked to deleted object.",
+          "enum": ["REJECT_IF_LINKED", "CASCADE_DELETE", "UNLINK", "ORPHAN"],
+          "default": "REJECT_IF_LINKED"
+        },
+        "retentionPeriod": {
+          "type": "integer",
+          "description": "Days to retain soft-deleted objects before purge.",
+          "minimum": 0,
+          "default": 90
+        },
+        "auditDeletion": {
+          "type": "boolean",
+          "description": "Record deletion in audit log.",
+          "default": true
+        },
+        "statusTransition": {
+          "type": "object",
+          "description": "Required status transitions before deletion.",
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "description": "Must transition through DEPRECATED before DELETE.",
+              "default": true
+            },
+            "deprecationPeriodDays": {
+              "type": "integer",
+              "description": "Minimum days in DEPRECATED before DELETE allowed.",
+              "default": 30
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PermissionIntegrationConfig": {
+      "type": "object",
+      "description": "How permissions are checked for operations.",
+      "properties": {
+        "checkTiming": {
+          "type": "string",
+          "description": "When permission checks occur.",
+          "enum": ["BEFORE_VALIDATION", "AFTER_VALIDATION", "BOTH"],
+          "default": "BEFORE_VALIDATION"
+        },
+        "resolutionOrder": {
+          "type": "array",
+          "description": "Order for resolving permissions (ODA 5-layer model).",
+          "items": {
+            "type": "string",
+            "enum": ["INSTANCE", "OBJECT_TYPE", "TEAM", "ROLE", "DEFAULT"]
+          },
+          "default": ["INSTANCE", "OBJECT_TYPE", "TEAM", "ROLE", "DEFAULT"]
+        },
+        "denyOverridesAllow": {
+          "type": "boolean",
+          "description": "If true, explicit DENY always wins.",
+          "default": true
+        },
+        "mandatoryControlIntegration": {
+          "type": "boolean",
+          "description": "Check mandatory control properties for row-level security.",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "ActionTypeToLinkTypeRules": {
+      "type": "object",
+      "description": "Rules for how ActionTypes operate on links.",
+      "properties": {
+        "linkRules": {
+          "$ref": "#/$defs/LinkOperationRules"
+        },
+        "unlinkRules": {
+          "$ref": "#/$defs/UnlinkOperationRules"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LinkOperationRules": {
+      "type": "object",
+      "description": "Rules for CREATE_LINK operations.",
+      "properties": {
+        "existenceValidation": {
+          "type": "string",
+          "description": "Validate that source and target objects exist.",
+          "enum": ["STRICT", "WARN", "DISABLED"],
+          "default": "STRICT"
+        },
+        "cardinalityValidation": {
+          "type": "string",
+          "description": "Validate cardinality constraints before linking.",
+          "enum": ["STRICT", "WARN", "DISABLED"],
+          "default": "STRICT"
+        },
+        "duplicateLinkBehavior": {
+          "type": "string",
+          "description": "What happens when link already exists.",
+          "enum": ["REJECT", "UPDATE_PROPERTIES", "IGNORE"],
+          "default": "REJECT"
+        },
+        "bidirectionalCreation": {
+          "type": "boolean",
+          "description": "Automatically create reverse navigation.",
+          "default": true
+        },
+        "linkPropertyDefaults": {
+          "type": "boolean",
+          "description": "Apply default values to link properties.",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "UnlinkOperationRules": {
+      "type": "object",
+      "description": "Rules for DELETE_LINK operations.",
+      "properties": {
+        "nonExistentLinkBehavior": {
+          "type": "string",
+          "description": "What happens when unlinking non-existent link.",
+          "enum": ["REJECT", "IGNORE"],
+          "default": "IGNORE"
+        },
+        "cascadeToBackingTable": {
+          "type": "boolean",
+          "description": "For N:N, delete row from backing table.",
+          "default": true
+        },
+        "auditUnlink": {
+          "type": "boolean",
+          "description": "Record unlink in audit log.",
+          "default": true
+        },
+        "orphanProtection": {
+          "type": "boolean",
+          "description": "Prevent unlinking if it would violate min cardinality.",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "CascadeEffectsRules": {
+      "type": "object",
+      "description": "Rules for cascading effects across types.",
+      "properties": {
+        "objectDeleteCascade": {
+          "type": "object",
+          "description": "Cascade behavior when object is deleted.",
+          "properties": {
+            "linksFromObject": {
+              "type": "string",
+              "description": "What happens to links where deleted object is source.",
+              "enum": ["CASCADE_DELETE", "ORPHAN", "REJECT"],
+              "default": "CASCADE_DELETE"
+            },
+            "linksToObject": {
+              "type": "string",
+              "description": "What happens to links where deleted object is target.",
+              "enum": ["CASCADE_DELETE", "SET_NULL", "ORPHAN", "REJECT"],
+              "default": "CASCADE_DELETE"
+            },
+            "nestedObjects": {
+              "type": "string",
+              "description": "What happens to objects owned by deleted object.",
+              "enum": ["CASCADE_DELETE", "ORPHAN", "REJECT"],
+              "default": "CASCADE_DELETE"
+            }
+          }
+        },
+        "linkTypeDeleteCascade": {
+          "type": "object",
+          "description": "Cascade behavior when LinkType is deleted from schema.",
+          "properties": {
+            "linkInstances": {
+              "type": "string",
+              "description": "What happens to existing link instances.",
+              "enum": ["CASCADE_DELETE", "ARCHIVE", "REJECT"],
+              "default": "CASCADE_DELETE"
+            },
+            "backingTableData": {
+              "type": "string",
+              "description": "What happens to backing table data.",
+              "enum": ["CASCADE_DELETE", "ARCHIVE", "PRESERVE"],
+              "default": "CASCADE_DELETE"
+            }
+          }
+        },
+        "statusTransitionCascade": {
+          "type": "object",
+          "description": "Cascade effects when object status changes.",
+          "properties": {
+            "onDeprecate": {
+              "type": "string",
+              "description": "Effect on linked objects when object is deprecated.",
+              "enum": ["WARN_LINKED", "DEPRECATE_LINKED", "NO_ACTION"],
+              "default": "WARN_LINKED"
+            },
+            "onArchive": {
+              "type": "string",
+              "description": "Effect on linked objects when object is archived.",
+              "enum": ["ARCHIVE_LINKED", "UNLINK", "NO_ACTION"],
+              "default": "UNLINK"
+            }
+          }
+        },
+        "maxCascadeDepth": {
+          "type": "integer",
+          "description": "Maximum depth for cascade operations (prevent infinite loops).",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 5
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReferentialIntegrityRules": {
+      "type": "object",
+      "description": "Rules ensuring referential integrity.",
+      "properties": {
+        "enforcementLevel": {
+          "type": "string",
+          "description": "How strictly referential integrity is enforced.",
+          "enum": ["STRICT", "EVENTUAL", "DISABLED"],
+          "default": "STRICT"
+        },
+        "foreignKeyIntegrity": {
+          "type": "object",
+          "properties": {
+            "onInsert": {
+              "type": "string",
+              "description": "Validate FK references on insert.",
+              "enum": ["VALIDATE", "DEFER", "DISABLED"],
+              "default": "VALIDATE"
+            },
+            "onUpdate": {
+              "type": "string",
+              "description": "Validate FK references on update.",
+              "enum": ["VALIDATE", "DEFER", "DISABLED"],
+              "default": "VALIDATE"
+            }
+          }
+        },
+        "orphanDetection": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable periodic orphan detection.",
+              "default": true
+            },
+            "frequency": {
+              "type": "string",
+              "description": "How often to run orphan detection.",
+              "enum": ["REALTIME", "HOURLY", "DAILY", "WEEKLY"],
+              "default": "DAILY"
+            },
+            "action": {
+              "type": "string",
+              "description": "What to do with detected orphans.",
+              "enum": ["REPORT", "AUTO_CLEANUP", "QUARANTINE"],
+              "default": "REPORT"
+            }
+          }
+        },
+        "circularReferenceHandling": {
+          "type": "string",
+          "description": "How to handle circular references.",
+          "enum": ["ALLOW", "WARN", "REJECT"],
+          "default": "WARN"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SecurityInteractionRules": {
+      "type": "object",
+      "description": "Rules for security-related interactions (Palantir P1-CRITICAL requirements).",
+      "properties": {
+        "mandatoryControlEnforcement": {
+          "type": "object",
+          "description": "How mandatory control properties interact with operations.",
+          "properties": {
+            "onCreate": {
+              "type": "string",
+              "description": "Mandatory controls must be set on create.",
+              "enum": ["REQUIRED", "ALLOW_EMPTY_ARRAY", "DISABLED"],
+              "default": "REQUIRED"
+            },
+            "onModify": {
+              "type": "string",
+              "description": "Can mandatory controls be modified?",
+              "enum": ["RESTRICTED", "ALLOWED_WITH_APPROVAL", "PROHIBITED"],
+              "default": "ALLOWED_WITH_APPROVAL"
+            },
+            "inheritanceFromSource": {
+              "type": "boolean",
+              "description": "Links inherit security from source object.",
+              "default": true
+            },
+            "unionWithTarget": {
+              "type": "boolean",
+              "description": "Link visibility requires both source and target visible.",
+              "default": false
+            }
+          }
+        },
+        "restrictedViewIntegration": {
+          "type": "object",
+          "description": "How restricted views affect operations.",
+          "properties": {
+            "filterOnRead": {
+              "type": "boolean",
+              "description": "Apply RV filters on read operations.",
+              "default": true
+            },
+            "filterOnWrite": {
+              "type": "boolean",
+              "description": "Apply RV filters on write operations.",
+              "default": true
+            },
+            "filterOnLink": {
+              "type": "boolean",
+              "description": "Apply RV filters when creating links.",
+              "default": true
+            },
+            "policyEvaluationOrder": {
+              "type": "array",
+              "description": "Order for evaluating RV policies.",
+              "items": {
+                "type": "string",
+                "enum": ["MARKINGS", "ORGANIZATIONS", "CLASSIFICATIONS", "CUSTOM"]
+              },
+              "default": ["MARKINGS", "ORGANIZATIONS", "CLASSIFICATIONS"]
+            }
+          }
+        },
+        "fieldLevelSecurity": {
+          "type": "object",
+          "description": "Field-level security interaction rules.",
+          "properties": {
+            "maskingOnRead": {
+              "type": "boolean",
+              "description": "Apply masking when reading MASKED properties.",
+              "default": true
+            },
+            "hiddenPropertiesInResponse": {
+              "type": "string",
+              "description": "How to handle HIDDEN properties in responses.",
+              "enum": ["OMIT", "NULL", "REDACTED_MARKER"],
+              "default": "OMIT"
+            },
+            "auditHiddenAccess": {
+              "type": "boolean",
+              "description": "Log attempts to access HIDDEN properties.",
+              "default": true
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidationOrderRules": {
+      "type": "object",
+      "description": "Order in which validations are performed.",
+      "properties": {
+        "operationValidationOrder": {
+          "type": "array",
+          "description": "Order of validation steps for operations.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "PERMISSION_CHECK",
+              "SCHEMA_VALIDATION",
+              "CONSTRAINT_VALIDATION",
+              "REFERENTIAL_INTEGRITY",
+              "CARDINALITY_CHECK",
+              "MANDATORY_CONTROL_CHECK",
+              "SUBMISSION_CRITERIA",
+              "CUSTOM_VALIDATORS"
+            ]
+          },
+          "default": [
+            "PERMISSION_CHECK",
+            "SCHEMA_VALIDATION",
+            "CONSTRAINT_VALIDATION",
+            "REFERENTIAL_INTEGRITY",
+            "CARDINALITY_CHECK",
+            "MANDATORY_CONTROL_CHECK",
+            "SUBMISSION_CRITERIA",
+            "CUSTOM_VALIDATORS"
+          ]
+        },
+        "failFast": {
+          "type": "boolean",
+          "description": "Stop on first validation failure.",
+          "default": true
+        },
+        "collectAllErrors": {
+          "type": "boolean",
+          "description": "If not failFast, collect all errors before returning.",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": "1.0.0",
+      "objectTypeToLinkType": {
+        "participationRules": [
+          {
+            "ruleId": "primary-key-type-rule",
+            "description": "All ObjectTypes must have UUID or STRING primary key for linking",
+            "applicableTo": "ALL_OBJECT_TYPES",
+            "constraint": {
+              "requiredPrimaryKeyType": "STRING",
+              "selfLinkAllowed": true
+            },
+            "enforcement": "STRICT"
+          }
+        ],
+        "cardinalityEnforcement": {
+          "oneToOneEnforcement": "INDICATOR_ONLY",
+          "oneToManyEnforcement": "STRICT",
+          "manyToOneEnforcement": "STRICT",
+          "manyToManyEnforcement": "STRICT",
+          "minCardinalityEnforcement": "DEFERRED",
+          "violationBehavior": "REJECT"
+        },
+        "foreignKeyRules": {
+          "nullForeignKeyAllowed": true,
+          "orphanedForeignKeyBehavior": "REJECT",
+          "indexingRequired": true,
+          "typeValidation": "STRICT"
+        },
+        "backingTableRules": {
+          "backingTableRequired": true,
+          "duplicateLinkBehavior": "REJECT",
+          "linkPropertyRequired": false,
+          "auditColumns": {
+            "createdAt": true,
+            "createdBy": true
+          }
+        }
+      },
+      "actionTypeToObjectType": {
+        "createRules": {
+          "primaryKeyGeneration": "UUID",
+          "requiredPropertyValidation": "IMMEDIATE",
+          "defaultValueApplication": "ON_MISSING_ONLY",
+          "mandatoryControlValidation": "IMMEDIATE",
+          "auditCreation": true,
+          "statusInitialization": "ACTIVE"
+        },
+        "modifyRules": {
+          "immutablePropertyEnforcement": "STRICT",
+          "versionIncrement": true,
+          "optimisticLocking": true,
+          "auditModification": true,
+          "partialUpdateAllowed": true,
+          "nullifyBehavior": "REJECTED_IF_REQUIRED",
+          "mandatoryControlModification": "RESTRICTED"
+        },
+        "deleteRules": {
+          "softDeleteEnabled": true,
+          "hardDeleteAllowed": false,
+          "linkedObjectBehavior": "REJECT_IF_LINKED",
+          "retentionPeriod": 90,
+          "auditDeletion": true,
+          "statusTransition": {
+            "required": true,
+            "deprecationPeriodDays": 30
+          }
+        },
+        "permissionIntegration": {
+          "checkTiming": "BEFORE_VALIDATION",
+          "resolutionOrder": ["INSTANCE", "OBJECT_TYPE", "TEAM", "ROLE", "DEFAULT"],
+          "denyOverridesAllow": true,
+          "mandatoryControlIntegration": true
+        }
+      },
+      "actionTypeToLinkType": {
+        "linkRules": {
+          "existenceValidation": "STRICT",
+          "cardinalityValidation": "STRICT",
+          "duplicateLinkBehavior": "REJECT",
+          "bidirectionalCreation": true,
+          "linkPropertyDefaults": true
+        },
+        "unlinkRules": {
+          "nonExistentLinkBehavior": "IGNORE",
+          "cascadeToBackingTable": true,
+          "auditUnlink": true,
+          "orphanProtection": true
+        }
+      },
+      "cascadeEffects": {
+        "objectDeleteCascade": {
+          "linksFromObject": "CASCADE_DELETE",
+          "linksToObject": "CASCADE_DELETE",
+          "nestedObjects": "CASCADE_DELETE"
+        },
+        "linkTypeDeleteCascade": {
+          "linkInstances": "CASCADE_DELETE",
+          "backingTableData": "CASCADE_DELETE"
+        },
+        "statusTransitionCascade": {
+          "onDeprecate": "WARN_LINKED",
+          "onArchive": "UNLINK"
+        },
+        "maxCascadeDepth": 5
+      },
+      "referentialIntegrity": {
+        "enforcementLevel": "STRICT",
+        "foreignKeyIntegrity": {
+          "onInsert": "VALIDATE",
+          "onUpdate": "VALIDATE"
+        },
+        "orphanDetection": {
+          "enabled": true,
+          "frequency": "DAILY",
+          "action": "REPORT"
+        },
+        "circularReferenceHandling": "WARN"
+      },
+      "securityInteractions": {
+        "mandatoryControlEnforcement": {
+          "onCreate": "REQUIRED",
+          "onModify": "ALLOWED_WITH_APPROVAL",
+          "inheritanceFromSource": true,
+          "unionWithTarget": false
+        },
+        "restrictedViewIntegration": {
+          "filterOnRead": true,
+          "filterOnWrite": true,
+          "filterOnLink": true,
+          "policyEvaluationOrder": ["MARKINGS", "ORGANIZATIONS", "CLASSIFICATIONS"]
+        },
+        "fieldLevelSecurity": {
+          "maskingOnRead": true,
+          "hiddenPropertiesInResponse": "OMIT",
+          "auditHiddenAccess": true
+        }
+      },
+      "validationOrder": {
+        "operationValidationOrder": [
+          "PERMISSION_CHECK",
+          "SCHEMA_VALIDATION",
+          "CONSTRAINT_VALIDATION",
+          "REFERENTIAL_INTEGRITY",
+          "CARDINALITY_CHECK",
+          "MANDATORY_CONTROL_CHECK",
+          "SUBMISSION_CRITERIA",
+          "CUSTOM_VALIDATORS"
+        ],
+        "failFast": true,
+        "collectAllErrors": false
+      }
+    }
+  ]
+}

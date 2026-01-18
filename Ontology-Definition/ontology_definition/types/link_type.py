@@ -1,0 +1,988 @@
+"""
+LinkType Definition for Ontology.
+
+A LinkType defines the schema for a relationship between two ObjectTypes
+in Palantir Foundry Ontology. It specifies:
+    - Source and target ObjectType references
+    - Cardinality (1:1, 1:N, N:1, N:N)
+    - Implementation strategy (foreign key or backing table)
+    - Cascade policies for referential integrity
+    - Link properties (for N:N with backing table)
+
+IMPORTANT: LinkType does NOT support the 'endorsed' status (GAP-005).
+Only ObjectTypes can be endorsed.
+
+Example:
+    employee_to_dept = LinkType(
+        api_name="EmployeeToDepartment",
+        display_name="Employee to Department",
+        source_object_type=ObjectTypeReference(api_name="Employee"),
+        target_object_type=ObjectTypeReference(api_name="Department"),
+        cardinality=CardinalityConfig(type=Cardinality.MANY_TO_ONE),
+        implementation=LinkImplementation(
+            type=LinkImplementationType.FOREIGN_KEY,
+            foreign_key=ForeignKeyConfig(
+                foreign_key_property="departmentId",
+                foreign_key_location=ForeignKeyLocation.SOURCE,
+            ),
+        ),
+    )
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from ontology_definition.core.base import OntologyEntity
+from ontology_definition.core.enums import (
+    AccessLevel,
+    Cardinality,
+    CascadeAction,
+    DataType,
+    ForeignKeyLocation,
+    LinkImplementationType,
+    LinkMergeStrategy,
+    LinkTypeStatus,
+)
+from ontology_definition.core.identifiers import generate_rid
+
+
+class ObjectTypeReference(BaseModel):
+    """
+    Reference to an ObjectType participating in a link.
+
+    Used to specify the source and target ObjectTypes in a LinkType definition.
+    """
+
+    api_name: str = Field(
+        ...,
+        description="apiName of the referenced ObjectType.",
+        min_length=1,
+        max_length=255,
+        pattern=r"^[a-zA-Z][a-zA-Z0-9_]*$",
+        alias="apiName",
+    )
+
+    rid: str | None = Field(
+        default=None,
+        description="RID of the referenced ObjectType (optional, for external references).",
+        pattern=r"^ri\.ontology\.[a-z]+\.object-type\.[a-zA-Z0-9-]+$",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {"apiName": self.api_name}
+        if self.rid:
+            result["rid"] = self.rid
+        return result
+
+
+class CardinalityConfig(BaseModel):
+    """
+    Cardinality specification for a LinkType.
+
+    Defines how many instances can be linked in each direction.
+
+    Note: ONE_TO_ONE is an indicator only in Palantir Foundry -
+    it is not strictly enforced at the database level.
+
+    Example:
+        # Many employees to one department
+        cardinality = CardinalityConfig(
+            type=Cardinality.MANY_TO_ONE,
+            source_min=0,
+            source_max=1,
+            target_min=0,
+            target_max="N",
+        )
+    """
+
+    type: Cardinality = Field(
+        ...,
+        description="Cardinality type for this relationship.",
+    )
+
+    source_min: int = Field(
+        default=0,
+        description="Minimum links from source (0 = optional, 1 = required).",
+        ge=0,
+        alias="sourceMin",
+    )
+
+    source_max: int | str = Field(
+        default="N",
+        description="Maximum links from source. Use 'N' or -1 for unlimited.",
+        alias="sourceMax",
+    )
+
+    target_min: int = Field(
+        default=0,
+        description="Minimum links to target (0 = optional, 1 = required).",
+        ge=0,
+        alias="targetMin",
+    )
+
+    target_max: int | str = Field(
+        default="N",
+        description="Maximum links to target. Use 'N' or -1 for unlimited.",
+        alias="targetMax",
+    )
+
+    enforced: bool = Field(
+        default=False,
+        description="If true, cardinality constraints are strictly enforced. "
+                    "Note: ONE_TO_ONE is indicator only in Palantir Foundry.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {
+            "type": self.type.value,
+            "sourceMin": self.source_min,
+            "sourceMax": self.source_max,
+            "targetMin": self.target_min,
+            "targetMax": self.target_max,
+        }
+        if self.enforced:
+            result["enforced"] = True
+        return result
+
+
+class ForeignKeyConfig(BaseModel):
+    """
+    Foreign key implementation for 1:1, 1:N, N:1 relationships.
+
+    Specifies which property holds the foreign key reference.
+
+    Example:
+        # Employee holds departmentId referencing Department's primary key
+        fk_config = ForeignKeyConfig(
+            foreign_key_property="departmentId",
+            foreign_key_location=ForeignKeyLocation.SOURCE,
+            referenced_property="departmentId",
+        )
+    """
+
+    foreign_key_property: str = Field(
+        ...,
+        description="Property apiName on one ObjectType that references another's primary key.",
+        alias="foreignKeyProperty",
+    )
+
+    foreign_key_location: ForeignKeyLocation = Field(
+        ...,
+        description="Which side holds the foreign key (SOURCE or TARGET).",
+        alias="foreignKeyLocation",
+    )
+
+    referenced_property: str | None = Field(
+        default=None,
+        description="Property apiName being referenced (usually primary key). "
+                    "If not specified, assumes target's primary key.",
+        alias="referencedProperty",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {
+            "foreignKeyProperty": self.foreign_key_property,
+            "foreignKeyLocation": self.foreign_key_location.value,
+        }
+        if self.referenced_property:
+            result["referencedProperty"] = self.referenced_property
+        return result
+
+
+class BackingTableColumnMapping(BaseModel):
+    """
+    Mapping between backing table column and link property.
+    """
+
+    column_name: str = Field(
+        ...,
+        description="Column name in backing table.",
+        alias="columnName",
+    )
+
+    property_api_name: str = Field(
+        ...,
+        description="apiName of the link property this column maps to.",
+        alias="propertyApiName",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+
+class BackingTableConfig(BaseModel):
+    """
+    Junction/bridge table implementation for MANY_TO_MANY relationships.
+
+    Required when cardinality is MANY_TO_MANY - Palantir Foundry requires
+    a backing dataset to store the N:N relationship.
+
+    Example:
+        backing_table = BackingTableConfig(
+            dataset_rid="ri.foundry.main.dataset.project-team-junction",
+            source_key_column="project_id",
+            target_key_column="member_id",
+            additional_columns=[
+                BackingTableColumnMapping(
+                    column_name="role",
+                    property_api_name="assignedRole"
+                )
+            ],
+        )
+    """
+
+    dataset_rid: str | None = Field(
+        default=None,
+        description="RID of the backing Foundry Dataset (junction table).",
+        pattern=r"^ri\.foundry\.[a-z]+\.dataset\.[a-zA-Z0-9-]+$",
+        alias="datasetRid",
+    )
+
+    source_key_column: str = Field(
+        ...,
+        description="Column name in backing table containing source object's primary key.",
+        alias="sourceKeyColumn",
+    )
+
+    target_key_column: str = Field(
+        ...,
+        description="Column name in backing table containing target object's primary key.",
+        alias="targetKeyColumn",
+    )
+
+    additional_columns: list[BackingTableColumnMapping] = Field(
+        default_factory=list,
+        description="Additional columns for link properties.",
+        alias="additionalColumns",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {
+            "sourceKeyColumn": self.source_key_column,
+            "targetKeyColumn": self.target_key_column,
+        }
+        if self.dataset_rid:
+            result["datasetRid"] = self.dataset_rid
+        if self.additional_columns:
+            result["additionalColumns"] = [
+                {
+                    "columnName": col.column_name,
+                    "propertyApiName": col.property_api_name,
+                }
+                for col in self.additional_columns
+            ]
+        return result
+
+
+class LinkImplementation(BaseModel):
+    """
+    Physical implementation of link storage.
+
+    Either FOREIGN_KEY (for 1:1, 1:N, N:1) or BACKING_TABLE (required for N:N).
+
+    CRITICAL: MANY_TO_MANY cardinality REQUIRES backing_table configuration.
+    """
+
+    type: LinkImplementationType = Field(
+        ...,
+        description="Implementation type (FOREIGN_KEY or BACKING_TABLE).",
+    )
+
+    foreign_key: ForeignKeyConfig | None = Field(
+        default=None,
+        description="For FOREIGN_KEY type, the FK configuration.",
+        alias="foreignKey",
+    )
+
+    backing_table: BackingTableConfig | None = Field(
+        default=None,
+        description="For BACKING_TABLE type (required for MANY_TO_MANY), the junction table config.",
+        alias="backingTable",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    @model_validator(mode="after")
+    def validate_implementation_config(self) -> LinkImplementation:
+        """Validate that required config is present based on type."""
+        if self.type == LinkImplementationType.FOREIGN_KEY and self.foreign_key is None:
+            raise ValueError(
+                "FOREIGN_KEY implementation type requires foreign_key configuration"
+            )
+        if self.type == LinkImplementationType.BACKING_TABLE and self.backing_table is None:
+            raise ValueError(
+                "BACKING_TABLE implementation type requires backing_table configuration"
+            )
+        return self
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {"type": self.type.value}
+        if self.foreign_key:
+            result["foreignKey"] = self.foreign_key.to_foundry_dict()
+        if self.backing_table:
+            result["backingTable"] = self.backing_table.to_foundry_dict()
+        return result
+
+
+class CascadePolicy(BaseModel):
+    """
+    Referential integrity behavior when linked objects are modified or deleted.
+
+    Defines what happens to links when source or target objects are deleted/updated.
+    """
+
+    on_source_delete: CascadeAction = Field(
+        default=CascadeAction.CASCADE,
+        description="Action when source object is deleted.",
+        alias="onSourceDelete",
+    )
+
+    on_target_delete: CascadeAction = Field(
+        default=CascadeAction.CASCADE,
+        description="Action when target object is deleted.",
+        alias="onTargetDelete",
+    )
+
+    on_source_update: CascadeAction = Field(
+        default=CascadeAction.CASCADE,
+        description="Action when source object's primary key is updated.",
+        alias="onSourceUpdate",
+    )
+
+    on_target_update: CascadeAction = Field(
+        default=CascadeAction.CASCADE,
+        description="Action when target object's primary key is updated.",
+        alias="onTargetUpdate",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        return {
+            "onSourceDelete": self.on_source_delete.value,
+            "onTargetDelete": self.on_target_delete.value,
+            "onSourceUpdate": self.on_source_update.value,
+            "onTargetUpdate": self.on_target_update.value,
+        }
+
+
+class LinkPropertyDefinition(BaseModel):
+    """
+    Property definition on the link itself (for N:N relationships with backing table).
+
+    Link properties store data about the relationship itself, not the related objects.
+
+    Example:
+        # Role assignment on project-to-member relationship
+        role_prop = LinkPropertyDefinition(
+            api_name="assignedRole",
+            display_name="Assigned Role",
+            data_type=DataType.STRING,
+            backing_column="role",
+            required=True,
+        )
+    """
+
+    api_name: str = Field(
+        ...,
+        description="Unique identifier for this link property.",
+        min_length=1,
+        max_length=255,
+        pattern=r"^[a-zA-Z][a-zA-Z0-9_]*$",
+        alias="apiName",
+    )
+
+    display_name: str = Field(
+        ...,
+        description="Human-friendly name for UI display.",
+        min_length=1,
+        max_length=255,
+        alias="displayName",
+    )
+
+    data_type: DataType = Field(
+        ...,
+        description="Data type for this property. Limited to simple types for link properties.",
+        alias="dataType",
+    )
+
+    backing_column: str | None = Field(
+        default=None,
+        description="Column name in backing table.",
+        alias="backingColumn",
+    )
+
+    required: bool = Field(
+        default=False,
+        description="If true, this property must have a value.",
+    )
+
+    description: str | None = Field(
+        default=None,
+        description="Documentation for this link property.",
+        max_length=4096,
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    @model_validator(mode="after")
+    def validate_link_property_type(self) -> LinkPropertyDefinition:
+        """Validate that link properties use simple types only."""
+        allowed_types = {
+            DataType.STRING,
+            DataType.INTEGER,
+            DataType.LONG,
+            DataType.FLOAT,
+            DataType.DOUBLE,
+            DataType.BOOLEAN,
+            DataType.DATE,
+            DataType.TIMESTAMP,
+        }
+        if self.data_type not in allowed_types:
+            raise ValueError(
+                f"Link property data type must be one of {[t.value for t in allowed_types]}, "
+                f"got {self.data_type.value}"
+            )
+        return self
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {
+            "apiName": self.api_name,
+            "displayName": self.display_name,
+            "dataType": self.data_type.value,
+        }
+        if self.backing_column:
+            result["backingColumn"] = self.backing_column
+        if self.required:
+            result["required"] = True
+        if self.description:
+            result["description"] = self.description
+        return result
+
+
+class LinkMergingConfig(BaseModel):
+    """
+    Configuration for merging duplicate links from multiple data sources.
+    """
+
+    enabled: bool = Field(
+        default=False,
+        description="If true, duplicate links are merged.",
+    )
+
+    strategy: LinkMergeStrategy = Field(
+        default=LinkMergeStrategy.FIRST_WINS,
+        description="Merge strategy for conflicting link properties.",
+    )
+
+    priority_field: str | None = Field(
+        default=None,
+        description="For PRIORITY_BASED strategy, the field to determine priority.",
+        alias="priorityField",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    @model_validator(mode="after")
+    def validate_priority_field(self) -> LinkMergingConfig:
+        """Validate priority_field is set for PRIORITY_BASED strategy."""
+        if self.strategy == LinkMergeStrategy.PRIORITY_BASED and not self.priority_field:
+            raise ValueError(
+                "priority_field is required for PRIORITY_BASED merge strategy"
+            )
+        return self
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {
+            "enabled": self.enabled,
+            "strategy": self.strategy.value,
+        }
+        if self.priority_field:
+            result["priorityField"] = self.priority_field
+        return result
+
+
+class LinkPropertySecurityPolicy(BaseModel):
+    """
+    Security policy for a specific link property.
+    """
+
+    property_api_name: str = Field(
+        ...,
+        description="apiName of the link property this policy applies to.",
+        alias="propertyApiName",
+    )
+
+    access_level: AccessLevel = Field(
+        ...,
+        description="Access level for this property.",
+        alias="accessLevel",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+
+class LinkSecurityConfig(BaseModel):
+    """
+    Security configuration for link visibility and access control.
+
+    Links can inherit security from source, target, or both objects.
+    """
+
+    inherit_source_security: bool = Field(
+        default=True,
+        description="If true, link visibility inherits from source object security.",
+        alias="inheritSourceSecurity",
+    )
+
+    inherit_target_security: bool = Field(
+        default=False,
+        description="If true, link visibility inherits from target object security.",
+        alias="inheritTargetSecurity",
+    )
+
+    require_both_visible: bool = Field(
+        default=False,
+        description="If true, both source and target must be visible to see the link.",
+        alias="requireBothVisible",
+    )
+
+    link_property_security: list[LinkPropertySecurityPolicy] = Field(
+        default_factory=list,
+        description="Security policies for individual link properties.",
+        alias="linkPropertySecurity",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {
+            "inheritSourceSecurity": self.inherit_source_security,
+            "inheritTargetSecurity": self.inherit_target_security,
+            "requireBothVisible": self.require_both_visible,
+        }
+        if self.link_property_security:
+            result["linkPropertySecurity"] = [
+                {
+                    "propertyApiName": p.property_api_name,
+                    "accessLevel": p.access_level.value,
+                }
+                for p in self.link_property_security
+            ]
+        return result
+
+
+class LinkType(OntologyEntity):
+    """
+    LinkType schema definition - relationship between two ObjectTypes.
+
+    A LinkType defines the schema for a relationship (link) between
+    a source ObjectType and a target ObjectType.
+
+    Key Features:
+    - Cardinality specification (1:1, 1:N, N:1, N:N)
+    - Implementation strategy (foreign key or backing table)
+    - Bidirectional navigation support
+    - Link properties for N:N relationships
+    - Cascade policies for referential integrity
+
+    IMPORTANT: LinkType does NOT support 'endorsed' status.
+    Only ObjectTypes can be endorsed (GAP-005).
+
+    Example:
+        >>> emp_to_dept = LinkType(
+        ...     api_name="EmployeeToDepartment",
+        ...     display_name="Employee to Department",
+        ...     source_object_type=ObjectTypeReference(api_name="Employee"),
+        ...     target_object_type=ObjectTypeReference(api_name="Department"),
+        ...     cardinality=CardinalityConfig(type=Cardinality.MANY_TO_ONE),
+        ...     implementation=LinkImplementation(
+        ...         type=LinkImplementationType.FOREIGN_KEY,
+        ...         foreign_key=ForeignKeyConfig(
+        ...             foreign_key_property="departmentId",
+        ...             foreign_key_location=ForeignKeyLocation.SOURCE,
+        ...         ),
+        ...     ),
+        ... )
+    """
+
+    # Override RID to use link-type specific format
+    rid: str = Field(
+        default_factory=lambda: generate_rid("ontology", "link-type"),
+        description="Resource ID - globally unique identifier for this LinkType.",
+        pattern=r"^ri\.ontology\.[a-z]+\.link-type\.[a-zA-Z0-9-]+$",
+        json_schema_extra={"readOnly": True, "immutable": True},
+    )
+
+    # Source and Target ObjectTypes (REQUIRED)
+    source_object_type: ObjectTypeReference = Field(
+        ...,
+        description="ObjectType on the 'from' side of the relationship.",
+        alias="sourceObjectType",
+    )
+
+    target_object_type: ObjectTypeReference = Field(
+        ...,
+        description="ObjectType on the 'to' side of the relationship.",
+        alias="targetObjectType",
+    )
+
+    # Cardinality (REQUIRED)
+    cardinality: CardinalityConfig = Field(
+        ...,
+        description="Relationship cardinality defining how many instances can be linked.",
+    )
+
+    # Implementation (REQUIRED)
+    implementation: LinkImplementation = Field(
+        ...,
+        description="How the link is physically stored (foreign key or backing table).",
+    )
+
+    # Bidirectional Navigation
+    bidirectional: bool = Field(
+        default=True,
+        description="If true, link can be navigated from both source and target.",
+    )
+
+    reverse_api_name: str | None = Field(
+        default=None,
+        description="apiName for the reverse direction navigation (target to source).",
+        pattern=r"^[a-zA-Z][a-zA-Z0-9_]*$",
+        alias="reverseApiName",
+    )
+
+    reverse_display_name: str | None = Field(
+        default=None,
+        description="Display name for reverse direction.",
+        alias="reverseDisplayName",
+    )
+
+    # Cascade Policy
+    cascade_policy: CascadePolicy | None = Field(
+        default=None,
+        description="Behavior when linked objects are deleted.",
+        alias="cascadePolicy",
+    )
+
+    # Link Properties (for N:N with backing table)
+    link_properties: list[LinkPropertyDefinition] = Field(
+        default_factory=list,
+        description="Properties on the link itself (for N:N with backing table).",
+        alias="linkProperties",
+    )
+
+    # Lifecycle Status (NO ENDORSED for LinkType!)
+    status: LinkTypeStatus = Field(
+        default=LinkTypeStatus.EXPERIMENTAL,
+        description="Lifecycle status of the LinkType. Note: ENDORSED is NOT supported for LinkType.",
+    )
+
+    # Link Merging
+    link_merging: LinkMergingConfig | None = Field(
+        default=None,
+        description="Configuration for merging duplicate links from multiple sources.",
+        alias="linkMerging",
+    )
+
+    # Security Configuration
+    security_config: LinkSecurityConfig | None = Field(
+        default=None,
+        description="Security configuration for link visibility and access.",
+        alias="securityConfig",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        use_enum_values=False,
+        json_schema_extra={
+            "x-palantir-entity-type": "link-type",
+            "x-palantir-indexing": ["api_name", "rid", "status"],
+            "x-palantir-no-endorsed": True,  # LinkType cannot be endorsed
+        },
+    )
+
+    @model_validator(mode="after")
+    def validate_many_to_many_requires_backing_table(self) -> LinkType:
+        """
+        Validate that MANY_TO_MANY cardinality uses BACKING_TABLE implementation.
+
+        Palantir Foundry requires a backing dataset (junction table) for N:N relationships.
+        """
+        if self.cardinality.type == Cardinality.MANY_TO_MANY:
+            if self.implementation.type != LinkImplementationType.BACKING_TABLE:
+                raise ValueError(
+                    "MANY_TO_MANY cardinality requires BACKING_TABLE implementation. "
+                    "Palantir Foundry needs a junction table for N:N relationships."
+                )
+            if self.implementation.backing_table is None:
+                raise ValueError(
+                    "MANY_TO_MANY cardinality requires backing_table configuration."
+                )
+        return self
+
+    @model_validator(mode="after")
+    def validate_bidirectional_config(self) -> LinkType:
+        """Validate bidirectional navigation configuration."""
+        if self.bidirectional and not self.reverse_api_name:
+            # Auto-generate reverse name if not provided
+            # This is just a warning - could be auto-generated later
+            pass
+        return self
+
+    @model_validator(mode="after")
+    def validate_link_properties_require_backing_table(self) -> LinkType:
+        """Validate that link properties are only used with backing table implementation."""
+        if self.link_properties:
+            if self.implementation.type != LinkImplementationType.BACKING_TABLE:
+                raise ValueError(
+                    "Link properties can only be defined when using BACKING_TABLE implementation. "
+                    "Link properties are stored in the junction table."
+                )
+        return self
+
+    @model_validator(mode="after")
+    def validate_unique_link_property_names(self) -> LinkType:
+        """Validate that all link property apiNames are unique."""
+        if self.link_properties:
+            names = [p.api_name for p in self.link_properties]
+            duplicates = [n for n in names if names.count(n) > 1]
+            if duplicates:
+                raise ValueError(
+                    f"Duplicate link property apiNames found: {set(duplicates)}"
+                )
+        return self
+
+    def get_link_property(self, api_name: str) -> LinkPropertyDefinition | None:
+        """Get a link property by its apiName."""
+        for prop in self.link_properties:
+            if prop.api_name == api_name:
+                return prop
+        return None
+
+    def is_many_to_many(self) -> bool:
+        """Check if this is a many-to-many relationship."""
+        return self.cardinality.type == Cardinality.MANY_TO_MANY
+
+    def has_backing_table(self) -> bool:
+        """Check if this link uses a backing table."""
+        return self.implementation.type == LinkImplementationType.BACKING_TABLE
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Palantir Foundry-compatible dictionary format."""
+        result = super().to_foundry_dict()
+
+        result["sourceObjectType"] = self.source_object_type.to_foundry_dict()
+        result["targetObjectType"] = self.target_object_type.to_foundry_dict()
+        result["cardinality"] = self.cardinality.to_foundry_dict()
+        result["implementation"] = self.implementation.to_foundry_dict()
+        result["bidirectional"] = self.bidirectional
+        result["status"] = self.status.value
+
+        if self.reverse_api_name:
+            result["reverseApiName"] = self.reverse_api_name
+        if self.reverse_display_name:
+            result["reverseDisplayName"] = self.reverse_display_name
+
+        if self.cascade_policy:
+            result["cascadePolicy"] = self.cascade_policy.to_foundry_dict()
+
+        if self.link_properties:
+            result["linkProperties"] = [
+                p.to_foundry_dict() for p in self.link_properties
+            ]
+
+        if self.link_merging:
+            result["linkMerging"] = self.link_merging.to_foundry_dict()
+
+        if self.security_config:
+            result["securityConfig"] = self.security_config.to_foundry_dict()
+
+        return result
+
+    @classmethod
+    def from_foundry_dict(cls, data: dict[str, Any]) -> LinkType:
+        """Create LinkType from Palantir Foundry JSON format."""
+        from ontology_definition.core.enums import ForeignKeyLocation
+
+        # Parse cardinality
+        card_data = data["cardinality"]
+        cardinality = CardinalityConfig(
+            type=Cardinality(card_data["type"]),
+            source_min=card_data.get("sourceMin", 0),
+            source_max=card_data.get("sourceMax", "N"),
+            target_min=card_data.get("targetMin", 0),
+            target_max=card_data.get("targetMax", "N"),
+            enforced=card_data.get("enforced", False),
+        )
+
+        # Parse implementation
+        impl_data = data["implementation"]
+        foreign_key = None
+        backing_table = None
+
+        if impl_data.get("foreignKey"):
+            fk_data = impl_data["foreignKey"]
+            foreign_key = ForeignKeyConfig(
+                foreign_key_property=fk_data["foreignKeyProperty"],
+                foreign_key_location=ForeignKeyLocation(fk_data["foreignKeyLocation"]),
+                referenced_property=fk_data.get("referencedProperty"),
+            )
+
+        if impl_data.get("backingTable"):
+            bt_data = impl_data["backingTable"]
+            additional_cols = []
+            if bt_data.get("additionalColumns"):
+                additional_cols = [
+                    BackingTableColumnMapping(
+                        column_name=col["columnName"],
+                        property_api_name=col["propertyApiName"],
+                    )
+                    for col in bt_data["additionalColumns"]
+                ]
+            backing_table = BackingTableConfig(
+                dataset_rid=bt_data.get("datasetRid"),
+                source_key_column=bt_data["sourceKeyColumn"],
+                target_key_column=bt_data["targetKeyColumn"],
+                additional_columns=additional_cols,
+            )
+
+        implementation = LinkImplementation(
+            type=LinkImplementationType(impl_data["type"]),
+            foreign_key=foreign_key,
+            backing_table=backing_table,
+        )
+
+        # Parse link properties
+        link_properties = []
+        if data.get("linkProperties"):
+            link_properties = [
+                LinkPropertyDefinition(
+                    api_name=lp["apiName"],
+                    display_name=lp["displayName"],
+                    data_type=DataType(lp["dataType"]),
+                    backing_column=lp.get("backingColumn"),
+                    required=lp.get("required", False),
+                    description=lp.get("description"),
+                )
+                for lp in data["linkProperties"]
+            ]
+
+        # Parse cascade policy
+        cascade_policy = None
+        if data.get("cascadePolicy"):
+            cp_data = data["cascadePolicy"]
+            cascade_policy = CascadePolicy(
+                on_source_delete=CascadeAction(cp_data.get("onSourceDelete", "CASCADE")),
+                on_target_delete=CascadeAction(cp_data.get("onTargetDelete", "CASCADE")),
+                on_source_update=CascadeAction(cp_data.get("onSourceUpdate", "CASCADE")),
+                on_target_update=CascadeAction(cp_data.get("onTargetUpdate", "CASCADE")),
+            )
+
+        # Parse link merging
+        link_merging = None
+        if data.get("linkMerging"):
+            lm_data = data["linkMerging"]
+            link_merging = LinkMergingConfig(
+                enabled=lm_data.get("enabled", False),
+                strategy=LinkMergeStrategy(lm_data.get("strategy", "FIRST_WINS")),
+                priority_field=lm_data.get("priorityField"),
+            )
+
+        # Parse security config
+        security_config = None
+        if data.get("securityConfig"):
+            sc_data = data["securityConfig"]
+            link_prop_security = []
+            if sc_data.get("linkPropertySecurity"):
+                link_prop_security = [
+                    LinkPropertySecurityPolicy(
+                        property_api_name=lps["propertyApiName"],
+                        access_level=AccessLevel(lps["accessLevel"]),
+                    )
+                    for lps in sc_data["linkPropertySecurity"]
+                ]
+            security_config = LinkSecurityConfig(
+                inherit_source_security=sc_data.get("inheritSourceSecurity", True),
+                inherit_target_security=sc_data.get("inheritTargetSecurity", False),
+                require_both_visible=sc_data.get("requireBothVisible", False),
+                link_property_security=link_prop_security,
+            )
+
+        return cls(
+            rid=data.get("rid", generate_rid("ontology", "link-type")),
+            api_name=data["apiName"],
+            display_name=data["displayName"],
+            description=data.get("description"),
+            source_object_type=ObjectTypeReference(
+                api_name=data["sourceObjectType"]["apiName"],
+                rid=data["sourceObjectType"].get("rid"),
+            ),
+            target_object_type=ObjectTypeReference(
+                api_name=data["targetObjectType"]["apiName"],
+                rid=data["targetObjectType"].get("rid"),
+            ),
+            cardinality=cardinality,
+            implementation=implementation,
+            bidirectional=data.get("bidirectional", True),
+            reverse_api_name=data.get("reverseApiName"),
+            reverse_display_name=data.get("reverseDisplayName"),
+            cascade_policy=cascade_policy,
+            link_properties=link_properties,
+            status=LinkTypeStatus(data.get("status", "EXPERIMENTAL")),
+            link_merging=link_merging,
+            security_config=security_config,
+        )
