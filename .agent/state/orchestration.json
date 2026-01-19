@@ -1,0 +1,13 @@
+{
+  "phase": "init",
+  "iteration": 0,
+  "completedPhases": [],
+  "pendingL2Refs": [],
+  "lastUpdated": "2026-01-19T19:14:00+09:00",
+  "activeAgents": {},
+  "metadata": {
+    "version": "1.0.0",
+    "createdBy": "l1_l2_runtime_integration",
+    "description": "L1/L2 Orchestration state for Auto-Compact recovery"
+  }
+}

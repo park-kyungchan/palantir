@@ -1,0 +1,127 @@
+{
+  "id": "agent-output-l1l2",
+  "apiName": "AgentOutputL1L2",
+  "displayName": "Agent Output L1/L2",
+  "pluralDisplayName": "Agent Outputs L1/L2",
+  "description": "Deterministic schema for L1/L2 enforcement. L1 is summary for Main Agent (max 200 chars), L2 is detailed output stored separately.",
+  "primaryKey": {
+    "propertyApiName": "l2Ref"
+  },
+  "titleKey": {
+    "propertyApiName": "l1Summary"
+  },
+  "properties": [
+    {
+      "id": "l1-operation",
+      "apiName": "l1Operation",
+      "displayName": "L1 Operation",
+      "description": "Type of operation performed by the agent.",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true,
+        "enum": ["create", "update", "delete", "validate", "stage", "deploy"]
+      }
+    },
+    {
+      "id": "l1-resource-type",
+      "apiName": "l1ResourceType",
+      "displayName": "L1 Resource Type",
+      "description": "Type of resource being operated on (e.g., ObjectType, LinkType, ActionType).",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "id": "l1-resource-id",
+      "apiName": "l1ResourceId",
+      "displayName": "L1 Resource ID",
+      "description": "Unique identifier of the resource being operated on.",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "id": "l1-status",
+      "apiName": "l1Status",
+      "displayName": "L1 Status",
+      "description": "Status of the operation.",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true,
+        "enum": ["success", "error", "pending_review", "staged"]
+      }
+    },
+    {
+      "id": "l1-summary",
+      "apiName": "l1Summary",
+      "displayName": "L1 Summary",
+      "description": "Compact summary - Main Agent receives ONLY this. Max 200 chars enforced.",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true,
+        "maxLength": 200
+      }
+    },
+    {
+      "id": "l2-ref",
+      "apiName": "l2Ref",
+      "displayName": "L2 Reference",
+      "description": "UUID reference to L2 storage file.",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true,
+        "uuidFormat": true,
+        "unique": true
+      },
+      "keys": {
+        "isPrimaryKey": true
+      }
+    },
+    {
+      "id": "l2-path",
+      "apiName": "l2Path",
+      "displayName": "L2 Path",
+      "description": "File path to L2 details: .agent/l2_storage/{uuid}.json",
+      "dataType": {
+        "type": "STRING"
+      },
+      "constraints": {
+        "required": true,
+        "pattern": "^\\.agent/l2_storage/.*\\.json$"
+      }
+    },
+    {
+      "id": "l2-stored",
+      "apiName": "l2Stored",
+      "displayName": "L2 Stored",
+      "description": "Whether L2 details have been persisted.",
+      "dataType": {
+        "type": "BOOLEAN"
+      },
+      "constraints": {
+        "required": true
+      }
+    }
+  ],
+  "status": "experimental",
+  "visibility": "normal",
+  "groups": ["agent-infrastructure", "output-management"],
+  "metadata": {
+    "tags": ["l1l2-enforcement", "agent-output", "deterministic-schema"],
+    "sourceModule": "oda_agent_infrastructure"
+  }
+}
