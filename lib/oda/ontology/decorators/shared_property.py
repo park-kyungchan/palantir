@@ -33,7 +33,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, get_type_hints
 
-from pydantic import Field
+from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
 
 logger = logging.getLogger(__name__)
@@ -234,6 +234,7 @@ def uses_shared_property(
         # Track which properties were injected
         injected: List[str] = []
         all_errors: List[tuple[str, List[str]]] = []
+        pydantic_fields: Dict[str, tuple[Any, Any]] = {}
 
         for property_id in property_ids:
             # Try registry first, then built-ins
@@ -283,8 +284,32 @@ def uses_shared_property(
                     continue
 
             # Inject the property
-            _inject_property(cls, prop_def)
-            injected.append(property_id)
+            if issubclass(cls, BaseModel):
+                annotation = _resolve_type_hint(prop_def.type_hint)
+
+                if prop_def.default_value is not None:
+                    default = Field(default=prop_def.default_value, description=prop_def.description)
+                elif prop_def.default_factory is not None:
+                    factory = _resolve_default_factory(prop_def.default_factory)
+                    if factory is None:
+                        logger.warning(
+                            f"[uses_shared_property] {class_name}: "
+                            f"Unknown default_factory '{prop_def.default_factory}' for '{property_id}', "
+                            "falling back to default=None"
+                        )
+                        default = Field(default=None, description=prop_def.description)
+                    else:
+                        default = Field(default_factory=factory, description=prop_def.description)
+                elif prop_def.is_required:
+                    default = Field(..., description=prop_def.description)
+                else:
+                    default = Field(default=None, description=prop_def.description)
+
+                pydantic_fields[property_id] = (annotation, default)
+                injected.append(property_id)
+            else:
+                _inject_property(cls, prop_def)
+                injected.append(property_id)
 
             # Register usage
             if register:
@@ -300,6 +325,21 @@ def uses_shared_property(
             logger.debug(
                 f"[uses_shared_property] {class_name}: Injected '{property_id}'"
             )
+
+        # If this is a Pydantic model, rebuild as a new model class with added fields.
+        # Pydantic v2 does not support adding model fields by mutating __annotations__ in-place.
+        if pydantic_fields:
+            original_doc = getattr(cls, "__doc__", None)
+            original_qualname = getattr(cls, "__qualname__", cls.__name__)
+            cls = create_model(
+                cls.__name__,
+                __base__=cls,
+                __module__=cls.__module__,
+                **pydantic_fields,
+            )
+            if original_doc is not None:
+                cls.__doc__ = original_doc
+            cls.__qualname__ = original_qualname
 
         # Add metadata to the class
         if not hasattr(cls, "_uses_shared_properties"):

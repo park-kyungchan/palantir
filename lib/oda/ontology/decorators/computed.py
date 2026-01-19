@@ -45,6 +45,8 @@ from typing import (
     get_type_hints,
 )
 
+from pydantic import ConfigDict
+
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -257,6 +259,7 @@ class ComputedPropertyMixin:
 
     _computed_properties: Dict[str, ComputedPropertyDescriptor] = {}
     _dependency_map: Dict[str, Set[str]] = {}
+    model_config = ConfigDict(ignored_types=(ComputedPropertyDescriptor,))
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Override setattr to invalidate computed property caches."""

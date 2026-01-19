@@ -88,7 +88,8 @@ class Workspace(OntologyObject):
     slug: str = Field(
         default="",
         max_length=100,
-        description="URL-friendly identifier"
+        description="URL-friendly identifier",
+        validate_default=True,
     )
     tags: List[str] = Field(
         default_factory=list,

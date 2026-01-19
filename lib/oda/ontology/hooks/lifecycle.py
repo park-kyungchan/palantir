@@ -426,13 +426,13 @@ class LifecycleHookRegistry:
         # Get hook metadata
         if isinstance(hook, LifecycleHook):
             h_type = hook_type or hook.hook_type
-            h_priority = priority or hook.priority
+            h_priority = hook.priority if priority is None else priority
             hook_name = hook.hook_name
         else:
             if hook_type is None:
                 raise ValueError("hook_type required for callable hooks")
             h_type = hook_type
-            h_priority = priority or LifecycleHookPriority.NORMAL
+            h_priority = LifecycleHookPriority.NORMAL if priority is None else priority
             hook_name = getattr(hook, "__name__", str(hook))
 
         # Store with priority for sorting
