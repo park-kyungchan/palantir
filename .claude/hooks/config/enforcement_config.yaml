@@ -115,7 +115,7 @@ fallback_on_error: true
 # -------
 logging:
   enabled: true
-  log_dir: /home/palantir/park-kyungchan/palantir/.agent/logs
+  log_dir: /home/palantir/.claude/logs
   log_file: orchestrator_violations.log
   include_tool_input: true     # Log tool input summaries
   max_summary_length: 100      # Truncate summaries to this length
