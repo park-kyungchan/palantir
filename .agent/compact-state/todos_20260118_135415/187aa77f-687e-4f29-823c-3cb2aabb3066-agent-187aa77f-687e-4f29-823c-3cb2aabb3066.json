@@ -1,0 +1,77 @@
+[
+  {
+    "content": "[Phase 1] Package Foundation - __init__.py 생성 | Files: lib/oda/planning/__init__.py | Agent: Direct:N/A (done)",
+    "status": "completed",
+    "activeForm": "Creating __init__.py for package foundation"
+  },
+  {
+    "content": "[Phase 1] Import 검증 | Files: lib/oda/planning/ | Agent: Direct:N/A (done)",
+    "status": "completed",
+    "activeForm": "Verifying imports work correctly"
+  },
+  {
+    "content": "[Phase 2] PlanFile 데이터클래스 생성 | Files: lib/oda/planning/plan_file.py | Agent: general-purpose:pending",
+    "status": "in_progress",
+    "activeForm": "Creating PlanFile dataclass"
+  },
+  {
+    "content": "[Phase 2] from_markdown() 파서 구현 | Files: lib/oda/planning/plan_file.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing from_markdown parser"
+  },
+  {
+    "content": "[Phase 2] to_markdown() 시리얼라이저 구현 | Files: lib/oda/planning/plan_file.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing to_markdown serializer"
+  },
+  {
+    "content": "[Phase 3] ExecutionOrchestrator 스켈레톤 생성 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Creating ExecutionOrchestrator skeleton"
+  },
+  {
+    "content": "[Phase 3] Composed modules 초기화 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Initializing composed modules"
+  },
+  {
+    "content": "[Phase 3] execute_phase() 구현 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing execute_phase method"
+  },
+  {
+    "content": "[Phase 3] TaskDecomposer 통합 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Integrating TaskDecomposer"
+  },
+  {
+    "content": "[Phase 4] verify_result() 구현 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing verify_result method"
+  },
+  {
+    "content": "[Phase 4] L2/L3 fallback 접근 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing L2/L3 fallback access"
+  },
+  {
+    "content": "[Phase 5] recovery_gate() 구현 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing recovery_gate method"
+  },
+  {
+    "content": "[Phase 5] block_and_recover() 구현 | Files: lib/oda/planning/execution_orchestrator.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Implementing block_and_recover method"
+  },
+  {
+    "content": "[Phase 6] /execute.md 간결화 | Files: /home/palantir/.claude/commands/execute.md | Agent: Direct:N/A",
+    "status": "pending",
+    "activeForm": "Simplifying /execute.md skill file"
+  },
+  {
+    "content": "[Phase 6] ExecutionOrchestrator 참조 추가 | Files: /home/palantir/.claude/commands/execute.md | Agent: Direct:N/A",
+    "status": "pending",
+    "activeForm": "Adding ExecutionOrchestrator reference"
+  }
+]

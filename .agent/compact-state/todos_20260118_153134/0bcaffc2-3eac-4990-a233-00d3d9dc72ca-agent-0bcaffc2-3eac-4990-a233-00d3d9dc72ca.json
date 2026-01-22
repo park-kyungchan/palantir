@@ -1,0 +1,37 @@
+[
+  {
+    "content": "[MASTER] Boris Cherny 패턴 조사 및 적용 - Auto-Compact 복구용 전체 맥락",
+    "status": "in_progress",
+    "activeForm": "Boris Cherny 패턴 조사 진행 중"
+  },
+  {
+    "content": "[Phase 1] WebSearch: Boris Cherny Claude Code 패턴 조사 (2025-2026)",
+    "status": "in_progress",
+    "activeForm": "WebSearch 조사 중"
+  },
+  {
+    "content": "[Phase 2] 패턴 목록화: 발견된 패턴들 정리 및 설명",
+    "status": "pending",
+    "activeForm": "패턴 목록화 대기"
+  },
+  {
+    "content": "[Phase 3] Native 위반 검토: 각 패턴별 Claude Code Native 준수 여부 확인",
+    "status": "pending",
+    "activeForm": "Native 위반 검토 대기"
+  },
+  {
+    "content": "[Phase 4] 사용자 승인: 패턴별 하나씩 질문 및 반영 여부 확인",
+    "status": "pending",
+    "activeForm": "사용자 승인 대기"
+  },
+  {
+    "content": "[Phase 5] 적용 및 문서화: 승인된 패턴 적용 및 CLAUDE.md 업데이트",
+    "status": "pending",
+    "activeForm": "적용 및 문서화 대기"
+  },
+  {
+    "content": "[Context] 적용방식: 하나씩 질문, 하나씩 반영 | Native 위반: 즉시 보고",
+    "status": "pending",
+    "activeForm": "컨텍스트 정보"
+  }
+]

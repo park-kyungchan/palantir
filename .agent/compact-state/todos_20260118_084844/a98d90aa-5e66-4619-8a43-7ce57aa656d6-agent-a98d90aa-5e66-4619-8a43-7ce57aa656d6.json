@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Plan 1: Stage B/C API 연동 계획서 작성 ✅",
+    "status": "completed",
+    "activeForm": "Plan 1 completed"
+  },
+  {
+    "content": "Plan 2: E2E 통합 테스트 계획서 작성 ✅",
+    "status": "completed",
+    "activeForm": "Plan 2 completed"
+  },
+  {
+    "content": "Plan 3: 파이프라인 완성도 검증 계획서 작성",
+    "status": "in_progress",
+    "activeForm": "Writing Plan 3: Pipeline completeness verification"
+  },
+  {
+    "content": "Plan 4: 프로덕션 준비 계획서 작성",
+    "status": "pending",
+    "activeForm": "Writing Plan 4: Production readiness"
+  }
+]

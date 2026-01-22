@@ -1,0 +1,32 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Orchestrator Mode 활성화"
+  },
+  {
+    "content": "[Phase 1] 구조 일관성 검사 | → Delegate: Explore x3 | Budget: 15K each",
+    "status": "pending",
+    "activeForm": "F01-F14, F20-F54, Legacy KBs 구조 스캔"
+  },
+  {
+    "content": "[Phase 2] 콘텐츠 완전성 검사 | → Delegate: Explore | Budget: 15K",
+    "status": "pending",
+    "activeForm": "7개 언어 커버리지 검증"
+  },
+  {
+    "content": "[Phase 3] Cross-Reference 무결성 | → Delegate: Explore | Budget: 15K",
+    "status": "pending",
+    "activeForm": "내부/외부 링크 검증"
+  },
+  {
+    "content": "[Phase 4] Semantic Matrix 검증 | → Delegate: Explore | Budget: 15K",
+    "status": "pending",
+    "activeForm": "5개 차원 검증"
+  },
+  {
+    "content": "[Phase 5] 위험도 평가 및 종합 보고서",
+    "status": "pending",
+    "activeForm": "최종 보고서 작성"
+  }
+]

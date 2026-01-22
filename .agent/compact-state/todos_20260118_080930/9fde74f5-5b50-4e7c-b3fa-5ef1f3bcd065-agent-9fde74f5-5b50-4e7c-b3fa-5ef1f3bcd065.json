@@ -1,0 +1,32 @@
+[
+  {
+    "content": "🎯 /plan: 전체 슬래시커맨드 + Hooks + Skills + Agents 점검계획",
+    "status": "in_progress",
+    "activeForm": "Planning comprehensive audit of slash commands, hooks, skills, and agents"
+  },
+  {
+    "content": "Phase 1: 탐색 - Commands, Hooks, Skills, Agents 파일 구조 파악",
+    "status": "completed",
+    "activeForm": "Completed file structure exploration"
+  },
+  {
+    "content": "Phase 2: ODA 3-Stage Protocol 분석 (Path 1)",
+    "status": "in_progress",
+    "activeForm": "Executing ODA Protocol analysis"
+  },
+  {
+    "content": "Phase 3: Plan Subagent 아키텍처 분석 (Path 2)",
+    "status": "in_progress",
+    "activeForm": "Executing Plan Subagent analysis"
+  },
+  {
+    "content": "Phase 4: Dual-Path 결과 합성 및 점검계획 수립",
+    "status": "pending",
+    "activeForm": "Synthesizing dual-path results into audit plan"
+  },
+  {
+    "content": "Phase 5: 테스트 계획 수립",
+    "status": "pending",
+    "activeForm": "Creating test plan for verification"
+  }
+]

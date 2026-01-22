@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Stage A: SCAN - ODA Orchestration 구조 분석",
+    "status": "in_progress",
+    "activeForm": "Scanning ODA orchestration structure"
+  },
+  {
+    "content": "claude-code-guide로 V2.1.x 기능 검증",
+    "status": "pending",
+    "activeForm": "Verifying V2.1.x feature integration"
+  },
+  {
+    "content": "Stage B: TRACE - 비효율성 식별",
+    "status": "pending",
+    "activeForm": "Identifying inefficiencies"
+  },
+  {
+    "content": "Stage C: VERIFY - 최적화 제안",
+    "status": "pending",
+    "activeForm": "Proposing optimizations"
+  },
+  {
+    "content": "사용자 질문 후 삭제/개선 실행",
+    "status": "pending",
+    "activeForm": "Executing deletions/improvements"
+  }
+]

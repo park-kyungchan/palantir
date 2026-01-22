@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Analyze all slash commands for suppressOutput applicability",
+    "status": "completed",
+    "activeForm": "Analyzed slash commands for suppressOutput applicability"
+  },
+  {
+    "content": "Create PostToolUse Hook for L2 output transformation",
+    "status": "in_progress",
+    "activeForm": "Creating PostToolUse Hook for L2 output transformation"
+  },
+  {
+    "content": "Redesign /plan skill with Progressive-Disclosure pattern",
+    "status": "pending",
+    "activeForm": "Redesigning /plan skill with Progressive-Disclosure"
+  },
+  {
+    "content": "Apply suppressOutput pattern to applicable slash commands",
+    "status": "pending",
+    "activeForm": "Applying suppressOutput pattern to slash commands"
+  },
+  {
+    "content": "Update CLAUDE.md with new hook documentation",
+    "status": "pending",
+    "activeForm": "Updating CLAUDE.md documentation"
+  }
+]

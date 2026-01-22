@@ -1,0 +1,22 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: Phase 4 실행 중 | 직접 실행 금지 - Task()로 Subagent에 위임",
+    "status": "in_progress",
+    "activeForm": "Orchestrating Phase 4 execution"
+  },
+  {
+    "content": "[Phase 4-1] Create MathpixPipeline orchestrator (~200 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating pipeline orchestrator"
+  },
+  {
+    "content": "[Phase 4-2] Write integration tests (~500 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating integration tests"
+  },
+  {
+    "content": "[Phase 4-3] Write E2E tests (~300 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating E2E tests"
+  }
+]

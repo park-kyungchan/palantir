@@ -1,0 +1,107 @@
+[
+  {
+    "content": "[MASTER] Math Image Parsing Pipeline v2.0 코드 구현 | Files: /home/palantir/cow/ | Agent: Main",
+    "status": "in_progress",
+    "activeForm": "Master 구현 프로젝트 진행 중"
+  },
+  {
+    "content": "[Phase 1] Foundation 완료 | Files: src/mathpix_pipeline/schemas/ | Agent: Main (done)",
+    "status": "completed",
+    "activeForm": "Phase 1 완료"
+  },
+  {
+    "content": "═══ PHASE 2A: Stage B Enhancement (Week 2-3) ═══",
+    "status": "in_progress",
+    "activeForm": "Phase 2A 진행 중"
+  },
+  {
+    "content": "[Phase 2A.1] MathpixClient 클래스 기본 구조 분석 | Files: .agent/plans/template_2*.md | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "MathpixClient 분석 완료"
+  },
+  {
+    "content": "[Phase 2A.2] MathpixClient 클래스 구현 - detection_map 파싱 | Files: src/mathpix_pipeline/clients/mathpix.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "MathpixClient 구현 완료"
+  },
+  {
+    "content": "[Phase 2A.3] detection_map → content_flags 변환 함수 | Files: src/mathpix_pipeline/clients/mathpix.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "content_flags 변환 완료"
+  },
+  {
+    "content": "[Phase 2A.4] line_data → line_segments 변환 함수 | Files: src/mathpix_pipeline/clients/mathpix.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "line_segments 변환 완료"
+  },
+  {
+    "content": "[Phase 2A.5] should_trigger_vision_parse() Stage C 트리거 로직 | Files: src/mathpix_pipeline/clients/mathpix.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "Stage C 트리거 완료"
+  },
+  {
+    "content": "[Phase 2A.6] contour_to_bbox() 좌표 변환 함수 | Files: src/mathpix_pipeline/utils/geometry.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "좌표 변환 완료"
+  },
+  {
+    "content": "[Phase 2A.7] Stage B 에러 핸들링 (429, 408, 500) | Files: src/mathpix_pipeline/clients/mathpix.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "에러 핸들링 완료"
+  },
+  {
+    "content": "[Phase 2A.8] Phase 2A 검증 및 테스트 | Files: tests/clients/test_mathpix.py | Agent: Main:direct",
+    "status": "in_progress",
+    "activeForm": "Phase 2A 검증 중"
+  },
+  {
+    "content": "═══ PHASE 2B: Stage C Hybrid Architecture (Week 2-3) ═══",
+    "status": "pending",
+    "activeForm": "Phase 2B 대기 중"
+  },
+  {
+    "content": "[Phase 2B.1] YOLO + Claude Hybrid 아키텍처 분석 | Files: .agent/plans/template_1*.md | Agent: Explore:pending",
+    "status": "pending",
+    "activeForm": "Hybrid 아키텍처 분석 중"
+  },
+  {
+    "content": "[Phase 2B.2] YOLOv8 모델 로더 및 추론 클래스 | Files: src/mathpix_pipeline/vision/yolo_detector.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "YOLO 로더 구현 중"
+  },
+  {
+    "content": "[Phase 2B.3] DetectionLayer 처리 로직 | Files: src/mathpix_pipeline/vision/detection_layer.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "DetectionLayer 구현 중"
+  },
+  {
+    "content": "[Phase 2B.4] InterpretationLayer (Claude) 프롬프트 설계 | Files: src/mathpix_pipeline/vision/interpretation_layer.py | Agent: Plan:pending",
+    "status": "pending",
+    "activeForm": "InterpretationLayer 설계 중"
+  },
+  {
+    "content": "[Phase 2B.5] HybridMerger 클래스 - YOLO + Claude 결합 | Files: src/mathpix_pipeline/vision/hybrid_merger.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "HybridMerger 구현 중"
+  },
+  {
+    "content": "[Phase 2B.6] calculate_combined_confidence() 가중치 함수 | Files: src/mathpix_pipeline/vision/hybrid_merger.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "combined_confidence 구현 중"
+  },
+  {
+    "content": "[Phase 2B.7] Fallback Strategy (YOLO→Gemini→Manual) | Files: src/mathpix_pipeline/vision/fallback.py | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Fallback Strategy 구현 중"
+  },
+  {
+    "content": "[Phase 2B.8] Phase 2B 검증 및 테스트 | Files: tests/vision/ | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Phase 2B 검증 중"
+  },
+  {
+    "content": "[REF] Plan Files | Files: .agent/plans/*.md (7개) | Agent: reference",
+    "status": "completed",
+    "activeForm": "Plan Files 참조 완료"
+  }
+]

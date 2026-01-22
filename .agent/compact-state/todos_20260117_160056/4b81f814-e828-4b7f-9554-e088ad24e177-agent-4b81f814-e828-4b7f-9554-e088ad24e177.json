@@ -1,0 +1,57 @@
+[
+  {
+    "content": "📝 PLAN: Stage A~H 전체 파이프라인 구현 계획 | Dual-Path Analysis",
+    "status": "in_progress",
+    "activeForm": "Stage A~H 계획 수립 중"
+  },
+  {
+    "content": "[Step 0] TodoWrite 초기화 - 8개 Stage 파싱",
+    "status": "in_progress",
+    "activeForm": "Stage 파싱 중"
+  },
+  {
+    "content": "[Step 1] Stage A (Ingestion) 분석 및 설계",
+    "status": "pending",
+    "activeForm": "Stage A 분석 중"
+  },
+  {
+    "content": "[Step 2] Stage B (TextParse) 분석 및 설계",
+    "status": "pending",
+    "activeForm": "Stage B 분석 중"
+  },
+  {
+    "content": "[Step 3] Stage C (VisionParse) 검토 및 개선점",
+    "status": "pending",
+    "activeForm": "Stage C 검토 중"
+  },
+  {
+    "content": "[Step 4] Stage D (Alignment) 검토 및 개선점",
+    "status": "pending",
+    "activeForm": "Stage D 검토 중"
+  },
+  {
+    "content": "[Step 5] Stage E (SemanticGraph) 검토 및 개선점",
+    "status": "pending",
+    "activeForm": "Stage E 검토 중"
+  },
+  {
+    "content": "[Step 6] Stage F (Regeneration) 설계",
+    "status": "pending",
+    "activeForm": "Stage F 설계 중"
+  },
+  {
+    "content": "[Step 7] Stage G (HumanReview) 설계",
+    "status": "pending",
+    "activeForm": "Stage G 설계 중"
+  },
+  {
+    "content": "[Step 8] Stage H (Export) 설계",
+    "status": "pending",
+    "activeForm": "Stage H 설계 중"
+  },
+  {
+    "content": "[Step 9] 종합 계획 문서 생성 및 승인 요청",
+    "status": "pending",
+    "activeForm": "계획 문서 생성 중"
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "content": "[MASTER] Math Image Parsing Pipeline v2.0 코드 구현 | Files: /home/palantir/cow/ | Agent: Main",
+    "status": "in_progress",
+    "activeForm": "Master 구현 프로젝트 진행 중"
+  },
+  {
+    "content": "[Phase 1] Foundation 완료 | Files: src/mathpix_pipeline/schemas/ | Agent: Main:done",
+    "status": "completed",
+    "activeForm": "Phase 1 완료"
+  },
+  {
+    "content": "[Phase 2A] Stage B Enhancement 완료 | Files: src/mathpix_pipeline/clients/ | Agent: Main:done",
+    "status": "completed",
+    "activeForm": "Phase 2A 완료"
+  },
+  {
+    "content": "═══ PHASE 2B: Stage C Hybrid Architecture ═══",
+    "status": "in_progress",
+    "activeForm": "Phase 2B 진행 중"
+  },
+  {
+    "content": "[Phase 2B.1] YOLO + Claude Hybrid 아키텍처 분석 | Files: template_1_claude_vision_alternative.md | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "Hybrid 아키텍처 분석 완료"
+  },
+  {
+    "content": "[Phase 2B.2] YOLOv8 모델 로더 및 추론 클래스 | Files: src/mathpix_pipeline/vision/yolo_detector.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "YOLO 로더 구현 완료"
+  },
+  {
+    "content": "[Phase 2B.3] InterpretationLayer (Claude) 프롬프트 설계 | Files: src/mathpix_pipeline/vision/interpretation_layer.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "InterpretationLayer 설계 완료"
+  },
+  {
+    "content": "[Phase 2B.4] HybridMerger 클래스 - YOLO + Claude 결합 | Files: src/mathpix_pipeline/vision/hybrid_merger.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "HybridMerger 구현 완료"
+  },
+  {
+    "content": "[Phase 2B.5] Fallback Strategy (YOLO→Gemini→Manual) | Files: src/mathpix_pipeline/vision/fallback.py | Agent: Main:direct",
+    "status": "completed",
+    "activeForm": "Fallback Strategy 구현 완료"
+  },
+  {
+    "content": "[Phase 2B.6] Phase 2B 검증 및 테스트 | Files: tests/vision/ | Agent: Main:direct",
+    "status": "in_progress",
+    "activeForm": "Phase 2B 검증 중"
+  },
+  {
+    "content": "[REF] Plan Files | Files: .agent/plans/*.md (7개) | Agent: reference",
+    "status": "completed",
+    "activeForm": "Plan Files 참조 완료"
+  }
+]

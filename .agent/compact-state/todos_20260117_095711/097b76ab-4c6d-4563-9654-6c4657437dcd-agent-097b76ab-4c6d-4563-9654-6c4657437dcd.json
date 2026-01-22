@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Phase 1.1: Restricted Views (RV) 패턴 구현",
+    "status": "pending",
+    "activeForm": "Implementing Restricted Views pattern for row-level security"
+  },
+  {
+    "content": "Phase 1.2: Mandatory Control Property 지원 추가",
+    "status": "pending",
+    "activeForm": "Adding Mandatory Control Property support to PropertyDefinition"
+  },
+  {
+    "content": "Phase 1.3: Ontology Schema JSON Export 구현",
+    "status": "pending",
+    "activeForm": "Implementing Foundry-compatible JSON schema export"
+  },
+  {
+    "content": "Phase 1.4: mcp__oda_ontology 도구 개선",
+    "status": "pending",
+    "activeForm": "Enhancing MCP ODA ontology tools"
+  },
+  {
+    "content": "Phase 1.5: 통합 테스트 및 검증",
+    "status": "pending",
+    "activeForm": "Running integration tests and validation"
+  }
+]

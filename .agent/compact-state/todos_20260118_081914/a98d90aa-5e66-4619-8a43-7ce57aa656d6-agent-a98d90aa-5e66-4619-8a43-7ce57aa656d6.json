@@ -1,0 +1,42 @@
+[
+  {
+    "content": "Phase 5 계획 수립: 요구사항 분석 ✅",
+    "status": "completed",
+    "activeForm": "Requirements analysis completed"
+  },
+  {
+    "content": "Phase 5-1a: Stage E threshold import 추가 ✅",
+    "status": "completed",
+    "activeForm": "Threshold imports added to Stage E"
+  },
+  {
+    "content": "Phase 5-1b: GraphBuilderConfig에 ThresholdConfig 통합 ✅",
+    "status": "completed",
+    "activeForm": "ThresholdConfig integrated to GraphBuilder"
+  },
+  {
+    "content": "Phase 5-1c: Stage E dynamic threshold 적용 ✅",
+    "status": "completed",
+    "activeForm": "Dynamic threshold applied to Stage E"
+  },
+  {
+    "content": "Phase 5-1d: Stage G threshold import 추가 ✅",
+    "status": "completed",
+    "activeForm": "Threshold imports added to Stage G"
+  },
+  {
+    "content": "Phase 5-1e: PriorityScorer dynamic threshold 적용 ✅",
+    "status": "completed",
+    "activeForm": "Dynamic threshold applied to PriorityScorer"
+  },
+  {
+    "content": "Phase 5-2: mathpix.md v2.0 문서 업데이트",
+    "status": "in_progress",
+    "activeForm": "Updating mathpix.md documentation"
+  },
+  {
+    "content": "Phase 5-3: 전체 E2E 테스트 실행",
+    "status": "pending",
+    "activeForm": "Running full E2E test suite"
+  }
+]

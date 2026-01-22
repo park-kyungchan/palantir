@@ -1,0 +1,87 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Orchestrator 모드 활성화"
+  },
+  {
+    "content": "[Phase 1-1] Create oda-ask.md | Files: .claude/skills/oda-ask.md | Agent: general-purpose:a5c340e (done)",
+    "status": "completed",
+    "activeForm": "oda-ask.md 생성 완료"
+  },
+  {
+    "content": "[Phase 1-2] Create oda-deep-audit.md | Files: .claude/skills/oda-deep-audit.md | Agent: general-purpose:a762e90 (done)",
+    "status": "completed",
+    "activeForm": "oda-deep-audit.md 생성 완료"
+  },
+  {
+    "content": "[Phase 1-3] Create oda-protocol.md | Files: .claude/skills/oda-protocol.md | Agent: general-purpose:ae08d2c (done)",
+    "status": "completed",
+    "activeForm": "oda-protocol.md 생성 완료"
+  },
+  {
+    "content": "[Phase 1-4] Create oda-execute.md | Files: .claude/skills/oda-execute.md | Agent: general-purpose:adcb15b (done)",
+    "status": "completed",
+    "activeForm": "oda-execute.md 생성 완료"
+  },
+  {
+    "content": "[Phase 2-1] Enhance oda-plan.md with intents | Files: .claude/skills/oda-plan.md | Agent: general-purpose:a4cb507",
+    "status": "in_progress",
+    "activeForm": "oda-plan.md 인텐트 추가 중"
+  },
+  {
+    "content": "[Phase 2-2] Enhance oda-audit.md with intents | Files: .claude/skills/oda-audit.md | Agent: general-purpose:ac88381",
+    "status": "in_progress",
+    "activeForm": "oda-audit.md 인텐트 추가 중"
+  },
+  {
+    "content": "[Phase 2-3] Enhance oda-governance.md with intents | Files: .claude/skills/oda-governance.md | Agent: general-purpose:a946971",
+    "status": "in_progress",
+    "activeForm": "oda-governance.md 인텐트 추가 중"
+  },
+  {
+    "content": "[Phase 3-1] Replace ask.md with thin wrapper | Files: .claude/commands/ask.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "ask.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 3-2] Replace plan.md with thin wrapper | Files: .claude/commands/plan.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "plan.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 3-3] Replace audit.md with thin wrapper | Files: .claude/commands/audit.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "audit.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 3-4] Replace deep-audit.md with thin wrapper | Files: .claude/commands/deep-audit.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "deep-audit.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 3-5] Replace protocol.md with thin wrapper | Files: .claude/commands/protocol.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "protocol.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 3-6] Replace execute.md with thin wrapper | Files: .claude/commands/execute.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "execute.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 3-7] Replace governance.md with thin wrapper | Files: .claude/commands/governance.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "governance.md thin wrapper 전환 대기"
+  },
+  {
+    "content": "[Phase 4-1] Update CLAUDE.md Section 9.1 | Files: .claude/CLAUDE.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "CLAUDE.md 9.1 업데이트 대기"
+  },
+  {
+    "content": "[Phase 4-2] Update CLAUDE.md Section 9.2 | Files: .claude/CLAUDE.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "CLAUDE.md 9.2 업데이트 대기"
+  }
+]

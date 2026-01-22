@@ -1,0 +1,112 @@
+[
+  {
+    "content": "Phase 1: DOCX 문서 분석 - Palantir-AIP-Foundry-Architecture-Deep-Research.docx 읽기",
+    "status": "completed",
+    "activeForm": "Completed reading DOCX 1"
+  },
+  {
+    "content": "Phase 1: DOCX 문서 분석 - Review_of_Ontology_Specification_Palantir__Foundry_Alignment.docx 읽기",
+    "status": "completed",
+    "activeForm": "Completed reading DOCX 2"
+  },
+  {
+    "content": "Phase 1: DOCX 추출 결과를 analysis/docx_extraction.json에 저장",
+    "status": "completed",
+    "activeForm": "Completed DOCX extraction"
+  },
+  {
+    "content": "Phase 2: WebSearch - Palantir Foundry Ontology SDK 공식 문서 검색",
+    "status": "in_progress",
+    "activeForm": "Searching Palantir Foundry Ontology SDK official docs"
+  },
+  {
+    "content": "Phase 2: WebSearch - Palantir AIP ObjectType/LinkType/ActionType 스펙 검색",
+    "status": "pending",
+    "activeForm": "Searching Palantir AIP ObjectType/LinkType/ActionType specification"
+  },
+  {
+    "content": "Phase 2: Context7 - Palantir Foundry 라이브러리 문서 조회",
+    "status": "pending",
+    "activeForm": "Querying Context7 for Palantir Foundry library docs"
+  },
+  {
+    "content": "Phase 2: WebSearch - Ontology-driven architecture best practices 검색",
+    "status": "pending",
+    "activeForm": "Searching Ontology-driven architecture best practices"
+  },
+  {
+    "content": "Phase 2: 웹 연구 결과를 analysis/web_research.json에 저장",
+    "status": "pending",
+    "activeForm": "Saving web research to analysis/web_research.json"
+  },
+  {
+    "content": "Phase 3: 현재 ODA 코드베이스 분석 (lib/oda/ontology/)",
+    "status": "pending",
+    "activeForm": "Analyzing current ODA ontology module"
+  },
+  {
+    "content": "Phase 3: 현재 ODA 코드베이스 분석 (lib/oda/agent/)",
+    "status": "pending",
+    "activeForm": "Analyzing current ODA agent module"
+  },
+  {
+    "content": "Phase 3: ODA 분석 결과를 analysis/current_oda_analysis.json에 저장",
+    "status": "pending",
+    "activeForm": "Saving ODA analysis to analysis/current_oda_analysis.json"
+  },
+  {
+    "content": "Phase 4: ObjectType.schema.json 정의",
+    "status": "pending",
+    "activeForm": "Defining ObjectType.schema.json"
+  },
+  {
+    "content": "Phase 4: LinkType.schema.json 정의",
+    "status": "pending",
+    "activeForm": "Defining LinkType.schema.json"
+  },
+  {
+    "content": "Phase 4: ActionType.schema.json 정의",
+    "status": "pending",
+    "activeForm": "Defining ActionType.schema.json"
+  },
+  {
+    "content": "Phase 4: Property.schema.json 정의",
+    "status": "pending",
+    "activeForm": "Defining Property.schema.json"
+  },
+  {
+    "content": "Phase 4: Metadata.schema.json 정의",
+    "status": "pending",
+    "activeForm": "Defining Metadata.schema.json"
+  },
+  {
+    "content": "Phase 5: Interaction.schema.json 정의 (상호작용 규칙)",
+    "status": "pending",
+    "activeForm": "Defining Interaction.schema.json (cross-type rules)"
+  },
+  {
+    "content": "Phase 6: Gap Analysis - 현재 ODA vs Palantir 요구사항 비교",
+    "status": "pending",
+    "activeForm": "Comparing current ODA vs Palantir requirements"
+  },
+  {
+    "content": "Phase 6: Gap 분석 결과를 analysis/gap_analysis.json에 저장",
+    "status": "pending",
+    "activeForm": "Saving gap analysis to analysis/gap_analysis.json"
+  },
+  {
+    "content": "Phase 7: 리팩토링 계획 수립 - 삭제/생성/수정 파일 목록",
+    "status": "pending",
+    "activeForm": "Creating refactoring plan with file lists"
+  },
+  {
+    "content": "Phase 7: 리팩토링 계획을 analysis/refactoring_plan.json에 저장",
+    "status": "pending",
+    "activeForm": "Saving refactoring plan to analysis/refactoring_plan.json"
+  },
+  {
+    "content": "index.json 업데이트 - 모든 출력 파일 참조 통합",
+    "status": "pending",
+    "activeForm": "Updating index.json with all output file references"
+  }
+]

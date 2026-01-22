@@ -1,0 +1,22 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수 | Phase 1 실행 중",
+    "status": "in_progress",
+    "activeForm": "Orchestrating Phase 1 execution"
+  },
+  {
+    "content": "[Phase 1-1] Create ingestion/ module (~800 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 1-1 to general-purpose"
+  },
+  {
+    "content": "[Phase 1-2] Create schemas/ingestion.py (~150 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating Phase 1-2 to general-purpose"
+  },
+  {
+    "content": "[Phase 1-3] Fix yolo_detector.py:258 dir() bug | → Delegate: general-purpose:pending | Budget: 15K",
+    "status": "pending",
+    "activeForm": "Delegating Phase 1-3 to general-purpose"
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Verifying subagent results"
+  },
+  {
+    "content": "=== /audit & /deep-audit 전체 재설계 - 승인됨 ===",
+    "status": "completed",
+    "activeForm": "Plan approved"
+  },
+  {
+    "content": "[Phase 1.1] ScopeMinimizer 모듈 생성 | Files: lib/oda/planning/scope_minimizer.py | → Delegate: general-purpose:a360e7a | Budget: 32K",
+    "status": "completed",
+    "activeForm": "Completed by agent a360e7a"
+  },
+  {
+    "content": "[Phase 1.2] TierAnalyzer 모듈 생성 | Files: lib/oda/planning/tier_analyzer.py | → Delegate: general-purpose:ae56932 | Budget: 32K",
+    "status": "completed",
+    "activeForm": "Completed by agent ae56932"
+  },
+  {
+    "content": "[Phase 2] /audit 스킬 재설계 (1300→200 lines) | Files: .claude/skills/audit.md | → Delegate: general-purpose:a5d71be | Budget: 32K",
+    "status": "in_progress",
+    "activeForm": "Agent a5d71be optimizing (283 lines)"
+  },
+  {
+    "content": "[Phase 3] /deep-audit 스킬 재설계 (1555→250 lines) | Files: .claude/skills/deep-audit.md | → Delegate: general-purpose:a645c0a | Budget: 32K",
+    "status": "completed",
+    "activeForm": "✅ Completed: 219 lines (86% reduction)"
+  },
+  {
+    "content": "[Phase 4.1] audit-execution.md 참조문서 | Files: .claude/references/audit-execution.md | → Delegate: general-purpose:a730b46 | Budget: 15K",
+    "status": "in_progress",
+    "activeForm": "Agent a730b46 creating reference"
+  },
+  {
+    "content": "[Phase 4.2] deep-audit-execution.md 참조문서 | Files: .claude/references/deep-audit-execution.md | → Delegate: general-purpose:a43d955 | Budget: 15K",
+    "status": "in_progress",
+    "activeForm": "Agent a43d955 finishing"
+  },
+  {
+    "content": "[Phase 4.3] parallel-execution.md 공통 패턴 통합 | Files: .claude/references/parallel-execution.md | → Delegate: general-purpose:af57d7e | Budget: 15K",
+    "status": "completed",
+    "activeForm": "✅ Completed: 449 lines created"
+  },
+  {
+    "content": "[Phase 5] __init__.py Export 추가 - ALREADY DONE by Phase 1 agents | Version: 3.4.0",
+    "status": "completed",
+    "activeForm": "Exports added by a360e7a and ae56932"
+  },
+  {
+    "content": "[Phase 6] E2E 검증 | Scenarios: Socratic Q, 3-Tier execution | → Delegate: Explore:pending | Budget: 15K",
+    "status": "pending",
+    "activeForm": "Running E2E verification"
+  }
+]

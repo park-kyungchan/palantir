@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Analyze imports from ontology_types.py and validators/schema_validator.py",
+    "status": "completed",
+    "activeForm": "Analyzing imports from target deletion files"
+  },
+  {
+    "content": "Refactor ontology_types.py to use bridge enums while keeping unique runtime types",
+    "status": "completed",
+    "activeForm": "Refactoring ontology_types.py to use bridge enums"
+  },
+  {
+    "content": "Update bridge module to export missing utility functions (utc_now, generate_object_id)",
+    "status": "completed",
+    "activeForm": "Updating bridge module exports"
+  },
+  {
+    "content": "Verify all imports and enum compatibility across ODA codebase",
+    "status": "in_progress",
+    "activeForm": "Verifying all imports and enum compatibility"
+  }
+]

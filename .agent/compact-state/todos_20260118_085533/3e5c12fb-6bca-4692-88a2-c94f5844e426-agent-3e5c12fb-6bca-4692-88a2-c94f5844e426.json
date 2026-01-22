@@ -1,0 +1,17 @@
+[
+  {
+    "content": "Remove duplicate MCP configs from ~/.claude.json",
+    "status": "in_progress",
+    "activeForm": "Removing duplicate MCP configs"
+  },
+  {
+    "content": "Verify ~/.mcp.json has correct tavily config",
+    "status": "pending",
+    "activeForm": "Verifying tavily configuration"
+  },
+  {
+    "content": "Test tavily MCP server works",
+    "status": "pending",
+    "activeForm": "Testing tavily MCP server"
+  }
+]

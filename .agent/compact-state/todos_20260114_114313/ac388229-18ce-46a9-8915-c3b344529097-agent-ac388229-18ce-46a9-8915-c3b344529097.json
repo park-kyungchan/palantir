@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Phase 1: Interfaces 구현 (6 tasks)",
+    "status": "completed",
+    "activeForm": "Completed Interfaces phase"
+  },
+  {
+    "content": "Phase 2: Extended Statuses 구현 (6 tasks)",
+    "status": "completed",
+    "activeForm": "Completed Extended Statuses phase"
+  },
+  {
+    "content": "Phase 3: Full RBAC 구현 (7 tasks)",
+    "status": "in_progress",
+    "activeForm": "Implementing Full RBAC phase"
+  },
+  {
+    "content": "Phase 4: Medium Enhancements (9 tasks)",
+    "status": "pending",
+    "activeForm": "Implementing Medium Enhancements"
+  }
+]

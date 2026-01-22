@@ -1,0 +1,32 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Orchestrating execution - delegation only"
+  },
+  {
+    "content": "[Phase 6-1] F30_conditionals.md | → Delegate: general-purpose:a8ba562",
+    "status": "in_progress",
+    "activeForm": "Creating conditionals KB"
+  },
+  {
+    "content": "[Phase 6-2] F31_loops_iteration.md | → Delegate: general-purpose:abe56d4",
+    "status": "in_progress",
+    "activeForm": "Creating loops KB"
+  },
+  {
+    "content": "[Phase 6-3] F32_exception_handling.md | → Delegate: general-purpose:a16ca90",
+    "status": "in_progress",
+    "activeForm": "Creating exception handling KB"
+  },
+  {
+    "content": "[Phase 6-4] F33_pattern_matching.md | → Delegate: general-purpose:a18a6ac",
+    "status": "in_progress",
+    "activeForm": "Creating pattern matching KB"
+  },
+  {
+    "content": "[Phase 6-5] F34_control_flow_expressions.md | → Delegate: general-purpose:a6e5785",
+    "status": "in_progress",
+    "activeForm": "Creating control flow expressions KB"
+  }
+]

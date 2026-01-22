@@ -1,0 +1,107 @@
+[
+  {
+    "content": "Phase 1.1: Define MathpixPipelineStage enum in pipeline.py:35+",
+    "status": "in_progress",
+    "activeForm": "Defining MathpixPipelineStage enum"
+  },
+  {
+    "content": "Phase 1.2: Define ReviewSeverity enum in pipeline.py",
+    "status": "pending",
+    "activeForm": "Defining ReviewSeverity enum"
+  },
+  {
+    "content": "Phase 1.3: Define MathpixPipeline ObjectType with circuit breaker (pipeline.py:349+)",
+    "status": "pending",
+    "activeForm": "Defining MathpixPipeline ObjectType"
+  },
+  {
+    "content": "Phase 1.4: Define CorrectionPatch model in file_actions.py:67+",
+    "status": "pending",
+    "activeForm": "Defining CorrectionPatch model"
+  },
+  {
+    "content": "Phase 1.5: Extend StageEvidence model with correction_patches, final_confidence fields",
+    "status": "pending",
+    "activeForm": "Extending StageEvidence model"
+  },
+  {
+    "content": "Phase 2.1: Create new file pipeline_actions.py with module docstring",
+    "status": "pending",
+    "activeForm": "Creating pipeline_actions.py module"
+  },
+  {
+    "content": "Phase 2.2: Define BlockerDetails and AmbiguityResolution Pydantic models",
+    "status": "pending",
+    "activeForm": "Defining Pydantic models for actions"
+  },
+  {
+    "content": "Phase 2.3: Define AlignmentBlockerResult ObjectType",
+    "status": "pending",
+    "activeForm": "Defining AlignmentBlockerResult ObjectType"
+  },
+  {
+    "content": "Phase 2.4: Define AmbiguityResolutionResult ObjectType",
+    "status": "pending",
+    "activeForm": "Defining AmbiguityResolutionResult ObjectType"
+  },
+  {
+    "content": "Phase 2.5: Implement alignment.blocker_detected ActionType (hazardous)",
+    "status": "pending",
+    "activeForm": "Implementing alignment.blocker_detected action"
+  },
+  {
+    "content": "Phase 2.6: Implement semantic.resolve_ambiguity ActionType (hazardous)",
+    "status": "pending",
+    "activeForm": "Implementing semantic.resolve_ambiguity action"
+  },
+  {
+    "content": "Phase 2.7: Implement pipeline.advance_stage ActionType (non-hazardous)",
+    "status": "pending",
+    "activeForm": "Implementing pipeline.advance_stage action"
+  },
+  {
+    "content": "Phase 2.8: Add __all__ exports to pipeline_actions.py",
+    "status": "pending",
+    "activeForm": "Adding module exports"
+  },
+  {
+    "content": "Phase 3.1: Add alignment.blocker_detected rule to governance/actions.yaml",
+    "status": "pending",
+    "activeForm": "Adding blocker_detected governance rule"
+  },
+  {
+    "content": "Phase 3.2: Add semantic.resolve_ambiguity rule to governance/actions.yaml",
+    "status": "pending",
+    "activeForm": "Adding resolve_ambiguity governance rule"
+  },
+  {
+    "content": "Phase 3.3: Add pipeline.advance_stage rule to governance/actions.yaml",
+    "status": "pending",
+    "activeForm": "Adding advance_stage governance rule"
+  },
+  {
+    "content": "Phase 3.4: Add vision.low_confidence auto-trigger rule (confidence < 0.5)",
+    "status": "pending",
+    "activeForm": "Adding low_confidence auto-trigger rule"
+  },
+  {
+    "content": "Phase 3.5: Update lib/oda/ontology/actions/__init__.py with pipeline_actions import",
+    "status": "pending",
+    "activeForm": "Updating actions module imports"
+  },
+  {
+    "content": "Phase 4.1: Verify all imports work without circular dependency",
+    "status": "pending",
+    "activeForm": "Verifying imports"
+  },
+  {
+    "content": "Phase 4.2: Run Python syntax check on all modified files",
+    "status": "pending",
+    "activeForm": "Running syntax verification"
+  },
+  {
+    "content": "Phase 4.3: Update plan file status to COMPLETED",
+    "status": "pending",
+    "activeForm": "Updating plan file status"
+  }
+]

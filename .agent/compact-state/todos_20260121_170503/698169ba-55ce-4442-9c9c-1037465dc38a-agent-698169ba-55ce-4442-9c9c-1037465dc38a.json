@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Create draft file for /create command",
+    "status": "completed",
+    "activeForm": "Creating draft file for /create command"
+  },
+  {
+    "content": "Define template selection flow (Agent/Skill/Hook)",
+    "status": "completed",
+    "activeForm": "Defining template selection flow"
+  },
+  {
+    "content": "Design Q&A patterns for each type",
+    "status": "completed",
+    "activeForm": "Designing Q&A patterns"
+  },
+  {
+    "content": "Plan Agent integration structure",
+    "status": "completed",
+    "activeForm": "Planning Plan Agent integration"
+  },
+  {
+    "content": "Continue Q&A for detailed design decisions",
+    "status": "in_progress",
+    "activeForm": "Continuing Q&A for design decisions"
+  }
+]

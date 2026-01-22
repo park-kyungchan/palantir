@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Parse requirements: /execute 전체 아키텍처 리팩토링",
+    "status": "completed",
+    "activeForm": "Parsing requirements for /execute refactoring"
+  },
+  {
+    "content": "Scope keyword 검사 (decomposition check)",
+    "status": "completed",
+    "activeForm": "Checking scope keywords for decomposition"
+  },
+  {
+    "content": "ODA 3-Stage Protocol 실행 (Path 1)",
+    "status": "in_progress",
+    "activeForm": "Executing ODA 3-Stage Protocol"
+  },
+  {
+    "content": "Plan Subagent 분석 실행 (Path 2)",
+    "status": "in_progress",
+    "activeForm": "Executing Plan Subagent analysis"
+  },
+  {
+    "content": "Optimal 접근법 합성",
+    "status": "pending",
+    "activeForm": "Synthesizing optimal approach"
+  },
+  {
+    "content": "Plan File 생성 및 사용자 승인 요청",
+    "status": "pending",
+    "activeForm": "Creating plan file and requesting user approval"
+  }
+]

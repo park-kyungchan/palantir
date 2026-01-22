@@ -1,0 +1,127 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: Ontology Schema-Based Commands Rebuild | Plan: .agent/plans/ontology_schema_commands.md",
+    "status": "in_progress",
+    "activeForm": "Orchestrator 모드 활성화"
+  },
+  {
+    "content": "[Phase 0-1] Delete protocol.md command | Files: .claude/commands/protocol.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "protocol.md 삭제 대기"
+  },
+  {
+    "content": "[Phase 0-2] Delete governance.md command | Files: .claude/commands/governance.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "governance.md 삭제 대기"
+  },
+  {
+    "content": "[Phase 0-3] Delete oda-protocol.md skill | Files: .claude/skills/oda-protocol.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-protocol.md 삭제 대기"
+  },
+  {
+    "content": "[Phase 0-4] Delete oda-governance.md skill | Files: .claude/skills/oda-governance.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-governance.md 삭제 대기"
+  },
+  {
+    "content": "[Phase 1] Analyze 7 schema files | Files: ontology_definition/*.schema.json | Agent: Explore:pending",
+    "status": "pending",
+    "activeForm": "7개 스키마 분석 대기"
+  },
+  {
+    "content": "[Phase 2-1] Create oda-objecttype.md skill | Files: .claude/skills/oda-objecttype.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-objecttype.md 생성 대기"
+  },
+  {
+    "content": "[Phase 2-2] Create oda-actiontype.md skill | Files: .claude/skills/oda-actiontype.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-actiontype.md 생성 대기"
+  },
+  {
+    "content": "[Phase 2-3] Create oda-linktype.md skill | Files: .claude/skills/oda-linktype.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-linktype.md 생성 대기"
+  },
+  {
+    "content": "[Phase 2-4] Create oda-property.md skill | Files: .claude/skills/oda-property.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-property.md 생성 대기"
+  },
+  {
+    "content": "[Phase 2-5] Create oda-interface.md skill | Files: .claude/skills/oda-interface.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-interface.md 생성 대기"
+  },
+  {
+    "content": "[Phase 2-6] Create oda-metadata.md skill (동적 설계) | Files: .claude/skills/oda-metadata.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-metadata.md 생성 대기"
+  },
+  {
+    "content": "[Phase 2-7] Create oda-interaction.md skill | Files: .claude/skills/oda-interaction.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "oda-interaction.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-1] Create objecttype.md command | Files: .claude/commands/objecttype.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "objecttype.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-2] Create actiontype.md command | Files: .claude/commands/actiontype.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "actiontype.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-3] Create linktype.md command | Files: .claude/commands/linktype.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "linktype.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-4] Create property.md command | Files: .claude/commands/property.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "property.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-5] Create interface.md command | Files: .claude/commands/interface.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "interface.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-6] Create metadata.md command (동적 설계) | Files: .claude/commands/metadata.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "metadata.md 생성 대기"
+  },
+  {
+    "content": "[Phase 3-7] Create interaction.md command | Files: .claude/commands/interaction.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "interaction.md 생성 대기"
+  },
+  {
+    "content": "[Phase 4-1] Update CLAUDE.md Section 9 | Files: .claude/CLAUDE.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "CLAUDE.md 업데이트 대기"
+  },
+  {
+    "content": "[Phase 4-2] Create ontology-lifecycle.md reference | Files: .claude/references/ontology-lifecycle.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "ontology-lifecycle.md 생성 대기"
+  },
+  {
+    "content": "[Phase 5-1] Test all 7 commands | Files: - | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "커맨드 테스트 대기"
+  },
+  {
+    "content": "[Phase 5-2] Verify schema validation | Files: - | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "스키마 검증 테스트 대기"
+  },
+  {
+    "content": "[Phase 5-3] REMINDER: Metadata 동적 설계 논의 | Files: - | Agent: -",
+    "status": "pending",
+    "activeForm": "Metadata 동적 설계 리마인드"
+  }
+]

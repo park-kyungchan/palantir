@@ -1,0 +1,72 @@
+[
+  {
+    "content": "[MASTER] Math Image Parsing Pipeline v2.0 코드 구현 | Files: /home/palantir/cow/ | Agent: Main",
+    "status": "in_progress",
+    "activeForm": "Master 구현 프로젝트 진행 중"
+  },
+  {
+    "content": "[Phase 1] Foundation 완료 | Files: src/mathpix_pipeline/schemas/ | Agent: Main:done",
+    "status": "completed",
+    "activeForm": "Phase 1 완료"
+  },
+  {
+    "content": "[Phase 2A] Stage B Enhancement 완료 | Files: src/mathpix_pipeline/clients/ | Agent: Main:done",
+    "status": "completed",
+    "activeForm": "Phase 2A 완료"
+  },
+  {
+    "content": "[Phase 2B] Stage C Hybrid Architecture 완료 | Files: src/mathpix_pipeline/vision/ | Agent: Main:done",
+    "status": "completed",
+    "activeForm": "Phase 2B 완료"
+  },
+  {
+    "content": "[Phase 3] Stage D Alignment Engine | Files: src/mathpix_pipeline/alignment/ | Agent: Main:phase3",
+    "status": "in_progress",
+    "activeForm": "Phase 3 Alignment Engine 구현 중"
+  },
+  {
+    "content": "[3.1] alignment/ 디렉토리 구조 생성 | Files: alignment/__init__.py | Agent: Main:3.1",
+    "status": "completed",
+    "activeForm": "alignment 디렉토리 구조 생성 완료"
+  },
+  {
+    "content": "[3.2] TextVisualMatcher 구현 | Files: alignment/matcher.py | Agent: Main:3.2",
+    "status": "completed",
+    "activeForm": "TextVisualMatcher 구현 완료"
+  },
+  {
+    "content": "[3.3] ConsistencyChecker 구현 | Files: alignment/consistency.py | Agent: Main:3.3",
+    "status": "completed",
+    "activeForm": "ConsistencyChecker 구현 완료"
+  },
+  {
+    "content": "[3.4] InconsistencyDetector 구현 | Files: alignment/inconsistency.py | Agent: Main:3.4",
+    "status": "completed",
+    "activeForm": "InconsistencyDetector 구현 완료"
+  },
+  {
+    "content": "[3.5] AlignmentEngine 통합 클래스 구현 | Files: alignment/engine.py | Agent: Main:3.5",
+    "status": "completed",
+    "activeForm": "AlignmentEngine 통합 클래스 구현 완료"
+  },
+  {
+    "content": "[3.6] Stage D 테스트 작성 및 검증 | Files: tests/test_alignment.py | Agent: Main:3.6",
+    "status": "in_progress",
+    "activeForm": "Stage D 테스트 작성 중"
+  },
+  {
+    "content": "═══ 참조 파일 ═══",
+    "status": "completed",
+    "activeForm": "구분선"
+  },
+  {
+    "content": "[REF] Plan Files | Files: .agent/plans/*.md (7개) | Agent: reference",
+    "status": "completed",
+    "activeForm": "Plan Files 참조 완료"
+  },
+  {
+    "content": "[REF] AlignmentReport Schema | Files: schemas/alignment.py | Agent: reference",
+    "status": "completed",
+    "activeForm": "AlignmentReport Schema 참조"
+  }
+]

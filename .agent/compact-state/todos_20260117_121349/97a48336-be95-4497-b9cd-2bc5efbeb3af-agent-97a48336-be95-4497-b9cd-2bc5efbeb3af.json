@@ -1,0 +1,282 @@
+[
+  {
+    "content": "[MASTER] Math Image Parsing Pipeline v2.0 코드 구현 프로젝트",
+    "status": "in_progress",
+    "activeForm": "Master 구현 프로젝트 진행 중"
+  },
+  {
+    "content": "═══ PHASE 1: Foundation (Week 1) ═══",
+    "status": "pending",
+    "activeForm": "Phase 1 대기 중"
+  },
+  {
+    "content": "[1.1] threshold_calibration.yaml 설정 파일 작성",
+    "status": "pending",
+    "activeForm": "Threshold 설정 파일 작성 중"
+  },
+  {
+    "content": "[1.2] Pydantic BaseModel: TextSpec v2.0.0 스키마 구현",
+    "status": "pending",
+    "activeForm": "TextSpec 스키마 구현 중"
+  },
+  {
+    "content": "[1.3] Pydantic BaseModel: VisionSpec v2.0.0 스키마 구현",
+    "status": "pending",
+    "activeForm": "VisionSpec 스키마 구현 중"
+  },
+  {
+    "content": "[1.4] Pydantic BaseModel: AlignmentReport v2.0.0 스키마 구현",
+    "status": "pending",
+    "activeForm": "AlignmentReport 스키마 구현 중"
+  },
+  {
+    "content": "[1.5] Pydantic BaseModel: SemanticGraph v2.0.0 스키마 구현",
+    "status": "pending",
+    "activeForm": "SemanticGraph 스키마 구현 중"
+  },
+  {
+    "content": "[1.6] 공통 타입 정의: BBox, Confidence, Provenance",
+    "status": "pending",
+    "activeForm": "공통 타입 정의 중"
+  },
+  {
+    "content": "═══ PHASE 2A: Stage B Enhancement (Week 2-3) ═══",
+    "status": "pending",
+    "activeForm": "Phase 2A 대기 중"
+  },
+  {
+    "content": "[2A.1] MathpixClient 클래스 확장 - detection_map 파싱",
+    "status": "pending",
+    "activeForm": "MathpixClient detection_map 구현 중"
+  },
+  {
+    "content": "[2A.2] detection_map → content_flags 변환 함수 구현",
+    "status": "pending",
+    "activeForm": "content_flags 변환 구현 중"
+  },
+  {
+    "content": "[2A.3] line_data → line_segments 변환 함수 구현",
+    "status": "pending",
+    "activeForm": "line_segments 변환 구현 중"
+  },
+  {
+    "content": "[2A.4] should_trigger_vision_parse() Stage C 트리거 로직",
+    "status": "pending",
+    "activeForm": "Stage C 트리거 로직 구현 중"
+  },
+  {
+    "content": "[2A.5] contour_to_bbox() 좌표 변환 함수 구현",
+    "status": "pending",
+    "activeForm": "좌표 변환 함수 구현 중"
+  },
+  {
+    "content": "[2A.6] MCP 서버 설정 (mathpix.json) 작성",
+    "status": "pending",
+    "activeForm": "MCP 서버 설정 작성 중"
+  },
+  {
+    "content": "[2A.7] Stage B 에러 핸들링 (429, 408, 500) 구현",
+    "status": "pending",
+    "activeForm": "Stage B 에러 핸들링 구현 중"
+  },
+  {
+    "content": "═══ PHASE 2B: Stage C Hybrid Architecture (Week 2-3) ═══",
+    "status": "pending",
+    "activeForm": "Phase 2B 대기 중"
+  },
+  {
+    "content": "[2B.1] YOLOv8 모델 로더 및 추론 클래스 구현",
+    "status": "pending",
+    "activeForm": "YOLO 모델 로더 구현 중"
+  },
+  {
+    "content": "[2B.2] DetectionLayer 스키마 및 처리 로직 구현",
+    "status": "pending",
+    "activeForm": "DetectionLayer 구현 중"
+  },
+  {
+    "content": "[2B.3] InterpretationLayer (Claude) 프롬프트 설계",
+    "status": "pending",
+    "activeForm": "InterpretationLayer 프롬프트 설계 중"
+  },
+  {
+    "content": "[2B.4] HybridMerger 클래스 - YOLO + Claude 결합",
+    "status": "pending",
+    "activeForm": "HybridMerger 구현 중"
+  },
+  {
+    "content": "[2B.5] calculate_combined_confidence() 가중치 함수",
+    "status": "pending",
+    "activeForm": "combined_confidence 함수 구현 중"
+  },
+  {
+    "content": "[2B.6] Fallback Strategy 구현 (YOLO→Gemini→Manual)",
+    "status": "pending",
+    "activeForm": "Fallback Strategy 구현 중"
+  },
+  {
+    "content": "[2B.7] YOLO 학습 데이터셋 수집 시작 (1750 샘플 목표)",
+    "status": "pending",
+    "activeForm": "YOLO 학습 데이터 수집 중"
+  },
+  {
+    "content": "═══ PHASE 3: Testing Framework (Week 4-5) ═══",
+    "status": "pending",
+    "activeForm": "Phase 3 대기 중"
+  },
+  {
+    "content": "[3.1] Golden Dataset 디렉토리 구조 생성",
+    "status": "pending",
+    "activeForm": "Golden Dataset 구조 생성 중"
+  },
+  {
+    "content": "[3.2] GoldenSampleAnnotation Pydantic 모델 구현",
+    "status": "pending",
+    "activeForm": "Annotation 모델 구현 중"
+  },
+  {
+    "content": "[3.3] Golden Dataset 50개 샘플 수집 및 어노테이션",
+    "status": "pending",
+    "activeForm": "50개 샘플 수집 중"
+  },
+  {
+    "content": "[3.4] Stage별 평가 지표 Pydantic 모델 (8개)",
+    "status": "pending",
+    "activeForm": "평가 지표 모델 구현 중"
+  },
+  {
+    "content": "[3.5] Smoke Test 구현 (5개 대표 샘플)",
+    "status": "pending",
+    "activeForm": "Smoke Test 구현 중"
+  },
+  {
+    "content": "[3.6] Full Regression Test 구현 (전체 샘플)",
+    "status": "pending",
+    "activeForm": "Regression Test 구현 중"
+  },
+  {
+    "content": "[3.7] GitHub Actions CI 워크플로우 작성",
+    "status": "pending",
+    "activeForm": "CI 워크플로우 작성 중"
+  },
+  {
+    "content": "[3.8] Golden Dataset 150개 확장",
+    "status": "pending",
+    "activeForm": "150개 샘플 확장 중"
+  },
+  {
+    "content": "═══ PHASE 4: Threshold System (Week 4-5) ═══",
+    "status": "pending",
+    "activeForm": "Phase 4 대기 중"
+  },
+  {
+    "content": "[4.1] compute_effective_threshold() 3-Layer 알고리즘",
+    "status": "pending",
+    "activeForm": "동적 threshold 알고리즘 구현 중"
+  },
+  {
+    "content": "[4.2] Context Modifier 클래스 (quality, complexity, density)",
+    "status": "pending",
+    "activeForm": "Context Modifier 구현 중"
+  },
+  {
+    "content": "[4.3] FeedbackLoop 클래스 (FN/FP rate tracking)",
+    "status": "pending",
+    "activeForm": "FeedbackLoop 구현 중"
+  },
+  {
+    "content": "[4.4] Hard Rules 검증 로직 (always_review 조건)",
+    "status": "pending",
+    "activeForm": "Hard Rules 구현 중"
+  },
+  {
+    "content": "[4.5] Monitoring 및 Alert 시스템 구현",
+    "status": "pending",
+    "activeForm": "Monitoring 시스템 구현 중"
+  },
+  {
+    "content": "[4.6] 초기 threshold 캘리브레이션 실행",
+    "status": "pending",
+    "activeForm": "초기 캘리브레이션 실행 중"
+  },
+  {
+    "content": "═══ PHASE 5: Integration (Week 6) ═══",
+    "status": "pending",
+    "activeForm": "Phase 5 대기 중"
+  },
+  {
+    "content": "[5.1] Stage D Alignment에 threshold 통합",
+    "status": "pending",
+    "activeForm": "Stage D threshold 통합 중"
+  },
+  {
+    "content": "[5.2] Stage E SemanticGraph에 threshold 통합",
+    "status": "pending",
+    "activeForm": "Stage E threshold 통합 중"
+  },
+  {
+    "content": "[5.3] Stage G HumanReview에 동적 severity 통합",
+    "status": "pending",
+    "activeForm": "Stage G severity 통합 중"
+  },
+  {
+    "content": "[5.4] mathpix.md v2.0 최종 문서 업데이트",
+    "status": "pending",
+    "activeForm": "mathpix.md v2.0 업데이트 중"
+  },
+  {
+    "content": "[5.5] E2E 통합 테스트 실행",
+    "status": "pending",
+    "activeForm": "E2E 테스트 실행 중"
+  },
+  {
+    "content": "[5.6] Canary 배포 전략 구현 (5%→100%)",
+    "status": "pending",
+    "activeForm": "Canary 배포 구현 중"
+  },
+  {
+    "content": "[5.7] 최종 문서화 및 README 작성",
+    "status": "pending",
+    "activeForm": "최종 문서화 진행 중"
+  },
+  {
+    "content": "═══ REFERENCE: Plan Files (Auto-Compact Safe) ═══",
+    "status": "completed",
+    "activeForm": "Plan Files 참조 완료"
+  },
+  {
+    "content": "[REF] template_1: Stage C YOLO+Claude Hybrid",
+    "status": "completed",
+    "activeForm": "Template 1 참조"
+  },
+  {
+    "content": "[REF] template_2: Stage B Mathpix API v3",
+    "status": "completed",
+    "activeForm": "Template 2 참조"
+  },
+  {
+    "content": "[REF] template_3: Test Framework Design",
+    "status": "completed",
+    "activeForm": "Template 3 참조"
+  },
+  {
+    "content": "[REF] template_4: Threshold Calibration",
+    "status": "completed",
+    "activeForm": "Template 4 참조"
+  },
+  {
+    "content": "[REF] integration_execution_plan: Master Plan",
+    "status": "completed",
+    "activeForm": "Integration Plan 참조"
+  },
+  {
+    "content": "[REF] mathpix_v2_modifications: 수정안 통합",
+    "status": "completed",
+    "activeForm": "수정안 참조"
+  },
+  {
+    "content": "[REF] design_completeness_verification: 96% 달성",
+    "status": "completed",
+    "activeForm": "완성도 검증 참조"
+  }
+]

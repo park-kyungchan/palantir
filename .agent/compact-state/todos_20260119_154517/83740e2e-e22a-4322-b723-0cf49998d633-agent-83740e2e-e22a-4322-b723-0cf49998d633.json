@@ -1,0 +1,42 @@
+[
+  {
+    "content": "Phase 1: 완료",
+    "status": "completed",
+    "activeForm": "Phase 1 완료"
+  },
+  {
+    "content": "Phase 2: Custom Subagents 생성",
+    "status": "completed",
+    "activeForm": "Custom Subagents 생성 중"
+  },
+  {
+    "content": "Phase 2: TodoWrite/Evidence/Protocol 스크립트",
+    "status": "completed",
+    "activeForm": "TodoWrite/Evidence/Protocol 스크립트 작성 중"
+  },
+  {
+    "content": "Phase 2: Protocol Integration Hooks 구현",
+    "status": "completed",
+    "activeForm": "Protocol Integration Hooks 구현 중"
+  },
+  {
+    "content": "Phase 3: ODA Protocol Adapter 구현",
+    "status": "in_progress",
+    "activeForm": "ODA Protocol Adapter 구현 중"
+  },
+  {
+    "content": "Phase 3: Stage Handlers (audit/plan/governance)",
+    "status": "pending",
+    "activeForm": "Stage Handlers 구현 중"
+  },
+  {
+    "content": "Phase 3: Skill-Protocol Binding",
+    "status": "pending",
+    "activeForm": "Skill-Protocol Binding 중"
+  },
+  {
+    "content": "Phase 4: 통합 검증 및 테스트",
+    "status": "pending",
+    "activeForm": "통합 검증 및 테스트 중"
+  }
+]

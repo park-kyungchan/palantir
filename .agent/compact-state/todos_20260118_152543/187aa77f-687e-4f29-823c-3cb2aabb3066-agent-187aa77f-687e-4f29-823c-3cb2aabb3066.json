@@ -1,0 +1,57 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Phase 1 executing in parallel"
+  },
+  {
+    "content": "=== /audit & /deep-audit 전체 재설계 - 승인됨 ===",
+    "status": "completed",
+    "activeForm": "Plan approved"
+  },
+  {
+    "content": "[Phase 1.1] ScopeMinimizer 모듈 생성 | Files: lib/oda/planning/scope_minimizer.py | → Delegate: general-purpose:a360e7a | Budget: 32K",
+    "status": "in_progress",
+    "activeForm": "Agent a360e7a executing"
+  },
+  {
+    "content": "[Phase 1.2] TierAnalyzer 모듈 생성 | Files: lib/oda/planning/tier_analyzer.py | → Delegate: general-purpose:ae56932 | Budget: 32K",
+    "status": "in_progress",
+    "activeForm": "Agent ae56932 executing"
+  },
+  {
+    "content": "[Phase 2] /audit 스킬 재설계 (1300→200 lines) | Files: .claude/skills/audit.md | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Redesigning audit skill"
+  },
+  {
+    "content": "[Phase 3] /deep-audit 스킬 재설계 (1555→250 lines) | Files: .claude/skills/deep-audit.md | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Redesigning deep-audit skill"
+  },
+  {
+    "content": "[Phase 4.1] audit-execution.md 참조문서 | Files: .claude/references/audit-execution.md | → Delegate: general-purpose:pending | Budget: 15K",
+    "status": "pending",
+    "activeForm": "Creating audit reference"
+  },
+  {
+    "content": "[Phase 4.2] deep-audit-execution.md 참조문서 | Files: .claude/references/deep-audit-execution.md | → Delegate: general-purpose:pending | Budget: 15K",
+    "status": "pending",
+    "activeForm": "Creating deep-audit reference"
+  },
+  {
+    "content": "[Phase 4.3] parallel-execution.md 공통 패턴 통합 | Files: .claude/references/parallel-execution.md | → Delegate: general-purpose:pending | Budget: 15K",
+    "status": "pending",
+    "activeForm": "Consolidating parallel patterns"
+  },
+  {
+    "content": "[Phase 5] __init__.py Export 추가 | Files: lib/oda/planning/__init__.py | → Delegate: general-purpose:pending | Budget: 10K",
+    "status": "pending",
+    "activeForm": "Adding exports"
+  },
+  {
+    "content": "[Phase 6] E2E 검증 | Scenarios: Socratic Q, 3-Tier execution | → Delegate: Explore:pending | Budget: 15K",
+    "status": "pending",
+    "activeForm": "Running E2E verification"
+  }
+]

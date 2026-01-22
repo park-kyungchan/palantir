@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Step 0: Draft 파일 감지 및 참조",
+    "status": "completed",
+    "activeForm": "Completed draft detection"
+  },
+  {
+    "content": "Step 1: 요구사항 파싱 및 분해 판단",
+    "status": "completed",
+    "activeForm": "Completed parsing requirements"
+  },
+  {
+    "content": "Step 2: Dual-Path 분석 (ODA + Plan)",
+    "status": "in_progress",
+    "activeForm": "Running dual-path analysis"
+  },
+  {
+    "content": "Step 3: 결과 합성 및 Plan 파일 생성",
+    "status": "pending",
+    "activeForm": "Synthesizing results"
+  },
+  {
+    "content": "Step 4: 사용자 승인 요청",
+    "status": "pending",
+    "activeForm": "Requesting approval"
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Draft 파일 생성 - Commands/Skills 고도화 요구사항",
+    "status": "completed",
+    "activeForm": "Creating draft file for enhancement requirements"
+  },
+  {
+    "content": "현황 분석 - 남은 7개 파일 Native Capability 적용 현황",
+    "status": "completed",
+    "activeForm": "Analyzing current Native Capability usage"
+  },
+  {
+    "content": "고도화 전략 수립 - 파일별 개선 방안",
+    "status": "completed",
+    "activeForm": "Designing enhancement strategy per file"
+  },
+  {
+    "content": "사용자 Q&A - Socratic 질문으로 요구사항 명확화",
+    "status": "completed",
+    "activeForm": "Clarifying requirements via Socratic Q&A"
+  },
+  {
+    "content": "Progressive Deep-Dive - Native Capabilities 취사선택",
+    "status": "in_progress",
+    "activeForm": "Presenting Native Capabilities for user selection"
+  }
+]

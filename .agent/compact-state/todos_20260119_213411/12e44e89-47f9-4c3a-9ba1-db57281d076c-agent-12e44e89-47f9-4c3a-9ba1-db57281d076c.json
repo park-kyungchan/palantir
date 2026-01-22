@@ -1,0 +1,27 @@
+[
+  {
+    "content": "PR 1: Ontology-Definition 삭제 (이동됨)",
+    "status": "completed",
+    "activeForm": "Creating PR for Ontology-Definition removal"
+  },
+  {
+    "content": "PR 2: ODA Planning 모듈 추가",
+    "status": "in_progress",
+    "activeForm": "Creating PR for ODA Planning module"
+  },
+  {
+    "content": "PR 3: ODA Ontology 개선 (evidence, storage)",
+    "status": "pending",
+    "activeForm": "Creating PR for ODA Ontology improvements"
+  },
+  {
+    "content": "PR 4: Coding Knowledge Base 추가",
+    "status": "pending",
+    "activeForm": "Creating PR for Coding Knowledge Base"
+  },
+  {
+    "content": "PR 5: E2E Tests 및 Plans 추가",
+    "status": "pending",
+    "activeForm": "Creating PR for E2E tests and plans"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Create Regeneration Module (Stage F) - schemas/regeneration.py",
+    "status": "completed",
+    "activeForm": "Creating regeneration schemas"
+  },
+  {
+    "content": "Create Regeneration Module (Stage F) - regeneration/ directory",
+    "status": "completed",
+    "activeForm": "Creating regeneration module structure"
+  },
+  {
+    "content": "Create Export Module (Stage H) - schemas/export.py",
+    "status": "completed",
+    "activeForm": "Creating export schemas"
+  },
+  {
+    "content": "Create Export Module (Stage H) - export/ directory",
+    "status": "in_progress",
+    "activeForm": "Creating export module structure"
+  }
+]
