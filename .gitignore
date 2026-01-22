@@ -53,3 +53,14 @@ node_modules/
 .claude/debug/
 .antigravity-server/bin/
 *.jsonl
+
+# Sensitive credentials - NEVER commit
+kc-palantir-*.json
+kc-palantir-*.json:Zone.Identifier
+*.json:Zone.Identifier
+
+# Temp files
+=*
+
+# Personal configs
+.gitconfig
