@@ -66,6 +66,49 @@ Task(subagent_type="Explore", prompt="...", run_in_background=True)
 Task(subagent_type="Plan", prompt="...", run_in_background=True)
 ```
 
+### 2.4 Progressive Disclosure (L1/L2/L3 Pattern)
+
+**Hook-based output format enforcement for token efficiency.**
+
+Hook: `.claude/hooks/progressive-disclosure/pd-inject.sh`
+
+#### L1 Summary Format (MAX 500 TOKENS)
+
+```yaml
+taskId: {8-char id}
+agentType: {Explore|Plan|general-purpose}
+summary: "1-2 sentence summary"
+status: success | partial | failed
+
+# Progressive Disclosure Fields
+priority: CRITICAL | HIGH | MEDIUM | LOW
+recommendedRead:
+  - anchor: "#section-name"
+    reason: "why this section should be read"
+
+l2Index:
+  - anchor: "#section-name"
+    tokens: {estimated number}
+    priority: CRITICAL | HIGH | MEDIUM | LOW
+
+l2Path: .agent/outputs/{agentType}/{taskId}.md
+requiresL2Read: true | false
+```
+
+#### Reading Strategy
+
+| Priority | Action |
+|----------|--------|
+| CRITICAL | MUST read recommendedRead sections |
+| HIGH | SHOULD read recommendedRead sections |
+| MEDIUM | MAY read L2 on demand |
+| LOW | L1 is sufficient |
+
+#### Token Budget
+
+- If `l2Index[].tokens` total > 10K → read CRITICAL/HIGH only
+- If context usage > 70% → read L1 + recommendedRead only
+
 ---
 
 ## 3. Safety Rules (Non-Negotiable)
