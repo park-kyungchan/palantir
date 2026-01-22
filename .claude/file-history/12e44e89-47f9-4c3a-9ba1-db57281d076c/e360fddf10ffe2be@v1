@@ -1,0 +1,174 @@
+#!/bin/bash
+# Orchestration-Loop Hook for Phase Management
+#
+# Triggered: At end of each orchestration phase
+# Purpose: Decide next phase or termination based on L1 summaries
+#
+# Environment variables:
+#   ORCHESTRATION_STATE - JSON string of current state
+#   PHASE_COMPLETED - Name of phase just completed
+#   L1_SUMMARIES - JSON array of L1 summaries from this phase
+#
+# Outputs:
+#   Decision (CONTINUE/TERMINATE) and next phase info
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# State file location
+STATE_DIR=".agent/state"
+STATE_FILE="${STATE_DIR}/orchestration.json"
+
+# Inputs
+ORCHESTRATION_STATE="${ORCHESTRATION_STATE:-}"
+PHASE_COMPLETED="${PHASE_COMPLETED:-}"
+L1_SUMMARIES="${L1_SUMMARIES:-[]}"
+
+# Ensure directories exist
+mkdir -p "$STATE_DIR" 2>/dev/null || true
+mkdir -p .agent/logs 2>/dev/null || true
+
+log_event() {
+  local event="$1"
+  local detail="$2"
+  echo "$(date -Iseconds) | ORCH_LOOP | $PHASE_COMPLETED | $event | $detail" >> .agent/logs/l1l2_hooks.log 2>/dev/null || true
+}
+
+# Load or initialize state
+load_state() {
+  if [[ -f "$STATE_FILE" ]]; then
+    cat "$STATE_FILE"
+  else
+    echo '{"phase":"init","completedPhases":[],"pendingL2Refs":[],"iteration":0}'
+  fi
+}
+
+# Save state
+save_state() {
+  local state="$1"
+  echo "$state" > "$STATE_FILE"
+}
+
+# Check for blocking issues in L1 summaries
+check_for_blockers() {
+  local summaries="$1"
+
+  # Look for BLOCK, FAIL, ERROR keywords
+  if echo "$summaries" | grep -qiE "(BLOCK|FAIL|ERROR|CRITICAL)"; then
+    return 0  # Found blocker
+  fi
+  return 1  # No blocker
+}
+
+# Count pending L2 references
+count_pending_l2_refs() {
+  local state="$1"
+  echo "$state" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('pendingL2Refs',[])))" 2>/dev/null || echo "0"
+}
+
+# Determine next action
+determine_next_action() {
+  local current_phase="$1"
+  local state="$2"
+  local summaries="$3"
+
+  # Check for blockers first
+  if check_for_blockers "$summaries"; then
+    echo "TERMINATE"
+    echo "REASON: Blocking issue detected in L1 summaries"
+    return
+  fi
+
+  # Phase transition logic
+  case "$current_phase" in
+    "init")
+      echo "CONTINUE"
+      echo "NEXT_PHASE: analysis"
+      ;;
+    "analysis")
+      echo "CONTINUE"
+      echo "NEXT_PHASE: planning"
+      ;;
+    "planning")
+      echo "CONTINUE"
+      echo "NEXT_PHASE: execution"
+      ;;
+    "execution")
+      echo "CONTINUE"
+      echo "NEXT_PHASE: verification"
+      ;;
+    "verification")
+      # Check if all verifications passed
+      if echo "$summaries" | grep -q "PASS"; then
+        echo "TERMINATE"
+        echo "REASON: All phases completed successfully"
+      else
+        echo "CONTINUE"
+        echo "NEXT_PHASE: remediation"
+      fi
+      ;;
+    "remediation")
+      # Re-verify after remediation
+      echo "CONTINUE"
+      echo "NEXT_PHASE: verification"
+      ;;
+    *)
+      echo "TERMINATE"
+      echo "REASON: Unknown phase '$current_phase'"
+      ;;
+  esac
+}
+
+# Main orchestration logic
+echo "[Orchestration Loop Hook]"
+echo "Phase Completed: $PHASE_COMPLETED"
+echo "---"
+
+# Load current state
+STATE=$(load_state)
+log_event "STATE_LOADED" "iteration=$(echo "$STATE" | python3 -c "import json,sys; print(json.load(sys.stdin).get('iteration',0))" 2>/dev/null || echo "?")"
+
+# Update state with completed phase
+UPDATED_STATE=$(echo "$STATE" | python3 -c "
+import json
+import sys
+from datetime import datetime
+
+state = json.load(sys.stdin)
+phase = '$PHASE_COMPLETED'
+
+# Add to completed phases
+if phase and phase not in state.get('completedPhases', []):
+    state.setdefault('completedPhases', []).append(phase)
+
+# Increment iteration
+state['iteration'] = state.get('iteration', 0) + 1
+
+# Update timestamp
+state['lastUpdated'] = datetime.now().isoformat()
+
+# Set current phase
+state['phase'] = phase
+
+print(json.dumps(state))
+" 2>/dev/null || echo "$STATE")
+
+# Determine next action
+echo ""
+echo "Decision:"
+determine_next_action "$PHASE_COMPLETED" "$UPDATED_STATE" "$L1_SUMMARIES"
+
+# Save updated state
+save_state "$UPDATED_STATE"
+log_event "STATE_SAVED" "phase=$PHASE_COMPLETED"
+
+# Check iteration limit (prevent infinite loops)
+ITERATION=$(echo "$UPDATED_STATE" | python3 -c "import json,sys; print(json.load(sys.stdin).get('iteration',0))" 2>/dev/null || echo "0")
+if [[ "$ITERATION" -gt 20 ]]; then
+  echo ""
+  echo "WARNING: Iteration limit (20) reached. Forcing termination."
+  log_event "ITERATION_LIMIT" "forced_termination"
+fi
+
+exit 0

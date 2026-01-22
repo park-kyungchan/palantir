@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "metadata": {
+    "analyzed_at": "2026-01-17T10:43:00Z",
+    "total_files_analyzed": 34,
+    "total_loc": 49116,
+    "modules_covered": ["ontology", "agent", "foundry_mimic", "mcp"]
+  },
+  "modules": {
+    "ontology": {
+      "path": "lib/oda/ontology/",
+      "total_loc": 41779,
+      "structure": {
+        "actions": "19 action files - ActionType implementations",
+        "objects": "15+ domain models - ObjectType definitions",
+        "types": "Type systems - properties, links, statuses",
+        "storage": "Repository layer - SQLite/SQLAlchemy",
+        "evidence": "Anti-hallucination tracking",
+        "validators": "Schema & status validators",
+        "decorators": "Computed, shared property, interface decorators",
+        "tracking": "Status history, change capture",
+        "governance": "Quality gates, approval workflows",
+        "hooks": "Lifecycle event system",
+        "introspection": "Runtime reflection of relationships",
+        "registry.py": "Single source of truth"
+      },
+      "objectTypes_defined": {
+        "core": ["Artifact", "Task", "Agent", "Proposal", "AuditLog"],
+        "domain": ["Workspace", "Session", "Resource", "Branch", "Learning"],
+        "evidence_location": "lib/oda/ontology/objects/*.py"
+      },
+      "linkTypes_defined": {
+        "cardinality_support": ["1:1", "1:N", "N:1", "N:N"],
+        "cascade_policies": ["RESTRICT", "CASCADE", "SET_NULL", "SET_DEFAULT", "NO_ACTION"],
+        "backing_table_enforcement": "M:N links require explicit backing table",
+        "bidirectional_navigation": true,
+        "evidence_location": "lib/oda/ontology/types/link_types.py:225-437"
+      },
+      "actionTypes_defined": {
+        "modules": 19,
+        "hazardous_actions": ["file.modify", "file.write", "file.delete", "branch.merge", "branch.delete", "rbac.grant_object"],
+        "non_hazardous_actions": ["file.read", "quality.check", "memory.save_insight"],
+        "submission_criteria_support": true,
+        "side_effects_support": true,
+        "evidence_location": "lib/oda/ontology/actions/__init__.py:542-660"
+      },
+      "property_system": {
+        "definition_class": "PropertyDefinition",
+        "location": "lib/oda/ontology/types/property_types.py:258-464",
+        "data_types": 18,
+        "data_type_list": ["STRING", "INTEGER", "LONG", "FLOAT", "DOUBLE", "BOOLEAN", "DATE", "TIMESTAMP", "ARRAY", "STRUCT", "GEOPOINT", "GEOSHAPE", "TIMESERIES", "VECTOR", "JSON", "MARKDOWN", "DATETIME", "BINARY"],
+        "constraint_types": {
+          "required": "lib/oda/ontology/types/property_types.py:161-168",
+          "unique": "lib/oda/ontology/types/property_types.py:161-168",
+          "immutable": "lib/oda/ontology/types/property_types.py:171-174",
+          "min_value": "lib/oda/ontology/types/property_types.py:177-184",
+          "max_value": "lib/oda/ontology/types/property_types.py:177-184",
+          "min_length": "lib/oda/ontology/types/property_types.py:187-196",
+          "max_length": "lib/oda/ontology/types/property_types.py:187-196",
+          "pattern": "lib/oda/ontology/types/property_types.py:199-202",
+          "enum": "lib/oda/ontology/types/property_types.py:205-208",
+          "custom_validator": "lib/oda/ontology/types/property_types.py:217-220"
+        },
+        "computed_properties": true,
+        "shared_properties": true
+      },
+      "status_lifecycle": {
+        "stages": ["DRAFT", "EXPERIMENTAL", "ALPHA", "BETA", "ACTIVE", "STABLE", "DEPRECATED", "SUNSET", "ARCHIVED", "DELETED"],
+        "evidence_location": "lib/oda/ontology/types/status_types.py:25-64"
+      },
+      "registry_system": {
+        "schema_version": "4.0.0",
+        "export_format": "JSON",
+        "evidence_location": "lib/oda/ontology/registry.py"
+      }
+    },
+    "agent": {
+      "path": "lib/oda/agent/",
+      "total_loc": 7337,
+      "files_count": 18,
+      "permission_resolution": {
+        "layers": ["Instance-Level", "ObjectType-Level", "Team", "Role-Based", "Default Deny"],
+        "priority_order": "Instance > ObjectType > Team > Role > Default",
+        "evidence_location": "lib/oda/agent/permission_resolver.py:235-329"
+      },
+      "field_level_security": {
+        "access_levels": ["FULL", "READ_ONLY", "MASKED", "HIDDEN"],
+        "masking_patterns": ["{last4}", "{first3}...{last3}"],
+        "evidence_location": "lib/oda/agent/object_permissions.py:77-175"
+      },
+      "team_hierarchy": {
+        "membership_types": ["MEMBER", "ADMIN", "OWNER", "GUEST"],
+        "inheritance": true,
+        "evidence_location": "lib/oda/agent/teams.py:157-523"
+      },
+      "governance_features": {
+        "proposal_workflow": {
+          "states": ["DRAFT", "PENDING", "APPROVED", "REJECTED", "EXECUTED", "CANCELLED", "DELETED"],
+          "reviewer_tracking": true,
+          "evidence_location": "lib/oda/ontology/objects/proposal.py:94-122"
+        },
+        "audit_log": {
+          "operation_types": ["CREATE", "READ", "UPDATE", "DELETE", "LINK", "UNLINK", "EXECUTE", "APPROVE", "REJECT", "TRANSITION"],
+          "immutable_records": true,
+          "before_after_snapshots": true,
+          "evidence_location": "lib/oda/ontology/objects/audit_log.py:30-50"
+        }
+      },
+      "role_presets": ["Admin", "Operator", "Developer", "Auditor", "Agent", "Guest"]
+    },
+    "foundry_mimic": {
+      "path": "lib/oda/foundry_mimic/",
+      "total_loc": 1148,
+      "purpose": "Foundry-compatible schema definitions",
+      "spec_classes": {
+        "ObjectTypeSpec": {
+          "location": "lib/oda/foundry_mimic/models.py:100-131",
+          "features": ["primary_key_config", "datasource_mode", "property_validation", "interface_tracking"]
+        },
+        "LinkTypeSpec": {
+          "location": "lib/oda/foundry_mimic/models.py:133-151",
+          "features": ["bidirectional_relationships", "cardinality_support"]
+        },
+        "InterfaceTypeSpec": {
+          "location": "lib/oda/foundry_mimic/models.py:153-176",
+          "features": ["interface_inheritance", "required_properties"]
+        },
+        "ActionTypeSpec": {
+          "location": "lib/oda/foundry_mimic/models.py:280-308",
+          "features": ["parameters", "edit_specifications", "submission_criteria", "side_effects"]
+        },
+        "FunctionTypeSpec": {
+          "location": "lib/oda/foundry_mimic/models.py:310-323",
+          "features": ["TypeScript_support", "Python_support"]
+        },
+        "DynamicSecuritySpec": {
+          "location": "lib/oda/foundry_mimic/models.py:325-336",
+          "status": "placeholder"
+        },
+        "SchemaMigrationPlan": {
+          "location": "lib/oda/foundry_mimic/models.py:354-372",
+          "features": ["max_500_instructions", "primary_key_protection"]
+        },
+        "OntologyChangeSet": {
+          "location": "lib/oda/foundry_mimic/models.py:520-530",
+          "operation_types": 12
+        }
+      },
+      "datasource_modes": ["SINGLE", "MULTI"]
+    },
+    "mcp": {
+      "path": "lib/oda/mcp/",
+      "ontology_server_tools": {
+        "total": 12,
+        "action_tools": ["list_actions", "inspect_action", "execute_action"],
+        "proposal_tools": ["create_proposal", "get_proposal", "list_proposals", "list_pending_proposals", "approve_proposal", "reject_proposal", "execute_proposal"],
+        "statistics_tools": ["get_proposal_stats", "get_proposal_history"],
+        "evidence_location": "lib/oda/mcp/ontology_server.py"
+      },
+      "agent_tools": {
+        "total": 12,
+        "categories": ["execution", "planning", "confirmation", "permissions", "roles", "query"],
+        "evidence_location": "lib/oda/mcp/agent_tools.py"
+      }
+    }
+  },
+  "implementation_status": {
+    "object_type_system": {
+      "status": "COMPLETE",
+      "score": 95,
+      "evidence": ["Pydantic-based OntologyObject", "@register_object_type decorator", "status lifecycle"]
+    },
+    "link_type_system": {
+      "status": "COMPLETE",
+      "score": 90,
+      "evidence": ["4 cardinality modes", "cascade policies", "N:N backing table enforcement"]
+    },
+    "action_type_system": {
+      "status": "COMPLETE",
+      "score": 90,
+      "evidence": ["requires_proposal flag", "submission_criteria", "side_effects"]
+    },
+    "property_system": {
+      "status": "COMPLETE",
+      "score": 95,
+      "evidence": ["18 data types", "9 constraint types", "computed properties"]
+    },
+    "governance": {
+      "status": "COMPLETE",
+      "score": 95,
+      "evidence": ["full proposal lifecycle", "immutable audit logs", "reviewer tracking"]
+    },
+    "rbac": {
+      "status": "COMPLETE",
+      "score": 90,
+      "evidence": ["5-layer resolution", "field-level masking", "team hierarchy"]
+    },
+    "foundry_compatibility": {
+      "status": "PARTIAL",
+      "score": 70,
+      "evidence": ["foundry_mimic models", "spec classes", "missing API integration"]
+    },
+    "row_level_security": {
+      "status": "NOT_IMPLEMENTED",
+      "score": 0,
+      "evidence": ["no Restricted View pattern", "no policy-based row filtering"]
+    },
+    "mandatory_control_properties": {
+      "status": "NOT_IMPLEMENTED",
+      "score": 0,
+      "evidence": ["no is_mandatory_control flag", "no marking integration"]
+    },
+    "schema_export": {
+      "status": "PARTIAL",
+      "score": 30,
+      "evidence": ["registry JSON export exists", "not Foundry API format", "no import capability"]
+    }
+  },
+  "to_keep": [
+    "lib/oda/ontology/ontology_types.py - Core OntologyObject base class",
+    "lib/oda/ontology/types/property_types.py - PropertyDefinition and constraints",
+    "lib/oda/ontology/types/link_types.py - LinkTypeMetadata and ReferentialIntegrityChecker",
+    "lib/oda/ontology/types/status_types.py - Status lifecycle",
+    "lib/oda/ontology/actions/__init__.py - ActionType base class",
+    "lib/oda/ontology/objects/proposal.py - Proposal workflow",
+    "lib/oda/ontology/objects/audit_log.py - AuditLog ObjectType",
+    "lib/oda/ontology/registry.py - Central registry",
+    "lib/oda/ontology/evidence/collector.py - Evidence tracking",
+    "lib/oda/agent/permission_resolver.py - 5-layer RBAC",
+    "lib/oda/agent/instance_permissions.py - Per-object ACL",
+    "lib/oda/agent/object_permissions.py - ObjectType + field permissions",
+    "lib/oda/agent/teams.py - Team hierarchy",
+    "lib/oda/foundry_mimic/models.py - Foundry-compatible spec classes",
+    "lib/oda/foundry_mimic/service.py - Schema validation and change application",
+    "lib/oda/mcp/ontology_server.py - MCP tools for ontology governance"
+  ],
+  "to_delete": [
+    "Potentially: Duplicate/overlapping code between ontology and foundry_mimic modules after consolidation"
+  ],
+  "to_refactor": [
+    {
+      "file": "lib/oda/ontology/types/property_types.py",
+      "change": "Add is_mandatory_control flag to PropertyConstraint",
+      "location": "line 174",
+      "priority": "CRITICAL"
+    },
+    {
+      "module": "lib/oda/agent/",
+      "change": "Add Restricted View engine with policy-based row filtering",
+      "new_file": "lib/oda/agent/restricted_views.py",
+      "priority": "CRITICAL"
+    },
+    {
+      "file": "lib/oda/agent/permission_resolver.py",
+      "change": "Integrate RV filtering into resolution chain",
+      "location": "line 358",
+      "priority": "CRITICAL"
+    },
+    {
+      "module": "lib/oda/foundry_mimic/",
+      "change": "Add FoundrySchemaExporter class for Ontology JSON export",
+      "new_file": "lib/oda/foundry_mimic/schema_export.py",
+      "priority": "HIGH"
+    },
+    {
+      "file": "lib/oda/mcp/ontology_server.py",
+      "change": "Add schema_export and schema_import MCP tools",
+      "priority": "HIGH"
+    },
+    {
+      "file": "lib/oda/ontology/registry.py",
+      "change": "Add export_foundry_format() method",
+      "location": "line 994",
+      "priority": "HIGH"
+    }
+  ],
+  "critical_gaps": [
+    {
+      "id": "GAP-001",
+      "name": "Restricted Views",
+      "description": "No row-level security via policy-based filtering",
+      "palantir_requirement": "Restricted View - A Foundry dataset that applies row-level filters based on policies/markings",
+      "impact": "Cannot implement Palantir-style row-level security",
+      "files_affected": ["permission_resolver.py", "new: restricted_views.py"],
+      "priority": "P1-CRITICAL"
+    },
+    {
+      "id": "GAP-002",
+      "name": "Mandatory Control Properties",
+      "description": "No is_mandatory_control flag for security marking enforcement",
+      "palantir_requirement": "Mandatory control properties must be required and cannot have defaults",
+      "impact": "Cannot enforce security classification tagging",
+      "files_affected": ["property_types.py"],
+      "priority": "P1-CRITICAL"
+    },
+    {
+      "id": "GAP-003",
+      "name": "Ontology Schema JSON Export",
+      "description": "No Foundry-compatible JSON export with top-level 'ontology' key",
+      "palantir_requirement": "JSON export with objectTypes, linkTypes, actionTypes arrays",
+      "impact": "Cannot exchange ontology definitions with Foundry systems",
+      "files_affected": ["registry.py", "new: schema_export.py", "ontology_server.py"],
+      "priority": "P2-HIGH"
+    }
+  ],
+  "overall_alignment_score": {
+    "current": 78,
+    "target": 95,
+    "calculation": "14/17 features implemented (82%), security-weighted: 78%"
+  }
+}

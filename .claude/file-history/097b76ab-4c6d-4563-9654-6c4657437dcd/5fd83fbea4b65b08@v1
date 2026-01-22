@@ -1,0 +1,485 @@
+"""
+Unit tests for OntologyRegistry - singleton registry for ontology types.
+
+Tests cover:
+- Singleton pattern (thread-safe, RLock)
+- Registration and lookup (by apiName, by RID)
+- Unregistration
+- Cross-type queries
+- Statistics
+- Reset functionality (for testing)
+"""
+
+import pytest
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from ontology_definition import (
+    ObjectType,
+    LinkType,
+    ActionType,
+    PropertyDefinition,
+    DataTypeSpec,
+    DataType,
+    PrimaryKeyDefinition,
+    Interface,
+)
+from ontology_definition.registry import (
+    OntologyRegistry,
+    get_registry,
+    TypeRegistry,
+)
+
+
+@pytest.fixture(autouse=True)
+def reset_registry():
+    """Reset registry before and after each test."""
+    OntologyRegistry.reset_instance()
+    yield
+    OntologyRegistry.reset_instance()
+
+
+class TestTypeRegistry:
+    """Tests for generic TypeRegistry[T]."""
+
+    def test_register_and_get(self):
+        """Register and retrieve an item."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        item = MockItem("TestItem", "ri.test.main.item.123")
+        registry.register(item)
+
+        retrieved = registry.get("TestItem")
+        assert retrieved is item
+
+    def test_get_by_rid(self):
+        """Retrieve by RID."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        item = MockItem("TestItem", "ri.test.main.item.123")
+        registry.register(item)
+
+        retrieved = registry.get_by_rid("ri.test.main.item.123")
+        assert retrieved is item
+
+    def test_register_duplicate_fails(self):
+        """Registering duplicate apiName should fail."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        item1 = MockItem("TestItem", "ri.test.main.item.123")
+        item2 = MockItem("TestItem", "ri.test.main.item.456")
+
+        registry.register(item1)
+        with pytest.raises(ValueError) as exc_info:
+            registry.register(item2)
+        assert "already registered" in str(exc_info.value)
+
+    def test_unregister(self):
+        """Unregister an item."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        item = MockItem("TestItem", "ri.test.main.item.123")
+        registry.register(item)
+
+        unregistered = registry.unregister("TestItem")
+        assert unregistered is item
+        assert registry.get("TestItem") is None
+        assert registry.get_by_rid("ri.test.main.item.123") is None
+
+    def test_list_all(self):
+        """List all registered items."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        items = [
+            MockItem("Item1", "ri.test.main.item.1"),
+            MockItem("Item2", "ri.test.main.item.2"),
+            MockItem("Item3", "ri.test.main.item.3"),
+        ]
+        for item in items:
+            registry.register(item)
+
+        all_items = registry.list_all()
+        assert len(all_items) == 3
+
+    def test_exists(self):
+        """Check if item exists."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        item = MockItem("TestItem", "ri.test.main.item.123")
+        registry.register(item)
+
+        assert registry.exists("TestItem") is True
+        assert registry.exists("Unknown") is False
+
+    def test_count(self):
+        """Count registered items."""
+        registry = TypeRegistry("Test")
+
+        class MockItem:
+            def __init__(self, api_name, rid):
+                self.api_name = api_name
+                self.rid = rid
+
+        assert registry.count() == 0
+        registry.register(MockItem("Item1", "ri.test.main.item.1"))
+        assert registry.count() == 1
+        registry.register(MockItem("Item2", "ri.test.main.item.2"))
+        assert registry.count() == 2
+
+
+class TestOntologyRegistrySingleton:
+    """Tests for singleton pattern of OntologyRegistry."""
+
+    def test_singleton_same_instance(self):
+        """get_instance should return same instance."""
+        registry1 = OntologyRegistry.get_instance()
+        registry2 = OntologyRegistry.get_instance()
+        assert registry1 is registry2
+
+    def test_get_registry_convenience_function(self):
+        """get_registry() should return singleton."""
+        registry1 = get_registry()
+        registry2 = OntologyRegistry.get_instance()
+        assert registry1 is registry2
+
+    def test_new_returns_singleton(self):
+        """Direct __new__ should return singleton."""
+        registry1 = OntologyRegistry()
+        registry2 = OntologyRegistry()
+        assert registry1 is registry2
+
+    def test_reset_clears_registry(self):
+        """reset_instance should clear all registered types."""
+        registry = get_registry()
+
+        obj = ObjectType(
+            api_name="TestObj",
+            display_name="Test",
+            primary_key=PrimaryKeyDefinition(property_api_name="id"),
+            properties=[
+                PropertyDefinition(
+                    api_name="id",
+                    display_name="ID",
+                    data_type=DataTypeSpec(type=DataType.STRING),
+                )
+            ],
+        )
+        registry.register_object_type(obj)
+        assert registry.has_object_type("TestObj") is True
+
+        OntologyRegistry.reset_instance()
+
+        # New instance should be empty
+        new_registry = get_registry()
+        assert new_registry.has_object_type("TestObj") is False
+
+    def test_thread_safe_singleton(self):
+        """Singleton should be thread-safe (no deadlock with RLock)."""
+        results = []
+        errors = []
+
+        def get_registry_worker():
+            try:
+                registry = get_registry()
+                results.append(id(registry))
+            except Exception as e:
+                errors.append(str(e))
+
+        threads = [threading.Thread(target=get_registry_worker) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=5)
+
+        # Should not deadlock and all should get same instance
+        assert len(errors) == 0, f"Errors occurred: {errors}"
+        assert len(results) == 10
+        assert all(r == results[0] for r in results), "All threads should get same instance"
+
+
+class TestOntologyRegistryObjectTypes:
+    """Tests for ObjectType registration and lookup."""
+
+    def create_object_type(self, api_name: str) -> ObjectType:
+        """Helper to create a simple ObjectType."""
+        return ObjectType(
+            api_name=api_name,
+            display_name=api_name,
+            primary_key=PrimaryKeyDefinition(property_api_name="id"),
+            properties=[
+                PropertyDefinition(
+                    api_name="id",
+                    display_name="ID",
+                    data_type=DataTypeSpec(type=DataType.STRING),
+                )
+            ],
+        )
+
+    def test_register_and_get_object_type(self):
+        """Register and retrieve ObjectType."""
+        registry = get_registry()
+        obj = self.create_object_type("Employee")
+
+        registry.register_object_type(obj)
+
+        retrieved = registry.get_object_type("Employee")
+        assert retrieved is obj
+
+    def test_get_object_type_by_rid(self):
+        """Retrieve ObjectType by RID."""
+        registry = get_registry()
+        obj = self.create_object_type("Employee")
+        registry.register_object_type(obj)
+
+        retrieved = registry.get_object_type_by_rid(obj.rid)
+        assert retrieved is obj
+
+    def test_has_object_type(self):
+        """Check if ObjectType exists."""
+        registry = get_registry()
+        obj = self.create_object_type("Employee")
+        registry.register_object_type(obj)
+
+        assert registry.has_object_type("Employee") is True
+        assert registry.has_object_type("Unknown") is False
+
+    def test_list_object_types(self):
+        """List all registered ObjectTypes."""
+        registry = get_registry()
+        obj1 = self.create_object_type("Employee")
+        obj2 = self.create_object_type("Department")
+        registry.register_object_type(obj1)
+        registry.register_object_type(obj2)
+
+        all_types = registry.list_object_types()
+        assert len(all_types) == 2
+
+    def test_list_object_type_names(self):
+        """List all registered ObjectType names."""
+        registry = get_registry()
+        obj1 = self.create_object_type("Employee")
+        obj2 = self.create_object_type("Department")
+        registry.register_object_type(obj1)
+        registry.register_object_type(obj2)
+
+        names = registry.list_object_type_names()
+        assert set(names) == {"Employee", "Department"}
+
+    def test_unregister_object_type(self):
+        """Unregister ObjectType."""
+        registry = get_registry()
+        obj = self.create_object_type("Employee")
+        registry.register_object_type(obj)
+
+        unregistered = registry.unregister_object_type("Employee")
+        assert unregistered is obj
+        assert registry.has_object_type("Employee") is False
+
+    def test_duplicate_registration_fails(self):
+        """Duplicate ObjectType registration should fail."""
+        registry = get_registry()
+        obj1 = self.create_object_type("Employee")
+        obj2 = self.create_object_type("Employee")
+
+        registry.register_object_type(obj1)
+        with pytest.raises(ValueError) as exc_info:
+            registry.register_object_type(obj2)
+        assert "already registered" in str(exc_info.value)
+
+
+class TestOntologyRegistryStatistics:
+    """Tests for registry statistics."""
+
+    def test_stats_empty(self):
+        """Stats for empty registry."""
+        registry = get_registry()
+        stats = registry.stats()
+
+        assert stats["object_types"] == 0
+        assert stats["link_types"] == 0
+        assert stats["action_types"] == 0
+        assert stats["interfaces"] == 0
+        assert stats["total"] == 0
+
+    def test_stats_with_items(self):
+        """Stats after registering items."""
+        registry = get_registry()
+
+        obj = ObjectType(
+            api_name="Employee",
+            display_name="Employee",
+            primary_key=PrimaryKeyDefinition(property_api_name="id"),
+            properties=[
+                PropertyDefinition(
+                    api_name="id",
+                    display_name="ID",
+                    data_type=DataTypeSpec(type=DataType.STRING),
+                )
+            ],
+        )
+        registry.register_object_type(obj)
+
+        iface = Interface(
+            api_name="Auditable",
+            display_name="Auditable",
+            properties=[
+                PropertyDefinition(
+                    api_name="createdAt",
+                    display_name="Created At",
+                    data_type=DataTypeSpec(type=DataType.TIMESTAMP),
+                )
+            ],
+        )
+        registry.register_interface(iface)
+
+        stats = registry.stats()
+        assert stats["object_types"] == 1
+        assert stats["interfaces"] == 1
+        assert stats["total"] == 2
+
+    def test_to_dict(self):
+        """Export registry to dictionary."""
+        registry = get_registry()
+
+        obj = ObjectType(
+            api_name="Employee",
+            display_name="Employee",
+            primary_key=PrimaryKeyDefinition(property_api_name="id"),
+            properties=[
+                PropertyDefinition(
+                    api_name="id",
+                    display_name="ID",
+                    data_type=DataTypeSpec(type=DataType.STRING),
+                )
+            ],
+        )
+        registry.register_object_type(obj)
+
+        result = registry.to_dict()
+        assert "object_types" in result
+        assert len(result["object_types"]) == 1
+
+
+class TestOntologyRegistryConcurrency:
+    """Tests for concurrent access to registry."""
+
+    def test_concurrent_registration(self):
+        """Concurrent registrations should be thread-safe."""
+        registry = get_registry()
+        errors = []
+
+        def register_worker(index):
+            try:
+                obj = ObjectType(
+                    api_name=f"Employee{index}",
+                    display_name=f"Employee {index}",
+                    primary_key=PrimaryKeyDefinition(property_api_name="id"),
+                    properties=[
+                        PropertyDefinition(
+                            api_name="id",
+                            display_name="ID",
+                            data_type=DataTypeSpec(type=DataType.STRING),
+                        )
+                    ],
+                )
+                registry.register_object_type(obj)
+            except Exception as e:
+                errors.append(str(e))
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(register_worker, i) for i in range(20)]
+            for future in as_completed(futures):
+                pass  # Wait for completion
+
+        assert len(errors) == 0, f"Errors: {errors}"
+        assert len(registry.list_object_types()) == 20
+
+    def test_concurrent_read_write(self):
+        """Concurrent reads and writes should be thread-safe."""
+        registry = get_registry()
+        results = {"reads": 0, "writes": 0}
+        lock = threading.Lock()
+
+        # Pre-register some items
+        for i in range(5):
+            obj = ObjectType(
+                api_name=f"Initial{i}",
+                display_name=f"Initial {i}",
+                primary_key=PrimaryKeyDefinition(property_api_name="id"),
+                properties=[
+                    PropertyDefinition(
+                        api_name="id",
+                        display_name="ID",
+                        data_type=DataTypeSpec(type=DataType.STRING),
+                    )
+                ],
+            )
+            registry.register_object_type(obj)
+
+        def reader():
+            for _ in range(50):
+                _ = registry.list_object_types()
+                with lock:
+                    results["reads"] += 1
+
+        def writer(index):
+            obj = ObjectType(
+                api_name=f"New{index}",
+                display_name=f"New {index}",
+                primary_key=PrimaryKeyDefinition(property_api_name="id"),
+                properties=[
+                    PropertyDefinition(
+                        api_name="id",
+                        display_name="ID",
+                        data_type=DataTypeSpec(type=DataType.STRING),
+                    )
+                ],
+            )
+            registry.register_object_type(obj)
+            with lock:
+                results["writes"] += 1
+
+        threads = []
+        for _ in range(5):
+            threads.append(threading.Thread(target=reader))
+        for i in range(10):
+            threads.append(threading.Thread(target=writer, args=(i,)))
+
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=10)
+
+        assert results["reads"] == 250  # 5 readers * 50 reads
+        assert results["writes"] == 10

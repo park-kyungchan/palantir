@@ -1,0 +1,14 @@
+"""
+Math Image Parsing Pipeline v2.0
+
+A pipeline for converting math problem images to Desmos/GeoGebra compatible data.
+
+8-Stage Pipeline:
+    A. Ingestion → B. TextParse → C. VisionParse → D. Alignment
+                                                        ↓
+    H. Export ← G. HumanReview ← F. Regeneration ← E. SemanticGraph
+"""
+
+from .schemas import __version__
+
+__all__ = ["__version__"]

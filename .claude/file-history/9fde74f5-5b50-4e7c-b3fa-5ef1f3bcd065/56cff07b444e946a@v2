@@ -1,0 +1,495 @@
+# L2 Synthesizer + Structured Prompt Engineering
+
+> **Version:** 1.0 | **Status:** COMPLETED | **Date:** 2026-01-17
+> **Auto-Compact Safe:** This file persists across context compaction
+> **ODA Version:** V2.1.10
+
+---
+
+## Overview
+
+| Item | Value |
+|------|-------|
+| Complexity | LARGE |
+| Total Phases | 5 |
+| Files to Create | 4 |
+| Files to Modify | 3 |
+
+---
+
+## Problem Statement
+
+### Current Flow (V2.1.9)
+```
+Task() → Subagent Output (5K-15K tokens) → Hook L2 생성 → L1 Headline만 Main Agent에게
+```
+
+**문제점:**
+1. Main Agent가 L2를 언제 읽을지 판단 기준 없음
+2. 여러 L2 파일을 읽으면 Context 비용 다시 증가
+3. L2 파일이 비구조화된 텍스트 → 추출 어려움
+
+### Target Flow (V2.1.10)
+```
+Main Agent
+    │ ← 고도화된 Prompt (Schema 강제)
+    ▼
+Task() → Subagent Output (JSON Schema 준수) → Hook L2 생성 (구조화)
+    │                                              │
+    │ (L1 Headline만)                              ▼
+    ▼                                         L2 파일들 (JSON)
+Main Agent                                         │
+    │                                              │
+    │ ← L2 Synthesizer Agent 호출                  │
+    ▼                                              ▼
+L2 Synthesizer ────────────────────────────────► 병합/추출
+    │
+    │ (Condensed ~500 tokens)
+    ▼
+Main Agent receives: Synthesized Essential Context
+    │
+    ▼
+Next Task delegation with minimal but complete context
+```
+
+---
+
+## Requirements
+
+### R1: L2 Synthesizer Agent
+- 여러 L2 파일을 읽고 필요한 부분만 추출
+- 출력: ~500-1000 tokens (Main Agent context 최소화)
+- 파일 기반 통신 패턴 사용
+
+### R2: Structured Prompt Templates
+- JSON Schema 강제하는 프롬프트 템플릿
+- 서브에이전트 타입별 출력 포맷 표준화
+- 32K 출력 제한 내 동작 보장
+
+### R3: Hook Enhancement
+- `progressive_disclosure_hook.py` 수정
+- JSON 구조 검증 추가
+- L2 파일을 JSON 형태로 저장
+
+---
+
+## Implementation Phases
+
+### Phase 1: Structured Output Schema 정의
+**Status:** COMPLETED
+
+| Task | File | Description |
+|------|------|-------------|
+| 1.1 | `lib/oda/planning/output_schemas.py` | Pydantic 스키마 정의 |
+| 1.2 | `.claude/templates/explore_output.json` | Explore 에이전트 출력 스키마 |
+| 1.3 | `.claude/templates/plan_output.json` | Plan 에이전트 출력 스키마 |
+
+**Output Schema (Explore):**
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["summary", "files_analyzed", "findings", "next_action_hint"],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "One-sentence summary"
+    },
+    "files_analyzed": {
+      "type": "array",
+      "items": {"type": "string"},
+      "maxItems": 50
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "line", "severity", "description"],
+        "properties": {
+          "file": {"type": "string"},
+          "line": {"type": "integer"},
+          "severity": {"enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]},
+          "description": {"type": "string", "maxLength": 100}
+        }
+      },
+      "maxItems": 20
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {"type": "string"},
+      "maxItems": 20
+    },
+    "next_action_hint": {
+      "type": "string",
+      "maxLength": 100
+    }
+  }
+}
+```
+
+---
+
+### Phase 2: Prompt Template Library 구현
+**Status:** COMPLETED
+
+| Task | File | Description |
+|------|------|-------------|
+| 2.1 | `lib/oda/planning/prompt_templates.py` | 템플릿 생성기 클래스 |
+| 2.2 | `.claude/templates/prompts/explore.md` | Explore 프롬프트 템플릿 |
+| 2.3 | `.claude/templates/prompts/plan.md` | Plan 프롬프트 템플릿 |
+
+**Explore Prompt Template:**
+```markdown
+## Task
+{task_description}
+
+## MANDATORY: Output Schema
+You MUST output ONLY valid JSON matching this schema:
+
+\`\`\`json
+{schema_json}
+\`\`\`
+
+## Constraints
+- YOUR OUTPUT MUST NOT EXCEED {budget} TOKENS
+- Output MUST be valid JSON (no text before/after)
+- All string values properly quoted
+- Follow the schema exactly
+
+## Additional Context
+{additional_context}
+```
+
+**PromptTemplateBuilder Class:**
+```python
+class PromptTemplateBuilder:
+    def __init__(self, subagent_type: str):
+        self.subagent_type = subagent_type
+        self.schema = self._load_schema()
+
+    def build(
+        self,
+        task_description: str,
+        budget: int = 5000,
+        additional_context: str = ""
+    ) -> str:
+        """Build structured prompt with schema enforcement"""
+        template = self._load_template()
+        return template.format(
+            task_description=task_description,
+            schema_json=json.dumps(self.schema, indent=2),
+            budget=budget,
+            additional_context=additional_context
+        )
+```
+
+---
+
+### Phase 3: L2 Synthesizer Agent 구현
+**Status:** COMPLETED
+
+| Task | File | Description |
+|------|------|-------------|
+| 3.1 | `.claude/agents/l2-synthesizer.md` | 에이전트 정의 |
+| 3.2 | `lib/oda/planning/l2_synthesizer.py` | 핵심 로직 |
+
+**Agent Definition (`.claude/agents/l2-synthesizer.md`):**
+```markdown
+---
+name: l2-synthesizer
+description: |
+  Synthesizes multiple L2 structured reports into condensed essential context.
+  Reads JSON L2 files and extracts only what's needed for next delegation.
+allowed-tools: Read, Glob, Grep
+model: haiku  # Fast, cheap for aggregation
+---
+
+## Role
+You are an L2 Synthesizer. Your job is to:
+1. Read multiple L2 JSON files
+2. Extract only essential information
+3. Return condensed synthesis (~500 tokens max)
+
+## Input
+You receive a list of L2 file paths and a synthesis goal.
+
+## Output Schema
+\`\`\`json
+{
+  "synthesis": {
+    "total_agents": 3,
+    "critical_findings": [...],
+    "cross_module_concerns": [...],
+    "recommended_next_action": "string",
+    "file_references": [...]
+  }
+}
+\`\`\`
+
+## Rules
+- NEVER include verbose explanations
+- ONLY extract what's relevant to synthesis goal
+- Output MUST be under 500 tokens
+```
+
+**L2Synthesizer Class:**
+```python
+class L2Synthesizer:
+    def __init__(self):
+        self.l2_base = Path(".agent/outputs")
+
+    def synthesize(
+        self,
+        l2_paths: List[Path],
+        synthesis_goal: str,
+        max_output_tokens: int = 500
+    ) -> Dict:
+        """
+        Read multiple L2 files and synthesize into condensed context.
+
+        Args:
+            l2_paths: List of L2 structured report paths
+            synthesis_goal: What to extract (e.g., "security issues", "architecture")
+            max_output_tokens: Maximum output size
+
+        Returns:
+            Condensed synthesis dict
+        """
+        # Delegate to l2-synthesizer agent
+        prompt = self._build_synthesis_prompt(l2_paths, synthesis_goal)
+
+        result = Task(
+            subagent_type="l2-synthesizer",
+            prompt=prompt,
+            description="L2 synthesis"
+        )
+
+        return json.loads(result.output)
+
+    def _build_synthesis_prompt(self, paths: List[Path], goal: str) -> str:
+        return f"""
+        ## Synthesis Goal
+        {goal}
+
+        ## L2 Files to Read
+        {chr(10).join(f"- {p}" for p in paths)}
+
+        ## Instructions
+        1. Read each L2 file
+        2. Extract only information relevant to: {goal}
+        3. Identify cross-file patterns
+        4. Return condensed synthesis (max 500 tokens)
+
+        ## Output
+        Return ONLY valid JSON matching the synthesis schema.
+        """
+```
+
+---
+
+### Phase 4: Hook Enhancement
+**Status:** COMPLETED
+
+| Task | File | Description |
+|------|------|-------------|
+| 4.1 | `.claude/hooks/progressive_disclosure_hook.py` | JSON 검증 추가 |
+| 4.2 | `.claude/hooks/config/progressive_disclosure_config.yaml` | 설정 업데이트 |
+
+**Enhancement Points:**
+1. JSON 출력 검증
+2. 스키마 준수 확인
+3. L2 파일을 JSON 형식으로 저장
+4. 스키마 불일치 시 경고 로깅
+
+---
+
+### Phase 5: Integration & Testing
+**Status:** COMPLETED
+
+| Task | Description |
+|------|-------------|
+| 5.1 | CLAUDE.md 업데이트 (V2.1.10 섹션 추가) |
+| 5.2 | `/plan`, `/audit` 커맨드에 L2 Synthesizer 통합 |
+| 5.3 | E2E 테스트: 3개 서브에이전트 병렬 → L2 Synthesizer → 결과 검증 |
+
+---
+
+## Critical File Paths
+
+```yaml
+new_files:
+  - lib/oda/planning/output_schemas.py
+  - lib/oda/planning/prompt_templates.py
+  - lib/oda/planning/l2_synthesizer.py
+  - .claude/agents/l2-synthesizer.md
+  - .claude/templates/explore_output.json
+  - .claude/templates/plan_output.json
+  - .claude/templates/prompts/explore.md
+  - .claude/templates/prompts/plan.md
+
+modify_files:
+  - .claude/hooks/progressive_disclosure_hook.py
+  - .claude/CLAUDE.md
+  - .claude/commands/plan.md
+```
+
+---
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. Read this file: `.agent/plans/l2_synthesizer_and_structured_prompts.md`
+2. Check TodoWrite for current phase status
+3. Continue from first PENDING task
+
+**Current Progress:**
+- Phase 1: COMPLETED ✅
+- Phase 2: COMPLETED ✅
+- Phase 3: COMPLETED ✅
+- Phase 4: COMPLETED ✅
+- Phase 5: COMPLETED ✅
+
+---
+
+## Agent Registry (For Resume)
+
+| Phase | Agent Type | Agent ID | Status |
+|-------|------------|----------|--------|
+| Research | claude-code-guide | aba7b2d | completed |
+| Phase 1 | general-purpose | aa07ee1 | completed |
+| Phase 2 | general-purpose | a486349 | completed |
+| Phase 3 | general-purpose | ae486ef | completed |
+| Phase 4 | general-purpose | ad90bef | completed |
+| Phase 5 | general-purpose | a5f2c1d | completed |
+
+---
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    V2.1.10 L2 Synthesizer Architecture                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Main Agent (Orchestrator)                                              │
+│      │                                                                  │
+│      │ PromptTemplateBuilder.build()                                    │
+│      │ ┌─────────────────────────────────────────────────────────────┐  │
+│      │ │ Task Description: "Analyze auth module"                     │  │
+│      │ │ + JSON Schema (MANDATORY)                                   │  │
+│      │ │ + Output Budget: 5000 tokens                                │  │
+│      │ │ + Constraints                                               │  │
+│      │ └─────────────────────────────────────────────────────────────┘  │
+│      ▼                                                                  │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Task(subagent_type="Explore", prompt=structured_prompt)           │  │
+│  │ Task(subagent_type="Explore", prompt=structured_prompt)           │  │
+│  │ Task(subagent_type="Plan", prompt=structured_prompt)              │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│      │                                                                  │
+│      ▼ (Parallel Execution)                                             │
+│  ┌────────┬────────┬────────┐                                          │
+│  │ Sub A  │ Sub B  │ Sub C  │                                          │
+│  │ (JSON) │ (JSON) │ (JSON) │                                          │
+│  └───┬────┴───┬────┴───┬────┘                                          │
+│      │        │        │                                                │
+│      ▼        ▼        ▼                                                │
+│  ┌────────────────────────────────────────────────────────────────┐    │
+│  │ PostToolUse Hook (progressive_disclosure_hook.py)              │    │
+│  │                                                                │    │
+│  │ 1. Validate JSON Schema                                        │    │
+│  │ 2. Write to .agent/outputs/{type}/{id}.json (L2)              │    │
+│  │ 3. Generate L1 Headline                                        │    │
+│  │ 4. suppressOutput: true                                        │    │
+│  │ 5. additionalContext: L1 + L2 path                            │    │
+│  └────────────────────────────────────────────────────────────────┘    │
+│      │                                                                  │
+│      ▼                                                                  │
+│  Main Agent receives: 3x L1 Headlines (~300 tokens total)              │
+│      │                                                                  │
+│      │ "Now I need to synthesize these results"                        │
+│      ▼                                                                  │
+│  ┌────────────────────────────────────────────────────────────────┐    │
+│  │ L2Synthesizer.synthesize(                                      │    │
+│  │   l2_paths=[".agent/outputs/explore/a.json",                   │    │
+│  │            ".agent/outputs/explore/b.json",                    │    │
+│  │            ".agent/outputs/plan/c.json"],                      │    │
+│  │   synthesis_goal="security concerns and implementation order"  │    │
+│  │ )                                                              │    │
+│  └────────────────────────────────────────────────────────────────┘    │
+│      │                                                                  │
+│      ▼                                                                  │
+│  ┌────────────────────────────────────────────────────────────────┐    │
+│  │ l2-synthesizer Agent (model: haiku)                            │    │
+│  │                                                                │    │
+│  │ Reads: L2_A.json, L2_B.json, L2_C.json                        │    │
+│  │ Extracts: Only security-related findings                       │    │
+│  │ Returns: Condensed ~500 token synthesis                        │    │
+│  └────────────────────────────────────────────────────────────────┘    │
+│      │                                                                  │
+│      ▼                                                                  │
+│  Main Agent receives: Condensed Essential Context (~500 tokens)        │
+│      │                                                                  │
+│      │ "Now I have exactly what I need for next delegation"            │
+│      ▼                                                                  │
+│  Next Task with precise, minimal context                               │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Token Budget Analysis
+
+| Stage | Without L2 Synthesizer | With L2 Synthesizer |
+|-------|------------------------|---------------------|
+| Initial Task Outputs | 3 × 5000 = 15,000 tokens | 3 × 100 = 300 tokens (L1 only) |
+| L2 Read (if needed) | 15,000 tokens | 0 (Synthesizer reads) |
+| Synthesis Result | N/A | 500 tokens |
+| **Total Context Cost** | **15,000+ tokens** | **800 tokens** |
+| **Reduction** | - | **~95%** |
+
+---
+
+## Risk Register
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Subagent ignores JSON schema | L2 Synthesizer fails | Hook validates and blocks non-JSON |
+| L2 Synthesizer exceeds budget | Context inflation | Hard 500 token limit in prompt |
+| Schema too restrictive | Useful info lost | Allow `additional_notes` field |
+| Haiku model quality | Poor synthesis | Upgrade to Sonnet if needed |
+
+---
+
+## Approval Gate
+
+- [x] Architecture design approved
+- [x] Prompt templates reviewed
+- [x] Implementation phases accepted
+- [x] Risk mitigations acceptable
+
+---
+
+## Completion Summary
+
+All phases implemented successfully:
+
+1. **Phase 1:** `output_schemas.py` - Pydantic schemas (ExploreOutput, PlanOutput, SynthesisOutput)
+2. **Phase 2:** `prompt_templates.py` - PromptTemplateBuilder with schema injection
+3. **Phase 3:** `l2_synthesizer.py` + `l2-synthesizer.md` - Multi-L2 synthesis agent
+4. **Phase 4:** `progressive_disclosure_hook.py` - JSON validation enhancement
+5. **Phase 5:** CLAUDE.md updated to V2.1.10, plan file marked complete
+
+**Key Deliverables:**
+- `lib/oda/planning/output_schemas.py` - Pydantic output schemas
+- `lib/oda/planning/prompt_templates.py` - PromptTemplateBuilder class
+- `lib/oda/planning/l2_synthesizer.py` - L2Synthesizer class
+- `.claude/agents/l2-synthesizer.md` - Haiku-based synthesis agent
+- `.claude/templates/explore_output.json` - Explore output schema
+- `.claude/templates/plan_output.json` - Plan output schema
+- `.claude/templates/prompts/explore.md` - Explore prompt template
+- `.claude/templates/prompts/plan.md` - Plan prompt template
+- `.claude/templates/prompts/synthesis.md` - Synthesis prompt template

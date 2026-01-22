@@ -1,0 +1,453 @@
+# Palantir Foundry Ontology Deep Research Prompt
+
+> **Version:** 1.0.0 | **Status:** READY_FOR_EXECUTION | **Date:** 2026-01-17
+> **Purpose:** Enable Claude (Main Agent) to perform large-scale ODA refactoring using Subagents
+> **Mode:** Machine-Readable First (JSON Schema primary, Markdown minimal)
+
+---
+
+## 1. RESEARCH OBJECTIVE
+
+### 1.1 Primary Goal
+
+Conduct comprehensive research on **Palantir Foundry Ontology architecture** to define optimal schemas for:
+
+- **ObjectType** - Entity definition and properties
+- **LinkType** - Relationship definition and cardinality
+- **ActionType** - Mutation operations and side effects
+- **Property** - Field definitions and constraints
+- **Metadata** - Auxiliary information and tracking
+
+### 1.2 Key Research Question
+
+> **"ObjectType/LinkType/ActionType/Property/Metadata를 어떻게 정의해야 상호작용이 원활하고, 코드베이스의 유지보수와 확장에 용이한가?"**
+
+### 1.3 Research Purpose
+
+This research is **EXCLUSIVELY** for enabling:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   TARGET EXECUTION PATTERN                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  User Prompt ──► Main Agent (Claude) ──► Subagents              │
+│                   [Orchestrator ONLY]       │                    │
+│                   - NO direct code edits    │                    │
+│                   - Delegates ALL work      │                    │
+│                                             ▼                    │
+│                                    ┌─────────────────┐          │
+│                                    │  ODA System     │          │
+│                                    │  (Refactored)   │          │
+│                                    │  ──────────     │          │
+│                                    │  ObjectType     │          │
+│                                    │  LinkType       │          │
+│                                    │  ActionType     │          │
+│                                    └────────┬────────┘          │
+│                                             │                    │
+│                                             ▼                    │
+│                                    ┌─────────────────┐          │
+│                                    │ Code Mutations  │          │
+│                                    │ (FULL TRACKING) │          │
+│                                    │                 │          │
+│                                    │ - What changed  │          │
+│                                    │ - Who changed   │          │
+│                                    │ - When changed  │          │
+│                                    │ - Why changed   │          │
+│                                    └─────────────────┘          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.4 Critical Constraints
+
+| Constraint | Description |
+|------------|-------------|
+| **Main Agent Role** | Orchestrator ONLY - NO direct file modifications |
+| **Subagent Role** | Execute actual code changes via ODA system |
+| **Traceability** | ALL operations must be fully tracked |
+| **Refactoring Scope** | lib/oda/ontology/ + lib/oda/agent/ |
+
+---
+
+## 2. INPUT SOURCES
+
+### 2.1 Primary Sources (MANDATORY)
+
+| Source | Path | Priority |
+|--------|------|----------|
+| **DOCX 1** | `/home/palantir/park-kyungchan/palantir/docs/Palantir-AIP-Foundry-Architecture-Deep-Research.docx` | P1 |
+| **DOCX 2** | `/home/palantir/park-kyungchan/palantir/docs/Review_of_Ontology_Specification_Palantir__Foundry_Alignment.docx` | P1 |
+
+### 2.2 Secondary Sources (WebSearch Required)
+
+| Source Type | Search Queries |
+|-------------|----------------|
+| **Palantir Official Docs** | "Palantir Foundry Ontology SDK documentation 2026" |
+| **Palantir Developer Portal** | "Palantir AIP ObjectType LinkType ActionType specification" |
+| **Context7 Library** | Use `mcp__context7__resolve-library-id` for "Palantir Foundry" |
+
+### 2.3 Tertiary Sources (Best Practices)
+
+| Source Type | Search Queries |
+|-------------|----------------|
+| **Developer Communities** | "Ontology-driven architecture best practices" |
+| **Design Patterns** | "Domain-driven design entity relationship patterns" |
+| **Schema Design** | "JSON Schema design patterns maintainability" |
+
+---
+
+## 3. OUTPUT SPECIFICATION
+
+### 3.1 Output Location
+
+```
+/home/palantir/park-kyungchan/palantir/docs/research/
+```
+
+### 3.2 Output File Structure
+
+```
+docs/research/
+├── PALANTIR_ONTOLOGY_RESEARCH_PROMPT.md    # This file (research instructions)
+├── index.json                               # Master index of all schemas
+├── schemas/
+│   ├── ObjectType.schema.json              # ObjectType definition schema
+│   ├── LinkType.schema.json                # LinkType definition schema
+│   ├── ActionType.schema.json              # ActionType definition schema
+│   ├── Property.schema.json                # Property definition schema
+│   ├── Metadata.schema.json                # Metadata definition schema
+│   └── Interaction.schema.json             # Cross-type interaction rules
+├── examples/
+│   ├── ObjectType.example.json             # Example ObjectType instances
+│   ├── LinkType.example.json               # Example LinkType instances
+│   └── ActionType.example.json             # Example ActionType instances
+└── analysis/
+    ├── current_oda_analysis.json           # Current ODA system analysis
+    ├── gap_analysis.json                   # Gaps vs Palantir requirements
+    └── refactoring_plan.json               # Detailed refactoring steps
+```
+
+### 3.3 Output Format Rules
+
+| Rule | Description |
+|------|-------------|
+| **Primary Format** | JSON Schema (Draft 2020-12) |
+| **Documentation** | Minimal - only where JSON cannot express |
+| **Machine-Readable** | 100% parseable by code |
+| **No Prose** | Avoid narrative explanations |
+| **Self-Documenting** | Use `description` fields in JSON |
+
+### 3.4 JSON Schema Template
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oda.palantir.local/schemas/{type}.schema.json",
+  "title": "{Type} Definition Schema",
+  "description": "Palantir Foundry-aligned {type} definition for ODA system",
+  "type": "object",
+  "properties": {
+    // ... properties with descriptions
+  },
+  "required": [],
+  "$defs": {
+    // ... reusable definitions
+  },
+  "examples": []
+}
+```
+
+---
+
+## 4. RESEARCH PHASES
+
+### Phase 1: Primary Source Analysis
+
+**Input:** Two DOCX files
+**Output:** `analysis/docx_extraction.json`
+
+```json
+{
+  "objectType": {
+    "definition": "...",
+    "properties": [],
+    "constraints": [],
+    "palantir_requirements": []
+  },
+  "linkType": { ... },
+  "actionType": { ... },
+  "interactions": { ... }
+}
+```
+
+**Extraction Method:**
+```python
+# Use Python zipfile to extract word/document.xml
+# Parse XML and extract text content
+# Structure into JSON format above
+```
+
+### Phase 2: Web Research
+
+**Input:** Search queries from Section 2.2 and 2.3
+**Output:** `analysis/web_research.json`
+
+```json
+{
+  "palantir_official": {
+    "sources": [
+      {"url": "...", "key_findings": [], "relevance_score": 0.0-1.0}
+    ]
+  },
+  "developer_best_practices": {
+    "sources": [ ... ]
+  },
+  "design_patterns": {
+    "sources": [ ... ]
+  }
+}
+```
+
+### Phase 3: Current ODA Analysis
+
+**Input:** Existing ODA codebase at `/home/palantir/park-kyungchan/palantir/lib/oda/`
+**Output:** `analysis/current_oda_analysis.json`
+
+```json
+{
+  "modules": {
+    "ontology": {
+      "files": [],
+      "objectTypes_defined": [],
+      "linkTypes_defined": [],
+      "actionTypes_defined": []
+    },
+    "agent": {
+      "files": [],
+      "permission_models": [],
+      "rbac_layers": []
+    }
+  },
+  "to_keep": [],
+  "to_delete": [],
+  "to_refactor": []
+}
+```
+
+### Phase 4: Schema Definition
+
+**Input:** All analysis from Phases 1-3
+**Output:** `schemas/*.schema.json`
+
+Define each schema with:
+- All required properties
+- All optional properties with defaults
+- Validation constraints
+- Relationships to other schemas
+- Examples
+
+### Phase 5: Interaction Mapping
+
+**Input:** All schemas from Phase 4
+**Output:** `schemas/Interaction.schema.json`
+
+```json
+{
+  "objectType_to_linkType": {
+    "rules": [],
+    "constraints": []
+  },
+  "actionType_to_objectType": {
+    "create_rules": [],
+    "update_rules": [],
+    "delete_rules": []
+  },
+  "actionType_to_linkType": {
+    "link_rules": [],
+    "unlink_rules": []
+  }
+}
+```
+
+### Phase 6: Gap Analysis
+
+**Input:** Current ODA analysis + Palantir requirements
+**Output:** `analysis/gap_analysis.json`
+
+```json
+{
+  "critical_gaps": [],
+  "high_priority_gaps": [],
+  "medium_priority_gaps": [],
+  "low_priority_gaps": [],
+  "recommendations": []
+}
+```
+
+### Phase 7: Refactoring Plan
+
+**Input:** All analysis and schemas
+**Output:** `analysis/refactoring_plan.json`
+
+```json
+{
+  "phases": [
+    {
+      "phase_id": 1,
+      "name": "...",
+      "files_to_delete": [],
+      "files_to_create": [],
+      "files_to_modify": [],
+      "dependencies": [],
+      "verification_steps": []
+    }
+  ],
+  "total_estimated_effort": "...",
+  "risk_assessment": []
+}
+```
+
+---
+
+## 5. EXECUTION RULES
+
+### 5.1 Incremental Save Rule
+
+**CRITICAL:** To prevent Auto-Compact context loss:
+
+```
+After completing each Phase (1-7):
+  1. Write output file immediately
+  2. Update index.json with new file reference
+  3. Log progress to TodoWrite
+
+DO NOT accumulate data in memory across phases.
+```
+
+### 5.2 Subagent Delegation Rule
+
+```
+For each Phase:
+  - Use Task(subagent_type="Explore") for analysis
+  - Use Task(subagent_type="general-purpose") for file writing
+  - Main Agent ONLY synthesizes and orchestrates
+  - ALL file writes go through subagents
+```
+
+### 5.3 Token Budget Rule
+
+| Phase | Max Tokens | Action if Exceeded |
+|-------|------------|-------------------|
+| Phase 1-3 | 10K each | Split into sub-phases |
+| Phase 4-5 | 15K each | Write incrementally |
+| Phase 6-7 | 10K each | Summarize findings |
+
+### 5.4 Verification Rule
+
+After each Phase:
+```json
+{
+  "phase_completed": true,
+  "output_files_written": ["..."],
+  "next_phase": "Phase N",
+  "blockers": []
+}
+```
+
+---
+
+## 6. KEY RESEARCH QUESTIONS
+
+### 6.1 ObjectType Questions
+
+1. What properties MUST every ObjectType have?
+2. How should ObjectType status lifecycle work (Active/Deprecated/Archived)?
+3. What metadata is required for traceability?
+4. How to define primary key vs business key?
+
+### 6.2 LinkType Questions
+
+1. What cardinality options are supported (1:1, 1:N, N:1, N:N)?
+2. How do cascade policies work (ON DELETE, ON UPDATE)?
+3. When is a backing table required?
+4. How to handle bidirectional navigation?
+
+### 6.3 ActionType Questions
+
+1. What makes an action "hazardous" requiring approval?
+2. How to define submission criteria (preconditions)?
+3. How to specify side effects (notifications, webhooks)?
+4. How to track action execution history?
+
+### 6.4 Interaction Questions
+
+1. How does ActionType.Create interact with ObjectType schema?
+2. How does ActionType.Link interact with LinkType cardinality?
+3. How do cascading deletes propagate through LinkTypes?
+4. How to ensure referential integrity across types?
+
+### 6.5 Traceability Questions
+
+1. What audit fields are required on every mutation?
+2. How to track "who, what, when, why" for all changes?
+3. How to support rollback/revert operations?
+4. How to integrate with Proposal approval workflow?
+
+---
+
+## 7. SUCCESS CRITERIA
+
+### 7.1 Completeness Criteria
+
+| Criterion | Target |
+|-----------|--------|
+| All 5 schema files created | 100% |
+| All research questions answered | 100% |
+| Current ODA gaps identified | 100% |
+| Refactoring plan with specific files | 100% |
+
+### 7.2 Quality Criteria
+
+| Criterion | Target |
+|-----------|--------|
+| JSON Schema validates | 100% |
+| No ambiguous definitions | 100% |
+| All properties have descriptions | 100% |
+| Examples for each schema | 100% |
+
+### 7.3 Usability Criteria
+
+| Criterion | Target |
+|-----------|--------|
+| Claude can read and understand independently | 100% |
+| Schemas can be used for code generation | 100% |
+| Refactoring plan is actionable | 100% |
+
+---
+
+## 8. QUICK RESUME CONTEXT
+
+If this research is interrupted (Auto-Compact), resume by:
+
+1. Read `/home/palantir/park-kyungchan/palantir/docs/research/index.json`
+2. Identify last completed Phase
+3. Continue from next Phase
+4. All prior analysis is in `analysis/` folder
+
+---
+
+## 9. APPROVAL GATE
+
+Before executing this research:
+
+- [ ] User has reviewed this prompt document
+- [ ] User approves research scope
+- [ ] User approves output format
+- [ ] User approves execution plan
+
+---
+
+*Generated by ODA /plan command v2.1.7*
+*E2E Questions: 10 completed*
+*Ready for user approval*

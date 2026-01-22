@@ -1,0 +1,328 @@
+"""
+Common types for Math Image Parsing Pipeline v2.0.
+
+This module defines foundational types used across all pipeline stages:
+- BBox: Bounding box representations (YOLO, normalized, pixel)
+- Confidence: Confidence scores with source tracking
+- Provenance: Audit trail for element origins
+- WritingStyle: Handwritten/printed classification
+
+Schema Version: 2.0.0
+"""
+
+from datetime import datetime, timezone
+from enum import Enum
+from typing import List, Literal, Optional, Tuple
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+def utc_now() -> datetime:
+    """Return current UTC timestamp."""
+    return datetime.now(timezone.utc)
+
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+class WritingStyle(str, Enum):
+    """Writing style classification for text elements."""
+    PRINTED = "printed"
+    HANDWRITTEN = "handwritten"
+    MIXED = "mixed"
+
+
+class RiskLevel(str, Enum):
+    """Risk levels for threshold calibration."""
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM_HIGH = "medium_high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class ReviewSeverity(str, Enum):
+    """Severity levels for human review."""
+    BLOCKER = "blocker"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class BBoxFormat(str, Enum):
+    """Bounding box coordinate formats."""
+    XYWH = "xywh"       # x, y, width, height (top-left origin)
+    XYXY = "xyxy"       # x1, y1, x2, y2 (YOLO style)
+    NORMALIZED = "normalized"  # 0-1 range relative to image
+
+
+class PipelineStage(str, Enum):
+    """Pipeline stage identifiers."""
+    INGESTION = "A"
+    TEXT_PARSE = "B"
+    VISION_PARSE = "C"
+    ALIGNMENT = "D"
+    SEMANTIC_GRAPH = "E"
+    REGENERATION = "F"
+    HUMAN_REVIEW = "G"
+    EXPORT = "H"
+
+
+# =============================================================================
+# Base Model
+# =============================================================================
+
+class MathpixBaseModel(BaseModel):
+    """Base model for all Mathpix Pipeline schemas.
+
+    Features:
+    - Strict mode: rejects unknown fields
+    - Validate on assignment: re-validates when attributes change
+    - Enum preservation: keeps enum objects instead of raw values
+    """
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        use_enum_values=False,
+    )
+
+
+# =============================================================================
+# BBox Types
+# =============================================================================
+
+class BBox(MathpixBaseModel):
+    """Standard bounding box with x, y, width, height.
+
+    Coordinates are in pixel space by default.
+    Use BBoxNormalized for 0-1 range coordinates.
+    """
+    x: float = Field(..., description="X coordinate of top-left corner")
+    y: float = Field(..., description="Y coordinate of top-left corner")
+    width: float = Field(..., gt=0, description="Width of bounding box")
+    height: float = Field(..., gt=0, description="Height of bounding box")
+    format: BBoxFormat = Field(default=BBoxFormat.XYWH)
+
+    @property
+    def area(self) -> float:
+        """Calculate area of bounding box."""
+        return self.width * self.height
+
+    @property
+    def center(self) -> Tuple[float, float]:
+        """Calculate center point of bounding box."""
+        return (self.x + self.width / 2, self.y + self.height / 2)
+
+    def to_xyxy(self) -> List[float]:
+        """Convert to [x1, y1, x2, y2] format."""
+        return [self.x, self.y, self.x + self.width, self.y + self.height]
+
+    # TODO(human): Implement normalize() method
+    # This method should convert pixel coordinates to normalized (0-1) range.
+    # Consider: What parameters are needed? How to handle edge cases?
+    def normalize(self, image_width: int, image_height: int) -> "BBoxNormalized":
+        """Convert pixel coordinates to normalized (0-1) range.
+
+        Args:
+            image_width: Width of the source image in pixels
+            image_height: Height of the source image in pixels
+
+        Returns:
+            BBoxNormalized with coordinates in 0-1 range
+        """
+        raise NotImplementedError("TODO(human): Implement normalize method")
+
+
+class BBoxNormalized(MathpixBaseModel):
+    """Normalized bounding box with coordinates in 0-1 range.
+
+    Used for resolution-independent coordinate storage.
+    """
+    x: float = Field(..., ge=0.0, le=1.0, description="Normalized X (0-1)")
+    y: float = Field(..., ge=0.0, le=1.0, description="Normalized Y (0-1)")
+    width: float = Field(..., gt=0.0, le=1.0, description="Normalized width (0-1)")
+    height: float = Field(..., gt=0.0, le=1.0, description="Normalized height (0-1)")
+    format: BBoxFormat = Field(default=BBoxFormat.NORMALIZED)
+
+    @model_validator(mode="after")
+    def validate_bounds(self) -> "BBoxNormalized":
+        """Ensure bbox stays within image bounds."""
+        if self.x + self.width > 1.0:
+            raise ValueError(f"x + width ({self.x + self.width}) exceeds 1.0")
+        if self.y + self.height > 1.0:
+            raise ValueError(f"y + height ({self.y + self.height}) exceeds 1.0")
+        return self
+
+    def to_pixels(self, image_width: int, image_height: int) -> BBox:
+        """Convert normalized coordinates to pixel space."""
+        return BBox(
+            x=self.x * image_width,
+            y=self.y * image_height,
+            width=self.width * image_width,
+            height=self.height * image_height,
+            format=BBoxFormat.XYWH,
+        )
+
+
+class BBoxYOLO(MathpixBaseModel):
+    """YOLO-style bounding box [x1, y1, x2, y2].
+
+    Used for YOLO detection outputs where coordinates
+    represent top-left and bottom-right corners.
+    """
+    coordinates: List[float] = Field(
+        ...,
+        min_length=4,
+        max_length=4,
+        description="[x1, y1, x2, y2] coordinates"
+    )
+    format: Literal["xyxy"] = "xyxy"
+
+    @field_validator("coordinates")
+    @classmethod
+    def validate_coordinates(cls, v: List[float]) -> List[float]:
+        """Ensure x2 > x1 and y2 > y1."""
+        x1, y1, x2, y2 = v
+        if x2 <= x1:
+            raise ValueError(f"x2 ({x2}) must be greater than x1 ({x1})")
+        if y2 <= y1:
+            raise ValueError(f"y2 ({y2}) must be greater than y1 ({y1})")
+        return v
+
+    @property
+    def width(self) -> float:
+        """Calculate width from coordinates."""
+        return self.coordinates[2] - self.coordinates[0]
+
+    @property
+    def height(self) -> float:
+        """Calculate height from coordinates."""
+        return self.coordinates[3] - self.coordinates[1]
+
+    def to_xywh(self) -> BBox:
+        """Convert to standard BBox format."""
+        x1, y1, x2, y2 = self.coordinates
+        return BBox(
+            x=x1,
+            y=y1,
+            width=x2 - x1,
+            height=y2 - y1,
+            format=BBoxFormat.XYWH,
+        )
+
+
+# =============================================================================
+# Confidence
+# =============================================================================
+
+class Confidence(MathpixBaseModel):
+    """Confidence score with source tracking.
+
+    Tracks which model/stage produced the confidence
+    and for which element type.
+    """
+    value: float = Field(..., ge=0.0, le=1.0, description="Confidence score 0-1")
+    source: str = Field(..., description="Model or stage that produced this score")
+    element_type: str = Field(..., description="Type of element this confidence applies to")
+
+    @field_validator("value")
+    @classmethod
+    def round_confidence(cls, v: float) -> float:
+        """Round confidence to 4 decimal places for consistency."""
+        return round(v, 4)
+
+
+class CombinedConfidence(MathpixBaseModel):
+    """Combined confidence from multiple sources (YOLO + Claude hybrid).
+
+    Used in Stage C merged output to track confidence
+    from both detection and interpretation layers.
+    """
+    detection_confidence: float = Field(..., ge=0.0, le=1.0)
+    interpretation_confidence: float = Field(..., ge=0.0, le=1.0)
+    combined_value: float = Field(..., ge=0.0, le=1.0)
+    bbox_source: str = Field(..., description="Source of bbox (e.g., 'yolo26')")
+    label_source: str = Field(..., description="Source of label (e.g., 'claude-opus-4-5')")
+
+    # Weights used for combination (for audit trail)
+    detection_weight: float = Field(default=0.6, ge=0.0, le=1.0)
+    interpretation_weight: float = Field(default=0.4, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def validate_weights_sum(self) -> "CombinedConfidence":
+        """Ensure weights sum to 1.0."""
+        total = self.detection_weight + self.interpretation_weight
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(f"Weights must sum to 1.0, got {total}")
+        return self
+
+
+# =============================================================================
+# Provenance
+# =============================================================================
+
+class Provenance(MathpixBaseModel):
+    """Audit trail for element origins.
+
+    Tracks which stage, model, and version produced an element,
+    along with timestamps for debugging and quality analysis.
+    """
+    stage: PipelineStage = Field(..., description="Pipeline stage that created this element")
+    model: str = Field(..., description="Model name/ID used")
+    timestamp: datetime = Field(default_factory=utc_now, description="Creation timestamp (UTC)")
+    version: str = Field(default="2.0.0", description="Schema version")
+
+    # Optional processing details
+    processing_time_ms: Optional[float] = Field(default=None, description="Processing time in milliseconds")
+    parent_element_id: Optional[str] = Field(default=None, description="ID of parent element if derived")
+    evidence_refs: List[str] = Field(default_factory=list, description="References to evidence files")
+
+
+# =============================================================================
+# Review Metadata
+# =============================================================================
+
+class ReviewMetadata(MathpixBaseModel):
+    """Metadata for human review decisions.
+
+    Attached to elements that require or have undergone human review.
+    """
+    review_required: bool = Field(default=False, description="Whether human review is needed")
+    review_severity: Optional[ReviewSeverity] = Field(default=None, description="Urgency of review")
+    review_reason: Optional[str] = Field(default=None, description="Why review is needed")
+
+    # Post-review fields
+    reviewed_at: Optional[datetime] = Field(default=None, description="When review was completed")
+    reviewed_by: Optional[str] = Field(default=None, description="Reviewer identifier")
+    review_decision: Optional[str] = Field(default=None, description="Accept/Reject/Modify")
+    review_notes: Optional[str] = Field(default=None, description="Reviewer comments")
+
+
+# =============================================================================
+# Export
+# =============================================================================
+
+__all__ = [
+    # Enums
+    "WritingStyle",
+    "RiskLevel",
+    "ReviewSeverity",
+    "BBoxFormat",
+    "PipelineStage",
+    # Base
+    "MathpixBaseModel",
+    # BBox
+    "BBox",
+    "BBoxNormalized",
+    "BBoxYOLO",
+    # Confidence
+    "Confidence",
+    "CombinedConfidence",
+    # Provenance
+    "Provenance",
+    # Review
+    "ReviewMetadata",
+    # Utilities
+    "utc_now",
+]

@@ -1,0 +1,176 @@
+---
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ORCHESTRATOR PROTOCOL V4.1 - MACHINE READABLE + HOOK INTEGRATION
+# Target: Claude Code Main Agent
+# Enforcement: Prompt (soft) + Hooks (hard)
+# Complexity Gate: medium+ tasks only
+# ═══════════════════════════════════════════════════════════════════════════════
+
+protocol:
+  version: "4.1"
+  name: "Orchestrator-First TodoWrite"
+  enforcement:
+    soft: "prompt instruction"
+    hard: "PreToolUse hooks (orchestrator_enforcement.py)"
+  complexity_gate: "medium|large"  # Skip for small/trivial tasks
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 1: ROLE (Prompt + Hook Dual Enforcement)
+# ─────────────────────────────────────────────────────────────────────────────
+role:
+  identity: "orchestrator"
+
+  allowed_tools:  # Prompt guidance
+    - Read
+    - Grep
+    - Glob
+    - Task
+    - TaskOutput
+    - TodoWrite
+    - AskUserQuestion
+
+  hook_enforced_blocks:  # PreToolUse: orchestrator_enforcement.py
+    - tool: Edit
+      enforcement: BLOCK
+      redirect: "Task(subagent_type=general-purpose)"
+    - tool: Write
+      enforcement: BLOCK
+      redirect: "Task(subagent_type=general-purpose)"
+    - tool: Bash
+      condition: "complex (>200 chars OR >3 pipes)"
+      enforcement: BLOCK
+      redirect: "Task(subagent_type=Explore)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 2: HEADER (Prompt-Only - Hooks cannot track)
+# ─────────────────────────────────────────────────────────────────────────────
+header:
+  format: "ORCHESTRATOR | Delegated: {N} | Current: {ACTION} | Plan: {slug}"
+  # Note: direct_count removed - hooks enforce but cannot report to TodoWrite
+  fields:
+    delegated_count:
+      type: integer
+      tracking: "Main Agent self-count"
+    current_action:
+      type: enum
+      values: [PENDING, DELEGATE, AWAIT, VERIFY, SYNTHESIZE, COMPLETE]
+    plan_slug:
+      type: string
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 3: ITEM FORMAT
+# ─────────────────────────────────────────────────────────────────────────────
+item:
+  format: "[{action}] Phase {N}: {task} | -> {type}:{id} | L2: {ref}"
+  # Budget removed for simplicity - hooks don't enforce it
+  fields:
+    action:
+      type: enum
+      values: [PENDING, DELEGATE, AWAIT, VERIFY, SYNTHESIZE, COMPLETE]
+    subagent_type:
+      type: enum
+      values: [Explore, Plan, general-purpose]
+    agent_id:
+      type: string
+      pattern: "[a-f0-9]{7}|pending"
+    l2_ref:
+      type: string
+      hook_enforced: "SubagentStop prompt validates L2 presence"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 4: STATE MACHINE (Prompt-Guided)
+# ─────────────────────────────────────────────────────────────────────────────
+state_machine:
+  # Hooks enforce DELEGATE (block Edit/Write)
+  # Other states are prompt-guided only
+
+  PENDING:
+    allowed: [Read, Grep, Glob, TodoWrite]
+    next: DELEGATE
+
+  DELEGATE:
+    allowed: [Task]
+    hook_enforced: true  # orchestrator_enforcement.py
+    next: AWAIT
+
+  AWAIT:
+    allowed: [TaskOutput]
+    next: VERIFY
+
+  VERIFY:
+    allowed: [Read]  # Read L2 output file
+    guidance: "Check subagent result completeness"
+    next: SYNTHESIZE
+
+  SYNTHESIZE:
+    allowed: [Read, TodoWrite]
+    guidance: "Extract key findings, update TodoWrite"
+    next: COMPLETE
+
+  COMPLETE:
+    allowed: [TodoWrite]
+    next: PENDING  # Next phase
+
+  # EXECUTE state does not exist
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 5: HOOK COVERAGE MATRIX
+# ─────────────────────────────────────────────────────────────────────────────
+hook_matrix:
+  PreToolUse:
+    - matcher: "Bash|Edit|Write"
+      script: "orchestrator_enforcement.py"
+      action: "BLOCK direct mutations, suggest Task()"
+
+  PostToolUse:
+    - matcher: "Task"
+      script: "layer2_output_handler.sh"
+      action: "Save L2 output to .agent/outputs/"
+
+  SubagentStop:
+    - type: "prompt"
+      validates: "Layer1/Layer2 structure in subagent output"
+
+  Stop:
+    - type: "prompt"
+      validates: "Summary + Evidence in Main Agent output"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 6: EXECUTION TEMPLATE
+# ─────────────────────────────────────────────────────────────────────────────
+execution:
+  activation: |
+    IF complexity >= medium:
+      APPLY this protocol
+    ELSE:
+      Execute directly (hooks still enforce safety)
+
+  init:
+    - TodoWrite:
+        header: "ORCHESTRATOR | Delegated: 0 | Current: PENDING | Plan: {slug}"
+        items: "[PENDING] Phase N: {task} | -> {type}:pending | L2: -"
+
+  loop:
+    - "Transition PENDING -> DELEGATE"
+    - "Task(subagent_type=..., run_in_background=True)"
+    - "On completion: AWAIT -> VERIFY"
+    - "Read L2 output: VERIFY -> SYNTHESIZE"
+    - "Update TodoWrite: SYNTHESIZE -> COMPLETE"
+    - "Repeat for next PENDING"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECTION 7: EXAMPLE
+# ─────────────────────────────────────────────────────────────────────────────
+example:
+  header: "ORCHESTRATOR | Delegated: 2 | Current: VERIFY | Plan: feature-auth"
+  items:
+    - "[COMPLETE] Phase 1: Analyze | -> Explore:a1b2c3d | L2: .agent/outputs/a1b2c3d.md"
+    - "[VERIFY] Phase 2: Implement | -> general-purpose:b2c3d4e | L2: pending"
+    - "[PENDING] Phase 3: Test | -> Explore:pending | L2: -"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# END PROTOCOL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+---

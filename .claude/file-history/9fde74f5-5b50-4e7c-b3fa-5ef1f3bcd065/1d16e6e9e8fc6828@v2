@@ -1,0 +1,478 @@
+---
+name: deep-audit
+description: |
+  Execute Progressive Deep-Dive Audit with RSIL method.
+  Uses forked context with Explore agent for isolated, intensive analysis.
+  BLOCK enforcement - must pass before code changes.
+  **[V2.1.7] ULTRATHINK Mode, Parallel Execution, Resume 지원.**
+  **[V2.1.9] Progressive-Disclosure Native - Auto L2 generation via PostToolUse Hook**
+allowed-tools: Read, Grep, Glob, Bash, Task, TodoWrite
+argument-hint: <target_path>
+
+# V2.1.9 Features (includes V2.1.7)
+v21x_features:
+  context_budget_manager: true    # CRITICAL: Use effective_window
+  parallel_execution: true        # Background subagents
+  resume_support: true            # Resume deep analysis after Auto-Compact
+  ultrathink_mode: true           # 64K thinking budget for deep analysis
+  task_decomposer: true           # Mandatory for comprehensive audits
+  progressive_disclosure: true    # V2.1.9: Hook auto-generates L2
+  suppress_verbose_output: true   # V2.1.9: Verbose output hidden
+  auto_l2_generation: true        # V2.1.9: L2 reports created automatically
+
+# V2.1.10 Features (NEW)
+v2110_features:
+  structured_prompts: true         # PromptTemplateBuilder with JSON Schema
+  l2_synthesizer: true             # Multi-L2 synthesis for comprehensive findings
+  json_output_validation: true     # Pydantic schema validation via Hook
+---
+
+# /deep-audit Command (RSIL + Forked Context)
+
+$ARGUMENTS
+
+> **Protocol:** AuditProtocol (BLOCK enforcement)
+> **Method:** RSIL (Recursive Self-Improvement Loop)
+> **Execution:** Forked context with Explore subagent
+
+---
+
+## Native Capability Optimization (V2.1.7 Enhanced)
+
+This command leverages Claude Code V2.1.7 features:
+
+| Feature | Usage | V2.1.7 Enhancement |
+|---------|-------|-------------------|
+| `context: fork` | Isolated execution, no main context pollution | Protected from Auto-Compact |
+| `agent: Explore` | Specialized codebase exploration | 15K budget in ULTRATHINK |
+| `Task(evidence-collector)` | Background evidence tracking | Parallel non-blocking |
+| `TodoWrite` | Stage progress visualization | Auto-Compact recovery |
+| `Skill(oda-audit)` | Internal protocol (user-invocable: false) | Forked context |
+| `ContextBudgetManager` | Context usage management | **effective_window (136K in ULTRATHINK)** |
+| `TaskDecomposer` | Large scope splitting | Mandatory for deep analysis |
+| `Resume Parameter` | Auto-Compact recovery | Continue deep dives |
+
+### ULTRATHINK Mode Configuration (V2.1.7)
+
+Deep-audit uses ULTRATHINK mode for maximum analysis depth:
+
+```python
+from lib.oda.planning.context_budget_manager import (
+    ContextBudgetManager,
+    ThinkingMode,
+)
+
+# Initialize with ULTRATHINK (64K max output)
+manager = ContextBudgetManager(thinking_mode=ThinkingMode.ULTRATHINK)
+
+# Budget allocation for deep-audit
+ULTRATHINK_BUDGETS = {
+    "explore_main": 15000,      # 3x standard (5K)
+    "explore_secondary": 10000, # For parallel scans
+    "evidence_collector": 8000, # Comprehensive evidence
+    "plan_synthesis": 25000,    # 2.5x standard (10K)
+}
+
+# Effective context window: 200K - 64K = 136K available
+effective_window = manager.get_effective_window()  # 136,000 tokens
+```
+
+### Pre-Delegation Context Check (MANDATORY)
+
+```python
+decision = manager.check_before_delegation("Explore", estimated_tokens=15000)
+
+if decision == DelegationDecision.ABORT:
+    # Critical: Context nearly full
+    raise ContextExhaustedError("Run /compact before deep-audit")
+elif decision == DelegationDecision.DEFER:
+    print("⚠️ Context at 70-85%. Consider /compact for optimal results.")
+elif decision == DelegationDecision.REDUCE_SCOPE:
+    # Apply TaskDecomposer
+    pass
+```
+
+---
+
+## Execution Strategy (V2.1.7 ULTRATHINK)
+
+### Step 0: Context Budget Verification (MANDATORY)
+
+```python
+from lib.oda.planning.context_budget_manager import ContextBudgetManager, ThinkingMode
+
+# Initialize ULTRATHINK mode for deep analysis
+manager = ContextBudgetManager(thinking_mode=ThinkingMode.ULTRATHINK)
+
+# Check before any delegation
+if manager.get_usage_percentage() > 0.70:
+    print("⚠️ Recommend /compact before deep-audit for optimal results")
+```
+
+### Step 1: Initialize with TodoWrite (Auto-Compact Safe)
+
+```python
+# MANDATORY: Comprehensive TodoWrite for Auto-Compact recovery
+TodoWrite([
+    {"content": "Stage A: SCAN - Map landscape", "status": "in_progress", "activeForm": "Scanning target landscape"},
+    {"content": "Stage B: TRACE - Verify logic", "status": "pending", "activeForm": "Tracing logic paths"},
+    {"content": "Stage C: VERIFY - Quality gate", "status": "pending", "activeForm": "Running quality verification"},
+    {"content": "Synthesize findings", "status": "pending", "activeForm": "Synthesizing audit results"},
+])
+```
+
+### Step 1.5: Task Decomposition (Large Scope)
+
+```python
+from lib.oda.planning.task_decomposer import should_decompose_task, decompose_task, SubagentType
+
+if should_decompose_task("Deep audit $ARGUMENTS", "$ARGUMENTS"):
+    subtasks = decompose_task("Deep audit", "$ARGUMENTS", SubagentType.EXPLORE)
+
+    # V2.1.10: Use PromptTemplateBuilder for structured JSON output
+    from lib.oda.planning.prompt_templates import build_structured_prompt
+
+    # V2.1.7: Deploy parallel background agents (Boris Cherny pattern)
+    agent_registry = {}  # Track for resume
+    for i, subtask in enumerate(subtasks):
+        # V2.1.10: Build structured prompt with JSON Schema
+        structured_prompt = build_structured_prompt(
+            subagent_type="explore",
+            task_description=f"""{subtask.prompt}
+
+Deep analysis of {subtask.scope} including:
+- File structure and complexity mapping
+- Import path verification
+- Pattern compliance check
+- Security vulnerability scan""",
+            budget=15000,  # ULTRATHINK budget
+            additional_context=f"Subtask {i+1} of decomposed deep-audit"
+        )
+
+        result = Task(
+            subagent_type="Explore",
+            prompt=structured_prompt,  # JSON Schema embedded
+            description=f"Parallel deep-audit {i+1}",
+            run_in_background=True,  # V2.1.7 Parallel Execution
+        )
+        agent_registry[f"scan_{i}"] = result.agent_id  # Store for resume
+```
+
+### Step 2: Launch Forked Audit (Main Analysis)
+
+```python
+# Main audit in forked context (prevents context pollution)
+# ULTRATHINK mode allows 15K output per Explore subagent
+Skill("oda-audit", args="$ARGUMENTS")
+# oda-audit skill has: context: fork, agent: Explore
+```
+
+### Step 3: Evidence Collection (Parallel Background)
+
+```python
+# V2.1.10: Use PromptTemplateBuilder for evidence collector
+from lib.oda.planning.prompt_templates import build_structured_prompt
+
+evidence_prompt = build_structured_prompt(
+    subagent_type="general_purpose",  # Evidence collector uses general schema
+    task_description="""Collect comprehensive audit evidence for: $ARGUMENTS
+
+Required Evidence:
+- files_viewed: All examined files with line ranges
+- lines_referenced: Specific line numbers for each finding
+- code_snippets: Critical code excerpts (max 50 lines each)
+
+Evidence must support anti-hallucination verification.""",
+    budget=8000,  # ULTRATHINK evidence budget
+    additional_context="Focus on file:line precision for audit findings"
+)
+
+# V2.1.7: Non-blocking parallel execution
+evidence_task = Task(
+    subagent_type="evidence-collector",
+    prompt=evidence_prompt,  # JSON Schema embedded
+    run_in_background=True,  # Non-blocking
+    description="Background evidence collection"
+)
+evidence_agent_id = evidence_task.agent_id  # Store for resume
+```
+
+### Step 3.5: L2 Synthesis (V2.1.10 Multi-Subagent Context)
+
+When multiple parallel subagents complete, synthesize their L2 outputs:
+
+```python
+from lib.oda.planning.l2_synthesizer import L2Synthesizer
+
+# After all parallel agents complete, synthesize findings
+synthesizer = L2Synthesizer()
+
+# Collect L2 paths from completed agents
+l2_paths = [
+    f".agent/outputs/explore/{agent_id}_structured.json"
+    for agent_id in agent_registry.values()
+]
+l2_paths.append(f".agent/outputs/general/{evidence_agent_id}_structured.json")
+
+# V2.1.10: Synthesize multi-L2 to ~500 tokens essential context
+synthesis_result = synthesizer.synthesize(
+    l2_paths=l2_paths,
+    synthesis_goal="critical security findings, quality issues, and implementation priorities",
+    max_output_tokens=500  # Aggressive condensation
+)
+
+# Synthesis result contains:
+# {
+#   "summary": "Deep audit found 5 critical issues across 3 modules",
+#   "total_agents": 4,
+#   "critical_findings": ["SQL injection in db.py:42", ...],
+#   "cross_module_concerns": ["Shared auth bypass vulnerability"],
+#   "recommended_next_action": "Fix SQL injection before merge"
+# }
+```
+
+**Context Cost with V2.1.10:**
+| Component | Without Synthesis | With L2Synthesizer |
+|-----------|-------------------|-------------------|
+| 4 subagent L2s | 8,000 tokens | 0 (synthesizer reads) |
+| Synthesis result | N/A | 500 tokens |
+| **Total Context** | **8,000+ tokens** | **~500 tokens** |
+
+### Step 4: Resume Protocol (Auto-Compact Recovery)
+
+```python
+from lib.oda.planning.agent_registry import AgentRegistry
+from lib.oda.planning.output_layer_manager import OutputLayerManager, OutputLayer
+
+# Initialize managers
+registry = AgentRegistry()
+output_manager = OutputLayerManager()
+
+# After Auto-Compact, find and resume interrupted analysis
+for agent in registry.get_resumable():
+    if "deep-audit" in agent.description.lower() or "deep_audit" in agent.parent_task:
+        Task(
+            subagent_type=agent.type,
+            prompt="Continue deep analysis from previous state",
+            resume=agent.id,  # V2.1.7 Resume Parameter
+            description=f"Resume {agent.description[:30]}"
+        )
+```
+
+### Step 5: Progressive-Disclosure Output (V2.1.7)
+
+```python
+# After subagent completion, process output layers
+for agent_id, agent_info in completed_agents.items():
+    # L1: Headline for main context (~50 tokens)
+    headline = output_manager.format_headline(
+        agent_id=agent_id,
+        agent_type=agent_info["type"],
+        summary=agent_info["summary"],
+        status="completed",
+        metrics={"findings": agent_info["finding_count"], "severity": "HIGH"}
+    )
+    # Example: "✅ Explore[a1b2c3d]: Deep audit complete: 5 findings, 2 CRITICAL"
+
+    # L2: Write structured report for on-demand access
+    report_path = output_manager.write_structured_report(
+        agent_id=agent_id,
+        agent_type=agent_info["type"],
+        task_description=f"Deep audit $ARGUMENTS",
+        result=agent_info["full_output"],
+        status="completed"
+    )
+    # Creates: .agent/outputs/explore/{agent_id}_structured.md
+
+    # Mark completion in registry
+    registry.mark_completed(agent_id, output_path=report_path)
+
+# Layer Access Decision
+# For deep-audit, always access L2 (need detailed findings)
+for agent_id in completed_agents:
+    l2_content = output_manager.read_layer(agent_id, OutputLayer.L2_STRUCTURED)
+    # Parse structured findings for synthesis
+```
+
+### 3-Layer Progressive-Disclosure (V2.1.7)
+
+| Layer | Content | Location | Token Cost | When to Access |
+|-------|---------|----------|------------|----------------|
+| **L1 Headline** | `✅ Explore[id]: summary` | Main Context | ~50 | Always |
+| **L2 Structured** | Detailed findings, evidence | `.agent/outputs/explore/{id}_structured.md` | ~2000 | Deep-audit synthesis |
+| **L3 Raw** | Full RSIL transcript | `/tmp/claude/.../tasks/{id}.output` | Full | Resume or debug |
+
+```python
+# Access pattern for deep-audit
+decision = output_manager.decide_layer_access(
+    task_type=TaskType.PLANNING,  # Deep-audit needs comprehensive access
+    context={"urgency": "high", "detail_required": True}
+)
+# Returns: LayerAccessDecision(layers=[L1, L2, L3])
+```
+
+---
+
+## Stage A: SURFACE SCAN (Landscape)
+
+### Goal
+Establish Structural Reality & Remove Guesswork.
+
+### Actions
+1. **File Structure Analysis**: Map target directory structure
+2. **Legacy Artifact Sweep**: Check for deprecated paths, AIP-KEY remnants
+3. **Pattern Identification**: Identify key components and modules
+4. **Dependency Check**: Verify imports and external dependencies
+
+### Evidence Required
+```yaml
+files_viewed: [실제 읽은 파일 목록]
+legacy_artifacts: CLEAN | DETECTED
+structure: {디렉토리 구조 맵}
+```
+
+### Verification
+- [ ] All target files identified
+- [ ] Legacy artifacts status confirmed
+- [ ] Structure documented
+
+---
+
+## Stage B: LOGIC TRACE (Deep-Dive)
+
+### Goal
+Prevent Integration Failures by Tracing Actual Data Flow.
+
+### Actions
+1. **Import Path Verification**: Confirm all imports exist
+2. **Call Stack Trace**: Map data flow paths
+3. **Signature Matching**: Verify function signatures align
+4. **Dependency Mapping**: Identify integration points
+
+### Trace Format
+```
+[EntryPoint] function_name() file.py:line
+    │
+    ├── [Dependency] import_path
+    │       ↓
+    │   Called function: signature
+    │
+    └── [Output] return type
+```
+
+### RSIL Trigger
+If signature mismatch found → HALT → CORRECT → RESTART Stage B
+
+### Verification
+- [ ] Import paths validated
+- [ ] Call stack documented
+- [ ] Signatures matched
+
+---
+
+## Stage C: QUALITY GATE (Microscopic Audit)
+
+### Goal
+Ensure Micro-to-Macro Consistency.
+
+### Quality Checks
+1. **Pattern Fidelity**: Does code match ODA patterns?
+2. **Safety Audit**: Type hints, docstrings, null validation
+3. **Clean Architecture**: Layer separation
+4. **SOLID Principles**: Single responsibility, etc.
+
+### Findings Format
+```
+[File:Line] [Severity] - Description
+```
+
+### Severity Levels
+| Level | Action |
+|-------|--------|
+| CRITICAL | Block execution |
+| HIGH | Require fix before merge |
+| MEDIUM | Recommend fix |
+| LOW | Informational |
+
+### Verification
+- [ ] No critical findings
+- [ ] High findings documented
+- [ ] Quality gate: PASS / FAIL
+
+---
+
+## Output Format
+
+```markdown
+### AUDIT REPORT (Deep-Dive)
+
+#### Execution Context
+- Method: RSIL + Forked Context
+- Agent: Explore
+- Evidence Collector: Active
+
+#### Stage A: SCAN
+- Target Files: [count]
+- Legacy Artifacts: CLEAN/DETECTED
+- Structure: Documented
+- Evidence: [files_viewed count]
+
+#### Stage B: TRACE
+- Import Verification: VALID/INVALID
+- Critical Path: Documented
+- Signature Match: PASS/FAIL
+- RSIL Iterations: [count]
+
+#### Stage C: QUALITY
+- Pattern Fidelity: ALIGNED/MISALIGNED
+- Findings: [count by severity]
+- Quality Gate: PASS/FAIL
+
+#### Evidence Summary
+```yaml
+files_viewed: [list]
+lines_referenced: {file: [lines]}
+code_snippets: [count]
+```
+
+#### Status
+- Audit Result: PASS/FAIL
+- Duration: X seconds
+- Context: Forked (isolated)
+```
+
+---
+
+## When to Use
+
+| Scenario | Command |
+|----------|---------|
+| Quick scan | `/audit` |
+| Pre-merge validation | `/deep-audit` |
+| After major refactor | `/deep-audit` |
+| Security review | `/deep-audit` |
+| Performance investigation | `/deep-audit` |
+
+---
+
+## Integration with Workflow
+
+```
+/deep-audit → PASS → /governance → PASS → Proceed with changes
+           ↓
+         FAIL → Fix issues → /deep-audit (re-run)
+```
+
+---
+
+## Example Usage
+
+```
+/deep-audit scripts/ontology/           # Deep audit ontology module
+/deep-audit .                           # Deep audit entire workspace
+/deep-audit hwpx/ --focus security     # Security-focused audit
+```
+
+---
+
+**ZERO-TRUST: Do NOT execute code changes until deep-audit passes**

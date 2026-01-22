@@ -1,0 +1,99 @@
+# Task Result Validation Configuration
+# =====================================
+# Version: 1.0
+# Purpose: Configure automatic subagent result verification
+# Location: PostToolUse hook for Task tool
+
+# Enable/Disable Validation
+# -------------------------
+enabled: true
+
+# Enforcement Mode
+# ----------------
+# WARN:  Log and provide guidance, but allow proceeding
+# BLOCK: Block if no L2/L3 available and result is summary-only
+enforcement_mode: WARN
+
+# Summary Detection Thresholds
+# ----------------------------
+# Results below these thresholds are considered summaries
+min_complete_chars: 500     # Characters
+min_complete_lines: 20      # Lines
+min_evidence_items: 2       # Evidence markers needed
+
+# Automatic Layer Access
+# ----------------------
+# When summary detected, automatically include L2/L3 content
+auto_access_l2: true        # Include L2 summary in systemMessage
+auto_access_l3: false       # Don't auto-read L3 (too large)
+
+# Re-delegation Suggestion
+# ------------------------
+# Suggest Task(resume=agent_id) when no detailed output found
+suggest_resume: true
+
+# Logging
+# -------
+log_validations: true
+log_path: /home/palantir/park-kyungchan/palantir/.agent/logs/task_validation.log
+
+# Layer Paths
+# -----------
+l2_base_path: /home/palantir/.agent/outputs
+l3_base_path: /tmp/claude
+
+# Summary Indicator Patterns
+# --------------------------
+# Additional patterns to detect summary-only results
+summary_patterns:
+  - "summary only"
+  - "see detailed"
+  - "truncated"
+  - "abbreviated"
+  - "for full results"
+
+# Completeness Indicator Patterns
+# -------------------------------
+# Patterns that indicate a complete result
+completeness_patterns:
+  - "files_viewed"
+  - "lines_referenced"
+  - "## Critical Findings"
+  - "## Recommendations"
+  - "## Evidence"
+
+# Agent Type Mapping
+# ------------------
+# Map agent types to their L2 output directories
+agent_type_dirs:
+  explore: explore
+  plan: plan
+  general-purpose: general
+  evidence-collector: evidence
+  audit-logger: audit
+
+# V2.1.9+ Hook Execution Settings
+# -------------------------------
+# These settings control the new V2.1.9 hook output features
+hook_execution:
+  # Enable hookSpecificOutput in responses
+  use_hook_specific_output: true
+
+  # Permission decision mapping for incomplete results
+  permission_categories:
+    no_l2_no_l3: deny              # No detailed output available - block
+    l2_available: ask              # L2 exists - prompt user to read it
+    l3_available: ask              # L3 exists - prompt user to read it
+    both_available: allow          # Both exist - allow with warning
+    complete_result: allow         # Complete result - no intervention
+
+  # Include recovery guidance in additionalContext
+  include_recovery_template: true
+
+  # additionalContext content settings
+  additional_context:
+    include_l2_path: true          # Show L2 path in context
+    include_l3_path: true          # Show L3 path in context
+    include_resume_command: true   # Show Task(resume=...) suggestion
+    include_reference: true        # Include CLAUDE.md reference
+    max_template_length: 2000      # Truncate template if too long

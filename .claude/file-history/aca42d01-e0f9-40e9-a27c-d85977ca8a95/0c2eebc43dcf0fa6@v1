@@ -1,0 +1,331 @@
+#!/usr/bin/env python3
+"""
+ODA Orchestrator Enforcement PreToolUse Hook (Simplified)
+==========================================================
+
+Detects complex operations and enforces delegation patterns.
+Returns simple {"decision": "allow|block"} responses.
+
+Detailed guidance is in CLAUDE.md Section 2.5 - this hook only enforces.
+
+Configuration: .claude/hooks/config/enforcement_config.yaml
+"""
+
+import json
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+try:
+    import yaml
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+CONFIG_PATH = Path("/home/palantir/.claude/hooks/config/enforcement_config.yaml")
+LOG_PATH = Path("/home/palantir/park-kyungchan/palantir/.agent/logs/orchestrator_violations.log")
+
+# Minimal defaults - YAML config is the source of truth
+DEFAULTS = {
+    "enforcement_mode": "WARN",
+    "thresholds": {"bash_command_length": 150, "bash_pipe_count": 2, "edit_line_count": 30, "write_line_count": 80},
+    "simple_bash_patterns": ["ls", "pwd", "cat", "head", "tail", "wc", "git status", "git log", "git diff", "pytest", "echo"],
+    "allowed_direct_commands": ["grep", "find", "rg", "git status", "git log", "git diff", "pytest", "ruff check", "mypy"],
+    "dangerous_patterns": ["rm -rf", "sudo rm", "sudo", "chmod 777", "DROP TABLE", "eval(", "exec("],
+}
+
+
+def load_config() -> dict[str, Any]:
+    """Load configuration from YAML or use defaults."""
+    if not HAS_YAML or not CONFIG_PATH.exists():
+        return DEFAULTS.copy()
+    try:
+        with open(CONFIG_PATH) as f:
+            config = yaml.safe_load(f) or {}
+        # Merge with defaults
+        merged = DEFAULTS.copy()
+        for key, value in config.items():
+            if isinstance(value, dict) and key in merged and isinstance(merged[key], dict):
+                merged[key] = {**merged[key], **value}
+            else:
+                merged[key] = value
+        return merged
+    except Exception:
+        return DEFAULTS.copy()
+
+
+CONFIG = load_config()
+
+
+def get(key: str, default: Any = None) -> Any:
+    """Get config value."""
+    return CONFIG.get(key, default)
+
+
+def get_threshold(name: str) -> int:
+    """Get threshold value."""
+    return get("thresholds", {}).get(name, DEFAULTS["thresholds"].get(name, 50))
+
+
+# =============================================================================
+# Complexity Detection
+# =============================================================================
+
+def is_allowed(command: str) -> bool:
+    """Check if command bypasses enforcement."""
+    cmd = command.lower().strip()
+    return any(cmd.startswith(a.lower()) for a in get("allowed_direct_commands", []))
+
+
+def is_simple(command: str) -> bool:
+    """Check if bash command is simple."""
+    cmd = command.lower().strip()
+    if any(c in command for c in ['|', '&&', ';']):
+        return False
+    if any(cmd.startswith(p) for p in get("simple_bash_patterns", [])):
+        return True
+    return len(command) < 50
+
+
+def check_bash(command: str) -> tuple[bool, list[str], str]:
+    """Check bash command complexity. Returns (is_complex, reasons, category)."""
+    reasons, category = [], "default"
+    cmd = command.lower()
+
+    # Dangerous patterns (highest priority)
+    for pattern in get("dangerous_patterns", []):
+        if pattern.lower() in cmd:
+            reasons.append(f"dangerous:{pattern}")
+            category = "dangerous_operation"
+
+    if is_allowed(command) and not reasons:
+        return False, [], ""
+    if is_simple(command) and not reasons:
+        return False, [], ""
+
+    # Length check
+    if len(command) > get_threshold("bash_command_length"):
+        reasons.append("long_command")
+        category = category or "complex_analysis"
+
+    # Pipe count
+    if command.count('|') >= get_threshold("bash_pipe_count"):
+        reasons.append("multi_pipe")
+        category = "multi_pipe_command"
+
+    # Multi-step indicators
+    if any(c in command for c in ['&&', ';', '||']):
+        reasons.append("multi_step")
+        category = category or "complex_analysis"
+
+    # Loops/conditionals
+    if any(kw in command for kw in ['for ', 'while ', 'if ', 'do ', 'done']):
+        reasons.append("loop_or_conditional")
+        category = category or "complex_analysis"
+
+    return len(reasons) > 0, reasons, category
+
+
+def check_edit(tool_input: dict) -> tuple[bool, list[str], str]:
+    """Check edit operation complexity."""
+    reasons, category = [], "default"
+    old_str = tool_input.get('old_string', '')
+    new_str = tool_input.get('new_string', '')
+    lines = max(old_str.count('\n'), new_str.count('\n'))
+
+    if lines > get_threshold("edit_line_count"):
+        reasons.append("large_edit")
+        category = "large_write"
+
+    if lines > 20 and any(p in old_str + new_str for p in ['class ', 'def ', 'async def ']):
+        reasons.append("structural_change")
+        category = "structural_change"
+
+    return len(reasons) > 0, reasons, category
+
+
+def check_write(tool_input: dict) -> tuple[bool, list[str], str]:
+    """Check write operation complexity."""
+    reasons, category = [], "default"
+    content = tool_input.get('content', '')
+    file_path = tool_input.get('file_path', '')
+    lines = content.count('\n')
+
+    if lines > get_threshold("write_line_count"):
+        reasons.append("large_write")
+        category = "large_write"
+
+    if file_path.endswith(('.py', '.ts', '.tsx', '.js', '.jsx')):
+        if 'class ' in content and 'def ' in content:
+            reasons.append("module_with_class")
+            category = "structural_change"
+        elif content.count('def ') > 2 or content.count('function ') > 2:
+            reasons.append("multi_function")
+            category = "structural_change"
+
+    return len(reasons) > 0, reasons, category
+
+
+# =============================================================================
+# Logging (Minimal)
+# =============================================================================
+
+def log_violation(tool_name: str, reasons: list[str], mode: str, decision: str) -> None:
+    """Log violation to file."""
+    try:
+        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "ts": datetime.now().isoformat(),
+            "mode": mode,
+            "decision": decision,
+            "tool": tool_name,
+            "reasons": reasons,
+            "session": os.environ.get('CLAUDE_SESSION_ID', 'unknown')[:8]
+        }
+        with open(LOG_PATH, 'a') as f:
+            f.write(json.dumps(entry) + '\n')
+    except Exception:
+        pass
+
+
+# =============================================================================
+# Main
+# =============================================================================
+
+def main():
+    """Main entry point."""
+    try:
+        global CONFIG
+        CONFIG = load_config()
+        mode = get("enforcement_mode", "WARN").upper()
+        if mode not in ("WARN", "BLOCK", "AUTO_WRAP"):
+            mode = "WARN"
+
+        data = json.load(sys.stdin)
+        tool_name = data.get('tool_name', '')
+        tool_input = data.get('tool_input', {})
+
+        # Only check Bash/Edit/Write
+        if tool_name not in ['Bash', 'Edit', 'Write']:
+            print(json.dumps({"decision": "allow"}))
+            return
+
+        # Detect complexity
+        is_complex, reasons, category = False, [], "default"
+        if tool_name == 'Bash':
+            is_complex, reasons, category = check_bash(tool_input.get('command', ''))
+        elif tool_name == 'Edit':
+            is_complex, reasons, category = check_edit(tool_input)
+        elif tool_name == 'Write':
+            is_complex, reasons, category = check_write(tool_input)
+
+        # No violation
+        if not is_complex:
+            print(json.dumps({"decision": "allow"}))
+            return
+
+        # Apply enforcement mode
+        subagent_map = {"dangerous_operation": "general-purpose", "complex_analysis": "Explore",
+                        "multi_pipe_command": "Explore", "structural_change": "Plan",
+                        "multi_file_change": "Plan", "large_write": "general-purpose"}
+        subagent = subagent_map.get(category, "general-purpose")
+
+        # V2.1.9: Build delegation template for additionalContext
+        delegation_template = f"""## Delegation Required
+
+This operation requires subagent delegation per ODA governance.
+
+**Recommended Pattern:**
+```python
+Task(
+    subagent_type="{subagent}",
+    prompt=\"\"\"
+        ## Context
+        Operating under ODA governance.
+
+        ## Task
+        [Describe the specific task]
+
+        ## Required Evidence
+        - files_viewed: [must populate]
+    \"\"\",
+    description="[Brief description]"
+)
+```
+
+**Category:** {category}
+**Reasons:** {', '.join(reasons)}
+**Reference:** CLAUDE.md Section 2.6 (Orchestrator Enforcement)"""
+
+        # V2.1.9: Permission decision mapping
+        # dangerous_operation -> deny (always block)
+        # complex_analysis, structural_change -> ask (borderline, user can override)
+        # large_write -> ask (may be intentional)
+        permission_map = {
+            "dangerous_operation": "deny",
+            "complex_analysis": "ask",
+            "multi_pipe_command": "ask",
+            "structural_change": "ask",
+            "multi_file_change": "ask",
+            "large_write": "ask"
+        }
+        permission_decision = permission_map.get(category, "ask")
+
+        if mode == "BLOCK":
+            # For dangerous operations, always deny
+            if category == "dangerous_operation":
+                permission_decision = "deny"
+
+            output = {
+                "decision": "block",
+                "systemMessage": f"[BLOCK] Delegate to Task(subagent_type=\"{subagent}\"). Reasons: {','.join(reasons)}",
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": permission_decision,
+                    "additionalContext": delegation_template
+                }
+            }
+            decision = "block"
+        elif mode == "AUTO_WRAP":
+            # AUTO_WRAP: suggest delegation but allow with ask permission
+            output = {
+                "decision": "allow",
+                "systemMessage": f"[AUTO_WRAP] Consider Task(subagent_type=\"{subagent}\"). Reasons: {','.join(reasons)}",
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "ask",
+                    "additionalContext": delegation_template
+                }
+            }
+            decision = "allow"
+        else:  # WARN
+            output = {
+                "decision": "allow",
+                "systemMessage": f"[WARN] Consider Task(subagent_type=\"{subagent}\"). Reasons: {','.join(reasons)}",
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "additionalContext": f"## Advisory\n\nComplex operation detected ({category}). Consider delegation to {subagent} subagent."
+                }
+            }
+            decision = "allow"
+
+        log_violation(tool_name, reasons, mode, decision)
+        print(json.dumps(output))
+
+    except json.JSONDecodeError:
+        print(json.dumps({"decision": "allow"}))
+    except Exception as e:
+        print(json.dumps({"decision": "allow", "systemMessage": f"[FALLBACK] Hook error: {e}"}))
+    finally:
+        sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

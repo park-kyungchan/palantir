@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Feature 1: ODA 제거 - PR #21 ✅",
+    "status": "completed",
+    "activeForm": "PR #21 생성 완료"
+  },
+  {
+    "content": "Feature 2: /build V4.0 - PR #22 ✅",
+    "status": "completed",
+    "activeForm": "PR #22 생성 완료"
+  },
+  {
+    "content": "Feature 3: cow DOCX - PR #23 ✅",
+    "status": "completed",
+    "activeForm": "PR #23 생성 완료"
+  },
+  {
+    "content": "Feature 4: Agent State - PR #24 ✅",
+    "status": "completed",
+    "activeForm": "PR #24 생성 완료"
+  },
+  {
+    "content": "Feature 5: 기타 설정/캠시/툴 커밋",
+    "status": "in_progress",
+    "activeForm": "기타 설정/캠시/툴 커밋 중"
+  }
+]

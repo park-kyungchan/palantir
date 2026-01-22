@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "TODO(human): pre-task-delegation.sh 경로를 입력하세요"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "TODO(human): post-task-output.sh 경로를 입력하세요"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,314 @@
+"""
+AlignmentReport Schema for Stage D (Alignment) Output.
+
+Stage D aligns text content (Stage B) with visual elements (Stage C):
+- Matches text labels to diagram elements
+- Detects inconsistencies between text and visual
+- Applies threshold-based review decisions
+
+Schema Version: 2.0.0
+"""
+
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import Field, model_validator
+
+from .common import (
+    BBox,
+    Confidence,
+    MathpixBaseModel,
+    Provenance,
+    PipelineStage,
+    ReviewMetadata,
+    ReviewSeverity,
+    RiskLevel,
+    utc_now,
+)
+
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+class MatchType(str, Enum):
+    """Types of text-visual matches."""
+    LABEL_TO_POINT = "label_to_point"
+    LABEL_TO_CURVE = "label_to_curve"
+    EQUATION_TO_GRAPH = "equation_to_graph"
+    DESCRIPTION_TO_ELEMENT = "description_to_element"
+    COORDINATE_TO_POINT = "coordinate_to_point"
+    AXIS_LABEL = "axis_label"
+
+
+class InconsistencyType(str, Enum):
+    """Types of text-visual inconsistencies."""
+    LABEL_MISMATCH = "label_mismatch"
+    COORDINATE_MISMATCH = "coordinate_mismatch"
+    EQUATION_GRAPH_MISMATCH = "equation_graph_mismatch"
+    MISSING_LABEL = "missing_label"
+    EXTRA_LABEL = "extra_label"
+    SCALE_INCONSISTENCY = "scale_inconsistency"
+    AMBIGUOUS_REFERENCE = "ambiguous_reference"
+
+
+# =============================================================================
+# Sub-Models
+# =============================================================================
+
+class TextElement(MathpixBaseModel):
+    """Reference to a text element from Stage B."""
+    id: str = Field(..., description="Element ID from TextSpec")
+    content: str = Field(..., description="Text content")
+    latex: Optional[str] = Field(default=None)
+    bbox: Optional[BBox] = Field(default=None)
+    source_line_id: Optional[str] = Field(default=None)
+
+
+class VisualElement(MathpixBaseModel):
+    """Reference to a visual element from Stage C."""
+    id: str = Field(..., description="Element ID from VisionSpec")
+    element_class: str = Field(..., description="Element class")
+    semantic_label: str = Field(..., description="Semantic label from Claude")
+    bbox: BBox
+    source_merged_id: Optional[str] = Field(default=None)
+
+
+class MatchedPair(MathpixBaseModel):
+    """A matched pair of text and visual elements."""
+    id: str = Field(..., description="Match pair identifier")
+    match_type: MatchType
+
+    # Matched elements
+    text_element: TextElement
+    visual_element: VisualElement
+
+    # Confidence and scoring
+    consistency_score: float = Field(..., ge=0.0, le=1.0)
+    confidence: Confidence
+    threshold_passed: bool = Field(default=True)
+    applied_threshold: float = Field(..., ge=0.0, le=1.0)
+
+    # Alignment details
+    spatial_overlap: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    semantic_similarity: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+    # Review
+    review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+
+    @model_validator(mode="after")
+    def check_threshold(self) -> "MatchedPair":
+        """Set review required if below threshold."""
+        if self.consistency_score < self.applied_threshold:
+            self.threshold_passed = False
+            self.review.review_required = True
+            if self.consistency_score < 0.4:
+                self.review.review_severity = ReviewSeverity.HIGH
+            else:
+                self.review.review_severity = ReviewSeverity.MEDIUM
+            self.review.review_reason = (
+                f"Consistency score {self.consistency_score:.2f} below "
+                f"threshold {self.applied_threshold:.2f}"
+            )
+        return self
+
+
+class Inconsistency(MathpixBaseModel):
+    """A detected inconsistency between text and visual."""
+    id: str = Field(..., description="Inconsistency identifier")
+    inconsistency_type: InconsistencyType
+    severity: ReviewSeverity
+
+    # Elements involved
+    text_element: Optional[TextElement] = Field(default=None)
+    visual_element: Optional[VisualElement] = Field(default=None)
+
+    # Details
+    description: str = Field(..., description="Human-readable description")
+    expected_value: Optional[str] = Field(default=None)
+    actual_value: Optional[str] = Field(default=None)
+
+    # Scoring
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    threshold_passed: bool = Field(default=False)
+    applied_threshold: float = Field(default=0.80)  # inconsistency threshold is high
+
+    # Auto-fix suggestion
+    suggested_fix: Optional[str] = Field(default=None)
+    auto_fixable: bool = Field(default=False)
+
+    # Review
+    review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+
+    @model_validator(mode="after")
+    def set_review_from_severity(self) -> "Inconsistency":
+        """Set review metadata based on severity."""
+        self.review.review_required = True
+        self.review.review_severity = self.severity
+        self.review.review_reason = f"{self.inconsistency_type.value}: {self.description}"
+        return self
+
+
+class UnmatchedElement(MathpixBaseModel):
+    """An element that could not be matched."""
+    id: str
+    source: str = Field(..., description="'text' or 'visual'")
+    element_id: str = Field(..., description="Original element ID")
+    content: str = Field(..., description="Element content/label")
+    bbox: Optional[BBox] = Field(default=None)
+    reason: str = Field(..., description="Why matching failed")
+
+
+class AlignmentStatistics(MathpixBaseModel):
+    """Statistics about the alignment process."""
+    total_text_elements: int = Field(default=0)
+    total_visual_elements: int = Field(default=0)
+    matched_pairs: int = Field(default=0)
+    inconsistencies_found: int = Field(default=0)
+    unmatched_text: int = Field(default=0)
+    unmatched_visual: int = Field(default=0)
+
+    # Threshold statistics
+    pairs_above_threshold: int = Field(default=0)
+    pairs_below_threshold: int = Field(default=0)
+
+    # Confidence distribution
+    avg_consistency_score: float = Field(default=0.0)
+    min_consistency_score: float = Field(default=1.0)
+    max_consistency_score: float = Field(default=0.0)
+
+
+# =============================================================================
+# Main Schema
+# =============================================================================
+
+class AlignmentReport(MathpixBaseModel):
+    """Stage D output: Alignment Report.
+
+    Contains the results of aligning Stage B (text) with Stage C (visual):
+    - matched_pairs: Successfully aligned elements
+    - inconsistencies: Detected mismatches
+    - unmatched: Elements without matches
+
+    v2.0.0 Additions:
+    - Threshold integration from threshold_calibration.yaml
+    - Per-element threshold application
+    - Automatic severity assignment based on threshold
+    """
+    # Metadata
+    schema_version: str = Field(default="2.0.0")
+    image_id: str = Field(..., description="Source image identifier")
+    text_spec_id: str = Field(..., description="Reference to Stage B output")
+    vision_spec_id: str = Field(..., description="Reference to Stage C output")
+    provenance: Provenance = Field(default_factory=lambda: Provenance(
+        stage=PipelineStage.ALIGNMENT,
+        model="alignment-engine-v2"
+    ))
+
+    # Alignment results
+    matched_pairs: List[MatchedPair] = Field(default_factory=list)
+    inconsistencies: List[Inconsistency] = Field(default_factory=list)
+    unmatched_elements: List[UnmatchedElement] = Field(default_factory=list)
+
+    # Statistics
+    statistics: AlignmentStatistics = Field(default_factory=AlignmentStatistics)
+
+    # Threshold configuration used
+    threshold_config_version: str = Field(default="2.0.0")
+    base_alignment_threshold: float = Field(default=0.60)
+    base_inconsistency_threshold: float = Field(default=0.80)
+
+    # Overall scores
+    overall_alignment_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    overall_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    # Review aggregation
+    review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+    blocker_count: int = Field(default=0)
+    high_severity_count: int = Field(default=0)
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=utc_now)
+    processing_time_ms: Optional[float] = Field(default=None)
+
+    @model_validator(mode="after")
+    def compute_statistics(self) -> "AlignmentReport":
+        """Compute alignment statistics from results."""
+        self.statistics.matched_pairs = len(self.matched_pairs)
+        self.statistics.inconsistencies_found = len(self.inconsistencies)
+        self.statistics.unmatched_text = len([
+            e for e in self.unmatched_elements if e.source == "text"
+        ])
+        self.statistics.unmatched_visual = len([
+            e for e in self.unmatched_elements if e.source == "visual"
+        ])
+
+        # Threshold stats
+        self.statistics.pairs_above_threshold = len([
+            p for p in self.matched_pairs if p.threshold_passed
+        ])
+        self.statistics.pairs_below_threshold = len([
+            p for p in self.matched_pairs if not p.threshold_passed
+        ])
+
+        # Confidence distribution
+        if self.matched_pairs:
+            scores = [p.consistency_score for p in self.matched_pairs]
+            self.statistics.avg_consistency_score = sum(scores) / len(scores)
+            self.statistics.min_consistency_score = min(scores)
+            self.statistics.max_consistency_score = max(scores)
+
+        # Count severity levels
+        self.blocker_count = len([
+            i for i in self.inconsistencies
+            if i.severity == ReviewSeverity.BLOCKER
+        ])
+        self.high_severity_count = len([
+            i for i in self.inconsistencies
+            if i.severity == ReviewSeverity.HIGH
+        ])
+
+        # Set overall review
+        if self.blocker_count > 0:
+            self.review.review_required = True
+            self.review.review_severity = ReviewSeverity.BLOCKER
+            self.review.review_reason = f"{self.blocker_count} blocker inconsistencies"
+        elif self.high_severity_count > 0:
+            self.review.review_required = True
+            self.review.review_severity = ReviewSeverity.HIGH
+            self.review.review_reason = f"{self.high_severity_count} high-severity issues"
+        elif self.statistics.pairs_below_threshold > 0:
+            self.review.review_required = True
+            self.review.review_severity = ReviewSeverity.MEDIUM
+            self.review.review_reason = f"{self.statistics.pairs_below_threshold} pairs below threshold"
+
+        return self
+
+    def has_blockers(self) -> bool:
+        """Check if any blocker issues exist."""
+        return self.blocker_count > 0
+
+    def needs_human_review(self) -> bool:
+        """Check if human review is required."""
+        return self.review.review_required
+
+
+# =============================================================================
+# Export
+# =============================================================================
+
+__all__ = [
+    # Enums
+    "MatchType",
+    "InconsistencyType",
+    # Sub-Models
+    "TextElement",
+    "VisualElement",
+    "MatchedPair",
+    "Inconsistency",
+    "UnmatchedElement",
+    "AlignmentStatistics",
+    # Main Schema
+    "AlignmentReport",
+]

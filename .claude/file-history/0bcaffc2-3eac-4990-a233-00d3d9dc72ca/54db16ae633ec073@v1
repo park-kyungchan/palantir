@@ -1,0 +1,292 @@
+---
+name: audit
+description: |
+  Run ODA 3-Stage Audit on target path using Explore subagent.
+  Quick audit for standard analysis; use /deep-audit for intensive review.
+  V2.0: 4-Stream Architecture with Boris Cherny Parallel Execution
+allowed-tools: Read, Grep, Glob, Bash, Task, TodoWrite
+argument-hint: <target_path>
+version: "2.0"
+zone: Pre-Mutation Zone
+enforcement: Stage C Quality Gate
+---
+
+# /audit Command (V2.0)
+
+Execute comprehensive 3-Stage Protocol audit on specified target.
+
+> **Zone:** Pre-Mutation Zone (verification before/after changes)
+> **Method:** Explore subagent delegation with parallel quality checks
+> **Pattern:** Boris Cherny Parallel Execution (4-Stream)
+
+## Arguments
+$ARGUMENTS - Path to audit (default: current workspace)
+
+---
+
+## 1. Pre-Mutation Zone Definition
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PRE-MUTATION ZONE                            │
+│                                                                 │
+│  PURPOSE: Verify code quality BEFORE any file mutations         │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  ALLOWED OPERATIONS                                      │   │
+│  │  ✓ Read files (Read, Grep, Glob)                        │   │
+│  │  ✓ Execute verification commands (pytest, ruff, mypy)   │   │
+│  │  ✓ Analyze code structure                               │   │
+│  │  ✓ Generate audit reports                               │   │
+│  │  ✓ Update TodoWrite progress                            │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  FORBIDDEN OPERATIONS                                    │   │
+│  │  ✗ Edit files                                           │   │
+│  │  ✗ Write new files                                      │   │
+│  │  ✗ Create Proposals                                     │   │
+│  │  ✗ Execute code modifications                           │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  EXIT CONDITIONS                                                │
+│  → PASS: Zero CRITICAL, Zero ERROR findings                    │
+│  → FAIL: Any CRITICAL or ERROR finding present                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Four Quality Check Streams (4-Stream Architecture)
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│              PARALLEL QUALITY CHECK STREAMS                            │
+│                                                                        │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐     │
+│  │  BUILD STREAM    │  │  LINT STREAM     │  │ SECURITY STREAM  │     │
+│  │                  │  │                  │  │                  │     │
+│  │ • pytest         │  │ • ruff check     │  │ • eval() detect  │     │
+│  │ • py_compile     │  │ • formatting     │  │ • exec() detect  │     │
+│  │ • import verify  │  │ • complexity     │  │ • credential leak│     │
+│  │ • type checking  │  │ • unused imports │  │ • SQL injection  │     │
+│  │                  │  │                  │  │                  │     │
+│  │ Priority: HIGH   │  │ Priority: MEDIUM │  │ Priority: HIGH   │     │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘     │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────┐     │
+│  │  DOCUMENTATION STREAM                                        │     │
+│  │                                                              │     │
+│  │  • docstring coverage     • module-level docs                │     │
+│  │  • type annotation %      • README presence                  │     │
+│  │                                                              │     │
+│  │  Priority: LOW (non-blocking)                                │     │
+│  └──────────────────────────────────────────────────────────────┘     │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stream Configuration
+
+| Stream | Priority | Blocking | Commands | Severity Mapping |
+|--------|----------|----------|----------|------------------|
+| **Build** | HIGH | Yes | `pytest`, `python -m py_compile`, `mypy` | Errors → CRITICAL |
+| **Lint** | MEDIUM | Partial | `ruff check`, `ruff format --check` | Errors → ERROR, Warnings → WARNING |
+| **Security** | HIGH | Yes | Pattern grep, AST analysis | Findings → CRITICAL |
+| **Documentation** | LOW | No | Docstring coverage check | Missing → INFO |
+
+---
+
+## 3. Parallel Execution (Boris Cherny Pattern)
+
+**MANDATORY:** Use `run_in_background=true` for 3+ independent audit tasks.
+
+```python
+# Deploy all 4 streams in parallel (single message, 4 Task calls)
+streams = ["build", "lint", "security", "documentation"]
+
+for stream in streams:
+    Task(
+        subagent_type="Explore",
+        prompt=f"""
+        ## Context
+        Operating under ODA governance. Pre-Mutation Zone: READ-ONLY.
+
+        ## Stream: {stream.upper()}
+        Execute {stream} quality checks on target: $ARGUMENTS
+
+        ## Constraint: Output Budget
+        YOUR OUTPUT MUST NOT EXCEED 5K TOKENS.
+        """,
+        run_in_background=True,
+        description=f"audit-{stream}"
+    )
+```
+
+---
+
+## 4. Severity Levels
+
+| Level | Description | Action | Examples |
+|-------|-------------|--------|----------|
+| **CRITICAL** | Security vulnerability | BLOCK | eval(), exec(), credentials |
+| **ERROR** | Functional defect | BLOCK | Test failure, import error |
+| **HIGH** | Significant issue | Review | Missing type hints on public API |
+| **MEDIUM** | Minor issue | Note | Unused variable |
+| **WARNING** | Best practice | Info | Long function |
+| **LOW** | Style issue | Optional | Formatting |
+| **INFO** | Documentation | FYI | Missing docstring |
+
+---
+
+## 5. Stage C Quality Gate
+
+| Condition | Decision | Action |
+|-----------|----------|--------|
+| CRITICAL > 0 | **BLOCK** | Must fix before proceeding |
+| ERROR > 0 | **BLOCK** | Must fix before proceeding |
+| HIGH > 0 | WARN | Review recommended |
+| MEDIUM/LOW/INFO only | **PASS** | Can proceed |
+
+---
+
+## 6. Execution Flow
+
+### Step 1: Initialize Tracking
+```
+TodoWrite:
+- [ ] Initialize audit: $ARGUMENTS
+- [ ] Stream 1: Build checks
+- [ ] Stream 2: Lint checks
+- [ ] Stream 3: Security checks
+- [ ] Stream 4: Documentation checks
+- [ ] Synthesize results
+- [ ] Present report
+```
+
+### Step 2: Parallel Stream Deployment
+Deploy all 4 streams using Boris Cherny pattern.
+
+### Step 3: Result Synthesis
+```python
+# Aggregate findings across all streams
+aggregated = {
+    "quality_checks": [],
+    "findings": [],
+    "severity_counts": {
+        "CRITICAL": 0, "ERROR": 0, "HIGH": 0,
+        "MEDIUM": 0, "WARNING": 0, "LOW": 0, "INFO": 0
+    }
+}
+
+# Determine overall status
+if aggregated["severity_counts"]["CRITICAL"] > 0:
+    overall_status = "FAIL"
+elif aggregated["severity_counts"]["ERROR"] > 0:
+    overall_status = "FAIL"
+else:
+    overall_status = "PASS"
+```
+
+---
+
+## 7. Output Format
+
+```markdown
+# Audit Report: $ARGUMENTS
+
+## Summary
+| Metric | Value |
+|--------|-------|
+| Files scanned | N |
+| Complexity | small/medium/large |
+| Critical findings | N |
+| Quality score | X/10 |
+
+## Stream Results
+| Stream | Status | Findings |
+|--------|--------|----------|
+| Build | ✓ PASS | 0 |
+| Lint | ⚠ WARN | 2 |
+| Security | ✓ PASS | 0 |
+| Documentation | ℹ INFO | 3 |
+
+## Severity Summary
+| Severity | Count | Status |
+|----------|-------|--------|
+| CRITICAL | 0 | ✓ |
+| ERROR | 0 | ✓ |
+| HIGH | 0 | ✓ |
+| MEDIUM | 1 | ⚠ |
+
+## Findings
+| Severity | Location | Description |
+|----------|----------|-------------|
+| MEDIUM | file.py:42 | Unused import |
+
+## Stage C Quality Gate
+- **Status:** PASS
+- **Recommendation:** Ready for implementation
+
+## Next Steps
+- [ ] Address findings (if any)
+- [ ] Run /deep-audit if needed
+```
+
+---
+
+## 8. Evidence Collection
+
+Evidence requirements:
+- **files_viewed:** Every examined file logged
+- **lines_referenced:** Specific line numbers for findings
+- **code_snippets:** Relevant excerpts preserved
+
+```python
+Task(
+    subagent_type="evidence-collector",
+    prompt="Track files_viewed and lines_referenced for audit evidence",
+    run_in_background=True
+)
+```
+
+---
+
+## 9. Comparison: /audit vs /deep-audit
+
+| Aspect | /audit | /deep-audit |
+|--------|--------|-------------|
+| Speed | Fast (Explore agent) | Thorough (RSIL method) |
+| Depth | Standard analysis | Microscopic review |
+| Use case | Regular checks | Pre-merge validation |
+| Evidence | Automatic | Mandatory with BLOCK |
+| Streams | 4-Stream parallel | Deep RSIL synthesis |
+
+---
+
+## 10. Example Usage
+
+```
+/audit scripts/ontology/        # Audit specific directory
+/audit .                        # Audit current workspace
+/audit lib/oda/                 # Audit ODA module
+```
+
+---
+
+## References
+
+- **Skills Detail:** `.claude/references/audit-skill-details.md`
+- **3-Stage Protocol:** `.claude/references/3-stage-protocol.md`
+- **Delegation Patterns:** `.claude/references/delegation-patterns.md`
+
+---
+
+> **V2.0 Changes:**
+> - Added: Pre-Mutation Zone definition
+> - Added: 4-Stream Architecture (Build, Lint, Security, Documentation)
+> - Added: Boris Cherny Parallel Execution pattern
+> - Added: Severity levels with action matrix
+> - Added: Stage C Quality Gate enforcement
+> - Integrated: Skills and Commands into single file

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Palantir Ontology Research Index",
+  "version": "1.0.0",
+  "created_at": "2026-01-17T09:30:00Z",
+  "status": "IN_PROGRESS",
+  "phases_completed": ["Phase 1: DOCX Extraction"],
+  "phases_pending": [
+    "Phase 2: Web Research",
+    "Phase 3: Current ODA Analysis",
+    "Phase 4: Schema Definition",
+    "Phase 5: Interaction Mapping",
+    "Phase 6: Gap Analysis",
+    "Phase 7: Refactoring Plan"
+  ],
+  "files": {
+    "analysis": {
+      "docx_extraction": {
+        "path": "analysis/docx_extraction.json",
+        "status": "complete",
+        "description": "Structured extraction from two DOCX reference documents"
+      },
+      "web_research": {
+        "path": "analysis/web_research.json",
+        "status": "pending",
+        "description": "Web search results from official docs and best practices"
+      },
+      "current_oda_analysis": {
+        "path": "analysis/current_oda_analysis.json",
+        "status": "pending",
+        "description": "Analysis of existing ODA codebase"
+      },
+      "gap_analysis": {
+        "path": "analysis/gap_analysis.json",
+        "status": "pending",
+        "description": "Gaps between current ODA and Palantir requirements"
+      },
+      "refactoring_plan": {
+        "path": "analysis/refactoring_plan.json",
+        "status": "pending",
+        "description": "Detailed refactoring steps with file lists"
+      }
+    },
+    "schemas": {
+      "object_type": {
+        "path": "schemas/ObjectType.schema.json",
+        "status": "pending"
+      },
+      "link_type": {
+        "path": "schemas/LinkType.schema.json",
+        "status": "pending"
+      },
+      "action_type": {
+        "path": "schemas/ActionType.schema.json",
+        "status": "pending"
+      },
+      "property": {
+        "path": "schemas/Property.schema.json",
+        "status": "pending"
+      },
+      "metadata": {
+        "path": "schemas/Metadata.schema.json",
+        "status": "pending"
+      },
+      "interaction": {
+        "path": "schemas/Interaction.schema.json",
+        "status": "pending"
+      }
+    },
+    "examples": {
+      "object_type": {
+        "path": "examples/ObjectType.example.json",
+        "status": "pending"
+      },
+      "link_type": {
+        "path": "examples/LinkType.example.json",
+        "status": "pending"
+      },
+      "action_type": {
+        "path": "examples/ActionType.example.json",
+        "status": "pending"
+      }
+    }
+  },
+  "quick_resume": {
+    "instruction": "Read this index.json to determine current progress. Continue from first 'pending' phase.",
+    "last_completed_phase": "Phase 1: DOCX Extraction",
+    "next_phase": "Phase 2: Web Research"
+  }
+}

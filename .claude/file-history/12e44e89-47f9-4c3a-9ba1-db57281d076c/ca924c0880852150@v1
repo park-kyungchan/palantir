@@ -1,0 +1,174 @@
+# .claude/ 디렉토리 통합 계획
+
+> **Version:** 1.0 | **Status:** IN_PROGRESS | **Date:** 2026-01-19
+> **Auto-Compact Safe:** This file persists across context compaction
+
+## Overview
+
+| Item | Value |
+|------|-------|
+| Complexity | medium |
+| Total Tasks | 12 |
+| Phases | 4 |
+| Goal | 두 디렉토리의 .claude/ 스킬/커맨드를 Home Directory로 통합 |
+
+## Current State Analysis
+
+### Source Directories
+
+| Directory | Type | Commands | Skills |
+|-----------|------|----------|--------|
+| `/home/palantir/.claude/` | Global (User Level) | 24 | 12 |
+| `/home/palantir/park-kyungchan/palantir/.claude/` | Project Level | 1 | 7 |
+
+### Skill Naming Convention
+
+| Location | Pattern | Example | Purpose |
+|----------|---------|---------|---------|
+| Global | `oda-*.md` | `oda-audit.md` | Full implementation |
+| Project | `*.md` | `audit.md` | V2.1.8 thin wrappers |
+
+### Inventory
+
+**Global Commands (24):**
+```
+actiontype, ask, audit, commit-push-pr, consolidate, deep-audit,
+execute, governance, init, interaction, interface, linktype,
+maintenance, memory-sync, memory, metadata, objecttype, plan,
+property, protocol, quality-check, teleport
+```
+
+**Global Skills (12):**
+```
+capability-advisor, help-korean,
+oda-actiontype, oda-audit, oda-governance, oda-interaction,
+oda-interface, oda-linktype, oda-metadata, oda-objecttype,
+oda-plan, oda-property
+```
+
+**Project Skills (7) - Unique:**
+```
+ask.md, audit.md, deep-audit.md, evidence-report.md,
+plan.md, pre-check.md, protocol.md
+```
+
+**Project Commands (1) - Project-Specific:**
+```
+palantir-coding.md (Keep in project, not consolidated)
+```
+
+## Key Decisions
+
+1. **Global = User Level:** 모든 프로젝트에서 사용 가능
+2. **Project Skills → Global:** 7개 스킬을 Global로 이동
+3. **Naming Conflict Resolution:** `oda-*` 패턴과 thin wrapper 공존
+4. **Project-Specific 유지:** `palantir-coding.md`는 프로젝트에 유지
+
+## Tasks
+
+| # | Phase | Task | Status |
+|---|-------|------|--------|
+| 1.1 | Phase 1 | Analyze skill dependencies (command → skill mapping) | PENDING |
+| 1.2 | Phase 1 | Identify missing skills in Global | PENDING |
+| 2.1 | Phase 2 | Copy `ask.md` to Global skills | PENDING |
+| 2.2 | Phase 2 | Copy `audit.md` to Global skills | PENDING |
+| 2.3 | Phase 2 | Copy `deep-audit.md` to Global skills | PENDING |
+| 2.4 | Phase 2 | Copy `evidence-report.md` to Global skills | PENDING |
+| 2.5 | Phase 2 | Copy `plan.md` to Global skills (rename if conflict) | PENDING |
+| 2.6 | Phase 2 | Copy `pre-check.md` to Global skills | PENDING |
+| 2.7 | Phase 2 | Copy `protocol.md` to Global skills | PENDING |
+| 3.1 | Phase 3 | Verify command → skill references | PENDING |
+| 3.2 | Phase 3 | Test sample commands work | PENDING |
+| 4.1 | Phase 4 | Clean up Project skills (optional backup) | PENDING |
+
+## Progress Tracking
+
+| Phase | Tasks | Completed | Status |
+|-------|-------|-----------|--------|
+| Phase 1: Analysis | 2 | 0 | PENDING |
+| Phase 2: Skills Migration | 7 | 0 | PENDING |
+| Phase 3: Verification | 2 | 0 | PENDING |
+| Phase 4: Cleanup | 1 | 0 | PENDING |
+
+## Execution Strategy
+
+### Phase 1: Analysis (Parallel)
+
+```
+Task(Explore): Map command → skill dependencies
+Task(Explore): List missing skills in Global
+```
+
+### Phase 2: Skills Migration (Sequential per file)
+
+For each Project skill:
+1. Read content
+2. Check for naming conflicts in Global
+3. Copy to Global `/home/palantir/.claude/skills/`
+4. Update TodoWrite
+
+### Phase 3: Verification
+
+1. Test `/ask` command works with new skill location
+2. Test `/audit` command
+3. Test `/plan` command
+
+### Phase 4: Cleanup
+
+1. Backup Project skills to `.archive/`
+2. Remove duplicates from Project
+
+## Subagent Delegation
+
+| Task Group | Subagent Type | Budget |
+|------------|---------------|--------|
+| Phase 1 Analysis | Explore | 15K |
+| Phase 2 File Operations | general-purpose | 32K |
+| Phase 3 Testing | general-purpose | 15K |
+
+## Critical File Paths
+
+```yaml
+# Source (Project)
+project_skills: /home/palantir/park-kyungchan/palantir/.claude/skills/
+project_commands: /home/palantir/park-kyungchan/palantir/.claude/commands/
+
+# Target (Global)
+global_skills: /home/palantir/.claude/skills/
+global_commands: /home/palantir/.claude/commands/
+
+# Backup
+archive: /home/palantir/park-kyungchan/palantir/.archive/claude-backup/
+```
+
+## Risk Register
+
+| Risk | Mitigation |
+|------|------------|
+| Naming conflict | Use descriptive prefixes or merge content |
+| Broken references | Test each command after migration |
+| Loss of project-specific features | Keep palantir-coding.md in project |
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. Read this file: `.agent/plans/claude_directory_consolidation.md`
+2. Check TodoWrite for current task status
+3. Continue from first PENDING task in sequence
+4. Verify file existence before operations
+
+## Acceptance Criteria
+
+- [ ] All 7 Project skills copied to Global
+- [ ] All commands reference correct skill paths
+- [ ] Sample commands tested and working
+- [ ] Project .claude/ only contains project-specific files
+
+---
+
+## Reminder
+
+**L1/L2 Orchestrating Loop 계획 승인은 이 작업 완료 후 리마인드**
+- Plan file: `.agent/plans/l1_l2_orchestrating_loop.md`
+- Status: Version 1.1, awaiting approval

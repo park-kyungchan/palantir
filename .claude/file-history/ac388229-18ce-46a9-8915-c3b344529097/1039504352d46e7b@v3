@@ -1,0 +1,368 @@
+# Comprehensive To-Do List: Palantir ODA Gap Analysis 대규모 개선
+
+> **Version:** 1.0 | **Date:** 2026-01-14
+> **Purpose:** Auto-Compact 이후에도 맥락 유지를 위한 포괄적 작업 목록
+> **Plan File:** `.agent/plans/palantir_oda_gap_analysis_improvement.md`
+
+---
+
+## 작업 상태 범례
+
+| Symbol | Status | Meaning |
+|--------|--------|---------|
+| ⬜ | PENDING | 미시작 |
+| 🔄 | IN_PROGRESS | 진행 중 |
+| ✅ | COMPLETED | 완료 |
+| ⏸️ | BLOCKED | 대기 (의존성) |
+
+---
+
+## Phase 1: Interfaces (ObjectType 다형성) - COMPLETED
+
+### 1.1 Core Framework
+
+- ✅ **Task 1.1.1**: InterfaceDefinition Pydantic 모델 생성
+  - File: `lib/oda/ontology/types/interface_types.py`
+  - Fields: interface_id, description, required_properties, required_methods, extends
+  - Dependencies: None
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 1.1.2**: InterfaceRegistry 클래스 추가
+  - File: `lib/oda/ontology/registry.py`
+  - Methods: register_interface(), get_interface(), list_interfaces(), validate_implementation()
+  - Dependencies: Task 1.1.1
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 1.1.3**: @implements_interface 데코레이터 구현
+  - File: `lib/oda/ontology/decorators/interface_decorator.py`
+  - Validation: 필수 속성/메서드 검증
+  - Dependencies: Task 1.1.1, 1.1.2
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 1.1.4**: OntologyObject base class에 interface 지원 추가
+  - File: `lib/oda/ontology/ontology_types.py`
+  - Add: `_implements: ClassVar[List[str]]` field
+  - Dependencies: Task 1.1.1, 1.1.2, 1.1.3
+  - Hazardous: Yes (기존 모델 변경)
+  - **Proposal ID**: 13616d22-1654-4552-a179-c9631b22ff83
+  - **Completed**: 2026-01-14
+
+### 1.2 Actions & Testing
+
+- ✅ **Task 1.2.1**: Interface Actions 등록
+  - File: `lib/oda/ontology/actions/interface_actions.py`
+  - Actions: interface.register, interface.validate, interface.list, interface.get_implementations, interface.export
+  - Dependencies: Task 1.1.4
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 1.2.2**: Unit tests 작성
+  - File: `tests/ontology/test_interfaces.py`
+  - Coverage: InterfaceDefinition, decorator, validation, registry, actions
+  - Dependencies: All Phase 1 tasks
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+---
+
+## Phase 2: Extended Statuses (리소스 라이프사이클) - COMPLETED
+
+### 2.1 Core Framework
+
+- ✅ **Task 2.1.1**: ResourceLifecycleStatus Enum 생성
+  - File: `lib/oda/ontology/types/status_types.py`
+  - Values: DRAFT, EXPERIMENTAL, ALPHA, BETA, ACTIVE, STABLE, DEPRECATED, SUNSET, ARCHIVED, DELETED
+  - Dependencies: None
+  - Hazardous: No
+
+- ✅ **Task 2.1.2**: StatusTransition 검증기 구현
+  - File: `lib/oda/ontology/validators/status_validator.py`
+  - Logic: Valid transition rules enforcement
+  - Dependencies: Task 2.1.1
+  - Hazardous: No
+
+- ✅ **Task 2.1.3**: StatusMixin 클래스 구현
+  - File: `lib/oda/ontology/mixins/status_mixin.py`
+  - Methods: transition_to(), can_transition_to(), get_allowed_transitions()
+  - Dependencies: Task 2.1.1, 2.1.2
+  - Hazardous: No
+
+- ✅ **Task 2.1.4**: 상태 이력 추적 시스템
+  - File: `lib/oda/ontology/tracking/status_history.py`
+  - Model: StatusHistoryEntry with timestamp, actor, from_status, to_status
+  - Dependencies: Task 2.1.3
+  - Hazardous: No
+
+### 2.2 Actions & Testing
+
+- ✅ **Task 2.2.1**: Status Actions 등록
+  - File: `lib/oda/ontology/actions/status_actions.py`
+  - Actions: status.transition (hazardous), status.rollback (hazardous), status.history
+  - Dependencies: Task 2.1.4
+  - Hazardous: Yes
+
+- ✅ **Task 2.2.2**: Unit tests 작성
+  - File: `tests/ontology/test_status_lifecycle.py`
+  - Coverage: Transitions, validation, history (55 tests)
+  - Dependencies: All Phase 2 tasks
+  - Hazardous: No
+
+---
+
+## Phase 3: Full RBAC (ObjectType 레벨 권한) - COMPLETED
+
+### 3.1 Permission Models
+
+- ✅ **Task 3.1.1**: ObjectTypePermission 모델 생성
+  - File: `lib/oda/agent/object_permissions.py`
+  - Fields: object_type, role_id, can_read/create/update/delete/link, field_restrictions
+  - Dependencies: None
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 3.1.2**: Team/Group 모델 생성
+  - File: `lib/oda/agent/teams.py`
+  - Fields: name, members, parent_team_id, permissions
+  - Inheritance: 팀 계층 지원
+  - Dependencies: Task 3.1.1
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+### 3.2 Permission System Extension
+
+- ✅ **Task 3.2.1**: AgentProfile 팀 멤버십 확장
+  - File: `lib/oda/agent/permissions.py`
+  - Add: team_ids field, team-based permission resolution
+  - Dependencies: Task 3.1.2
+  - Hazardous: Yes (기존 모델 변경)
+  - **Proposal ID**: 80fa90c8-ba0a-4e83-a239-a1d568fed3c8
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 3.2.2**: InstancePermission 모델 (객체별 ACL)
+  - File: `lib/oda/agent/instance_permissions.py`
+  - Per-object override permissions
+  - Dependencies: Task 3.1.1
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 3.2.3**: PermissionResolver 구현
+  - File: `lib/oda/agent/permission_resolver.py`
+  - Logic: Instance → ObjectType → Team → Role 순서 resolution
+  - Inheritance: 상위 권한 상속
+  - Dependencies: Task 3.1.1, 3.1.2, 3.2.1, 3.2.2
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+### 3.3 Actions & Testing
+
+- ✅ **Task 3.3.1**: RBAC Actions 등록
+  - File: `lib/oda/ontology/actions/rbac_actions.py`
+  - Actions: rbac.grant_object, rbac.revoke_object, rbac.create_team, rbac.add_member, rbac.check, rbac.list, rbac.get_team
+  - Dependencies: Task 3.2.3
+  - Hazardous: Yes (grant/revoke/create/add_member)
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 3.3.2**: Unit tests 작성
+  - File: `tests/unit/agent/test_rbac_full.py`
+  - Coverage: ObjectTypePermission, Team, InstancePermission, PermissionResolver, AgentIdentity teams (30 tests)
+  - Dependencies: All Phase 3 tasks
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+---
+
+## Phase 4: Medium Priority Enhancements - COMPLETED
+
+### 4.1 Shared Properties
+
+- ✅ **Task 4.1.1**: SharedPropertyDefinition 모델
+  - File: `lib/oda/ontology/types/shared_properties.py`
+  - Palantir pattern: 여러 ObjectType에서 재사용 가능한 속성
+  - Dependencies: Phase 1 완료
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 4.1.2**: @uses_shared_property 데코레이터
+  - File: `lib/oda/ontology/decorators/shared_property.py`
+  - Dependencies: Task 4.1.1
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 4.1.3**: Registry 내보내기 확장
+  - File: `lib/oda/ontology/registry.py`
+  - Add: export_shared_properties()
+  - Dependencies: Task 4.1.1, 4.1.2
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+### 4.2 Ontology Branching Enhancement
+
+- ✅ **Task 4.2.1**: Merge conflict detection
+  - File: `lib/oda/transaction/schema_conflict.py`
+  - Logic: ObjectType schema 변경 충돌 감지
+  - Dependencies: None
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 4.2.2**: Cherry-pick 지원
+  - File: `lib/oda/transaction/cherry_pick.py`
+  - Git-like selective merge
+  - Dependencies: Task 4.2.1
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 4.2.3**: Branch 비교 API
+  - File: `lib/oda/ontology/actions/branch_actions.py`
+  - Actions: branch.compare, branch.diff, branch.merge_preview, branch.resolve_conflict, branch.cherry_pick
+  - Dependencies: Task 4.2.1
+  - Hazardous: Yes (resolve_conflict, cherry_pick)
+  - **Completed**: 2026-01-14
+
+### 4.3 Pipeline Builder
+
+- ✅ **Task 4.3.1**: PipelineBuilder DSL
+  - File: `lib/oda/data/pipeline_builder.py`
+  - Fluent API for data pipeline construction
+  - Dependencies: None
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 4.3.2**: PipelineStep ObjectType
+  - File: `lib/oda/ontology/objects/pipeline.py`
+  - Model: Pipeline stages with dependencies
+  - Dependencies: Task 4.3.1
+  - Hazardous: No
+  - **Completed**: 2026-01-14
+
+- ✅ **Task 4.3.3**: Pipeline validation actions
+  - File: `lib/oda/ontology/actions/pipeline_actions.py`
+  - Actions: pipeline.validate, pipeline.status, pipeline.execute, pipeline.schedule, pipeline.pause, pipeline.delete
+  - Dependencies: Task 4.3.2
+  - Hazardous: Yes (execute, schedule, pause, delete)
+  - **Completed**: 2026-01-14
+
+---
+
+## Summary Statistics
+
+| Phase | Total Tasks | Completed | Remaining |
+|-------|-------------|-----------|-----------|
+| Phase 1: Interfaces | 6 | 6 | 0 |
+| Phase 2: Statuses | 6 | 6 | 0 |
+| Phase 3: RBAC | 7 | 7 | 0 |
+| Phase 4.1: Shared Properties | 3 | 3 | 0 |
+| Phase 4.2: Branching | 3 | 3 | 0 |
+| Phase 4.3: Pipeline | 3 | 3 | 0 |
+| **TOTAL** | **28** | **28** | **0** |
+
+---
+
+## Execution Order (Recommended)
+
+### Parallel Group A (Week 1)
+```
+Phase 1: Interfaces    ←─→    Phase 2: Statuses
+   (Independent, can run simultaneously)
+```
+
+### Sequential Phase 3 (Week 2)
+```
+Phase 3: RBAC
+   (Depends on Phase 1 for interface-based permissions)
+```
+
+### Parallel Group B (Week 3)
+```
+Phase 4.1: Shared Properties  ←─→  Phase 4.2: Branching  ←─→  Phase 4.3: Pipeline
+   (Independent enhancements)
+```
+
+---
+
+## Auto-Compact Recovery Instructions
+
+만약 컨텍스트가 압축되면:
+
+1. **이 파일 읽기:**
+   ```
+   Read(".agent/plans/COMPREHENSIVE_TODO_LIST.md")
+   ```
+
+2. **첫 번째 ⬜ PENDING 작업 찾기**
+
+3. **해당 Phase의 의존성 확인**
+
+4. **Subagent 위임으로 구현:**
+   ```python
+   Task(
+       subagent_type="general-purpose",
+       prompt="Implement Task X.X.X as specified in the TODO list...",
+       run_in_background=True
+   )
+   ```
+
+5. **완료 시 이 파일 업데이트:**
+   - ⬜ → ✅ 변경
+   - Summary Statistics 업데이트
+
+---
+
+## File Quick Reference
+
+### 신규 생성 파일 (CREATE)
+
+```
+Phase 1:
+├── lib/oda/ontology/types/interface_types.py
+├── lib/oda/ontology/decorators/interface_decorator.py
+├── lib/oda/ontology/actions/interface_actions.py
+└── tests/ontology/test_interfaces.py
+
+Phase 2:
+├── lib/oda/ontology/types/status_types.py
+├── lib/oda/ontology/validators/status_validator.py
+├── lib/oda/ontology/mixins/status_mixin.py
+├── lib/oda/ontology/tracking/status_history.py
+├── lib/oda/ontology/actions/status_actions.py
+└── tests/ontology/test_status_lifecycle.py
+
+Phase 3:
+├── lib/oda/agent/object_permissions.py
+├── lib/oda/agent/teams.py
+├── lib/oda/agent/instance_permissions.py
+├── lib/oda/agent/permission_resolver.py
+├── lib/oda/ontology/actions/rbac_actions.py
+└── tests/agent/test_rbac_full.py
+
+Phase 4:
+├── lib/oda/ontology/types/shared_properties.py
+├── lib/oda/ontology/decorators/shared_property.py
+├── lib/oda/transaction/conflict_detector.py
+├── lib/oda/transaction/cherry_pick.py
+├── lib/oda/ontology/actions/branch_actions.py
+├── lib/oda/data/pipeline_builder.py
+├── lib/oda/ontology/objects/pipeline.py
+└── lib/oda/ontology/actions/pipeline_actions.py
+```
+
+### 수정 파일 (MODIFY)
+
+```
+lib/oda/ontology/ontology_types.py  # OntologyObject base class
+lib/oda/ontology/registry.py        # Central registry
+lib/oda/agent/permissions.py        # Existing RBAC extension
+```
+
+---
+
+## Last Updated
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-01-14 |
+| Last Task Completed | Phase 4.3.3 (All 28 tasks - 100% COMPLETE) |
+| Next Task | None - All phases completed |
+| Blocker | None - Project completed |

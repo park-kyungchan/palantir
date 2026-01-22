@@ -1,0 +1,242 @@
+# TodoWrite + Agent ID Tracking Enhancement Plan
+
+> **Version:** 1.0 | **Status:** DRAFT | **Date:** 2026-01-18
+> **Scope:** Global TodoWrite enhancement for Auto-Compact survival
+
+## Overview
+
+| Item | Value |
+|------|-------|
+| Complexity | medium |
+| Total Phases | 5 |
+| Files Affected | 6 |
+| New Files | 1 |
+| Modified Files | 5 |
+
+## Requirements
+
+| # | Requirement | Priority |
+|---|-------------|----------|
+| R1 | 모든 multi-step 작업에서 상세 TodoWrite 생성 | HIGH |
+| R2 | Agent ID 라이프사이클: pending → actual → (done) | HIGH |
+| R3 | Auto-Compact 후 자동 Resume | HIGH |
+| R4 | CLAUDE.md 전역 프로토콜 문서화 | HIGH |
+| R5 | /plan.md 간결화 (~150줄) | MEDIUM |
+
+## TodoWrite Format Specification
+
+```
+[Phase N] {작업 설명} | Files: {대상 파일} | Agent: {subagent_type}:{agent_id}
+```
+
+### Agent ID Lifecycle States
+
+| State | Format | Trigger |
+|-------|--------|---------|
+| Pending | `Agent: Explore:pending` | 실행 전 |
+| Active | `Agent: Explore:a740d90` | Task() 반환 후 |
+| Done | `Agent: Explore:a740d90 (done)` | verify_result() 성공 |
+| Failed | `Agent: Explore:a740d90 (FAILED)` | recovery_gate() 블록 |
+
+---
+
+## Phases
+
+### Phase 1: TodoWriteTracker Module 생성
+| Item | Detail |
+|------|--------|
+| **Goal** | Agent ID 추적 전용 모듈 생성 |
+| **Effort** | medium |
+| **Dependencies** | None |
+
+**Files Affected:**
+- `lib/oda/planning/todowrite_tracker.py` (NEW)
+- `lib/oda/planning/__init__.py` (exports 추가)
+
+**Key Components:**
+```python
+@dataclass
+class TrackedTodo:
+    phase_num: int
+    task: str
+    files: List[str]
+    subagent_type: str
+    agent_id: str  # "pending" | actual_id | "id (done)"
+
+class TodoWriteTracker:
+    def add_phase(phase_num, task, files, subagent_type)
+    def update_agent_id(phase_num, agent_id)
+    def mark_completed(phase_num)
+    def mark_failed(phase_num)
+    def get_todowrite_json() -> List[Dict]
+    def get_resumable_agents() -> List[Tuple]
+```
+
+---
+
+### Phase 2: ExecutionOrchestrator Integration
+| Item | Detail |
+|------|--------|
+| **Goal** | Orchestrator에 TodoWriteTracker 통합 |
+| **Effort** | small |
+| **Dependencies** | Phase 1 |
+
+**Files Affected:**
+- `lib/oda/planning/execution_orchestrator.py`
+
+**Integration Points:**
+1. `_todowrite_tracker` property 추가
+2. `register_agent()` → TodoWrite 업데이트
+3. `verify_result()` → 완료 마킹
+4. `recovery_gate()` → 실패 마킹
+5. `get_todowrite_state()` 메서드 추가
+6. `initialize_todowrite_from_plan()` 메서드 추가
+
+---
+
+### Phase 3: CLAUDE.md Section 2.6.5 추가
+| Item | Detail |
+|------|--------|
+| **Goal** | 전역 프로토콜 문서화 |
+| **Effort** | small |
+| **Dependencies** | Phase 1 |
+
+**Files Affected:**
+- `/home/palantir/.claude/CLAUDE.md`
+
+**New Section Location:** After Section 2.6 (around line 270)
+
+**Content:**
+- TodoWrite + Agent ID Tracking Protocol (V2.1.8)
+- Todo Item Format specification
+- Agent ID Lifecycle States table
+- Main Agent Behavior Rules
+- Code Pattern examples
+- Auto-Compact Recovery Workflow
+
+---
+
+### Phase 4: /plan.md 간결화 + TodoWrite 통합
+| Item | Detail |
+|------|--------|
+| **Goal** | 930줄 → ~150줄 압축, TodoWrite 통합 |
+| **Effort** | medium |
+| **Dependencies** | Phase 1, 3 |
+
+**Files Affected:**
+- `.claude/skills/plan.md`
+
+**Structure:**
+1. Frontmatter (version 2.1.8)
+2. Execution Flow (compact)
+3. TodoWrite Integration (MANDATORY)
+4. Agent ID Lifecycle (reference to CLAUDE.md)
+5. Dual-Path Analysis (quick reference table)
+6. Plan File Generation
+7. Pass Criteria
+
+---
+
+### Phase 5: __init__.py Exports 업데이트
+| Item | Detail |
+|------|--------|
+| **Goal** | TodoWriteTracker 패키지 export |
+| **Effort** | trivial |
+| **Dependencies** | Phase 1 |
+
+**Files Affected:**
+- `lib/oda/planning/__init__.py`
+
+**New Exports:**
+- `TodoWriteTracker`
+- `TrackedTodo`
+
+---
+
+## Critical File Paths
+
+```yaml
+new_files:
+  - lib/oda/planning/todowrite_tracker.py
+
+modified_files:
+  - lib/oda/planning/execution_orchestrator.py
+  - lib/oda/planning/__init__.py
+  - /home/palantir/.claude/CLAUDE.md
+  - .claude/skills/plan.md
+
+reference_files:
+  - lib/oda/planning/agent_registry.py  # Agent ID pattern
+  - lib/oda/planning/plan_file.py       # AgentEntry pattern
+```
+
+---
+
+## Success Criteria
+
+1. [ ] `TodoWrite` displays `[Phase N] ... | Agent: type:pending` before execution
+2. [ ] `TodoWrite` updates to `Agent: type:actual_id` after Task() returns
+3. [ ] `TodoWrite` updates to `Agent: type:id (done)` after completion
+4. [ ] After Auto-Compact, `Task(resume=agent_id)` 자동 재개 가능
+5. [ ] CLAUDE.md Section 2.6.5 명확한 프로토콜 문서화
+6. [ ] /plan.md < 200 lines
+
+---
+
+## Risk Register
+
+| # | Risk | Severity | Mitigation |
+|---|------|----------|------------|
+| R1 | TodoWrite JSON 호환성 | LOW | 표준 구조 사용 |
+| R2 | YAML/PlanFile/TodoWrite 동기화 | MEDIUM | TodoWriteTracker를 single source |
+| R3 | Auto-Compact 타이밍 | MEDIUM | Agent ID를 content 문자열에 포함 |
+
+---
+
+## Verification Plan
+
+### 1. Unit Tests
+```bash
+python3 -c "
+from lib.oda.planning import TodoWriteTracker
+
+tracker = TodoWriteTracker('Test Plan')
+tracker.add_phase(1, 'Analysis', ['lib/'], 'Explore')
+tracker.update_agent_id(1, 'a123456')
+tracker.mark_completed(1)
+print(tracker.get_todowrite_json())
+"
+```
+
+### 2. Integration Test
+```python
+orchestrator = get_orchestrator()
+orchestrator.load_plan('.agent/plans/test.md')
+orchestrator.initialize_todowrite_from_plan()
+todos = orchestrator.get_todowrite_state()
+# Verify format: [Phase N] ... | Agent: type:pending
+```
+
+### 3. E2E Test
+1. Run `/plan` command
+2. Verify TodoWrite shows phases with `Agent: type:pending`
+3. Execute phase → verify `Agent: type:actual_id`
+4. Complete phase → verify `Agent: type:id (done)`
+
+---
+
+## Execution Strategy
+
+| Phase | Subagent | Context | Budget |
+|-------|----------|---------|--------|
+| Phase 1 | Direct | standard | N/A |
+| Phase 2 | Direct | standard | N/A |
+| Phase 3 | Direct | standard | N/A |
+| Phase 4 | Direct | standard | N/A |
+| Phase 5 | Direct | standard | N/A |
+
+**Note:** 모든 Phase가 trivial~medium이므로 Direct 실행
+
+---
+
+> **Approval Required:** Proceed with this 5-phase implementation plan?

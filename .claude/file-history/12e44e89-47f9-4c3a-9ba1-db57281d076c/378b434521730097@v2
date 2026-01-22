@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""
+Force run_in_background=true on all Task() calls via PreToolUse hook.
+
+This hook enables L1/L2 separation by ensuring all subagent outputs
+are written to files rather than returned directly to Main Context.
+
+Hook Response Format:
+{
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "allow",
+        "updatedInput": { ...modified tool_input... }
+    }
+}
+
+Exit Codes:
+- 0: Success (allow with or without modification)
+- 1: Internal error (falls back to allow)
+- 2: Block operation (not used in this hook)
+"""
+
+import json
+import sys
+import os
+from datetime import datetime
+from pathlib import Path
+
+# Configuration - use home directory for logs (global hook)
+HOME_DIR = Path.home()
+LOG_DIR = HOME_DIR / ".claude" / "logs"
+LOG_FILE = LOG_DIR / "l1l2_hooks.log"
+ENABLE_LOGGING = True
+
+
+def log_message(message: str) -> None:
+    """Log message to file if logging is enabled."""
+    if not ENABLE_LOGGING:
+        return
+
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().isoformat()
+        with open(LOG_FILE, "a") as f:
+            f.write(f"[{timestamp}] [force_background] {message}\n")
+    except Exception:
+        pass  # Silently fail logging
+
+
+def create_allow_response(updated_input: dict = None) -> dict:
+    """Create a standard allow response with optional updated input."""
+    response = {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "allow"
+        }
+    }
+
+    if updated_input is not None:
+        response["hookSpecificOutput"]["updatedInput"] = updated_input
+
+    return response
+
+
+def main() -> int:
+    """Main hook logic."""
+    try:
+        # Read input from stdin
+        input_data = json.load(sys.stdin)
+    except json.JSONDecodeError as e:
+        log_message(f"ERROR: Failed to parse JSON input: {e}")
+        # Allow operation on parse failure (graceful degradation)
+        print(json.dumps(create_allow_response()))
+        return 0
+    except Exception as e:
+        log_message(f"ERROR: Failed to read stdin: {e}")
+        print(json.dumps(create_allow_response()))
+        return 0
+
+    tool_name = input_data.get("tool_name", "")
+
+    # Only process Task tool calls
+    if tool_name != "Task":
+        log_message(f"SKIP: Non-Task tool: {tool_name}")
+        print(json.dumps(create_allow_response()))
+        return 0
+
+    # Get current tool input
+    current_input = input_data.get("tool_input", {})
+
+    # Check if already set to background
+    if current_input.get("run_in_background") is True:
+        log_message(f"SKIP: Already background: {current_input.get('description', 'unnamed')}")
+        print(json.dumps(create_allow_response()))
+        return 0
+
+    # Inject run_in_background=true
+    updated_input = {
+        **current_input,
+        "run_in_background": True
+    }
+
+    # Log the injection
+    description = current_input.get("description", "unnamed task")
+    subagent_type = current_input.get("subagent_type", "unknown")
+    log_message(f"INJECT: run_in_background=true for {subagent_type}: {description}")
+
+    # Return response with updated input
+    response = create_allow_response(updated_input)
+    print(json.dumps(response))
+
+    return 0
+
+
+if __name__ == "__main__":
+    # Canary: write timestamp to file immediately on invocation
+    try:
+        canary_file = LOG_DIR / "hook_canary.log"
+        canary_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(canary_file, "a") as f:
+            f.write(f"[{datetime.now().isoformat()}] Hook invoked\n")
+    except Exception:
+        pass
+    sys.exit(main())

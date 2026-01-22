@@ -1,0 +1,258 @@
+---
+skill_name: ask
+description: Prompt Assistant - Semantic Integrity Protocol로 요구사항 명확화
+user_invocable: true
+context: fork
+model: sonnet
+version: "2.1.8"
+---
+
+# /ask - Prompt Assistant (V2.1.8)
+
+> **Role:** Semantic Integrity 보장 및 요구사항 명확화
+> **Core Principle:** 수치 점수 NO → Socratic 질문 YES → 승인 없이 실행 NO
+
+---
+
+## 1. Core Protocol: Semantic Integrity
+
+**MANDATORY:** 모든 실행은 사용자 승인 후에만 가능합니다.
+
+```
+User Input
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 1. PARSE: 의도 추출                  │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 2. UNDERSTAND: "내가 이해한 바로는..." │
+│    → AI가 자신의 이해를 명시적 진술    │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 3. AMBIGUITY: 모호한 부분 식별        │
+│    → "다음 부분이 명확하지 않습니다..." │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 4. QUESTION: AskUserQuestion         │
+│    → Socratic 질문으로 명확화         │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 5. CLARIFY: 답변 통합                │
+│    → 추가 모호함 있으면 3으로 복귀     │
+│    → MAX_ROUNDS = 3 (무한루프 방지)   │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 6. APPROVE: 최종 프롬프트 승인 요청   │  ★ MANDATORY GATE
+│    → 사용자가 "승인"해야만 7단계 진행   │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 7. ROUTE: 적절한 스킬로 라우팅        │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 2. Clarification State Machine
+
+**Module:** `lib/oda/planning/clarification_tracker.py`
+
+```python
+from lib.oda.planning import (
+    ClarificationTracker,
+    create_clarification_tracker,
+    ClarificationState,
+)
+
+# Initialize
+tracker = create_clarification_tracker(user_input)
+
+# Flow
+tracker.start_understanding()
+tracker.state_understanding("사용자가 코드 리뷰를 원하는 것으로 이해합니다.")
+
+tracker.identify_ambiguities(["어떤 파일?", "검사 범위?"])
+tracker.start_questioning()
+
+tracker.record_response(0, "lib/ 디렉토리")
+tracker.mark_clarified()
+
+# MANDATORY: Approval gate
+approval = tracker.request_approval(skill_recommendation="/audit", confidence_level="high")
+# → User must approve
+tracker.mark_approved()
+
+# Only then execute
+tracker.start_execution("/audit", "lib/")
+```
+
+### State Transitions (Forward-Only)
+
+| State | Next Valid States |
+|-------|-------------------|
+| INITIAL | UNDERSTANDING |
+| UNDERSTANDING | QUESTIONING, CLARIFIED |
+| QUESTIONING | CLARIFIED |
+| CLARIFIED | APPROVED |
+| APPROVED | EXECUTING |
+| EXECUTING | (terminal) |
+
+---
+
+## 3. Execution Flow
+
+### Step 1: Initialize Tracker
+
+```python
+tracker = create_clarification_tracker(user_input)
+```
+
+### Step 2: UNDERSTAND → AMBIGUITY → QUESTION Loop
+
+```python
+tracker.start_understanding()
+tracker.state_understanding(f"내가 이해한 바로는: {understanding}")
+
+if ambiguities := identify_unclear_parts(user_input):
+    tracker.identify_ambiguities(ambiguities)
+    tracker.start_questioning()
+
+    # AskUserQuestion
+    questions = generate_socratic_questions(ambiguities)
+    responses = AskUserQuestion(questions=questions)
+
+    for idx, response in enumerate(responses):
+        tracker.record_response(idx, response)
+
+tracker.mark_clarified(final_prompt)
+```
+
+### Step 3: APPROVE (MANDATORY)
+
+```python
+approval = tracker.request_approval(
+    skill_recommendation=detected_skill,
+    confidence_level="high"  # categorical: high/medium/low
+)
+
+# Present to user
+AskUserQuestion(
+    questions=[{
+        "question": f"최종 확인: {approval.final_prompt}\n\n진행할까요?",
+        "header": "Execution Approval",
+        "options": [
+            {"label": "예, 진행해 주세요", "description": "승인하고 실행"},
+            {"label": "아니요, 수정이 필요해요", "description": "추가 명확화"}
+        ],
+        "multiSelect": False
+    }]
+)
+
+# On approval
+tracker.mark_approved()
+```
+
+### Step 4: ROUTE
+
+```python
+if tracker.is_approved():
+    tracker.start_execution(skill, scope)
+    Skill(skill=skill, args=scope)
+else:
+    raise ClarificationError("Approval required")
+```
+
+---
+
+## 4. Quick Reference: Skill Routing
+
+| Intent | Keywords | Route |
+|--------|----------|-------|
+| 탐색/분석 | 분석, 이해, 설명, 찾아 | Explore Agent |
+| 수정/변경 | 수정, 고쳐, 바꿔, 추가 | /plan |
+| 검사/리뷰 | 검사, 리뷰, 확인, 체크 | /audit |
+| 심층분석 | 심층, 깊이, 상세, 철저 | /deep-audit |
+| 계획/설계 | 계획, 설계, 아키텍처 | /plan |
+| 모호함 | (none matched) | /ask (continue) |
+
+---
+
+## 5. Approval Gate Implementation
+
+**CRITICAL:** `start_execution()`은 승인 없이 호출 시 `ClarificationError` 발생
+
+```python
+def start_execution(self, skill: str, scope: Optional[str] = None) -> None:
+    if not self.is_approved():
+        raise ClarificationError(
+            "EXECUTION BLOCKED: User approval required."
+        )
+    # Proceed only if approved
+```
+
+---
+
+## 6. TodoWrite Integration
+
+```python
+# Tracker generates TodoWrite-compatible JSON
+todos = tracker.to_todowrite_json()
+TodoWrite(todos=todos)
+
+# Example output:
+# [/ask] Awaiting approval | Input: 코드 리뷰해줘...
+#   Round 1: 사용자가 코드 리뷰를 원하는 것으로...
+#   [GATE] User Approval: PENDING
+```
+
+---
+
+## 7. Auto-Compact Survival
+
+```python
+# Serialize for persistence
+json_str = tracker.to_json()
+
+# Resume after compaction
+tracker = ClarificationTracker.from_json(json_str)
+```
+
+---
+
+## 8. Error Handling
+
+| Scenario | Handling |
+|----------|----------|
+| User refuses to answer | Best-effort routing with low confidence |
+| Ambiguity persists after MAX_ROUNDS | Force approval request |
+| Approval denied | Return to UNDERSTANDING state |
+| Execution without approval | Raise ClarificationError |
+
+---
+
+## References
+
+- **Detailed Implementation:** `.claude/references/ask-skill-details.md`
+- **Module:** `lib/oda/planning/clarification_tracker.py`
+- **Related Skills:** `/plan`, `/audit`, `/deep-audit`
+
+---
+
+> **V2.1.8 Changes:**
+> - Removed: clarity_score (numerical scoring)
+> - Added: ClarificationTracker state machine
+> - Added: MANDATORY approval gate
+> - Added: Categorical confidence (high/medium/low)
+> - Compressed: 686 → ~180 lines

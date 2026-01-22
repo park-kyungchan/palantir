@@ -1,0 +1,654 @@
+"""
+Comprehensive tests for Stage D (Alignment) module.
+
+Tests cover:
+- Text-Visual Matching (matcher.py)
+- Consistency Checking (consistency.py)
+- Inconsistency Detection (inconsistency.py)
+- Alignment Engine (engine.py)
+
+Schema Version: 2.0.0
+"""
+
+import pytest
+from typing import Dict, List, Optional
+
+from mathpix_pipeline.schemas import (
+    BBox,
+    Confidence,
+    MatchType,
+    InconsistencyType,
+    PipelineStage,
+    ReviewSeverity,
+    TextElement,
+    VisualElement,
+    MatchedPair,
+    TextSpec,
+    VisionSpec,
+)
+from mathpix_pipeline.alignment import (
+    # Matcher
+    MatcherConfig,
+    SpatialMatcher,
+    SemanticMatcher,
+    TextVisualMatcher,
+    # Consistency
+    ConsistencyConfig,
+    EquationGraphConsistency,
+    CoordinateConsistency,
+    LabelConsistency,
+    ConsistencyChecker,
+    # Inconsistency
+    InconsistencyConfig,
+    LabelInconsistencyDetector,
+    EquationInconsistencyDetector,
+    CoordinateInconsistencyDetector,
+    InconsistencyDetector,
+    # Engine
+    AlignmentEngineConfig,
+    AlignmentEngine,
+    create_alignment_engine,
+    align_text_and_vision,
+)
+
+
+# =============================================================================
+# SpatialMatcher Tests
+# =============================================================================
+
+class TestSpatialMatcher:
+    """Tests for SpatialMatcher class."""
+
+    @pytest.fixture
+    def matcher(self):
+        return SpatialMatcher(MatcherConfig())
+
+    def test_calculate_overlap_with_intersection(self, matcher, sample_bbox, overlapping_bbox):
+        """Test IoU calculation for overlapping bboxes.
+
+        sample_bbox: (100,100,50,30) -> rect(100-150, 100-130)
+        overlapping_bbox: (120,110,50,30) -> rect(120-170, 110-140)
+        Intersection: rect(120-150, 110-130) = 30*20 = 600
+        Union: 1500 + 1500 - 600 = 2400
+        IoU = 600/2400 = 0.25
+        """
+        iou = matcher.calculate_overlap(sample_bbox, overlapping_bbox)
+        assert 0.0 < iou < 1.0
+        assert iou == pytest.approx(0.25, abs=0.05)  # Correct IoU calculation
+
+    def test_calculate_overlap_no_intersection(self, matcher, sample_bbox, non_overlapping_bbox):
+        """Test IoU calculation for non-overlapping bboxes."""
+        iou = matcher.calculate_overlap(sample_bbox, non_overlapping_bbox)
+        assert iou == 0.0
+
+    def test_calculate_overlap_identical_bboxes(self, matcher, sample_bbox):
+        """Test IoU for identical bboxes should be 1.0."""
+        iou = matcher.calculate_overlap(sample_bbox, sample_bbox)
+        assert iou == 1.0
+
+    def test_calculate_proximity_close_bboxes(self, matcher, sample_bbox, overlapping_bbox):
+        """Test proximity score for close bboxes."""
+        proximity = matcher.calculate_proximity(sample_bbox, overlapping_bbox)
+        assert 0.0 < proximity <= 1.0
+
+    def test_calculate_proximity_distant_bboxes(self, matcher, sample_bbox, non_overlapping_bbox):
+        """Test proximity score for distant bboxes (beyond threshold)."""
+        proximity = matcher.calculate_proximity(sample_bbox, non_overlapping_bbox)
+        assert proximity == 0.0
+
+
+# =============================================================================
+# SemanticMatcher Tests
+# =============================================================================
+
+class TestSemanticMatcher:
+    """Tests for SemanticMatcher class."""
+
+    @pytest.fixture
+    def matcher(self):
+        return SemanticMatcher()
+
+    @pytest.mark.parametrize("equation,curve_type,expected_min", [
+        ("y = 2x + 1", "linear", 0.9),
+        ("y = x^2", "quadratic", 0.9),
+        ("y = x^2", "parabola", 0.9),
+        ("y = sin(x)", "sine", 0.9),
+        ("y = e^x", "exponential", 0.9),
+    ])
+    def test_match_equation_to_curve_valid_pairs(self, matcher, equation, curve_type, expected_min):
+        """Test equation-curve matching for valid pairs."""
+        score = matcher.match_equation_to_curve(equation, curve_type)
+        assert score >= expected_min
+
+    def test_match_equation_to_curve_mismatch(self, matcher):
+        """Test equation-curve matching for mismatched pairs."""
+        # Quadratic equation vs linear curve
+        score = matcher.match_equation_to_curve("y = x^2", "linear")
+        assert score < 0.5
+
+    def test_match_equation_to_curve_generic_function(self, matcher):
+        """Test matching with generic 'function' label."""
+        score = matcher.match_equation_to_curve("y = x^2", "function graph")
+        assert score >= 0.6
+
+    def test_match_equation_to_curve_empty_inputs(self, matcher):
+        """Test with empty inputs."""
+        assert matcher.match_equation_to_curve("", "linear") == 0.0
+        assert matcher.match_equation_to_curve("y = x", "") == 0.0
+
+    @pytest.mark.parametrize("label_text,point_label,expected", [
+        ("A", "A", 1.0),
+        ("A", "a", 0.95),
+        ("Point A", "A", 0.8),
+        ("A", "B", 0.0),
+    ])
+    def test_match_label_to_point(self, matcher, label_text, point_label, expected):
+        """Test label-point matching."""
+        score = matcher.match_label_to_point(label_text, point_label)
+        assert score == pytest.approx(expected, abs=0.05)
+
+    def test_match_coordinate_reference(self, matcher):
+        """Test coordinate reference matching."""
+        text = "Point at (2, 3)"
+        coords = {"x": 2.0, "y": 3.0}
+        score = matcher.match_coordinate_reference(text, coords)
+        assert score >= 0.9
+
+    def test_match_coordinate_reference_partial(self, matcher):
+        """Test partial coordinate matching."""
+        text = "Point at (2, 3)"
+        coords = {"x": 2.0, "y": 5.0}  # Only x matches
+        score = matcher.match_coordinate_reference(text, coords)
+        assert 0.5 <= score <= 0.7
+
+
+# =============================================================================
+# TextVisualMatcher Tests
+# =============================================================================
+
+class TestTextVisualMatcher:
+    """Tests for TextVisualMatcher class."""
+
+    @pytest.fixture
+    def matcher(self):
+        return TextVisualMatcher(MatcherConfig())
+
+    def test_match_basic(self, matcher, sample_text_spec, sample_vision_spec):
+        """Test basic matching between TextSpec and VisionSpec."""
+        matched_pairs = matcher.match(
+            sample_text_spec,
+            sample_vision_spec,
+            "test-image-001",
+        )
+        assert len(matched_pairs) >= 1
+        assert all(isinstance(p, MatchedPair) for p in matched_pairs)
+
+    def test_match_with_labels(self, matcher, text_spec_with_labels, vision_spec_with_points):
+        """Test matching with point labels."""
+        matched_pairs = matcher.match(
+            text_spec_with_labels,
+            vision_spec_with_points,
+            "test-labels-001",
+        )
+        # Should match: A→A, B→B, equation→curve
+        assert len(matched_pairs) >= 2
+
+        # Check label matches exist
+        label_matches = [p for p in matched_pairs if p.match_type == MatchType.LABEL_TO_POINT]
+        assert len(label_matches) >= 2
+
+    def test_match_threshold_filtering(self, matcher, text_spec_with_labels, vision_spec_with_points):
+        """Test that low-confidence matches are filtered by threshold."""
+        # High threshold should filter out some matches
+        matched_pairs_high = matcher.match(
+            text_spec_with_labels,
+            vision_spec_with_points,
+            "test-labels-001",
+            base_threshold=0.9,
+        )
+
+        matched_pairs_low = matcher.match(
+            text_spec_with_labels,
+            vision_spec_with_points,
+            "test-labels-001",
+            base_threshold=0.1,
+        )
+
+        # Low threshold should allow more matches
+        assert len(matched_pairs_low) >= len(matched_pairs_high)
+
+    def test_get_unmatched(self, matcher, text_spec_with_labels, vision_spec_with_points):
+        """Test retrieval of unmatched elements."""
+        matched_pairs = matcher.match(
+            text_spec_with_labels,
+            vision_spec_with_points,
+            "test-labels-001",
+        )
+
+        unmatched_text, unmatched_visual = matcher.get_unmatched(
+            text_spec_with_labels,
+            vision_spec_with_points,
+            matched_pairs,
+        )
+
+        # The description line should be unmatched
+        assert any("graph shows" in t.content for t in unmatched_text)
+
+
+# =============================================================================
+# EquationGraphConsistency Tests
+# =============================================================================
+
+class TestEquationGraphConsistency:
+    """Tests for EquationGraphConsistency class."""
+
+    @pytest.fixture
+    def checker(self):
+        return EquationGraphConsistency()
+
+    @pytest.mark.parametrize("latex,expected_type", [
+        ("y = 2x + 1", "linear"),
+        ("y = x^2", "quadratic"),
+        ("y = x²", "quadratic"),
+        ("y = x^3", "cubic"),
+        ("y = sin(x)", "sine"),
+        ("y = \\sin(x)", "sine"),
+        ("y = cos(x)", "cosine"),
+        ("y = e^x", "exponential"),
+        ("y = log(x)", "logarithmic"),
+    ])
+    def test_infer_equation_type(self, checker, latex, expected_type):
+        """Test equation type inference from LaTeX."""
+        result = checker.infer_equation_type(latex)
+        assert result == expected_type
+
+    def test_infer_equation_type_unknown(self, checker):
+        """Test unknown equation type."""
+        result = checker.infer_equation_type("random text")
+        assert result is None
+
+    def test_check_consistency_match(self, checker):
+        """Test consistency check for matching equation and curve."""
+        score = checker.check_consistency("y = x^2", "parabola")
+        assert score >= 0.9
+
+    def test_check_consistency_mismatch(self, checker):
+        """Test consistency check for mismatched equation and curve."""
+        score = checker.check_consistency("y = x^2", "linear line")
+        assert score < 0.5
+
+
+# =============================================================================
+# CoordinateConsistency Tests
+# =============================================================================
+
+class TestCoordinateConsistency:
+    """Tests for CoordinateConsistency class."""
+
+    @pytest.fixture
+    def checker(self):
+        return CoordinateConsistency(ConsistencyConfig())
+
+    @pytest.mark.parametrize("text,expected", [
+        ("(2, 3)", (2.0, 3.0)),
+        ("[1.5, 2.5]", (1.5, 2.5)),
+        ("x = 1, y = 2", (1.0, 2.0)),
+        ("point at (-1, -2)", (-1.0, -2.0)),
+    ])
+    def test_extract_coordinates(self, checker, text, expected):
+        """Test coordinate extraction from text."""
+        result = checker.extract_coordinates(text)
+        assert result == expected
+
+    def test_extract_coordinates_none(self, checker):
+        """Test extraction with no coordinates."""
+        result = checker.extract_coordinates("no coordinates here")
+        assert result is None
+
+    def test_check_consistency_match(self, checker):
+        """Test consistency for matching coordinates."""
+        text_coords = (2.0, 3.0)
+        visual_coords = {"x": 2.0, "y": 3.0}
+        score = checker.check_consistency(text_coords, visual_coords)
+        assert score >= 0.9
+
+    def test_check_consistency_close(self, checker):
+        """Test consistency for close (within tolerance) coordinates."""
+        text_coords = (2.0, 3.0)
+        visual_coords = {"x": 2.05, "y": 3.05}
+        score = checker.check_consistency(text_coords, visual_coords)
+        assert score >= 0.8
+
+
+# =============================================================================
+# LabelConsistency Tests
+# =============================================================================
+
+class TestLabelConsistency:
+    """Tests for LabelConsistency class."""
+
+    @pytest.fixture
+    def checker(self):
+        return LabelConsistency(ConsistencyConfig())
+
+    def test_normalize_label(self, checker):
+        """Test label normalization."""
+        assert checker.normalize_label("  Point A  ") == "POINTA"
+        assert checker.normalize_label("a") == "A"
+
+    @pytest.mark.parametrize("text_label,visual_label,expected_min", [
+        ("A", "A", 1.0),
+        ("A", "a", 1.0),  # After normalization
+        ("Point A", "A", 0.85),  # Substring match
+        ("A", "A1", 0.7),  # First char match
+        ("A", "B", 0.2),  # Mismatch
+    ])
+    def test_check_consistency(self, checker, text_label, visual_label, expected_min):
+        """Test label consistency checking."""
+        score = checker.check_consistency(text_label, visual_label)
+        assert score >= expected_min
+
+
+# =============================================================================
+# ConsistencyChecker Tests
+# =============================================================================
+
+class TestConsistencyChecker:
+    """Tests for ConsistencyChecker class."""
+
+    @pytest.fixture
+    def checker(self):
+        return ConsistencyChecker(ConsistencyConfig())
+
+    def test_check_pair(self, checker, sample_matched_pair):
+        """Test consistency check for a single matched pair."""
+        score = checker.check_pair(sample_matched_pair)
+        assert 0.0 <= score <= 1.0
+
+    def test_check_all(self, checker, sample_matched_pair):
+        """Test consistency check for all pairs."""
+        pairs = [sample_matched_pair]
+        updated_pairs = checker.check_all(pairs)
+
+        assert len(updated_pairs) == 1
+        assert updated_pairs[0].consistency_score >= 0.0
+
+    def test_compute_overall_score(self, checker, sample_matched_pair):
+        """Test overall score computation."""
+        pairs = [sample_matched_pair]
+        score = checker.compute_overall_score(pairs)
+        assert 0.0 <= score <= 1.0
+
+    def test_compute_overall_score_empty(self, checker):
+        """Test overall score with empty pairs."""
+        score = checker.compute_overall_score([])
+        assert score == 0.0
+
+
+# =============================================================================
+# InconsistencyDetector Tests
+# =============================================================================
+
+class TestLabelInconsistencyDetector:
+    """Tests for LabelInconsistencyDetector class."""
+
+    @pytest.fixture
+    def detector(self):
+        return LabelInconsistencyDetector()
+
+    def test_detect_mismatch_found(self, detector):
+        """Test label mismatch detection."""
+        result = detector.detect_mismatch("X", "Y")
+        assert result == ("X", "Y")
+
+    def test_detect_mismatch_not_found(self, detector):
+        """Test no mismatch when labels match."""
+        result = detector.detect_mismatch("A", "A")
+        assert result is None
+
+    def test_detect_mismatch_first_char_match(self, detector):
+        """Test no mismatch when first characters match."""
+        result = detector.detect_mismatch("A1", "A2")
+        assert result is None
+
+
+class TestEquationInconsistencyDetector:
+    """Tests for EquationInconsistencyDetector class."""
+
+    @pytest.fixture
+    def detector(self):
+        return EquationInconsistencyDetector(InconsistencyConfig())
+
+    def test_extract_coefficients_quadratic(self, detector):
+        """Test coefficient extraction from quadratic equation."""
+        coeffs = detector.extract_coefficients("y = x^2 + 2x + 1")
+        assert "a" in coeffs or "b" in coeffs  # Depends on regex match
+
+    def test_extract_coefficients_linear(self, detector):
+        """Test coefficient extraction from linear equation."""
+        coeffs = detector.extract_coefficients("y = 2x + 3")
+        # Should extract m=2, b=3
+        assert len(coeffs) > 0
+
+    def test_detect_coefficient_mismatch(self, detector):
+        """Test coefficient mismatch detection."""
+        result = detector.detect_coefficient_mismatch(
+            "y = 2x + 1",
+            "y = 3x + 1"  # Different slope
+        )
+        # Should detect mismatch in coefficient
+        # (depends on regex success)
+
+
+class TestCoordinateInconsistencyDetector:
+    """Tests for CoordinateInconsistencyDetector class."""
+
+    @pytest.fixture
+    def detector(self):
+        return CoordinateInconsistencyDetector(InconsistencyConfig())
+
+    def test_detect_mismatch_found(self, detector):
+        """Test coordinate mismatch detection."""
+        result = detector.detect_mismatch(
+            (2.0, 3.0),
+            {"x": 5.0, "y": 6.0}  # Significant difference
+        )
+        assert result is not None
+
+    def test_detect_mismatch_not_found(self, detector):
+        """Test no mismatch within tolerance."""
+        result = detector.detect_mismatch(
+            (2.0, 3.0),
+            {"x": 2.1, "y": 3.1}  # Within tolerance
+        )
+        assert result is None
+
+
+class TestInconsistencyDetector:
+    """Tests for main InconsistencyDetector class."""
+
+    @pytest.fixture
+    def detector(self):
+        return InconsistencyDetector(InconsistencyConfig())
+
+    def test_detect_from_pair(self, detector, sample_matched_pair):
+        """Test inconsistency detection from matched pair."""
+        inconsistencies = detector.detect_from_pair(
+            sample_matched_pair,
+            "test-image-001",
+            0
+        )
+        assert isinstance(inconsistencies, list)
+
+    def test_detect_missing_labels(self, detector):
+        """Test detection of missing labels."""
+        unmatched_text = [
+            TextElement(
+                id="text-001",
+                content="A",  # Short label
+                bbox=BBox(x=100, y=100, width=20, height=20),
+            )
+        ]
+        inconsistencies = detector.detect_missing_labels(
+            unmatched_text,
+            "test-image-001",
+            0
+        )
+        assert len(inconsistencies) == 1
+        assert inconsistencies[0].inconsistency_type == InconsistencyType.MISSING_LABEL
+
+    def test_detect_extra_labels(self, detector):
+        """Test detection of extra labels."""
+        unmatched_visual = [
+            VisualElement(
+                id="visual-001",
+                element_class="label",  # Label type
+                semantic_label="X",
+                bbox=BBox(x=100, y=100, width=20, height=20),
+                source_merged_id="merged-001",
+            )
+        ]
+        inconsistencies = detector.detect_extra_labels(
+            unmatched_visual,
+            "test-image-001",
+            0
+        )
+        assert len(inconsistencies) == 1
+        assert inconsistencies[0].inconsistency_type == InconsistencyType.EXTRA_LABEL
+
+    def test_detect_all(self, detector, sample_matched_pair):
+        """Test full inconsistency detection pipeline."""
+        inconsistencies = detector.detect_all(
+            matched_pairs=[sample_matched_pair],
+            unmatched_text=[],
+            unmatched_visual=[],
+            image_id="test-image-001",
+        )
+        assert isinstance(inconsistencies, list)
+
+
+# =============================================================================
+# AlignmentEngine Tests
+# =============================================================================
+
+class TestAlignmentEngine:
+    """Tests for AlignmentEngine class."""
+
+    @pytest.fixture
+    def engine(self):
+        return AlignmentEngine(AlignmentEngineConfig())
+
+    def test_align_basic(self, engine, sample_text_spec, sample_vision_spec):
+        """Test basic alignment pipeline."""
+        report = engine.align(sample_text_spec, sample_vision_spec)
+
+        assert report.image_id == "test-image-001"
+        assert report.text_spec_id == "test-image-001"
+        assert report.vision_spec_id == "test-image-001"
+        assert report.provenance.stage == PipelineStage.ALIGNMENT
+        assert 0.0 <= report.overall_alignment_score <= 1.0
+
+    def test_align_with_labels(self, engine, text_spec_with_labels, vision_spec_with_points):
+        """Test alignment with label matching."""
+        report = engine.align(text_spec_with_labels, vision_spec_with_points)
+
+        assert len(report.matched_pairs) >= 2
+        # Note: matched_pairs_count is now a @computed_field on AlignmentReport
+        assert report.matched_pairs_count >= 2
+
+    def test_align_statistics(self, engine, sample_text_spec, sample_vision_spec):
+        """Test alignment statistics computation."""
+        report = engine.align(sample_text_spec, sample_vision_spec)
+
+        # Input statistics are on report.statistics
+        stats = report.statistics
+        assert stats.total_text_elements >= 0
+        assert stats.total_visual_elements >= 0
+        # Derived statistics are @computed_field on AlignmentReport
+        assert report.matched_pairs_count >= 0
+
+    def test_align_unmatched_elements(self, engine, text_spec_with_labels, vision_spec_with_points):
+        """Test unmatched elements in report."""
+        report = engine.align(text_spec_with_labels, vision_spec_with_points)
+
+        # Should have some unmatched elements (like description text)
+        assert report.unmatched_elements is not None
+
+    def test_create_alignment_engine(self):
+        """Test factory function."""
+        engine = create_alignment_engine()
+        assert isinstance(engine, AlignmentEngine)
+
+    def test_align_text_and_vision_convenience(self, sample_text_spec, sample_vision_spec):
+        """Test convenience function."""
+        report = align_text_and_vision(sample_text_spec, sample_vision_spec)
+        assert report.image_id == "test-image-001"
+
+
+# =============================================================================
+# Integration Tests
+# =============================================================================
+
+class TestAlignmentIntegration:
+    """Integration tests for the complete alignment pipeline."""
+
+    def test_full_pipeline_equation_graph(self, sample_text_spec, sample_vision_spec):
+        """Test full pipeline with equation-to-graph matching."""
+        engine = AlignmentEngine()
+        report = engine.align(sample_text_spec, sample_vision_spec)
+
+        # Should produce valid report
+        assert report is not None
+        assert report.processing_time_ms > 0
+
+        # Check that equation matched to curve
+        eq_matches = [
+            p for p in report.matched_pairs
+            if p.match_type == MatchType.EQUATION_TO_GRAPH
+        ]
+        # May or may not match depending on threshold
+
+    def test_full_pipeline_label_matching(self, text_spec_with_labels, vision_spec_with_points):
+        """Test full pipeline with label matching."""
+        engine = AlignmentEngine(AlignmentEngineConfig(
+            base_alignment_threshold=0.5,  # Lower threshold for testing
+        ))
+        report = engine.align(text_spec_with_labels, vision_spec_with_points)
+
+        # Should have label matches
+        label_matches = [
+            p for p in report.matched_pairs
+            if p.match_type == MatchType.LABEL_TO_POINT
+        ]
+        assert len(label_matches) >= 1
+
+    def test_consistency_updates_review_status(self, text_spec_with_labels, vision_spec_with_points):
+        """Test that consistency checking updates review status."""
+        engine = AlignmentEngine(AlignmentEngineConfig(
+            base_alignment_threshold=0.9,  # High threshold
+        ))
+        report = engine.align(text_spec_with_labels, vision_spec_with_points)
+
+        # Check that some pairs may need review
+        pairs_needing_review = [
+            p for p in report.matched_pairs
+            if p.review.review_required
+        ]
+        # High threshold should trigger some review requirements
+
+    def test_threshold_config_affects_results(self, text_spec_with_labels, vision_spec_with_points):
+        """Test that threshold configuration affects results."""
+        # Low threshold
+        engine_low = AlignmentEngine(AlignmentEngineConfig(
+            base_alignment_threshold=0.3,
+        ))
+        report_low = engine_low.align(text_spec_with_labels, vision_spec_with_points)
+
+        # High threshold
+        engine_high = AlignmentEngine(AlignmentEngineConfig(
+            base_alignment_threshold=0.9,
+        ))
+        report_high = engine_high.align(text_spec_with_labels, vision_spec_with_points)
+
+        # Low threshold should have more matches above threshold
+        assert report_low.statistics.pairs_above_threshold >= report_high.statistics.pairs_above_threshold

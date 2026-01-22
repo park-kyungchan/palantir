@@ -1,0 +1,605 @@
+# Draft: Commands/Skills 고도화 (Native Capabilities 최대 활용)
+
+> **Version:** 1.0 | **Status:** QUESTIONING
+> **Date:** 2026-01-20 | **Rounds:** 0
+> **Auto-Compact Safe:** This file persists across context compaction
+
+---
+
+## INDEX
+
+### 요구사항 요약
+남은 Commands (4개) + Skills (3개)를 Claude Code Native Capabilities 최대 활용하여 고도화:
+- `resume`, `run_in_background=true`, `context: fork` 등 적극 활용
+- L1/L2 패턴 적용 (이미 Hook으로 자동 적용됨)
+- 최신 V2.1.12 기능 적극 통합
+
+### Complexity
+- **예상 복잡도:** medium
+- **대상 파일:** 7개 (중복 제거 시 5개)
+
+### 현재 적용 현황
+
+| 파일 | resume | run_in_background | context:fork | L1/L2 | 개선 필요도 |
+|------|:------:|:-----------------:|:------------:|:-----:|:-----------:|
+| **Commands** |  |  |  |  |  |
+| ask.md | ❌ | ❌ | ⚠️ 언급만 | ✅ Hook | **HIGH** |
+| commit-push-pr.md | ❌ | ❌ | ❌ | ✅ Hook | **MEDIUM** |
+| plan-draft.md | ❌ | ❌ | ❌ | ✅ Hook | **HIGH** |
+| teleport.md | ❌ | ❌ | ❌ | ✅ Hook | **LOW** |
+| **Skills** |  |  |  |  |  |
+| ask.md | ❌ | ❌ | ❌ | ✅ Hook | **HIGH** |
+| docx-automation.md | ❌ | ❌ | ❌ | ✅ Hook | **LOW** |
+| plan-draft.md | ❌ | ❌ | ❌ | ✅ Hook | **HIGH** |
+
+### 추천 고도화 기능 (claude-code-guide 결과)
+
+| 기능 | 버전 | 적용 대상 | 효과 |
+|------|------|----------|------|
+| `resume` parameter | V2.0.28+ | /plan-draft, /ask | Auto-Compact 후 작업 재개 |
+| `run_in_background=true` | V2.1.0+ | /plan-draft, /ask | 병렬 탐색 가속 |
+| `context: fork` | V2.1.0+ | /plan-draft, /ask | 메인 컨텍스트 오염 방지 |
+| `updatedInput` Hook | V2.1.9+ | 모든 Task() 호출 | 파라미터 자동 주입 |
+| `additionalContext` Hook | V2.1.9+ | 모든 Task() 호출 | 컨텍스트 자동 주입 |
+| `allowed-tools` 최적화 | V2.1.0+ | 모든 Skills | 최소 권한 원칙 |
+| Prompt-based hooks | V2.1.x | /plan-draft Stop | 지능적 완료 판단 |
+| Progressive disclosure | V2.1.0+ | /ask, /plan-draft | 문서 분리 |
+
+### Q&A 핵심 (Round 1)
+1. **Q:** 중복 파일 처리? → **A:** 분리 유지, /ask와 /plan-draft만 고도화
+2. **Q:** 우선순위? → **A:** 모든 Native-Subagents + /ask, /plan-draft
+3. **Q:** context:fork 전략? → **A:** 모든 Subagent 호출에 fork 적용
+4. **Q:** Hook 추가 기능? → **A:** (조사 중 - claude-code-guide 실행)
+
+### 리스크
+- Commands와 Skills의 중복 (ask.md, plan-draft.md)
+- 기존 사용 패턴과의 호환성
+- 고도화 후 복잡도 증가 우려
+
+### 다음 단계
+Socratic Q&A 시작 → 사용자 의도 명확화
+
+---
+
+## DETAIL: Q&A 전체 로그 {#qa-log}
+
+### Round 0 (Initialization)
+**배경:**
+- 사용자가 명시적으로 커맨드/스킬 사용 시 Native Capabilities 최대 활용 원함
+- claude-code-guide로 최신 기능 조사 완료
+
+### Round 1 (2026-01-20 21:40)
+**Q1:** Commands/Skills 중복 파일 처리?
+**A1:** 분리 유지. /ask, /plan-draft만 고도화. 나머지는 그대로.
+
+**Q2:** 우선순위?
+**A2:** 모든 Native-Subagents와 /ask, /plan-draft만 진행
+
+**Q3:** context:fork 전략?
+**A3:** 모든 Subagent 호출에 fork 적용
+
+**Q4:** Hook 추가 기능 필요?
+**A4:** "hook에 관한 native-capabilities 더 없나?" → claude-code-guide 추가 조사 완료
+
+**핵심 요구사항 정리:**
+1. 커맨드로 프롬프트 입력 시 **항상 Task() 호출**하여 Hook이 작동하도록
+2. 모든 Subagent에 **context: fork** 적용
+3. Native Capabilities **최대 활용** (resume, run_in_background, etc.)
+
+### Round 2 (2026-01-20 22:05) - `resume` Parameter
+**기능:** Auto-Compact 후 subagent 작업 재개 (이전 컨텍스트 복원)
+
+**Claude 추천:**
+- /ask: ⚠️ 선택적 (대부분 단일 턴 완료)
+- /plan-draft: ✅ 필요 (여러 라운드 Q&A)
+
+**추천 근거:**
+- `/ask`는 prompt-assistant가 빠르게 응답하므로 resume 필요성 낮음
+- `/plan-draft`는 5-10+ 라운드 Q&A가 진행될 수 있어 resume 필수
+
+**사용자 결정:** ✅ **둘 다 적용 + Native-Subagents 포함**
+
+**결정 이유:** 복잡한 분석 시 /ask도 장시간 진행될 수 있음. Native-Subagents(Explore, Plan, general-purpose, claude-code-guide)도 resume 지원
+
+### Round 3 (2026-01-20 22:10) - `run_in_background=true`
+**기능:** Subagent 백그라운드 실행으로 병렬 처리 가능 (Boris Cherny Pattern)
+
+**현재 상태:** l1l2_inject.sh Hook이 **모든 Task()에 자동 주입** 중
+
+**Claude 추천:**
+- Hook 의존 + 문서화: 코드는 Hook에 맡기고, Skill 파일에 가이드라인으로 의도 명시
+
+**추천 근거:**
+1. Hook이 이미 자동 처리하므로 코드 중복 불필요
+2. 의도적 병렬 실행(3+ Explore 동시)은 Skill 문서에 명시하면 가독성 향상
+3. 중앙 관리(Hook) + 의도 명시(문서) = 최적 조합
+
+**사용자 질문:** "의도적 병렬 실행을 명시할 수 있어? 이것은 hooks, parameter와 다른 기능 섹션인가?"
+
+**Claude 설명:**
+- Hook: 시스템 레벨, 모든 Task()에 자동 적용
+- Parameter: 개별 Task() 호출 시 지정
+- 문서화: Skill 파일에 가이드라인으로 의도 명시 (실행에 영향 없음)
+
+**사용자 결정:** ✅ **Hook 의존 + 문서화**
+
+**결정 이유:** 코드는 Hook에 맡기고, Skill 파일에 병렬 실행 의도를 가이드라인으로 명시
+
+### Round 4 (2026-01-20 22:20) - `context: fork`
+**기능:** Skill이 격리된 컨텍스트에서 실행. 메인 컨텍스트 오염 방지.
+
+**Claude 추천:**
+- /ask, /plan-draft: ❌ **사용 금지**
+- 이유: 사용자 상호작용(AskUserQuestion) 필수
+
+**추천 근거:**
+1. `context: fork`는 격리된 컨텍스트에서 실행
+2. AskUserQuestion 응답이 메인으로 전달 안 됨
+3. /ask, /plan-draft는 Socratic Q&A가 핵심 → 사용자 응답 필수
+
+**사용자 질문 1:** "AskUserQuestion 사용에 대해 더 자세히 설명해"
+
+**Claude 설명:**
+- standard: User ↔ Skill 상호작용 가능 (AskUserQuestion 작동)
+- fork: User 응답이 Fork 내부에 갇힘 (Q&A 루프 중단)
+
+**사용자 질문 2:** "fork 적용하면 Agents 위임 후에 어떻게 되는지 standard와 비교해봐"
+
+**Claude 설명 (상세 비교):**
+| 항목 | standard | fork |
+|------|----------|------|
+| User ↔ Skill 상호작용 | ✅ 가능 | ❌ 불가 |
+| Skill 출력이 메인에 보임 | ⚠️ 예 | ❌ 격리 |
+| Skill ↔ Agent 상호작용 | ✅ 가능 | ✅ 가능 |
+| 적합한 용도 | Q&A, 대화형 | 분석, 배치 |
+
+**사용자 결정:** ✅ **/ask, /plan-draft는 standard**
+
+**결정 이유:** 사용자 Q&A 필수. fork는 /deep-audit 같은 분석용에만 적합
+
+### Round 5 (2026-01-21 14:50) - `model` Parameter
+**기능:** Task() 호출 시 subagent에 사용할 모델 지정 (sonnet, opus, haiku)
+
+**Claude 추천:**
+- /ask, /plan-draft: ⚠️ **기본값 유지 (상속)** - 사용자가 선택한 모델로 일관된 경험 제공
+
+**추천 근거:**
+1. `/ask`, `/plan-draft`는 사용자와 직접 대화하는 스킬
+2. 사용자가 선택한 모델(Opus 4.5) 존중하면 품질 일관성 유지
+3. 모델 전환 오버헤드 없이 자연스러운 경험
+
+**사용자 결정:** ✅ **Opus 명시**
+
+**결정 이유:** 최고 품질 보장. /ask, /plan-draft는 사용자와 직접 대화하므로 품질이 중요
+
+### Round 6 (2026-01-21 14:55) - `updatedInput` (Hook Response Field)
+**기능:** PreToolUse Hook에서 도구 파라미터를 강제 변경 (시스템 레벨)
+
+**현재 상태:** `l1l2_inject.sh`가 이미 `run_in_background=true` 자동 주입 중
+
+**Claude 질문:** Round 5에서 Opus 명시 결정 → Hook에 `model="opus"`도 추가할지?
+
+**옵션 제시:**
+1. Hook에 추가 (추천) - 모든 Task()에 자동 주입
+2. Skill에만 명시 - Delegation Template에 직접 작성
+3. 선택적 적용 - prompt-assistant는 Opus, 다른 subagent는 상속
+
+**사용자 결정:** ✅ **Hook에 추가 (추천)**
+
+**결정 이유:** 중앙 관리로 일관성 보장. l1l2_inject.sh에서 모든 Task()에 model="opus" 자동 주입
+
+**구현 영향:**
+- `l1l2_inject.sh` 수정 필요
+- `updatedInput`에 `"model": "opus"` 추가
+
+### Round 7 (2026-01-21 15:05) - `additionalContext` (Hook Response Field)
+**기능:** PreToolUse Hook에서 subagent 프롬프트에 컨텍스트 주입
+
+**현재 상태:** `l1l2_inject.sh`가 모든 Task()에 L1/L2 형식 프롬프트 주입 중
+
+**문제 제기:**
+- `/ask`: prompt-assistant는 대화형 Q&A → L1/L2 형식이 부자연스러움
+- `/plan-draft`: Socratic Q&A 진행 → 매 턴 YAML 응답이면 사용자 경험 저하
+
+**Claude 설명 (쉬운 버전):**
+- 대화형 스킬: 자연어 응답 필요 (친절한 대화)
+- 분석형 스킬: 구조화된 보고서 필요 (L1/L2 적합)
+
+**옵션 제시:**
+1. 분기 처리 (추천) - subagent_type별로 L1/L2 적용 여부 결정
+2. 전체 적용 - 모든 응답이 기계적 형식
+3. 전체 제외 - 분석 결과도 구조화 안 됨
+
+**사용자 결정:** ✅ **분기 처리 (추천)**
+
+**결정 이유:** 대화형(prompt-assistant)=자연어, 분석형(Explore/Plan)=L1/L2로 분기
+
+**구현 영향:**
+- `l1l2_inject.sh` 수정 필요
+- `subagent_type` 확인 후 `additionalContext` 조건부 주입
+- 제외 대상: `prompt-assistant` (대화형)
+
+### Round 8 (2026-01-21 15:10) - Hook Events 개요
+**기능:** Claude Code Hook Events (10개 이벤트 타입)
+
+**현재 사용 중:** PreToolUse (l1l2_inject.sh), SessionStart (환영 메시지)
+
+**사용자 요청:** Hook Event도 하나씩 결정하겠음
+
+**진행 방식:** Round 9~18에서 각 Hook Event 개별 결정
+
+### Round 9 (2026-01-21 15:15) - `PostToolUse` Hook
+**기능:** 도구 실행 후 트리거. 결과 가공, 로깅, 후처리에 사용.
+
+**L1/L2와의 관계:**
+- PreToolUse: L1/L2 형식 주입 (실행 전)
+- PostToolUse: 결과 관찰/기록 (실행 후) → 충돌 없음
+
+**옵션 제시:**
+1. Agent ID 캡처 (추천) - resume 지원
+2. 결과 로깅 - L1 요약 + Agent ID 기록
+3. 둘 다
+4. 사용 안 함
+
+**사용자 질문:** "결과 로깅은 L1/L2 시스템과 어떠한 상호작용이 있게 되나?"
+
+**Claude 설명:**
+- PostToolUse는 결과를 **관찰**하고 **기록**할 뿐
+- L2 파일 생성과 중복되지 않음 (L2는 subagent가 생성)
+- 로그는 별도 파일 (.agent/logs/task_execution.log)
+
+**사용자 추가 질문:** "Main Agent가 Auto-Compact 이후에도 알 수 있나?"
+
+**Claude 설명:**
+- ✅ **예, 알 수 있음**
+- 파일 시스템은 Auto-Compact 영향 받지 않음
+- 로그 파일에서 Agent ID 읽어서 resume 가능
+
+**사용자 결정:** ✅ **둘 다 (Agent ID 캡처 + 결과 로깅)**
+
+**결정 이유:** Auto-Compact 후에도 Agent ID 확인 가능. resume 지원 완전 보장.
+
+**구현 영향:**
+- PostToolUse Hook 신규 작성 필요
+- 로그 경로: `.agent/logs/task_execution.log`
+- Agent ID, taskId, status, l2Path 기록
+
+### Round 10 (2026-01-21 15:20) - `Stop` Hook
+**기능:** Main Agent 대화 종료 시점에 트리거. 마지막 정리 작업.
+
+**옵션 제시:**
+1. Draft 상태 저장 (추천) - /plan-draft 중 종료 시 현재 상태 영구 저장
+2. 미완료 알림 - 종료 전 진행 중 작업 안내
+3. 둘 다
+4. 사용 안 함
+
+**사용자 결정:** ✅ **둘 다 (Draft 상태 저장 + 미완료 알림)**
+
+**결정 이유:** 세션 종료 시 작업 손실 방지. 사용자에게 미완료 작업 인지시킴.
+
+**구현 영향:**
+- Stop Hook 신규 작성 필요
+- Draft 파일 상태를 `PAUSED`로 변경
+- 진행 중인 Task 목록 출력
+
+### Round 11 (2026-01-21 15:25) - `SubagentStop` Hook
+**기능:** Subagent 실행 완료 시점에 트리거. Subagent 내부에서 호출.
+
+**PostToolUse와의 관계:**
+- PostToolUse: Main Agent에서 Task() 반환 후 호출 (Agent ID 캡처)
+- SubagentStop: Subagent 내부에서 종료 시 호출 (내부 상태 기록)
+
+**옵션 제시:**
+1. 사용 안 함 (추천) - PostToolUse로 충분. 중복 방지
+2. 종료 사유 기록 - subagent 종료 상세 사유 (timeout, error, success)
+
+**사용자 결정:** ✅ **종료 사유 기록**
+
+**결정 이유:** PostToolUse와 별개로 subagent 내부 종료 사유(timeout, error, max_turns 도달 등) 상세 기록
+
+**구현 영향:**
+- SubagentStop Hook 신규 작성 필요
+- 종료 사유 분류: success, timeout, error, max_turns_reached
+- 로그 경로: `.agent/logs/subagent_stops.log`
+
+### Round 12 (2026-01-21 15:30) - `UserPromptSubmit` Hook
+**기능:** 사용자가 메시지를 입력한 직후 트리거. Claude 처리 전.
+
+**옵션 제시:**
+1. Q&A 로깅 (추천) - 사용자 입력을 Draft 파일에 자동 기록
+2. 입력 전처리 - 키워드 감지, 의도 분류
+3. 둘 다
+4. 사용 안 함
+
+**사용자 결정:** ✅ **Q&A 로깅 (추천)**
+
+**결정 이유:** /plan-draft Q&A 기록 자동화. 사용자 질문/응답 전체 이력 보존.
+
+**구현 영향:**
+- UserPromptSubmit Hook 신규 작성 필요
+- 활성 Draft 파일 감지 후 사용자 입력 기록
+- Q&A 로그 형식: `### User: {timestamp}\n{input}`
+
+### Round 13 (2026-01-21 15:35) - `PermissionRequest` Hook
+**기능:** Claude가 권한 요청할 때 트리거. 자동 승인/거부 정책 적용.
+
+**사용자 질문:** "auto-compact에는 사용 불가능한가?"
+
+**Claude 설명:**
+- PermissionRequest: 도구 사용 권한 요청 시 트리거 (Auto-Compact와 무관)
+- PreCompact: Auto-Compact 직전 트리거 (상태 저장용)
+- 두 Hook은 별개 이벤트
+
+**옵션 제시:**
+1. 사용 안 함 (추천) - /ask, /plan-draft는 권한 요청 거의 없음
+2. 로깅 전용 - 권한 요청 기록 (디버깅용)
+
+**사용자 결정:** ✅ **사용 안 함 (추천)**
+
+**결정 이유:** /ask, /plan-draft는 읽기/분석 위주. 권한 요청 상황 거의 없음.
+
+### Round 14 (2026-01-21 15:40) - `Notification` Hook
+**기능:** 시스템 알림 발생 시 트리거. 알림 필터링/커스터마이징.
+
+**옵션 제시:**
+1. 사용 안 함 (추천) - 기본 알림으로 충분
+2. 커스터마이징 - 알림 형식/내용 변경
+
+**사용자 결정:** ✅ **사용 안 함 (추천)**
+
+**결정 이유:** 기본 알림 시스템으로 충분. 추가 커스터마이징 불필요.
+
+### Round 15 (2026-01-21 15:45) - `SessionStart` Hook
+**기능:** 세션 시작 시 트리거. 환영 메시지, 초기화.
+
+**현재 상태:** 이미 사용 중 (환영 메시지 표시)
+
+**사용자 질문:** "auto-compact 이후도 새로운 세션으로 판단되나?"
+
+**Claude 설명:**
+- SessionStart: Claude Code 시작 시만 트리거 (새 세션)
+- Auto-Compact: 같은 세션 내에서 메모리만 정리 (SessionStart 안 호출)
+- PreCompact: Auto-Compact 직전 트리거 (상태 저장용)
+
+**옵션 제시:**
+1. Draft 복구 알림 (추천) - 새 세션 시작 시 미완료 Draft 있으면 알림
+2. 현상 유지 - 기존 환영 메시지만
+
+**사용자 결정:** ✅ **Draft 복구 알림 (추천)**
+
+**결정 이유:** 새 세션 시작 시 이전 미완료 /plan-draft 작업 알림. 작업 연속성 보장.
+
+**구현 영향:**
+- SessionStart Hook 수정 필요
+- `.agent/plans/` 디렉토리 스캔하여 상태가 `in_progress` 또는 `PAUSED`인 파일 검색
+- 발견 시 알림: "미완료 Draft 발견: {filename}. `/resume`로 계속하세요."
+
+### Round 16 (2026-01-21 15:50) - `SessionEnd` Hook
+**기능:** 세션 종료 시 트리거. 최종 정리 작업.
+
+**Stop Hook과의 관계:**
+- Stop: 사용자가 종료 명령 시 (대화 종료)
+- SessionEnd: 시스템이 세션 종료 감지 (완전 종료)
+
+**옵션 제시:**
+1. 사용 안 함 (추천) - Stop Hook으로 충분. 중복 방지
+2. 최종 로그 기록 - 세션 통계 기록
+
+**사용자 결정:** ✅ **사용 안 함 (추천)**
+
+**결정 이유:** Stop Hook에서 이미 Draft 상태 저장 처리. SessionEnd는 중복.
+
+### Round 17 (2026-01-21 15:55) - `PreCompact` Hook
+**기능:** Auto-Compact 직전에 트리거. 마지막 상태 저장 기회.
+
+**중요성:** ⚠️ resume 지원의 핵심. Auto-Compact 후 메모리 사라지므로 파일 저장 필수.
+
+**사용자 질문:** "이것 관련한 시스템 파라미터 없나?"
+
+**Claude 설명:**
+- 시스템 파라미터로 자동 저장되는 것은 없음
+- PreCompact Hook에서 직접 파일로 저장해야 함
+- Hook 입력에 context_usage (토큰 사용량) 정보 포함
+
+**옵션 제시:**
+1. 전체 상태 저장 (강력 추천) - Agent ID + Draft 상태 + 라운드 번호
+2. Agent ID만 저장 - resume만 지원
+3. 사용 안 함 - Auto-Compact 후 상태 손실 위험
+
+**사용자 결정:** ✅ **전체 상태 저장 (강력 추천)**
+
+**결정 이유:** Auto-Compact 후에도 완전한 상태 복구 가능. resume + Q&A 연속성 모두 지원.
+
+**구현 영향:**
+- PreCompact Hook 신규 작성 필요
+- Draft 파일 메타데이터 업데이트:
+  - `last_agent_ids: [a1b2c3d, e5f6g7h]`
+  - `qa_round: 17`
+  - `status: COMPACTING`
+- `.agent/logs/precompact.log`에 컨텍스트 스냅샷 기록
+
+### Round 18 (2026-01-21 16:00) - `allowed-tools` (Skill Frontmatter)
+**기능:** Skill이 사용할 수 있는 도구 목록 제한. 최소 권한 원칙.
+
+**현재 상태:**
+- /ask: `Read, Grep, Glob, AskUserQuestion, Task, WebSearch`
+- /plan-draft: (명시 안 됨)
+
+**옵션 제시:**
+1. 추천대로 (최소 권한) - /ask 유지, /plan-draft + Write 추가
+2. 넘넘하게 (전체 허용) - 모든 도구 허용
+3. 엄격하게 (읽기 전용) - Task 제외
+
+**사용자 결정:** ✅ **넘넘하게 (전체 허용)**
+
+**결정 이유:** 유연성 우선. 필요한 도구 제한 없이 모든 기능 사용 가능.
+
+**구현 영향:**
+- /ask: `allowed-tools` 제거 또는 `*` (전체)
+- /plan-draft: `allowed-tools` 제거 또는 `*` (전체)
+
+### Round 19 (2026-01-21 16:05) - Progressive Disclosure
+**기능:** 문서를 계층적으로 분리하는 패턴 (Layer 1/2/3)
+
+**사용자 요청:** "L1/L2 전체시스템 대규모개선을 이것을 적용해서 할 수 있는 방법 연구해봐"
+
+**Claude 연구 결과:**
+- 3-Layer L1/L2 시스템 제안
+- Layer 1: L1 Summary (300 tokens) - 항상 반환
+- Layer 2: L2 Index (200 tokens) - 섹션 목차 + 우선순위
+- Layer 3: L2 Detail - 요청 시만 Read()
+
+**개선 포인트:**
+- L1에 `priority` (CRITICAL/MEDIUM/LOW) 추가
+- L1에 `recommendedRead` (추천 읽기 순서) 추가
+- Main Agent가 필요한 섹션만 선택적 읽기
+
+**장점:**
+- 컨텍스트 효율: 필요한 섹션만 읽어서 토큰 절약
+- 확장성: 50개, 100개 파일도 처리 가능
+- Auto-Compact 방지: 불필요한 상세 내용 로드 안 함
+
+**사용자 결정:** ✅ **통합 적용 + Plan Agent로 문서화 + 코드 레벨까지 작성**
+
+**결정 이유:** L1/L2 시스템의 대규모 개선. Progressive Disclosure 원칙으로 컨텍스트 효율 극대화.
+
+**다음 단계:** Plan Agent 호출하여 상세 구현 계획 문서화
+
+---
+
+## DETAIL: Native Capabilities Reference {#native-ref}
+
+### 1. resume Parameter
+```python
+# 첫 실행 시 agent_id 반환됨
+Task(
+    subagent_type="Explore",
+    prompt="...",
+    run_in_background=True
+)
+# → agent_id: "a1b2c3d"
+
+# Auto-Compact 후 재개
+Task(
+    subagent_type="Explore",
+    prompt="Continue analysis",
+    resume="a1b2c3d",  # 이전 agent ID
+    run_in_background=True
+)
+```
+
+### 2. run_in_background + Parallel Deployment
+```python
+# Boris Cherny Pattern: 3+ 독립 작업 병렬 실행
+Task(subagent_type="Explore", prompt="...", run_in_background=True)
+Task(subagent_type="Plan", prompt="...", run_in_background=True)
+Task(subagent_type="general-purpose", prompt="...", run_in_background=True)
+# 모두 동시 실행, 결과는 나중에 수집
+```
+
+### 3. context: fork (Skill YAML)
+```yaml
+---
+name: deep-analysis
+context: fork  # 격리된 컨텍스트에서 실행
+agent: general-purpose
+---
+```
+
+### 4. updatedInput + additionalContext (Hook)
+```bash
+# PreToolUse Hook 응답
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedInput": {"run_in_background": true},
+    "additionalContext": "L1/L2 format required..."
+  }
+}
+```
+
+### 5. allowed-tools (최소 권한)
+```yaml
+# Read-only analysis
+allowed-tools: Read, Grep, Glob
+
+# With execution
+allowed-tools: Read, Grep, Glob, Bash
+
+# Full modification
+allowed-tools: Read, Grep, Glob, Bash, Edit, Write
+```
+
+---
+
+## DETAIL: 파일별 현황 분석 {#file-analysis}
+
+### /ask (Command + Skill)
+**현재 상태:**
+- Delegation Template에서 `context="fork"` 언급만
+- `run_in_background` 미적용
+- `resume` 미적용
+
+**개선 포인트:**
+- [ ] Skill에 `context: fork` frontmatter 추가
+- [ ] prompt-assistant 호출 시 `run_in_background=true`
+- [ ] 장시간 분석 시 `resume` 지원
+
+### /plan-draft (Command + Skill)
+**현재 상태:**
+- Socratic Q&A 루프 구현
+- Phase 3: Exploration에서 Task() 사용
+- Background 실행 미적용
+
+**개선 포인트:**
+- [ ] Skill에 `context: fork` 추가 (verbose 출력 격리)
+- [ ] Phase 1 병렬 탐색 추가 (3개 Explore 동시)
+- [ ] Agent ID 저장하여 `resume` 지원
+- [ ] Prompt-based Stop hook 추가
+
+### /commit-push-pr (Command only)
+**현재 상태:**
+- Pre-flight checks 구현
+- Governance 통합 언급만
+
+**개선 포인트:**
+- [ ] Pre-commit Task()에 `run_in_background=true`
+- [ ] Push 실패 시 `resume` 지원
+
+### /teleport (Command only)
+**현재 상태:**
+- Web ↔ CLI 세션 전송
+- Python 스크립트 의존
+
+**개선 포인트:**
+- [ ] Background 실행 옵션 추가
+- [ ] (우선순위 낮음 - 이미 잘 동작)
+
+### /docx-automation (Skill only)
+**현재 상태:**
+- Pipeline 통합 완료
+- python-docx 의존
+
+**개선 포인트:**
+- [ ] 대용량 처리 시 `run_in_background=true`
+- [ ] (우선순위 낮음 - 특수 목적)
+
+---
+
+## DETAIL: 리스크 분석 {#risk-analysis}
+
+| 리스크 | 영향 | 완화 방안 |
+|--------|------|----------|
+| Commands/Skills 중복 | LOW | 통합 또는 역할 명확화 |
+| context:fork 제한사항 | MEDIUM | User interaction 필요 시 standard 사용 |
+| resume ID 관리 복잡도 | LOW | Plan 파일에 자동 기록 |
+| 병렬 실행 순서 문제 | LOW | 독립 작업만 병렬화 |
+
+---
+
+## Metadata
+
+- Created: 2026-01-20 21:35
+- Last Updated: 2026-01-20 21:35
+- Q&A Rounds: 0
+- State: QUESTIONING (Q&A 대기 중)

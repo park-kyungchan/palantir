@@ -1,0 +1,60 @@
+# Progressive-Disclosure Hook Configuration
+# ==========================================
+#
+# This hook transforms verbose subagent outputs into L1/L2/L3 layered format.
+# Purpose: Prevent Auto-Compact during /plan and similar commands by minimizing
+#          Main Agent context consumption.
+#
+# V2.1.9 Feature
+
+# Master switch
+enabled: true
+
+# Automatically generate L2 structured reports for verbose outputs
+auto_generate_l2: true
+
+# Suppress verbose output from Main Agent transcript
+# When true: Only L1 headline + L2 path shown to Main Agent
+# When false: Full output still visible (L2 generated as backup)
+suppress_verbose_output: true
+
+# Maximum length for L1 headlines (characters)
+max_headline_length: 100
+
+# Maximum tokens to include in L2 report (approximate)
+# Outputs exceeding this are truncated in L2, full content in L3
+max_l2_tokens: 3000
+
+# Skills that should use Progressive-Disclosure
+# These skills typically generate large subagent outputs
+applicable_skills:
+  - plan
+  - audit
+  - deep-audit
+  - execute
+  - quality-check
+
+# Log all transformations for debugging
+log_transformations: true
+
+# Thresholds for determining "verbose" output
+thresholds:
+  # Output with more than this many characters is considered verbose
+  min_chars_for_transformation: 1000
+  # Output with more than this many lines is considered verbose
+  min_lines_for_transformation: 30
+
+# Agent type to output directory mapping
+agent_directories:
+  explore: explore
+  plan: plan
+  general-purpose: general
+  evidence-collector: evidence
+  prompt-assistant: prompt
+
+# Output budget per agent type (tokens, for reference)
+agent_budgets:
+  explore: 5000
+  plan: 10000
+  general-purpose: 15000
+  evidence-collector: 5000
