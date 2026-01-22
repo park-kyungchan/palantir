@@ -1,4 +1,5 @@
 ---
+name: commit-push-pr
 description: |
   Boris Cherny Pattern 6: Commit changes, push to remote, create/update PR.
   All-in-one git workflow command used dozens of times daily.

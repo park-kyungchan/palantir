@@ -1,3 +1,12 @@
+---
+name: teleport
+description: |
+  Teleport: Web ↔ CLI Session Transfer.
+  Transfer your Claude Code session between web interface and CLI.
+allowed-tools: Read, Bash, WebFetch
+argument-hint: <direction: in|out> [session_id]
+---
+
 # Teleport: Web ↔ CLI Session Transfer
 
 Transfer your Claude Code session between web interface and CLI.

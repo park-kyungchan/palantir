@@ -1,7 +1,7 @@
 ---
 name: onboarding-guide
 description: |
-  Claude Code와 ODA 시스템 사용법을 안내합니다.
+  Claude Code 사용법을 안내합니다.
   처음 사용하는 사용자에게 단계별 가이드를 제공합니다.
   Use when user is new or asks basic questions about how to use the system.
 
@@ -14,14 +14,6 @@ skills:
     - help-korean  # Direct access to Korean help
     - capability-advisor  # Recommend features to new users
   via_delegation: []  # User-facing, doesn't delegate
-
-# ODA Context
-oda_context:
-  role: user_support
-  stage_access: []  # Not part of 3-Stage Protocol
-  evidence_required: false
-  audit_integration: false  # User guidance not audited
-  governance_mode: none  # No governance for help
 
 # V2.1.x Features (NEW)
 v21x_features:
@@ -50,7 +42,7 @@ context: standard  # Quick responses in main context
 
 # Onboarding Guide Agent
 
-환영합니다! Claude Code와 ODA 시스템 사용법을 안내해드립니다.
+환영합니다! Claude Code 사용법을 안내해드립니다.
 
 ## 시작하기
 
