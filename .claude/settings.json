@@ -78,9 +78,27 @@
             "command": "/home/palantir/.claude/hooks/auto-backup.sh"
           }
         ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/progressive-disclosure/pd-inject.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/progressive-disclosure/post-task-output.sh"
+          }
+        ]
+      },
       {
         "matcher": ".*",
         "hooks": [

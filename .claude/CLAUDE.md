@@ -72,6 +72,31 @@ Task(subagent_type="Plan", prompt="...", run_in_background=True)
 
 Hook: `.claude/hooks/progressive-disclosure/pd-inject.sh`
 
+#### Layer Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│ L1: Summary (≤500 tokens)                           │
+│ - priority, summary, l2Index, recommendedRead       │
+│ - Main Agent로 직접 반환 (tool_result)              │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│ L2: Index (l2Index[])                               │
+│ - anchor, tokens, priority, description             │
+│ - L3 섹션에 대한 메타데이터                         │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│ L3: Detail (File sections)                          │
+│ - .agent/outputs/{type}/{id}.md 파일                │
+│ - ## Section {#anchor} 형식으로 작성                │
+│ - 필요 시만 Read()로 접근 (Lazy Loading)            │
+└─────────────────────────────────────────────────────┘
+```
+
 #### L1 Summary Format (MAX 500 TOKENS)
 
 ```yaml
@@ -90,24 +115,54 @@ l2Index:
   - anchor: "#section-name"
     tokens: {estimated number}
     priority: CRITICAL | HIGH | MEDIUM | LOW
+    description: "what this section contains"
 
 l2Path: .agent/outputs/{agentType}/{taskId}.md
 requiresL2Read: true | false
+nextActionHint: "suggested next step"
+```
+
+#### L3 Detail Format (File)
+
+```markdown
+<!-- .agent/outputs/{agentType}/{taskId}.md -->
+<!-- Estimated total: ~2000 tokens -->
+
+## Section Name {#anchor}
+<!-- ~500 tokens -->
+
+Detailed content here...
+
+## Another Section {#another-anchor}
+<!-- ~800 tokens -->
+
+More detailed content...
 ```
 
 #### Reading Strategy
 
 | Priority | Action |
 |----------|--------|
-| CRITICAL | MUST read recommendedRead sections |
-| HIGH | SHOULD read recommendedRead sections |
-| MEDIUM | MAY read L2 on demand |
-| LOW | L1 is sufficient |
+| CRITICAL | MUST read recommendedRead L3 sections |
+| HIGH | SHOULD read recommendedRead L3 sections |
+| MEDIUM | MAY read L3 on demand |
+| LOW | L1 is sufficient, skip L3 |
 
 #### Token Budget
 
-- If `l2Index[].tokens` total > 10K → read CRITICAL/HIGH only
-- If context usage > 70% → read L1 + recommendedRead only
+- If `l2Index[].tokens` total > 10K → read CRITICAL/HIGH L3 only
+- If context usage > 70% → read L1 + recommendedRead L3 only
+
+#### Subagent Type Exceptions
+
+| Subagent Type | L1/L2/L3 Format | Reason |
+|---------------|-----------------|--------|
+| `Explore` | ✅ Applied | Analysis output |
+| `Plan` | ✅ Applied | Design output |
+| `general-purpose` | ✅ Applied | Execution output |
+| `prompt-assistant` | ❌ Skipped | Conversational |
+| `onboarding-guide` | ❌ Skipped | Conversational |
+| `statusline-setup` | ❌ Skipped | Config only |
 
 ---
 
