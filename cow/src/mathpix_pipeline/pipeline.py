@@ -14,7 +14,7 @@ import logging
 import time
 import uuid
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .schemas.common import PipelineStage
 from .schemas.pipeline import (
@@ -755,7 +755,7 @@ class MathpixPipeline:
             if options.enable_human_review and not options.should_skip(
                 PipelineStage.HUMAN_REVIEW
             ):
-                result.review_result = await self._run_stage_g(result)
+                result.review_result = await self._run_stage_g(result, options)
 
             # Stage H: Export
             if not options.should_skip(PipelineStage.EXPORT):
@@ -944,20 +944,15 @@ class MathpixPipeline:
             # Initialize Mathpix client if not exists
             if not hasattr(self, '_mathpix_client'):
                 if self.mathpix_config is None:
-                    result.add_warning(
-                        "Mathpix config not provided, using placeholder TextSpec",
-                        PipelineStage.TEXT_PARSE,
+                    # FAIL-FAST: Stage B requires valid Mathpix credentials
+                    error_msg = (
+                        "Mathpix config not provided. Stage B (TextParse) requires "
+                        "valid Mathpix credentials. Set MATHPIX_APP_ID and MATHPIX_APP_KEY "
+                        "environment variables or provide MathpixConfig."
                     )
-                    # Return minimal TextSpec when no config
-                    text_spec = TextSpec(
-                        image_id=ingestion_spec.image_id,
-                        raw_latex="",
-                        equations=[],
-                        line_segments=[],
-                    )
-                    result.mark_stage_complete(PipelineStage.TEXT_PARSE)
-                    timing.complete(success=True)
-                    return text_spec
+                    result.add_error(error_msg, PipelineStage.TEXT_PARSE)
+                    timing.complete(success=False, error=error_msg)
+                    return None  # Return None with ERROR, not warning with empty spec
 
                 self._mathpix_client = MathpixClient(
                     config=self.mathpix_config
@@ -1272,33 +1267,145 @@ class MathpixPipeline:
     async def _run_stage_g(
         self,
         result: PipelineResult,
+        options: PipelineOptions,
     ) -> Optional[Any]:
         """Run Stage G: Human Review.
 
-        Note: This is a placeholder. Full implementation requires
-        human review queue integration.
+        Creates review tasks for items flagged during pipeline stages
+        based on confidence thresholds.
 
         Args:
             result: Pipeline result
+            options: Pipeline options with review configuration
 
         Returns:
-            Review result or None
+            Review summary dict or None
         """
         timing = StageTiming(stage=PipelineStage.HUMAN_REVIEW)
         result.stage_timings.append(timing)
 
         try:
-            # Placeholder: Human review would create a review task
-            # and wait for reviewer action
+            # Check if human review is enabled
+            if not options.enable_human_review:
+                result.add_warning(
+                    "Human review disabled, auto-approving",
+                    PipelineStage.HUMAN_REVIEW,
+                )
+                result.mark_stage_complete(PipelineStage.HUMAN_REVIEW)
+                timing.complete(success=True)
+                return None
+
+            # Collect items needing review from semantic graph
+            review_threshold = options.min_confidence_threshold
+            items_for_review = self._collect_review_items(result, review_threshold)
+
+            if not items_for_review:
+                # All items passed confidence thresholds
+                logger.info(
+                    f"No items below threshold {review_threshold:.2f} for image {result.image_id}"
+                )
+                result.mark_stage_complete(PipelineStage.HUMAN_REVIEW)
+                timing.complete(success=True)
+                return None
+
+            # Create and return review summary (actual queue integration is optional)
+            review_summary = {
+                "image_id": result.image_id,
+                "items_flagged": len(items_for_review),
+                "items": items_for_review,
+                "threshold": review_threshold,
+                "review_required": True,
+            }
+
+            logger.info(
+                f"Stage G flagged {len(items_for_review)} items for review "
+                f"(threshold: {review_threshold:.2f})"
+            )
+
             result.mark_stage_complete(PipelineStage.HUMAN_REVIEW)
             timing.complete(success=True)
 
-            return None
+            return review_summary
 
         except Exception as e:
             timing.complete(success=False, error=str(e))
             result.add_error(f"Human review failed: {e}", PipelineStage.HUMAN_REVIEW)
             return None
+
+    def _collect_review_items(
+        self,
+        result: PipelineResult,
+        threshold: float,
+    ) -> List[Dict[str, Any]]:
+        """Collect items from pipeline stages that need human review.
+
+        Args:
+            result: Pipeline result containing stage outputs
+            threshold: Confidence threshold below which items need review
+
+        Returns:
+            List of items requiring review with metadata
+        """
+        items: List[Dict[str, Any]] = []
+
+        # Check semantic graph nodes if available
+        if result.semantic_graph and result.semantic_graph.nodes:
+            for node in result.semantic_graph.nodes:
+                if node.confidence and node.confidence.value < threshold:
+                    items.append({
+                        "element_type": "semantic_node",
+                        "element_id": node.id,
+                        "node_type": node.node_type.value if node.node_type else "unknown",
+                        "label": node.label,
+                        "confidence": node.confidence.value,
+                        "reason": (
+                            f"Node confidence {node.confidence.value:.2f} "
+                            f"below threshold {threshold:.2f}"
+                        ),
+                        "stage": PipelineStage.SEMANTIC_GRAPH.value,
+                    })
+
+        # Check semantic graph edges if available
+        if result.semantic_graph and result.semantic_graph.edges:
+            for edge in result.semantic_graph.edges:
+                if edge.confidence and edge.confidence.value < threshold:
+                    items.append({
+                        "element_type": "semantic_edge",
+                        "element_id": edge.id,
+                        "edge_type": edge.edge_type.value if edge.edge_type else "unknown",
+                        "source_id": edge.source_id,
+                        "target_id": edge.target_id,
+                        "confidence": edge.confidence.value,
+                        "reason": (
+                            f"Edge confidence {edge.confidence.value:.2f} "
+                            f"below threshold {threshold:.2f}"
+                        ),
+                        "stage": PipelineStage.SEMANTIC_GRAPH.value,
+                    })
+
+        # Check alignment report matched pairs if available
+        if result.alignment_report and result.alignment_report.matched_pairs:
+            for pair in result.alignment_report.matched_pairs:
+                pair_confidence = getattr(pair, 'confidence', None)
+                if pair_confidence:
+                    conf_value = (
+                        pair_confidence.value
+                        if hasattr(pair_confidence, 'value')
+                        else pair_confidence
+                    )
+                    if conf_value < threshold:
+                        items.append({
+                            "element_type": "aligned_pair",
+                            "element_id": getattr(pair, 'id', 'unknown'),
+                            "confidence": conf_value,
+                            "reason": (
+                                f"Alignment confidence {conf_value:.2f} "
+                                f"below threshold {threshold:.2f}"
+                            ),
+                            "stage": PipelineStage.ALIGNMENT.value,
+                        })
+
+        return items
 
     async def _run_stage_h(
         self,
