@@ -3,33 +3,36 @@
 PostToolUse Hook: Output Preservation
 =====================================
 
-V2.1.12: Enforces Output Preservation by detecting summary-only results.
+Enforces Output Preservation by detecting summary-only results.
 
 Trigger: Task tool completion
+Matcher: Task
+Exit Codes:
+    0 - Success (with JSON output)
+
 Action:
     1. Detect if result is summary-only (using is_summary_only())
     2. If summary: Write L2 file + inject guidance for Main Agent
     3. If complete: Pass through unchanged
 
 This hook solves the Output Preservation Problem:
-    병렬 Subagent 배포 → 대량 Output → Auto-Compact → 요약만 남음
-    → Main Agent가 요약만으로 작업 → 데이터 손실
+    Parallel Subagent -> Large Output -> Auto-Compact -> Summary only
+    -> Main Agent works with summary only -> Data loss
 
 With this hook:
-    Task result → Hook intercepts → Summary? → Write L2 + Guide recovery
-
-Configuration: .claude/hooks/config/output_preservation_config.yaml
+    Task result -> Hook intercepts -> Summary? -> Write L2 + Guide recovery
 """
 
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import List, Tuple
 
-import re
-
-WORKSPACE_ROOT = Path(__file__).parent.parent.parent
+# Environment-based workspace root with fallback
+WORKSPACE_ROOT = Path(os.environ.get("CLAUDE_WORKSPACE_ROOT", os.getcwd()))
 
 # Summary detection patterns for Output Preservation
 SUMMARY_INDICATORS = [
@@ -41,7 +44,7 @@ SUMMARY_INDICATORS = [
 ]
 
 
-def is_summary_only(result: str) -> tuple[bool, list[str]]:
+def is_summary_only(result: str) -> Tuple[bool, List[str]]:
     """
     Detect if result is summary-only (potentially truncated or incomplete).
 
@@ -72,10 +75,10 @@ def get_agent_id_from_result(result_obj):
     return "unknown"
 
 
-def get_agent_type_from_result(result_obj):
-    """Extract agent type from tool result object."""
-    if isinstance(result_obj, dict):
-        return result_obj.get("subagent_type", "general").lower()
+def get_agent_type_from_input(input_obj):
+    """Extract agent type from tool input object."""
+    if isinstance(input_obj, dict):
+        return input_obj.get("subagent_type", "general").lower()
     return "general"
 
 
@@ -133,6 +136,7 @@ def main():
         return
 
     tool_result = hook_input.get("tool_result", {})
+    tool_input = hook_input.get("tool_input", {})
 
     # Get result text
     if isinstance(tool_result, dict):
@@ -141,15 +145,15 @@ def main():
         result_text = str(tool_result)
 
     agent_id = get_agent_id_from_result(tool_result)
-    agent_type = get_agent_type_from_result(tool_result)
+    agent_type = get_agent_type_from_input(tool_input)
 
     # Check if summary only
     is_summary, reasons = is_summary_only(result_text)
 
     if not is_summary:
-        # Complete result - pass through
+        # Complete result - pass through (no additional context needed)
         log_hook_action("PASS_THROUGH", agent_id, [])
-        print(json.dumps({"continue": True}))
+        print(json.dumps({}))  # Empty output, let primary hook (post-task-output.sh) handle
         return
 
     # Summary detected - write L2 and provide guidance
@@ -157,7 +161,7 @@ def main():
     log_hook_action("L2_WRITTEN", agent_id, reasons)
 
     guidance = f"""
-## ⚠️ Output Preservation Alert
+## Output Preservation Alert
 
 **Summary detected** - Main Agent must access detailed content before proceeding.
 
@@ -179,13 +183,19 @@ def main():
    Task(resume="{agent_id}", prompt="Provide complete results")
    ```
 
-### ⛔ BLOCKING RULE
+### BLOCKING RULE
 Do NOT proceed with summary-only results. Access L2/L3 first.
 """
 
+    # Use hookSpecificOutput format for consistency with other hooks
     print(json.dumps({
-        "continue": True,
-        "additionalContext": guidance
+        "hookSpecificOutput": {
+            "preservationAlert": True,
+            "agentId": agent_id,
+            "agentType": agent_type,
+            "l2Path": l2_path,
+            "guidance": guidance
+        }
     }))
 
 

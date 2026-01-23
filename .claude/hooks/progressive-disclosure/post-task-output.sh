@@ -1,16 +1,105 @@
 #!/bin/bash
-# PostToolUse Hook for Task tool - Agent ID capture and L1 logging
-# Version: 2.3.0 (Progressive Disclosure)
+# =============================================================================
+# Claude Code PostToolUse Hook - Agent ID Capture and L1 Logging
+# =============================================================================
+# Captures Agent ID for resume support and logs L1 summary with priority.
+# Provides guidance to Main Agent based on priority level.
 #
-# Purpose:
-#   - Capture Agent ID for resume support
-#   - Log L1 summary with priority for later reference
-#   - Validate Progressive Disclosure compliance
+# Matcher: Task
+# Exit Codes:
+#   0 - Success (with optional JSON output)
+# =============================================================================
 
-set -euo pipefail
+# Don't exit on error - handle failures gracefully
+set +e
+
+#=============================================================================
+# Configuration
+#=============================================================================
+
+WORKSPACE_ROOT="${CLAUDE_WORKSPACE_ROOT:-$(pwd)}"
+LOG_DIR="${WORKSPACE_ROOT}/.agent/logs"
+LOG_FILE="${LOG_DIR}/task_execution.log"
+
+#=============================================================================
+# JSON Helper
+#=============================================================================
+
+HAS_JQ=false
+if command -v jq &> /dev/null; then
+    HAS_JQ=true
+fi
+
+json_get() {
+    local field="$1"
+    local json="$2"
+
+    if $HAS_JQ; then
+        echo "$json" | jq -r "$field // empty" 2>/dev/null || echo ""
+    else
+        echo "$json" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    keys = '$field'.lstrip('.').split('.')
+    val = data
+    for k in keys:
+        if isinstance(val, dict):
+            val = val.get(k, '')
+        else:
+            val = ''
+    print(val if val else '')
+except:
+    print('')
+" 2>/dev/null || echo ""
+    fi
+}
+
+#=============================================================================
+# YAML Field Extractor (grep fallback for -oP compatibility)
+#=============================================================================
+
+# Check grep -oP support once (Perl regex)
+HAS_GREP_P=false
+if echo "test" | grep -oP 'test' &>/dev/null; then
+    HAS_GREP_P=true
+fi
+
+extract_yaml_field() {
+    local field="$1"
+    local text="$2"
+    local default="${3:-}"
+
+    # Try grep -oP first (Perl regex) - cached check
+    if $HAS_GREP_P; then
+        result=$(echo "$text" | grep -oP "${field}:\s*\K[^\s]+" 2>/dev/null | head -1)
+        if [ -n "$result" ]; then
+            echo "$result"
+            return
+        fi
+    fi
+
+    # Fallback: Python extraction (use stdin for safety)
+    result=$(echo "$text" | python3 -c "
+import sys, re
+text = sys.stdin.read()
+match = re.search(r'${field}:\s*(\S+)', text)
+print(match.group(1) if match else '')
+" 2>/dev/null)
+
+    if [ -n "$result" ]; then
+        echo "$result"
+    else
+        echo "$default"
+    fi
+}
+
+#=============================================================================
+# Main Logic
+#=============================================================================
 
 INPUT=$(cat)
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
+TOOL_NAME=$(json_get '.tool_name' "$INPUT")
 
 # Only process Task tool results
 if [[ "$TOOL_NAME" != "Task" ]]; then
@@ -19,26 +108,26 @@ if [[ "$TOOL_NAME" != "Task" ]]; then
 fi
 
 # Extract result info
-AGENT_ID=$(echo "$INPUT" | jq -r '.tool_result.agent_id // ""')
-OUTPUT=$(echo "$INPUT" | jq -r '.tool_result.output // ""')
-SUBAGENT_TYPE=$(echo "$INPUT" | jq -r '.tool_input.subagent_type // "unknown"')
+AGENT_ID=$(json_get '.tool_result.agent_id' "$INPUT")
+OUTPUT=$(json_get '.tool_result.output' "$INPUT")
+SUBAGENT_TYPE=$(json_get '.tool_input.subagent_type' "$INPUT")
+[ -z "$SUBAGENT_TYPE" ] && SUBAGENT_TYPE="unknown"
 
 # Extract L1 fields from output (if present)
-TASK_ID=$(echo "$OUTPUT" | grep -oP 'taskId:\s*\K\w+' 2>/dev/null || echo "unknown")
-PRIORITY=$(echo "$OUTPUT" | grep -oP 'priority:\s*\K\w+' 2>/dev/null || echo "UNKNOWN")
-STATUS=$(echo "$OUTPUT" | grep -oP 'status:\s*\K\w+' 2>/dev/null || echo "unknown")
-FINDINGS_COUNT=$(echo "$OUTPUT" | grep -oP 'findingsCount:\s*\K\d+' 2>/dev/null || echo "0")
-CRITICAL_COUNT=$(echo "$OUTPUT" | grep -oP 'criticalCount:\s*\K\d+' 2>/dev/null || echo "0")
-L2_PATH=$(echo "$OUTPUT" | grep -oP 'l2Path:\s*\K[^\s]+' 2>/dev/null || echo "")
-REQUIRES_L2=$(echo "$OUTPUT" | grep -oP 'requiresL2Read:\s*\K\w+' 2>/dev/null || echo "false")
+TASK_ID=$(extract_yaml_field 'taskId' "$OUTPUT" "unknown")
+PRIORITY=$(extract_yaml_field 'priority' "$OUTPUT" "UNKNOWN")
+STATUS=$(extract_yaml_field 'status' "$OUTPUT" "unknown")
+FINDINGS_COUNT=$(extract_yaml_field 'findingsCount' "$OUTPUT" "0")
+CRITICAL_COUNT=$(extract_yaml_field 'criticalCount' "$OUTPUT" "0")
+L2_PATH=$(extract_yaml_field 'l2Path' "$OUTPUT" "")
+REQUIRES_L2=$(extract_yaml_field 'requiresL2Read' "$OUTPUT" "false")
 
-# Log to file
-LOG_FILE=".agent/logs/task_execution.log"
-mkdir -p "$(dirname "$LOG_FILE")"
+# Create log directory and log entry
+mkdir -p "$LOG_DIR" 2>/dev/null
 
 cat >> "$LOG_FILE" <<EOF
 ---
-timestamp: $(date -Iseconds)
+timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 agent_id: $AGENT_ID
 task_id: $TASK_ID
 subagent_type: $SUBAGENT_TYPE
@@ -55,16 +144,16 @@ EOF
 GUIDANCE=""
 case "$PRIORITY" in
     "CRITICAL")
-        GUIDANCE="⚠️ CRITICAL priority detected. MUST read recommendedRead sections in L2."
+        GUIDANCE="CRITICAL priority detected. MUST read recommendedRead sections in L2."
         ;;
     "HIGH")
-        GUIDANCE="📋 HIGH priority. SHOULD read recommendedRead sections."
+        GUIDANCE="HIGH priority. SHOULD read recommendedRead sections."
         ;;
     "MEDIUM")
-        GUIDANCE="ℹ️ MEDIUM priority. MAY read L2 on demand."
+        GUIDANCE="MEDIUM priority. MAY read L2 on demand."
         ;;
     "LOW")
-        GUIDANCE="✅ LOW priority. L1 is sufficient."
+        GUIDANCE="LOW priority. L1 is sufficient."
         ;;
 esac
 
@@ -82,3 +171,5 @@ RESPONSE
 else
     echo '{}'
 fi
+
+exit 0

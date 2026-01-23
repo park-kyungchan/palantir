@@ -1,20 +1,62 @@
 #!/bin/bash
-# PreToolUse Hook for Task tool - L1/L2 Format Injection
-# Version: 2.3.0 (Progressive Disclosure)
+# =============================================================================
+# Claude Code PreToolUse Hook - L1/L2 Format Injection
+# =============================================================================
+# Injects L1/L2 format instructions into Task subagent prompts.
+# Adds run_in_background=true and model="opus" for complex analysis.
+# Skips injection for conversational agents.
 #
-# Purpose:
-#   - Inject L1/L2 format instructions into Task subagent prompts
-#   - Add run_in_background=true for parallel execution
-#   - Add model="opus" for complex analysis
-#   - Skip injection for conversational agents (prompt-assistant)
+# Matcher: Task
+# Exit Codes:
+#   0 - Allow (with JSON output)
+# =============================================================================
 
-set -euo pipefail
+# Don't exit on error - handle failures gracefully
+set +e
+
+#=============================================================================
+# JSON Helper
+#=============================================================================
+
+HAS_JQ=false
+if command -v jq &> /dev/null; then
+    HAS_JQ=true
+fi
+
+json_get() {
+    local field="$1"
+    local json="$2"
+
+    if $HAS_JQ; then
+        echo "$json" | jq -r "$field // empty" 2>/dev/null || echo ""
+    else
+        echo "$json" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    keys = '$field'.lstrip('.').split('.')
+    val = data
+    for k in keys:
+        if isinstance(val, dict):
+            val = val.get(k, '')
+        else:
+            val = ''
+    print(val if val else '')
+except:
+    print('')
+" 2>/dev/null || echo ""
+    fi
+}
+
+#=============================================================================
+# Main Logic
+#=============================================================================
 
 # Read input from stdin
 INPUT=$(cat)
 
 # Extract tool name
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
+TOOL_NAME=$(json_get '.tool_name' "$INPUT")
 
 # Only process Task tool
 if [[ "$TOOL_NAME" != "Task" ]]; then
@@ -22,9 +64,10 @@ if [[ "$TOOL_NAME" != "Task" ]]; then
     exit 0
 fi
 
-# Extract current tool input
-TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // "{}"')
-SUBAGENT_TYPE=$(echo "$TOOL_INPUT" | jq -r '.subagent_type // ""')
+# Extract current tool input and subagent type
+# Note: Get subagent_type directly from nested path to avoid double-parsing
+TOOL_INPUT=$(json_get '.tool_input' "$INPUT")
+SUBAGENT_TYPE=$(json_get '.tool_input.subagent_type' "$INPUT")
 
 # Conversational agents: skip L1/L2 format injection
 SKIP_AGENTS=("prompt-assistant" "onboarding-guide" "statusline-setup")
@@ -88,13 +131,49 @@ Include estimated token count per section in header comment.
 
 CONSTRAINT: L1 MUST NOT EXCEED 500 TOKENS. Be concise.'
 
-# Build updated input with injections
-UPDATED_INPUT=$(echo "$TOOL_INPUT" | jq \
-    --arg l1l2 "$L1L2_PROMPT" \
-    '. + {
-        run_in_background: true,
-        model: "opus"
-    }')
+#=============================================================================
+# Build Updated Input
+#=============================================================================
+
+build_updated_input() {
+    local tool_input="$1"
+
+    if $HAS_JQ; then
+        echo "$tool_input" | jq '. + {
+            run_in_background: true,
+            model: "opus"
+        }' 2>/dev/null
+    else
+        # Use stdin to avoid shell escaping issues with JSON content
+        echo "$tool_input" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    data['run_in_background'] = True
+    data['model'] = 'opus'
+    print(json.dumps(data))
+except:
+    print('{}')
+" 2>/dev/null || echo '{}'
+    fi
+}
+
+escape_json_string() {
+    local str="$1"
+
+    if $HAS_JQ; then
+        echo "$str" | jq -Rs . 2>/dev/null
+    else
+        # Use stdin to avoid shell escaping issues
+        echo "$str" | python3 -c "
+import json, sys
+print(json.dumps(sys.stdin.read()))
+" 2>/dev/null || echo '""'
+    fi
+}
+
+UPDATED_INPUT=$(build_updated_input "$TOOL_INPUT")
+ESCAPED_L1L2=$(escape_json_string "$L1L2_PROMPT")
 
 # Output with additionalContext for L1/L2 prompt
 cat <<RESPONSE
@@ -102,7 +181,7 @@ cat <<RESPONSE
   "hookSpecificOutput": {
     "permissionDecision": "allow",
     "updatedInput": $UPDATED_INPUT,
-    "additionalContext": $(echo "$L1L2_PROMPT" | jq -Rs .)
+    "additionalContext": $ESCAPED_L1L2
   }
 }
 RESPONSE

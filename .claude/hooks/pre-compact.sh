@@ -1,13 +1,17 @@
 #!/bin/bash
 # ==============================================================================
-# Orion ODA v3.0 - PreCompact Hook
+# Claude Code - PreCompact Hook
 # ==============================================================================
-# Purpose: Save context state before Auto-Compact
-# Pattern: Claude Code V2.1.x PreCompact event handler
-# Reference: .agent/plans/claude_code_v21x_feature_enhancement.md (Phase 2.1)
+# Saves context state before Auto-Compact for session restoration.
+# Preserves todos, plans, session health, and creates compact summary.
+#
+# Matcher: PreCompact event
+# Exit Codes:
+#   0 - Success
 # ==============================================================================
 
-set -euo pipefail
+# Don't exit on error - graceful handling is critical for PreCompact
+set +e
 
 # Configuration
 CONTEXT_DIR="${HOME}/.agent/compact-state"
@@ -102,11 +106,29 @@ log "Updated last compact marker"
 # ==============================================================================
 # 7. Cleanup old compact states (keep last 5)
 # ==============================================================================
-cd "$CONTEXT_DIR"
-ls -t compact_summary_*.md 2>/dev/null | tail -n +6 | xargs -r rm --
-ls -t todos_* 2>/dev/null | tail -n +6 | xargs -r rm -rf --
-ls -t session_health_*.json 2>/dev/null | tail -n +6 | xargs -r rm --
-ls -t protocol_state_*.json 2>/dev/null | tail -n +6 | xargs -r rm --
+cleanup_old_files() {
+    local pattern="$1"
+    local keep_count="${2:-5}"
+    local is_dir="${3:-false}"
+
+    # Use absolute paths, avoid cd
+    local files=$(ls -t "$CONTEXT_DIR"/$pattern 2>/dev/null | tail -n +$((keep_count + 1)))
+
+    for file in $files; do
+        if [ -n "$file" ]; then
+            if [ "$is_dir" = "true" ]; then
+                rm -rf "$file" 2>/dev/null || true
+            else
+                rm -f "$file" 2>/dev/null || true
+            fi
+        fi
+    done
+}
+
+cleanup_old_files "compact_summary_*.md" 5 false
+cleanup_old_files "todos_*" 5 true
+cleanup_old_files "session_health_*.json" 5 false
+cleanup_old_files "protocol_state_*.json" 5 false
 log "Cleaned up old compact states"
 
 # ==============================================================================

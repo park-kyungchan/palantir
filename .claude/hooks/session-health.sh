@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Orion ODA - Session Health Monitor Hook
+# Claude Code - Session Health Monitor Hook
 # =============================================================================
 # Boris Cherny Pattern 12: Session Discard
 #
@@ -8,8 +8,8 @@
 # I just kill it and start fresh - cheaper than trying to fix context."
 #
 # Hook Type: PostToolUse
-# Triggers: After every tool call
-# Purpose: Track tool usage patterns and detect dead-ends
+# Matcher: * (all tools)
+# Purpose: Track tool usage patterns and detect dead-ends/loops
 #
 # Environment Variables (from Claude Code):
 #   CLAUDE_SESSION_ID - Current session ID
@@ -22,11 +22,12 @@
 #   2 - Block (if health is terminal - NOT recommended, prefer warnings)
 # =============================================================================
 
-set -e
+# Don't exit on error - handle failures gracefully
+set +e
 
-# Configuration
-WORKSPACE_ROOT="${ORION_WORKSPACE_ROOT:-/home/palantir}"
-AGENT_TMP_DIR="$WORKSPACE_ROOT/park-kyungchan/palantir/.agent/tmp"
+# Configuration - Environment-based paths
+WORKSPACE_ROOT="${CLAUDE_WORKSPACE_ROOT:-$(pwd)}"
+AGENT_TMP_DIR="${CLAUDE_AGENT_TMP_DIR:-${HOME}/.agent/tmp}"
 HEALTH_LOG="$AGENT_TMP_DIR/session_health.jsonl"
 TOOL_HISTORY_FILE="$AGENT_TMP_DIR/tool_history_${CLAUDE_SESSION_ID:-unknown}.jsonl"
 
@@ -86,39 +87,43 @@ if [ "$REPETITION_COUNT" -ge "$REPETITION_WARNING_THRESHOLD" ]; then
     # Log warning
     echo "{\"timestamp\":\"$TIMESTAMP\",\"session_id\":\"$SESSION_ID\",\"type\":\"repetition_warning\",\"tool\":\"$TOOL_NAME\",\"count\":$REPETITION_COUNT}" >> "$HEALTH_LOG"
 
-    # Output warning (will be shown to user via hook output)
-    echo "{\"warning\":\"Repetitive pattern detected\",\"tool\":\"$TOOL_NAME\",\"occurrences\":$REPETITION_COUNT,\"suggestion\":\"Consider a different approach\"}"
+    # Output warning using hookSpecificOutput format
+    cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "type": "repetition_warning",
+    "warning": "Repetitive pattern detected",
+    "tool": "$TOOL_NAME",
+    "occurrences": $REPETITION_COUNT,
+    "suggestion": "Consider a different approach"
+  }
+}
+RESPONSE
+    exit 0
 fi
 
-# Periodic full health check
+# Periodic health summary (every N tool calls)
 if [ $((CALL_COUNT % HEALTH_CHECK_INTERVAL)) -eq 0 ] && [ "$CALL_COUNT" -gt 0 ]; then
-    # Run Python health evaluation in background (non-blocking)
-    python3 -c "
-import sys
-sys.path.insert(0, '$WORKSPACE_ROOT/park-kyungchan/palantir')
+    # Count errors in recent history
+    ERROR_COUNT=$(tail -20 "$TOOL_HISTORY_FILE" 2>/dev/null | grep -c '"success":false' || echo "0")
 
-try:
-    import asyncio
-    from scripts.claude.session_health import get_health_monitor
+    # Log periodic health summary
+    echo "{\"timestamp\":\"$TIMESTAMP\",\"session_id\":\"$SESSION_ID\",\"type\":\"health_summary\",\"call_count\":$CALL_COUNT,\"recent_errors\":$ERROR_COUNT}" >> "$HEALTH_LOG"
 
-    async def check():
-        monitor = get_health_monitor()
-        report = await monitor.evaluate()
-
-        import json
-        print(json.dumps({
-            'health_check': True,
-            'status': report.metrics.status,
-            'overall_health': round(report.metrics.overall_health, 2),
-            'should_terminate': report.should_terminate,
-            'termination_reason': report.termination_reason,
-            'recommendations': report.recommendations[:2] if len(report.recommendations) > 2 else report.recommendations
-        }))
-
-    asyncio.run(check())
-except Exception as e:
-    print('{\"health_check\":false,\"error\":\"' + str(e).replace('\"', '\\\\\"') + '\"}')
-" 2>/dev/null || true
+    # Warn if error rate is high
+    if [ "$ERROR_COUNT" -ge 5 ]; then
+        cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "type": "high_error_rate",
+    "warning": "High error rate detected",
+    "recentErrors": $ERROR_COUNT,
+    "suggestion": "Review recent tool calls for issues"
+  }
+}
+RESPONSE
+        exit 0
+    fi
 fi
 
 # Simple pattern detection without Python
@@ -138,7 +143,17 @@ detect_simple_loop() {
         if [ "${tools_array[$len-1]}" = "${tools_array[$len-3]}" ] && \
            [ "${tools_array[$len-2]}" = "${tools_array[$len-4]}" ]; then
             echo "{\"timestamp\":\"$TIMESTAMP\",\"type\":\"loop_detected\",\"pattern\":\"${tools_array[$len-2]}-${tools_array[$len-1]}\"}" >> "$HEALTH_LOG"
-            echo "{\"warning\":\"Possible loop detected\",\"pattern\":[\"${tools_array[$len-2]}\",\"${tools_array[$len-1]}\"],\"suggestion\":\"Try breaking the cycle\"}"
+            cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "type": "loop_detected",
+    "warning": "Possible loop detected",
+    "pattern": ["${tools_array[$len-2]}", "${tools_array[$len-1]}"],
+    "suggestion": "Try breaking the cycle"
+  }
+}
+RESPONSE
+            exit 0
         fi
     fi
 }
@@ -146,7 +161,8 @@ detect_simple_loop() {
 # Run simple loop detection
 detect_simple_loop
 
-# Output standard completion (ensures hook doesn't block)
-echo "{\"status\":\"recorded\",\"tool\":\"$TOOL_NAME\",\"call_count\":$CALL_COUNT}"
+# No action needed - return empty JSON (recommended pattern per claude-code-guide)
+# This minimizes overhead while ensuring hook doesn't block
+echo '{}'
 
 exit 0
