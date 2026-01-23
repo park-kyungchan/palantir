@@ -1,33 +1,134 @@
 # /build Command - Unified System Component Builder
 
-> **Version:** 4.0.0 | **Type:** Cascading Interactive Builder
-> **Scope:** Agent, Skill, Hook, Runtime-Chaining
+> **Version:** 5.0.0 | **Type:** Cascading Interactive Builder + Concept Mode
+> **Scope:** Concept Research, Agent, Skill, Hook, Runtime-Chaining
 > **Claude Code Compatibility:** V2.1.15+
 
 ---
 
 ## Purpose
 
-Create and orchestrate system components through **4 distinct build modes**:
+Create and orchestrate system components through **5 distinct build modes**:
 
 ```
-/build agent     →  Agent + Skills + Hooks (Cascade)
-/build skill     →  Skill + Hooks (Cascade)
-/build hook      →  Hook (Standalone)
-/build chain     →  Runtime Orchestration Pattern (NEW)
+/build "concept"  →  Research → Roadmap → Multi-select Build (NEW)
+/build agent      →  Agent + Skills + Hooks (Cascade)
+/build skill      →  Skill + Hooks (Cascade)
+/build hook       →  Hook (Standalone)
+/build chain      →  Runtime Orchestration Pattern
 ```
 
 ## Usage
 
 ```bash
+# Concept Mode (NEW) - Three-Phase Pattern
+/build "Progressive-Disclosure"    # Research capabilities → Roadmap → Build
+/build "token-budgeting"           # Research → Select complexity → Generate
+/build --resume pd-a1b2            # Resume from .agent/builds/{id}/
+
+# Direct Mode - Traditional Q&A
 /build                    # Interactive type selection
 /build agent              # Full cascade: Agent → Skills → Hooks
 /build skill              # Partial cascade: Skill → Hooks
 /build hook               # Single component: Hook only
 /build chain              # Runtime chaining pattern definition
-/build --resume <name>    # Resume incomplete draft
 /build --standalone       # Disable cascade
 ```
+
+---
+
+# SECTION 0: CONCEPT MODE (NEW)
+
+## Concept Mode Overview
+
+When you provide a **quoted concept name**, the build command uses a **three-phase approach**:
+
+```
+┌───────────────────────────────────────────────────────────┐
+│ /build "Progressive-Disclosure"                           │
+├───────────────────────────────────────────────────────────┤
+│ PHASE 0: RESEARCH                                         │
+│ ├─ Delegate to claude-code-guide agent                    │
+│ ├─ Discover all relevant capabilities                     │
+│ └─ Save to .agent/builds/{id}/research.json               │
+├───────────────────────────────────────────────────────────┤
+│ PHASE 1: ROADMAP                                          │
+│ ├─ Present L1 summary (≤500 tokens)                       │
+│ ├─ Show complexity levels (0/50/100)                      │
+│ └─ User selects target level                              │
+├───────────────────────────────────────────────────────────┤
+│ PHASE 2: BUILD                                            │
+│ ├─ Multi-round capability selection (4 per round)         │
+│ ├─ Dependency resolution                                  │
+│ └─ Generate files → .agent/builds/{id}/artifacts.json     │
+└───────────────────────────────────────────────────────────┘
+```
+
+## Concept Mode Q&A Flow
+
+### Round 1: Complexity Level Selection
+
+```
+AskUserQuestion(
+  questions=[{
+    "question": "어떤 복잡도 레벨을 선택하시겠습니까?",
+    "header": "Level",
+    "options": [
+      {"label": "Level 0 - Basic", "description": "Core features only (4 capabilities)"},
+      {"label": "Level 50 - Recommended", "description": "Production-ready (9 capabilities)"},
+      {"label": "Level 100 - Full", "description": "All features (14 capabilities)"},
+      {"label": "Custom Selection", "description": "Choose individual capabilities"}
+    ],
+    "multiSelect": false
+  }]
+)
+```
+
+### Rounds 2-N: Capability Selection (Custom or batched)
+
+```
+# Skills batch (max 4 options per round)
+AskUserQuestion(
+  questions=[{
+    "question": "포함할 Skill을 선택하세요",
+    "header": "Skills",
+    "options": [
+      {"label": "[S1] core-feature", "description": "Required base capability"},
+      {"label": "[S2] enhancement", "description": "Optional enhancement"},
+      {"label": "[S3] integration", "description": "Third-party integration"},
+      {"label": "Skip skills", "description": "No additional skills"}
+    ],
+    "multiSelect": true
+  }]
+)
+```
+
+## State Persistence
+
+All concept mode state is saved in `.agent/builds/{build_id}/`:
+
+```
+.agent/builds/
+├── master/
+│   ├── capability_index.json    # Master capability reference
+│   └── complexity_levels.json   # Level 0/50/100 definitions
+└── {build_id}/
+    ├── research.json            # Phase 0 output
+    ├── selection.json           # Phase 1-2 selections
+    └── artifacts.json           # Phase 2 generated files
+```
+
+## Resume Support
+
+```bash
+# Resume an incomplete build
+/build --resume pd-a1b2
+
+# Lists available drafts if id not found
+/build --resume
+```
+
+---
 
 ---
 

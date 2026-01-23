@@ -1,39 +1,350 @@
 # /build Skill - Interactive Component Builder
 
-> **Version:** 1.0.0 | **Context:** standard | **Model:** sonnet
-> **user-invocable:** true | **argument-hint:** [agent|skill|hook] [--resume name]
+> **Version:** 2.0.0 | **Context:** standard | **Model:** sonnet
+> **user-invocable:** true | **argument-hint:** ["concept"] | [agent|skill|hook] [--resume id]
 
 ---
 
 ## Purpose
 
-Interactive builder for creating Agents, Skills, and Hooks through progressive Q&A rounds.
-Each round collects specific field values, validates input, and builds the final component.
+Enhanced builder with two modes:
+1. **Concept Mode**: `/build "concept-name"` - Three-phase research, roadmap, and build
+2. **Direct Mode**: `/build agent|skill|hook` - Traditional Q&A rounds
+
+---
+
+## Three-Phase Pattern Overview
+
+```
+┌───────────────────────────────────────────────────────────┐
+│ /build "Progressive-Disclosure" (Concept Mode)            │
+├───────────────────────────────────────────────────────────┤
+│                                                           │
+│ PHASE 0: RESEARCH (Delegated to build-research.md)        │
+│   └─ Task(subagent_type="claude-code-guide")              │
+│      └─ Discover all relevant capabilities                │
+│      └─ Save to .agent/builds/{id}/research.json          │
+│                                                           │
+│ PHASE 1: ROADMAP (L1/L2/L3 Progressive Disclosure)        │
+│   ├─ L1: Summary (500 tokens)                             │
+│   │   "Found 12 capabilities across 3 categories"         │
+│   ├─ L2: Index (complexity levels)                        │
+│   │   Level 0/50/100 options                              │
+│   └─ L3: Details (on-demand via Read)                     │
+│                                                           │
+│ PHASE 2: BUILD (Multi-round Selection)                    │
+│   ├─ Round 1: Target complexity level (0/50/100)          │
+│   ├─ Round 2-N: Feature selection (4 per round)           │
+│   └─ Generate artifacts                                   │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────┐
+│ /build agent|skill|hook (Direct Mode)                     │
+├───────────────────────────────────────────────────────────┤
+│ Traditional Q&A rounds for component creation             │
+│ (See Phase 3: Type Selection below)                       │
+└───────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Initialization
 
-Parse `$ARGUMENTS` to determine:
-1. Component type: `agent`, `skill`, `hook`, or none (prompt selection)
-2. Resume flag: `--resume <draft_name>` to continue incomplete build
+Parse `$ARGUMENTS` to determine build mode:
 
 ```python
-args = "$ARGUMENTS".split()
+args = "$ARGUMENTS".strip()
+build_mode = None
+concept = None
 component_type = None
-resume_name = None
+resume_id = None
 
+# Priority 1: Resume flag
 if "--resume" in args:
-    resume_idx = args.index("--resume")
-    if len(args) > resume_idx + 1:
-        resume_name = args[resume_idx + 1]
-elif args and args[0] in ["agent", "skill", "hook"]:
-    component_type = args[0]
+    parts = args.split("--resume")
+    resume_id = parts[1].strip().split()[0] if len(parts) > 1 else None
+    build_mode = "resume"
+
+# Priority 2: Concept mode (quoted string)
+elif args.startswith('"') or args.startswith("'"):
+    concept = args.strip('"').strip("'")
+    build_mode = "concept"
+
+# Priority 3: Direct mode (agent/skill/hook)
+elif args.split()[0] in ["agent", "skill", "hook"] if args else False:
+    component_type = args.split()[0]
+    build_mode = "direct"
+
+# Priority 4: No args → prompt selection
+else:
+    build_mode = "select"
+```
+
+### Build Mode Decision Tree
+
+| Input | Mode | Next Phase |
+|-------|------|------------|
+| `--resume pd-a1b2` | resume | Load state from `.agent/builds/{id}/` |
+| `"Progressive-Disclosure"` | concept | Phase 0: Research |
+| `agent` | direct | Phase 3: Type Selection (skip to agent) |
+| (empty) | select | Phase 3: Type Selection (prompt) |
+
+---
+
+## Phase 0: Research (Concept Mode Only)
+
+**Triggered by:** `/build "concept-name"`
+
+### 0.1 Delegate to build-research.md
+
+```python
+# Invoke build-research skill for Phase 0
+# This skill:
+# 1. Generates build_id (e.g., "pro-a1b2")
+# 2. Delegates to claude-code-guide
+# 3. Saves research.json
+# 4. Returns L1 summary
+
+# The skill handles all research logic internally
+# Main Agent receives L1 summary with:
+# - buildId
+# - complexityOptions (Level 0/50/100)
+# - l2Path for detailed research
+```
+
+### 0.2 Research Output (L1 Summary)
+
+After build-research.md completes:
+
+```yaml
+buildId: "pro-a1b2"
+concept: "Progressive-Disclosure"
+summary: "Found 14 capabilities across 4 categories"
+status: success
+complexityOptions:
+  - level: 0
+    name: "Basic"
+    capabilities: 4
+  - level: 50
+    name: "Recommended"
+    capabilities: 9
+  - level: 100
+    name: "Full"
+    capabilities: 14
+l2Path: ".agent/builds/pro-a1b2/research.json"
+nextActionHint: "Select complexity level"
+```
+
+→ Proceed to Phase 1: Roadmap
+
+---
+
+## Phase 1: Roadmap (Concept Mode Only)
+
+**Triggered after:** Phase 0 completes with L1 summary
+
+### 1.1 Complexity Level Selection
+
+```
+AskUserQuestion(
+  questions=[{
+    "question": "어떤 복잡도 레벨을 선택하시겠습니까?",
+    "header": "Complexity",
+    "options": [
+      {"label": "Level 0 - Basic (4 capabilities)", "description": "Essential features: L1/L2 format, basic validation"},
+      {"label": "Level 50 - Recommended (9 capabilities)", "description": "Production-ready: priority system, output preservation"},
+      {"label": "Level 100 - Full (14 capabilities)", "description": "All features: context optimization, lazy loading"},
+      {"label": "Custom - Manual Selection", "description": "Choose individual capabilities"}
+    ],
+    "multiSelect": false
+  }]
+)
+```
+
+### 1.2 Roadmap Presentation (Based on Selection)
+
+After level selection, present the roadmap from research.json:
+
+```markdown
+## Build Roadmap: {concept}
+
+**Build ID:** `{buildId}`
+**Selected Level:** {level} ({name})
+**Capabilities:** {count}
+
+### Included Capabilities
+
+| ID | Name | Category | Description |
+|----|------|----------|-------------|
+| S1 | pd-inject | skill | Core L1/L2 format injection |
+| H1 | pre-task-inject | hook | Format enforcement |
+| ... | ... | ... | ... |
+
+### Dependencies Resolved
+- [S1] → [S2], [H1] (automatically included)
+
+### Next Steps
+Proceed to Phase 2: Build to generate files?
+```
+
+### 1.3 Roadmap Confirmation
+
+```
+AskUserQuestion(
+  questions=[{
+    "question": "Roadmap을 확인하셨나요? 빌드를 진행하시겠습니까?",
+    "header": "Confirm",
+    "options": [
+      {"label": "Yes, proceed to build", "description": "Generate files for selected capabilities"},
+      {"label": "Change level", "description": "Select different complexity level"},
+      {"label": "Custom selection", "description": "Manually add/remove capabilities"},
+      {"label": "Save roadmap only", "description": "Exit without building"}
+    ],
+    "multiSelect": false
+  }]
+)
+```
+
+→ If "Yes", proceed to Phase 2: Build
+→ If "Custom selection", proceed to multi-round capability selection
+
+---
+
+## Phase 2: Build (Concept Mode Multi-Round Selection)
+
+**Triggered after:** Phase 1 confirmation
+
+### 2.1 Capability Selection (If Custom or Level 50+)
+
+For levels with many capabilities, batch into rounds (4 options per round):
+
+**Round 1: Skills**
+```
+AskUserQuestion(
+  questions=[{
+    "question": "포함할 Skill을 선택하세요",
+    "header": "Skills",
+    "options": [
+      {"label": "[S1] pd-inject (Required)", "description": "Core L1/L2 format injection"},
+      {"label": "[S2] priority-handler", "description": "Priority-based reading strategy"},
+      {"label": "[S3] token-estimator", "description": "Section token estimation"},
+      {"label": "[S4] recommended-read", "description": "Auto-populate recommendedRead"}
+    ],
+    "multiSelect": true
+  }]
+)
+```
+
+**Round 2: Agents**
+```
+AskUserQuestion(
+  questions=[{
+    "question": "포함할 Agent를 선택하세요",
+    "header": "Agents",
+    "options": [
+      {"label": "[A1] l1l2-validator", "description": "Validates L1/L2 output format"},
+      {"label": "[A2] progressive-reader", "description": "Reads L2 sections on-demand"},
+      {"label": "Skip agents", "description": "No agents needed"}
+    ],
+    "multiSelect": true
+  }]
+)
+```
+
+**Round 3: Hooks**
+```
+AskUserQuestion(
+  questions=[{
+    "question": "포함할 Hook을 선택하세요",
+    "header": "Hooks",
+    "options": [
+      {"label": "[H1] pre-task-inject (Required)", "description": "Injects L1/L2 format"},
+      {"label": "[H2] post-task-validate", "description": "Validates L1 compliance"},
+      {"label": "[H3] priority-alert", "description": "CRITICAL priority notification"},
+      {"label": "[H4] output-preserve", "description": "Preserves L2 files"}
+    ],
+    "multiSelect": true
+  }]
+)
+```
+
+### 2.2 Selection Persistence
+
+Save selections to `.agent/builds/{buildId}/selection.json`:
+
+```json
+{
+  "buildId": "pro-a1b2",
+  "selectedLevel": 50,
+  "selectedCapabilities": ["S1", "S2", "A1", "H1", "H2", "H3"],
+  "rounds": [
+    {"roundNumber": 1, "category": "skills", "selected": ["S1", "S2"]},
+    {"roundNumber": 2, "category": "agents", "selected": ["A1"]},
+    {"roundNumber": 3, "category": "hooks", "selected": ["H1", "H2", "H3"]}
+  ],
+  "status": "selection_complete",
+  "timestamp": "2026-01-23T15:00:00Z"
+}
+```
+
+### 2.3 File Generation
+
+Generate files for selected capabilities:
+
+```python
+for capability in selected_capabilities:
+    template = load_template(capability.category)
+    content = render_template(template, capability)
+    write_file(capability.output_path, content)
+
+# Save artifacts list
+artifacts = {
+    "buildId": build_id,
+    "generated_files": [
+        {"path": ".claude/skills/pd-inject.md", "type": "skill"},
+        {"path": ".claude/hooks/pre-task-inject.sh", "type": "hook"},
+        ...
+    ],
+    "timestamp": datetime.now().isoformat()
+}
+save_json(f".agent/builds/{build_id}/artifacts.json", artifacts)
+```
+
+### 2.4 Build Complete Summary
+
+```markdown
+## Build Complete: {concept}
+
+**Build ID:** `{buildId}`
+**Generated Files:** {count}
+
+### Files Created
+
+| Type | Path | Status |
+|------|------|--------|
+| skill | .claude/skills/pd-inject.md | ✅ Created |
+| hook | .claude/hooks/pre-task-inject.sh | ✅ Created |
+| ... | ... | ... |
+
+### Test Commands
+
+```bash
+# Test skill
+/pd-inject "test input"
+
+# Test hook (triggered automatically on Task tool)
+```
+
+### Resume Command
+```
+/build --resume {buildId}
+```
 ```
 
 ---
 
-## Phase 1: Type Selection
+## Phase 3: Type Selection (Direct Mode)
 
 If `component_type` is None and `resume_name` is None:
 
@@ -54,7 +365,7 @@ AskUserQuestion(
 
 ---
 
-## Phase 2: Q&A Execution
+## Phase 4: Q&A Execution (Direct Mode)
 
 ### Agent Builder (15 Rounds)
 
@@ -245,7 +556,7 @@ AskUserQuestion(
 
 ---
 
-## Phase 3: Draft Generation
+## Phase 5: Draft Generation
 
 After all rounds, generate draft file:
 
@@ -279,7 +590,7 @@ Save to: `.agent/plans/create_drafts/{type}_{name}.md`
 
 ---
 
-## Phase 4: Confirmation & Generation
+## Phase 6: Confirmation & Generation
 
 ```
 AskUserQuestion(
