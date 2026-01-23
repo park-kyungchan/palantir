@@ -96,38 +96,10 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/progressive-disclosure/post-task-output.sh"
-          }
-        ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/post-tool-use-audit.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Read|Grep|Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/auto-format.sh"
           },
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/quality-check.sh",
-            "timeout": 10
+            "command": "/home/palantir/.claude/hooks/output_preservation_hook.py"
           }
         ]
       },
@@ -136,21 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
-          },
-          {
-            "type": "command",
             "command": "/home/palantir/.claude/hooks/session-health.sh"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/parallel-notify.sh"
           }
         ]
       }
@@ -161,26 +119,6 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/pre-compact.sh"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/permission-request.sh"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/notification.sh"
           }
         ]
       }

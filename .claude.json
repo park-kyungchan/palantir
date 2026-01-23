@@ -33,7 +33,7 @@
     "rename-conversation": 26,
     "custom-commands": 26
   },
-  "promptQueueUseCount": 289,
+  "promptQueueUseCount": 298,
   "showExpandedTodos": true,
   "cachedStatsigGates": {
     "tengu_prompt_suggestion": true,
@@ -79,7 +79,8 @@
     "tengu_prompt_suggestion": true,
     "tengu_keybinding_customization": false,
     "tengu_claudeai_mcp_connectors": false,
-    "tengu_attribution_header": true
+    "tengu_attribution_header": true,
+    "tengu_plan_mode_interview_phase": false
   },
   "userID": "686ed4acad815732f5f0dc4ccf1b5f4a50ce529b6d26605dade4ff54ef55ebc4",
   "firstStartTime": "2026-01-09T06:49:15.799Z",
@@ -297,7 +298,7 @@
         "referral_link": "https://claude.ai/referral/x65A7fa1Gg"
       },
       "referrer_reward": null,
-      "timestamp": 1769059566509
+      "timestamp": 1769153198922
     }
   },
   "skillUsage": {
@@ -334,19 +335,19 @@
       "lastUsedAt": 1769060676344
     },
     "commit-push-pr": {
-      "usageCount": 2,
-      "lastUsedAt": 1769062857513
+      "usageCount": 3,
+      "lastUsedAt": 1769155167883
     },
     "build": {
-      "usageCount": 1,
-      "lastUsedAt": 1768998936419
+      "usageCount": 8,
+      "lastUsedAt": 1769153566936
     }
   },
-  "lastPlanModeUse": 1768804883916,
+  "lastPlanModeUse": 1769151231237,
   "passesUpsellSeenCount": 4,
   "opusProMigrationComplete": true,
   "cachedChromeExtensionInstalled": false,
   "feedbackSurveyState": {
-    "lastShownTime": 1768909005777
+    "lastShownTime": 1769066585332
   }
 }
