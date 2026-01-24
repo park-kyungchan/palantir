@@ -1,0 +1,574 @@
+# Plan: Stage A~H 전체 파이프라인 구현
+
+> **Version:** 1.0 | **Status:** IN_PROGRESS | **Date:** 2026-01-17
+> **Auto-Compact Safe:** This file persists across context compaction
+> **Previous Work:** HIGH issue fixes + SemanticGraphBuilder (8 phases completed)
+
+## Overview
+
+| Item | Value |
+|------|-------|
+| Complexity | Large (~4,700 LOC new code) |
+| Total Stages | 8 (A through H) |
+| Existing Code | ~4,600 LOC (Stages B, C, D, E) |
+| New Modules | 4 (A, F, G, H) |
+| Fixes Required | 1 CRITICAL bug (Stage C) |
+
+## Pipeline Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Math Image Parsing Pipeline v2.0                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  📥 INPUT: Math/Science Problem Images (PNG, JPG, PDF)                       │
+│      │                                                                       │
+│      ▼                                                                       │
+│  ┌─────────────────┐                                                         │
+│  │ Stage A         │ NEW - ImageLoader, Validator, Preprocessor             │
+│  │ INGESTION       │ → IngestionSpec schema                                 │
+│  └────────┬────────┘                                                         │
+│           │                                                                  │
+│      ▼────┴────▼                                                             │
+│  ┌─────────────────┐    ┌─────────────────┐                                  │
+│  │ Stage B         │    │ Stage C         │                                  │
+│  │ TEXT_PARSE      │    │ VISION_PARSE    │ FIX - dir() bug at line 258     │
+│  │ (Mathpix OCR)   │    │ (YOLO+Claude)   │                                  │
+│  └────────┬────────┘    └────────┬────────┘                                  │
+│           │                      │                                           │
+│           └──────────┬───────────┘                                           │
+│                      ▼                                                       │
+│  ┌─────────────────────────────────┐                                         │
+│  │ Stage D: ALIGNMENT              │ OPTIMIZE - logging, caching            │
+│  │ Match text labels ↔ visual bbox │                                         │
+│  └────────────────┬────────────────┘                                         │
+│                   ▼                                                          │
+│  ┌─────────────────────────────────┐                                         │
+│  │ Stage E: SEMANTIC_GRAPH         │ OPTIMIZE - per-graph-type confidence   │
+│  │ Build knowledge graph           │                                         │
+│  └────────────────┬────────────────┘                                         │
+│                   ▼                                                          │
+│  ┌─────────────────────────────────┐                                         │
+│  │ Stage F: REGENERATION           │ NEW - LaTeX/SVG/TikZ generators        │
+│  │ Generate structured output      │                                         │
+│  └────────────────┬────────────────┘                                         │
+│                   ▼                                                          │
+│  ┌─────────────────────────────────┐                                         │
+│  │ Stage G: HUMAN_REVIEW           │ NEW - Queue, Annotation, Feedback      │
+│  │ Quality assurance workflow      │                                         │
+│  └────────────────┬────────────────┘                                         │
+│                   ▼                                                          │
+│  ┌─────────────────────────────────┐                                         │
+│  │ Stage H: EXPORT                 │ NEW - JSON/PDF/LaTeX/API               │
+│  │ Multi-format output             │                                         │
+│  └────────────────┬────────────────┘                                         │
+│                   ▼                                                          │
+│  📤 OUTPUT: Structured Math Data (JSON, LaTeX, PDF, SVG)                     │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Current Status by Stage
+
+| Stage | Status | Rating | Priority | Action |
+|-------|--------|--------|----------|--------|
+| **A: Ingestion** | NOT_IMPLEMENTED | 5/10 | 🔴 CRITICAL | New module |
+| **B: TextParse** | COMPLETE | 9/10 | ✅ Done | No changes |
+| **C: VisionParse** | COMPLETE (bug) | 8/10 | 🟡 HIGH | Fix dir() bug |
+| **D: Alignment** | COMPLETE | 8/10 | 🟢 MEDIUM | Add logging |
+| **E: SemanticGraph** | COMPLETE | 8.5/10 | 🟢 MEDIUM | Confidence tuning |
+| **F: Regeneration** | NOT_IMPLEMENTED | 0/10 | 🟡 HIGH | New module |
+| **G: HumanReview** | NOT_IMPLEMENTED | 0/10 | 🟡 HIGH | New module |
+| **H: Export** | NOT_IMPLEMENTED | 0/10 | 🟢 MEDIUM | New module |
+
+---
+
+## Phase 1: Stage A (Ingestion) + Stage C Fix [Week 1-2]
+
+### Stage A: Ingestion Module (NEW - ~800 LOC)
+
+**Directory Structure:**
+```
+cow/src/mathpix_pipeline/ingestion/
+├── __init__.py           # Public exports
+├── loader.py             # ImageLoader class (~150 LOC)
+├── validator.py          # ImageValidator class (~120 LOC)
+├── preprocessor.py       # Preprocessor class (~180 LOC)
+├── storage.py            # StorageManager class (~150 LOC)
+└── exceptions.py         # IngestionError hierarchy (~50 LOC)
+
+cow/src/mathpix_pipeline/schemas/
+└── ingestion.py          # IngestionSpec schema (~150 LOC)
+```
+
+**Key Components:**
+
+#### 1. ImageLoader (`loader.py`)
+```python
+class ImageLoader:
+    """Load images from various sources."""
+
+    SUPPORTED_FORMATS = {"png", "jpg", "jpeg", "gif", "bmp", "tiff", "pdf"}
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
+    async def load_from_path(self, path: Path) -> LoadedImage: ...
+    async def load_from_url(self, url: str) -> LoadedImage: ...
+    async def load_from_bytes(self, data: bytes, filename: str) -> LoadedImage: ...
+    async def load_from_base64(self, b64: str, filename: str) -> LoadedImage: ...
+```
+
+#### 2. ImageValidator (`validator.py`)
+```python
+class ImageValidator:
+    """Validate images for pipeline processing."""
+
+    MIN_RESOLUTION = (100, 100)
+    MAX_RESOLUTION = (10000, 10000)
+    MIN_DPI = 72
+
+    def validate_format(self, image: LoadedImage) -> ValidationResult: ...
+    def validate_resolution(self, image: LoadedImage) -> ValidationResult: ...
+    def validate_content(self, image: LoadedImage) -> ValidationResult: ...
+    def is_math_content(self, image: LoadedImage) -> float: ...  # ML classifier
+```
+
+#### 3. Preprocessor (`preprocessor.py`)
+```python
+class Preprocessor:
+    """Prepare images for optimal OCR/Vision processing."""
+
+    def normalize_resolution(self, image: LoadedImage, target_dpi: int = 300) -> ProcessedImage: ...
+    def enhance_contrast(self, image: ProcessedImage) -> ProcessedImage: ...
+    def deskew(self, image: ProcessedImage) -> ProcessedImage: ...
+    def remove_noise(self, image: ProcessedImage) -> ProcessedImage: ...
+    def detect_regions(self, image: ProcessedImage) -> List[Region]: ...
+```
+
+#### 4. IngestionSpec Schema (`schemas/ingestion.py`)
+```python
+class ImageMetadata(MathpixBaseModel):
+    """Metadata extracted from image."""
+    format: str
+    width: int
+    height: int
+    dpi: Optional[int]
+    color_mode: str
+    file_size_bytes: int
+
+class ValidationResult(MathpixBaseModel):
+    """Result of image validation."""
+    is_valid: bool
+    checks_passed: List[str]
+    checks_failed: List[str]
+    warnings: List[str]
+
+class IngestionSpec(MathpixBaseModel):
+    """Stage A output schema."""
+    image_id: str
+    source_path: Optional[str]
+    source_url: Optional[str]
+    metadata: ImageMetadata
+    validation: ValidationResult
+    preprocessing_applied: List[str]
+    regions_detected: List[Region]
+    math_content_confidence: float
+    provenance: Provenance
+    created_at: datetime
+```
+
+### Stage C Fix: YOLO Detector Bug
+
+**Location:** `vision/yolo_detector.py:258`
+
+**Current (Bug):**
+```python
+# WRONG: dir() returns attribute names, not local variables
+image_size=(image_width, image_height) if 'image_width' in dir() else None
+```
+
+**Fixed:**
+```python
+# CORRECT: Use locals() for variable existence check
+image_size = (image_width, image_height) if image_width is not None and image_height is not None else None
+```
+
+**Better Fix (defensive defaults):**
+```python
+def detect(self, image: Union[str, Path, bytes], image_id: str) -> DetectionLayer:
+    # Set defaults at function start
+    image_width: Optional[int] = None
+    image_height: Optional[int] = None
+
+    # ... processing that may set image_width/image_height ...
+
+    # Now safe to use
+    image_size = (image_width, image_height) if image_width and image_height else None
+```
+
+---
+
+## Phase 2: Stage F (Regeneration) + Stage H (Export) [Week 3-4]
+
+### Stage F: Regeneration Module (NEW - ~1,200 LOC)
+
+**Directory Structure:**
+```
+cow/src/mathpix_pipeline/regeneration/
+├── __init__.py           # Public exports
+├── engine.py             # RegenerationEngine orchestrator (~200 LOC)
+├── latex_generator.py    # LaTeX output generator (~300 LOC)
+├── svg_generator.py      # SVG/TikZ generator (~350 LOC)
+├── delta_comparer.py     # Diff detection (~200 LOC)
+└── templates/            # Jinja2 templates
+    ├── equation.tex.j2
+    ├── graph.tex.j2
+    └── diagram.svg.j2
+
+cow/src/mathpix_pipeline/schemas/
+└── regeneration.py       # RegenerationSpec schema (~150 LOC)
+```
+
+**Key Components:**
+
+#### 1. RegenerationEngine (`engine.py`)
+```python
+class RegenerationEngine:
+    """Orchestrate structured output generation from SemanticGraph."""
+
+    def __init__(
+        self,
+        latex_generator: LaTeXGenerator,
+        svg_generator: SVGGenerator,
+        delta_comparer: DeltaComparer,
+        config: Optional[RegenerationConfig] = None
+    ): ...
+
+    async def regenerate(
+        self,
+        semantic_graph: SemanticGraph,
+        output_formats: List[OutputFormat] = [OutputFormat.LATEX]
+    ) -> RegenerationSpec: ...
+```
+
+#### 2. LaTeXGenerator (`latex_generator.py`)
+```python
+class LaTeXGenerator:
+    """Generate LaTeX from SemanticGraph."""
+
+    def generate_equation(self, node: SemanticNode) -> str: ...
+    def generate_graph(self, nodes: List[SemanticNode], edges: List[SemanticEdge]) -> str: ...
+    def generate_tikz_diagram(self, graph: SemanticGraph) -> str: ...
+
+    # Template-based generation
+    def render_template(self, template_name: str, context: dict) -> str: ...
+```
+
+#### 3. RegenerationSpec Schema
+```python
+class RegenerationOutput(MathpixBaseModel):
+    """Single format output."""
+    format: OutputFormat  # LATEX, SVG, TIKZ, MATHML
+    content: str
+    confidence: float
+    generation_time_ms: float
+
+class DeltaReport(MathpixBaseModel):
+    """Differences between original and regenerated."""
+    similarity_score: float
+    added_elements: List[str]
+    removed_elements: List[str]
+    modified_elements: List[str]
+
+class RegenerationSpec(MathpixBaseModel):
+    """Stage F output schema."""
+    image_id: str
+    semantic_graph_id: str
+    outputs: List[RegenerationOutput]
+    delta_report: Optional[DeltaReport]
+    overall_confidence: float
+    provenance: Provenance
+```
+
+### Stage H: Export Module (NEW - ~900 LOC)
+
+**Directory Structure:**
+```
+cow/src/mathpix_pipeline/export/
+├── __init__.py           # Public exports
+├── engine.py             # ExportEngine orchestrator (~150 LOC)
+├── exporters/
+│   ├── __init__.py
+│   ├── json_exporter.py  # JSON format (~100 LOC)
+│   ├── pdf_exporter.py   # PDF generation (~200 LOC)
+│   ├── latex_exporter.py # LaTeX package (~150 LOC)
+│   └── svg_exporter.py   # SVG bundle (~100 LOC)
+├── api/
+│   ├── __init__.py
+│   └── endpoints.py      # FastAPI routes (~150 LOC)
+└── storage.py            # Output storage (~100 LOC)
+
+cow/src/mathpix_pipeline/schemas/
+└── export.py             # ExportSpec schema (~100 LOC)
+```
+
+**Key Components:**
+
+#### 1. ExportEngine
+```python
+class ExportEngine:
+    """Export pipeline results to various formats."""
+
+    def export(
+        self,
+        pipeline_result: PipelineResult,
+        formats: List[ExportFormat],
+        options: ExportOptions
+    ) -> ExportSpec: ...
+
+    async def export_batch(
+        self,
+        results: List[PipelineResult],
+        output_dir: Path
+    ) -> BatchExportReport: ...
+```
+
+#### 2. API Endpoints (`api/endpoints.py`)
+```python
+# FastAPI router
+router = APIRouter(prefix="/api/v1/export", tags=["export"])
+
+@router.post("/json")
+async def export_json(request: ExportRequest) -> JSONResponse: ...
+
+@router.post("/pdf")
+async def export_pdf(request: ExportRequest) -> FileResponse: ...
+
+@router.post("/latex")
+async def export_latex(request: ExportRequest) -> FileResponse: ...
+
+@router.get("/status/{job_id}")
+async def get_export_status(job_id: str) -> ExportStatus: ...
+```
+
+---
+
+## Phase 3: Stage G (HumanReview) + Optimizations [Week 5-6]
+
+### Stage G: HumanReview Module (NEW - ~1,500 LOC)
+
+**Directory Structure:**
+```
+cow/src/mathpix_pipeline/human_review/
+├── __init__.py               # Public exports
+├── queue_manager.py          # ReviewQueueManager (~250 LOC)
+├── annotation_workflow.py    # AnnotationWorkflow (~300 LOC)
+├── feedback_loop.py          # FeedbackLoopManager (~200 LOC)
+├── priority_scorer.py        # PriorityScorer (~150 LOC)
+├── models/
+│   ├── __init__.py
+│   ├── task.py               # ReviewTask model (~100 LOC)
+│   ├── annotation.py         # Annotation model (~100 LOC)
+│   └── reviewer.py           # Reviewer model (~50 LOC)
+└── api/
+    ├── __init__.py
+    └── review_endpoints.py   # Review API (~200 LOC)
+
+cow/src/mathpix_pipeline/schemas/
+└── human_review.py           # Review schemas (~150 LOC)
+```
+
+**Key Components:**
+
+#### 1. ReviewQueueManager
+```python
+class ReviewQueueManager:
+    """Manage review task queue with priority."""
+
+    def __init__(self, db_path: Path, config: QueueConfig): ...
+
+    async def enqueue(self, task: ReviewTask) -> str: ...
+    async def dequeue(self, reviewer_id: str) -> Optional[ReviewTask]: ...
+    async def get_queue_stats(self) -> QueueStats: ...
+    async def reassign_stale_tasks(self, timeout_hours: int = 24) -> int: ...
+```
+
+#### 2. AnnotationWorkflow
+```python
+class AnnotationWorkflow:
+    """Manage annotation process."""
+
+    async def start_annotation(self, task_id: str, reviewer_id: str) -> AnnotationSession: ...
+    async def save_annotation(self, session_id: str, annotation: Annotation) -> None: ...
+    async def submit_review(self, session_id: str, decision: ReviewDecision) -> ReviewResult: ...
+    async def request_second_opinion(self, task_id: str, reason: str) -> None: ...
+```
+
+#### 3. FeedbackLoopManager
+```python
+class FeedbackLoopManager:
+    """Collect feedback for model improvement."""
+
+    async def record_correction(self, original: Any, corrected: Any, reason: str) -> None: ...
+    async def generate_training_data(self, date_range: DateRange) -> TrainingDataset: ...
+    async def analyze_error_patterns(self) -> ErrorPatternReport: ...
+```
+
+### Stage D/E Optimizations (~200 LOC)
+
+#### Stage D: Alignment Logging
+```python
+# Add to alignment/engine.py
+import structlog
+logger = structlog.get_logger(__name__)
+
+# Add timing and result logging
+async def align(self, ...) -> AlignmentReport:
+    with logger.bind(image_id=image_id):
+        logger.info("alignment_started")
+        start = time.perf_counter()
+        # ... existing code ...
+        duration = time.perf_counter() - start
+        logger.info("alignment_completed", duration_ms=duration*1000, pairs=len(result.matched_pairs))
+```
+
+#### Stage E: Per-Graph-Type Confidence
+```python
+# Add to semantic_graph/confidence.py
+class GraphTypeConfidenceAdjuster:
+    """Adjust confidence based on graph type characteristics."""
+
+    GRAPH_TYPE_FACTORS = {
+        GraphType.FUNCTION_PLOT: {"node": 0.95, "edge": 0.90},
+        GraphType.GEOMETRY: {"node": 0.90, "edge": 0.85},
+        GraphType.COORDINATE_SYSTEM: {"node": 0.92, "edge": 0.88},
+        GraphType.DIAGRAM: {"node": 0.85, "edge": 0.80},
+    }
+
+    def adjust_for_graph_type(self, graph: SemanticGraph) -> None: ...
+```
+
+---
+
+## Phase 4: Integration & Testing [Week 7-8]
+
+### Integration Pipeline
+
+```python
+# cow/src/mathpix_pipeline/pipeline.py
+class MathpixPipeline:
+    """Full pipeline orchestrator."""
+
+    def __init__(
+        self,
+        ingestion: IngestionModule,        # Stage A
+        text_parser: TextParseModule,       # Stage B (existing)
+        vision_parser: VisionParseModule,   # Stage C (existing)
+        aligner: AlignmentEngine,           # Stage D (existing)
+        graph_builder: SemanticGraphBuilder, # Stage E (existing)
+        regenerator: RegenerationEngine,    # Stage F
+        reviewer: HumanReviewModule,        # Stage G
+        exporter: ExportEngine,             # Stage H
+    ): ...
+
+    async def process(
+        self,
+        image: Union[str, Path, bytes],
+        options: PipelineOptions
+    ) -> PipelineResult: ...
+```
+
+### Test Coverage Requirements
+
+| Stage | Unit Tests | Integration Tests | E2E Tests |
+|-------|------------|-------------------|-----------|
+| A | 15+ | 5+ | Part of full pipeline |
+| B | (existing) | (existing) | (existing) |
+| C | (existing) | (existing) | (existing) |
+| D | (existing) | (existing) | (existing) |
+| E | (existing) | (existing) | (existing) |
+| F | 20+ | 8+ | 3+ |
+| G | 25+ | 10+ | 5+ |
+| H | 15+ | 8+ | 3+ |
+
+### Quality Gates
+
+- [ ] All unit tests passing
+- [ ] Integration tests for each stage boundary
+- [ ] E2E tests with sample math images
+- [ ] Performance benchmarks (< 5s per image for A→E)
+- [ ] Documentation for each module
+- [ ] Type hints coverage > 95%
+- [ ] No CRITICAL or HIGH severity issues
+
+---
+
+## Tasks Summary
+
+| # | Phase | Task | Status | LOC |
+|---|-------|------|--------|-----|
+| 1 | 1 | Create ingestion/ module | ✅ done | 1,480 |
+| 2 | 1 | Create schemas/ingestion.py | ✅ done | 200 |
+| 3 | 1 | Fix yolo_detector.py:258 bug | ✅ done | 10 |
+| 4 | 2 | Create regeneration/ module | ✅ done | 1,600 |
+| 5 | 2 | Create schemas/regeneration.py | ✅ done | 330 |
+| 6 | 2 | Create export/ module (JSON first) | ✅ done | 2,800 |
+| 7 | 2 | Create schemas/export.py | ✅ done | 320 |
+| 8 | 3 | Create human_review/ module | ✅ done | 3,500 |
+| 9 | 3 | Create schemas/human_review.py | ✅ done | 280 |
+| 10 | 3 | Add Stage D logging | ✅ done | 130 |
+| 11 | 3 | Add Stage E graph-type confidence | ✅ done | 260 |
+| 12 | 4 | Create MathpixPipeline orchestrator | pending | 200 |
+| 13 | 4 | Write integration tests | pending | 500 |
+| 14 | 4 | Write E2E tests | pending | 300 |
+
+**Total New Code:** ~4,710 LOC
+
+---
+
+## Risk Assessment
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| Gemini API rate limits | HIGH | MEDIUM | Implement exponential backoff, caching |
+| PDF generation complexity | MEDIUM | HIGH | Start with JSON, add PDF later |
+| Human review scalability | MEDIUM | LOW | Use async queue, pagination |
+| Integration failures | HIGH | MEDIUM | Stage-by-stage testing, rollback plan |
+
+---
+
+## Agent Registry
+
+| Task | Agent ID | Type | Status |
+|------|----------|------|--------|
+| ULTRATHINK Audit | ac1c352 | Explore | completed |
+| Best Practices | a70634a | claude-code-guide | completed |
+| Plan Analysis | a658cd2 | Plan | completed |
+| Phase 1 Execution | a3d4a3f | general-purpose | completed |
+| Phase 2 Execution | a64e8bc | general-purpose | completed |
+| Phase 3 Execution | a65f7fe | general-purpose | completed |
+| Phase 3 human_review | a854a98 | general-purpose | completed |
+
+---
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. Read this file: `.agent/plans/stage_a_to_h_pipeline_implementation.md`
+2. Check TodoWrite for current task status
+3. Continue from first PENDING task in sequence
+4. Use subagent delegation pattern from "Execution Strategy" section
+
+---
+
+## Approval Gate
+
+**Please review this implementation plan:**
+
+- [ ] Stage A (Ingestion) design approved
+- [ ] Stage C bug fix approach approved
+- [ ] Stage F (Regeneration) design approved
+- [ ] Stage G (HumanReview) design approved
+- [ ] Stage H (Export) design approved
+- [ ] Implementation sequence approved
+- [ ] Ready to proceed with `/execute`

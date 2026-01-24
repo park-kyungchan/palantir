@@ -1,0 +1,73 @@
+{
+  "buildId": "pro-a69a",
+  "concept": "Progressive-Disclosure",
+  "level": 50,
+  "generatedDate": "2026-01-23",
+  "artifacts": {
+    "skills": [
+      {
+        "id": "S1-S3",
+        "path": ".claude/skills/pd-analyzer.md",
+        "name": "pd-analyzer",
+        "description": "L1/L2/L3 형식 분석기"
+      },
+      {
+        "id": "S2",
+        "path": ".claude/skills/pd-injector.md",
+        "name": "pd-injector",
+        "description": "동적 컨텍스트 주입 데모"
+      },
+      {
+        "id": "S3",
+        "path": ".claude/skills/pd-forked-task.md",
+        "name": "pd-forked-task",
+        "description": "Context Forking 데모"
+      }
+    ],
+    "agents": [
+      {
+        "id": "A1",
+        "path": ".claude/agents/pd-readonly-analyzer.md",
+        "name": "pd-readonly-analyzer",
+        "description": "읽기 전용 분석 에이전트"
+      },
+      {
+        "id": "A2",
+        "path": ".claude/agents/pd-skill-loader.md",
+        "name": "pd-skill-loader",
+        "description": "스킬 사전 로드 에이전트"
+      }
+    ],
+    "hooks": [
+      {
+        "id": "H1",
+        "path": ".claude/hooks/progressive-disclosure/pd-pretooluse.sh",
+        "name": "pd-pretooluse",
+        "event": "PreToolUse",
+        "matcher": "Task"
+      },
+      {
+        "id": "H2",
+        "path": ".claude/hooks/progressive-disclosure/pd-posttooluse.sh",
+        "name": "pd-posttooluse",
+        "event": "PostToolUse",
+        "matcher": "Task"
+      }
+    ],
+    "references": [
+      {
+        "id": "P1-T2",
+        "path": ".claude/references/pd-patterns.md",
+        "name": "pd-patterns",
+        "description": "7개 패턴 통합 레퍼런스"
+      }
+    ]
+  },
+  "summary": {
+    "totalFiles": 8,
+    "skills": 3,
+    "agents": 2,
+    "hooks": 2,
+    "references": 1
+  }
+}

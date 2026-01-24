@@ -1,0 +1,125 @@
+{
+  "researchDate": "2026-01-23",
+  "researchSource": "Claude Code Official Documentation (v2.1+)",
+  "researchAgentId": "ab0b952",
+  "capabilities": {
+    "agents": {
+      "description": "Custom AI subagents with YAML frontmatter configuration",
+      "fields": [
+        {"name": "name", "type": "string", "required": true, "complexity": "basic"},
+        {"name": "description", "type": "string", "required": true, "complexity": "basic"},
+        {"name": "tools", "type": "array(string)", "required": false, "complexity": "basic"},
+        {"name": "disallowedTools", "type": "array(string)", "required": false, "complexity": "intermediate"},
+        {"name": "model", "type": "enum", "required": false, "values": ["sonnet", "opus", "haiku", "inherit", "default", "opusplan"], "complexity": "intermediate"},
+        {"name": "permissionMode", "type": "enum", "required": false, "values": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"], "complexity": "intermediate"},
+        {"name": "skills", "type": "array(string)", "required": false, "complexity": "intermediate"},
+        {"name": "hooks", "type": "object", "required": false, "events": ["PreToolUse", "PostToolUse", "Stop"], "complexity": "advanced"},
+        {"name": "color", "type": "string", "required": false, "complexity": "advanced"}
+      ],
+      "totalFields": 9,
+      "builtInAgents": ["Explore", "Plan", "general-purpose"]
+    },
+    "skills": {
+      "description": "Reusable instructions and workflows with YAML frontmatter",
+      "features": [
+        {"name": "frontmatter", "fields": ["name", "description", "argument-hint", "disable-model-invocation", "user-invocable", "allowed-tools", "model", "context", "agent", "hooks"], "complexity": "basic"},
+        {"name": "string_substitutions", "variables": ["$ARGUMENTS", "${CLAUDE_SESSION_ID}"], "complexity": "intermediate"},
+        {"name": "dynamic_context_injection", "syntax": "!`command`", "complexity": "intermediate"},
+        {"name": "extended_thinking_trigger", "keyword": "ultrathink", "complexity": "advanced"},
+        {"name": "supporting_files", "structure": "skill-name/SKILL.md + files", "complexity": "basic"},
+        {"name": "invocation_control", "modes": ["disable-model-invocation", "user-invocable"], "complexity": "intermediate"},
+        {"name": "nested_discovery", "description": "Auto-discover in subdirectories", "complexity": "basic"},
+        {"name": "skill_context_forking", "context": "fork", "complexity": "advanced"},
+        {"name": "permission_bypass", "field": "allowed-tools", "complexity": "intermediate"},
+        {"name": "skill_sharing", "scopes": ["Personal", "Project", "Plugin", "Enterprise"], "complexity": "basic"},
+        {"name": "directory_structure", "example": "skill-name/SKILL.md + templates", "complexity": "basic"}
+      ],
+      "totalFeatures": 11
+    },
+    "hooks": {
+      "description": "Lifecycle event handlers",
+      "events": [
+        {"name": "SessionStart", "matchers": ["startup", "resume", "clear", "compact"], "complexity": "basic"},
+        {"name": "UserPromptSubmit", "supportsPrompt": true, "complexity": "intermediate"},
+        {"name": "PreToolUse", "matchers": ["Task", "Bash", "Write", "Edit", "Read", "mcp__*__*"], "supportsPrompt": true, "complexity": "basic"},
+        {"name": "PermissionRequest", "supportsPrompt": true, "complexity": "advanced"},
+        {"name": "PostToolUse", "matchers": "same as PreToolUse", "complexity": "basic"},
+        {"name": "PostToolUseFailure", "complexity": "intermediate"},
+        {"name": "Stop", "supportsPrompt": true, "complexity": "intermediate"},
+        {"name": "SubagentStart", "matchers": ["agent-type-name"], "complexity": "advanced"},
+        {"name": "SubagentStop", "supportsPrompt": true, "complexity": "advanced"},
+        {"name": "PreCompact", "matchers": ["manual", "auto"], "complexity": "intermediate"},
+        {"name": "Setup", "matchers": ["init", "maintenance"], "complexity": "intermediate"},
+        {"name": "Notification", "matchers": ["permission_prompt", "idle_prompt", "auth_success"], "complexity": "advanced"},
+        {"name": "SessionEnd", "complexity": "basic"}
+      ],
+      "totalEvents": 13,
+      "hookTypes": [
+        {"type": "command", "execution": "Bash script", "complexity": "basic"},
+        {"type": "prompt", "execution": "LLM evaluation", "complexity": "advanced"}
+      ]
+    },
+    "taskTool": {
+      "description": "Spawn and manage subagent instances",
+      "parameters": [
+        {"name": "subagent_type", "type": "enum|string", "required": true, "complexity": "basic"},
+        {"name": "prompt", "type": "string", "required": true, "complexity": "basic"},
+        {"name": "description", "type": "string", "required": false, "complexity": "basic"},
+        {"name": "run_in_background", "type": "boolean", "default": false, "complexity": "intermediate"},
+        {"name": "resume", "type": "string", "complexity": "intermediate"},
+        {"name": "model", "type": "enum", "values": ["sonnet", "opus", "haiku", "inherit"], "complexity": "intermediate"},
+        {"name": "tools", "type": "array(string)", "complexity": "advanced"},
+        {"name": "permissionMode", "type": "enum", "complexity": "advanced"},
+        {"name": "max_turns", "type": "number", "complexity": "advanced"}
+      ],
+      "totalParams": 9
+    },
+    "models": {
+      "description": "AI model selection with aliases",
+      "aliases": [
+        {"name": "default", "complexity": "basic"},
+        {"name": "sonnet", "version": "claude-sonnet-4-5-20250929", "complexity": "basic"},
+        {"name": "opus", "version": "claude-opus-4-5-20251101", "complexity": "basic"},
+        {"name": "haiku", "version": "claude-haiku-4-5-20251001", "complexity": "basic"},
+        {"name": "sonnet[1m]", "contextWindow": "1M tokens", "complexity": "advanced"},
+        {"name": "opusplan", "behavior": "opus in plan, sonnet in execution", "complexity": "advanced"}
+      ],
+      "totalAliases": 6
+    }
+  },
+  "complexityLevels": {
+    "0": {
+      "name": "Basic",
+      "description": "Essential features for getting started",
+      "capabilities": [
+        "Agent: name + description + tools",
+        "Skill: frontmatter basics",
+        "Hook: command-based PreToolUse/PostToolUse",
+        "Task: subagent_type + prompt",
+        "Model: sonnet/opus/haiku"
+      ]
+    },
+    "50": {
+      "name": "Recommended",
+      "description": "Production-ready configurations",
+      "capabilities": [
+        "Agent: permissionMode + skills preload + model override",
+        "Skill: context:fork + allowed-tools + dynamic commands",
+        "Hook: JSON output (allow/deny/ask) + additionalContext",
+        "Task: background + resume + tool restrictions",
+        "Model: opusplan + environment variables"
+      ]
+    },
+    "100": {
+      "name": "Full",
+      "description": "Complete feature set",
+      "capabilities": [
+        "Agent: all 9 fields + custom hooks + color",
+        "Skill: ultrathink + nested discovery + all frontmatter",
+        "Hook: all 13 events + prompt-based + MCP patterns",
+        "Task: max_turns + permissionMode override",
+        "Model: [1m] context + custom names + caching control"
+      ]
+    }
+  }
+}

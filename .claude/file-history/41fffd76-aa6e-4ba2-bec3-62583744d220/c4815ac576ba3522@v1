@@ -1,0 +1,79 @@
+# --- Dependencies & Build ---
+.venv
+node_modules
+__pycache__
+.DS_Store
+.env
+dist
+build
+coverage
+logs
+*.log
+
+# --- Secrets (NEVER commit) ---
+.claude/secrets/
+**/api_keys.env
+**/credentials.json
+**/*.pem
+
+# --- System & Cache ---
+.local
+.cache
+.npm
+.pnpm
+.bun
+.config
+.vscode-server
+.wget-hsts
+.bash_history
+.history
+.orion/codebase_index
+
+# --- IDE & Tools ---
+.antigravity-server
+.nvm
+google-chrome-stable_current_amd64.deb
+redis_ca.pem
+bridge.sh
+Neo4j-*.txt
+
+# --- Antigravity Agent State (Brain) ---
+# Ignore all agent internal state by default
+.gemini/
+
+# Allow specific configuration/persona files
+!.gemini/GEMINI.md
+!.gemini/SYSTEM_PROMPT_LAYER0.md
+!.gemini/antigravity/mcp_config.json
+!.gemini/settings.json
+!.gemini/DYNAMIC_IMPACT_ANALYSIS.xml
+
+# --- Orion V3 Memory Architecture ---
+.agent/indexes/*.db
+.agent/logs/*.db
+.agent/tmp/
+.agent/memory/working/*
+!.agent/memory/working/.gitkeep
+
+# --- Antigravity Native Capabilities ---
+!.agent/rules/
+!.agent/rules/**
+!.agent/workflows/
+!.agent/workflows/**
+
+# WSL Zone Identifiers
+*:Zone.Identifier
+
+# Ontology DB
+.agent/orion_ontology.db
+!frontend/dist/index.html
+*.db-shm
+*.db-wal
+.agent/learning/
+data/learning.db
+
+# Sensitive files - NEVER commit
+.mcp.json
+.claude/
+.antigravity/
+*.jsonl

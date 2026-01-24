@@ -1,0 +1,86 @@
+# Skills V2.1.0 Upgrade - CHANGELOG Draft
+
+> **Generated:** 2026-01-24
+> **Status:** Final (Verified 2026-01-24)
+> **Merge Target:** `/CHANGELOG.md` 또는 별도 릴리즈 노트
+
+---
+
+## [2.1.0] - 2026-01-24
+
+### Summary
+모든 스킬을 V2.1.19 Skill Frontmatter Spec에 맞춰 표준화하고,
+`/clarify`를 기준으로 Semantic Integrity를 확보함.
+
+### Breaking Changes
+- `TodoWrite` 도구 제거 (deprecated) → `Task` API로 대체
+  - 영향 스킬: clarify, synthesis (확인 필요)
+  - 마이그레이션: `TaskCreate`, `TaskUpdate`, `TaskList`, `TaskGet` 사용
+
+### Added
+
+#### `/clarify` (V2.0.0 → V2.1.0)
+- Section 8.3: Task Delegation Pattern 문서화
+- Section 8.4: Model Inheritance 옵션 문서화
+- Section 11: Parameter Module Compatibility 체크리스트
+- `argument-hint` 업데이트: `<request> | --resume <slug>`
+
+#### All Skills (V1.0.0 → V2.1.0)
+- Parameter Module Compatibility 섹션 추가 (9개 스킬)
+- V2.1.19 Skill Frontmatter Spec 준수
+- Version History 테이블 추가
+
+### Changed
+
+#### Frontmatter Updates
+| Skill | Old Version | New Version | Key Changes |
+|-------|-------------|-------------|-------------|
+| clarify | 2.0.0 | 2.1.0 | TodoWrite 제거, Task Delegation 추가 |
+| orchestrate | 1.0.0 | 2.1.0 | Parameter Module 섹션 추가 |
+| worker | 1.0.0 | 2.1.0 | Parameter Module 섹션 추가 |
+| assign | 1.0.0 | 2.1.0 | Parameter Module 섹션 추가 |
+| collect | 1.0.0 | 2.1.0 | Parameter Module 섹션 추가 |
+| synthesis | 1.0.0 | 2.1.0 | Parameter Module 섹션 추가 |
+| build-research | 1.0.0 | 2.1.0 | Parameter Module 섹션 추가 |
+| commit-push-pr | 1.1.1 | 2.1.0 | allowed-tools 형식 수정 (문자열 → 배열) |
+| docx-automation | 1.1.1 | 2.1.0 | allowed-tools 형식 수정 (문자열 → 배열) |
+
+#### Tool Configuration
+- `allowed-tools` 형식 통일: YAML 배열 형식
+- 불필요한 도구 제거: `TodoWrite` (deprecated)
+
+### Fixed
+- `commit-push-pr`: allowed-tools 잘못된 형식 (쉼표 구분 문자열 → YAML 배열)
+- `docx-automation`: allowed-tools 잘못된 형식 (쉼표 구분 문자열 → YAML 배열)
+
+### Documentation
+- 6개 파라미터 모듈 참조 문서화:
+  - `model-selection.md`: 모델 선택 옵션
+  - `context-mode.md`: 컨텍스트 모드 설정
+  - `tool-config.md`: 도구 구성
+  - `hook-config.md`: Hook 설정
+  - `permission-mode.md`: 권한 모드 (Agent 전용)
+  - `task-params.md`: Task 위임 패턴
+
+### Internal
+- helpers.sh: CLARIFY_VERSION 상수 업데이트 (2.0.0 → 2.1.0)
+- 업그레이드 추적 YAML: `.agent/clarify/clarify_upgrade_20260124.yaml`
+
+---
+
+## Semantic Integrity Checklist
+
+- [x] 모든 version 필드: 2.1.0+
+- [x] 모든 allowed-tools: YAML 배열 형식
+- [x] TodoWrite 참조: 0개
+- [x] Parameter Module Compatibility 섹션: 10개 스킬 (build 포함)
+- [x] Terminal-B 작업 완료 확인 (verified)
+
+---
+
+## Reference
+
+- **Semantic Integrity Source:** `/clarify` V2.1.0
+- **Spec Reference:** V2.1.19 Skill Frontmatter Spec
+- **Parameter Modules:** `/build/parameters/*.md`
+- **Work Instructions:** `.agent/prompts/skill-upgrade-v2.1.0-batch.yaml`

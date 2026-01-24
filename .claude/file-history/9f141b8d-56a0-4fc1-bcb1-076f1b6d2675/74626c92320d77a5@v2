@@ -1,0 +1,523 @@
+# /build Command - Unified System Component Builder
+
+> **Version:** 3.0.0 | **Type:** Cascading Interactive Builder
+> **Scope:** Agent, Skill, Hook creation with dependency chaining
+> **Claude Code Compatibility:** V2.1.15+
+
+---
+
+## Purpose
+
+Create new system components through **Cascading Build** - a hierarchical Q&A workflow that automatically prompts for related components:
+
+```
+Agent Build  →  Skills?  →  Hooks?
+Skill Build  →  Hooks?
+Hook Build   →  (standalone)
+```
+
+## Usage
+
+```bash
+/build                    # Start interactive builder (type selection)
+/build agent              # Full cascade: Agent → Skills → Hooks
+/build skill              # Partial cascade: Skill → Hooks
+/build hook               # Single component: Hook only
+/build --resume <name>    # Resume incomplete draft
+/build --standalone       # Disable cascade (single component only)
+```
+
+## Arguments
+
+- `$ARGUMENTS` - Optional: component type, flags, or --resume
+
+---
+
+## Cascading Build Architecture
+
+### Component Hierarchy
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  AGENT (Top-Level)                                           │
+│  - Has: tools, model, permissions                            │
+│  - Uses: Skills (for workflows)                              │
+│  - Triggers: Hooks (for events)                              │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  SKILL (Mid-Level)                                     │ │
+│  │  - Invoked by: Agent or User (/command)                │ │
+│  │  - Has: allowed-tools, context                         │ │
+│  │  - Triggers: Hooks (PreToolUse, PostToolUse)           │ │
+│  │                                                        │ │
+│  │  ┌──────────────────────────────────────────────────┐ │ │
+│  │  │  HOOK (Bottom-Level)                             │ │ │
+│  │  │  - Standalone event handler                      │ │ │
+│  │  │  - Attached to: Agent, Skill, or Global          │ │ │
+│  │  └──────────────────────────────────────────────────┘ │ │
+│  └────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Build Flow Comparison
+
+| Command | Components Created | Cascade Depth |
+|---------|-------------------|---------------|
+| `/build agent` | Agent + Skills + Hooks | 3 levels |
+| `/build skill` | Skill + Hooks | 2 levels |
+| `/build hook` | Hook only | 1 level |
+| `/build agent --standalone` | Agent only | 1 level |
+
+---
+
+## Execution Flow
+
+### Phase 1: Type Selection
+
+```python
+AskUserQuestion(
+  questions=[{
+    "question": "어떤 컴포넌트를 생성하시겠습니까?",
+    "header": "Component",
+    "options": [
+      {"label": "Agent (Full)", "description": "Agent + Skills + Hooks 전체 생성"},
+      {"label": "Skill (+ Hooks)", "description": "Skill + 연결된 Hooks 생성"},
+      {"label": "Hook (Single)", "description": "Hook 단독 생성"}
+    ],
+    "multiSelect": false
+  }]
+)
+```
+
+### Phase 2: Primary Component Q&A
+
+Based on selection, complete the primary component's Q&A rounds.
+
+### Phase 3: Cascade Prompts (Agent/Skill only)
+
+```python
+# After Agent Q&A completion
+AskUserQuestion(
+  questions=[{
+    "question": f"'{agent_name}' Agent에 전용 Skills를 추가하시겠습니까?",
+    "header": "Add Skills",
+    "options": [
+      {"label": "예, Skills 추가", "description": "이 Agent가 사용할 Skills 정의"},
+      {"label": "기존 Skill 연결", "description": "이미 있는 Skill을 연결"},
+      {"label": "아니오, 건너뛰기", "description": "Skills 없이 진행"}
+    ],
+    "multiSelect": false
+  }]
+)
+
+# After each Skill Q&A (or Agent if no Skills)
+AskUserQuestion(
+  questions=[{
+    "question": f"'{component_name}'에 Hooks를 추가하시겠습니까?",
+    "header": "Add Hooks",
+    "options": [
+      {"label": "예, Hooks 추가", "description": "이벤트 기반 훅 정의"},
+      {"label": "아니오, 완료", "description": "컴포넌트 생성 완료"}
+    ],
+    "multiSelect": false
+  }]
+)
+```
+
+### Phase 4: Nested Component Q&A
+
+If user chooses to add Skills/Hooks, run their respective Q&A rounds.
+
+### Phase 5: Draft Generation & Confirmation
+
+Generate all components as a bundle, show preview, confirm.
+
+### Phase 6: File Generation
+
+Create all files with proper cross-references.
+
+---
+
+## Q&A Pattern References
+
+### Agent (15 Rounds + Cascade)
+
+| Category | Rounds | Fields |
+|----------|--------|--------|
+| Core Identity | 1-3 | name, description, disable-model-invocation |
+| Tool Config | 4-6 | tools, disallowedTools, mcp_tools |
+| Context | 7-9 | model, context, permissionMode |
+| Integration | 10-12 | skills[], hooks[], customInstructions |
+| Advanced | 13-15 | maxTurns, timeout, v21x_features |
+| **Cascade** | 16+ | → Skill Q&A (if selected) → Hook Q&A |
+
+**Agent Fields Reference:**
+```yaml
+# Core (Required)
+name: string              # Unique agent identifier
+description: string       # What this agent does
+
+# Tools
+tools: string[]           # Allowed tools
+disallowedTools: string[] # Denied tools
+mcp_tools: string[]       # MCP server tools
+
+# Execution
+model: enum               # sonnet | opus | haiku
+context: enum             # standard | fork
+permissionMode: enum      # auto | confirm | deny
+
+# Integration (Cascade References)
+skills: string[]          # Skills this agent uses (built in cascade)
+hooks:                    # Hooks attached to this agent
+  PreToolUse: string[]
+  PostToolUse: string[]
+  SubagentStart: string[]
+  SubagentStop: string[]
+
+# Optional
+disable-model-invocation: bool
+maxTurns: number
+customInstructions: string
+```
+
+### Skill (13 Rounds + Cascade)
+
+| Category | Rounds | Fields |
+|----------|--------|--------|
+| Identity | 1-3 | name, description, user-invocable |
+| Execution | 4-6 | context, agent, model |
+| Tools | 7-9 | allowed-tools, argument-hint |
+| Control | 10-11 | disable-model-invocation, once |
+| Features | 12-13 | content-type, ultrathink |
+| **Cascade** | 14+ | → Hook Q&A (if selected) |
+
+**Skill Fields Reference:**
+```yaml
+# Core (Required)
+name: string              # /name command
+description: string       # Displayed in list
+
+# Execution
+user-invocable: bool      # Direct user invocation?
+context: enum             # standard | fork
+agent: string             # Agent for context: fork
+model: enum               # sonnet | opus | haiku
+
+# Tools
+allowed-tools: string[]   # Available tools
+argument-hint: string     # Autocomplete hint
+
+# Control (V2.1.x+)
+disable-model-invocation: bool
+once: bool
+
+# Integration (Cascade References)
+parent_agent: string      # If created via Agent cascade
+hooks:                    # Hooks attached to this skill
+  PreToolUse: string[]
+  PostToolUse: string[]
+```
+
+### Hook (16 Rounds - No Cascade)
+
+| Category | Rounds | Fields |
+|----------|--------|--------|
+| Identity | 1-3 | name, event-type, language |
+| Trigger | 4-6 | matcher, timeout, type |
+| Input/Output | 7-10 | permission, updatedInput, additionalContext |
+| Output Schema | 11-13 | output-fields, blocking, json-schema |
+| Advanced | 14-16 | env-vars, logging, once |
+
+**Hook Event Types (12 Total):**
+
+| Event Type | Trigger Point | Attachable To |
+|------------|---------------|---------------|
+| `SessionStart` | Session begins | Global |
+| `SessionEnd` | Session ends | Global |
+| `Setup` | Repository init | Global |
+| `UserPromptSubmit` | User sends prompt | Global |
+| `PreToolUse` | Before tool | Agent, Skill, Global |
+| `PostToolUse` | After tool success | Agent, Skill, Global |
+| `PostToolUseFailure` | After tool failure | Agent, Skill, Global |
+| `PermissionRequest` | Permission prompt | Global |
+| `PreCompact` | Before compact | Global |
+| `Notification` | System notification | Global |
+| `SubagentStart` | Subagent begins | Agent |
+| `SubagentStop` | Subagent ends | Agent |
+| `Stop` | Session stops | Global |
+
+**Hook Type (V2.1.x+):**
+
+| Type | Description | Language |
+|------|-------------|----------|
+| `command` | Shell execution | bash, python, node |
+| `prompt` | LLM evaluation | N/A (uses model) |
+
+**Hook Fields Reference:**
+```yaml
+# Identity
+name: string
+event: enum               # 12 event types
+
+# Trigger
+matcher: string           # Regex pattern
+timeout: number           # ms (default: 60000)
+type: enum                # command | prompt
+
+# For type: command
+command: string
+language: enum            # bash | python | node
+
+# For type: prompt (V2.1.x+)
+prompt: string
+
+# Output (JSON)
+output_schema:
+  continue: bool
+  stopReason: string
+  suppressOutput: bool
+  systemMessage: string
+  permissionDecision: enum # allow | deny | ask
+  additionalContext: string
+  updatedInput: object
+
+# Control
+blocking: bool
+once: bool
+
+# Integration (Cascade Reference)
+attached_to:
+  type: enum              # agent | skill | global
+  name: string            # Parent component name
+```
+
+---
+
+## Cascade Examples
+
+### Example 1: Full Agent Cascade
+
+```
+/build agent
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 AGENT Q&A (15 rounds)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Q1: "code-reviewer"
+→ Q2: "Reviews code changes for quality and security"
+→ Q4: [Read, Grep, Glob, Task]
+→ Q7: "sonnet"
+→ ...
+→ Q15: Complete
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 CASCADE: Add Skills to 'code-reviewer'?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ User: "예, Skills 추가"
+
+  ┌────────────────────────────────────────────────┐
+  │ 🔧 SKILL Q&A #1 (13 rounds)                    │
+  ├────────────────────────────────────────────────┤
+  │ → Q1: "quick-review"                           │
+  │ → Q2: "Fast code review for small changes"     │
+  │ → Q3: user-invocable: true                     │
+  │ → ...                                          │
+  │                                                │
+  │ 📦 CASCADE: Add Hooks to 'quick-review'?       │
+  │ → User: "예, Hooks 추가"                        │
+  │                                                │
+  │   ┌──────────────────────────────────────────┐ │
+  │   │ 🔧 HOOK Q&A (16 rounds)                  │ │
+  │   │ → Q1: "review-logger"                    │ │
+  │   │ → Q2: "PostToolUse"                      │ │
+  │   │ → Q6: "command"                          │ │
+  │   │ → ...                                    │ │
+  │   └──────────────────────────────────────────┘ │
+  │                                                │
+  │ 📦 Add another Hook? → "아니오"                 │
+  └────────────────────────────────────────────────┘
+
+📦 Add another Skill? → "예"
+
+  ┌────────────────────────────────────────────────┐
+  │ 🔧 SKILL Q&A #2 (13 rounds)                    │
+  │ → Q1: "deep-review"                            │
+  │ → ...                                          │
+  │ 📦 Add Hooks? → "아니오"                        │
+  └────────────────────────────────────────────────┘
+
+📦 Add another Skill? → "아니오"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 CASCADE: Add Agent-Level Hooks?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ User: "예, Hooks 추가"
+
+  ┌────────────────────────────────────────────────┐
+  │ 🔧 HOOK Q&A (16 rounds)                        │
+  │ → Q1: "agent-monitor"                          │
+  │ → Q2: "SubagentStart"                          │
+  │ → ...                                          │
+  └────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ BUILD COMPLETE - Preview
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Generated Components:
+├── Agent: code-reviewer
+│   ├── Skill: quick-review
+│   │   └── Hook: review-logger (PostToolUse)
+│   ├── Skill: deep-review
+│   └── Hook: agent-monitor (SubagentStart)
+
+Files to create:
+├── .claude/agents/code-reviewer.md
+├── .claude/skills/quick-review.md
+├── .claude/skills/deep-review.md
+├── .claude/hooks/code-reviewer/review-logger.py
+└── .claude/hooks/code-reviewer/agent-monitor.py
+
+Confirm? [Y/n]
+```
+
+### Example 2: Skill with Hooks
+
+```
+/build skill
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 SKILL Q&A (13 rounds)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Q1: "secure-deploy"
+→ Q2: "Secure deployment workflow"
+→ ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 CASCADE: Add Hooks to 'secure-deploy'?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ User: "예"
+
+  ┌────────────────────────────────────────────────┐
+  │ 🔧 HOOK Q&A #1: PreToolUse validator           │
+  └────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────┐
+  │ 🔧 HOOK Q&A #2: PostToolUse logger             │
+  └────────────────────────────────────────────────┘
+
+Generated:
+├── Skill: secure-deploy
+│   ├── Hook: deploy-validator (PreToolUse)
+│   └── Hook: deploy-logger (PostToolUse)
+```
+
+### Example 3: Standalone Hook
+
+```
+/build hook
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 HOOK Q&A (16 rounds)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Q1: "global-audit"
+→ Q2: "PostToolUse"
+→ Q3: "Python"
+→ ...
+
+Generated:
+└── Hook: global-audit (PostToolUse) - Global scope
+```
+
+---
+
+## Output Locations
+
+| Component | Path Pattern |
+|-----------|--------------|
+| Agent | `.claude/agents/{name}.md` |
+| Skill | `.claude/skills/{name}.md` |
+| Hook (Agent-attached) | `.claude/hooks/{agent_name}/{hook_name}.{ext}` |
+| Hook (Skill-attached) | `.claude/hooks/{skill_name}/{hook_name}.{ext}` |
+| Hook (Global) | `.claude/hooks/global/{hook_name}.{ext}` |
+| Draft | `.agent/plans/create_drafts/{type}_{name}.md` |
+
+---
+
+## Cross-Reference Generation
+
+When cascade completes, files include proper references:
+
+**Agent file includes:**
+```yaml
+# .claude/agents/code-reviewer.md
+skills:
+  - quick-review
+  - deep-review
+hooks:
+  SubagentStart:
+    - .claude/hooks/code-reviewer/agent-monitor.py
+```
+
+**Skill file includes:**
+```yaml
+# .claude/skills/quick-review.md
+parent_agent: code-reviewer  # If created via cascade
+hooks:
+  PostToolUse:
+    - .claude/hooks/quick-review/review-logger.py
+```
+
+**Hook file includes:**
+```python
+# .claude/hooks/code-reviewer/agent-monitor.py
+# Attached to: Agent/code-reviewer
+# Event: SubagentStart
+```
+
+---
+
+## V2.1.x+ Features
+
+### Prompt-based Hooks
+```yaml
+type: prompt
+prompt: |
+  Evaluate if this code change follows security guidelines.
+  Return: {"continue": true/false, "reason": "..."}
+```
+
+### PostToolUseFailure Event
+```yaml
+event: PostToolUseFailure
+matcher: "Bash"
+command: "python handle_failure.py"
+```
+
+### once Flag
+```yaml
+once: true  # Run only once per session
+```
+
+---
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--standalone` | Disable cascade, create single component |
+| `--resume <name>` | Resume incomplete draft |
+| `--dry-run` | Preview without creating files |
+| `--template <path>` | Use custom template |
+
+---
+
+## Notes
+
+- All Q&A can be skipped with defaults
+- Draft auto-saves after each round
+- Cascade can be cancelled at any prompt
+- Use `--standalone` for single component creation
+- Cross-references are automatically maintained
+- V2.1.15+ features fully supported

@@ -1,0 +1,70 @@
+---
+name: assign
+description: Assign a specific task to a worker terminal
+user-invocable: true
+disable-model-invocation: true
+version: "1.0.0"
+---
+
+# Assign Task to Worker
+
+Assign a task file to a specific worker terminal.
+
+## Usage
+```
+/assign <terminal> <task-file-or-description>
+```
+
+## Input
+$ARGUMENTS
+
+## Parse Arguments
+
+Expected format: `<terminal-letter> <task>`
+- Terminal: B, C, or D
+- Task: Either a .yaml file path or task description
+
+## Current Worker Status
+```bash
+cat .agent/prompts/_progress.yaml 2>/dev/null | grep -A5 "terminal-"
+```
+
+## Actions
+
+1. **If task file provided**: Verify it exists, update `_progress.yaml`
+2. **If description provided**: Create new task YAML file
+
+### Task File Template
+```yaml
+taskId: "{generated-id}"
+assignedTo: "Terminal-{X}"
+orchestrator: "Terminal-A"
+createdAt: "{timestamp}"
+priority: "P1"
+
+scope:
+  description: |
+    {task description}
+
+targetFiles:
+  - path: "{file-to-modify}"
+    action: "CREATE|MODIFY"
+
+completionCriteria:
+  - "{criterion 1}"
+  - "{criterion 2}"
+
+onComplete:
+  - "Update _progress.yaml: terminal-{x}.status = 'completed'"
+```
+
+## Output
+
+```yaml
+assigned:
+  terminal: "{X}"
+  taskId: "{id}"
+  taskFile: "{path}"
+status: "ready"
+instruction: "Terminal-{X}: Read {taskFile} and execute"
+```

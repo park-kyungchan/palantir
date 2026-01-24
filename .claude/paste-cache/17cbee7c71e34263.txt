@@ -1,0 +1,92 @@
+  ———
+
+  # 새 세션용 최종 요구사항(복붙용)
+
+  ## 0) 작업 디렉토리/대상
+
+  - 작업 루트: /home/palantir/park-kyungchan/palantir
+  - KB 중심 디렉토리: /home/palantir/park-kyungchan/palantir/coding (특히 coding/knowledge_bases)
+  - 목표는 “두 디렉토리의 목적이 다름”을 전제로, 각각을 정확히 분리해서 개선한다.
+
+  ## 1) 공통 원칙(반드시 준수)
+
+  1. 네트워크 연결 상태에서 진행: 외부 공식 문서/채용공고/스펙을 실제로 검색·검증한다(로컬 추측 금지).
+  2. 외부 고품질 자료는 전부 저장: 네트워크로 확보한 핵심 자료는 향후 Claude/Gemini/Codex가 코드단위까지 참조할 수 있도록, 재사용 가능한 형
+     태로 repo 내 KB로 저장한다(요약/핵심 제약/용어/URL/조회일 포함).
+  3. Progressive-Deep-Dive-Method로 “프로젝트 전체” 점검: 얕게→깊게, 파일/코드레벨까지 내용단위로 빠짐없이 점검하고 개선점을 실제로 반영한다
+     (단, 목적과 무관한 변경은 최소화).
+  4. 크로스언어 연결은 파일 의존성/워크플로 아티팩트로 수행: Python/TS/JS/Go 간 연결은 네트워크 호출이나 런타임 RPC가 아니라, repo 내부의
+     dependencies 및 CI/빌드/배포 등 workflow artifact를 근거로 연결한다.
+  5. 토큰화는 런타임 계산만: 프롬프트 토큰/특징량은 저장/영속화하지 않고 런타임에서만 사용한다.
+  6. 1인 규모를 고려하되 확장 가능하게: 지금은 1인 운영이지만, 향후 확장(사람/LLM/모듈) 고려하여 누락 없이 포함하고 모듈 경계를 명확히 한다.
+
+  ———
+
+  ## 2) /home/palantir/park-kyungchan/palantir/coding 요구사항 (KB 중심, Dev/Delta 언어 전면 업데이트)
+
+  ### 목적
+
+  - coding/은 “KB 중심 학습 시스템”이며, Palantir Dev(Product Development/PD) 및 Delta(FDE/FDSE) 직군이 실제로 필요로 하는 프로그래밍 언어/
+    스택을 기존의 애자일+동적 설계 방식에 맞게 KB 전체 관점에서 업데이트한다.
+
+  ### 해야 할 일(명확한 요구)
+
+  1. Dev/Delta 직군 구분을 정확 용어로 반영
+      - Dev(PD)와 Delta(FDE)의 직군 명칭 차이를 KB에서 혼동 없이 유지/정정한다.
+  2. Dev/Delta에 필요한 “프로그래밍 언어/스택”을 네트워크 기반으로 확정
+      - Palantir 공식 문서/공식 채용 공고(직군별) 등 외부 자료를 네트워크로 확인해, Dev/Delta 각각에 요구/우대되는 언어를 KB에 반영한다.
+  3. KB 전반 업데이트(애자일+동적 설계 방식 유지)
+      - 기존 KB 문서들에서 언어/스택 서술이 부정확하거나 근거가 약한 부분을 수정한다.
+      - 깨진 링크/불명확한 예시 코드를 발견하면 공식 근거에 맞춰 고친다.
+  4. 외부자료 저장
+      - 위 언어/스택 확정에 사용한 외부자료는 모두 KB로 저장(요약+제약+URL+조회일). “참고 링크만 남기고 끝내기” 금지.
+
+  ### 산출물(최소)
+
+  - coding/knowledge_bases/ 내에:
+      - Dev/Delta 언어/스택을 근거 기반으로 정리한 KB 문서(신규 또는 기존 문서 대폭 개정)
+      - 이번 작업에서 사용한 외부자료 요약/근거 저장 문서(재사용 가능 형태)
+
+  ———
+
+  ## 3) /home/palantir/park-kyungchan/palantir/ 요구사항 (ODA SubModule: Foundry/AIP 모방 품질 관리)
+
+  ### 전제
+
+  - 이 repo 루트는 이미 Palantir AIP/Foundry를 모방해 만든 ODA이며, 여기서 말하는 “SubModule”은 단순 기능 추가가 아니라:
+      - ObjectTypes, LinkTypes, ActionTypes, Schema/Migrations, Proposals/Approval 등을
+          - “새롭게 정의”하거나,
+          - “기존 정의를 개선”하거나,
+          - “ODA가 E2E로 원활히 작동하도록 위 요소들의 품질(정합성/검증/거버넌스/스키마)을 관리”하는 모듈이다.
+
+  ### SubModule이 반드시 제공해야 하는 기능 요구(Foundry/AIP 모방)
+
+  1. 정의/스펙 계층
+      - ObjectTypes/LinkTypes/ActionTypes/Functions/Interfaces/Dynamic Security 등 Foundry 스타일 요소를 “정의 가능한 스펙”으로 표현한다.
+  2. 검증/정합성(quality management)
+      - 스펙 간 참조 무결성, 제약(예: schema migration 제약), 충돌/중복 탐지 등을 검증한다.
+  3. Schema/Migrations
+      - 스키마 변경과 마이그레이션 제약/정책을 모델링하고, E2E 흐름에서 누락 없이 다룬다.
+  4. Proposals/Approval (C=통합)
+      - 코드 변경과 온톨로지 변경 모두 “Proposal→Approval→Apply” 흐름으로 통합한다.
+      - hazardous/중요 변경은 반드시 승인 게이트를 거친다.
+  5. LLM-독립(E2E)
+      - Claude/Gemini/Codex 등 어떤 LLM이 붙어도 동일한 스키마/검증/거버넌스로 작동해야 한다.
+      - LLM이 참조할 수 있는 스키마 산출물(예: JSON schema export)을 제공/갱신한다.
+  6. 충돌/중복 격리
+      - 기존 ODA에 이미 유사 개념이 있으면 “코어를 무리하게 덮어쓰기”가 아니라, 충돌/중복을 분리하거나 어댑터/네임스페이스로 격리하여
+        SubModule로 운영 가능하게 한다.
+
+  ### 산출물(최소)
+
+  - SubModule 코드/스키마/검증/프로포절 연동(실제 E2E 동작 확인 가능해야 함)
+  - 네트워크로 조사한 Foundry/AIP 공식 자료의 핵심 요약/제약/용어를 KB로 저장(재사용 가능)
+
+  ———
+
+  ## 4) 완료(수용) 기준(명확)
+
+  - (coding/) Dev/Delta 언어/스택이 네트워크 근거 기반으로 KB에 반영되어 있고, 외부자료 요약이 repo에 저장되어 있다.
+  - (root ODA/) SubModule이 ObjectTypes/LinkTypes/ActionTypes/Schema/Migrations/Proposals/Approval 품질을 관리하며, E2E로 정의→검증→제안→승
+    인→적용 흐름이 동작한다.
+  - 전체 작업 과정에서 외부 자료는 저장되며, 추측/미검증 주장 없이 근거 기반으로 업데이트된다.

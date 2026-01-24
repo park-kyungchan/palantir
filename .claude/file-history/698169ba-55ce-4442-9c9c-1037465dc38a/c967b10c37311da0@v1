@@ -1,0 +1,420 @@
+# Plan: Progressive Disclosure + L1/L2 Enhancement V2.3.0
+
+> **Version:** 2.3.0 | **Status:** APPROVED
+> **Date:** 2026-01-21 | **Created From:** Round 19 Decision
+> **Auto-Compact Safe:** This file persists across context compaction
+
+---
+
+## INDEX
+
+### 요구사항 요약
+L1/L2 시스템에 Progressive Disclosure 원칙 통합:
+- Layer 1: L1 Summary (300 tokens) - `priority`, `recommendedRead` 추가
+- Layer 2: L2 Index (200 tokens) - 섹션별 `tokens`, `priority` 추가
+- Layer 3: L2 Detail - 요청 시만 Read()
+
+### Complexity
+- **예상 복잡도:** medium
+- **영향 파일:** 4개
+
+### 핵심 개선점
+1. L1에 `priority` (CRITICAL/HIGH/MEDIUM/LOW) 필드 추가
+2. L1에 `recommendedRead` (추천 읽기 순서 + 이유) 추가
+3. `l2Index[].tokens` - 섹션별 토큰 추정치
+4. `l2Index[].priority` - 섹션별 우선순위
+
+### 리스크
+- Hook 수정 후 기존 subagent 응답 호환성
+- YAML 파싱 복잡도 증가
+
+### 다음 단계
+Phase 1부터 순차 구현
+
+---
+
+## Phase 1: L1 Schema Enhancement
+
+### Enhanced L1 Schema (Target)
+
+```yaml
+# Enhanced L1 Schema V2.3.0
+taskId: {auto-generate unique 8-char id}
+agentType: {Explore|Plan|general-purpose}
+summary: |
+  1-2 sentence summary (max 200 chars)
+status: success | partial | failed
+
+# === NEW: Progressive Disclosure Fields ===
+priority: CRITICAL | HIGH | MEDIUM | LOW
+recommendedRead:
+  - anchor: "#security-findings"
+    reason: "3 critical vulnerabilities detected"
+  - anchor: "#performance-issues"
+    reason: "2 blocking performance issues"
+
+findingsCount: {number}
+criticalCount: {number}
+
+l2Index:
+  - anchor: "#section-name"
+    tokens: {estimated number}       # NEW
+    priority: CRITICAL | HIGH | MEDIUM | LOW  # NEW
+    description: "what this section contains"
+
+l2Path: .agent/outputs/{agentType}/{taskId}.md
+requiresL2Read: true | false
+nextActionHint: "suggested next step"
+```
+
+### Priority Decision Tree
+
+```
+Determine L1 priority:
+
+criticalCount > 0
+    └── priority: CRITICAL
+        └── MUST read recommendedRead sections
+
+criticalCount == 0 && status == "partial"
+    └── priority: HIGH
+        └── SHOULD read recommendedRead sections
+
+status == "success" && findingsCount > 5
+    └── priority: MEDIUM
+        └── MAY read l2Index on demand
+
+status == "success" && findingsCount <= 5
+    └── priority: LOW
+        └── L1 is sufficient
+```
+
+---
+
+## Phase 2: Hook Modification (l1l2_inject.sh)
+
+### File: `/home/palantir/.claude/hooks/l1l2/l1l2_inject.sh`
+
+### Changes Required
+
+1. Update `L1L2_PROMPT` with new schema
+2. Add `model: "opus"` to `updatedInput` (Round 6 decision)
+3. Add subagent_type branching for `additionalContext` (Round 7 decision)
+
+### Updated L1L2_PROMPT
+
+```bash
+L1L2_PROMPT='## L1/L2 Output Format V2.3.0 (MANDATORY - Progressive Disclosure)
+
+Your output MUST follow this structure:
+
+### L1 Section (Return to Main Agent - MAX 500 TOKENS)
+```yaml
+taskId: {auto-generate unique 8-char id}
+agentType: {Explore|Plan|general-purpose}
+summary: |
+  1-2 sentence summary (max 200 chars)
+status: success | partial | failed
+
+# Progressive Disclosure Fields (REQUIRED)
+priority: CRITICAL | HIGH | MEDIUM | LOW
+recommendedRead:
+  - anchor: "#anchor-name"
+    reason: "Brief explanation why this should be read"
+
+findingsCount: {number}
+criticalCount: {number}
+
+l2Index:
+  - anchor: "#section-name"
+    tokens: {estimated tokens for this section}
+    priority: CRITICAL | HIGH | MEDIUM | LOW
+    description: "what this section contains"
+
+l2Path: .agent/outputs/{agentType}/{taskId}.md
+requiresL2Read: true | false
+nextActionHint: "suggested next step"
+```
+
+### L2 Section (Write to File)
+Write detailed output to: .agent/outputs/{agentType}/{taskId}.md
+Use markdown anchors (## Section {#anchor}) matching l2Index.
+Include estimated token count per section in header comment.
+
+### Priority Guidelines
+- CRITICAL: criticalCount > 0 OR blocking issues found
+- HIGH: status == partial OR major issues requiring attention
+- MEDIUM: status == success with notable findings (findingsCount > 5)
+- LOW: status == success with minimal findings
+
+CONSTRAINT: L1 MUST NOT EXCEED 500 TOKENS. Be concise.'
+```
+
+### Subagent Type Branching (Round 7)
+
+```bash
+# Extract subagent_type from tool_input
+SUBAGENT_TYPE=$(json_get "$CURRENT_INPUT" ".subagent_type" "")
+
+# Conversational agents: skip L1/L2 format
+if [[ "$SUBAGENT_TYPE" == "prompt-assistant" ]]; then
+    # Allow without L1/L2 format injection
+    cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedInput": $UPDATED_INPUT
+  }
+}
+RESPONSE
+    exit 0
+fi
+
+# Analysis agents: inject L1/L2 format
+# ... existing L1L2_PROMPT injection ...
+```
+
+---
+
+## Phase 3: CLAUDE.md Update (Section 2.7)
+
+### File: `/home/palantir/.claude/CLAUDE.md`
+
+### Replace Section 2.7 With:
+
+```markdown
+### 2.7 L1/L2 Orchestrating Pattern V2.3.0 (Progressive Disclosure)
+
+**Native Hook-based output format enforcement with Progressive Disclosure.**
+
+#### How It Works
+
+PreToolUse Hook (`l1l2_inject.sh`) automatically injects:
+1. `run_in_background=true` via `updatedInput`
+2. `model="opus"` via `updatedInput`
+3. L1/L2 format instructions via `additionalContext` (analysis agents only)
+
+#### L1 Summary Format (MAX 500 TOKENS)
+
+```yaml
+taskId: {auto-generate unique id}
+agentType: {Explore|Plan|general-purpose}
+summary: |
+  1-2 sentence summary (max 200 chars)
+status: success | partial | failed
+
+# Progressive Disclosure Fields
+priority: CRITICAL | HIGH | MEDIUM | LOW
+recommendedRead:
+  - anchor: "#section-name"
+    reason: "why this section should be read"
+
+l2Index:
+  - anchor: "#section-name"
+    tokens: {estimated number}
+    priority: CRITICAL | HIGH | MEDIUM | LOW
+    description: "what this section contains"
+
+l2Path: .agent/outputs/{agentType}/{taskId}.md
+requiresL2Read: true | false
+nextActionHint: "suggested next step"
+```
+
+#### Progressive Disclosure Reading Strategy (Main Agent Behavior)
+
+```
+Receive L1 from Subagent
+    │
+    ├── priority == CRITICAL
+    │   └── MUST Read L2 sections in recommendedRead order
+    │
+    ├── priority == HIGH
+    │   └── SHOULD Read L2 recommendedRead sections
+    │
+    ├── priority == MEDIUM
+    │   └── MAY Read L2 on demand (user request or context need)
+    │
+    └── priority == LOW
+        └── L1 is sufficient, skip L2 read
+```
+
+#### Token Budget Estimation
+
+Use `l2Index[].tokens` to estimate context impact before reading:
+- If total estimated tokens > 10K, read CRITICAL/HIGH sections only
+- If context usage > 70%, read L1 + recommendedRead only
+
+#### Subagent Type Exceptions
+
+| Subagent Type | L1/L2 Format | Reason |
+|---------------|--------------|--------|
+| `Explore` | ✅ Applied | Analysis output |
+| `Plan` | ✅ Applied | Design output |
+| `general-purpose` | ✅ Applied | Execution output |
+| `prompt-assistant` | ❌ Skipped | Conversational, natural language |
+| `claude-code-guide` | ✅ Applied | Documentation output |
+```
+
+---
+
+## Phase 4: PostToolUse Hook Enhancement
+
+### File: `/home/palantir/.claude/hooks/l1l2/post-task-output.sh` (NEW)
+
+### Purpose
+- Capture Agent ID for resume support
+- Log L1 summary with priority for later reference
+- Validate Progressive Disclosure compliance
+
+### Implementation
+
+```bash
+#!/bin/bash
+# PostToolUse Hook for Task tool - Agent ID capture and L1 logging
+# Version: 2.3.0
+
+set -euo pipefail
+
+INPUT=$(cat)
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
+
+# Only process Task tool results
+if [[ "$TOOL_NAME" != "Task" ]]; then
+    echo '{}'
+    exit 0
+fi
+
+# Extract result info
+AGENT_ID=$(echo "$INPUT" | jq -r '.tool_result.agent_id // ""')
+OUTPUT=$(echo "$INPUT" | jq -r '.tool_result.output // ""')
+
+# Extract L1 fields from output (if present)
+TASK_ID=$(echo "$OUTPUT" | grep -oP 'taskId:\s*\K\w+' || echo "unknown")
+PRIORITY=$(echo "$OUTPUT" | grep -oP 'priority:\s*\K\w+' || echo "UNKNOWN")
+STATUS=$(echo "$OUTPUT" | grep -oP 'status:\s*\K\w+' || echo "unknown")
+
+# Log to file
+LOG_FILE=".agent/logs/task_execution.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+
+cat >> "$LOG_FILE" <<EOF
+---
+timestamp: $(date -Iseconds)
+agent_id: $AGENT_ID
+task_id: $TASK_ID
+priority: $PRIORITY
+status: $STATUS
+---
+EOF
+
+echo '{}'
+```
+
+---
+
+## Phase 5: Python Validator Enhancement (Optional)
+
+### File: `/home/palantir/.claude/hooks/l1l2/post_task_validator.py`
+
+### Add Priority Validation
+
+```python
+def validate_l1_progressive_disclosure(l1_yaml: dict) -> list[str]:
+    """Validate Progressive Disclosure fields in L1."""
+    errors = []
+
+    # Required fields
+    if "priority" not in l1_yaml:
+        errors.append("Missing required field: priority")
+    elif l1_yaml["priority"] not in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+        errors.append(f"Invalid priority: {l1_yaml['priority']}")
+
+    # Conditional validation
+    if l1_yaml.get("criticalCount", 0) > 0:
+        if l1_yaml.get("priority") != "CRITICAL":
+            errors.append("priority should be CRITICAL when criticalCount > 0")
+
+    # recommendedRead validation
+    if l1_yaml.get("priority") in ["CRITICAL", "HIGH"]:
+        if not l1_yaml.get("recommendedRead"):
+            errors.append("recommendedRead required for CRITICAL/HIGH priority")
+
+    # l2Index token estimates
+    for idx, item in enumerate(l1_yaml.get("l2Index", [])):
+        if "tokens" not in item:
+            errors.append(f"l2Index[{idx}] missing tokens estimate")
+        if "priority" not in item:
+            errors.append(f"l2Index[{idx}] missing priority")
+
+    return errors
+```
+
+---
+
+## Phase 6: Testing & Verification
+
+### Test Cases
+
+1. **Explore subagent with CRITICAL findings**
+   - Verify priority=CRITICAL
+   - Verify recommendedRead populated
+   - Verify Main Agent reads recommended sections
+
+2. **Plan subagent with no issues**
+   - Verify priority=LOW
+   - Verify L2 not read automatically
+
+3. **prompt-assistant conversation**
+   - Verify L1/L2 format NOT applied
+   - Verify natural language response
+
+4. **Auto-Compact recovery**
+   - Verify agent_id logged
+   - Verify resume works with logged ID
+
+### Verification Checklist
+
+- [ ] l1l2_inject.sh updated with V2.3.0 schema
+- [ ] Model="opus" added to updatedInput
+- [ ] Subagent type branching implemented
+- [ ] CLAUDE.md Section 2.7 updated
+- [ ] PostToolUse hook created
+- [ ] All test cases pass
+
+---
+
+## Phase 7: Rollback Plan
+
+### If Issues Occur
+
+1. Restore previous l1l2_inject.sh from git
+2. Revert CLAUDE.md Section 2.7
+3. Disable PostToolUse hook
+
+### Backup Commands
+
+```bash
+# Before starting
+cp .claude/hooks/l1l2/l1l2_inject.sh .claude/hooks/l1l2/l1l2_inject.sh.backup
+cp .claude/CLAUDE.md .claude/CLAUDE.md.backup
+```
+
+---
+
+## Implementation Priority
+
+| Phase | File | Priority | Estimated Effort |
+|-------|------|----------|------------------|
+| 2 | l1l2_inject.sh | P0 | 30 min |
+| 3 | CLAUDE.md | P0 | 15 min |
+| 4 | post-task-output.sh | P1 | 20 min |
+| 5 | post_task_validator.py | P2 | 15 min |
+| 6 | Testing | P1 | 30 min |
+
+---
+
+## Metadata
+
+- Created: 2026-01-21 16:20
+- Source: Round 19 Decision (draft_commands_skills_enhancement_v2.2.md)
+- Dependencies: l1l2_inject.sh (existing), CLAUDE.md (existing)

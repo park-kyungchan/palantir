@@ -1,0 +1,274 @@
+---
+name: ask
+description: |
+  Prompt Assistant를 호출하여 요구사항을 명확화하고 최적의 기능을 추천받습니다.
+  V2.1.8: Semantic Integrity Protocol - 수치 점수 제거, 상태 기계 기반 흐름
+allowed-tools: Read, Grep, Glob, AskUserQuestion, Task, WebSearch, TodoWrite
+version: "2.1.8"
+---
+
+# /ask Command (V2.1.8)
+
+$ARGUMENTS
+
+> **Role:** Semantic Integrity 보장 및 요구사항 명확화
+> **Core Principle:** 수치 점수 NO → Socratic 질문 YES → 승인 없이 실행 NO
+
+---
+
+## 1. Core Protocol: Semantic Integrity
+
+**MANDATORY:** 모든 실행은 사용자 승인 후에만 가능합니다.
+
+```
+User Input
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 1. PARSE: 의도 추출                  │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 2. UNDERSTAND: "내가 이해한 바로는..." │
+│    → AI가 자신의 이해를 명시적 진술    │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 3. AMBIGUITY: 모호한 부분 식별        │
+│    → "다음 부분이 명확하지 않습니다..." │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 4. QUESTION: AskUserQuestion         │
+│    → Socratic 질문으로 명확화         │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 5. CLARIFY: 답변 통합                │
+│    → 추가 모호함 있으면 3으로 복귀     │
+│    → MAX_ROUNDS = 3 (무한루프 방지)   │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 6. APPROVE: 최종 프롬프트 승인 요청   │  ★ MANDATORY GATE
+│    → 사용자가 "승인"해야만 7단계 진행   │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 7. ROUTE: 적절한 스킬로 라우팅        │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 2. Clarification State Machine
+
+**State Transitions (Forward-Only)**
+
+| State | Next Valid States |
+|-------|-------------------|
+| INITIAL | UNDERSTANDING |
+| UNDERSTANDING | QUESTIONING, CLARIFIED |
+| QUESTIONING | CLARIFIED |
+| CLARIFIED | APPROVED |
+| APPROVED | EXECUTING |
+| EXECUTING | (terminal) |
+
+**CRITICAL:** `EXECUTING` 상태는 `APPROVED` 없이 도달 불가
+
+---
+
+## 3. Orchestration Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ORCHESTRATION FLOW                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐  │
+│  │  Main Agent │ ──► │ prompt-assistant │ ──► │ Synthesized     │  │
+│  │ (Conductor) │     │  (Forked Agent)  │     │   Results       │  │
+│  └─────────────┘     └──────────────────┘     └─────────────────┘  │
+│         │                     │                       │             │
+│         │                     ▼                       │             │
+│         │           ┌──────────────────┐              │             │
+│         │           │ • Analyze Intent │              │             │
+│         │           │ • Clarify Needs  │              │             │
+│         │           │ • Recommend Tool │              │             │
+│         │           └──────────────────┘              │             │
+│         │                                             │             │
+│         └─────────────────────────────────────────────┘             │
+│                                                                     │
+│  FALLBACK: If subagent unavailable → WebSearch for techniques       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+- **Main Agent only orchestrates** - does not perform analysis directly
+- **Delegates to prompt-assistant** (forked context with isolated memory)
+- **Returns synthesized results** to user in standardized format
+- **WebSearch fallback** for prompt engineering techniques when needed
+
+---
+
+## 4. Delegation Template
+
+```python
+Task(
+    subagent_type="prompt-assistant",
+    prompt="""
+    ## Context
+    User needs help clarifying their requirements.
+    Operating under ODA governance with Semantic Integrity Protocol.
+
+    ## User Input
+    {user_input}
+
+    ## Task
+    1. Analyze user intent (UNDERSTAND phase)
+    2. Identify ambiguities (AMBIGUITY phase)
+    3. Generate Socratic questions if needed (QUESTION phase)
+    4. Request approval before routing (APPROVE phase)
+
+    ## Required Output
+    - understanding: "내가 이해한 바로는..."
+    - ambiguities: [...] (unclear parts)
+    - questions: [...] (Socratic questions if needed)
+    - confidence_level: "high" | "medium" | "low"  # NOT numerical score
+    - recommended_skill: skill name or "continue_clarification"
+    """,
+    description="Clarify user requirements with Semantic Integrity",
+    context="fork"
+)
+```
+
+---
+
+## 5. Approval Gate Implementation
+
+**CRITICAL:** 실행 전 반드시 사용자 승인 필요
+
+```python
+# Present final prompt for approval
+AskUserQuestion(
+    questions=[{
+        "question": f"최종 확인: {final_prompt}\n\n진행할까요?",
+        "header": "Execution Approval",
+        "options": [
+            {"label": "예, 진행해 주세요", "description": "승인하고 실행"},
+            {"label": "아니요, 수정이 필요해요", "description": "추가 명확화"}
+        ],
+        "multiSelect": False
+    }]
+)
+```
+
+---
+
+## 6. Quick Reference: Skill Routing
+
+| Intent | Keywords | Route |
+|--------|----------|-------|
+| 탐색/분석 | 분석, 이해, 설명, 찾아 | Explore Agent |
+| 수정/변경 | 수정, 고쳐, 바꿔, 추가 | /plan |
+| 검사/리뷰 | 검사, 리뷰, 확인, 체크 | /audit |
+| 심층분석 | 심층, 깊이, 상세, 철저 | /deep-audit |
+| 계획/설계 | 계획, 설계, 아키텍처 | /plan |
+| 모호함 | (none matched) | /ask (continue) |
+
+---
+
+## 7. 사용법
+
+```
+/ask 이 코드를 개선하고 싶어
+/ask 버그가 있는 것 같은데 찾아줘
+/ask 새로운 기능을 추가하고 싶어
+/ask 도와줘
+```
+
+---
+
+## 8. Prompt Assistant가 제공하는 것
+
+### 8.1 요청 분석 (UNDERSTAND)
+- 사용자 의도 파악
+- 작업 범위 식별
+- 필요한 도구 결정
+
+### 8.2 명확화 질문 (QUESTION - Socratic)
+- 모호한 부분 명확화
+- 구체적인 요구사항 도출
+- 예상 결과 확인
+
+### 8.3 기능 추천 (ROUTE)
+- 상황에 맞는 Native Capabilities 제안
+- Skills, Agents, Hooks 활용 방안
+- 단계별 실행 계획
+
+### 8.4 최종 확인 (APPROVE)
+- 이해한 내용 요약
+- 실행 계획 제시
+- 사용자 승인 요청 ★
+
+---
+
+## 9. Execution Flow
+
+```
+1. User invokes: /ask <요청>
+2. Main Agent: Parse $ARGUMENTS
+3. Main Agent: Delegate to prompt-assistant (UNDERSTAND)
+4. Subagent: Identify ambiguities (AMBIGUITY)
+5. Subagent: Generate questions (QUESTION)
+6. Main Agent: AskUserQuestion for clarification
+7. Subagent: Synthesize responses (CLARIFY)
+8. Main Agent: Present final prompt for approval (APPROVE) ★
+9. User confirms → Execute recommended action (ROUTE)
+```
+
+---
+
+## 10. Error Handling
+
+| 상황 | 처리 방법 |
+|------|----------|
+| prompt-assistant 로드 실패 | WebSearch로 prompting 기법 검색 후 직접 처리 |
+| 사용자 응답 없음 | 기본 추천 제공 (Explore → Plan 순) |
+| 복합 요청 | TodoWrite로 작업 분해 후 순차 처리 |
+| 모호함 지속 (MAX_ROUNDS) | 강제 승인 요청으로 전환 |
+| 승인 거부 | UNDERSTANDING 상태로 복귀 |
+
+---
+
+## 11. TodoWrite Integration
+
+```
+# Progress tracking format
+[/ask] Awaiting approval | Input: 코드 리뷰해줘...
+  Round 1: 사용자가 코드 리뷰를 원하는 것으로...
+  [GATE] User Approval: PENDING
+```
+
+---
+
+## References
+
+- **Agent Definition:** `.claude/agents/prompt-assistant.md`
+- **Detailed Implementation:** `.claude/references/ask-skill-details.md`
+- **Related Skills:** `/plan`, `/audit`, `/deep-audit`
+
+---
+
+> **V2.1.8 Changes:**
+> - Removed: clarity_score (numerical scoring 0.0-1.0)
+> - Added: Clarification state machine
+> - Added: MANDATORY approval gate
+> - Added: Categorical confidence (high/medium/low)
+> - Integrated: Skills and Commands into single file

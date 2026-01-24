@@ -1,0 +1,13 @@
+{
+  "id": "6",
+  "subject": "Implement /collect skill",
+  "description": "Create /collect skill that aggregates worker results, verifies completion via TaskList, reads L1 outputs from .agent/outputs/, generates synthesis report",
+  "activeForm": "Implementing /collect skill",
+  "status": "pending",
+  "blocks": [
+    "7"
+  ],
+  "blockedBy": [
+    "1"
+  ]
+}

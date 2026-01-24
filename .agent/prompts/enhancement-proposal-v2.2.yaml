@@ -1,0 +1,487 @@
+# =============================================================================
+# Enhancement Proposal: Claude Code v2.1.16+ Integration
+# =============================================================================
+# Target: Terminal-A (Main Agent Orchestrator)
+# Format: Machine-Readable YAML
+# Created: 2026-01-24T01:15:00Z
+# Author: Terminal-D (Worker)
+# =============================================================================
+
+version: "1.0"
+proposalId: "enhancement-v2.2"
+priority: HIGH
+status: "proposed"
+
+# =============================================================================
+# EXECUTIVE SUMMARY
+# =============================================================================
+summary:
+  title: "Session-Aware Worker System → Claude Code Native Integration"
+  description: |
+    현재 구현된 file-based session registry와 prompt lifecycle을
+    Claude Code v2.1.16+ 네이티브 기능과 통합하여 효율성 극대화.
+
+  currentState:
+    - "File-based session registry (~/.agent/tmp/current_session.json)"
+    - "Custom hook pipeline (pd-task-interceptor, pd-task-processor)"
+    - "YAML prompt files for worker coordination"
+    - "L1/L2/L3 Progressive Disclosure"
+
+  proposedEnhancements:
+    - "CLAUDE_CODE_TASK_LIST_ID로 네이티브 task 공유"
+    - "Skills system으로 재사용 가능한 workflow 캡슐화"
+    - "CLAUDE_ENV_FILE로 환경변수 영구화"
+    - "PreToolUse additionalContext로 컨텍스트 주입"
+
+  expectedBenefits:
+    - "Hook 복잡도 50% 감소"
+    - "터미널 간 Task 동기화 자동화"
+    - "Skill 기반 표준화된 workflow"
+
+# =============================================================================
+# ENHANCEMENT 1: Native Task List Sharing
+# =============================================================================
+enhancements:
+  - id: "E1"
+    name: "Native Task List Integration"
+    priority: "P0"
+    complexity: "LOW"
+    impact: "HIGH"
+
+    problem: |
+      현재 TodoWrite/TaskCreate로 생성된 task가 터미널 간 공유되지 않음.
+      각 터미널이 독립적인 task context를 가짐.
+
+    solution: |
+      CLAUDE_CODE_TASK_LIST_ID 환경변수를 모든 Worker 터미널에서 공유.
+      ~/.claude/tasks/{PROJECT_ID}/ 디렉토리에 task 자동 영구화.
+
+    implementation:
+      files:
+        - path: ".claude/hooks/session-start.sh"
+          action: "MODIFY"
+          changes:
+            - location: "Line 310+ (after current_session.json creation)"
+              code: |
+                # Export shared task list ID via CLAUDE_ENV_FILE
+                if [ -n "$CLAUDE_ENV_FILE" ]; then
+                    PROJECT_TASK_ID="palantir-$(date +%Y%m%d)"
+                    echo "export CLAUDE_CODE_TASK_LIST_ID=\"$PROJECT_TASK_ID\"" >> "$CLAUDE_ENV_FILE"
+
+                    # Also store in session registry for Worker reference
+                    if [ -f "$SESSION_REGISTRY" ]; then
+                        # Update JSON with task list ID
+                        TMP_FILE=$(mktemp)
+                        jq --arg tid "$PROJECT_TASK_ID" '. + {taskListId: $tid}' "$SESSION_REGISTRY" > "$TMP_FILE"
+                        mv "$TMP_FILE" "$SESSION_REGISTRY"
+                    fi
+                fi
+
+      workerSetup: |
+        # Worker terminals should read task list ID from session registry
+        TASK_LIST_ID=$(jq -r '.taskListId // empty' ~/.agent/tmp/current_session.json)
+        export CLAUDE_CODE_TASK_LIST_ID="$TASK_LIST_ID"
+
+    verification:
+      - "Start Orchestrator: claude"
+      - "Start Worker: Read taskListId from session registry"
+      - "Create task in Orchestrator: TaskCreate"
+      - "Verify in Worker: TaskList shows same tasks"
+
+  # ===========================================================================
+  # ENHANCEMENT 2: Skills-Based Workflow Encapsulation
+  # ===========================================================================
+  - id: "E2"
+    name: "Skills System for Common Workflows"
+    priority: "P1"
+    complexity: "MEDIUM"
+    impact: "HIGH"
+
+    problem: |
+      반복되는 workflow (탐색, 계획, 코드 리뷰 등)가 매번 새로 prompt됨.
+      Worker 간 일관성 없는 출력 형식.
+
+    solution: |
+      .claude/skills/ 디렉토리에 재사용 가능한 Skill 정의.
+      L1/L2/L3 출력 형식을 Skill에 embedded.
+
+    implementation:
+      skills:
+        - name: "explore-l1l2l3"
+          path: ".claude/skills/explore-l1l2l3/SKILL.md"
+          content: |
+            ---
+            name: explore-l1l2l3
+            description: Explore codebase with L1/L2/L3 progressive disclosure output
+            context: fork
+            agent: Explore
+            user-invocable: true
+            ---
+
+            # Codebase Exploration (L1/L2/L3 Output)
+
+            Session: ${CLAUDE_SESSION_ID}
+
+            ## Task
+            $ARGUMENTS
+
+            ## Output Requirements
+
+            You MUST output in L1/L2/L3 format:
+
+            ### L1 Summary (stdout, ≤500 tokens)
+            ```yaml
+            taskId: {8-char-id}
+            agentType: Explore
+            summary: "1-2 sentence finding"
+            status: success | partial | failed
+            priority: CRITICAL | HIGH | MEDIUM | LOW
+            l2Path: .agent/outputs/Explore/{taskId}.md
+            requiresL2Read: true | false
+            ```
+
+            ### L2/L3 Detail (file)
+            Write detailed findings to: .agent/outputs/Explore/{taskId}.md
+
+        - name: "plan-l1l2l3"
+          path: ".claude/skills/plan-l1l2l3/SKILL.md"
+          content: |
+            ---
+            name: plan-l1l2l3
+            description: Create implementation plan with L1/L2/L3 output
+            context: fork
+            agent: Plan
+            user-invocable: true
+            ---
+
+            # Implementation Planning (L1/L2/L3 Output)
+
+            Session: ${CLAUDE_SESSION_ID}
+
+            ## Task
+            $ARGUMENTS
+
+            ## Output Requirements
+            Same L1/L2/L3 format as explore-l1l2l3.
+
+        - name: "worker-task"
+          path: ".claude/skills/worker-task/SKILL.md"
+          content: |
+            ---
+            name: worker-task
+            description: Execute assigned worker task from prompt file
+            auto-load: false
+            user-invocable: true
+            allowed-tools: Read, Grep, Glob, Edit, Write, Bash
+            ---
+
+            # Worker Task Execution
+
+            Session: ${CLAUDE_SESSION_ID}
+
+            ## Instructions
+
+            1. Read your task file from: $ARGUMENTS
+            2. Check _progress.yaml for dependencies
+            3. Execute the task
+            4. Update _progress.yaml when complete
+            5. Report in L1/L2/L3 format
+
+    verification:
+      - "ls .claude/skills/"
+      - "Invoke: /explore-l1l2l3 Find all authentication handlers"
+      - "Verify L1 output format"
+      - "Check .agent/outputs/Explore/ for L2/L3 file"
+
+  # ===========================================================================
+  # ENHANCEMENT 3: PreToolUse Context Injection
+  # ===========================================================================
+  - id: "E3"
+    name: "PreToolUse additionalContext for Tool Enhancement"
+    priority: "P1"
+    complexity: "MEDIUM"
+    impact: "MEDIUM"
+
+    problem: |
+      Edit/Write 도구 사용 시 프로젝트 컨벤션을 매번 상기시켜야 함.
+      Task 도구 사용 시 L1/L2/L3 프롬프트를 매번 주입해야 함.
+
+    solution: |
+      PreToolUse hook에서 additionalContext JSON 출력으로 자동 컨텍스트 주입.
+
+    implementation:
+      files:
+        - path: ".claude/hooks/task-pipeline/pd-context-injector.sh"
+          action: "CREATE"
+          content: |
+            #!/bin/bash
+            # =============================================================================
+            # pd-context-injector.sh - PreToolUse Hook for Context Injection
+            # =============================================================================
+            # Injects project-specific context before tool execution.
+            # Matcher: Edit, Write, Task
+            # =============================================================================
+
+            set +e
+            INPUT=$(cat)
+            TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+
+            case "$TOOL_NAME" in
+                "Edit"|"Write")
+                    cat <<EOF
+            {
+              "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "additionalContext": "Code Style: Follow existing patterns. No new dependencies without approval. Preserve L1/L2/L3 output compatibility."
+              }
+            }
+            EOF
+                    ;;
+                "Task")
+                    SUBAGENT_TYPE=$(echo "$INPUT" | jq -r '.tool_input.subagent_type // empty')
+                    case "$SUBAGENT_TYPE" in
+                        "Explore"|"Plan"|"general-purpose")
+                            cat <<EOF
+            {
+              "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "additionalContext": "Output Format: L1/L2/L3 Progressive Disclosure required. Write L2/L3 to .agent/outputs/{agentType}/. Session: $(jq -r '.session_id // empty' <<< "$INPUT")"
+              }
+            }
+            EOF
+                            ;;
+                    esac
+                    ;;
+            esac
+
+            exit 0
+
+        - path: ".claude/settings.json"
+          action: "MODIFY"
+          changes:
+            - location: "hooks.PreToolUse section"
+              code: |
+                "PreToolUse": [
+                  {
+                    "matcher": "Edit|Write|Task",
+                    "hooks": [{
+                      "type": "command",
+                      "command": ".claude/hooks/task-pipeline/pd-context-injector.sh"
+                    }]
+                  }
+                ]
+
+    verification:
+      - "Run: Edit tool on any file"
+      - "Check Claude receives additionalContext about code style"
+      - "Run: Task(subagent_type='Explore')"
+      - "Verify L1/L2/L3 prompt injection"
+
+  # ===========================================================================
+  # ENHANCEMENT 4: Environment Variable Persistence
+  # ===========================================================================
+  - id: "E4"
+    name: "CLAUDE_ENV_FILE for Session-Wide Variables"
+    priority: "P2"
+    complexity: "LOW"
+    impact: "MEDIUM"
+
+    problem: |
+      현재 session ID를 file-based registry에서 매번 읽어야 함.
+      Bash 명령어에서 세션 정보 접근이 번거로움.
+
+    solution: |
+      SessionStart hook에서 CLAUDE_ENV_FILE에 환경변수 기록.
+      모든 후속 Bash 명령에서 자동으로 사용 가능.
+
+    implementation:
+      files:
+        - path: ".claude/hooks/session-start.sh"
+          action: "MODIFY"
+          changes:
+            - location: "End of session initialization"
+              code: |
+                # Persist session variables for all Bash commands
+                if [ -n "$CLAUDE_ENV_FILE" ]; then
+                    cat >> "$CLAUDE_ENV_FILE" <<ENVVARS
+                export ORCHESTRATOR_SESSION_ID="$SESSION_ID"
+                export CLAUDE_CODE_TASK_LIST_ID="${PROJECT_TASK_ID:-palantir-main}"
+                export WORKSPACE_ROOT="$WORKSPACE_ROOT"
+                export L1L2L3_OUTPUT_DIR=".agent/outputs"
+                ENVVARS
+                fi
+
+    verification:
+      - "Start new Claude session"
+      - "Run: echo $ORCHESTRATOR_SESSION_ID"
+      - "Should print session ID without file read"
+
+  # ===========================================================================
+  # ENHANCEMENT 5: Custom Slash Commands for Orchestration
+  # ===========================================================================
+  - id: "E5"
+    name: "Custom Commands for Multi-Terminal Workflow"
+    priority: "P2"
+    complexity: "LOW"
+    impact: "MEDIUM"
+
+    problem: |
+      Worker 시작, 진행 상황 확인, Task 할당 등이 수동 명령어 필요.
+
+    solution: |
+      .claude/commands/에 Orchestrator 전용 명령어 정의.
+
+    implementation:
+      commands:
+        - name: "worker-status"
+          path: ".claude/commands/worker-status.md"
+          content: |
+            ---
+            name: worker-status
+            description: Check status of all worker terminals
+            ---
+
+            Read and summarize .agent/prompts/_progress.yaml:
+
+            1. Show each terminal's current status
+            2. List blocked tasks and their blockers
+            3. Show completed deliverables
+            4. Suggest next actions for idle workers
+
+        - name: "assign-task"
+          path: ".claude/commands/assign-task.md"
+          content: |
+            ---
+            name: assign-task
+            description: Assign a task to a worker terminal
+            argument-hint: "[terminal] [task-description]"
+            ---
+
+            Create a worker task file:
+
+            1. Parse arguments: $ARGUMENTS
+            2. Generate task YAML in .agent/prompts/worker-{terminal}-task.yaml
+            3. Update _progress.yaml with assignment
+            4. Output assignment confirmation
+
+        - name: "sync-tasks"
+          path: ".claude/commands/sync-tasks.md"
+          content: |
+            ---
+            name: sync-tasks
+            description: Synchronize task list across all terminals
+            ---
+
+            1. Read CLAUDE_CODE_TASK_LIST_ID from session registry
+            2. List all tasks with TaskList
+            3. Show which tasks are assigned to which terminals
+            4. Identify orphaned or stale tasks
+
+    verification:
+      - "Type /worker-status in Orchestrator"
+      - "Verify output shows all terminal statuses"
+      - "/assign-task b 'Implement feature X'"
+      - "Check .agent/prompts/worker-b-task.yaml created"
+
+# =============================================================================
+# IMPLEMENTATION PHASES
+# =============================================================================
+implementationPlan:
+  phase1:
+    name: "Quick Wins"
+    priority: "P0"
+    enhancements: ["E1", "E4"]
+    estimatedEffort: "30 minutes"
+    description: "CLAUDE_CODE_TASK_LIST_ID와 CLAUDE_ENV_FILE 활성화"
+
+  phase2:
+    name: "Skills Integration"
+    priority: "P1"
+    enhancements: ["E2"]
+    estimatedEffort: "1 hour"
+    description: "L1/L2/L3 Skills 생성 및 테스트"
+    dependencies: ["phase1"]
+
+  phase3:
+    name: "Advanced Hooks"
+    priority: "P1"
+    enhancements: ["E3"]
+    estimatedEffort: "45 minutes"
+    description: "PreToolUse additionalContext 구현"
+    dependencies: ["phase2"]
+
+  phase4:
+    name: "Orchestration Commands"
+    priority: "P2"
+    enhancements: ["E5"]
+    estimatedEffort: "30 minutes"
+    description: "Custom slash commands 추가"
+    dependencies: ["phase1"]
+
+# =============================================================================
+# DEPENDENCY GRAPH
+# =============================================================================
+dependencyGraph: |
+  E1 (Task List Sharing) ─────┬──────> E5 (Custom Commands)
+                              │
+  E4 (Env Persistence) ───────┤
+                              │
+  E2 (Skills System) ─────────┴──────> E3 (PreToolUse Context)
+
+# =============================================================================
+# RISKS & MITIGATIONS
+# =============================================================================
+risks:
+  - id: "R1"
+    description: "CLAUDE_ENV_FILE이 없는 환경에서 fallback 필요"
+    mitigation: "File-based registry를 fallback으로 유지"
+    severity: "LOW"
+
+  - id: "R2"
+    description: "Skills context:fork가 기존 L1/L2/L3 hook과 충돌 가능"
+    mitigation: "Skills 내에서 L1/L2/L3 형식 명시적 요구"
+    severity: "MEDIUM"
+
+  - id: "R3"
+    description: "PreToolUse additionalContext가 너무 길면 토큰 낭비"
+    mitigation: "Context를 100 tokens 이하로 제한"
+    severity: "LOW"
+
+# =============================================================================
+# SUCCESS METRICS
+# =============================================================================
+successMetrics:
+  - metric: "Hook code lines"
+    before: "~600 lines"
+    after: "~300 lines"
+    improvement: "50% reduction"
+
+  - metric: "Task synchronization"
+    before: "Manual via _progress.yaml"
+    after: "Automatic via CLAUDE_CODE_TASK_LIST_ID"
+    improvement: "Zero manual sync"
+
+  - metric: "L1/L2/L3 compliance"
+    before: "Hook-enforced (variable)"
+    after: "Skill-embedded (guaranteed)"
+    improvement: "100% format compliance"
+
+# =============================================================================
+# NEXT STEPS (for Orchestrator)
+# =============================================================================
+nextSteps:
+  - step: 1
+    action: "Review this proposal"
+    owner: "Terminal-A (Orchestrator)"
+
+  - step: 2
+    action: "Approve/modify enhancement priorities"
+    owner: "Terminal-A (Orchestrator)"
+
+  - step: 3
+    action: "Assign phase1 to available Worker"
+    owner: "Terminal-A (Orchestrator)"
+
+  - step: 4
+    action: "Execute phase1 (E1 + E4)"
+    owner: "Assigned Worker"

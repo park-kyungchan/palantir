@@ -1,0 +1,122 @@
+# cow/ Pipeline Lightweight Optimization Plan
+
+> **Version:** 1.0 | **Status:** DISCOVERY | **Date:** 2026-01-19
+> **Goal:** Mathpix + Claude Vision만 사용하는 경량 파이프라인
+> **Last Updated:** 2026-01-19 (Q1: Stage C 필요성)
+
+---
+
+## Current Architecture (8-Stage)
+
+```
+A. INGESTION    → B. TEXT PARSE   → C. VISION PARSE  → D. ALIGNMENT
+      ↓                (Mathpix)       (YOLO+Gemini)        ↓
+H. EXPORT      ← G. HUMAN REVIEW  ← F. REGENERATION  ← E. SEMANTIC GRAPH
+```
+
+## Target Architecture (경량화 후)
+
+```
+A. INGESTION    → B. TEXT PARSE   → C. VISION PARSE  → H. EXPORT
+                    (Mathpix)        (Claude Vision)
+```
+
+**제거 대상 (검토 중):**
+- [ ] Stage D: Alignment (Text↔Vision 정렬)
+- [ ] Stage E: Semantic Graph
+- [ ] Stage F: Regeneration
+- [ ] Stage G: Human Review
+
+---
+
+## Q&A Log (매 프롬프트 업데이트)
+
+### Q1: Stage C는 왜 필요하지? (2026-01-19)
+
+**현재 Stage C 구성:**
+| Component | Purpose | File |
+|-----------|---------|------|
+| **YOLO Detector** | 다이어그램/도형 박스 감지 | `vision/yolo_detector.py` |
+| **Gemini Vision** | 감지된 영역 해석 | `vision/gemini_client.py` |
+| **Hybrid Merger** | YOLO + Gemini 결과 병합 | `vision/hybrid_merger.py` |
+| **Detection Layer** | 좌표 기반 감지 | `vision/detection_layer.py` |
+| **Interpretation Layer** | 의미 해석 | `vision/interpretation_layer.py` |
+
+**Stage C가 해결하는 문제:**
+1. Mathpix는 **텍스트/수식 OCR**에 특화 → 다이어그램/그래프 해석 불가
+2. YOLO로 **시각적 요소 위치** 감지 → Gemini로 **의미 해석**
+3. 수학 문제에 그림이 포함된 경우 필요
+
+**Claude Vision으로 대체 가능한가?**
+
+| 기능 | YOLO+Gemini | Claude Vision | 대체 가능? |
+|------|-------------|---------------|-----------|
+| 도형 감지 | YOLO bbox | 가능 | ✅ |
+| 그래프 해석 | Gemini | 가능 | ✅ |
+| 수식 OCR | ❌ | 가능 (정확도 낮음) | ⚠️ |
+| 좌표 반환 | 정확한 bbox | 대략적 위치 | ⚠️ |
+
+**결론:**
+- 순수 **다이어그램 해석** 목적이면 → Claude Vision으로 대체 가능
+- **정확한 좌표 기반 처리** 필요하면 → YOLO 유지 권장
+
+---
+
+## Decision Points (사용자 확인 필요)
+
+### DP1: Stage C 처리 방식
+- [ ] **Option A:** Claude Vision으로 완전 대체 (YOLO+Gemini 제거)
+- [ ] **Option B:** Claude Vision만 사용 (YOLO 제거, Gemini→Claude)
+- [ ] **Option C:** Stage C 전체 제거 (Mathpix OCR만 사용)
+
+### DP2: 후속 Stage 처리
+- [ ] Stage D-G 제거 (정렬/그래프/재생성/리뷰 불필요)
+- [ ] Stage D만 유지 (Text↔Vision 정렬은 필요)
+- [ ] 다른 조합?
+
+---
+
+## Files to Modify/Remove (예정)
+
+### 제거 후보
+```
+cow/src/mathpix_pipeline/
+├── vision/
+│   ├── yolo_detector.py       # DP1에 따라 결정
+│   ├── gemini_client.py       # DP1에 따라 결정
+│   ├── hybrid_merger.py       # 제거 예정
+│   ├── detection_layer.py     # DP1에 따라 결정
+│   └── interpretation_layer.py # Claude Vision으로 대체
+├── alignment/                 # DP2에 따라 결정
+├── semantic_graph/            # 제거 예정
+├── regeneration/              # 제거 예정
+└── human_review/              # 제거 예정
+```
+
+### 유지 확정
+```
+cow/src/mathpix_pipeline/
+├── ingestion/                 # Stage A - 유지
+├── clients/mathpix.py         # Stage B - 유지
+├── export/                    # Stage H - 유지
+├── config.py                  # 경량화 필요
+├── pipeline.py                # 리팩토링 필요
+└── schemas/                   # 경량화 필요
+```
+
+---
+
+## Next Questions (다음 프롬프트에서 답변 필요)
+
+1. **DP1 결정:** Claude Vision으로 Stage C를 어떻게 대체할지?
+2. **출력 형식:** 최종 출력은 무엇이 필요한지? (JSON? LaTeX? 둘 다?)
+3. **Stage D-G:** 정렬/그래프/리뷰 기능이 필요한지?
+
+---
+
+## Change Log
+
+| Date | Version | Change |
+|------|---------|--------|
+| 2026-01-19 | 1.0 | Initial plan, Q1 answered |
+

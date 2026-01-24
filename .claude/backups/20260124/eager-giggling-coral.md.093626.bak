@@ -1,0 +1,147 @@
+# Skills Frontmatter 표준화 계획
+
+> **Version:** 1.0 | **Date:** 2026-01-24
+> **Status:** Ready for Implementation
+
+---
+
+## 1. 배경
+
+Claude Code에서 Slash Commands가 Skills로 병합되었습니다. 현재 프로젝트의 18개 스킬 frontmatter를 공식 스펙에 맞게 표준화해야 합니다.
+
+### 새로운 공식 필드
+- `disable-model-invocation: true` - 모델의 자동 호출 방지 (NEW)
+- `user-invocable: false` - 사용자 슬래시 호출 방지
+- `context: fork` - 격리된 서브에이전트 실행
+- `agent: <type>` - 서브에이전트 타입 지정
+
+---
+
+## 2. 현재 상태 분석
+
+| 항목 | 상태 | 영향 범위 |
+|------|------|----------|
+| Commands 디렉토리 | ✅ 이미 삭제됨 | 마이그레이션 완료 |
+| 비표준 필드명 | ❌ 1개 스킬 | `clarify/SKILL.md` |
+| `disable-model-invocation` | ❌ 미적용 | 6개 스킬 필요 |
+| `version` 필드 누락 | ⚠️ 10개 스킬 | 선택적 |
+| `model` 필드 누락 | ⚠️ 12개 스킬 | 선택적 |
+| Hook 호환성 | ✅ 문제 없음 | - |
+
+---
+
+## 3. 구현 계획
+
+### Phase 1: 필드명 표준화 (CRITICAL)
+
+**파일:** `.claude/skills/clarify/SKILL.md`
+
+```yaml
+# 변경 전
+skill_name: clarify
+user_invocable: true
+
+# 변경 후
+name: clarify
+user-invocable: true
+```
+
+### Phase 2: `disable-model-invocation` 적용 (CRITICAL)
+
+**대상 스킬 (6개):**
+
+| 스킬 | 이유 |
+|------|------|
+| `build-research` | /build의 내부 헬퍼 |
+| `worker-start` | 터미널별 수동 호출 |
+| `worker-task` | 작업 파일 기반 실행 |
+| `worker-done` | 수동 완료 보고 |
+| `assign` | 오케스트레이터 내부 명령 |
+| `collect` | 수동 결과 수집 |
+
+**추가할 라인:**
+```yaml
+disable-model-invocation: true
+```
+
+### Phase 3: 선택적 필드 추가 (HIGH)
+
+**`version` 필드 추가 대상 (10개):**
+- build, commit-push-pr, orchestrate, explore-l1l2l3, plan-l1l2l3
+- plan-draft, worker-start, worker-task, worker-done, workers
+- assign, collect, docx-automation
+
+**`model` 필드 권장 값:**
+| 스킬 | 모델 | 이유 |
+|------|------|------|
+| orchestrate | opus | 복잡한 조율 |
+| build | sonnet | 다단계 빌드 |
+| plan-l1l2l3 | sonnet | 계획 수립 |
+| assign, collect | haiku | 단순 작업 |
+| 나머지 | sonnet | 기본값 |
+
+### Phase 4: 문서 업데이트 (MEDIUM)
+
+**파일:** `.claude/CLAUDE.md` Section 6
+
+```markdown
+### Skill Frontmatter Fields
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| name | Yes | - | Skill identifier |
+| description | Yes | - | Brief description |
+| user-invocable | No | true | User can invoke via /name |
+| disable-model-invocation | No | false | Prevent auto-invocation |
+| context | No | standard | fork for isolated execution |
+| agent | No | - | Subagent type for fork |
+| model | No | sonnet | Model to use |
+```
+
+---
+
+## 4. 수정 대상 파일 목록
+
+### Critical (즉시 수정)
+1. `.claude/skills/clarify/SKILL.md` - 필드명 표준화
+2. `.claude/skills/build-research/SKILL.md` - disable-model-invocation 추가
+3. `.claude/skills/worker-start/SKILL.md` - disable-model-invocation 추가
+4. `.claude/skills/worker-task/SKILL.md` - disable-model-invocation 추가
+5. `.claude/skills/worker-done/SKILL.md` - disable-model-invocation 추가
+6. `.claude/skills/assign/SKILL.md` - disable-model-invocation 추가
+7. `.claude/skills/collect/SKILL.md` - disable-model-invocation 추가
+
+### High (권장)
+8. 10개 스킬에 `version: "1.0.0"` 추가
+
+### Medium (선택)
+9. `.claude/CLAUDE.md` - Section 6 업데이트
+
+---
+
+## 5. 검증 방법
+
+### 자동 검증
+```bash
+# 비표준 필드 검색 (0개 결과여야 함)
+grep -r "skill_name:" .claude/skills/
+grep -r "user_invocable:" .claude/skills/
+
+# disable-model-invocation 확인 (6개 결과)
+grep -r "disable-model-invocation: true" .claude/skills/
+```
+
+### 수동 검증
+1. `/clarify "테스트"` - 스킬 호출 정상 동작
+2. `/explore-l1l2l3 "테스트"` - L1/L2/L3 출력 확인
+3. `/build "테스트"` - Phase 1 리서치 위임 확인
+
+---
+
+## 6. 예상 소요
+
+- Phase 1: 1개 파일 수정
+- Phase 2: 6개 파일 수정
+- Phase 3: 10개 파일 수정 (선택적)
+- Phase 4: 1개 파일 수정
+
+**총 수정 파일:** 7개 (Critical) + 11개 (Optional) = 18개

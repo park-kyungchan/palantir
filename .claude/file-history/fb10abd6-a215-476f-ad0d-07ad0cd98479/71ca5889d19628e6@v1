@@ -1,0 +1,218 @@
+# Auto-Compact Recovery System Implementation Plan
+
+> **Version:** 1.0 | **Status:** IN_PROGRESS | **Date:** 2026-01-17
+> **Auto-Compact Safe:** This file persists across context compaction
+
+---
+
+## Overview
+
+| Item | Value |
+|------|-------|
+| Complexity | Medium |
+| Total Phases | 7 |
+| Files Affected | 5 |
+| Key Integration | V2.1.7 Progressive-Disclosure System |
+
+---
+
+## Problem Statement
+
+**현재 상태:**
+- PostToolUse Hook은 Task 실행 **직후**에만 작동
+- Auto-Compact **이후** Main Agent는 압축된 컨텍스트만 보유
+- L2/L3 상세 결과에 대한 **자동 복구 메커니즘 없음**
+
+**목표:**
+> Main Agent가 어떠한 상황에서든지 Orchestrating Role을 수행할 때, Agents의 outputs을 언제든지 전체작업결과까지 조회할 수 있도록 해서 **"auto-compact로 인하여 요약본(부족한 결과물)만 가지고 불확실한 상황에서 절대 작업하지 않도록"** 한다.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLAUDE.md                                │
+│              Section 2.12: Auto-Compact Recovery                │
+│    (Behavioral triggers for Main Agent startup ritual)          │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   /recover Skill                                │
+│          .claude/commands/recover.md                            │
+│  (Explicit invocation for context restoration)                  │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              AutoCompactRecoveryManager                         │
+│        lib/oda/planning/recovery_manager.py                     │
+│  (Coordinates state collection and prompt generation)           │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+     ┌──────────┐    ┌──────────┐    ┌──────────┐
+     │ Agent    │    │  Plan    │    │   L2     │
+     │ Registry │    │  Files   │    │ Outputs  │
+     │ (.yaml)  │    │  (.md)   │    │  (.md)   │
+     └──────────┘    └──────────┘    └──────────┘
+```
+
+---
+
+## Tasks
+
+| # | Phase | Task | Status | Priority |
+|---|-------|------|--------|----------|
+| 1 | ANALYZE | Hook 시스템 분석 | ✅ completed | P0 |
+| 2 | DESIGN | Recovery 시스템 설계 | ✅ completed | P0 |
+| 3 | IMPLEMENT | recovery_manager.py 구현 | ⏳ pending | P0 |
+| 4 | IMPLEMENT | /recover Skill 생성 | ⏳ pending | P0 |
+| 5 | UPDATE | CLAUDE.md Section 2.12 추가 | ⏳ pending | P1 |
+| 6 | UPDATE | AgentRegistry 확장 | ⏳ pending | P2 |
+| 7 | VERIFY | 테스트 및 검증 | ⏳ pending | P0 |
+
+---
+
+## Progress Tracking
+
+| Phase | Tasks | Completed | Status |
+|-------|-------|-----------|--------|
+| ANALYZE | 1 | 1 | ✅ Complete |
+| DESIGN | 1 | 1 | ✅ Complete |
+| IMPLEMENT | 2 | 0 | ⏳ Pending |
+| UPDATE | 2 | 0 | ⏳ Pending |
+| VERIFY | 1 | 0 | ⏳ Pending |
+
+---
+
+## Quick Resume After Auto-Compact
+
+If context is compacted, resume by:
+
+1. Read this file: `.agent/plans/auto_compact_recovery_system.md`
+2. Check TodoWrite for current task status
+3. Continue from first PENDING task in sequence
+4. Key files to implement:
+   - `lib/oda/planning/recovery_manager.py` (NEW)
+   - `.claude/commands/recover.md` (NEW)
+
+---
+
+## Key Design Decisions
+
+### 1. Hook 제약 사항
+
+Claude Code는 다음 Hook만 제공:
+- PreToolUse
+- PostToolUse
+- Notification
+
+**SessionStart, PostCompact Hook은 존재하지 않음** → Behavioral Injection + Skill 하이브리드 접근
+
+### 2. Recovery 전략
+
+| 전략 | 장점 | 단점 | 선택 |
+|------|------|------|------|
+| Hook 기반 | 자동화 | Hook 미지원 | ❌ |
+| Skill 기반 | 명시적 제어 | 수동 호출 필요 | ✅ |
+| CLAUDE.md 행동 규칙 | 자동 트리거 | Advisory만 | ✅ (보조) |
+
+**최종 결정:** `/recover` Skill + CLAUDE.md 행동 규칙 조합
+
+### 3. Recovery 트리거 조건
+
+Main Agent가 다음 상황에서 `/recover` 호출:
+1. 컨텍스트가 잘린 것 같을 때
+2. 사용자가 Main Agent가 모르는 작업을 언급할 때
+3. TodoWrite에 컨텍스트 없는 작업이 있을 때
+4. AgentRegistry에 인식하지 못하는 "running" 에이전트가 있을 때
+
+---
+
+## Critical File Paths
+
+```yaml
+# New Files
+recovery_manager: lib/oda/planning/recovery_manager.py
+recover_skill: .claude/commands/recover.md
+recovery_state: .agent/recovery-state.json
+
+# Modified Files
+claude_md: /home/palantir/.claude/CLAUDE.md
+agent_registry: lib/oda/planning/agent_registry.py
+
+# Reference Files
+output_layer_manager: lib/oda/planning/output_layer_manager.py
+agent_registry_yaml: .agent/config/agent_registry.yaml
+plan_files: .agent/plans/*.md
+l2_outputs: .agent/outputs/
+```
+
+---
+
+## Implementation Details
+
+### Phase 3: recovery_manager.py
+
+```python
+@dataclass
+class RecoveryState:
+    session_id: str
+    active_plan_path: Optional[str]
+    resumable_agents: List[AgentEntry]
+    incomplete_todos: List[Dict]
+    l2_reports: List[str]
+    recovery_needed: bool
+
+class AutoCompactRecoveryManager:
+    def detect_recovery_needed(self) -> bool
+    def collect_recovery_state(self) -> RecoveryState
+    def generate_recovery_prompt(self) -> str
+    def inject_l2_content(self, agent_ids: List[str]) -> Dict[str, str]
+```
+
+### Phase 4: /recover Skill
+
+```yaml
+---
+name: recover
+description: Restore Main Agent context after Auto-Compact
+triggers:
+  keywords: ["recover", "restore", "복구", "재개"]
+tools: [Read, Grep, Glob, TodoWrite]
+---
+```
+
+### Phase 5: CLAUDE.md Section 2.12
+
+- Recovery Detection Triggers
+- Startup Ritual
+- Recovery Skill Integration
+- Session State File
+
+### Phase 6: AgentRegistry 확장
+
+```python
+def mark_for_recovery(self, agent_id: str)
+def get_recovery_candidates(self, max_age_hours: float = 1.0) -> List[AgentEntry]
+def to_recovery_yaml(self) -> str
+```
+
+---
+
+## Agent Registry (Auto-Compact Resume)
+
+| Task | Agent ID | Type | Status | Resume Eligible |
+|------|----------|------|--------|-----------------|
+| Phase 2: Design | aef9acb | Plan | completed | No |
+
+---
+
+## Notes
+
+- Plan created: 2026-01-17T11:00:00
+- Last updated: 2026-01-17T11:00:00
+- Created by: /plan command

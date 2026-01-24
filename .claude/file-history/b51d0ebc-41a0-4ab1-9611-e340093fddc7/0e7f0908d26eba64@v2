@@ -1,0 +1,183 @@
+# =============================================================================
+# Worker Task: Terminal-C - Phase 2 Skills Integration (E2)
+# =============================================================================
+# Location: .agent/prompts/pending/worker-c-phase2-skills.yaml
+# Language: English (Machine-Readable)
+# =============================================================================
+
+taskId: "phase2-skills-e2"
+assignedTo: "Terminal-C"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-24T01:35:00Z"
+priority: "P1"
+
+# =============================================================================
+# CONTEXT
+# =============================================================================
+context:
+  proposalRef: ".agent/prompts/enhancement-proposal-v2.2.yaml"
+  description: |
+    Implement E2 (Skills-Based Workflow Encapsulation).
+    Create reusable Skills with L1/L2/L3 output format embedded.
+
+  targetOutcome:
+    - "Skills directory with explore-l1l2l3, plan-l1l2l3, worker-task"
+    - "L1/L2/L3 output format guaranteed via Skill definition"
+    - "Invocable via /explore-l1l2l3, /plan-l1l2l3, /worker-task"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies:
+  - "phase1-quick-wins-e1-e4"
+blockedBy:
+  - "phase1"
+canStartImmediately: false
+
+waitCondition: |
+  Check .agent/prompts/_progress.yaml
+  If terminal-b completes phase1-quick-wins, proceed
+
+# =============================================================================
+# SKILLS TO CREATE
+# =============================================================================
+skills:
+  - name: "explore-l1l2l3"
+    path: ".claude/skills/explore-l1l2l3/SKILL.md"
+    purpose: "Explore codebase with L1/L2/L3 progressive disclosure output"
+
+  - name: "plan-l1l2l3"
+    path: ".claude/skills/plan-l1l2l3/SKILL.md"
+    purpose: "Create implementation plan with L1/L2/L3 output"
+
+  - name: "worker-task"
+    path: ".claude/skills/worker-task/SKILL.md"
+    purpose: "Execute assigned worker task from prompt file"
+
+# =============================================================================
+# SKILL CONTENT TEMPLATES
+# =============================================================================
+skillTemplates:
+  explore-l1l2l3: |
+    ---
+    name: explore-l1l2l3
+    description: Explore codebase with L1/L2/L3 progressive disclosure output
+    context: fork
+    user-invocable: true
+    ---
+
+    # Codebase Exploration (L1/L2/L3 Output)
+
+    ## Task
+    $ARGUMENTS
+
+    ## Output Requirements
+
+    You MUST output in L1/L2/L3 format:
+
+    ### L1 Summary (stdout, ≤500 tokens)
+    ```yaml
+    taskId: {8-char-id}
+    agentType: Explore
+    summary: "1-2 sentence finding"
+    status: success | partial | failed
+    priority: CRITICAL | HIGH | MEDIUM | LOW
+    recommendedRead:
+      - anchor: "#section-name"
+        reason: "why read this"
+    l2Index:
+      - anchor: "#section-name"
+        tokens: {number}
+        priority: CRITICAL | HIGH | MEDIUM | LOW
+        description: "what this contains"
+    l2Path: .agent/outputs/Explore/{taskId}.md
+    requiresL2Read: true | false
+    nextActionHint: "suggested next step"
+    ```
+
+    ### L2/L3 Detail (file)
+    Write detailed findings to: .agent/outputs/Explore/{taskId}.md
+    Use ## Section Name {#anchor} format for each section.
+
+  plan-l1l2l3: |
+    ---
+    name: plan-l1l2l3
+    description: Create implementation plan with L1/L2/L3 output
+    context: fork
+    user-invocable: true
+    ---
+
+    # Implementation Planning (L1/L2/L3 Output)
+
+    ## Task
+    $ARGUMENTS
+
+    ## Output Requirements
+    Same L1/L2/L3 format as explore-l1l2l3.
+    Write plan details to: .agent/outputs/Plan/{taskId}.md
+
+  worker-task: |
+    ---
+    name: worker-task
+    description: Execute assigned worker task from prompt file
+    user-invocable: true
+    allowed-tools: Read, Grep, Glob, Edit, Write, Bash
+    ---
+
+    # Worker Task Execution
+
+    ## Instructions
+
+    1. Read your task file from: $ARGUMENTS
+       (e.g., /worker-task .agent/prompts/pending/worker-b-task.yaml)
+    2. Check _progress.yaml for dependencies
+    3. Execute the task as specified
+    4. Update _progress.yaml when complete
+    5. Report in L1/L2/L3 format
+
+# =============================================================================
+# IMPLEMENTATION STEPS
+# =============================================================================
+steps:
+  - step: 1
+    action: "Create .claude/skills/ directory structure"
+    command: "mkdir -p .claude/skills/{explore-l1l2l3,plan-l1l2l3,worker-task}"
+
+  - step: 2
+    action: "Write explore-l1l2l3/SKILL.md"
+
+  - step: 3
+    action: "Write plan-l1l2l3/SKILL.md"
+
+  - step: 4
+    action: "Write worker-task/SKILL.md"
+
+  - step: 5
+    action: "Test skill invocation"
+    command: "/explore-l1l2l3 List all hook files"
+    expected: "L1/L2/L3 formatted output"
+
+# =============================================================================
+# VERIFICATION
+# =============================================================================
+verification:
+  - command: "ls -la .claude/skills/"
+    expected: "Three skill directories exist"
+  - command: "/explore-l1l2l3 Find authentication handlers"
+    expected: "L1 YAML output with l2Path"
+  - command: "cat .agent/outputs/Explore/*.md"
+    expected: "L2/L3 detail file exists"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/outputs/Worker/phase2-skills.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "Update .agent/prompts/_progress.yaml: terminal-c.status = 'completed'"
+  - "Report L1 summary to Orchestrator (Terminal-A)"
+  - "Phase 3 (E3 PreToolUse) is now unblocked for Terminal-D"

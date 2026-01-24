@@ -1,0 +1,638 @@
+---
+name: protocol
+description: |
+  Execute ODA 3-Stage Protocol directly.
+  Uses forked context with parallel stage verification.
+  V1.0: Boris Cherny Pattern + Anti-Hallucination + Proposal Integration
+allowed-tools: Read, Grep, Glob, Bash, Task, TodoWrite
+argument-hint: <target_path>
+version: "1.0"
+model: sonnet
+context: fork
+output_format: ProtocolResult
+evidence_required:
+  - stage_a_evidence
+  - stage_b_evidence
+  - stage_c_evidence
+oda_context:
+  role: protocol_executor
+  stage_access: [A, B, C]
+  governance_mode: strict
+references:
+  - .claude/references/3-stage-protocol.md
+  - lib/oda/planning/task_decomposer.py
+---
+
+# /protocol Command (V1.0)
+
+$ARGUMENTS
+
+> **Purpose:** Direct ODA 3-Stage Protocol execution with parallel verification
+> **Framework:** Ontology-Driven Architecture (ODA)
+> **Method:** Evidence-based execution with mandatory file verification
+
+---
+
+## 1. Protocol Overview
+
+| Stage | Goal | Subagent | Output |
+|-------|------|----------|--------|
+| A: SCAN | Establish reality | Explore | `files_viewed`, `complexity` |
+| B: TRACE | Prevent failures | Explore/Plan | `imports_verified`, `signatures_matched` |
+| C: VERIFY | Quality gate | Explore | `quality_checks`, `findings` |
+
+---
+
+## 2. Invocation
+
+### Trigger Keywords
+
+```
+/protocol [target]
+프로토콜 [대상]
+execute protocol [path]
+run stages [A|B|C]
+```
+
+### Example Invocations
+
+```bash
+# Full protocol execution
+/protocol lib/oda/ontology/
+
+# Execute specific stage
+/protocol --stage A lib/oda/pai/
+
+# Parallel stage execution
+/protocol --parallel lib/oda/
+
+# Korean trigger
+프로토콜 실행 인증 모듈
+```
+
+---
+
+## 3. Parallel Execution Pattern (Boris Cherny)
+
+### Background Execution Strategy
+
+The 3-Stage Protocol can be optimized with parallel execution where stages are independent.
+
+| Stage Dependency | Pattern | Execution |
+|-----------------|---------|-----------|
+| A independent | Parallel per module | `run_in_background=true` |
+| B depends on A | Sequential after A | Wait for A completion |
+| C independent checks | Parallel checks | `run_in_background=true` |
+
+### Stage A: Parallel Module Scanning
+
+```python
+# When scanning multiple modules, parallelize Stage A
+modules = ["lib/oda/ontology/", "lib/oda/pai/", "lib/oda/planning/"]
+
+# Deploy parallel Stage A for each module
+for module in modules:
+    Task(
+        subagent_type="Explore",
+        prompt=f"""
+        ## Context
+        Operating under ODA governance. Stage A: SCAN.
+        Reference: `.claude/references/3-stage-protocol.md`
+
+        ## Task
+        Execute Stage A (SCAN) on: {module}
+
+        ## Required Actions
+        1. File Discovery: Glob for *.py, *.yaml, *.json
+        2. Content Analysis: Read key files
+        3. Requirements Extraction: Document FRx
+        4. Complexity Assessment: small/medium/large
+
+        ## Required Evidence
+        - files_viewed: [absolute paths, must be non-empty]
+        - lines_referenced: [file:line format]
+        - complexity: small|medium|large
+
+        ## Constraint: Output Budget
+        YOUR OUTPUT MUST NOT EXCEED 5K TOKENS.
+        """,
+        run_in_background=True,
+        description=f"protocol-A-{module[:20]}"
+    )
+```
+
+### Stage B: After Stage A Synthesis
+
+```python
+# Stage B executes after Stage A results are synthesized
+stage_a_results = [TaskOutput(task_id) for task_id in stage_a_tasks]
+
+# Merge Stage A evidence
+merged_files = []
+for result in stage_a_results:
+    merged_files.extend(result.files_viewed)
+
+# Now deploy Stage B (can parallelize import verification)
+import_groups = chunk_imports(extract_imports(merged_files), chunk_size=10)
+
+for group in import_groups:
+    Task(
+        subagent_type="Explore",
+        prompt=f"""
+        ## Context
+        Operating under ODA governance. Stage B: TRACE.
+
+        ## Task
+        Verify imports: {group}
+
+        ## Required Evidence
+        - imports_verified: [import: exists/missing]
+        - signatures_matched: [signature: matched/mismatched]
+
+        ## Constraint: Output Budget
+        YOUR OUTPUT MUST NOT EXCEED 5K TOKENS.
+        """,
+        run_in_background=True,
+        description=f"protocol-B-imports"
+    )
+```
+
+### Stage C: Parallel Quality Checks
+
+```python
+# Stage C quality checks are independent - parallelize all
+quality_checks = [
+    ("build", "python -m py_compile {files}"),
+    ("tests", "pytest {test_path} -v"),
+    ("lint", "ruff check {path}"),
+    ("typecheck", "mypy {path}"),
+]
+
+for check_name, command in quality_checks:
+    Task(
+        subagent_type="Explore",
+        prompt=f"""
+        ## Context
+        Operating under ODA governance. Stage C: VERIFY.
+
+        ## Task
+        Execute {check_name} quality check.
+
+        ## Command
+        {command}
+
+        ## Required Evidence
+        - quality_check: name, status, output
+        - findings: severity, message, location
+
+        ## Constraint: Output Budget
+        YOUR OUTPUT MUST NOT EXCEED 5K TOKENS.
+        """,
+        run_in_background=True,
+        description=f"protocol-C-{check_name}"
+    )
+```
+
+### Progress Tracking with TodoWrite
+
+```python
+# Use TodoWrite instead of verbose terminal output
+TodoWrite([
+    {"content": "Stage A: SCAN modules", "status": "in_progress", "activeForm": "Scanning modules"},
+    {"content": "Stage B: TRACE imports", "status": "pending", "activeForm": "Tracing imports"},
+    {"content": "Stage C: VERIFY quality", "status": "pending", "activeForm": "Verifying quality"},
+])
+
+# Update as stages complete
+# After Stage A completes:
+TodoWrite([
+    {"content": "Stage A: SCAN modules", "status": "completed", "activeForm": "Scanning modules"},
+    {"content": "Stage B: TRACE imports", "status": "in_progress", "activeForm": "Tracing imports"},
+    ...
+])
+```
+
+---
+
+## 4. Execution Flow
+
+```
+[TRIGGER: /protocol]
+    |
+    +-- 1. Scope Determination
+    |     +-- Parse target path
+    |     +-- Identify modules for parallel processing
+    |     +-- Check decomposition triggers
+    |
+    +-- 2. Stage A: SCAN (Parallel per module)
+    |     +-- Deploy Explore subagents (run_in_background=true)
+    |     +-- File discovery, content analysis
+    |     +-- Wait for all, synthesize results
+    |
+    +-- 3. Anti-Hallucination Check
+    |     +-- Verify files_viewed non-empty
+    |     +-- Validate evidence exists
+    |     +-- FAIL if no evidence
+    |
+    +-- 4. Stage B: TRACE (Sequential, parallel imports)
+    |     +-- Use Stage A files_viewed
+    |     +-- Parallel import verification
+    |     +-- Signature matching
+    |
+    +-- 5. Stage C: VERIFY (Parallel checks)
+    |     +-- Deploy parallel quality checks
+    |     +-- build, tests, lint, typecheck
+    |     +-- Aggregate findings
+    |
+    +-- 6. Synthesis & Output
+          +-- Combine all stage evidence
+          +-- Determine overall PASS/FAIL
+          +-- Output ProtocolResult
+```
+
+---
+
+## 5. Stage Evidence Templates
+
+### Stage A Evidence
+
+```yaml
+stage_a_evidence:
+  files_viewed:
+    - path: "/home/palantir/park-kyungchan/palantir/lib/oda/ontology/registry.py"
+      lines: "1-150"
+      purpose: "Core registry analysis"
+  lines_referenced:
+    - "registry.py:42-58"
+    - "task_types.py:10-25"
+  requirements:
+    - "FR1: Import verification"
+    - "FR2: Signature matching"
+  complexity: "medium"
+  anti_hallucination:
+    files_read_count: 12
+    verified: true
+```
+
+### Stage B Evidence
+
+```yaml
+stage_b_evidence:
+  imports_verified:
+    - import: "from pydantic import BaseModel"
+      exists: true
+      source: "external package"
+    - import: "from lib.oda.ontology.registry import Registry"
+      exists: true
+      path: "lib/oda/ontology/registry.py:45"
+  signatures_matched:
+    - signature: "def register(self, obj: ObjectType) -> None"
+      file: "registry.py"
+      line: 67
+      matches_usage: true
+  dependency_graph:
+    - source: "traits/composer.py"
+      imports: ["traits/definitions.py"]
+  test_strategy: "Unit tests for core logic"
+```
+
+### Stage C Evidence
+
+```yaml
+stage_c_evidence:
+  quality_checks:
+    - name: "build"
+      status: "passed"
+      command: "python -m py_compile"
+      duration_ms: 500
+    - name: "tests"
+      status: "passed"
+      command: "pytest tests/ -v"
+      coverage: "85%"
+      duration_ms: 12500
+    - name: "lint"
+      status: "passed"
+      command: "ruff check ."
+      duration_ms: 2000
+    - name: "typecheck"
+      status: "passed"
+      command: "mypy ."
+      duration_ms: 8000
+  findings:
+    - severity: "WARNING"
+      category: "lint"
+      message: "Unused import"
+      file: "registry.py"
+      line: 5
+  findings_summary:
+    CRITICAL: 0
+    ERROR: 0
+    WARNING: 1
+```
+
+---
+
+## 6. ProtocolResult Output
+
+```yaml
+protocol_result:
+  status: PASS | FAIL
+  timestamp: "2026-01-18T00:00:00Z"
+  target: "/home/palantir/park-kyungchan/palantir/lib/oda/"
+  duration_ms: 45000
+
+  stage_a:
+    passed: true
+    files_viewed: 12
+    complexity: "medium"
+    anti_hallucination_verified: true
+
+  stage_b:
+    passed: true
+    imports_verified: 24
+    signatures_matched: 15
+    issues_found: 0
+
+  stage_c:
+    passed: true
+    quality_checks: 4
+    checks_passed: 4
+    findings_summary:
+      CRITICAL: 0
+      ERROR: 0
+      WARNING: 1
+
+  overall:
+    stages_passed: 3
+    stages_failed: 0
+    blocking_issues: 0
+    recommendation: "Ready for implementation"
+
+  evidence:
+    stage_a_evidence: {...}
+    stage_b_evidence: {...}
+    stage_c_evidence: {...}
+```
+
+---
+
+## 7. Anti-Hallucination Enforcement
+
+### Core Rule
+
+> **Stages without `files_viewed` evidence are INVALID**
+
+### Validation Code
+
+```python
+def validate_stage_evidence(stage: str, evidence: dict) -> bool:
+    """Validate that evidence exists for passed stages."""
+    if stage == "A":
+        if not evidence.get("files_viewed"):
+            raise AntiHallucinationError(
+                stage="A",
+                message="Stage A passed without files_viewed evidence"
+            )
+    elif stage == "B":
+        if not evidence.get("imports_verified"):
+            raise AntiHallucinationError(
+                stage="B",
+                message="Stage B passed without imports_verified evidence"
+            )
+    elif stage == "C":
+        if not evidence.get("quality_checks"):
+            raise AntiHallucinationError(
+                stage="C",
+                message="Stage C passed without quality_checks evidence"
+            )
+    return True
+```
+
+### Enforcement at Each Stage
+
+```
+Stage A:
+  CHECK: len(files_viewed) > 0
+  FAIL IF: No files read with Read tool
+
+Stage B:
+  CHECK: len(imports_verified) > 0
+  FAIL IF: Imports not verified with Grep
+
+Stage C:
+  CHECK: len(quality_checks) > 0
+  FAIL IF: No commands executed with Bash
+```
+
+---
+
+## 8. Proposal Integration
+
+### Mutation Detection
+
+Protocol skill executes 3-Stage verification. Stage C may identify issues requiring fixes.
+All code mutations resulting from protocol execution MUST go through the Proposal workflow.
+
+### When Proposal is Required
+
+- Stage C findings requiring code fixes
+- Import corrections identified in Stage B
+- Configuration updates from Stage A analysis
+- Test additions based on Stage B test_strategy
+
+### Proposal Creation Pattern
+
+After Stage C verification identifies required changes:
+
+```python
+# Convert Stage C findings to Proposals
+for finding in stage_c_evidence["findings"]:
+    if finding["severity"] in ["CRITICAL", "ERROR"] and finding.get("suggested_fix"):
+        mcp__oda_ontology__create_proposal(
+            action_type="file.modify",
+            payload={
+                "path": finding["file"],
+                "operation": "fix",
+                "line": finding["line"],
+                "original": finding.get("evidence"),
+                "fix": finding["suggested_fix"],
+                "reason": f"Stage C fix: {finding['message']}",
+                "evidence": {
+                    "skill": "protocol",
+                    "stage": "C",
+                    "quality_check": finding.get("check_name"),
+                    "severity": finding["severity"],
+                    "stage_a_files": stage_a_evidence["files_viewed"],
+                    "stage_b_imports": stage_b_evidence["imports_verified"]
+                }
+            },
+            priority=severity_to_priority(finding["severity"]),
+            submit=True
+        )
+```
+
+### Priority Mapping
+
+| Finding Source | Severity | Proposal Priority |
+|----------------|----------|-------------------|
+| Stage C - Security | CRITICAL | critical |
+| Stage C - Build | ERROR | critical |
+| Stage C - Test | ERROR | high |
+| Stage B - Import | ERROR | high |
+| Stage C - Lint | WARNING | medium |
+| Stage B - Signature | WARNING | medium |
+
+### Workflow Integration
+
+```
+[Protocol Execution Complete]
+       │
+       ▼
+[Stage A: SCAN] ─────────────────────────────────────┐
+       │                                              │
+       ▼                                              │
+[Stage B: TRACE] ─────────┬───────────────────────────┤
+       │                  │                           │
+       │           Import Issues?                     │
+       │                  │                           │
+       │                  └── YES ─► Create Proposals │
+       ▼                                              │
+[Stage C: VERIFY] ────────┬───────────────────────────┤
+       │                  │                           │
+       │           Findings with Fixes?               │
+       │                  │                           │
+       │                  └── YES ─► Create Proposals │
+       ▼                                              │
+[All Proposals Created] ◄─────────────────────────────┘
+       │
+       ▼
+[User Reviews Proposals]
+       │
+       ▼
+[Approved → Execute]
+       │
+       ▼
+[Re-run Protocol to Verify]
+```
+
+---
+
+## 9. Integration Points
+
+### Skill Relationships
+
+```
+/protocol
+    |
+    +-- Stage A+B --> /pre-check (equivalent)
+    |
+    +-- Stage C --> /audit (equivalent)
+    |
+    +-- Full --> /deep-audit (more comprehensive)
+```
+
+### When to Use
+
+| Scenario | Skill |
+|----------|-------|
+| Quick validation | /pre-check |
+| Quality check | /audit |
+| Full protocol | /protocol |
+| Deep analysis | /deep-audit |
+
+---
+
+## 10. Quick Reference
+
+### Commands
+
+```bash
+/protocol <path>           # Full 3-stage protocol
+/protocol --stage A <path> # Stage A only
+/protocol --stage B <path> # Stage B only
+/protocol --stage C <path> # Stage C only
+/protocol --parallel <path> # Maximize parallelism
+```
+
+### Parallel Execution Checklist
+
+- [ ] Stage A: Parallel per module (`run_in_background=true`)
+- [ ] Stage B: Sequential after A, parallel imports
+- [ ] Stage C: Parallel quality checks (`run_in_background=true`)
+- [ ] Use TodoWrite for progress tracking
+- [ ] NO verbose terminal output
+- [ ] Synthesize stage results before proceeding
+- [ ] Validate anti-hallucination at each stage
+
+### Pass Criteria
+
+| Stage | Must Have |
+|-------|-----------|
+| A | `files_viewed` non-empty |
+| B | `imports_verified` complete |
+| C | Zero CRITICAL/ERROR findings |
+
+---
+
+## 11. Legacy Script Execution (Optional)
+
+For direct Python script execution:
+
+```bash
+cd /home/palantir/park-kyungchan/palantir
+source .venv/bin/activate 2>/dev/null
+
+python -c "
+import asyncio
+from scripts.claude.protocol_adapter import ODAProtocolAdapter, PROTOCOL_REGISTRY
+
+async def run():
+    protocol_name = '$1' or 'audit'
+    target_path = '$2' or '.'
+
+    protocol_cls = PROTOCOL_REGISTRY.get(protocol_name)
+    if not protocol_cls:
+        print(f'Unknown protocol: {protocol_name}')
+        print(f'Available: {list(PROTOCOL_REGISTRY.keys())}')
+        return
+
+    adapter = ODAProtocolAdapter(
+        protocol=protocol_cls(),
+        target_path=target_path,
+        session_id='cli_session',
+    )
+
+    result_a = await adapter.execute_stage_a()
+    print(f'Stage A: {\"PASS\" if result_a.passed else \"FAIL\"}')
+
+    if result_a.passed:
+        result_b = await adapter.execute_stage_b()
+        print(f'Stage B: {\"PASS\" if result_b.passed else \"FAIL\"}')
+
+        if result_b.passed:
+            result_c = await adapter.execute_stage_c()
+            print(f'Stage C: {\"PASS\" if result_c.passed else \"FAIL\"}')
+
+asyncio.run(run())
+"
+```
+
+---
+
+## References
+
+- **3-Stage Protocol:** `.claude/references/3-stage-protocol.md`
+- **TaskDecomposer:** `lib/oda/planning/task_decomposer.py`
+- **Governance Rules:** `.claude/references/governance-rules.md`
+
+---
+
+> **V1.0 Changes:**
+> - Added: Comprehensive metadata frontmatter
+> - Added: Boris Cherny parallel execution pattern
+> - Added: Stage evidence templates (YAML format)
+> - Added: Anti-hallucination enforcement
+> - Added: Proposal integration for Stage B/C fixes
+> - Added: Integration points with other skills
+> - Preserved: Legacy script execution option
+> - Integrated: Skills and Commands into single file

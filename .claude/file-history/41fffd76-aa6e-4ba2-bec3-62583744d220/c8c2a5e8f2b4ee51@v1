@@ -1,0 +1,188 @@
+# Agent Chaining Protocol (V2.1.7)
+
+> **Version:** 2.1.7 | **Purpose:** Main Agent → Subagent delegation patterns
+> **Updated:** 2026-01-15 | **Reason:** Added Pattern 4 for Plan + TodoWrite enforcement
+
+---
+
+## Overview
+
+This document defines patterns for Main Agent (Orchestrator) to delegate tasks to subagents while maintaining ODA governance and context preservation.
+
+---
+
+## Pattern 1: Basic Delegation
+
+**Use Case:** Simple, single-purpose tasks
+
+```python
+Task(
+    subagent_type="Explore",
+    prompt="Find all Python files importing 'requests'",
+    description="Search imports"
+)
+```
+
+---
+
+## Pattern 2: Parallel Background Execution (Boris Cherny)
+
+**Use Case:** 3+ independent tasks that can run concurrently
+
+```python
+# Deploy all in single message for parallel execution
+Task(subagent_type="Explore", prompt="...", run_in_background=True)
+Task(subagent_type="Plan", prompt="...", run_in_background=True)
+Task(subagent_type="general-purpose", prompt="...", run_in_background=True)
+```
+
+**Rule:** Independent tasks MUST use `run_in_background=True` and be sent in a single message.
+
+---
+
+## Pattern 3: Resume After Auto-Compact
+
+**Use Case:** Continue interrupted work after context compression
+
+```python
+# First execution - store agent ID
+result = Task(
+    subagent_type="Explore",
+    prompt="Analyze codebase structure",
+    description="Phase 1 analysis",
+    run_in_background=True
+)
+# Agent ID returned: result.agent_id (e.g., "a1b2c3d")
+
+# After Auto-Compact - resume using agent ID
+Task(
+    subagent_type="Explore",
+    prompt="Continue analysis",
+    description="Resume Phase 1",
+    resume="a1b2c3d"  # Previous agent ID
+)
+```
+
+---
+
+## Pattern 4: Plan with TodoWrite Enforcement (V2.1.7)
+
+**Use Case:** `/plan` command execution with Auto-Compact resilience
+
+**Context:**
+- Plan files (`.agent/plans/*.md`) persist **structure**
+- TodoWrite persists **dynamic progress state**
+- Together they enable **complete context recovery**
+
+**MANDATORY Workflow:**
+
+```python
+# Step 0: BEFORE any analysis or subagent delegation
+# Parse requirements into comprehensive task list
+initial_tasks = parse_requirements_to_tasks("$ARGUMENTS")
+
+# Quality Gate: Minimum 3 tasks validates non-trivial plan
+if len(initial_tasks) < 3:
+    AskUserQuestion([{
+        "question": "요구사항이 간단해 보입니다. /plan을 계속하시겠습니까?",
+        "options": [
+            {"label": "Yes, create plan anyway"},
+            {"label": "No, just implement directly"}
+        ]
+    }])
+
+# MANDATORY: Create comprehensive TodoWrite
+todos = []
+for i, task in enumerate(initial_tasks):
+    todos.append({
+        "content": f"Phase {i+1}: {task.description}",
+        "status": "pending",
+        "activeForm": f"Executing Phase {i+1}: {task.description}",
+    })
+
+# BLOCKS plan execution if fails
+TodoWrite(todos=todos)
+
+# Only AFTER TodoWrite succeeds, proceed with:
+# - Step 1: Initialize Tracking
+# - Step 1.5: Task Decomposition Check
+# - Path 1: ODA 3-Stage Protocol
+# - Path 2: Plan Subagent Analysis
+# - Synthesis
+```
+
+**Recovery After Auto-Compact:**
+```python
+# 1. Read plan file for structure
+plan_content = Read(".agent/plans/{slug}.md")
+
+# 2. TodoWrite state persists across Auto-Compact automatically
+
+# 3. Find first pending or in_progress task
+current_task = find_first_incomplete_task(todos)
+
+# 4. Resume from that point
+if current_task:
+    mark_as_in_progress(current_task)
+    execute_task(current_task)
+```
+
+**Enforcement Rules:**
+- TodoWrite MUST be called BEFORE any subagent delegation
+- Minimum 3 tasks required (validates non-trivial plan)
+- All tasks must have: `content`, `status`, `activeForm`
+- Plan file and TodoWrite are auto-synced throughout execution
+
+---
+
+## Pattern 5: Context Budget Management (V2.1.7)
+
+**Use Case:** ULTRATHINK mode with effective context window management
+
+```python
+from lib.oda.planning.context_budget_manager import (
+    ContextBudgetManager,
+    ThinkingMode,
+    DelegationDecision,
+)
+
+# Initialize with ULTRATHINK mode (64K output tokens)
+manager = ContextBudgetManager(thinking_mode=ThinkingMode.ULTRATHINK)
+
+# Check before delegation
+decision = manager.check_before_delegation(
+    subagent_type="Explore",
+    estimated_tokens=10000
+)
+
+if decision == DelegationDecision.PROCEED:
+    Task(subagent_type="Explore", ...)
+elif decision == DelegationDecision.REDUCE_SCOPE:
+    # Decompose task first
+    subtasks = decompose_task(...)
+elif decision == DelegationDecision.DEFER:
+    # Wait or trigger /compact
+    pass
+```
+
+---
+
+## Subagent Token Budgets
+
+| Subagent | Standard | ULTRATHINK | Max Output |
+|----------|----------|------------|------------|
+| Explore | 5K | 15K | Discovery only |
+| Plan | 10K | 25K | Design only |
+| general-purpose | 15K | 32K (max) | Full execution |
+
+**Rule:** Background agents have hardcoded 32K output limit. Use TaskDecomposer for larger scopes.
+
+---
+
+## Related References
+
+- **CLAUDE.md Section 2.6:** Orchestrator Enforcement
+- **CLAUDE.md Section 2.7:** Pre-Delegation Decomposition
+- **plan.md Step 0:** MANDATORY TodoWrite Initialization
+- **TaskDecomposer:** `lib/oda/planning/task_decomposer.py`
+- **ContextBudgetManager:** `lib/oda/planning/context_budget_manager.py`

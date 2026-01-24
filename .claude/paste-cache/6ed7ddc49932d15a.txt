@@ -1,0 +1,16 @@
+  🚀 Terminal-B 다음 작업                                                                                                                   
+                                                                                                                                            
+  # 1. 작업 시작                                                                                                                            
+  TaskUpdate(taskId="3", status="in_progress")                                                                                              
+                                                                                                                                            
+  # 2. 컨텍스트 파일 읽기                                                                                                                   
+  Read(".agent/prompts/pending/worker-b-synthesis.yaml")                                                                                    
+                                                                                                                                            
+  # 3. 참고 파일 (방금 만든 /collect 스킬)                                                                                                  
+  Read(".claude/skills/collect/SKILL.md")                                                                                                   
+                                                                                                                                            
+  # 4. /synthesis 스킬 구현                                                                                                                 
+  # (prompt 파일의 지시에 따라 진행)                                                                                                        
+                                                                                                                                            
+  # 5. 완료 시                                                                                                                              
+  TaskUpdate(taskId="3", status="completed")

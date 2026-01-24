@@ -1,0 +1,164 @@
+# /build Command - Unified System Component Builder
+
+> **Version:** 1.0.0 | **Type:** Interactive Q&A Builder
+> **Scope:** Agent, Skill, Hook creation via progressive Q&A rounds
+
+---
+
+## Purpose
+
+Create new system components (Agents, Skills, Hooks) through an interactive Q&A workflow that guides users through all required and optional fields.
+
+## Usage
+
+```
+/build                    # Start interactive builder
+/build agent              # Start Agent builder directly
+/build skill              # Start Skill builder directly
+/build hook               # Start Hook builder directly
+/build --resume <name>    # Resume an incomplete draft
+```
+
+## Arguments
+
+- `$ARGUMENTS` - Optional: component type (agent/skill/hook) or --resume flag
+
+---
+
+## Execution Flow
+
+### Phase 1: Type Selection
+
+If no type specified, present selection:
+
+```
+AskUserQuestion(
+  questions=[{
+    "question": "어떤 컴포넌트를 생성하시겠습니까?",
+    "header": "Component",
+    "options": [
+      {"label": "Agent", "description": "Specialized subagent with tools and ODA context"},
+      {"label": "Skill", "description": "Reusable workflow invoked via /command"},
+      {"label": "Hook", "description": "Event-driven script (PreToolUse, PostToolUse, etc.)"}
+    ],
+    "multiSelect": false
+  }]
+)
+```
+
+### Phase 2: Q&A Rounds
+
+Based on selected type, proceed through comprehensive Q&A rounds.
+
+Reference: `.agent/plans/draft_create_command_v1.md#qa-patterns` for full Q&A specifications.
+
+### Phase 3: Draft Generation
+
+After Q&A completion:
+1. Save draft to `.agent/plans/create_drafts/{type}_{name}.md`
+2. Show preview of generated file
+3. Ask for confirmation
+
+### Phase 4: File Generation
+
+On confirmation:
+1. Generate actual file(s) to target location
+2. Register in appropriate registry if applicable
+3. Provide test command
+
+---
+
+## Q&A Pattern References
+
+### Agent (15 Rounds)
+| Category | Rounds | Fields |
+|----------|--------|--------|
+| Core Identity | 1-3 | name, description, disable-model-invocation |
+| Tool Config | 4-6 | tools, disallowedTools, mcp_tools |
+| ODA Context | 7-9 | role, stage_access, governance |
+| Execution | 10-12 | model, context, permissionMode |
+| Integration | 13-15 | integrates_with, hooks, v21x_features |
+
+### Skill (12 Rounds)
+| Category | Rounds | Fields |
+|----------|--------|--------|
+| Identity | 1-3 | name, description, user-invocable |
+| Execution | 4-6 | context, agent, model |
+| Tools | 7-9 | allowed-tools, argument-hint, hooks |
+| Features | 10-12 | content-type, dynamic-commands, ultrathink |
+
+### Hook (14 Rounds)
+| Category | Rounds | Fields |
+|----------|--------|--------|
+| Identity | 1-3 | name, event-type, language |
+| Trigger | 4-6 | matcher, timeout, hook-type |
+| Input/Output | 7-10 | permission, updatedInput, additionalContext, input-fields |
+| Advanced | 11-14 | output-fields, blocking, env-vars, logging |
+
+---
+
+## Output Locations
+
+| Type | Target Path |
+|------|-------------|
+| Agent | `.claude/agents/{name}.md` |
+| Skill | `.claude/skills/{name}.md` |
+| Hook (bash) | `.claude/hooks/{path}/{name}.sh` |
+| Hook (python) | `.claude/hooks/{path}/{name}.py` |
+| Draft | `.agent/plans/create_drafts/{type}_{name}.md` |
+
+---
+
+## Integration
+
+### With /plan
+After draft creation, use `/plan --draft create_{type}_{name}` for Plan Agent review.
+
+### With Templates
+Templates at `.claude/templates/` provide baseline structure:
+- `agent.yaml`
+- `skill.yaml`
+- `hook-bash.sh`
+- `hook-python.py`
+
+---
+
+## Examples
+
+### Create Security Validator Agent
+```
+/build agent
+→ Q1: "security-validator"
+→ Q2: "Validates security patterns in code changes"
+→ Q4: [Read, Grep, Glob]
+→ Q7: "validator"
+→ ...
+```
+
+### Create Audit Skill
+```
+/build skill
+→ Q1: "quick-audit"
+→ Q2: "Fast code quality check"
+→ Q3: user-invocable: true
+→ ...
+```
+
+### Create PreToolUse Hook
+```
+/build hook
+→ Q1: "permission-gate"
+→ Q2: "PreToolUse"
+→ Q3: "Python"
+→ Q4: "Bash|Edit|Write"
+→ ...
+```
+
+---
+
+## Notes
+
+- All Q&A can be skipped with defaults where applicable
+- Draft saves automatically after each round
+- Use `--resume` to continue incomplete builds
+- Generated files include all ODA-required fields

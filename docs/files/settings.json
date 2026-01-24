@@ -1,0 +1,151 @@
+{
+  "$schema": "claude-code-settings-v2.2",
+  "_comment": "Claude Code v2.2+ Configuration - Machine-Readable for Codebase Improvement Planning",
+  
+  "model": "claude-sonnet-4-5-20250929",
+  "cleanupPeriodDays": 30,
+  "includeCoAuthoredBy": true,
+  "plansDirectory": "./.claude/plans",
+  
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm test*)",
+      "Bash(npm install*)",
+      "Bash(npx *)",
+      "Bash(yarn *)",
+      "Bash(pnpm *)",
+      "Bash(pytest *)",
+      "Bash(python -m pytest*)",
+      "Bash(cargo test*)",
+      "Bash(cargo build*)",
+      "Bash(go test*)",
+      "Bash(go build*)",
+      "Bash(git diff*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(git stash*)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(wc *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(ls *)",
+      "Bash(tree *)",
+      "Bash(cloc *)",
+      "Bash(eslint *)",
+      "Bash(prettier *)",
+      "Bash(tsc *)",
+      "Bash(mypy *)",
+      "Bash(ruff *)",
+      "Read(./**)",
+      "Edit(./**)",
+      "Write(./**)",
+      "Task(*)",
+      "MCP(filesystem:*)",
+      "MCP(github:*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(git checkout*)",
+      "Bash(git merge*)",
+      "Bash(git rebase*)",
+      "Bash(npm publish*)",
+      "Bash(docker*)",
+      "Bash(kubectl*)",
+      "Bash(rm -rf*)",
+      "WebFetch(*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./.env.local)",
+      "Read(./.env.production)",
+      "Read(./secrets/**)",
+      "Read(**/.git/config)",
+      "Read(**/credentials*)",
+      "Read(**/*secret*)",
+      "Read(**/*password*)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(:(){ :|:& };:)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  
+  "env": {
+    "CLAUDE_CODE_TASK_LIST_ID": "project-improvements",
+    "MAX_THINKING_TOKENS": "10000",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "NODE_ENV": "development"
+  },
+  
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "startup",
+      "hooks": [{
+        "type": "command",
+        "command": "mkdir -p .claude/{reports,checkpoints,sessions,plans} && echo \"[${CLAUDE_SESSION_ID}] Session started at $(date -Iseconds)\" >> .claude/sessions/session-log.txt"
+      }]
+    }],
+    
+    "PreToolUse": {
+      "Edit": [{
+        "type": "command",
+        "command": "echo '{\"additionalContext\": \"Follow project coding standards. Use TypeScript strict mode. Prefer functional patterns. Add JSDoc comments for public APIs.\"}'"
+      }],
+      "Write": [{
+        "type": "command",
+        "command": "echo '{\"additionalContext\": \"Check naming conventions. Ensure proper file structure. Add necessary imports.\"}'"
+      }],
+      "Bash": [{
+        "type": "command",
+        "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '(rm -rf|sudo|chmod 777)'; then echo '{\"block\": true, \"message\": \"Dangerous command blocked for safety\"}'; fi"
+      }]
+    },
+    
+    "PostToolUse": {
+      "Edit": [{
+        "type": "command",
+        "command": "git diff --no-color 2>/dev/null > .claude/checkpoints/last-edit-${CLAUDE_SESSION_ID}.diff || true"
+      }],
+      "Write": [{
+        "type": "command",
+        "command": "echo \"[${CLAUDE_SESSION_ID}] File created: $file_path\" >> .claude/sessions/file-log.txt"
+      }]
+    },
+    
+    "SessionStop": [{
+      "matcher": "shutdown",
+      "hooks": [{
+        "type": "command",
+        "command": "echo \"[${CLAUDE_SESSION_ID}] Session ended at $(date -Iseconds)\" >> .claude/sessions/session-log.txt"
+      }]
+    }],
+    
+    "Notification": [{
+      "type": "command",
+      "command": "echo \"Claude: $message\" >> .claude/sessions/notifications.txt"
+    }]
+  },
+  
+  "mcpServers": {},
+  
+  "enabledPlugins": {},
+  
+  "lspServers": {},
+  
+  "sandbox": {
+    "enabled": false,
+    "allowNetworking": true
+  }
+}

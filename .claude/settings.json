@@ -78,38 +78,42 @@
             "command": "/home/palantir/.claude/hooks/auto-backup.sh"
           }
         ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-interceptor.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-context-injector.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": ".*",
+        "matcher": "Task",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/post-tool-use-audit.sh"
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-processor.sh"
           }
         ]
       },
       {
-        "matcher": "Read|Grep|Glob",
+        "matcher": "AskUserQuestion",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/auto-format.sh"
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/quality-check.sh",
-            "timeout": 10
+            "command": "/home/palantir/.claude/hooks/clarify-qa-logger.sh"
           }
         ]
       },
@@ -118,51 +122,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/audit-logger.sh"
-          },
-          {
-            "type": "command",
             "command": "/home/palantir/.claude/hooks/session-health.sh"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/parallel-notify.sh"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/pre-compact.sh"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/permission-request.sh"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/notification.sh"
           }
         ]
       }
@@ -170,7 +130,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/palantir/.claude/statusline-pastel.sh"
+    "command": "/home/palantir/.claude/statusline-orchestrator.sh"
   },
   "language": "Korean"
 }

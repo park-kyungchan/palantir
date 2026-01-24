@@ -1,0 +1,476 @@
+"""
+ObjectType Definition for Ontology.
+
+An ObjectType is the schema definition of a real-world entity or event
+in Palantir Foundry Ontology. It defines:
+    - Properties (attributes) of the entity
+    - Primary key for unique identification
+    - Backing dataset configuration
+    - Security configuration (mandatory control, restricted views)
+    - Lifecycle status and endorsement
+
+This is the most fundamental schema type in the ontology system.
+
+Example:
+    employee_type = ObjectType(
+        api_name="Employee",
+        display_name="Employee",
+        description="Company employee entity",
+        primary_key=PrimaryKeyDefinition(property_api_name="employeeId"),
+        properties=[
+            PropertyDefinition(
+                api_name="employeeId",
+                display_name="Employee ID",
+                data_type=DataTypeSpec(type=DataType.STRING),
+                constraints=PropertyConstraints(required=True, unique=True),
+            ),
+            PropertyDefinition(
+                api_name="employeeName",
+                display_name="Employee Name",
+                data_type=DataTypeSpec(type=DataType.STRING),
+                constraints=PropertyConstraints(required=True),
+            ),
+        ],
+        status=ObjectStatus.ACTIVE,
+        endorsed=True,
+    )
+"""
+
+from __future__ import annotations
+
+from typing import Any, Optional
+
+from pydantic import ConfigDict, Field, model_validator
+
+from ontology_definition.core.base import OntologyEntity
+from ontology_definition.core.enums import BackingDatasetMode, ObjectStatus, SecurityPolicyType
+from ontology_definition.core.identifiers import generate_rid
+from ontology_definition.core.metadata import ObjectTypeMetadata
+from ontology_definition.constraints.mandatory_control import MandatoryControlConfig
+from ontology_definition.types.property_def import PrimaryKeyDefinition, PropertyDefinition
+
+
+class BackingDatasetConfig(BaseModel):
+    """
+    Configuration for the Foundry Dataset backing this ObjectType.
+
+    Supports:
+    - SINGLE mode: One dataset backs the ObjectType (default)
+    - MULTI mode: Multi-Dataset Object (MDO) - multiple datasets merged
+    """
+
+    dataset_rid: Optional[str] = Field(
+        default=None,
+        description="RID of the backing Foundry Dataset.",
+        pattern=r"^ri\.foundry\.[a-z]+\.dataset\.[a-zA-Z0-9-]+$",
+        alias="datasetRid",
+    )
+
+    mode: BackingDatasetMode = Field(
+        default=BackingDatasetMode.SINGLE,
+        description="Datasource mode - SINGLE for one dataset, MULTI for MDO.",
+    )
+
+    additional_datasets: list[str] = Field(
+        default_factory=list,
+        description="For MULTI mode, additional dataset RIDs.",
+        alias="additionalDatasets",
+    )
+
+    restricted_view_rid: Optional[str] = Field(
+        default=None,
+        description="RID of Restricted View for row-level security filtering.",
+        pattern=r"^ri\.foundry\.[a-z]+\.restricted-view\.[a-zA-Z0-9-]+$",
+        alias="restrictedViewRid",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {}
+        if self.dataset_rid:
+            result["datasetRid"] = self.dataset_rid
+        result["mode"] = self.mode.value
+        if self.additional_datasets:
+            result["additionalDatasets"] = self.additional_datasets
+        if self.restricted_view_rid:
+            result["restrictedViewRid"] = self.restricted_view_rid
+        return result
+
+
+class PropertySecurityPolicy(BaseModel):
+    """
+    Security policy for a specific property.
+
+    Controls visibility and access level for individual properties.
+    """
+
+    from ontology_definition.core.enums import AccessLevel
+
+    property_api_name: str = Field(
+        ...,
+        description="apiName of the property this policy applies to.",
+        alias="propertyApiName",
+    )
+
+    access_level: AccessLevel = Field(
+        default=AccessLevel.FULL,
+        description="Access level for this property.",
+        alias="accessLevel",
+    )
+
+    condition: Optional[str] = Field(
+        default=None,
+        description="Conditional expression for dynamic access control.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+
+class ObjectSecurityPolicy(BaseModel):
+    """
+    Row-level security policy for ObjectType.
+
+    Integrates with Foundry Restricted Views for fine-grained access control.
+    """
+
+    policy_type: SecurityPolicyType = Field(
+        default=SecurityPolicyType.RESTRICTED_VIEW,
+        description="Type of security policy.",
+        alias="policyType",
+    )
+
+    restricted_view_policy_ref: Optional[str] = Field(
+        default=None,
+        description="Reference to RestrictedViewPolicy definition.",
+        alias="restrictedViewPolicyRef",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+
+class SecurityConfig(BaseModel):
+    """
+    Security configuration for ObjectType.
+
+    Combines:
+    - Mandatory control properties (GAP-002)
+    - Object-level security policy
+    - Per-property security policies
+    """
+
+    mandatory_control_properties: list[MandatoryControlConfig] = Field(
+        default_factory=list,
+        description="Properties designated as mandatory control for row-level access.",
+        alias="mandatoryControlProperties",
+    )
+
+    object_security_policy: Optional[ObjectSecurityPolicy] = Field(
+        default=None,
+        description="Row-level security policy for this ObjectType.",
+        alias="objectSecurityPolicy",
+    )
+
+    property_security_policies: list[PropertySecurityPolicy] = Field(
+        default_factory=list,
+        description="Per-property security policies.",
+        alias="propertySecurityPolicies",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Foundry-compatible dictionary format."""
+        result: dict[str, Any] = {}
+        if self.mandatory_control_properties:
+            result["mandatoryControlProperties"] = [
+                mcp.to_foundry_dict() for mcp in self.mandatory_control_properties
+            ]
+        if self.object_security_policy:
+            result["objectSecurityPolicy"] = {
+                "policyType": self.object_security_policy.policy_type.value,
+            }
+            if self.object_security_policy.restricted_view_policy_ref:
+                result["objectSecurityPolicy"]["restrictedViewPolicyRef"] = (
+                    self.object_security_policy.restricted_view_policy_ref
+                )
+        if self.property_security_policies:
+            result["propertySecurityPolicies"] = [
+                {
+                    "propertyApiName": psp.property_api_name,
+                    "accessLevel": psp.access_level.value,
+                    "condition": psp.condition,
+                }
+                for psp in self.property_security_policies
+            ]
+        return result
+
+
+# Need to import BaseModel for the nested classes
+from pydantic import BaseModel
+
+
+class ObjectType(OntologyEntity):
+    """
+    ObjectType schema definition - the fundamental entity type in Palantir Ontology.
+
+    An ObjectType defines the schema for a real-world entity or event,
+    including its properties, primary key, backing dataset, and security settings.
+
+    Key Features:
+    - Properties with full type system (20 data types)
+    - Primary key for unique instance identification
+    - Backing dataset configuration (single or multi-dataset)
+    - Security configuration with mandatory control (GAP-002)
+    - Lifecycle status with ENDORSED support (GAP-005)
+    - Interface implementation for polymorphism
+
+    Example:
+        >>> employee = ObjectType(
+        ...     api_name="Employee",
+        ...     display_name="Employee",
+        ...     primary_key=PrimaryKeyDefinition(property_api_name="employeeId"),
+        ...     properties=[
+        ...         PropertyDefinition(
+        ...             api_name="employeeId",
+        ...             display_name="Employee ID",
+        ...             data_type=DataTypeSpec(type=DataType.STRING),
+        ...         )
+        ...     ],
+        ...     endorsed=True,
+        ... )
+    """
+
+    # Override RID to use object-type specific format
+    rid: str = Field(
+        default_factory=lambda: generate_rid("ontology", "object-type"),
+        description="Resource ID - globally unique identifier for this ObjectType.",
+        pattern=r"^ri\.ontology\.[a-z]+\.object-type\.[a-zA-Z0-9-]+$",
+        json_schema_extra={"readOnly": True, "immutable": True},
+    )
+
+    # Primary Key (REQUIRED)
+    primary_key: PrimaryKeyDefinition = Field(
+        ...,
+        description="Property that uniquely identifies each Object instance.",
+        alias="primaryKey",
+    )
+
+    # Properties (REQUIRED, min 1)
+    properties: list[PropertyDefinition] = Field(
+        ...,
+        description="List of property definitions for this ObjectType.",
+        min_length=1,
+    )
+
+    # Lifecycle Status
+    status: ObjectStatus = Field(
+        default=ObjectStatus.EXPERIMENTAL,
+        description="Lifecycle status of the ObjectType.",
+    )
+
+    # ENDORSED flag (GAP-005) - ObjectType ONLY, not LinkType
+    endorsed: bool = Field(
+        default=False,
+        description="Mark as trustworthy ObjectType. Can only be set by Ontology Owner. "
+                    "Note: Endorsed status is only available for ObjectTypes, not LinkTypes.",
+    )
+
+    # Interface Implementation (Polymorphism)
+    interfaces: list[str] = Field(
+        default_factory=list,
+        description="List of Interface apiNames this ObjectType implements.",
+    )
+
+    # Backing Dataset
+    backing_dataset: Optional[BackingDatasetConfig] = Field(
+        default=None,
+        description="Foundry Dataset configuration for data storage.",
+        alias="backingDataset",
+    )
+
+    # Security Configuration
+    security_config: Optional[SecurityConfig] = Field(
+        default=None,
+        description="Security configuration including mandatory control and policies.",
+        alias="securityConfig",
+    )
+
+    # Extended Metadata
+    metadata: Optional[ObjectTypeMetadata] = Field(
+        default=None,
+        description="Extended metadata for versioning, tagging, and audit.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        use_enum_values=False,
+        json_schema_extra={
+            "x-palantir-entity-type": "object-type",
+            "x-palantir-indexing": ["api_name", "rid", "status", "endorsed"],
+        },
+    )
+
+    @model_validator(mode="after")
+    def validate_primary_key_exists(self) -> "ObjectType":
+        """Validate that primary key references an existing property."""
+        property_names = {p.api_name for p in self.properties}
+        if self.primary_key.property_api_name not in property_names:
+            raise ValueError(
+                f"Primary key property '{self.primary_key.property_api_name}' "
+                f"not found in properties. Available: {property_names}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_mandatory_control_properties(self) -> "ObjectType":
+        """Validate that mandatory control properties exist and are properly configured."""
+        if not self.security_config:
+            return self
+
+        property_names = {p.api_name for p in self.properties}
+        property_map = {p.api_name: p for p in self.properties}
+
+        for mcp in self.security_config.mandatory_control_properties:
+            if mcp.property_api_name not in property_names:
+                raise ValueError(
+                    f"Mandatory control property '{mcp.property_api_name}' "
+                    f"not found in properties"
+                )
+
+            prop = property_map[mcp.property_api_name]
+            if not prop.is_mandatory_control:
+                raise ValueError(
+                    f"Property '{mcp.property_api_name}' is configured as mandatory control "
+                    f"but does not have is_mandatory_control=True"
+                )
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_unique_property_names(self) -> "ObjectType":
+        """Validate that all property apiNames are unique."""
+        names = [p.api_name for p in self.properties]
+        duplicates = [n for n in names if names.count(n) > 1]
+        if duplicates:
+            raise ValueError(
+                f"Duplicate property apiNames found: {set(duplicates)}"
+            )
+        return self
+
+    def get_property(self, api_name: str) -> Optional[PropertyDefinition]:
+        """Get a property by its apiName."""
+        for prop in self.properties:
+            if prop.api_name == api_name:
+                return prop
+        return None
+
+    def get_primary_key_property(self) -> PropertyDefinition:
+        """Get the primary key property definition."""
+        prop = self.get_property(self.primary_key.property_api_name)
+        if not prop:
+            raise ValueError(
+                f"Primary key property '{self.primary_key.property_api_name}' not found"
+            )
+        return prop
+
+    def get_mandatory_control_properties(self) -> list[PropertyDefinition]:
+        """Get all properties marked as mandatory control."""
+        return [p for p in self.properties if p.is_mandatory_control]
+
+    def get_required_properties(self) -> list[PropertyDefinition]:
+        """Get all required properties."""
+        return [
+            p for p in self.properties
+            if p.constraints and p.constraints.required
+        ]
+
+    def implements_interface(self, interface_api_name: str) -> bool:
+        """Check if this ObjectType implements a given interface."""
+        return interface_api_name in self.interfaces
+
+    def to_foundry_dict(self) -> dict[str, Any]:
+        """Export to Palantir Foundry-compatible dictionary format."""
+        result = super().to_foundry_dict()
+
+        result["primaryKey"] = self.primary_key.to_foundry_dict()
+        result["properties"] = [p.to_foundry_dict() for p in self.properties]
+        result["status"] = self.status.value
+
+        if self.endorsed:
+            result["endorsed"] = True
+
+        if self.interfaces:
+            result["interfaces"] = self.interfaces
+
+        if self.backing_dataset:
+            result["backingDataset"] = self.backing_dataset.to_foundry_dict()
+
+        if self.security_config:
+            result["securityConfig"] = self.security_config.to_foundry_dict()
+
+        return result
+
+    @classmethod
+    def from_foundry_dict(cls, data: dict[str, Any]) -> "ObjectType":
+        """Create ObjectType from Palantir Foundry JSON format."""
+        from ontology_definition.types.property_def import DataTypeSpec
+
+        # Parse properties
+        properties = [
+            PropertyDefinition.from_foundry_dict(p)
+            for p in data["properties"]
+        ]
+
+        # Parse backing dataset if present
+        backing_dataset = None
+        if data.get("backingDataset"):
+            bd = data["backingDataset"]
+            backing_dataset = BackingDatasetConfig(
+                dataset_rid=bd.get("datasetRid"),
+                mode=BackingDatasetMode(bd.get("mode", "SINGLE")),
+                additional_datasets=bd.get("additionalDatasets", []),
+                restricted_view_rid=bd.get("restrictedViewRid"),
+            )
+
+        # Parse security config if present
+        security_config = None
+        if data.get("securityConfig"):
+            sc = data["securityConfig"]
+            mcp_list = []
+            if sc.get("mandatoryControlProperties"):
+                mcp_list = [
+                    MandatoryControlConfig.from_foundry_dict(m)
+                    for m in sc["mandatoryControlProperties"]
+                ]
+            security_config = SecurityConfig(
+                mandatory_control_properties=mcp_list,
+            )
+
+        return cls(
+            rid=data.get("rid", generate_rid("ontology", "object-type")),
+            api_name=data["apiName"],
+            display_name=data["displayName"],
+            description=data.get("description"),
+            primary_key=PrimaryKeyDefinition.from_foundry_dict(data["primaryKey"]),
+            properties=properties,
+            status=ObjectStatus(data.get("status", "EXPERIMENTAL")),
+            endorsed=data.get("endorsed", False),
+            interfaces=data.get("interfaces", []),
+            backing_dataset=backing_dataset,
+            security_config=security_config,
+        )

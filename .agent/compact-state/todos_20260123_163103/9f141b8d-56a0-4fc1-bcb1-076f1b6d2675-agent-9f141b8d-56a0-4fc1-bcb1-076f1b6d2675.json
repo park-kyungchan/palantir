@@ -1,0 +1,72 @@
+[
+  {
+    "content": "[1] RESEARCH: claude-code-guide로 /build 전체 기능 명세 조사 | Agent: claude-code-guide | AgentID: ab0b952",
+    "status": "completed",
+    "activeForm": "claude-code-guide로 기능 명세 조사 완료"
+  },
+  {
+    "content": "[2] DESIGN: build-research.md 스킬 설계 (Research Dispatcher) | Agent: Plan | AgentID: a576fce",
+    "status": "completed",
+    "activeForm": "Research Dispatcher 스킬 설계 완료"
+  },
+  {
+    "content": "[3] DESIGN: L1/L2/L3 Roadmap 템플릿 설계 | Agent: Plan | AgentID: a761ef8",
+    "status": "completed",
+    "activeForm": "Roadmap 템플릿 설계 완료"
+  },
+  {
+    "content": "[4] IMPLEMENT: .claude/skills/build-research.md 생성 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "build-research.md 생성 완료"
+  },
+  {
+    "content": "[5] IMPLEMENT: .agent/builds/ 디렉토리 구조 생성 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "builds 디렉토리 생성 완료"
+  },
+  {
+    "content": "[6] UPDATE: .claude/skills/build.md - Phase 0/1/2 추가 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "build.md Phase 0/1/2 업데이트 완료"
+  },
+  {
+    "content": "[7] UPDATE: .claude/skills/build.md - Phase 번호 재정렬 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "build.md Phase 번호 재정렬 완료"
+  },
+  {
+    "content": "[8] UPDATE: .claude/commands/build.md - Concept Mode 추가 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "build.md Concept Mode 업데이트 완료"
+  },
+  {
+    "content": "[9] CREATE: capability_index.json 스키마 저장 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "capability_index 저장 완료"
+  },
+  {
+    "content": "[10] CREATE: complexity_levels.json 정의 (Level 0/50/100) | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "complexity_levels 정의 완료"
+  },
+  {
+    "content": "[11] VERIFY: /build \"개념\" 테스트 | Agent: Manual | AgentID: N/A",
+    "status": "pending",
+    "activeForm": "개념 모드 테스트 대기"
+  },
+  {
+    "content": "[12] VERIFY: /build --resume 테스트 | Agent: Manual | AgentID: N/A",
+    "status": "pending",
+    "activeForm": "Resume 기능 테스트 대기"
+  },
+  {
+    "content": "[13] VERIFY: Token usage < 7K 확인 | Agent: Manual | AgentID: N/A",
+    "status": "pending",
+    "activeForm": "토큰 사용량 검증 대기"
+  },
+  {
+    "content": "[14] DOCUMENT: Plan 파일 최종 업데이트 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "completed",
+    "activeForm": "Plan 파일 최종 업데이트 완료"
+  }
+]

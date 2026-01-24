@@ -1,7 +1,7 @@
 # Claude Code Agent
 
-> **Version:** 5.0 (Simplified) | **Role:** Main Agent Orchestrator
-> **Method:** Progressive-Disclosure (Frontmatter → References → Detail)
+> **Version:** 7.0 | **Role:** Main Agent Orchestrator
+> **Architecture:** Task-Centric Hybrid (Native Task + File-Based Prompts)
 
 ---
 
@@ -9,6 +9,7 @@
 
 ```
 VERIFY-FIRST   → Verify files/imports before ANY mutation
+TASK-DRIVEN    → Use Native Task System for ALL workflow tracking
 DELEGATE       → Use Task subagents for complex operations
 AUDIT-TRAIL    → Track files_viewed for all operations
 ```
@@ -16,132 +17,197 @@ AUDIT-TRAIL    → Track files_viewed for all operations
 ### Workspace
 ```yaml
 workspace_root: /home/palantir
-ontology_definition: /home/palantir/park-kyungchan/palantir/Ontology-Definition
+task_list_id: ${CLAUDE_CODE_TASK_LIST_ID}
+```
+
+### Multi-Terminal Execution
+```bash
+cc <task-list-id>       # All terminals use same ID
+cc palantir-dev         # Example: shared task list
 ```
 
 ---
 
-## 2. Orchestration Protocol
+## 2. Task System
 
-### 2.1 Delegation Rules
+> Native Task API for dependency-aware task management
 
-**You are the ORCHESTRATOR. Delegate complex tasks.**
+| Tool | Purpose |
+|------|---------|
+| `TaskCreate` | Create task with subject, description, activeForm |
+| `TaskUpdate` | Update status (pending→in_progress→completed) |
+| `TaskList` | View all tasks |
+| `TaskGet` | Get task details before starting |
 
-| Task Type | Delegate To | When |
-|-----------|-------------|------|
-| Codebase analysis | `Task(subagent_type="Explore")` | Structure discovery |
-| Implementation planning | `Task(subagent_type="Plan")` | Design |
-| Complex multi-step | `Task(subagent_type="general-purpose")` | Full workflow |
-| Documentation search | `Task(subagent_type="claude-code-guide")` | Prompt engineering |
-
-### 2.2 Delegation Template
-
-```python
-Task(
-  subagent_type="{type}",
-  prompt="""
-    ## Context
-    Reference: `.claude/references/native-capabilities.md`
-
-    ## Task
-    {specific_task_description}
-
-    ## Required Evidence
-    - files_viewed: [must populate]
-
-    ## Output Format
-    {expected_output_structure}
-  """,
-  description="{brief_description}"
-)
+### Lifecycle
+```
+pending → in_progress → completed
+            ↓
+         blocked → wait for blockers
 ```
 
-### 2.3 Parallel Execution (Boris Cherny Pattern)
+### Dependency Rules
+- `blockedBy`: Tasks that MUST complete first
+- Worker MUST check `blockedBy` is empty before starting
 
-**Background execution for independent tasks:**
+---
 
-```python
-# CORRECT: Parallel background delegation
-Task(subagent_type="Explore", prompt="...", run_in_background=True)
-Task(subagent_type="Plan", prompt="...", run_in_background=True)
+## 3. E2E Pipeline
+
+```
+/clarify          Requirements + Design Recording
+    │
+    ▼
+/research         Deep Codebase + External Analysis
+    │
+    ▼
+/planning         YAML Planning + Plan Agent Review
+    │
+    ▼
+/orchestrate      Task Decomposition + Dependencies
+    │
+    ▼
+/assign           Worker Assignment (owner field)
+    │
+    ▼
+┌───┴───┬───────┐
+▼       ▼       ▼
+Worker  Worker  Worker    Parallel Execution
+B       C       D
+└───────┼───────┘
+        ▼
+/collect          Result Aggregation
+    │
+    ▼
+/synthesis        Traceability + Quality Check
+    │
+    ├── COMPLETE ──▶ /commit-push-pr
+    └── ITERATE ───▶ /rsil-plan → /orchestrate
 ```
 
 ---
 
-## 3. Safety Rules (Non-Negotiable)
+## 4. Skill Inventory
+
+| Skill | Purpose | Model |
+|-------|---------|-------|
+| `/clarify` | Requirements elicitation with PE techniques | opus |
+| `/research` | Post-clarify codebase + external analysis | opus |
+| `/planning` | YAML planning with Plan Agent review | opus |
+| `/orchestrate` | Task decomposition + dependency setup | sonnet |
+| `/assign` | Worker assignment to terminals | sonnet |
+| `/worker` | Worker self-service (start, done, status) | sonnet |
+| `/collect` | Aggregate worker results | sonnet |
+| `/synthesis` | Traceability matrix + quality validation | opus |
+| `/rsil-plan` | Gap analysis + remediation planning | opus |
+| `/build` | Generate skills, hooks, agents | sonnet |
+| `/build-research` | Research for build operations | sonnet |
+| `/commit-push-pr` | Git commit and PR creation | sonnet |
+| `/docx-automation` | DOCX document generation | sonnet |
+
+---
+
+## 5. Safety Rules
 
 ### Blocked Patterns
 ```
-rm -rf          → ALWAYS DENY
-sudo rm         → ALWAYS DENY
-chmod 777       → ALWAYS DENY
-DROP TABLE      → ALWAYS DENY
+rm -rf, sudo rm, chmod 777, DROP TABLE → ALWAYS DENY
 ```
 
-### Sensitive Files (Auto-Blocked)
+### Sensitive Files
 ```
-.env*           → Contains secrets
-*credentials*   → Authentication data
-.ssh/id_*       → SSH private keys
-**/secrets/**   → Secret storage
+.env*, *credentials*, .ssh/id_*, **/secrets/** → Auto-Blocked
 ```
 
 ---
 
-## 4. Behavioral Directives
+## 6. Behavioral Directives
+
+### ACTION-FIRST (최우선 원칙)
+
+> **문제 발견 → 즉시 수정 → 결과 보고** (질문 단계 없음)
+
+| 상황 | ❌ 금지 | ✅ 필수 |
+|------|--------|--------|
+| 문제 발견 | 보고만 | 즉시 수정 후 보고 |
+| 선택지 있음 | 질문 | 최선책 실행 |
+
+**예외:** 요구사항 불명확, 파괴적 작업, 고비용 작업
 
 ### ALWAYS
-- Use `TodoWrite` for multi-step tasks
-- Verify files exist before editing
-- Include `files_viewed` evidence for analysis
+- TaskCreate for multi-step tasks
+- Check blockedBy before executing
+- Fix issues immediately
 
 ### NEVER
-- Edit files without reading first
-- Execute blocked patterns
-- Hallucinate file contents or code
+- Edit without reading first
+- Start blocked tasks
+- Report without fixing
 
 ---
 
-## 5. Communication Protocol
+## 7. Directory Structure
 
-| Context | Language |
-|---------|----------|
-| Intent clarification | Korean (사용자 의도 확인) |
-| Execution/Code | English |
-| Documentation | English |
+```
+.claude/
+├── CLAUDE.md              # This file
+├── settings.json          # Claude Code settings
+├── skills/                # Skill definitions
+│   ├── clarify/
+│   ├── research/
+│   ├── planning/
+│   ├── orchestrate/
+│   ├── assign/
+│   ├── worker/
+│   ├── collect/
+│   ├── synthesis/
+│   ├── rsil-plan/
+│   ├── build/
+│   ├── build-research/
+│   ├── commit-push-pr/
+│   └── docx-automation/
+├── hooks/                 # Lifecycle hooks
+│   ├── session-start.sh
+│   ├── session-end.sh
+│   ├── clarify-finalize.sh
+│   ├── research-finalize.sh
+│   └── planning-finalize.sh
+├── agents/                # Custom agents
+│   ├── onboarding-guide.md
+│   ├── pd-readonly-analyzer.md
+│   └── pd-skill-loader.md
+└── references/            # Documentation
+    ├── pd-patterns.md
+    └── skill-access-matrix.md
+
+.agent/
+├── prompts/               # Worker prompts
+│   ├── _context.yaml      # Global context
+│   ├── _progress.yaml     # Progress tracking
+│   └── pending/           # Worker task files
+├── research/              # Research outputs
+├── plans/                 # Planning documents
+├── clarify/               # Clarification records
+└── outputs/               # Worker outputs
+```
 
 ---
 
-## 6. Native Capabilities (Quick Reference)
+## 8. Skill Frontmatter (V2.1.19)
 
-### Context Modes
-| Mode | When | Effect |
-|------|------|--------|
-| `context: fork` | Deep analysis | Isolated execution |
-| `context: standard` | User interaction | Shared context |
-
-### Key Tools
-| Tool | Purpose |
-|------|---------|
-| `Read` | File analysis |
-| `Grep` | Pattern search |
-| `Task` | Subagent delegation |
-| `WebSearch` | External information |
-| `TodoWrite` | Progress tracking |
-
-**Full Detail:** `.claude/references/native-capabilities.md`
+| Field | Required | Default |
+|-------|----------|---------|
+| `name` | Yes | - |
+| `description` | Yes | - |
+| `user-invocable` | No | true |
+| `model` | No | sonnet |
+| `allowed-tools` | No | all |
+| `hooks` | No | - |
 
 ---
 
-## 7. Reference Index
-
-| Reference | Path | Purpose |
-|-----------|------|---------|
-| Native Capabilities | `.claude/references/native-capabilities.md` | Subagent capability details |
-| Delegation Patterns | `.claude/references/delegation-patterns.md` | Orchestrator templates |
-| Skill Dependencies | `.claude/references/skill-dependencies.md` | Skill invocation order |
-
----
-
-> **Note:** ODA (Ontology-Driven Architecture) has been removed.
-> Only `Ontology-Definition` directory is preserved for schema definitions.
+> **v7.0 (2026-01-24):** Enhanced Pipeline
+> - Added /research, /planning, /rsil-plan skills
+> - Directory structure documentation
+> - Skill inventory with model specifications
+> - Removed deprecated files and redundant sections

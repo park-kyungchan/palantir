@@ -1,0 +1,226 @@
+# Draft: Commands/Skills 고도화 (Native Capabilities 최대 활용)
+
+> **Version:** 1.0 | **Status:** QUESTIONING
+> **Date:** 2026-01-20 | **Rounds:** 0
+> **Auto-Compact Safe:** This file persists across context compaction
+
+---
+
+## INDEX
+
+### 요구사항 요약
+남은 Commands (4개) + Skills (3개)를 Claude Code Native Capabilities 최대 활용하여 고도화:
+- `resume`, `run_in_background=true`, `context: fork` 등 적극 활용
+- L1/L2 패턴 적용 (이미 Hook으로 자동 적용됨)
+- 최신 V2.1.12 기능 적극 통합
+
+### Complexity
+- **예상 복잡도:** medium
+- **대상 파일:** 7개 (중복 제거 시 5개)
+
+### 현재 적용 현황
+
+| 파일 | resume | run_in_background | context:fork | L1/L2 | 개선 필요도 |
+|------|:------:|:-----------------:|:------------:|:-----:|:-----------:|
+| **Commands** |  |  |  |  |  |
+| ask.md | ❌ | ❌ | ⚠️ 언급만 | ✅ Hook | **HIGH** |
+| commit-push-pr.md | ❌ | ❌ | ❌ | ✅ Hook | **MEDIUM** |
+| plan-draft.md | ❌ | ❌ | ❌ | ✅ Hook | **HIGH** |
+| teleport.md | ❌ | ❌ | ❌ | ✅ Hook | **LOW** |
+| **Skills** |  |  |  |  |  |
+| ask.md | ❌ | ❌ | ❌ | ✅ Hook | **HIGH** |
+| docx-automation.md | ❌ | ❌ | ❌ | ✅ Hook | **LOW** |
+| plan-draft.md | ❌ | ❌ | ❌ | ✅ Hook | **HIGH** |
+
+### 추천 고도화 기능 (claude-code-guide 결과)
+
+| 기능 | 버전 | 적용 대상 | 효과 |
+|------|------|----------|------|
+| `resume` parameter | V2.0.28+ | /plan-draft, /ask | Auto-Compact 후 작업 재개 |
+| `run_in_background=true` | V2.1.0+ | /plan-draft, /ask | 병렬 탐색 가속 |
+| `context: fork` | V2.1.0+ | /plan-draft, /ask | 메인 컨텍스트 오염 방지 |
+| `updatedInput` Hook | V2.1.9+ | 모든 Task() 호출 | 파라미터 자동 주입 |
+| `additionalContext` Hook | V2.1.9+ | 모든 Task() 호출 | 컨텍스트 자동 주입 |
+| `allowed-tools` 최적화 | V2.1.0+ | 모든 Skills | 최소 권한 원칙 |
+| Prompt-based hooks | V2.1.x | /plan-draft Stop | 지능적 완료 판단 |
+| Progressive disclosure | V2.1.0+ | /ask, /plan-draft | 문서 분리 |
+
+### Q&A 핵심 (Round 1)
+1. **Q:** 중복 파일 처리? → **A:** 분리 유지, /ask와 /plan-draft만 고도화
+2. **Q:** 우선순위? → **A:** 모든 Native-Subagents + /ask, /plan-draft
+3. **Q:** context:fork 전략? → **A:** 모든 Subagent 호출에 fork 적용
+4. **Q:** Hook 추가 기능? → **A:** (조사 중 - claude-code-guide 실행)
+
+### 리스크
+- Commands와 Skills의 중복 (ask.md, plan-draft.md)
+- 기존 사용 패턴과의 호환성
+- 고도화 후 복잡도 증가 우려
+
+### 다음 단계
+Socratic Q&A 시작 → 사용자 의도 명확화
+
+---
+
+## DETAIL: Q&A 전체 로그 {#qa-log}
+
+### Round 0 (Initialization)
+**배경:**
+- 사용자가 명시적으로 커맨드/스킬 사용 시 Native Capabilities 최대 활용 원함
+- claude-code-guide로 최신 기능 조사 완료
+
+### Round 1 (2026-01-20 21:40)
+**Q1:** Commands/Skills 중복 파일 처리?
+**A1:** 분리 유지. /ask, /plan-draft만 고도화. 나머지는 그대로.
+
+**Q2:** 우선순위?
+**A2:** 모든 Native-Subagents와 /ask, /plan-draft만 진행
+
+**Q3:** context:fork 전략?
+**A3:** 모든 Subagent 호출에 fork 적용
+
+**Q4:** Hook 추가 기능 필요?
+**A4:** "hook에 관한 native-capabilities 더 없나?" → claude-code-guide 추가 조사 중
+
+**핵심 요구사항 정리:**
+1. 커맨드로 프롬프트 입력 시 **항상 Task() 호출**하여 Hook이 작동하도록
+2. 모든 Subagent에 **context: fork** 적용
+3. Native Capabilities **최대 활용** (resume, run_in_background, etc.)
+
+---
+
+## DETAIL: Native Capabilities Reference {#native-ref}
+
+### 1. resume Parameter
+```python
+# 첫 실행 시 agent_id 반환됨
+Task(
+    subagent_type="Explore",
+    prompt="...",
+    run_in_background=True
+)
+# → agent_id: "a1b2c3d"
+
+# Auto-Compact 후 재개
+Task(
+    subagent_type="Explore",
+    prompt="Continue analysis",
+    resume="a1b2c3d",  # 이전 agent ID
+    run_in_background=True
+)
+```
+
+### 2. run_in_background + Parallel Deployment
+```python
+# Boris Cherny Pattern: 3+ 독립 작업 병렬 실행
+Task(subagent_type="Explore", prompt="...", run_in_background=True)
+Task(subagent_type="Plan", prompt="...", run_in_background=True)
+Task(subagent_type="general-purpose", prompt="...", run_in_background=True)
+# 모두 동시 실행, 결과는 나중에 수집
+```
+
+### 3. context: fork (Skill YAML)
+```yaml
+---
+name: deep-analysis
+context: fork  # 격리된 컨텍스트에서 실행
+agent: general-purpose
+---
+```
+
+### 4. updatedInput + additionalContext (Hook)
+```bash
+# PreToolUse Hook 응답
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedInput": {"run_in_background": true},
+    "additionalContext": "L1/L2 format required..."
+  }
+}
+```
+
+### 5. allowed-tools (최소 권한)
+```yaml
+# Read-only analysis
+allowed-tools: Read, Grep, Glob
+
+# With execution
+allowed-tools: Read, Grep, Glob, Bash
+
+# Full modification
+allowed-tools: Read, Grep, Glob, Bash, Edit, Write
+```
+
+---
+
+## DETAIL: 파일별 현황 분석 {#file-analysis}
+
+### /ask (Command + Skill)
+**현재 상태:**
+- Delegation Template에서 `context="fork"` 언급만
+- `run_in_background` 미적용
+- `resume` 미적용
+
+**개선 포인트:**
+- [ ] Skill에 `context: fork` frontmatter 추가
+- [ ] prompt-assistant 호출 시 `run_in_background=true`
+- [ ] 장시간 분석 시 `resume` 지원
+
+### /plan-draft (Command + Skill)
+**현재 상태:**
+- Socratic Q&A 루프 구현
+- Phase 3: Exploration에서 Task() 사용
+- Background 실행 미적용
+
+**개선 포인트:**
+- [ ] Skill에 `context: fork` 추가 (verbose 출력 격리)
+- [ ] Phase 1 병렬 탐색 추가 (3개 Explore 동시)
+- [ ] Agent ID 저장하여 `resume` 지원
+- [ ] Prompt-based Stop hook 추가
+
+### /commit-push-pr (Command only)
+**현재 상태:**
+- Pre-flight checks 구현
+- Governance 통합 언급만
+
+**개선 포인트:**
+- [ ] Pre-commit Task()에 `run_in_background=true`
+- [ ] Push 실패 시 `resume` 지원
+
+### /teleport (Command only)
+**현재 상태:**
+- Web ↔ CLI 세션 전송
+- Python 스크립트 의존
+
+**개선 포인트:**
+- [ ] Background 실행 옵션 추가
+- [ ] (우선순위 낮음 - 이미 잘 동작)
+
+### /docx-automation (Skill only)
+**현재 상태:**
+- Pipeline 통합 완료
+- python-docx 의존
+
+**개선 포인트:**
+- [ ] 대용량 처리 시 `run_in_background=true`
+- [ ] (우선순위 낮음 - 특수 목적)
+
+---
+
+## DETAIL: 리스크 분석 {#risk-analysis}
+
+| 리스크 | 영향 | 완화 방안 |
+|--------|------|----------|
+| Commands/Skills 중복 | LOW | 통합 또는 역할 명확화 |
+| context:fork 제한사항 | MEDIUM | User interaction 필요 시 standard 사용 |
+| resume ID 관리 복잡도 | LOW | Plan 파일에 자동 기록 |
+| 병렬 실행 순서 문제 | LOW | 독립 작업만 병렬화 |
+
+---
+
+## Metadata
+
+- Created: 2026-01-20 21:35
+- Last Updated: 2026-01-20 21:35
+- Q&A Rounds: 0
+- State: QUESTIONING (Q&A 대기 중)

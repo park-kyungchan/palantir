@@ -1,0 +1,497 @@
+# Plan: HIGH Issue Fix and SemanticGraph Implementation
+
+## Metadata
+- Created: 2026-01-17T13:15:00Z
+- Updated: 2026-01-17T13:25:00Z
+- Status: in_progress
+- Target: /home/palantir/cow/src/mathpix_pipeline
+- Evidence Agents: Explore[a173d50], Plan[a6030ef]
+
+## Current Progress
+
+### Completed
+- [x] **Step 1:** Exception hierarchy created (`vision/exceptions.py`, ~220 lines)
+  - VisionError base class with image_id and cause tracking
+  - YoloError hierarchy (5 exception types)
+  - ClaudeError hierarchy (4 exception types)
+  - GeminiError hierarchy (5 exception types)
+  - ImageError hierarchy (3 exception types)
+  - FallbackChainExhaustedError
+- [x] Updated `fallback.py` to use specific exception types
+- [x] Exported exceptions from `vision/__init__.py`
+
+### In Progress
+- [ ] **Step 2:** @computed_field refactoring (18 locations)
+
+### Pending
+- [ ] **Step 3:** Gemini Client implementation
+- [ ] **Step 4-8:** SemanticGraphBuilder components
+- [ ] **Step 9:** Unit and integration tests
+
+---
+
+## Executive Summary
+
+**Goal:** Fix 3 HIGH severity issues and build SemanticGraphBuilder (Stage E)
+
+**Current State:**
+- Pipeline design: 96% complete
+- Code implementation: ~40% (C, D partial)
+- Schemas: High quality (Pydantic v2, strong typing)
+- Missing: Stages A, F, G, H; SemanticGraph builder
+
+---
+
+## Phase 1: HIGH Issue Fixes (Priority: CRITICAL)
+
+### Issue 1: Gemini Fallback Not Implemented
+**Location:** `vision/fallback.py:188-193`
+**Severity:** HIGH
+**Root Cause:** TODO placeholder returns None, breaking fallback chain
+
+**Fix Plan:**
+```python
+# New file: vision/gemini_client.py
+class GeminiVisionClient:
+    """Gemini 2.5 zero-shot bbox + interpretation fallback."""
+
+    async def detect_and_interpret(
+        self,
+        image: bytes,
+        image_id: str
+    ) -> Optional[VisionSpec]:
+        """
+        Use Gemini's native bounding box API for:
+        1. Element detection (points, lines, curves, labels)
+        2. Semantic interpretation
+        3. Confidence scoring
+        """
+```
+
+**Tasks:**
+- [ ] Create `vision/gemini_client.py` with GeminiVisionClient
+- [ ] Implement structured output parsing for Gemini response
+- [ ] Add rate limiting and retry logic
+- [ ] Wire into `FallbackExecutor._try_gemini_fallback()`
+- [ ] Add integration tests with mock Gemini responses
+
+---
+
+### Issue 2: Bare Exception Handling
+**Location:** `vision/fallback.py:195`
+**Severity:** HIGH (masks bugs, security risk)
+
+**Fix Plan:**
+```python
+# Before (problematic)
+except Exception as e:
+    logger.error(f"Gemini fallback failed: {e}")
+    return None
+
+# After (explicit exceptions)
+except google.api_core.exceptions.GoogleAPIError as e:
+    logger.error(f"Gemini API error: {e}", exc_info=True)
+    return None
+except asyncio.TimeoutError:
+    logger.warning(f"Gemini timeout for {image_id}")
+    return None
+except ValueError as e:
+    logger.error(f"Gemini response parse error: {e}")
+    return None
+```
+
+**Tasks:**
+- [ ] Define explicit exception types in `vision/exceptions.py`
+- [ ] Update all bare `except Exception` to specific types
+- [ ] Add structured logging with exc_info for debugging
+- [ ] Create exception hierarchy: VisionError → GeminiError, YoloError
+
+---
+
+### Issue 3: object.__setattr__ Bypass Pattern
+**Location:** Multiple files (18+ instances)
+**Severity:** HIGH (architectural debt)
+
+**Root Cause Analysis:**
+```python
+# common.py:52
+class MathpixBaseModel(BaseModel):
+    model_config = ConfigDict(
+        validate_assignment=True,  # ← Causes infinite recursion
+    )
+
+# alignment.py:107-120
+@model_validator(mode="after")
+def check_threshold(self) -> "MatchedPair":
+    # Uses object.__setattr__ to bypass validate_assignment
+    object.__setattr__(self, "threshold_passed", False)  # ← Workaround
+```
+
+**Fix Options:**
+
+| Option | Pros | Cons | Recommendation |
+|--------|------|------|----------------|
+| A: Remove `validate_assignment=True` | Simple | Loses runtime validation | ❌ Not recommended |
+| B: Use `model_config` override per class | Targeted | Inconsistent behavior | ⚠️ Acceptable |
+| C: Use `model_construct()` pattern | Clean | Requires refactor | ✅ Recommended |
+| D: Computed fields (Pydantic v2) | Modern | May not fit all cases | ✅ Preferred |
+
+**Recommended Fix (Option D - Computed Fields):**
+```python
+from pydantic import computed_field
+
+class MatchedPair(MathpixBaseModel):
+    consistency_score: float = Field(..., ge=0.0, le=1.0)
+    applied_threshold: float = Field(default=0.60)
+
+    @computed_field
+    @property
+    def threshold_passed(self) -> bool:
+        """Computed from consistency_score vs threshold."""
+        return self.consistency_score >= self.applied_threshold
+
+    @computed_field
+    @property
+    def review_metadata(self) -> ReviewMetadata:
+        """Auto-generate review based on threshold."""
+        if not self.threshold_passed:
+            return ReviewMetadata(
+                review_required=True,
+                review_severity=ReviewSeverity.HIGH if self.consistency_score < 0.4 else ReviewSeverity.MEDIUM,
+                review_reason=f"Score {self.consistency_score:.2f} < threshold {self.applied_threshold:.2f}"
+            )
+        return ReviewMetadata()
+```
+
+**Tasks:**
+- [ ] Analyze all 18 `object.__setattr__` usages
+- [ ] Categorize: which can use `@computed_field`
+- [ ] Refactor MatchedPair, Inconsistency, SemanticNode, SemanticEdge
+- [ ] Update AlignmentReport.compute_statistics() validator
+- [ ] Run full test suite to verify no regression
+
+---
+
+## Phase 2: SemanticGraphBuilder Implementation
+
+### Current State
+- **Schema:** Complete (`semantic_graph.py`, 463 lines)
+  - 16 NodeTypes (POINT, LINE, EQUATION, CURVE, etc.)
+  - 14 EdgeTypes (INTERSECTS, LABELS, EQUALS, etc.)
+  - SemanticNode, SemanticEdge, GraphStatistics models
+- **Builder:** Missing (no code to create graph from AlignmentReport)
+
+### Architecture Design
+
+```
+AlignmentReport (Stage D)
+        │
+        ▼
+┌───────────────────────────────────┐
+│     SemanticGraphBuilder          │
+├───────────────────────────────────┤
+│ 1. NodeExtractor                  │
+│    - Extract nodes from matched   │
+│    - Create nodes from unmatched  │
+│    - Assign node types            │
+│                                   │
+│ 2. EdgeInferrer                   │
+│    - Spatial relationships        │
+│    - Label relationships          │
+│    - Mathematical relationships   │
+│                                   │
+│ 3. ConfidencePropagator           │
+│    - Propagate from Stage D       │
+│    - Apply threshold calibration  │
+│                                   │
+│ 4. GraphValidator                 │
+│    - Check connectivity           │
+│    - Validate edge consistency    │
+└───────────────────────────────────┘
+        │
+        ▼
+SemanticGraph (Stage E output)
+```
+
+### File Structure
+```
+semantic_graph/
+├── __init__.py           # Public exports
+├── builder.py            # SemanticGraphBuilder orchestrator
+├── node_extractor.py     # Extract nodes from alignment
+├── edge_inferrer.py      # Infer relationships
+├── confidence.py         # Confidence propagation
+└── validators.py         # Graph validation
+```
+
+### Implementation Tasks
+
+#### 2.1 NodeExtractor
+```python
+class NodeExtractor:
+    """Extract SemanticNodes from AlignmentReport."""
+
+    def extract_from_matched(
+        self,
+        matched_pairs: List[MatchedPair]
+    ) -> List[SemanticNode]:
+        """
+        Convert matched text-visual pairs to nodes.
+
+        Mapping:
+        - text.latex + visual.point → NodeType.POINT
+        - text.equation + visual.curve → NodeType.EQUATION
+        - text.label + visual.element → NodeType.LABEL
+        """
+
+    def extract_from_unmatched(
+        self,
+        unmatched: List[UnmatchedElement]
+    ) -> List[SemanticNode]:
+        """Create nodes for orphan elements with LOW confidence."""
+```
+
+**Tasks:**
+- [ ] Create `node_extractor.py`
+- [ ] Implement `classify_node_type()` based on element properties
+- [ ] Map MatchedPair → SemanticNode with confidence propagation
+- [ ] Handle unmatched elements as LOW confidence nodes
+
+#### 2.2 EdgeInferrer
+```python
+class EdgeInferrer:
+    """Infer edges between SemanticNodes."""
+
+    def infer_spatial_edges(
+        self,
+        nodes: List[SemanticNode]
+    ) -> List[SemanticEdge]:
+        """
+        Spatial relationships from bbox overlap/proximity:
+        - INTERSECTS: bbox overlap > threshold
+        - ADJACENT_TO: bbox distance < threshold
+        - CONTAINS/CONTAINED_BY: bbox containment
+        """
+
+    def infer_label_edges(
+        self,
+        nodes: List[SemanticNode]
+    ) -> List[SemanticEdge]:
+        """
+        Labeling relationships:
+        - LABELS: text node near visual element
+        - LABELED_BY: inverse relationship
+        """
+
+    def infer_mathematical_edges(
+        self,
+        nodes: List[SemanticNode]
+    ) -> List[SemanticEdge]:
+        """
+        Mathematical relationships:
+        - GRAPH_OF: equation node + curve node
+        - LIES_ON: point node + curve/line node
+        - EQUALS: equivalent expressions
+        """
+```
+
+**Tasks:**
+- [ ] Create `edge_inferrer.py`
+- [ ] Implement spatial edge detection using bbox geometry
+- [ ] Implement label edge detection using proximity + text matching
+- [ ] Implement mathematical edge detection using semantic analysis
+- [ ] Add edge confidence calculation based on evidence strength
+
+#### 2.3 ConfidencePropagator
+```python
+class ConfidencePropagator:
+    """Propagate confidence from Stage D to graph elements."""
+
+    def propagate_to_nodes(
+        self,
+        nodes: List[SemanticNode],
+        source_confidences: Dict[str, float]
+    ) -> None:
+        """
+        Node confidence = weighted average of:
+        - Source element confidence (from Stage C/D)
+        - Match quality score
+        - Type-specific adjustments
+        """
+
+    def propagate_to_edges(
+        self,
+        edges: List[SemanticEdge],
+        nodes: Dict[str, SemanticNode]
+    ) -> None:
+        """
+        Edge confidence = min(source_conf, target_conf) * edge_factor
+        """
+```
+
+**Tasks:**
+- [ ] Create `confidence.py`
+- [ ] Implement confidence propagation from Stage D scores
+- [ ] Apply threshold calibration from `threshold_calibration.yaml`
+- [ ] Handle confidence degradation for inferred edges
+
+#### 2.4 GraphValidator
+```python
+class GraphValidator:
+    """Validate semantic graph structure and consistency."""
+
+    def validate_connectivity(
+        self,
+        graph: SemanticGraph
+    ) -> List[ValidationIssue]:
+        """Check for isolated nodes, disconnected components."""
+
+    def validate_edge_consistency(
+        self,
+        graph: SemanticGraph
+    ) -> List[ValidationIssue]:
+        """
+        Check edge validity:
+        - Source/target nodes exist
+        - Edge type appropriate for node types
+        - No duplicate edges
+        """
+```
+
+**Tasks:**
+- [ ] Create `validators.py`
+- [ ] Implement connectivity validation
+- [ ] Implement edge consistency checks
+- [ ] Generate validation report with severity levels
+
+#### 2.5 Builder Orchestrator
+```python
+class SemanticGraphBuilder:
+    """Main builder orchestrating graph construction."""
+
+    def __init__(
+        self,
+        node_extractor: NodeExtractor,
+        edge_inferrer: EdgeInferrer,
+        confidence_propagator: ConfidencePropagator,
+        validator: GraphValidator,
+        config: Optional[GraphBuilderConfig] = None
+    ):
+        pass
+
+    def build(
+        self,
+        alignment_report: AlignmentReport
+    ) -> SemanticGraph:
+        """
+        Build semantic graph from alignment report.
+
+        Steps:
+        1. Extract nodes from matched pairs
+        2. Extract nodes from unmatched elements
+        3. Infer spatial edges
+        4. Infer label edges
+        5. Infer mathematical edges
+        6. Propagate confidence
+        7. Validate graph
+        8. Compute statistics
+        """
+```
+
+**Tasks:**
+- [ ] Create `builder.py` with SemanticGraphBuilder class
+- [ ] Wire all components together
+- [ ] Add configuration support (thresholds, edge type enables)
+- [ ] Create factory function `create_graph_builder()`
+- [ ] Add comprehensive logging
+
+---
+
+## Phase 3: Testing Strategy
+
+### Unit Tests
+```
+tests/semantic_graph/
+├── test_node_extractor.py
+├── test_edge_inferrer.py
+├── test_confidence.py
+├── test_validators.py
+└── test_builder.py
+```
+
+### Integration Tests
+```python
+def test_build_from_alignment_report():
+    """End-to-end: AlignmentReport → SemanticGraph"""
+    alignment_report = create_test_alignment_report()
+    builder = create_graph_builder()
+
+    graph = builder.build(alignment_report)
+
+    assert len(graph.nodes) > 0
+    assert len(graph.edges) > 0
+    assert graph.overall_confidence > 0.5
+```
+
+---
+
+## Implementation Order
+
+| Order | Component | Dependencies | Estimated LOC |
+|-------|-----------|--------------|---------------|
+| 1 | HIGH Issue 2: Exception handling | None | ~50 |
+| 2 | HIGH Issue 3: computed_field refactor | None | ~200 |
+| 3 | HIGH Issue 1: Gemini client | Exception handling | ~150 |
+| 4 | NodeExtractor | Schema, computed_field | ~120 |
+| 5 | EdgeInferrer | NodeExtractor | ~200 |
+| 6 | ConfidencePropagator | NodeExtractor | ~80 |
+| 7 | GraphValidator | All extractors | ~100 |
+| 8 | SemanticGraphBuilder | All components | ~150 |
+| 9 | Unit tests | Builder complete | ~300 |
+
+**Total Estimated:** ~1,350 lines
+
+---
+
+## Risk Assessment
+
+| Risk | Impact | Probability | Mitigation |
+|------|--------|-------------|------------|
+| computed_field breaks existing tests | HIGH | MEDIUM | Run full test suite after each change |
+| Gemini API changes | MEDIUM | LOW | Abstract behind client interface |
+| Edge inference accuracy | MEDIUM | MEDIUM | Start with high-confidence rules only |
+| Performance with large graphs | LOW | LOW | Add lazy evaluation, pagination |
+
+---
+
+## Quick Resume
+
+**Context for Auto-Compact recovery:**
+- Working on cow/ project (Math Image Parsing Pipeline v2.0)
+- 3 HIGH issues identified in deep-audit
+- SemanticGraph schema exists but builder missing
+- Implementation order: Exceptions → Pydantic refactor → Gemini → Graph builder
+
+**Agent Registry:**
+- Explore[a173d50]: Completed - codebase analysis
+- Plan[a6030ef]: Completed - architecture design
+
+**Next Action:** Begin Phase 1 with Exception handling refactor
+
+---
+
+## Evidence
+
+### Files Viewed
+- `cow/src/mathpix_pipeline/vision/fallback.py`
+- `cow/src/mathpix_pipeline/schemas/alignment.py`
+- `cow/src/mathpix_pipeline/schemas/semantic_graph.py`
+- `cow/src/mathpix_pipeline/schemas/common.py`
+- `cow/src/mathpix_pipeline/alignment/engine.py`
+- `cow/.agent/plans/MASTER_CONTEXT_REFERENCE.md`
+
+### Quality Assessment
+- Schema design: 9/10 (excellent Pydantic v2 usage)
+- AlignmentEngine: 8/10 (well-structured orchestrator)
+- Missing tests for semantic_graph module
+- object.__setattr__ pattern needs refactoring

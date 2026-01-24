@@ -1,0 +1,32 @@
+● Terminal D 설정                                                                                                                           
+                                                                                                                                            
+  1. 환경변수 설정                                                                                                                          
+                                                                                                                                            
+  export CLAUDE_CODE_TASK_LIST_ID="palantir-v3-refactor"                                                                                    
+                                                                                                                                            
+  2. 작업 프롬프트                                                                                                                          
+                                                                                                                                            
+  ## Task: PreCompact 훅 에러 수정                                                                                                          
+                                                                                                                                            
+  ### 문제                                                                                                                                  
+  /compact 실행 시 다음 에러 발생:                                                                                                          
+  "PreCompact [/home/palantir/.claude/hooks/pre-compact.sh] failed: not found"                                                              
+                                                                                                                                            
+  ### 원인                                                                                                                                  
+  Phase 1에서 pre-compact.sh를 _deprecated/ 폴더로 이동했으나,                                                                              
+  settings.json의 PreCompact 이벤트 핸들러가 남아있음.                                                                                      
+                                                                                                                                            
+  ### 작업                                                                                                                                  
+  1. .claude/settings.json 읽기                                                                                                             
+  2. "hooks" → "PreCompact" 섹션 확인                                                                                                       
+  3. PreCompact 섹션이 있다면 완전히 제거                                                                                                   
+  4. 제거 후 JSON 유효성 검증                                                                                                               
+                                                                                                                                            
+  ### 참고                                                                                                                                  
+  - 레지스트리: .claude/registry.yaml (deprecated 섹션 참조)                                                                                
+  - Phase 1 완료로 pre-compact 기능은 session-end.sh로 이전됨                                                                               
+                                                                                                                                            
+  ### 출력 형식                                                                                                                             
+  L1/L2/L3 Progressive Disclosure 형식으로 결과 보고                                                                                        
+                                                                                                                                            
+  ---                   

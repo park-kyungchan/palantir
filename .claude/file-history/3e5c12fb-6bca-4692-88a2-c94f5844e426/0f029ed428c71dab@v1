@@ -1,0 +1,44 @@
+model = "gpt-5.2"
+model_reasoning_effort = "xhigh"
+[projects."/home/palantir/park-kyungchan/palantir"]
+trust_level = "trusted"
+
+[projects."/home/palantir"]
+trust_level = "trusted"
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.2" = "gpt-5.2-codex"
+
+[features]
+unified_exec = true
+shell_snapshot = true
+
+[mcp_servers.sequential-thinking]
+command = "/home/palantir/.nvm/versions/node/v24.12.0/bin/node"
+args = ["/home/palantir/.nvm/versions/node/v24.12.0/lib/node_modules/@modelcontextprotocol/server-sequential-thinking/dist/index.js"]
+
+[mcp_servers.github-mcp-server]
+command = "/home/palantir/.nvm/versions/node/v24.12.0/bin/node"
+args = ["/home/palantir/.nvm/versions/node/v24.12.0/lib/node_modules/@modelcontextprotocol/server-github/dist/index.js"]
+
+[mcp_servers.context7]
+command = "/home/palantir/.nvm/versions/node/v24.12.0/bin/node"
+args = ["/home/palantir/.nvm/versions/node/v24.12.0/lib/node_modules/@upstash/context7-mcp/dist/index.js"]
+
+[mcp_servers.oda-ontology]
+command = "/home/palantir/park-kyungchan/palantir/.venv/bin/python"
+args = ["-m", "lib.oda.mcp.ontology_server"]
+
+[mcp_servers.oda-ontology.env]
+ORION_DB_PATH = "/home/palantir/park-kyungchan/palantir/.agent/tmp/ontology.db"
+PYTHONPATH = "/home/palantir/park-kyungchan/palantir"
+
+[mcp_servers.tavily]
+command = "/home/palantir/.nvm/versions/node/v24.12.0/bin/node"
+args = ["/home/palantir/.nvm/versions/node/v24.12.0/lib/node_modules/tavily-mcp/build/index.js"]
+
+[mcp_servers.tavily.env]
+TAVILY_API_KEY = "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"

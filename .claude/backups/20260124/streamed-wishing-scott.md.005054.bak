@@ -1,0 +1,567 @@
+# Session-Aware Worker Prompt System
+
+> **Plan ID:** streamed-wishing-scott
+> **Created:** 2026-01-24
+> **Status:** Pending Approval
+
+---
+
+## 1. 목표
+
+1. **세션 추적**: `CLAUDE_SESSION_ID` 파일 기반 레지스트리로 터미널 식별
+2. **Machine-Readable 프롬프트**: Worker 프롬프트를 YAML 파일로 전달
+3. **Orchestrator 워크플로우 최적화**: Main Agent가 파일 생성 → Worker가 파일 읽기
+
+---
+
+## 2. 핵심 설계 결정
+
+### 2.1 환경변수 대신 파일 기반 세션 레지스트리
+
+**문제**: Hook의 `export`는 부모 프로세스로 전파 불가 (shell 한계)
+
+**해결**: `.agent/tmp/current_session.json` 파일 사용
+
+```json
+{
+  "sessionId": "1769181929-610430",
+  "startTime": "2026-01-24T00:00:00Z",
+  "pid": "610430",
+  "status": "active"
+}
+```
+
+### 2.2 Worker 프롬프트 파일 구조
+
+```yaml
+---
+promptId: abc12345
+sessionId: 1769181929-610430
+timestamp: 2026-01-24T00:00:00Z
+subagentType: Explore
+model: opus
+outputFormat: L1/L2/L3
+cacheInputHash: def67890
+---
+
+## Task Description
+{Original prompt content}
+
+## Output Format
+{L1/L2/L3 instructions}
+```
+
+### 2.3 프롬프트 파일 Lifecycle
+
+```
+pending/ → active/ → completed/
+   │          │           │
+   │          │           └── 완료 후 아카이브 (audit trail)
+   │          └── Worker 실행 중
+   └── Main Agent가 생성, Worker 대기
+```
+
+---
+
+## 3. 디렉토리 구조
+
+```
+.agent/
+├── prompts/                    # NEW
+│   ├── pending/                # 대기 중인 프롬프트
+│   │   └── {session8}-{promptId}.yaml
+│   ├── active/                 # 실행 중
+│   └── completed/              # 완료됨
+├── tmp/
+│   ├── current_session.json    # NEW: 세션 레지스트리
+│   └── sessions/
+└── outputs/                    # 기존 L3 파일
+```
+
+---
+
+## 4. 수정 파일 목록
+
+| 파일 | 수정 내용 | 우선순위 |
+|------|----------|----------|
+| `.claude/hooks/session-start.sh` | current_session.json 생성, prompts 디렉토리 초기화 | P1 |
+| `.claude/hooks/task-pipeline/pd-task-interceptor.sh` | 세션 ID 파일 읽기, 프롬프트 파일 생성 | P1 |
+| `.claude/hooks/task-pipeline/pd-task-processor.sh` | 프롬프트 파일 lifecycle 관리 | P2 |
+| `.claude/hooks/session-health.sh` | 세션 ID 파일에서 읽기 | P2 |
+| `.claude/hooks/session-end.sh` | 세션 상태 업데이트 | P3 |
+
+---
+
+## 5. 구현 단계
+
+### Phase 1: 세션 레지스트리 (session-start.sh)
+
+**위치**: 라인 301 이후
+
+```bash
+# Write current session to file registry
+CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"
+cat > "$CURRENT_SESSION_FILE" << SESSION_EOF
+{
+  "sessionId": "$SESSION_ID",
+  "startTime": "$TIMESTAMP",
+  "pid": "$$",
+  "status": "active"
+}
+SESSION_EOF
+
+# Create prompts directories
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null
+```
+
+### Phase 2: 프롬프트 파일 생성 (pd-task-interceptor.sh)
+
+**위치**: 라인 160 이후 (세션 ID 읽기)
+
+```bash
+# Read session from file registry
+SESSION_REGISTRY="${HOME}/.agent/tmp/current_session.json"
+ORCHESTRATOR_SESSION_ID="unknown"
+if [ -f "$SESSION_REGISTRY" ]; then
+    ORCHESTRATOR_SESSION_ID=$(json_get '.sessionId' "$(cat "$SESSION_REGISTRY")")
+fi
+```
+
+**위치**: 라인 290 이후 (새 함수)
+
+```bash
+create_worker_prompt_file() {
+    local subagent_type="$1"
+    local original_prompt="$2"
+    local cache_hash="$3"
+
+    local prompt_id=$(date +%s | tail -c 9)
+    local session_prefix="${ORCHESTRATOR_SESSION_ID:0:8}"
+    local prompt_file="${WORKSPACE_ROOT}/.agent/prompts/pending/${session_prefix}-${prompt_id}.yaml"
+
+    cat > "$prompt_file" << PROMPT_EOF
+---
+promptId: $prompt_id
+sessionId: $ORCHESTRATOR_SESSION_ID
+timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+subagentType: $subagent_type
+model: opus
+outputFormat: L1/L2/L3
+cacheInputHash: $cache_hash
+---
+
+$original_prompt
+
+$L1L2L3_PROMPT
+PROMPT_EOF
+
+    echo "$prompt_file"
+}
+```
+
+### Phase 3: 프롬프트 Lifecycle (pd-task-processor.sh)
+
+**위치**: 라인 270 이후
+
+```bash
+# Move prompt file: pending → completed
+PROMPT_FILE=$(json_get '.tool_input._workerPromptFile' "$INPUT")
+if [[ -n "$PROMPT_FILE" && -f "$PROMPT_FILE" ]]; then
+    COMPLETED_DIR="${WORKSPACE_ROOT}/.agent/prompts/completed"
+    mv "$PROMPT_FILE" "$COMPLETED_DIR/" 2>/dev/null || true
+fi
+```
+
+---
+
+## 6. 성능 목표
+
+| 작업 | 목표 | 방법 |
+|------|------|------|
+| 세션 파일 읽기 | <1ms | 단일 JSON 파일 |
+| 프롬프트 파일 쓰기 | <2ms | 사전 생성된 디렉토리 |
+| 전체 오버헤드 | <5ms | jq 우선 사용 |
+
+---
+
+## 7. 검증 방법
+
+### 7.1 세션 ID 확인
+```bash
+cat ~/.agent/tmp/current_session.json
+# 예상: {"sessionId": "...", "status": "active"}
+```
+
+### 7.2 프롬프트 파일 생성 확인
+```bash
+ls -la .agent/prompts/pending/
+# Task 호출 후 YAML 파일 존재 확인
+```
+
+### 7.3 Lifecycle 확인
+```bash
+# Task 완료 후
+ls -la .agent/prompts/completed/
+# 프롬프트 파일이 이동됨 확인
+```
+
+### 7.4 성능 벤치마크
+```bash
+# 10회 Task 실행 시간 측정
+time for i in {1..10}; do
+  # Task subagent 호출
+done
+# 기존 대비 <5ms 증가 확인
+```
+
+---
+
+## 8. Rollback Plan
+
+문제 발생 시:
+1. `session-start.sh`에서 current_session.json 생성 제거
+2. `pd-task-interceptor.sh`에서 프롬프트 파일 생성 제거
+3. 기존 inline JSON 방식으로 자동 폴백
+4. `.agent/prompts/` 디렉토리는 유지 (데이터 손실 없음)
+
+---
+
+## 9. Task Decomposition (N개 터미널 병렬 작업)
+
+### 9.1 전체 컨텍스트 파일 구조
+
+**핵심 원칙**: 각 Worker가 **전체 흐름 + 자신의 작업 범위**를 동시에 파악
+
+```
+.agent/prompts/
+├── _context.yaml              # 전체 프로젝트 컨텍스트 (모든 Worker 공유)
+├── _progress.yaml             # 실시간 진행 상황 (Worker가 업데이트)
+├── pending/
+│   ├── worker-b-task.yaml     # Terminal B 전용
+│   ├── worker-c-task.yaml     # Terminal C 전용
+│   └── worker-d-task.yaml     # Terminal D 전용
+└── completed/
+```
+
+### 9.2 _context.yaml (전체 흐름 - 모든 Worker 필독)
+
+```yaml
+# .agent/prompts/_context.yaml
+# 모든 Worker가 작업 시작 전 반드시 읽어야 함
+
+version: "1.0"
+project: "Session-Aware Worker Prompt System"
+orchestrator: "Terminal-A (Main Agent)"
+lastUpdated: "2026-01-24T00:30:00Z"
+
+# 전체 목표 (Big Picture)
+objectives:
+  - "세션 추적: CLAUDE_SESSION_ID 파일 기반 레지스트리"
+  - "Machine-Readable 프롬프트: YAML 파일 전달"
+  - "성능 목표: <5ms 오버헤드"
+
+# 구현 단계 (전체 흐름)
+phases:
+  phase1:
+    name: "세션 레지스트리"
+    status: pending  # pending | in_progress | completed
+    owner: "Terminal-B"
+    files:
+      - ".claude/hooks/session-start.sh"
+    dependencies: []
+
+  phase2:
+    name: "프롬프트 파일 생성"
+    status: pending
+    owner: "Terminal-C"
+    files:
+      - ".claude/hooks/task-pipeline/pd-task-interceptor.sh"
+    dependencies: ["phase1"]  # phase1 완료 후 시작
+
+  phase3:
+    name: "프롬프트 Lifecycle"
+    status: pending
+    owner: "Terminal-D"
+    files:
+      - ".claude/hooks/task-pipeline/pd-task-processor.sh"
+    dependencies: ["phase2"]
+
+# 공유 규칙
+sharedRules:
+  - "수정 전 반드시 Read로 파일 확인"
+  - "완료 시 _progress.yaml 업데이트"
+  - "충돌 시 Orchestrator에 보고"
+```
+
+### 9.3 _progress.yaml (실시간 진행 상황)
+
+```yaml
+# .agent/prompts/_progress.yaml
+# Worker가 작업 시작/완료 시 업데이트
+
+lastUpdated: "2026-01-24T00:30:00Z"
+
+terminals:
+  terminal-b:
+    status: "in_progress"  # idle | in_progress | completed | blocked
+    currentTask: "phase1"
+    startedAt: "2026-01-24T00:30:00Z"
+    lastActivity: "2026-01-24T00:35:00Z"
+
+  terminal-c:
+    status: "idle"
+    currentTask: null
+    blockedBy: "phase1"    # 의존성으로 대기 중
+
+  terminal-d:
+    status: "idle"
+    currentTask: null
+    blockedBy: "phase2"
+
+completedTasks:
+  - taskId: "phase0-setup"
+    completedBy: "terminal-a"
+    completedAt: "2026-01-24T00:25:00Z"
+```
+
+### 9.4 Worker별 Task 파일 구조
+
+**Terminal B Task**: `worker-b-task.yaml`
+
+```yaml
+---
+# Worker Task Manifest
+taskId: "phase1-session-registry"
+assignedTo: "Terminal-B"
+orchestrator: "Terminal-A"
+
+# 전체 컨텍스트 참조 (필수)
+contextFile: ".agent/prompts/_context.yaml"
+progressFile: ".agent/prompts/_progress.yaml"
+
+# 내 작업 범위
+scope:
+  phase: "phase1"
+  name: "세션 레지스트리 구현"
+
+  # 수정 대상 파일 (이것만 수정)
+  targetFiles:
+    - path: ".claude/hooks/session-start.sh"
+      sections:
+        - "라인 301 이후: current_session.json 생성"
+        - "prompts 디렉토리 초기화"
+      readOnly: false
+
+  # 참조용 파일 (읽기만)
+  referenceFiles:
+    - path: ".claude/hooks/session-end.sh"
+      reason: "세션 종료 패턴 참고"
+
+# 의존성
+dependencies: []  # 없음 - 즉시 시작 가능
+
+# 완료 조건
+completionCriteria:
+  - "current_session.json 파일 생성 로직 추가"
+  - ".agent/prompts/ 디렉토리 생성 로직 추가"
+  - "테스트: 새 세션 시작 시 파일 생성 확인"
+
+# 완료 후 행동
+onComplete:
+  - "progress.yaml 업데이트: terminal-b.status = completed"
+  - "context.yaml 업데이트: phase1.status = completed"
+  - "Orchestrator에 보고"
+---
+
+## Task Description
+
+session-start.sh에 세션 레지스트리 파일 생성 로직을 추가합니다.
+
+### 구현 내용
+
+1. **current_session.json 생성** (라인 301 이후)
+
+\`\`\`bash
+CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"
+cat > "$CURRENT_SESSION_FILE" << SESSION_EOF
+{
+  "sessionId": "$SESSION_ID",
+  "startTime": "$TIMESTAMP",
+  "pid": "$$",
+  "status": "active"
+}
+SESSION_EOF
+\`\`\`
+
+2. **prompts 디렉토리 생성**
+
+\`\`\`bash
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null
+\`\`\`
+
+### 검증 방법
+
+\`\`\`bash
+# 새 터미널에서 Claude 시작 후
+cat ~/.agent/tmp/current_session.json
+ls -la .agent/prompts/
+\`\`\`
+```
+
+### 9.5 Orchestrator 워크플로우
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Terminal-A (Orchestrator)                                   │
+│                                                             │
+│ 1. _context.yaml 생성 (전체 흐름 정의)                       │
+│ 2. _progress.yaml 초기화                                    │
+│ 3. Worker Task 파일 생성 (worker-b/c/d-task.yaml)          │
+│ 4. Worker들에게 "파일 읽어서 작업해" 지시                    │
+│ 5. _progress.yaml 모니터링                                  │
+│ 6. 완료 시 검증 및 다음 단계 배포                            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+       ┌───────────────┼───────────────┐
+       ▼               ▼               ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Terminal-B  │ │ Terminal-C  │ │ Terminal-D  │
+│             │ │             │ │             │
+│ 1. Read     │ │ 1. Read     │ │ 1. Read     │
+│  _context   │ │  _context   │ │  _context   │
+│             │ │             │ │             │
+│ 2. Read     │ │ 2. Read     │ │ 2. Read     │
+│  worker-b   │ │  worker-c   │ │  worker-d   │
+│  -task.yaml │ │  -task.yaml │ │  -task.yaml │
+│             │ │             │ │             │
+│ 3. 작업     │ │ 3. 대기     │ │ 3. 대기     │
+│  (phase1)   │ │  (phase1   │ │  (phase2   │
+│             │ │   완료대기) │ │   완료대기) │
+│             │ │             │ │             │
+│ 4. Update   │ │             │ │             │
+│  _progress  │ │             │ │             │
+└─────────────┘ └─────────────┘ └─────────────┘
+```
+
+---
+
+## 10. 현재 구현을 위한 Task 분배
+
+### Terminal-B 프롬프트 (Phase 1: 세션 레지스트리)
+
+```
+## 작업 지시
+
+1. 먼저 컨텍스트 파일을 읽어주세요:
+   - .agent/prompts/_context.yaml (전체 흐름)
+   - .agent/prompts/worker-b-task.yaml (내 작업)
+
+2. 작업 대상 파일 확인:
+   - .claude/hooks/session-start.sh
+
+3. 구현:
+   - 라인 301 이후에 current_session.json 생성 로직 추가
+   - prompts 디렉토리 초기화 로직 추가
+
+4. 완료 후:
+   - .agent/prompts/_progress.yaml 업데이트
+   - L1/L2/L3 형식으로 결과 보고
+```
+
+### Terminal-C 프롬프트 (Phase 2: 프롬프트 파일 생성)
+
+```
+## 작업 지시
+
+1. 먼저 컨텍스트 파일을 읽어주세요:
+   - .agent/prompts/_context.yaml (전체 흐름)
+   - .agent/prompts/_progress.yaml (현재 진행 상황)
+   - .agent/prompts/worker-c-task.yaml (내 작업)
+
+2. 의존성 확인:
+   - phase1 (Terminal-B) 완료 여부 확인
+   - 미완료 시 대기
+
+3. 작업 대상 파일:
+   - .claude/hooks/task-pipeline/pd-task-interceptor.sh
+
+4. 구현:
+   - 세션 ID 파일 읽기 로직
+   - create_worker_prompt_file() 함수 추가
+```
+
+### Terminal-D 프롬프트 (Phase 3: 프롬프트 Lifecycle)
+
+```
+## 작업 지시
+
+1. 먼저 컨텍스트 파일을 읽어주세요:
+   - .agent/prompts/_context.yaml (전체 흐름)
+   - .agent/prompts/_progress.yaml (현재 진행 상황)
+   - .agent/prompts/worker-d-task.yaml (내 작업)
+
+2. 의존성 확인:
+   - phase2 (Terminal-C) 완료 여부 확인
+
+3. 작업 대상 파일:
+   - .claude/hooks/task-pipeline/pd-task-processor.sh
+
+4. 구현:
+   - 프롬프트 파일 lifecycle 관리 (pending → completed)
+```
+
+---
+
+## 11. Worker가 전체 흐름을 잃지 않는 방법
+
+### 11.1 매 작업 시작 전 체크리스트
+
+```yaml
+# Worker 체크리스트 (모든 터미널 공통)
+beforeStart:
+  - [ ] Read .agent/prompts/_context.yaml   # 전체 목표 확인
+  - [ ] Read .agent/prompts/_progress.yaml  # 현재 진행 상황
+  - [ ] Read 내 task 파일                   # 내 작업 범위 확인
+  - [ ] dependencies 확인                   # 선행 작업 완료 여부
+
+duringWork:
+  - [ ] targetFiles만 수정                  # 범위 초과 금지
+  - [ ] referenceFiles는 읽기만             # 참조용
+
+afterComplete:
+  - [ ] _progress.yaml 업데이트             # 상태 반영
+  - [ ] L1/L2/L3 형식으로 결과 보고         # 표준 출력
+```
+
+### 11.2 컨텍스트 유지 구조
+
+```
+┌────────────────────────────────────────────────────┐
+│ _context.yaml (불변)                               │
+│ - 전체 목표                                        │
+│ - 모든 Phase 목록                                  │
+│ - 의존성 그래프                                    │
+│ → Worker는 "내가 어디에 있는지" 항상 파악 가능     │
+└────────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌────────────────────────────────────────────────────┐
+│ _progress.yaml (가변)                              │
+│ - 실시간 진행 상황                                 │
+│ - 누가 무엇을 하고 있는지                          │
+│ → Worker는 "다른 터미널 상황"도 파악 가능          │
+└────────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌────────────────────────────────────────────────────┐
+│ worker-{x}-task.yaml (터미널별)                    │
+│ - 내 작업 범위만 명시                              │
+│ - 수정 대상 파일 목록                              │
+│ - 완료 조건                                        │
+│ → Worker는 "내 일에만 집중" 가능                   │
+└────────────────────────────────────────────────────┘
+```

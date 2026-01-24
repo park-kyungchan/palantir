@@ -1,0 +1,11 @@
+"""
+Security module - Row-level security and access control.
+
+Exports:
+    - RestrictedViewPolicy: Row-level security policy (GAP-001)
+    - PolicyTerm: AND/OR policy term composition
+    - AccessLevel: Access level definitions
+"""
+
+# Exports will be added as modules are implemented
+__all__: list[str] = []

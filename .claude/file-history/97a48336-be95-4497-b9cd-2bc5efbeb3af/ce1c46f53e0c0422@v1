@@ -1,0 +1,462 @@
+"""
+SemanticGraph Schema for Stage E (Semantic Graph) Output.
+
+Stage E builds a semantic graph from aligned elements:
+- Nodes: Mathematical elements with properties
+- Edges: Relationships between elements
+- Threshold-based confidence validation
+
+Schema Version: 2.0.0
+"""
+
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+from pydantic import Field, model_validator
+
+from .common import (
+    BBox,
+    Confidence,
+    MathpixBaseModel,
+    Provenance,
+    PipelineStage,
+    ReviewMetadata,
+    ReviewSeverity,
+    utc_now,
+)
+
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+class NodeType(str, Enum):
+    """Types of semantic graph nodes."""
+    # Geometric
+    POINT = "point"
+    LINE = "line"
+    LINE_SEGMENT = "line_segment"
+    RAY = "ray"
+    CIRCLE = "circle"
+    POLYGON = "polygon"
+    ANGLE = "angle"
+
+    # Algebraic
+    EQUATION = "equation"
+    EXPRESSION = "expression"
+    VARIABLE = "variable"
+    CONSTANT = "constant"
+    FUNCTION = "function"
+
+    # Graph elements
+    AXIS = "axis"
+    CURVE = "curve"
+    ASYMPTOTE = "asymptote"
+    INTERCEPT = "intercept"
+
+    # Labels and text
+    LABEL = "label"
+    ANNOTATION = "annotation"
+
+    # Container
+    REGION = "region"
+    COORDINATE_SYSTEM = "coordinate_system"
+
+
+class EdgeType(str, Enum):
+    """Types of semantic graph edges."""
+    # Spatial relationships
+    INTERSECTS = "intersects"
+    CONTAINS = "contains"
+    CONTAINED_BY = "contained_by"
+    ADJACENT_TO = "adjacent_to"
+    PARALLEL_TO = "parallel_to"
+    PERPENDICULAR_TO = "perpendicular_to"
+
+    # Labeling
+    LABELS = "labels"
+    LABELED_BY = "labeled_by"
+
+    # Mathematical relationships
+    EQUALS = "equals"
+    DEFINED_BY = "defined_by"
+    DERIVED_FROM = "derived_from"
+    GRAPH_OF = "graph_of"
+
+    # Points on curves
+    LIES_ON = "lies_on"
+    PASSES_THROUGH = "passes_through"
+
+    # Function relationships
+    DOMAIN_OF = "domain_of"
+    RANGE_OF = "range_of"
+    ASYMPTOTE_OF = "asymptote_of"
+
+
+# =============================================================================
+# Node Model
+# =============================================================================
+
+class NodeProperties(MathpixBaseModel):
+    """Properties specific to different node types."""
+    # Point properties
+    coordinates: Optional[Dict[str, float]] = Field(default=None)
+    point_label: Optional[str] = Field(default=None)
+
+    # Line/curve properties
+    equation: Optional[str] = Field(default=None)
+    slope: Optional[float] = Field(default=None)
+    y_intercept: Optional[float] = Field(default=None)
+
+    # Circle properties
+    center: Optional[Dict[str, float]] = Field(default=None)
+    radius: Optional[float] = Field(default=None)
+
+    # Angle properties
+    measure: Optional[float] = Field(default=None)
+    measure_unit: Optional[str] = Field(default="degrees")
+
+    # Function properties
+    function_type: Optional[str] = Field(default=None)
+    domain: Optional[str] = Field(default=None)
+    range: Optional[str] = Field(default=None)
+
+    # General
+    latex: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+
+
+class SemanticNode(MathpixBaseModel):
+    """A node in the semantic graph.
+
+    Represents a mathematical element with:
+    - Type and label
+    - Spatial location (bbox)
+    - Confidence with threshold validation
+    - Type-specific properties
+    """
+    id: str = Field(..., description="Unique node identifier")
+    node_type: NodeType
+    label: str = Field(..., description="Human-readable label")
+
+    # Spatial
+    bbox: Optional[BBox] = Field(default=None)
+
+    # Confidence with threshold
+    confidence: Confidence
+    threshold_passed: bool = Field(default=True)
+    applied_threshold: float = Field(default=0.60)
+
+    # Properties
+    properties: NodeProperties = Field(default_factory=NodeProperties)
+
+    # Source tracking
+    source_element_ids: List[str] = Field(
+        default_factory=list,
+        description="IDs from Stage C/D elements"
+    )
+
+    # Review
+    review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+
+    @model_validator(mode="after")
+    def check_threshold(self) -> "SemanticNode":
+        """Set review required if below threshold."""
+        if self.confidence.value < self.applied_threshold:
+            self.threshold_passed = False
+            self.review.review_required = True
+            self.review.review_severity = ReviewSeverity.HIGH
+            self.review.review_reason = (
+                f"Node confidence {self.confidence.value:.2f} below "
+                f"threshold {self.applied_threshold:.2f}"
+            )
+        return self
+
+
+# =============================================================================
+# Edge Model
+# =============================================================================
+
+class SemanticEdge(MathpixBaseModel):
+    """An edge in the semantic graph.
+
+    Represents a relationship between two nodes with:
+    - Source and target node IDs
+    - Relationship type
+    - Confidence with threshold validation
+    """
+    id: str = Field(..., description="Unique edge identifier")
+    source_id: str = Field(..., description="Source node ID")
+    target_id: str = Field(..., description="Target node ID")
+    edge_type: EdgeType
+
+    # Confidence with threshold
+    confidence: Confidence
+    threshold_passed: bool = Field(default=True)
+    applied_threshold: float = Field(default=0.55)
+
+    # Edge properties
+    properties: Dict[str, Any] = Field(default_factory=dict)
+    description: Optional[str] = Field(default=None)
+
+    # Bidirectional flag
+    bidirectional: bool = Field(default=False)
+
+    # Review
+    review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+
+    @model_validator(mode="after")
+    def check_threshold(self) -> "SemanticEdge":
+        """Set review required if below threshold."""
+        if self.confidence.value < self.applied_threshold:
+            self.threshold_passed = False
+            self.review.review_required = True
+            self.review.review_severity = ReviewSeverity.MEDIUM
+            self.review.review_reason = (
+                f"Edge confidence {self.confidence.value:.2f} below "
+                f"threshold {self.applied_threshold:.2f}"
+            )
+        return self
+
+
+# =============================================================================
+# Graph Statistics
+# =============================================================================
+
+class GraphStatistics(MathpixBaseModel):
+    """Statistics about the semantic graph."""
+    total_nodes: int = Field(default=0)
+    total_edges: int = Field(default=0)
+
+    # Node type distribution
+    node_type_counts: Dict[str, int] = Field(default_factory=dict)
+
+    # Edge type distribution
+    edge_type_counts: Dict[str, int] = Field(default_factory=dict)
+
+    # Threshold statistics
+    nodes_above_threshold: int = Field(default=0)
+    nodes_below_threshold: int = Field(default=0)
+    edges_above_threshold: int = Field(default=0)
+    edges_below_threshold: int = Field(default=0)
+
+    # Confidence distribution
+    avg_node_confidence: float = Field(default=0.0)
+    avg_edge_confidence: float = Field(default=0.0)
+    min_confidence: float = Field(default=1.0)
+    max_confidence: float = Field(default=0.0)
+
+    # Connectivity
+    connected_components: int = Field(default=0)
+    isolated_nodes: int = Field(default=0)
+
+
+# =============================================================================
+# Main Schema
+# =============================================================================
+
+class SemanticGraph(MathpixBaseModel):
+    """Stage E output: Semantic Graph.
+
+    A graph representation of mathematical content:
+    - nodes: Mathematical elements (points, lines, equations, etc.)
+    - edges: Relationships between elements
+
+    v2.0.0 Additions:
+    - Threshold integration for node/edge validation
+    - Confidence propagation from Stage C/D
+    - Graph-level statistics
+    """
+    # Metadata
+    schema_version: str = Field(default="2.0.0")
+    image_id: str = Field(..., description="Source image identifier")
+    alignment_report_id: str = Field(..., description="Reference to Stage D output")
+    provenance: Provenance = Field(default_factory=lambda: Provenance(
+        stage=PipelineStage.SEMANTIC_GRAPH,
+        model="graph-builder-v2"
+    ))
+
+    # Graph structure
+    nodes: List[SemanticNode] = Field(default_factory=list)
+    edges: List[SemanticEdge] = Field(default_factory=list)
+
+    # Graph-level properties
+    coordinate_system: Optional[str] = Field(default=None)
+    graph_type: Optional[str] = Field(default=None, description="e.g., 'function_graph', 'geometry'")
+    description: Optional[str] = Field(default=None)
+
+    # Statistics
+    statistics: GraphStatistics = Field(default_factory=GraphStatistics)
+
+    # Threshold configuration used
+    threshold_config_version: str = Field(default="2.0.0")
+    base_node_threshold: float = Field(default=0.60)
+    base_edge_threshold: float = Field(default=0.55)
+
+    # Overall confidence
+    overall_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    # Review
+    review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+    nodes_needing_review: int = Field(default=0)
+    edges_needing_review: int = Field(default=0)
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=utc_now)
+    processing_time_ms: Optional[float] = Field(default=None)
+
+    @model_validator(mode="after")
+    def compute_statistics(self) -> "SemanticGraph":
+        """Compute graph statistics from nodes and edges."""
+        self.statistics.total_nodes = len(self.nodes)
+        self.statistics.total_edges = len(self.edges)
+
+        # Node type distribution
+        node_types: Dict[str, int] = {}
+        for node in self.nodes:
+            key = node.node_type.value
+            node_types[key] = node_types.get(key, 0) + 1
+        self.statistics.node_type_counts = node_types
+
+        # Edge type distribution
+        edge_types: Dict[str, int] = {}
+        for edge in self.edges:
+            key = edge.edge_type.value
+            edge_types[key] = edge_types.get(key, 0) + 1
+        self.statistics.edge_type_counts = edge_types
+
+        # Threshold statistics
+        self.statistics.nodes_above_threshold = len([
+            n for n in self.nodes if n.threshold_passed
+        ])
+        self.statistics.nodes_below_threshold = len([
+            n for n in self.nodes if not n.threshold_passed
+        ])
+        self.statistics.edges_above_threshold = len([
+            e for e in self.edges if e.threshold_passed
+        ])
+        self.statistics.edges_below_threshold = len([
+            e for e in self.edges if not e.threshold_passed
+        ])
+
+        # Confidence distribution
+        all_confidences = (
+            [n.confidence.value for n in self.nodes] +
+            [e.confidence.value for e in self.edges]
+        )
+        if all_confidences:
+            self.statistics.min_confidence = min(all_confidences)
+            self.statistics.max_confidence = max(all_confidences)
+
+        if self.nodes:
+            self.statistics.avg_node_confidence = (
+                sum(n.confidence.value for n in self.nodes) / len(self.nodes)
+            )
+        if self.edges:
+            self.statistics.avg_edge_confidence = (
+                sum(e.confidence.value for e in self.edges) / len(self.edges)
+            )
+
+        # Connectivity analysis
+        self._compute_connectivity()
+
+        # Review counts
+        self.nodes_needing_review = len([
+            n for n in self.nodes if n.review.review_required
+        ])
+        self.edges_needing_review = len([
+            e for e in self.edges if e.review.review_required
+        ])
+
+        # Overall review
+        if self.nodes_needing_review > 0 or self.edges_needing_review > 0:
+            self.review.review_required = True
+            self.review.review_severity = ReviewSeverity.MEDIUM
+            self.review.review_reason = (
+                f"{self.nodes_needing_review} nodes, "
+                f"{self.edges_needing_review} edges need review"
+            )
+
+        # Overall confidence
+        if all_confidences:
+            self.overall_confidence = sum(all_confidences) / len(all_confidences)
+
+        return self
+
+    def _compute_connectivity(self) -> None:
+        """Compute connected components and isolated nodes."""
+        if not self.nodes:
+            return
+
+        # Build adjacency set
+        node_ids = {n.id for n in self.nodes}
+        connected: Dict[str, Set[str]] = {nid: set() for nid in node_ids}
+
+        for edge in self.edges:
+            if edge.source_id in connected and edge.target_id in connected:
+                connected[edge.source_id].add(edge.target_id)
+                connected[edge.target_id].add(edge.source_id)
+
+        # Find connected components using DFS
+        visited: Set[str] = set()
+        components = 0
+        isolated = 0
+
+        for node_id in node_ids:
+            if node_id not in visited:
+                if not connected[node_id]:
+                    isolated += 1
+                components += 1
+                # DFS
+                stack = [node_id]
+                while stack:
+                    current = stack.pop()
+                    if current not in visited:
+                        visited.add(current)
+                        stack.extend(connected[current] - visited)
+
+        self.statistics.connected_components = components
+        self.statistics.isolated_nodes = isolated
+
+    def get_node(self, node_id: str) -> Optional[SemanticNode]:
+        """Get a node by ID."""
+        for node in self.nodes:
+            if node.id == node_id:
+                return node
+        return None
+
+    def get_edges_for_node(self, node_id: str) -> List[SemanticEdge]:
+        """Get all edges connected to a node."""
+        return [
+            e for e in self.edges
+            if e.source_id == node_id or e.target_id == node_id
+        ]
+
+    def get_neighbors(self, node_id: str) -> List[str]:
+        """Get IDs of neighboring nodes."""
+        neighbors = set()
+        for edge in self.edges:
+            if edge.source_id == node_id:
+                neighbors.add(edge.target_id)
+            elif edge.target_id == node_id:
+                neighbors.add(edge.source_id)
+        return list(neighbors)
+
+
+# =============================================================================
+# Export
+# =============================================================================
+
+__all__ = [
+    # Enums
+    "NodeType",
+    "EdgeType",
+    # Models
+    "NodeProperties",
+    "SemanticNode",
+    "SemanticEdge",
+    "GraphStatistics",
+    # Main Schema
+    "SemanticGraph",
+]

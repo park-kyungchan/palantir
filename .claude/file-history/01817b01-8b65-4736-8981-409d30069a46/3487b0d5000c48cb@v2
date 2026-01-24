@@ -1,0 +1,147 @@
+# Worker Prompt: Implement /collect Skill
+# Task ID: #2
+# Assigned To: terminal-b
+# Priority: P0 (Critical)
+# Created: 2026-01-24
+
+---
+nativeTaskId: "2"
+terminalId: "terminal-b"
+status: pending
+createdAt: "2026-01-24T18:15:00Z"
+
+---
+
+## Objective
+
+Implement the `/collect` skill that aggregates worker results and verifies task completion.
+
+## Location
+
+Create: `.claude/skills/collect/SKILL.md`
+
+## Reference Files
+
+Read these files for context and patterns:
+
+1. **Existing Skill Structure:**
+   - `.claude/skills/assign/SKILL.md` - Similar pattern (TaskList integration)
+   - `.claude/skills/orchestrate/SKILL.md` - File generation patterns
+
+2. **Architecture Reference:**
+   - `.claude/CLAUDE.md` - Section 3.1 E2E Pipeline
+   - `.agent/prompts/_progress.yaml` - Progress tracking format
+
+3. **Output Locations:**
+   - `.agent/outputs/Worker/` - Where worker outputs are stored
+   - `.agent/outputs/synthesis/` - Where collection report should go
+
+## Implementation Requirements
+
+### 1. Frontmatter (V2.1.19 Compliant)
+
+```yaml
+---
+name: collect
+description: Aggregate worker results, verify completion, detect blockers
+user-invocable: true
+disable-model-invocation: false
+context: standard
+model: sonnet
+version: 1.0.0
+argument-hint: "[--all | --phase <phase-id>]"
+---
+```
+
+### 2. Core Functions
+
+```javascript
+// 1. verifyAllComplete()
+//    - TaskList() to get all tasks
+//    - Check status === "completed" for all owned tasks
+//    - Return { complete: boolean, pending: Task[], failed: Task[] }
+
+// 2. aggregateOutputs()
+//    - Glob(".agent/outputs/Worker/*.md")
+//    - Parse L1 summary from each file
+//    - Merge into unified structure
+
+// 3. detectBlockers()
+//    - Check for tasks with status !== "completed"
+//    - Identify circular dependencies
+//    - Return blocker list with recommendations
+
+// 4. generateReport()
+//    - Output: .agent/outputs/collection_report.md
+//    - Include: task summary, output aggregation, blockers, next action
+```
+
+### 3. Output Format
+
+```markdown
+# Collection Report
+
+## Summary
+- Total Tasks: X
+- Completed: Y
+- Pending: Z
+- Failed: W
+
+## Task Status
+
+| Task ID | Subject | Status | Owner |
+|---------|---------|--------|-------|
+| #1 | ... | completed | terminal-b |
+| #2 | ... | in_progress | terminal-c |
+
+## Aggregated Outputs
+
+### Task #1: [Subject]
+[L1 Summary from worker output]
+
+### Task #2: [Subject]
+[L1 Summary from worker output]
+
+## Blockers
+- [List any blockers]
+
+## Recommended Next Action
+- [ ] `/synthesis` - All tasks complete, proceed to validation
+- [ ] `Wait` - X tasks still pending
+- [ ] `/clarify` - Critical blocker detected
+```
+
+### 4. Invocation Examples
+
+```bash
+/collect              # Collect all tasks
+/collect --all        # Same as above
+/collect --phase p1   # Collect only Phase 1 tasks
+```
+
+## Completion Criteria
+
+- [ ] SKILL.md file created at correct location
+- [ ] Frontmatter V2.1.19 compliant
+- [ ] TaskList integration working
+- [ ] Output aggregation from .agent/outputs/Worker/
+- [ ] Collection report generation
+- [ ] Blocker detection logic
+- [ ] Example usage section with outputs
+
+## Workflow
+
+1. `TaskUpdate(taskId="2", status="in_progress")`
+2. Read reference files
+3. Create `.claude/skills/collect/` directory
+4. Implement SKILL.md
+5. Test with `TaskList` to verify integration
+6. `TaskUpdate(taskId="2", status="completed")`
+7. Notify Orchestrator
+
+## Notes
+
+- Follow the same documentation pattern as /assign skill
+- Use pseudocode for implementation (JavaScript-like)
+- Include error handling section
+- Add testing checklist at the end

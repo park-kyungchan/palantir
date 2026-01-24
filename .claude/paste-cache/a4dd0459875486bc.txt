@@ -1,0 +1,11 @@
+  ## Work Instructions                                                                                                                      
+                                                                                                                                            
+  1. Read context files:                                                                                                                    
+     - .agent/prompts/_context.yaml                                                                                                         
+     - .agent/prompts/worker-b-task.yaml                                                                                                    
+                                                                                                                                            
+  2. Target file: .claude/hooks/session-start.sh                                                                                            
+                                                                                                                                            
+  3. Implement per task file specifications                                                                                                 
+                                                                                                                                            
+  4. On complete: Update _progress.yaml and report L1/L2/L3

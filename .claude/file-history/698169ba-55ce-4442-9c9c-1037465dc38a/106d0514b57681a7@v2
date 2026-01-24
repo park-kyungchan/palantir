@@ -1,0 +1,103 @@
+# ODA L1/L2/L3 Output Layer Native Refactoring Plan
+
+> **Created:** 2026-01-20
+> **Status:** approved
+> **Agent ID:** ab6685e
+
+## Executive Summary
+
+L1/L2/L3 Output Layer를 Claude Code Native Capabilities로 대체:
+- `run_in_background=true` → L1 (경로만 반환)
+- `Read(output_file)` → L2 (선택적 읽기)
+- `TaskOutput` → L3 (전체 Raw)
+
+## Current State
+
+| File | Lines | Status |
+|------|-------|--------|
+| `output_layer_manager.py` | 841 | **DEAD CODE** - 삭제 |
+| `l2_synthesizer.py` | 671 | **DEAD CODE** - 삭제 |
+| `output_schemas.py` | 597 | **부분 사용** - 200줄로 축소 |
+| Hook bug | line 35 | 잘못된 import 수정 필요 |
+
+## Execution Sequence
+
+### Phase 1.3: Clean pycache
+```bash
+rm -rf /home/palantir/park-kyungchan/palantir/lib/oda/planning/__pycache__
+```
+
+### Phase 3.1: Fix Hook Bug
+**File:** `/home/palantir/.claude/hooks/output_preservation_hook.py`
+**Line 35:** Remove invalid import, use inline fallback
+
+### Phase 1.1: Delete output_layer_manager.py
+```bash
+rm /home/palantir/park-kyungchan/palantir/lib/oda/planning/output_layer_manager.py
+```
+**Reduction:** -841 lines
+
+### Phase 1.2: Delete l2_synthesizer.py
+```bash
+rm /home/palantir/park-kyungchan/palantir/lib/oda/planning/l2_synthesizer.py
+```
+**Reduction:** -671 lines
+
+### Phase 2.2: Reduce output_schemas.py
+
+**Keep:**
+- `Severity`, `Finding`, `DependencyInfo`
+- `ExploreOutput`, `PlanPhase`, `RiskItem`, `PlanOutput`
+- `SynthesisOutput`, `ExecutionOutput`
+- `SCHEMA_REGISTRY`, `get_schema`, `get_json_schema`
+
+**Remove:**
+- `AgentSummary` (lines 260-279)
+- `get_schema_prompt_block()` (lines 453-489)
+- `validate_output()` (lines 491-519)
+- `extract_structured_output()` (lines 521-573)
+- Verbose docstrings
+
+**Reduction:** ~-397 lines (597→200)
+
+### Phase 4.1: Update CLAUDE.md
+- Remove OutputLayerManager/L2Synthesizer references
+- Document Native L1/L2/L3 pattern
+
+## Verification
+
+```bash
+# Import check
+python -c "from lib.oda.planning.prompt_templates import PromptTemplateBuilder"
+
+# Schema check
+python -c "from lib.oda.planning.output_schemas import get_json_schema; print(get_json_schema('explore'))"
+
+# Hook syntax
+python -m py_compile /home/palantir/.claude/hooks/output_preservation_hook.py
+```
+
+## Summary
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Total Lines | 3,999 | 2,487 | **-1,512 (38%)** |
+| Dead Code | 1,512 | 0 | Removed |
+| Hook Bug | Yes | No | Fixed |
+
+## Quick Resume
+
+For Auto-Compact recovery:
+1. Read this plan file
+2. Check Phase status below
+3. Continue from last incomplete phase
+
+## Phase Status
+
+- [x] Phase 1.3: Clean pycache (pending)
+- [x] Phase 3.1: Fix hook bug (pending)
+- [ ] Phase 1.1: Delete output_layer_manager.py
+- [ ] Phase 1.2: Delete l2_synthesizer.py
+- [ ] Phase 2.2: Reduce output_schemas.py
+- [ ] Phase 4.1: Update CLAUDE.md
+- [ ] Phase 4.2: Document Native pattern

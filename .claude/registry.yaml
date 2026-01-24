@@ -1,0 +1,274 @@
+# =============================================================
+# Claude Code Component Registry
+# Version: 1.0.0
+# Updated: 2026-01-24
+# =============================================================
+#
+# 이 파일은 Agent, Skill, Hook 간의 관계를 명시적으로 선언합니다.
+# /build 명령어로 생성된 컴포넌트는 자동으로 이 레지스트리에 등록됩니다.
+#
+# =============================================================
+
+version: "1.0.0"
+lastUpdated: "2026-01-24"
+
+# =============================================================
+# AGENTS
+# =============================================================
+agents:
+  onboarding-guide:
+    model: haiku
+    contextMode: standard
+    tools:
+      allowed: [Read]
+      disallowed: []
+    hooks: []
+    skills:
+      provides: []
+      uses: [help-korean, capability-advisor]
+    taskIntegration:
+      enabled: false
+      reason: "Conversational agent - skips L1/L2/L3 format"
+
+  clarify-agent:
+    model: sonnet
+    contextMode: fork
+    tools:
+      allowed: [Read, Grep, Glob, AskUserQuestion, Task, WebSearch, TodoWrite]
+      disallowed: []
+    hooks:
+      preToolUse: [pd-task-interceptor]
+      postToolUse: [pd-task-processor]
+    skills:
+      provides: [clarify]
+      uses: []
+    taskIntegration:
+      enabled: true
+      outputFormat: L1/L2/L3
+      outputPath: ".agent/plans/clarify_{slug}.md"
+
+  pd-readonly-analyzer:
+    model: haiku
+    contextMode: standard
+    tools:
+      allowed: [Read, Grep, Glob, Task]
+      disallowed: [Write, Edit, Bash, NotebookEdit]
+    hooks:
+      preToolUse: [pd-task-interceptor]
+      postToolUse: [pd-task-processor]
+    skills:
+      provides: []
+      uses: []
+    taskIntegration:
+      enabled: true
+      outputFormat: L1/L2/L3
+      outputPath: ".agent/outputs/Explore/{taskId}.md"
+
+  pd-skill-loader:
+    model: sonnet
+    contextMode: standard
+    tools:
+      allowed: [Read, Grep, Glob, Write, Edit]
+      disallowed: []
+    hooks:
+      preToolUse: [pd-task-interceptor]
+      postToolUse: [pd-task-processor]
+    skills:
+      provides: []
+      uses: [pd-analyzer, pd-injector]
+    preloadedSkills: [pd-analyzer, pd-injector]
+    taskIntegration:
+      enabled: true
+      outputFormat: L1/L2/L3
+      outputPath: ".agent/outputs/Plan/{taskId}.md"
+
+# =============================================================
+# SKILLS
+# =============================================================
+skills:
+  commit-push-pr:
+    invocation: "/commit-push-pr"
+    description: "Boris Cherny Pattern 6: Git workflow (commit, push, PR)"
+    tools:
+      allowed: [Bash, Read, Task]
+    hooks:
+      preToolUse: [governance-check, auto-backup]
+      postToolUse: []
+    agents: []
+    taskIntegration:
+      enabled: true
+      delegatesTo: [Explore]
+
+  plan-draft:
+    invocation: "/plan-draft"
+    description: "Socratic Q&A를 통한 계획 초안 작성"
+    tools:
+      allowed: [Read, Grep, Glob, Task, TodoWrite, AskUserQuestion, WebSearch]
+    hooks:
+      preToolUse: []
+      postToolUse: []
+    agents: []
+    taskIntegration:
+      enabled: true
+      outputFormat: INDEX+DETAIL
+      outputPath: ".agent/plans/draft_{slug}.md"
+
+  clarify:
+    invocation: "/clarify"
+    description: "PE 기법을 적용한 요청 명확화"
+    tools:
+      allowed: [Read, Grep, Glob, AskUserQuestion, Task, WebSearch, TodoWrite]
+    hooks:
+      preToolUse: []
+      postToolUse: []
+    agents: [clarify-agent]
+    taskIntegration:
+      enabled: true
+      delegatesTo: [clarify-agent]
+
+  build:
+    invocation: "/build"
+    description: "Unified System Component Builder"
+    tools:
+      allowed: [Read, Grep, Glob, Task, Write, Edit]
+    hooks:
+      preToolUse: []
+      postToolUse: []
+    agents: []
+    cascade:
+      targets: [agent, skill, hook, chain]
+      autoRegister: true
+    taskIntegration:
+      enabled: true
+      delegatesTo: [claude-code-guide]
+
+# =============================================================
+# HOOKS
+# =============================================================
+hooks:
+  # --- SessionStart ---
+  session-start:
+    event: SessionStart
+    matcher: null
+    path: ".claude/hooks/session-start.sh"
+    global: true
+    purpose: "세션 초기화, Evidence 추적, Task 로드"
+
+  welcome:
+    event: SessionStart
+    matcher: null
+    path: ".claude/hooks/welcome.sh"
+    global: true
+    purpose: "환영 메시지 출력"
+
+  # --- SessionEnd ---
+  session-end:
+    event: SessionEnd
+    matcher: null
+    path: ".claude/hooks/session-end.sh"
+    global: true
+    purpose: "세션 종료, 상태 저장, Audit 아카이빙"
+
+  # --- PreToolUse ---
+  governance-check:
+    event: PreToolUse
+    matcher: "Bash|Edit|Write"
+    path: ".claude/hooks/governance-check.sh"
+    global: true
+    purpose: "보안 검증 (차단 패턴, 민감 파일)"
+    exitCodes:
+      0: allow
+      2: deny
+
+  auto-backup:
+    event: PreToolUse
+    matcher: "Edit|Write"
+    path: ".claude/hooks/auto-backup.sh"
+    global: true
+    purpose: "파일 수정 전 자동 백업"
+
+  pd-task-interceptor:
+    event: PreToolUse
+    matcher: "Task"
+    path: ".claude/hooks/task-pipeline/pd-task-interceptor.sh"
+    global: true
+    purpose: "Task subagent에 L1/L2/L3 포맷 주입"
+    skipAgents:
+      - prompt-assistant
+      - onboarding-guide
+      - statusline-setup
+      - claude-code-guide
+
+  # --- PostToolUse ---
+  pd-task-processor:
+    event: PostToolUse
+    matcher: "Task"
+    path: ".claude/hooks/task-pipeline/pd-task-processor.sh"
+    global: true
+    purpose: "Task 결과 처리, L1 요약 기록"
+
+  session-health:
+    event: PostToolUse
+    matcher: "*"
+    path: ".claude/hooks/session-health.sh"
+    global: true
+    purpose: "반복 패턴 감지, 루프 검출"
+
+# =============================================================
+# DEPRECATED (참조용)
+# =============================================================
+deprecated:
+  - name: pd-inject.sh
+    replacedBy: pd-task-interceptor
+    path: ".claude/hooks/_deprecated/pd-inject.sh"
+
+  - name: pd-pretooluse.sh
+    replacedBy: pd-task-interceptor
+    path: ".claude/hooks/_deprecated/pd-pretooluse.sh"
+
+  - name: post-task-output.sh
+    replacedBy: pd-task-processor
+    path: ".claude/hooks/_deprecated/post-task-output.sh"
+
+  - name: pd-posttooluse.sh
+    replacedBy: pd-task-processor
+    path: ".claude/hooks/_deprecated/pd-posttooluse.sh"
+
+  - name: pre-compact.sh
+    replacedBy: session-end (compact state logic)
+    path: ".claude/hooks/_deprecated/pre-compact.sh"
+
+# =============================================================
+# TASK INTEGRATION RULES
+# =============================================================
+# TODO(human): Task 통합 규칙 정의
+# 아래 섹션에서 Agent/Skill의 Task 통합 우선순위와
+# Context Budget에 따른 L2 읽기 전략을 구현하세요.
+taskIntegrationRules:
+  # L2 읽기 전략 (Context 사용량 기반)
+  l2ReadStrategy:
+    thresholds:
+      low: 50      # < 50%: 모든 L2 읽기 허용
+      medium: 70   # 50-70%: CRITICAL/HIGH만
+      high: 100    # > 70%: L1만 (명시적 요청 시 L2)
+
+    # TODO(human): 우선순위별 행동 정의
+    priorityActions:
+      CRITICAL: null  # 여기에 행동 정의
+      HIGH: null
+      MEDIUM: null
+      LOW: null
+
+  # Agent 우선순위 (동시 실행 시)
+  agentPriority:
+    - clarify-agent      # PE 작업 우선
+    - pd-skill-loader    # 스킬 로드
+    - pd-readonly-analyzer  # 분석
+    - onboarding-guide   # 안내 (낮은 우선순위)
+
+  # Cascade 규칙 (/build 시)
+  cascadeOrder:
+    - agent
+    - skill
+    - hook
+    - chain

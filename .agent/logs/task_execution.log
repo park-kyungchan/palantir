@@ -1,0 +1,723 @@
+---
+timestamp: 2026-01-23T14:10:58Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:15:28Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:17:22Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:19:33Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:27:28Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:28:57Z
+agent_id: 
+task_id: unknown
+subagent_type: Explore
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:31:15Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:32:11Z
+agent_id: 
+task_id: unknown
+subagent_type: Plan
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:37:27Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:48:31Z
+agent_id: 
+task_id: unknown
+subagent_type: Explore
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T14:49:36Z
+agent_id: 
+task_id: unknown
+subagent_type: claude-code-guide
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:05:56Z
+agent_id: 
+task_id: unknown
+subagent_type: Explore
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:05:56Z
+agent_id: 
+task_id: unknown
+subagent_type: Explore
+priority: UNKNOWN
+status: unknown
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:20Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:20Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:20Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:21Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:21Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:21Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:22Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:22Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:22Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:23Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+l1_detected: true
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:23Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:23Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:23Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:24Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:24Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:25Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:25Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:26Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:26Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T15:21:26Z
+agent_id: test123
+task_id: abc12345
+subagent_type: Explore
+priority: HIGH
+status: success
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T16:11:36Z
+agent_id: 
+task_id: auto-69184696
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T16:19:18Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-23T16:49:31Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-23T16:54:52Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-23T23:52:37Z
+agent_id: 
+task_id: auto-69212357
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-23T23:54:54Z
+agent_id: 
+task_id: auto-69212494
+subagent_type: Plan
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T00:06:09Z
+agent_id: 
+task_id: auto-69213169
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T00:06:09Z
+agent_id: 
+task_id: auto-69213169
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T00:27:00Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T00:27:00Z
+agent_id: 
+task_id: auto-69214420
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T00:27:00Z
+agent_id: 
+task_id: auto-69214420
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T00:27:30Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T00:27:30Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T00:27:30Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T06:46:20Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T06:48:04Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T06:51:15Z
+agent_id: 
+subagent_type: claude-code-guide
+l1_compatible: false
+note: "Conversational agent - L1/L2/L3 format not applicable"
+---
+---
+timestamp: 2026-01-24T06:54:33Z
+agent_id: 
+task_id: auto-69237673
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T07:06:38Z
+agent_id: 
+task_id: auto-69238398
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T07:21:51Z
+agent_id: 
+task_id: auto-69239311
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T08:58:10Z
+agent_id: 
+task_id: auto-69245090
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T09:41:13Z
+agent_id: 
+task_id: auto-69247673
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T09:46:58Z
+agent_id: 
+task_id: auto-69248018
+subagent_type: Plan
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T10:09:23Z
+agent_id: 
+task_id: auto-69249363
+subagent_type: Explore
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T10:27:19Z
+agent_id: 
+task_id: auto-69250439
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T10:36:53Z
+agent_id: 
+task_id: auto-69251013
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T10:37:45Z
+agent_id: 
+task_id: auto-69251065
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T10:40:38Z
+agent_id: 
+task_id: auto-69251238
+subagent_type: Plan
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---
+---
+timestamp: 2026-01-24T10:43:00Z
+agent_id: 
+task_id: auto-69251380
+subagent_type: claude-code-guide
+l1_detected: false
+priority: UNSPECIFIED
+status: completed
+findings_count: 0
+critical_count: 0
+l2_path: 
+requires_l2_read: false
+---

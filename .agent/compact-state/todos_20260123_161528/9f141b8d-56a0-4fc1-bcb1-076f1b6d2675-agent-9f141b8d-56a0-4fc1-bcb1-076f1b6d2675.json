@@ -1,0 +1,72 @@
+[
+  {
+    "content": "[1] RESEARCH: claude-code-guide로 /build 전체 기능 명세 조사 | Agent: claude-code-guide | AgentID: TBD-research-001",
+    "status": "pending",
+    "activeForm": "claude-code-guide로 기능 명세 조사 중"
+  },
+  {
+    "content": "[2] DESIGN: build-research.md 스킬 설계 (Research Dispatcher) | Agent: Plan | AgentID: TBD-plan-002",
+    "status": "pending",
+    "activeForm": "Research Dispatcher 스킬 설계 중"
+  },
+  {
+    "content": "[3] DESIGN: L1/L2/L3 Roadmap 템플릿 설계 | Agent: Plan | AgentID: TBD-plan-003",
+    "status": "pending",
+    "activeForm": "Roadmap 템플릿 설계 중"
+  },
+  {
+    "content": "[4] IMPLEMENT: .claude/skills/build-research.md 생성 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "build-research.md 생성 중"
+  },
+  {
+    "content": "[5] IMPLEMENT: .agent/builds/ 디렉토리 구조 생성 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "builds 디렉토리 생성 중"
+  },
+  {
+    "content": "[6] UPDATE: .claude/skills/build.md - Phase 1 Research 추가 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "build.md Phase 1 업데이트 중"
+  },
+  {
+    "content": "[7] UPDATE: .claude/skills/build.md - Phase 2 Roadmap 추가 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "build.md Phase 2 업데이트 중"
+  },
+  {
+    "content": "[8] UPDATE: .claude/commands/build.md - Multi-round Q&A 추가 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "build.md Multi-round Q&A 업데이트 중"
+  },
+  {
+    "content": "[9] CREATE: capability_index.json 스키마 정의 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "capability_index 스키마 생성 중"
+  },
+  {
+    "content": "[10] CREATE: complexity_levels.json 정의 (Level 0/50/100) | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "complexity_levels 정의 중"
+  },
+  {
+    "content": "[11] VERIFY: /build \"Progressive-Disclosure\" 테스트 | Agent: Explore | AgentID: TBD-verify-011",
+    "status": "pending",
+    "activeForm": "Progressive-Disclosure 테스트 중"
+  },
+  {
+    "content": "[12] VERIFY: /build --resume 테스트 | Agent: Explore | AgentID: TBD-verify-012",
+    "status": "pending",
+    "activeForm": "Resume 기능 테스트 중"
+  },
+  {
+    "content": "[13] VERIFY: Token usage < 7K 확인 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "토큰 사용량 검증 중"
+  },
+  {
+    "content": "[14] DOCUMENT: Plan 파일 최종 업데이트 | Agent: Main Agent (직접) | Resume: N/A",
+    "status": "pending",
+    "activeForm": "Plan 파일 최종 업데이트 중"
+  }
+]

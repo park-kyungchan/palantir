@@ -1,0 +1,163 @@
+# =============================================================================
+# Worker Task: Terminal-D - Phase 3 PreToolUse Context (E3)
+# =============================================================================
+# Location: .agent/prompts/pending/worker-d-phase3-pretooluse.yaml
+# Language: English (Machine-Readable)
+# =============================================================================
+
+taskId: "phase3-pretooluse-e3"
+assignedTo: "Terminal-D"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-24T01:35:00Z"
+priority: "P1"
+
+# =============================================================================
+# CONTEXT
+# =============================================================================
+context:
+  proposalRef: ".agent/prompts/enhancement-proposal-v2.2.yaml"
+  description: |
+    Implement E3 (PreToolUse additionalContext for Tool Enhancement).
+    Auto-inject context before Edit, Write, Task tool execution.
+
+  targetOutcome:
+    - "pd-context-injector.sh created and registered"
+    - "Edit/Write tools receive code style context"
+    - "Task tools receive L1/L2/L3 format reminder"
+
+# =============================================================================
+# DEPENDENCIES (NONE - Parallel Execution)
+# =============================================================================
+dependencies: []
+blockedBy: []
+canStartImmediately: true
+
+parallelNote: |
+  This task is INDEPENDENT of Phase 1 and Phase 2.
+  pd-context-injector.sh is a NEW FILE, no conflicts possible.
+  Execute in parallel with Terminal-B and Terminal-C.
+
+# =============================================================================
+# FILES TO CREATE/MODIFY
+# =============================================================================
+files:
+  - path: ".claude/hooks/task-pipeline/pd-context-injector.sh"
+    action: "CREATE"
+    content: |
+      #!/bin/bash
+      # =============================================================================
+      # pd-context-injector.sh - PreToolUse Hook for Context Injection
+      # =============================================================================
+      # Injects project-specific context before tool execution.
+      # Matcher: Edit, Write, Task
+      # =============================================================================
+
+      set +e
+      INPUT=$(cat)
+      TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+
+      case "$TOOL_NAME" in
+          "Edit"|"Write")
+              cat <<EOF
+      {
+        "hookSpecificOutput": {
+          "hookEventName": "PreToolUse",
+          "additionalContext": "Code Style: Follow existing patterns. Preserve L1/L2/L3 output compatibility. No new dependencies without approval."
+        }
+      }
+      EOF
+              ;;
+          "Task")
+              SUBAGENT_TYPE=$(echo "$INPUT" | jq -r '.tool_input.subagent_type // empty')
+              case "$SUBAGENT_TYPE" in
+                  "Explore"|"Plan"|"general-purpose")
+                      SESSION_ID=$(cat ~/.agent/tmp/current_session.json 2>/dev/null | jq -r '.sessionId // "unknown"')
+                      cat <<EOF
+      {
+        "hookSpecificOutput": {
+          "hookEventName": "PreToolUse",
+          "additionalContext": "Output Format: L1/L2/L3 Progressive Disclosure required. Write L2/L3 to .agent/outputs/{agentType}/. Session: $SESSION_ID"
+        }
+      }
+      EOF
+                      ;;
+              esac
+              ;;
+      esac
+
+      exit 0
+
+  - path: ".claude/settings.json"
+    action: "MODIFY"
+    section: "hooks.PreToolUse"
+    addMatcher: |
+      {
+        "matcher": "Edit|Write|Task",
+        "hooks": [{
+          "type": "command",
+          "command": ".claude/hooks/task-pipeline/pd-context-injector.sh"
+        }]
+      }
+
+# =============================================================================
+# IMPLEMENTATION STEPS
+# =============================================================================
+steps:
+  - step: 1
+    action: "Create pd-context-injector.sh"
+    command: "Write file and chmod +x"
+
+  - step: 2
+    action: "Read current .claude/settings.json"
+
+  - step: 3
+    action: "Add PreToolUse hook registration"
+    important: "Preserve existing hooks, add new matcher"
+
+  - step: 4
+    action: "Test Edit tool with additionalContext"
+    command: "Edit any file"
+    expected: "Claude sees code style context"
+
+  - step: 5
+    action: "Test Task tool with additionalContext"
+    command: "Task(subagent_type='Explore', prompt='test')"
+    expected: "L1/L2/L3 prompt injected"
+
+# =============================================================================
+# VERIFICATION
+# =============================================================================
+verification:
+  - command: "cat .claude/hooks/task-pipeline/pd-context-injector.sh"
+    expected: "Script exists and is executable"
+  - command: "cat .claude/settings.json | jq '.hooks.PreToolUse'"
+    expected: "Contains Edit|Write|Task matcher"
+  - testAction: "Run Edit on any file"
+    expected: "additionalContext about code style visible"
+
+# =============================================================================
+# GLOBAL CONTEXT CONSIDERATIONS
+# =============================================================================
+globalContextChecklist:
+  - question: "What if additionalContext is too long?"
+    consideration: "Keep under 100 tokens to avoid context waste"
+
+  - question: "Does this conflict with existing hooks?"
+    consideration: "PreToolUse is separate from PostToolUse, no conflict"
+
+  - question: "What about Bash tool?"
+    consideration: "Skip Bash to avoid unnecessary context injection"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/outputs/Worker/phase3-pretooluse.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "Update .agent/prompts/_progress.yaml: terminal-d.status = 'completed'"
+  - "Report L1 summary to Orchestrator (Terminal-A)"
+  - "Phase 4 (E5 Commands) can now proceed (parallel with Phase 1)"

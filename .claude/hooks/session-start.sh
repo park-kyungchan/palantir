@@ -1,12 +1,26 @@
 #!/bin/bash
-# ODA Session Start Hook
+# Claude Code Session Start Hook
 # Initializes evidence tracker and loads previous session state
 
 # Don't exit on error - gracefully handle failures
 set +e
 
-# Configuration
-AGENT_TMP_DIR="/home/palantir/park-kyungchan/palantir/.agent/tmp"
+#=============================================================================
+# Configuration - Environment-based paths
+#=============================================================================
+
+# Use environment variables with sensible defaults
+# Priority: CLAUDE_AGENT_TMP_DIR > HOME/.agent/tmp
+get_agent_tmp_dir() {
+    if [ -n "$CLAUDE_AGENT_TMP_DIR" ]; then
+        echo "$CLAUDE_AGENT_TMP_DIR"
+    else
+        # Fallback to user's home directory
+        echo "${HOME}/.agent/tmp"
+    fi
+}
+
+AGENT_TMP_DIR="$(get_agent_tmp_dir)"
 SESSION_STATE_DIR="$AGENT_TMP_DIR/sessions"
 AUDIT_LOG_DIR="$AGENT_TMP_DIR"
 
@@ -20,34 +34,239 @@ AUDIT_LOG_FILE="$AUDIT_LOG_DIR/audit_session_${SESSION_ID}.jsonl"
 mkdir -p "$SESSION_STATE_DIR" 2>/dev/null
 mkdir -p "$AUDIT_LOG_DIR" 2>/dev/null
 
-# Helper function: Use jq if available, fallback to python
-json_tool() {
-    if command -v jq &> /dev/null; then
-        jq "$@"
+# Create prompts directories for worker task files
+WORKSPACE_ROOT="${CLAUDE_WORKSPACE_ROOT:-$(pwd)}"
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null
+
+#=============================================================================
+# JSON Helper Functions (Unified)
+#=============================================================================
+
+# Check for jq availability once
+HAS_JQ=false
+if command -v jq &> /dev/null; then
+    HAS_JQ=true
+fi
+
+# Create JSON object from key-value pairs
+# Usage: json_object key1 val1 key2 val2 ...
+json_object() {
+    if $HAS_JQ; then
+        local args=()
+        while [ $# -ge 2 ]; do
+            args+=(--arg "$1" "$2")
+            shift 2
+        done
+        jq -n "${args[@]}" '$ARGS.named'
     else
         python3 -c "
-import sys, json
-data = json.load(sys.stdin) if not sys.stdin.isatty() else {}
-expr = '''$1'''
-# Basic jq-like operations
-if expr.startswith('-r'):
-    expr = expr[3:].strip()
-if expr.startswith('.'):
-    keys = expr[1:].split(' // ')[0].split('.')
-    result = data
-    for k in keys:
-        if k and isinstance(result, dict):
-            result = result.get(k, '')
-    print(result if result else (expr.split(' // ')[1].strip('\"') if '//' in '''$1''' else ''))
-else:
-    print(json.dumps(data))
-" 2>/dev/null || echo ""
+import json, sys
+args = sys.argv[1:]
+obj = {}
+for i in range(0, len(args), 2):
+    if i+1 < len(args):
+        obj[args[i]] = args[i+1]
+print(json.dumps(obj))
+" "$@" 2>/dev/null
     fi
 }
 
+# Read JSON field from file
+# Usage: json_read_field file field [default]
+json_read_field() {
+    local file="$1"
+    local field="$2"
+    local default="${3:-}"
+
+    if [ ! -f "$file" ]; then
+        echo "$default"
+        return
+    fi
+
+    if $HAS_JQ; then
+        jq -r ".$field // \"$default\"" "$file" 2>/dev/null || echo "$default"
+    else
+        python3 -c "
+import json
+try:
+    with open('$file') as f:
+        data = json.load(f)
+    print(data.get('$field', '$default'))
+except:
+    print('$default')
+" 2>/dev/null || echo "$default"
+    fi
+}
+
+# Read and filter todos from JSON file
+# Usage: json_filter_incomplete_todos file
+json_filter_incomplete_todos() {
+    local file="$1"
+
+    if [ ! -f "$file" ]; then
+        echo '[]'
+        return
+    fi
+
+    if $HAS_JQ; then
+        jq '.todos // [] | map(select(.status != "completed"))' "$file" 2>/dev/null || echo '[]'
+    else
+        python3 -c "
+import json
+try:
+    with open('$file') as f:
+        data = json.load(f)
+    todos = [t for t in data.get('todos', []) if t.get('status') != 'completed']
+    print(json.dumps(todos))
+except:
+    print('[]')
+" 2>/dev/null || echo '[]'
+    fi
+}
+
+# Create session state JSON
+create_session_state() {
+    local session_id="$1"
+    local timestamp="$2"
+    local previous_session="$3"
+    local evidence_file="$4"
+    local audit_log="$5"
+
+    if $HAS_JQ; then
+        jq -n \
+            --arg session_id "$session_id" \
+            --arg start_time "$timestamp" \
+            --arg previous_session "$previous_session" \
+            --arg evidence_file "$evidence_file" \
+            --arg audit_log "$audit_log" \
+            '{
+                session_id: $session_id,
+                start_time: $start_time,
+                previous_session: $previous_session,
+                evidence_file: $evidence_file,
+                audit_log: $audit_log,
+                protocol_stage: "IDLE",
+                todos: [],
+                files_viewed: [],
+                status: "active"
+            }'
+    else
+        python3 -c "
+import json
+print(json.dumps({
+    'session_id': '''$session_id''',
+    'start_time': '''$timestamp''',
+    'previous_session': '''$previous_session''',
+    'evidence_file': '''$evidence_file''',
+    'audit_log': '''$audit_log''',
+    'protocol_stage': 'IDLE',
+    'todos': [],
+    'files_viewed': [],
+    'status': 'active'
+}))
+" 2>/dev/null
+    fi
+}
+
+# Create JSON log entry with timestamp
+json_log_entry() {
+    local type="$1"
+    shift
+    local timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+    if $HAS_JQ; then
+        local args=(--arg type "$type" --arg timestamp "$timestamp")
+        while [ $# -ge 2 ]; do
+            args+=(--arg "$1" "$2")
+            shift 2
+        done
+        jq -n "${args[@]}" '$ARGS.named'
+    else
+        # Build Python dict dynamically
+        local py_args="'type': '$type', 'timestamp': '$timestamp'"
+        while [ $# -ge 2 ]; do
+            py_args="$py_args, '$1': '$2'"
+            shift 2
+        done
+        python3 -c "import json; print(json.dumps({$py_args}))" 2>/dev/null
+    fi
+}
+
+#=============================================================================
+# Task List Integration (CLAUDE_CODE_TASK_LIST_ID)
+#=============================================================================
+
+# Check for shared Task List ID
+TASK_LIST_ID="${CLAUDE_CODE_TASK_LIST_ID:-}"
+TASK_DIR="${HOME}/.claude/tasks"
+PENDING_TASKS_COUNT=0
+PENDING_TASKS_SUMMARY=""
+
+load_task_list_state() {
+    if [ -z "$TASK_LIST_ID" ]; then
+        return
+    fi
+
+    # Find task files for this task list
+    local task_files=$(find "$TASK_DIR" -name "*${TASK_LIST_ID}*.json" 2>/dev/null)
+
+    if [ -z "$task_files" ]; then
+        return
+    fi
+
+    # Count pending tasks
+    for task_file in $task_files; do
+        if [ -f "$task_file" ]; then
+            local status
+            if $HAS_JQ; then
+                status=$(jq -r '.status // "unknown"' "$task_file" 2>/dev/null)
+            else
+                status=$(python3 -c "
+import json
+try:
+    with open('$task_file') as f:
+        print(json.load(f).get('status', 'unknown'))
+except:
+    print('unknown')
+" 2>/dev/null)
+            fi
+
+            if [ "$status" = "pending" ] || [ "$status" = "in_progress" ]; then
+                PENDING_TASKS_COUNT=$((PENDING_TASKS_COUNT + 1))
+
+                # Extract subject for summary
+                local subject
+                if $HAS_JQ; then
+                    subject=$(jq -r '.subject // "Unknown task"' "$task_file" 2>/dev/null)
+                else
+                    subject=$(python3 -c "
+import json
+try:
+    with open('$task_file') as f:
+        print(json.load(f).get('subject', 'Unknown task'))
+except:
+    print('Unknown task')
+" 2>/dev/null)
+                fi
+
+                PENDING_TASKS_SUMMARY="${PENDING_TASKS_SUMMARY}- [${status}] ${subject}\n"
+            fi
+        fi
+    done
+}
+
+# Load task list state if TASK_LIST_ID is set
+load_task_list_state
+
+#=============================================================================
+# Main Logic
+#=============================================================================
+
 # Initialize evidence tracker file
 if [ ! -f "$EVIDENCE_FILE" ]; then
-    echo '{"type":"session_start","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","session_id":"'$SESSION_ID'"}' > "$EVIDENCE_FILE"
+    json_log_entry "session_start" "session_id" "$SESSION_ID" > "$EVIDENCE_FILE"
 fi
 
 # Load previous session state if exists
@@ -55,85 +274,144 @@ PREVIOUS_SESSION=""
 LATEST_SESSION=$(ls -t "$SESSION_STATE_DIR"/session_*.json 2>/dev/null | head -n 1 || true)
 
 if [ -n "$LATEST_SESSION" ] && [ -f "$LATEST_SESSION" ]; then
-    if command -v jq &> /dev/null; then
-        PREVIOUS_STATE=$(cat "$LATEST_SESSION" 2>/dev/null || echo '{}')
-        PREVIOUS_SESSION=$(echo "$PREVIOUS_STATE" | jq -r '.session_id // "none"' 2>/dev/null || echo "none")
-        INCOMPLETE_TODOS=$(echo "$PREVIOUS_STATE" | jq '.todos // [] | map(select(.status != "completed"))' 2>/dev/null || echo '[]')
-    else
-        PREVIOUS_SESSION=$(python3 -c "
-import json
-try:
-    with open('$LATEST_SESSION') as f:
-        data = json.load(f)
-    print(data.get('session_id', 'none'))
-except:
-    print('none')
-" 2>/dev/null || echo "none")
-        INCOMPLETE_TODOS=$(python3 -c "
-import json
-try:
-    with open('$LATEST_SESSION') as f:
-        data = json.load(f)
-    todos = [t for t in data.get('todos', []) if t.get('status') != 'completed']
-    print(json.dumps(todos))
-except:
-    print('[]')
-" 2>/dev/null || echo '[]')
-    fi
+    PREVIOUS_SESSION=$(json_read_field "$LATEST_SESSION" "session_id" "none")
+    INCOMPLETE_TODOS=$(json_filter_incomplete_todos "$LATEST_SESSION")
 
-    if [ "$INCOMPLETE_TODOS" != "[]" ] && [ "$INCOMPLETE_TODOS" != "" ]; then
-        echo '{"type":"restored_todos","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","previous_session":"'$PREVIOUS_SESSION'","todos":'$INCOMPLETE_TODOS'}' >> "$EVIDENCE_FILE"
+    if [ "$INCOMPLETE_TODOS" != "[]" ] && [ -n "$INCOMPLETE_TODOS" ]; then
+        # Append restored todos entry
+        if $HAS_JQ; then
+            jq -n \
+                --arg type "restored_todos" \
+                --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --arg previous_session "$PREVIOUS_SESSION" \
+                --argjson todos "$INCOMPLETE_TODOS" \
+                '{type: $type, timestamp: $timestamp, previous_session: $previous_session, todos: $todos}' >> "$EVIDENCE_FILE"
+        else
+            python3 -c "
+import json
+entry = {
+    'type': 'restored_todos',
+    'timestamp': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+    'previous_session': '$PREVIOUS_SESSION',
+    'todos': $INCOMPLETE_TODOS
+}
+print(json.dumps(entry))
+" >> "$EVIDENCE_FILE" 2>/dev/null
+        fi
     fi
 fi
 
 # Initialize new session state
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-if command -v jq &> /dev/null; then
-    SESSION_STATE=$(jq -n \
-        --arg session_id "$SESSION_ID" \
-        --arg start_time "$TIMESTAMP" \
-        --arg previous_session "$PREVIOUS_SESSION" \
-        --arg evidence_file "$EVIDENCE_FILE" \
-        --arg audit_log "$AUDIT_LOG_FILE" \
-        '{
-            session_id: $session_id,
-            start_time: $start_time,
-            previous_session: $previous_session,
-            evidence_file: $evidence_file,
-            audit_log: $audit_log,
-            protocol_stage: "IDLE",
-            todos: [],
-            files_viewed: [],
-            status: "active"
-        }'
-    )
-else
-    SESSION_STATE=$(python3 -c "
-import json
-print(json.dumps({
-    'session_id': '$SESSION_ID',
-    'start_time': '$TIMESTAMP',
-    'previous_session': '$PREVIOUS_SESSION',
-    'evidence_file': '$EVIDENCE_FILE',
-    'audit_log': '$AUDIT_LOG_FILE',
-    'protocol_stage': 'IDLE',
-    'todos': [],
-    'files_viewed': [],
-    'status': 'active'
-}))
-" 2>/dev/null)
-fi
-
+SESSION_STATE=$(create_session_state "$SESSION_ID" "$TIMESTAMP" "$PREVIOUS_SESSION" "$EVIDENCE_FILE" "$AUDIT_LOG_FILE")
 echo "$SESSION_STATE" > "$SESSION_FILE"
 
+# Write current session to file registry (for cross-hook access)
+CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"
+cat > "$CURRENT_SESSION_FILE" << SESSION_EOF
+{
+  "sessionId": "$SESSION_ID",
+  "startTime": "$TIMESTAMP",
+  "pid": "$$",
+  "status": "active"
+}
+SESSION_EOF
+
+#=============================================================================
+# E1: Export shared Task List ID via CLAUDE_ENV_FILE
+#=============================================================================
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+    # CHANGED (2026-01-24): Removed auto-generation of TASK_LIST_ID
+    # User must explicitly set CLAUDE_CODE_TASK_LIST_ID before starting claude
+    # Example: CLAUDE_CODE_TASK_LIST_ID=palantir-dev claude
+    # Or use cc wrapper: cc palantir-dev
+    if [ -n "$CLAUDE_CODE_TASK_LIST_ID" ]; then
+        PROJECT_TASK_ID="$CLAUDE_CODE_TASK_LIST_ID"
+    else
+        PROJECT_TASK_ID=""  # No auto-generation - leave empty if not set
+    fi
+
+    # Also store in session registry for Worker reference
+    if [ -f "$CURRENT_SESSION_FILE" ]; then
+        TMP_FILE=$(mktemp)
+        if $HAS_JQ; then
+            jq --arg tid "$PROJECT_TASK_ID" '. + {taskListId: $tid}' "$CURRENT_SESSION_FILE" > "$TMP_FILE" 2>/dev/null
+        else
+            python3 -c "
+import json
+with open('$CURRENT_SESSION_FILE') as f:
+    data = json.load(f)
+data['taskListId'] = '$PROJECT_TASK_ID'
+print(json.dumps(data, indent=2))
+" > "$TMP_FILE" 2>/dev/null
+        fi
+        mv "$TMP_FILE" "$CURRENT_SESSION_FILE" 2>/dev/null || true
+    fi
+fi
+
+#=============================================================================
+# E4: Persist session variables for all Bash commands
+#=============================================================================
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+    cat >> "$CLAUDE_ENV_FILE" <<ENVVARS
+export ORCHESTRATOR_SESSION_ID="$SESSION_ID"
+export WORKSPACE_ROOT="$WORKSPACE_ROOT"
+export L1L2L3_OUTPUT_DIR=".agent/outputs"
+ENVVARS
+fi
+
 # Set up audit log for session
-echo '{"type":"session_start","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","session_id":"'$SESSION_ID'","previous_session":"'$PREVIOUS_SESSION'"}' >> "$AUDIT_LOG_FILE"
+json_log_entry "session_start" "session_id" "$SESSION_ID" "previous_session" "$PREVIOUS_SESSION" >> "$AUDIT_LOG_FILE"
 
-# Export session ID for child processes
-export CLAUDE_SESSION_ID="$SESSION_ID"
-export ODA_EVIDENCE_FILE="$EVIDENCE_FILE"
+# NOTE: export in hook scripts does NOT propagate to parent Claude process
+# These are only useful if this script spawns child processes
+# export CLAUDE_SESSION_ID="$SESSION_ID"
+# export CLAUDE_EVIDENCE_FILE="$EVIDENCE_FILE"
 
-# Output session info (for Claude to consume)
-echo '{"status":"initialized","session_id":"'$SESSION_ID'","evidence_file":"'$EVIDENCE_FILE'"}'
+# Output session info (for Claude to consume via stdout)
+# Include Task List info if available
+if [ -n "$TASK_LIST_ID" ] && [ "$PENDING_TASKS_COUNT" -gt 0 ]; then
+    if $HAS_JQ; then
+        jq -n \
+            --arg status "initialized" \
+            --arg session_id "$SESSION_ID" \
+            --arg evidence_file "$EVIDENCE_FILE" \
+            --arg agent_tmp_dir "$AGENT_TMP_DIR" \
+            --arg task_list_id "$TASK_LIST_ID" \
+            --argjson pending_tasks_count "$PENDING_TASKS_COUNT" \
+            '{
+                status: $status,
+                session_id: $session_id,
+                evidence_file: $evidence_file,
+                agent_tmp_dir: $agent_tmp_dir,
+                task_list: {
+                    id: $task_list_id,
+                    pending_count: $pending_tasks_count,
+                    message: "Previous session has \($pending_tasks_count) pending task(s). Use TaskList to review."
+                }
+            }'
+    else
+        python3 -c "
+import json
+print(json.dumps({
+    'status': 'initialized',
+    'session_id': '$SESSION_ID',
+    'evidence_file': '$EVIDENCE_FILE',
+    'agent_tmp_dir': '$AGENT_TMP_DIR',
+    'task_list': {
+        'id': '$TASK_LIST_ID',
+        'pending_count': $PENDING_TASKS_COUNT,
+        'message': 'Previous session has $PENDING_TASKS_COUNT pending task(s). Use TaskList to review.'
+    }
+}))
+" 2>/dev/null
+    fi
+else
+    json_object \
+        "status" "initialized" \
+        "session_id" "$SESSION_ID" \
+        "evidence_file" "$EVIDENCE_FILE" \
+        "agent_tmp_dir" "$AGENT_TMP_DIR"
+fi
 
 exit 0

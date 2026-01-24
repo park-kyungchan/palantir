@@ -1,0 +1,51 @@
+---
+name: sync-tasks
+description: Synchronize task list across all terminals
+---
+
+Synchronize the native Task List with worker terminal assignments.
+
+## Steps
+
+1. **Read session registry** from `~/.agent/tmp/current_session.json`
+   - Get `taskListId` field (set by E1 enhancement)
+
+2. **List all tasks** using `TaskList` tool
+   - Show pending, in_progress, and completed tasks
+
+3. **Cross-reference with _progress.yaml**
+   - Map tasks to terminal assignments
+   - Identify mismatches
+
+4. **Report sync status**
+
+## Output Format
+
+```
+## Task Synchronization Report
+
+Session: {sessionId}
+Task List ID: {taskListId}
+
+### Native Task List
+| ID | Subject | Status | Owner |
+|----|---------|--------|-------|
+| 1  | ...     | ...    | ...   |
+
+### Worker Assignments (_progress.yaml)
+| Terminal | Task | Status |
+|----------|------|--------|
+| B | ... | ... |
+
+### Sync Issues
+- (none or list of mismatches)
+
+### Recommendations
+- {action to resolve issues}
+```
+
+## Notes
+
+- Use this command to verify that all workers are aligned
+- Helps identify orphaned or stale tasks
+- Run periodically during multi-terminal orchestration

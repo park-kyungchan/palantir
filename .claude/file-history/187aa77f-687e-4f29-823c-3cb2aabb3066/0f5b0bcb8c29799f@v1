@@ -1,0 +1,175 @@
+---
+name: plan
+description: Execute ODA 3-Stage Planning Protocol with Plan subagent comparison. Uses dual-path analysis - ODA Protocol + Claude Plan Agent = Optimal synthesis.
+version: "2.1.8"
+triggers:
+  keywords: ["plan", "design", "implementation", "계획", "설계", "구현"]
+  patterns: ["/plan", "create plan", "implementation design", "설계해줘"]
+tools: [Read, Grep, Glob, Task, TodoWrite]
+model: sonnet
+context: fork
+run_in_background: true
+output_format: PlanResult
+evidence_required:
+  - change_plan
+  - risk_assessment
+  - dual_path_synthesis
+references:
+  - lib/oda/planning/execution_orchestrator.py
+  - lib/oda/planning/todowrite_tracker.py
+  - .claude/CLAUDE.md#2.6.5
+---
+
+# /plan Skill (V2.1.8)
+
+> **Purpose:** Generate ODA-aligned implementation plan with TodoWrite tracking
+> **Zone:** Pre-Mutation (planning only)
+> **V2.1.8:** TodoWrite + Agent ID Tracking integration
+
+---
+
+## Execution Flow (7 Steps)
+
+### Step 1: Initialize TodoWrite Tracking (MANDATORY)
+
+```
+TodoWrite 첫 항목:
+🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임
+
+[Phase 1] Codebase analysis | Files: target/ | Agent: Explore:pending
+[Phase 2] Architecture design | Files: N/A | Agent: Plan:pending
+[Phase 3] Synthesis | Files: N/A | Agent: Direct
+```
+
+**Reference:** CLAUDE.md Section 2.6.5 - Agent ID Lifecycle
+
+### Step 2: Task Decomposition Check
+
+```python
+from lib.oda.planning import should_decompose_task, decompose_task
+
+if should_decompose_task(requirements, scope):
+    subtasks = decompose_task(requirements, scope, "Plan")
+    # Deploy parallel subagents for each subdirectory
+```
+
+**Triggers:** Keywords ("전체", "모든", "all", "entire") or file_count > 20
+
+### Step 3: Dual-Path Analysis (Parallel)
+
+| Path | Subagent | Purpose | Budget |
+|------|----------|---------|--------|
+| ODA Protocol | Explore | Stage A: SCAN + Stage B: TRACE | 15K |
+| Plan Subagent | Plan | Native architecture analysis | 25K |
+
+**Deploy in parallel:**
+```python
+Task(subagent_type="Explore", prompt="Stage A/B analysis...", run_in_background=True)
+Task(subagent_type="Plan", prompt="Architecture design...", run_in_background=True)
+```
+
+### Step 4: Update Agent IDs
+
+After Task() returns, update TodoWrite:
+```
+[Phase 1] Codebase analysis | Agent: Explore:a0068d9
+[Phase 2] Architecture design | Agent: Plan:a1a141c
+```
+
+### Step 5: Result Verification
+
+```python
+from lib.oda.planning import is_summary_only, verify_subagent_result
+
+if is_summary_only(result):
+    # Attempt L2/L3 recovery
+    content = read_layer_auto(agent_id, agent_type)
+```
+
+### Step 6: Synthesis & Plan File Generation
+
+**Output:** `.agent/plans/{slug}.md`
+
+```markdown
+# {Plan Title}
+
+> **Status:** IN_PROGRESS | **Date:** {timestamp}
+
+## Overview
+| Complexity | {small/medium/large} |
+| Phases | {count} |
+
+## Phases
+### Phase 1: {name}
+**Tasks:** [...]
+**Files:** [...]
+**Subagent:** {type}
+
+## Agent Registry (Auto-Compact Resume)
+| Task | Agent ID | Status |
+```
+
+### Step 7: Mark Completion in TodoWrite
+
+```
+[Phase 1] Codebase analysis | Agent: Explore:a0068d9 (done)
+[Phase 2] Architecture design | Agent: Plan:a1a141c (done)
+[Phase 3] Synthesis | Agent: Direct (done)
+```
+
+---
+
+## TodoWrite Format Specification
+
+**Pattern:** `[Phase N] {task} | Files: {paths} | Agent: {type}:{id}`
+
+| State | Format | Example |
+|-------|--------|---------|
+| Pending | `Agent: Explore:pending` | Before Task() |
+| Active | `Agent: Explore:a1b2c3d` | After Task() |
+| Done | `Agent: Explore:a1b2c3d (done)` | After verification |
+| Failed | `Agent: Explore:a1b2c3d (FAILED)` | After recovery_gate() |
+
+---
+
+## Comparison Matrix (Synthesis)
+
+| Aspect | ODA Protocol | Plan Subagent | Use |
+|--------|--------------|---------------|-----|
+| Schema alignment | ✓ Primary | Secondary | ODA |
+| Architecture trade-offs | Basic | ✓ Detailed | Plan |
+| Evidence collection | ✓ Mandatory | Optional | ODA |
+| Risk assessment | ✓ Governance | Experience | Both |
+
+---
+
+## Module References
+
+| Component | Path | Key Methods |
+|-----------|------|-------------|
+| ExecutionOrchestrator | `lib/oda/planning/execution_orchestrator.py` | `load_plan()`, `get_todowrite_state()` |
+| TodoWriteTracker | `lib/oda/planning/todowrite_tracker.py` | `add_phase()`, `update_agent_id()` |
+| TaskDecomposer | `lib/oda/planning/task_decomposer.py` | `should_decompose()`, `decompose()` |
+| PlanFile | `lib/oda/planning/plan_file.py` | `from_markdown()`, `to_markdown()` |
+
+---
+
+## Auto-Compact Recovery
+
+TodoWrite content survives compaction. Resume workflow:
+
+1. Read `.agent/plans/{slug}.md` for state
+2. Extract agent_ids from TodoWrite content
+3. `Task(resume="agent_id")` for in_progress phases
+4. Continue from first PENDING phase
+
+---
+
+## Related Commands
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| Clarification | `/ask` | Prompt engineering |
+| Planning | `/plan` | This skill |
+| Execution | `/execute` | Orchestrated implementation |
+| Verification | `/quality-check` | Quality gates |

@@ -1,0 +1,224 @@
+{
+  "concept": "Progressive-Disclosure",
+  "buildId": "pro-a69a",
+  "researchAgentId": "a69ad77",
+  "researchDate": "2026-01-23",
+  "capabilities": [
+    {
+      "id": "S1",
+      "name": "Frontmatter Configuration",
+      "category": "skill",
+      "complexity": "basic",
+      "level": 0,
+      "description": "Define skill metadata (name, description, allowed-tools) to control invocation behavior.",
+      "fields": ["name", "description", "allowed-tools", "disable-model-invocation", "user-invocable", "context", "agent", "model"],
+      "dependencies": []
+    },
+    {
+      "id": "S2",
+      "name": "Dynamic Context Injection",
+      "category": "skill",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Execute shell commands before skill content reaches Claude with !`command` syntax.",
+      "fields": ["!`shell-command`", "command-substitution", "preprocessing"],
+      "dependencies": []
+    },
+    {
+      "id": "S3",
+      "name": "Skill Context Forking",
+      "category": "skill",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Run skills in isolated subagent contexts with context:fork.",
+      "fields": ["context", "fork", "agent", "subagent_type"],
+      "dependencies": ["A1"]
+    },
+    {
+      "id": "A1",
+      "name": "Subagent Tool Restrictions",
+      "category": "agent",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Limit subagent tool access with tools: allowlist and disallowedTools: denylist.",
+      "fields": ["tools", "disallowedTools"],
+      "dependencies": []
+    },
+    {
+      "id": "A2",
+      "name": "Subagent Skill Injection",
+      "category": "agent",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Preload full skill content into subagent context at startup.",
+      "fields": ["skills", "skill-list", "context-injection"],
+      "dependencies": []
+    },
+    {
+      "id": "H1",
+      "name": "PreToolUse Hook (Task-specific)",
+      "category": "hook",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Intercept Task tool calls, inject L1/L2 format instructions via additionalContext.",
+      "fields": ["matcher: Task", "permissionDecision", "updatedInput", "additionalContext"],
+      "dependencies": []
+    },
+    {
+      "id": "H2",
+      "name": "PostToolUse Hook (Result Processing)",
+      "category": "hook",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Process Task tool results, extract L1 metadata, log for audit trail.",
+      "fields": ["matcher: Task", "tool_result.agent_id", "decision", "guidance"],
+      "dependencies": []
+    },
+    {
+      "id": "H3",
+      "name": "Hook JSON Output Control",
+      "category": "hook",
+      "complexity": "advanced",
+      "level": 100,
+      "description": "Return structured JSON from hooks to control tool execution (allow/deny/ask).",
+      "fields": ["hookSpecificOutput", "permissionDecision", "updatedInput", "additionalContext"],
+      "dependencies": []
+    },
+    {
+      "id": "H4",
+      "name": "Prompt-Based Hooks (LLM Evaluation)",
+      "category": "hook",
+      "complexity": "advanced",
+      "level": 100,
+      "description": "Use LLM to make context-aware decisions with type:prompt.",
+      "fields": ["type: prompt", "prompt", "LLM-decision"],
+      "dependencies": []
+    },
+    {
+      "id": "P1",
+      "name": "Task Tool with run_in_background",
+      "category": "pattern",
+      "complexity": "basic",
+      "level": 0,
+      "description": "Execute subagent tasks concurrently with run_in_background=true.",
+      "fields": ["Task()", "run_in_background", "concurrent-execution"],
+      "dependencies": []
+    },
+    {
+      "id": "P2",
+      "name": "L1/L2/L3 Output Format Pattern",
+      "category": "pattern",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Structure subagent output as L1 summary + L2 index + L3 detail files.",
+      "fields": ["L1: yaml", "L2: metadata", "L3: markdown", "taskId", "priority", "l2Index"],
+      "dependencies": []
+    },
+    {
+      "id": "P3",
+      "name": "Priority-Based Reading Strategy",
+      "category": "pattern",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Route Claude to recommended L3 sections based on priority levels.",
+      "fields": ["priority: CRITICAL|HIGH|MEDIUM|LOW", "recommendedRead", "requiresL2Read"],
+      "dependencies": ["P2"]
+    },
+    {
+      "id": "P4",
+      "name": "Subagent Type Exceptions",
+      "category": "pattern",
+      "complexity": "basic",
+      "level": 0,
+      "description": "Skip L1/L2/L3 format for conversational agents.",
+      "fields": ["subagent_type", "conversational-agents", "skip-format"],
+      "dependencies": []
+    },
+    {
+      "id": "P5",
+      "name": "Output Style Customization",
+      "category": "pattern",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Create custom output styles with frontmatter to modify system prompt.",
+      "fields": ["name", "description", "keep-coding-instructions"],
+      "dependencies": []
+    },
+    {
+      "id": "P6",
+      "name": "Hook-Based Format Enforcement",
+      "category": "pattern",
+      "complexity": "advanced",
+      "level": 100,
+      "description": "Use PreToolUse hook to inject L1/L2 format instructions automatically.",
+      "fields": ["PreToolUse matcher", "additionalContext injection", "enforcement-strategy"],
+      "dependencies": ["H1", "P1", "P2"]
+    },
+    {
+      "id": "P7",
+      "name": "Agent ID Capture for Resumption",
+      "category": "pattern",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Log agent_id from PostToolUse hook to enable resuming subagents.",
+      "fields": ["agent_id", "transcript_path", "subagent-resume"],
+      "dependencies": ["H2"]
+    },
+    {
+      "id": "P8",
+      "name": "Context Budget Management",
+      "category": "pattern",
+      "complexity": "advanced",
+      "level": 100,
+      "description": "Implement token budget tracking with l2Index[].tokens estimates.",
+      "fields": ["token-counting", "budget-tracking", "context-usage"],
+      "dependencies": ["P2", "P3"]
+    },
+    {
+      "id": "T1",
+      "name": "Task Tool Delegation",
+      "category": "pattern",
+      "complexity": "basic",
+      "level": 0,
+      "description": "Use Task(subagent_type=...) to delegate to specialized agents.",
+      "fields": ["subagent_type", "Explore", "Plan", "general-purpose"],
+      "dependencies": []
+    },
+    {
+      "id": "T2",
+      "name": "Task Tool Output Formats",
+      "category": "pattern",
+      "complexity": "intermediate",
+      "level": 50,
+      "description": "Foreground tasks block; background tasks run concurrently.",
+      "fields": ["run_in_background", "permission-handling"],
+      "dependencies": ["T1"]
+    }
+  ],
+  "levels": {
+    "0": {
+      "name": "Basic",
+      "capabilities": ["S1", "P1", "P4", "T1"],
+      "capabilityCount": 4,
+      "description": "Core Progressive-Disclosure foundations: frontmatter, background tasks, subagent types"
+    },
+    "50": {
+      "name": "Recommended",
+      "capabilities": ["S1", "S2", "S3", "A1", "A2", "H1", "H2", "P1", "P2", "P3", "P5", "P7", "T1", "T2"],
+      "capabilityCount": 14,
+      "description": "Standard implementation with L1/L2/L3 output format, hook injection, context forking"
+    },
+    "100": {
+      "name": "Full",
+      "capabilities": ["S1", "S2", "S3", "A1", "A2", "H1", "H2", "H3", "H4", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "T1", "T2"],
+      "capabilityCount": 19,
+      "description": "Complete implementation with LLM hooks, context budgeting, format enforcement"
+    }
+  },
+  "summary": {
+    "total_capabilities": 19,
+    "by_category": {"skill": 3, "agent": 2, "hook": 4, "pattern": 10},
+    "recommended_level": 50,
+    "estimated_complexity": "medium"
+  }
+}

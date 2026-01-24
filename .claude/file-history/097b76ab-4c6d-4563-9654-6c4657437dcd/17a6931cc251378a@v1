@@ -1,0 +1,19 @@
+"""
+Ontology Definition Package
+
+Palantir Foundry-aligned ontology schema definitions for ODA system.
+Provides ObjectType, LinkType, ActionType, and related primitives.
+
+Usage:
+    from ontology_definition import ObjectType, LinkType, ActionType
+    from ontology_definition.core import DataType, Cardinality, ObjectStatus
+    from ontology_definition.registry import OntologyRegistry
+"""
+
+__version__ = "1.0.0"
+__author__ = "ODA Team"
+
+# Core exports will be added as modules are implemented
+__all__ = [
+    "__version__",
+]
