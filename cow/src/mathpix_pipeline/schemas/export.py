@@ -36,6 +36,7 @@ class ExportFormat(str, Enum):
     LATEX = "latex"
     SVG = "svg"
     PNG = "png"
+    DOCX = "docx"
     ZIP = "zip"  # Bundle format
 
 

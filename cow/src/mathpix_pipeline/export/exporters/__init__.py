@@ -6,6 +6,7 @@ Contains format-specific exporters:
 - PDFExporter: PDF generation
 - LaTeXExporter: LaTeX package export
 - SVGExporter: SVG bundle export
+- DOCXExporter: Microsoft Word format export
 
 All exporters inherit from BaseExporter.
 
@@ -17,6 +18,7 @@ from .json_exporter import JSONExporter, JSONExporterConfig
 from .pdf_exporter import PDFExporter, PDFExporterConfig
 from .latex_exporter import LaTeXExporter, LaTeXExporterConfig
 from .svg_exporter import SVGExporter, SVGExporterConfig
+from .docx_exporter import DOCXExporter, DOCXExporterConfig
 
 
 __all__ = [
@@ -35,4 +37,7 @@ __all__ = [
     # SVG
     "SVGExporter",
     "SVGExporterConfig",
+    # DOCX
+    "DOCXExporter",
+    "DOCXExporterConfig",
 ]

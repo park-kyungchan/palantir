@@ -42,7 +42,7 @@ import logging
 import os
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -813,14 +813,31 @@ class PipelineConfig:
             True if configuration has no critical issues.
         """
         warnings = self.validate()
-        # Consider missing API keys as critical
+        # Critical patterns that indicate invalid configuration
+        critical_patterns = [
+            "is outside valid range",
+            "must be positive",
+            "cannot be negative",
+            "is not set",  # API key warnings are critical
+        ]
         critical_warnings = [
             w for w in warnings
-            if "is outside valid range" in w
-            or "must be positive" in w
-            or "cannot be negative" in w
+            if any(pattern in w for pattern in critical_patterns)
         ]
         return len(critical_warnings) == 0
+
+    def validate_api_keys(self) -> Tuple[bool, List[str]]:
+        """Validate API keys are properly configured.
+
+        Returns:
+            Tuple of (is_valid, list of missing keys)
+        """
+        missing = []
+        if not self.mathpix_app_id:
+            missing.append("mathpix_app_id")
+        if not self.mathpix_app_key:
+            missing.append("mathpix_app_key")
+        return len(missing) == 0, missing
 
     def get_stage_config(self, stage: str) -> Any:
         """Get configuration for a specific stage.
