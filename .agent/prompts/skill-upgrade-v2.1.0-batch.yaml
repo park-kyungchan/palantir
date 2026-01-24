@@ -1,0 +1,402 @@
+# =============================================================================
+# Skill Upgrade Batch Work Instructions for Terminal-B
+# =============================================================================
+# Generated: 2026-01-24T20:XX:XXZ
+# Author: Main Orchestrator
+# Reference: /clarify V2.1.0 (Semantic Integrity Source)
+# Standard: V2.1.19 Skill Frontmatter Spec
+# =============================================================================
+
+metadata:
+  task_type: skill_upgrade_batch
+  priority: high
+  estimated_skills: 9
+  reference_skill: "/home/palantir/.claude/skills/clarify/SKILL.md"
+  reference_version: "2.1.0"
+
+# =============================================================================
+# OBJECTIVE
+# =============================================================================
+objective: |
+  모든 스킬을 V2.1.0+ 표준으로 업그레이드하여 Semantic Integrity 달성.
+
+  Semantic Integrity 정의:
+  - 일관된 frontmatter 형식 (V2.1.19 스펙)
+  - 일관된 버전 체계 (2.1.0+)
+  - 6개 파라미터 모듈 호환성 문서화
+  - deprecated 도구 제거 (TodoWrite → Task API)
+  - 일관된 섹션 구조
+
+# =============================================================================
+# PARAMETER MODULES CHECKLIST (per skill)
+# =============================================================================
+parameter_modules:
+  1_model_selection:
+    file: "/home/palantir/.claude/skills/build/parameters/model-selection.md"
+    check_items:
+      - "model 필드 존재 (haiku|sonnet|opus)"
+      - "inherit 옵션 문서화 (해당 시)"
+      - "Model Inheritance 섹션 추가 (복잡한 스킬)"
+    default: "sonnet"
+
+  2_context_mode:
+    file: "/home/palantir/.claude/skills/build/parameters/context-mode.md"
+    check_items:
+      - "context 필드 존재 (standard|fork)"
+      - "Task 위임 패턴 문서화 (fork 사용 시)"
+      - "subagent_type 패턴 명시 (해당 시)"
+    default: "fork"
+
+  3_tool_config:
+    file: "/home/palantir/.claude/skills/build/parameters/tool-config.md"
+    check_items:
+      - "allowed-tools YAML 배열 형식 확인"
+      - "TodoWrite 제거 (deprecated)"
+      - "Task 도구 포함 확인"
+      - "disallowed-tools 필요 시 추가"
+    critical: "TodoWrite → Task API 마이그레이션 필수"
+
+  4_hook_config:
+    file: "/home/palantir/.claude/skills/build/parameters/hook-config.md"
+    check_items:
+      - "hooks 섹션 형식 검증"
+      - "timeout 값 설정 (권장: 150000ms)"
+      - "type: command 패턴 준수"
+
+  5_permission_mode:
+    file: "/home/palantir/.claude/skills/build/parameters/permission-mode.md"
+    check_items:
+      - "Agent 스킬에만 해당"
+      - "Skill에는 N/A 표시"
+
+  6_task_params:
+    file: "/home/palantir/.claude/skills/build/parameters/task-params.md"
+    check_items:
+      - "Task 위임 패턴 섹션 추가"
+      - "run_in_background 사용 문서화"
+      - "max_turns 권장값 명시"
+
+# =============================================================================
+# TARGET SKILLS (9 skills)
+# =============================================================================
+target_skills:
+
+  # ---------------------------------------------------------------------------
+  # SKILL 1: build-research
+  # ---------------------------------------------------------------------------
+  - name: "build-research"
+    path: "/home/palantir/.claude/skills/build-research/SKILL.md"
+    current_version: "1.0.0"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: false
+      context: fork
+      model: haiku
+      allowed_tools: "array format"
+    required_changes:
+      frontmatter:
+        - "version: '1.0.0' → '2.1.0'"
+      sections_to_add:
+        - "Parameter Module Compatibility (마지막 섹션)"
+      sections_to_update:
+        - "Task Delegation Pattern (haiku 모델 특성 문서화)"
+    notes: |
+      user-invocable: false 스킬 - 다른 스킬에서만 호출됨
+      haiku 모델 사용 - 빠른 연구 목적
+
+  # ---------------------------------------------------------------------------
+  # SKILL 2: commit-push-pr
+  # ---------------------------------------------------------------------------
+  - name: "commit-push-pr"
+    path: "/home/palantir/.claude/skills/commit-push-pr/SKILL.md"
+    current_version: "1.1.1"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "MALFORMED (comma-separated string)"
+    required_changes:
+      frontmatter:
+        - "version: '1.1.1' → '2.1.0'"
+        - "allowed-tools: 문자열 → YAML 배열 형식 변환"
+      critical_fix: |
+        # BEFORE (잘못된 형식)
+        allowed-tools: "Bash, Read, Write, Edit, Glob, Grep, Task"
+
+        # AFTER (올바른 형식)
+        allowed-tools:
+          - Bash
+          - Read
+          - Write
+          - Edit
+          - Glob
+          - Grep
+          - Task
+      sections_to_add:
+        - "Parameter Module Compatibility"
+    notes: |
+      Git 작업 스킬 - Bash 도구 필수
+      allowed-tools 형식 오류 수정 우선
+
+  # ---------------------------------------------------------------------------
+  # SKILL 3: docx-automation
+  # ---------------------------------------------------------------------------
+  - name: "docx-automation"
+    path: "/home/palantir/.claude/skills/docx-automation/SKILL.md"
+    current_version: "1.1.1"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "MALFORMED (comma-separated string)"
+    required_changes:
+      frontmatter:
+        - "version: '1.1.1' → '2.1.0'"
+        - "allowed-tools: 문자열 → YAML 배열 형식 변환"
+      critical_fix: |
+        # BEFORE (잘못된 형식)
+        allowed-tools: "Bash, Read, Write, Edit, Glob, Grep, Task"
+
+        # AFTER (올바른 형식)
+        allowed-tools:
+          - Bash
+          - Read
+          - Write
+          - Edit
+          - Glob
+          - Grep
+          - Task
+      sections_to_add:
+        - "Parameter Module Compatibility"
+    notes: |
+      DOCX 문서 생성 스킬
+      commit-push-pr과 동일한 형식 오류
+
+  # ---------------------------------------------------------------------------
+  # SKILL 4: orchestrate
+  # ---------------------------------------------------------------------------
+  - name: "orchestrate"
+    path: "/home/palantir/.claude/skills/orchestrate/SKILL.md"
+    current_version: "1.0.0"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "array format (correct)"
+    required_changes:
+      frontmatter:
+        - "version: '1.0.0' → '2.1.0'"
+      sections_to_add:
+        - "Task Delegation Pattern (섹션 번호 확인 후)"
+        - "Model Inheritance"
+        - "Parameter Module Compatibility (마지막)"
+      sections_to_update:
+        - "Task API 사용 패턴 강화 문서화"
+    notes: |
+      핵심 오케스트레이션 스킬 - 572 lines
+      Native Task System 통합 문서화 중요
+
+  # ---------------------------------------------------------------------------
+  # SKILL 5: assign
+  # ---------------------------------------------------------------------------
+  - name: "assign"
+    path: "/home/palantir/.claude/skills/assign/SKILL.md"
+    current_version: "1.0.0"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "array format"
+    required_changes:
+      frontmatter:
+        - "version: '1.0.0' → '2.1.0'"
+      sections_to_add:
+        - "Parameter Module Compatibility"
+    notes: |
+      Worker 할당 스킬 - 449 lines
+      TaskUpdate(owner=...) 패턴 핵심
+
+  # ---------------------------------------------------------------------------
+  # SKILL 6: collect
+  # ---------------------------------------------------------------------------
+  - name: "collect"
+    path: "/home/palantir/.claude/skills/collect/SKILL.md"
+    current_version: "1.0.0"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "array format"
+    required_changes:
+      frontmatter:
+        - "version: '1.0.0' → '2.1.0'"
+      sections_to_add:
+        - "Parameter Module Compatibility"
+    notes: |
+      결과 수집 스킬 - 743 lines
+      TaskList + 완료 검증 패턴
+
+  # ---------------------------------------------------------------------------
+  # SKILL 7: synthesis
+  # ---------------------------------------------------------------------------
+  - name: "synthesis"
+    path: "/home/palantir/.claude/skills/synthesis/SKILL.md"
+    current_version: "1.0.0"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "확인 필요"
+    required_changes:
+      frontmatter:
+        - "version: '1.0.0' → '2.1.0'"
+        - "TodoWrite 제거 확인"
+      sections_to_add:
+        - "Parameter Module Compatibility"
+    notes: |
+      품질 검증 + Traceability 스킬
+      파이프라인 마지막 단계
+
+  # ---------------------------------------------------------------------------
+  # SKILL 8: worker
+  # ---------------------------------------------------------------------------
+  - name: "worker"
+    path: "/home/palantir/.claude/skills/worker/SKILL.md"
+    current_version: "1.0.0"
+    target_version: "2.1.0"
+    current_state:
+      user_invocable: true
+      context: fork
+      model: sonnet
+      allowed_tools: "array format"
+    required_changes:
+      frontmatter:
+        - "version: '1.0.0' → '2.1.0'"
+      sections_to_add:
+        - "Task Delegation Pattern"
+        - "Parameter Module Compatibility"
+    notes: |
+      Worker 자체 관리 스킬 - 886 lines (가장 큼)
+      /worker start, done, status, block 명령
+
+  # ---------------------------------------------------------------------------
+  # SKILL 9: build (확인만)
+  # ---------------------------------------------------------------------------
+  - name: "build"
+    path: "/home/palantir/.claude/skills/build/SKILL.md"
+    current_version: "2.2.0"
+    target_version: "2.2.0"
+    status: "ALREADY_UPDATED"
+    action: "VERIFY_ONLY"
+    notes: |
+      이미 V2.2.0 - 레퍼런스 모듈 제공 스킬
+      파라미터 모듈 소스이므로 변경 불필요
+      단, 다른 스킬과의 일관성 최종 확인
+
+# =============================================================================
+# EXECUTION PROTOCOL
+# =============================================================================
+execution_protocol:
+
+  step_1_preparation:
+    description: "준비 단계"
+    actions:
+      - "TaskList로 현재 상태 확인"
+      - "TaskCreate로 9개 스킬 작업 등록"
+      - "/clarify V2.1.0 레퍼런스 열기"
+
+  step_2_per_skill:
+    description: "스킬별 업그레이드"
+    for_each_skill:
+      - "Read로 현재 SKILL.md 읽기"
+      - "6개 파라미터 모듈 체크리스트 확인"
+      - "frontmatter 수정 (version, allowed-tools 등)"
+      - "Parameter Module Compatibility 섹션 추가"
+      - "필요시 추가 섹션 작성"
+      - "TaskUpdate(status='completed')"
+
+  step_3_validation:
+    description: "검증 단계"
+    actions:
+      - "모든 스킬 frontmatter 일관성 확인"
+      - "Semantic Integrity 체크"
+      - "TaskList로 완료 상태 확인"
+
+# =============================================================================
+# SEMANTIC INTEGRITY CHECKLIST
+# =============================================================================
+semantic_integrity:
+
+  frontmatter_consistency:
+    - "모든 version 필드: 2.1.0+"
+    - "모든 context 필드: fork (또는 적절한 값)"
+    - "모든 allowed-tools: YAML 배열 형식"
+    - "TodoWrite 어디에도 없음"
+
+  section_consistency:
+    - "Parameter Module Compatibility 섹션 모든 스킬에 존재"
+    - "일관된 섹션 번호 체계"
+    - "동일한 테이블 형식 사용"
+
+  reference_alignment:
+    - "/clarify V2.1.0을 기준으로 형식 통일"
+    - "Version History 테이블 형식 동일"
+    - "Task Delegation Pattern 문서화 형식 동일"
+
+# =============================================================================
+# PARAMETER MODULE COMPATIBILITY TEMPLATE
+# =============================================================================
+template_section: |
+  ## N. Parameter Module Compatibility (V2.1.0)
+
+  > `/build/parameters/` 모듈과의 호환성 체크리스트
+
+  | Module | Status | Notes |
+  |--------|--------|-------|
+  | `model-selection.md` | ✅ | `{model}` 설정 |
+  | `context-mode.md` | ✅ | `{context}` 사용 |
+  | `tool-config.md` | ✅ | V2.1.0: TodoWrite 제거 |
+  | `hook-config.md` | {status} | {notes} |
+  | `permission-mode.md` | N/A | Skill에는 해당 없음 |
+  | `task-params.md` | ✅ | Task Delegation 패턴 지원 |
+
+  ### Version History
+
+  | Version | Change |
+  |---------|--------|
+  | 1.0.0 | Initial release |
+  | 2.1.0 | V2.1.19 Spec 호환, 파라미터 모듈 정렬 |
+
+# =============================================================================
+# SUCCESS CRITERIA
+# =============================================================================
+success_criteria:
+  - "9개 스킬 모두 version 2.1.0+"
+  - "allowed-tools 형식 오류 0개"
+  - "TodoWrite 참조 0개"
+  - "Parameter Module Compatibility 섹션 9개 스킬에 존재"
+  - "Semantic Integrity 체크리스트 100% 통과"
+
+# =============================================================================
+# PRIORITY ORDER
+# =============================================================================
+priority_order:
+  critical:
+    - "commit-push-pr (형식 오류 수정)"
+    - "docx-automation (형식 오류 수정)"
+  high:
+    - "orchestrate (핵심 스킬)"
+    - "worker (가장 큰 스킬)"
+  normal:
+    - "assign"
+    - "collect"
+    - "synthesis"
+    - "build-research"
+  verify_only:
+    - "build (이미 2.2.0)"
