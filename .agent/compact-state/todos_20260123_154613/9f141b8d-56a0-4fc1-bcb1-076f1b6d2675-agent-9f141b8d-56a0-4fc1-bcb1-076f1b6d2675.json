@@ -1,0 +1,27 @@
+[
+  {
+    "content": "[1] 훅 충돌 가능성 분석 - PreToolUse 동시 실행 검토",
+    "status": "completed",
+    "activeForm": "PreToolUse 충돌 분석 완료"
+  },
+  {
+    "content": "[2] 훅 충돌 가능성 분석 - PostToolUse 동시 실행 검토",
+    "status": "completed",
+    "activeForm": "PostToolUse 충돌 분석 완료"
+  },
+  {
+    "content": "[3] Multi-Agent Orchestration 최적화 검토",
+    "status": "completed",
+    "activeForm": "Orchestration 최적화 검토 완료"
+  },
+  {
+    "content": "[4] Progressive-Disclosure 흐름 검증",
+    "status": "completed",
+    "activeForm": "PD 흐름 검증 완료"
+  },
+  {
+    "content": "[5] 충돌 해결 및 최적화 적용",
+    "status": "in_progress",
+    "activeForm": "충돌 해결 적용 중"
+  }
+]

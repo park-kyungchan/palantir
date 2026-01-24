@@ -1,0 +1,27 @@
+[
+  {
+    "content": "훅 시스템 전체 검토 및 고도화 계획 수립",
+    "status": "completed",
+    "activeForm": "훅 시스템 전체 검토 중"
+  },
+  {
+    "content": "훅 목록 및 현황 파악",
+    "status": "in_progress",
+    "activeForm": "훅 목록 및 현황 파악 중"
+  },
+  {
+    "content": "각 훅 코드 레벨 검토",
+    "status": "pending",
+    "activeForm": "각 훅 코드 레벨 검토 중"
+  },
+  {
+    "content": "문제점 및 개선사항 도출",
+    "status": "pending",
+    "activeForm": "문제점 및 개선사항 도출 중"
+  },
+  {
+    "content": "훅 고도화 구현",
+    "status": "pending",
+    "activeForm": "훅 고도화 구현 중"
+  }
+]
