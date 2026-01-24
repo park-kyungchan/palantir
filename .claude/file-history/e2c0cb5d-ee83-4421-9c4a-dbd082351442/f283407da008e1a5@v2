@@ -1,0 +1,276 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "clarification-schema-v1.0",
+  "title": "Clarification Output Schema",
+  "description": "Structured output from /clarify skill for E2E pipeline consumption",
+
+  "type": "object",
+  "required": ["meta", "clarification", "scope", "decisions", "handoff"],
+
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Session and tracking metadata",
+      "required": ["sessionId", "taskId", "timestamp", "version"],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "CLAUDE_SESSION_ID for cross-phase tracking"
+        },
+        "taskId": {
+          "type": "string",
+          "pattern": "^clarify-[a-f0-9]{8}$",
+          "description": "Unique clarification task identifier"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "const": "2.0.0"
+        },
+        "auditLogPath": {
+          "type": "string",
+          "description": "Path to detailed Q&A audit log (JSONL)"
+        }
+      }
+    },
+
+    "clarification": {
+      "type": "object",
+      "description": "Core clarification results",
+      "required": ["topic", "primaryGoal", "phases", "summary"],
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "Original user request"
+        },
+        "primaryGoal": {
+          "type": "string",
+          "description": "Identified primary objective"
+        },
+        "phases": {
+          "type": "array",
+          "description": "Clarification phases with Q&A",
+          "items": {
+            "$ref": "#/definitions/ClarificationPhase"
+          }
+        },
+        "summary": {
+          "type": "string",
+          "description": "Final clarified understanding"
+        },
+        "confidenceLevel": {
+          "type": "string",
+          "enum": ["complete", "clear", "partial", "needs-more-info"]
+        }
+      }
+    },
+
+    "scope": {
+      "type": "object",
+      "description": "Investigation boundaries",
+      "required": ["include", "exclude"],
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ScopeItem"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ScopeItem"
+          }
+        }
+      }
+    },
+
+    "decisions": {
+      "type": "array",
+      "description": "All decisions made with rationale (for traceability)",
+      "items": {
+        "$ref": "#/definitions/Decision"
+      }
+    },
+
+    "handoff": {
+      "type": "object",
+      "description": "Data for downstream pipeline stages",
+      "required": ["nextPhase", "orchestrationHint"],
+      "properties": {
+        "nextPhase": {
+          "type": "string",
+          "enum": ["investigate", "plan", "execute", "complete"]
+        },
+        "orchestrationHint": {
+          "type": "object",
+          "properties": {
+            "parallelizable": { "type": "boolean" },
+            "suggestedWorkers": { "type": "integer", "minimum": 1, "maximum": 4 },
+            "estimatedComplexity": {
+              "type": "string",
+              "enum": ["simple", "moderate", "complex"]
+            }
+          }
+        },
+        "taskDecomposition": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskHint"
+          }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "ClarificationPhase": {
+      "type": "object",
+      "required": ["phase", "questions"],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": ["initial", "deep-dive", "validation", "scope-definition"]
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QuestionAnswer"
+          }
+        }
+      }
+    },
+
+    "QuestionAnswer": {
+      "type": "object",
+      "required": ["id", "question", "answer", "timestamp"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique Q&A identifier for reference"
+        },
+        "question": {
+          "type": "string"
+        },
+        "questionType": {
+          "type": "string",
+          "enum": ["socratic", "clarifying", "confirming", "scope"]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "description": { "type": "string" },
+              "selected": { "type": "boolean" }
+            }
+          }
+        },
+        "answer": {
+          "type": "string",
+          "description": "User's response"
+        },
+        "answerType": {
+          "type": "string",
+          "enum": ["selected-option", "free-text", "multi-select"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "followUpNeeded": {
+          "type": "boolean"
+        }
+      }
+    },
+
+    "ScopeItem": {
+      "type": "object",
+      "required": ["area", "reason"],
+      "properties": {
+        "area": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string",
+          "description": "WHY this is included/excluded (traceability)"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        },
+        "relatedQuestionId": {
+          "type": "string",
+          "description": "Link to Q&A that defined this scope"
+        }
+      }
+    },
+
+    "Decision": {
+      "type": "object",
+      "required": ["id", "decision", "rationale", "madeAt"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "decision": {
+          "type": "string",
+          "description": "What was decided"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "WHY this decision was made (왜 이렇게 설계했는가?)"
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "option": { "type": "string" },
+              "rejectedReason": { "type": "string" }
+            }
+          }
+        },
+        "relatedQuestionIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Q&A IDs that led to this decision"
+        },
+        "madeAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+
+    "TaskHint": {
+      "type": "object",
+      "required": ["task", "priority"],
+      "properties": {
+        "task": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        },
+        "suggestedWorker": {
+          "type": "string",
+          "enum": ["B", "C", "D", "any"]
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "derivedFromDecision": {
+          "type": "string",
+          "description": "Decision ID that created this task"
+        }
+      }
+    }
+  }
+}

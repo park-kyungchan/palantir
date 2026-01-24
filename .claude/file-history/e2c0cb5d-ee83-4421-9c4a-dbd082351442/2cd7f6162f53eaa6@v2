@@ -1,0 +1,342 @@
+---
+name: synthesis
+description: |
+  Final phase of E2E pipeline - synthesize all results into actionable output.
+  Traces decisions back to original Q&A from /clarify.
+  Generates final report with complete traceability chain.
+  Determines if loop iteration is needed or task is complete.
+user-invocable: true
+disable-model-invocation: true
+context: fork
+model: opus
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Write
+  - AskUserQuestion
+argument-hint: [session-id]
+version: "1.0.0"
+---
+
+# /synthesis - Final Pipeline Integration
+
+> **Version:** 1.0.0 | **Role:** E2E Pipeline Final Phase
+> **Input:** /collect output + /clarify audit logs
+> **Output:** Final Report + Loop/Complete Decision
+
+---
+
+## Input
+
+Session ID: $0
+
+---
+
+## Phase 1: Load Pipeline Context
+
+### 1.1 Read Clarify Output
+
+```python
+clarify_path = f".agent/outputs/clarify/{session_id}-clarification.json"
+clarify_data = Read(clarify_path)
+```
+
+**Extract:**
+- `decisions[]` - 모든 결정 + rationale
+- `scope.include/exclude` - 범위 정의
+- `meta.auditLogPath` - Q&A 감사 로그 경로
+
+### 1.2 Read Collect Output
+
+```python
+collect_path = ".agent/outputs/Worker/"  # Latest collection
+collect_data = Read(collect_path)
+```
+
+**Extract:**
+- `completedTasks[]` - 완료된 작업
+- `overallStatus` - 전체 상태
+- `deliverables[]` - 산출물 목록
+
+### 1.3 Read Audit Log
+
+```python
+audit_path = clarify_data['meta']['auditLogPath']
+qa_log = Read(audit_path)  # JSONL format
+```
+
+---
+
+## Phase 2: Traceability Analysis
+
+### 2.1 Build Why-Chain
+
+모든 결정에 대해 원본 Q&A까지 역추적:
+
+```yaml
+traceability:
+  - decision: "JWT 인증 방식 사용"
+    rationale: "상태 비저장 + 모바일 지원"
+    evidence:
+      - qaId: "qa-abc123"
+        question: "인증 방식 선호?"
+        answer: "상태 비저장"
+      - qaId: "qa-def456"
+        question: "지원 플랫폼?"
+        answer: "모바일 + 웹"
+    implementation:
+      - taskId: "worker-b-001"
+        deliverable: "src/auth/jwt.ts"
+        status: "verified"
+```
+
+### 2.2 Scope Compliance Check
+
+```yaml
+scope_compliance:
+  include_coverage:
+    - area: "인증 로직"
+      covered: true
+      by_tasks: ["worker-b-001", "worker-c-002"]
+    - area: "테스트"
+      covered: true
+      by_tasks: ["worker-d-003"]
+
+  exclude_compliance:
+    - area: "UI 변경"
+      violated: false
+      note: "UI 파일 수정 없음"
+```
+
+---
+
+## Phase 3: Quality Assessment
+
+### 3.1 Deliverable Verification
+
+```yaml
+deliverables:
+  - path: "src/auth/jwt.ts"
+    exists: true
+    tests: "src/auth/__tests__/jwt.test.ts"
+    testPassing: true
+
+  - path: "src/auth/middleware.ts"
+    exists: true
+    tests: null  # 테스트 없음
+    testPassing: null
+    warning: "테스트 커버리지 부족"
+```
+
+### 3.2 Risk Assessment
+
+```yaml
+risks:
+  identified:
+    - id: "r1"
+      description: "테스트 커버리지 불완전"
+      severity: "medium"
+      mitigation: "추가 테스트 필요"
+
+  resolved:
+    - id: "r0"
+      description: "기존 세션 충돌"
+      resolvedBy: "마이그레이션 스크립트 추가"
+```
+
+---
+
+## Phase 4: Decision - Loop or Complete?
+
+### 4.1 Completion Criteria
+
+```python
+criteria = {
+    "all_tasks_complete": collect_data['overallStatus'] == "ALL_COMPLETE",
+    "scope_covered": all(s['covered'] for s in scope_compliance['include_coverage']),
+    "no_critical_risks": not any(r['severity'] == 'critical' for r in risks['identified']),
+    "user_approved": False  # 아래에서 확인
+}
+```
+
+### 4.2 User Confirmation
+
+```python
+if all_criteria_except_approval:
+    AskUserQuestion(
+        questions=[{
+            "question": f"""
+## Synthesis 완료 확인
+
+**완료된 작업:** {completed_count}개
+**산출물:** {deliverables_list}
+**잔여 리스크:** {risks_summary}
+
+결과를 승인하시겠습니까?
+""",
+            "header": "최종 승인",
+            "options": [
+                {"label": "승인 - 완료", "description": "작업 종료"},
+                {"label": "보완 필요", "description": "추가 iteration"},
+                {"label": "중단", "description": "작업 취소"}
+            ],
+            "multiSelect": False
+        }]
+    )
+```
+
+---
+
+## Phase 5: Output Generation
+
+### 5.1 Final Report Schema
+
+```yaml
+synthesis_report:
+  meta:
+    sessionId: "{session_id}"
+    clarifyRef: "{clarify_session_id}"
+    timestamp: "{ISO8601}"
+    version: "1.0.0"
+
+  summary:
+    status: "COMPLETE" | "NEEDS_ITERATION" | "CANCELLED"
+    completedTasks: {n}
+    deliverables: {n}
+    risksRemaining: {n}
+
+  traceability:
+    decisions: [...]  # Why-Chain 포함
+    scopeCompliance: {...}
+
+  quality:
+    deliverables: [...]
+    risks: {...}
+
+  recommendation:
+    action: "commit" | "iterate" | "review"
+    details: "..."
+
+  nextSteps:
+    - step: "git commit"
+      command: "git add ... && git commit -m '...'"
+    - step: "PR 생성"
+      command: "/commit-push-pr"
+```
+
+**Output Path:** `.agent/outputs/synthesis/{session_id}-final.yaml`
+
+### 5.2 Loop Decision
+
+```yaml
+loop_decision:
+  shouldLoop: true | false
+
+  if_loop:
+    reason: "테스트 커버리지 부족"
+    nextClarifyInput:
+      additionalScope:
+        - area: "테스트"
+          priority: "HIGH"
+      skipPhases: ["initial-exploration"]  # 이미 명확한 부분 스킵
+
+  if_complete:
+    finalActions:
+      - "git commit"
+      - "/commit-push-pr"
+```
+
+---
+
+## E2E Pipeline Position
+
+```
+/clarify
+    │
+    ▼
+/orchestrate
+    │
+    ▼
+/assign → /worker (parallel)
+    │
+    ▼
+/collect
+    │
+    ▼
+┌─────────────┐
+│ /synthesis  │ ◄── YOU ARE HERE
+└──────┬──────┘
+       │
+       ├── COMPLETE → Final Commit
+       │
+       └── ITERATE → Back to /clarify (with context)
+```
+
+---
+
+## Example Output
+
+```yaml
+# .agent/outputs/synthesis/{session_id}-final.yaml
+
+meta:
+  sessionId: "syn-abc12345"
+  clarifyRef: "clr-def67890"
+  timestamp: "2026-01-24T12:00:00Z"
+  version: "1.0.0"
+
+summary:
+  status: "COMPLETE"
+  completedTasks: 3
+  deliverables: 5
+  risksRemaining: 0
+
+traceability:
+  decisions:
+    - id: "dec-001"
+      decision: "JWT 인증 방식"
+      rationale: "상태 비저장 + 모바일 지원"
+      evidence:
+        - qaId: "qa-abc123"
+          question: "인증 방식 선호?"
+          answer: "상태 비저장"
+      implementation:
+        - taskId: "worker-b-001"
+          deliverable: "src/auth/jwt.ts"
+
+  scopeCompliance:
+    includeCoverage: 100%
+    excludeViolations: 0
+
+quality:
+  testCoverage: 85%
+  allTestsPassing: true
+  lintErrors: 0
+
+recommendation:
+  action: "commit"
+  message: |
+    feat: Implement JWT authentication system
+
+    - Add JWT token generation and validation
+    - Add auth middleware for protected routes
+    - Add comprehensive test coverage
+
+    Closes #123
+
+nextSteps:
+  - step: "Create commit"
+    command: "/commit-push-pr"
+```
+
+---
+
+## Error Handling
+
+| 상황 | 처리 |
+|------|------|
+| clarify 출력 없음 | 에러 반환 + session_id 확인 요청 |
+| collect 미완료 | "먼저 /collect 실행 필요" 안내 |
+| 일부 작업 실패 | 실패 분석 + 재시도 권장 |
+| 승인 거부 | iteration 준비 또는 작업 취소 |

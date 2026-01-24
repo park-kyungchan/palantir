@@ -1,0 +1,248 @@
+---
+name: plan-l1l2l3
+description: |
+  Create implementation plans with Progressive Disclosure L1/L2/L3 output format.
+  Design step-by-step implementation guides with dependencies and risk analysis.
+  Returns structured plans with lazy-loading detail sections.
+  Use when planning features, refactoring, or multi-step implementations.
+user-invocable: true
+mode: true
+context: fork
+agent: Plan
+model: sonnet
+argument-hint: [task description]
+allowed-tools: Read, Grep, Glob
+version: "1.1.0"
+---
+
+# /plan-l1l2l3 Skill - Implementation Planning with L1/L2/L3 Output
+
+---
+
+## Purpose
+
+Create implementation plans with Progressive Disclosure L1/L2/L3 output format.
+Produces structured plans that Main Agent can consume efficiently.
+
+---
+
+## Task
+
+$ARGUMENTS
+
+---
+
+## Output Requirements
+
+You MUST output in L1/L2/L3 format.
+
+### L1 Summary (stdout, ≤500 tokens)
+
+Return this YAML block as your primary output:
+
+```yaml
+taskId: {8-char-id}
+agentType: Plan
+summary: "1-2 sentence plan overview"
+status: success | partial | failed
+priority: CRITICAL | HIGH | MEDIUM | LOW
+recommendedRead:
+  - anchor: "#section-name"
+    reason: "why read this"
+l2Index:
+  - anchor: "#overview"
+    tokens: {number}
+    priority: HIGH
+    description: "Plan overview and goals"
+  - anchor: "#implementation-steps"
+    tokens: {number}
+    priority: CRITICAL
+    description: "Step-by-step implementation guide"
+  - anchor: "#dependencies"
+    tokens: {number}
+    priority: MEDIUM
+    description: "Required dependencies and blockers"
+  - anchor: "#risks"
+    tokens: {number}
+    priority: MEDIUM
+    description: "Potential risks and mitigations"
+l2Path: .agent/outputs/Plan/{taskId}.md
+requiresL2Read: true | false
+nextActionHint: "suggested next step"
+```
+
+### L2/L3 Detail File
+
+Write detailed plan to: `.agent/outputs/Plan/{taskId}.md`
+
+Format each section with anchors:
+
+```markdown
+## Overview {#overview}
+<!-- ~{tokens} tokens -->
+
+Plan overview and goals...
+
+## Implementation Steps {#implementation-steps}
+<!-- ~{tokens} tokens -->
+
+Step-by-step guide...
+
+## Dependencies {#dependencies}
+<!-- ~{tokens} tokens -->
+
+Required dependencies...
+
+## Risks {#risks}
+<!-- ~{tokens} tokens -->
+
+Potential risks and mitigations...
+```
+
+---
+
+## Execution Flow
+
+1. **Generate taskId**: 8-character unique ID (e.g., `pln-c3d4`)
+2. **Create output directory**: `.agent/outputs/Plan/` if not exists
+3. **Analyze requirements**: Read relevant files, understand context
+4. **Design plan**: Break down into steps, identify dependencies
+5. **Write L3 detail file**: `.agent/outputs/Plan/{taskId}.md`
+6. **Return L1 summary**: YAML block with l2Index pointing to sections
+
+---
+
+## Plan Structure Guidelines
+
+### Overview Section
+- Clear statement of goals
+- Scope definition
+- Success criteria
+
+### Implementation Steps Section
+- Numbered, actionable steps
+- File paths and specific changes
+- Estimated complexity per step
+
+### Dependencies Section
+- Required files/modules
+- External dependencies
+- Blocking tasks
+
+### Risks Section
+- Potential issues
+- Mitigation strategies
+- Rollback plans
+
+---
+
+## Priority Guidelines
+
+| Priority | When to Use |
+|----------|-------------|
+| CRITICAL | Implementation steps (always read) |
+| HIGH | Overview, key decisions |
+| MEDIUM | Dependencies, risks |
+| LOW | Background information |
+
+---
+
+## Example Output
+
+### L1 Summary (stdout)
+```yaml
+taskId: pln-9e2f
+agentType: Plan
+summary: "Plan to add L1/L2/L3 output format to Task subagents via skill injection"
+status: success
+priority: HIGH
+recommendedRead:
+  - anchor: "#implementation-steps"
+    reason: "contains the exact changes to make"
+l2Index:
+  - anchor: "#overview"
+    tokens: 300
+    priority: HIGH
+    description: "Goal and scope of the implementation"
+  - anchor: "#implementation-steps"
+    tokens: 800
+    priority: CRITICAL
+    description: "5-step implementation guide with file paths"
+  - anchor: "#dependencies"
+    tokens: 200
+    priority: MEDIUM
+    description: "Required hook files and skill files"
+  - anchor: "#risks"
+    tokens: 250
+    priority: MEDIUM
+    description: "Compatibility risks with existing hooks"
+l2Path: .agent/outputs/Plan/pln-9e2f.md
+requiresL2Read: true
+nextActionHint: "Read #implementation-steps to begin implementation"
+```
+
+### L3 Detail File (.agent/outputs/Plan/pln-9e2f.md)
+```markdown
+## Overview {#overview}
+<!-- ~300 tokens -->
+
+**Goal:** Ensure all Task subagents output in L1/L2/L3 format.
+**Scope:** Modify pd-inject.sh hook and create new skills.
+**Success Criteria:** All Explore/Plan/general-purpose agents return L1 YAML.
+
+## Implementation Steps {#implementation-steps}
+<!-- ~800 tokens -->
+
+1. **Create explore-l1l2l3 skill**
+   - Path: `.claude/skills/explore-l1l2l3/SKILL.md`
+   - Content: L1/L2/L3 format instructions for exploration
+
+2. **Create plan-l1l2l3 skill**
+   - Path: `.claude/skills/plan-l1l2l3/SKILL.md`
+   - Content: L1/L2/L3 format instructions for planning
+
+3. **Modify pd-inject.sh**
+   - Add skill-based injection logic
+   - Line 150+: Check agent type, inject appropriate skill
+
+4. **Test with sample queries**
+   - `/explore-l1l2l3 Find hook files`
+   - `/plan-l1l2l3 Design cache system`
+
+5. **Update _progress.yaml**
+   - Mark phase2 as completed
+
+## Dependencies {#dependencies}
+<!-- ~200 tokens -->
+
+- `.claude/hooks/task-pipeline/pd-inject.sh` (modify)
+- `.agent/outputs/` directory structure
+- Existing L1/L2/L3 format documentation
+
+## Risks {#risks}
+<!-- ~250 tokens -->
+
+| Risk | Mitigation |
+|------|------------|
+| Hook execution order | Verify pd-inject runs before task |
+| Output parsing failures | Add fallback to plain text |
+| Token budget exceeded | Implement token counting |
+```
+
+---
+
+## Tools Allowed
+
+- Read
+- Grep
+- Glob
+- Bash (read-only commands)
+
+---
+
+## Notes
+
+- Plans should be actionable and specific
+- Include file paths and line numbers where possible
+- Estimate step complexity (simple/medium/complex)
+- Always set `requiresL2Read: true` for plans (details matter)

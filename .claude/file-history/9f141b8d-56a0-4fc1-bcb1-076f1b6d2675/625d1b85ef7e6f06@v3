@@ -1,0 +1,94 @@
+#!/bin/bash
+# =============================================================================
+# Claude Code Auto-Backup Pre-Tool Hook
+# =============================================================================
+# Creates backup of files before Edit/Write operations.
+# Maintains last 100 backups organized by date.
+#
+# Matcher: Edit|Write
+# =============================================================================
+
+# Don't exit on error - backup failure shouldn't block editing
+set +e
+
+#=============================================================================
+# Configuration
+#=============================================================================
+
+BACKUP_ROOT="${HOME}/.claude/backups"
+BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%d)"
+MAX_BACKUPS=100
+
+#=============================================================================
+# JSON Helper
+#=============================================================================
+
+HAS_JQ=false
+if command -v jq &> /dev/null; then
+    HAS_JQ=true
+fi
+
+json_get() {
+    local field="$1"
+    local json="$2"
+
+    if $HAS_JQ; then
+        echo "$json" | jq -r "$field // empty" 2>/dev/null || echo ""
+    else
+        echo "$json" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    keys = '$field'.lstrip('.').split('.')
+    val = data
+    for k in keys:
+        if isinstance(val, dict):
+            val = val.get(k, '')
+        else:
+            val = ''
+    print(val if val else '')
+except:
+    print('')
+" 2>/dev/null || echo ""
+    fi
+}
+
+#=============================================================================
+# Main Logic
+#=============================================================================
+
+# Read input from stdin
+INPUT=$(cat)
+
+# Extract file path from tool input
+FILE_PATH=$(json_get '.tool_input.file_path' "$INPUT")
+
+# Skip if no file path
+if [ -z "$FILE_PATH" ]; then
+    echo '{}'
+    exit 0
+fi
+
+# Skip if file doesn't exist (new file creation)
+if [ ! -f "$FILE_PATH" ]; then
+    echo '{}'
+    exit 0
+fi
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR" 2>/dev/null
+
+# Create backup with timestamp
+BACKUP_NAME="$(basename "$FILE_PATH").$(date +%H%M%S).bak"
+cp "$FILE_PATH" "$BACKUP_DIR/$BACKUP_NAME" 2>/dev/null
+
+# Keep only last N backups (cleanup old ones)
+find "$BACKUP_ROOT" -type f -name "*.bak" 2>/dev/null | \
+    sort -r | \
+    tail -n +$((MAX_BACKUPS + 1)) | \
+    xargs rm -f 2>/dev/null || true
+
+# Output empty JSON for consistency (per claude-code-guide recommendation)
+echo '{}'
+
+exit 0

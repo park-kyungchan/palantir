@@ -1,0 +1,66 @@
+---
+name: workers
+description: |
+  Check status of all worker terminals in multi-terminal orchestration.
+  Display pending tasks, completed tasks, and blocked dependencies.
+  Show real-time progress dashboard for Terminal B, C, D workers.
+  Use when monitoring parallel task execution or checking worker availability.
+user-invocable: true
+model: sonnet
+version: "1.1.0"
+---
+
+# Worker Status Dashboard
+
+Display current status of all worker terminals.
+
+## Live Status
+
+### Progress Tracker
+```bash
+cat .agent/prompts/_progress.yaml 2>/dev/null
+```
+
+### Pending Tasks
+```bash
+echo "=== PENDING ===" && ls -la .agent/prompts/pending/ 2>/dev/null || echo "None"
+```
+
+### Completed Tasks
+```bash
+echo "=== COMPLETED ===" && ls -la .agent/prompts/completed/ 2>/dev/null | tail -10
+```
+
+### Recent Activity Log
+```bash
+echo "=== RECENT LOGS ===" && tail -20 .agent/logs/prompt_lifecycle.log 2>/dev/null || echo "No logs"
+```
+
+## Output Format
+
+Summarize in this format:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ WORKER STATUS DASHBOARD                                  │
+├───────────┬──────────┬──────────────────────────────────┤
+│ Terminal  │ Status   │ Current Task                     │
+├───────────┼──────────┼──────────────────────────────────┤
+│ B         │ {status} │ {task or "idle"}                 │
+│ C         │ {status} │ {task or "idle"}                 │
+│ D         │ {status} │ {task or "idle"}                 │
+└───────────┴──────────┴──────────────────────────────────┘
+
+Completed: {n} tasks
+Pending: {n} tasks
+Blocked: {list or "none"}
+
+Next Action: {recommendation}
+```
+
+## Recommendations
+
+Based on status, suggest:
+- If workers idle + pending tasks → "Assign pending tasks"
+- If all complete → "Run E2E verification"
+- If blocked → "Resolve {blocker} first"

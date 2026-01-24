@@ -1,0 +1,1318 @@
+● ★ Insight ─────────────────────────────────────                                                                                           
+  Task Decomposition의 핵심 설계:                                                                                                           
+  1. globalContextChecklist: 각 Worker Task 파일에 "전체맥락 관점 체크리스트" 포함                                                          
+  2. 영어 + Machine-Readable: 모든 파일이 Claude Code CLI에서 직접 파싱 가능                                                                
+  3. 의존성 명시: blockedBy 필드로 작업 순서 강제                                                                                           
+  4. 검증 가능: 각 Phase에 verificationSteps 포함                                                                                           
+  ─────────────────────────────────────────────────                                                                                         
+                                                                                                                                            
+  ---                                                                                                                                       
+  계획 완료 요약                                                                                                                            
+                                                                                                                                            
+  생성할 파일 (5개)                                                                                                                         
+  ┌────────────────────┬──────────────────────────────┬────────────┐                                                                        
+  │        파일        │             용도             │    크기    │                                                                        
+  ├────────────────────┼──────────────────────────────┼────────────┤                                                                        
+  │ _context.yaml      │ 전체 맥락 (모든 Worker 필독) │ ~150 lines │                                                                        
+  ├────────────────────┼──────────────────────────────┼────────────┤                                                                        
+  │ _progress.yaml     │ 실시간 진행 상황             │ ~60 lines  │                                                                        
+  ├────────────────────┼──────────────────────────────┼────────────┤                                                                        
+  │ worker-b-task.yaml │ Terminal B: Phase 1          │ ~100 lines │                                                                        
+  ├────────────────────┼──────────────────────────────┼────────────┤                                                                        
+  │ worker-c-task.yaml │ Terminal C: Phase 2          │ ~120 lines │                                                                        
+  ├────────────────────┼──────────────────────────────┼────────────┤                                                                        
+  │ worker-d-task.yaml │ Terminal D: Phase 3          │ ~100 lines │                                                                        
+  └────────────────────┴──────────────────────────────┴────────────┘                                                                        
+  각 Worker 작업 흐름                                                                                                                       
+                                                                                                                                            
+  1. Read _context.yaml        → "전체 목표는 무엇인가?"                                                                                    
+  2. Read _progress.yaml       → "다른 터미널 상황은?"                                                                                      
+  3. Read worker-{x}-task.yaml → "내 작업 범위는?"                                                                                          
+  4. globalContextChecklist    → "전체 맥락에서 추가 고려할 것은?"                                                                          
+  5. 구현                                                                                                                                   
+  6. Update _progress.yaml     → "내 상태 업데이트"                                                                                         
+  7. L1/L2/L3 보고                                                                                                                          
+                                                                                                                                            
+● User approved Claude's plan                                                                                                               
+  ⎿  Plan saved to: .claude/plans/streamed-wishing-scott.md · /plan to edit                                                                 
+     Session-Aware Worker Prompt System                                                                                                     
+                                                                                                                                            
+     Plan ID: streamed-wishing-scott                                                                                                        
+     Created: 2026-01-24                                                                                                                    
+     Status: Pending Approval                                                                                                               
+     Mode: Pilot (Incremental Improvement)                                                                                                  
+     Language: English (Machine-Readable)                                                                                                   
+     Format: YAML/Markdown Only                                                                                                             
+                                                                                                                                            
+     ---                                                                                                                                    
+     CRITICAL RULES                                                                                                                         
+                                                                                                                                            
+     1. All files MUST be in English - For machine-readability and Claude Code compatibility                                                
+     2. All files MUST be YAML or Markdown - No prose, only structured data                                                                 
+     3. Each Worker reads 2 files: _context.yaml (big picture) + worker-{x}-task.yaml (my task)                                             
+     4. Each Worker MUST think: "What else should I consider from the global context perspective?"                                          
+                                                                                                                                            
+     ---                                                                                                                                    
+     0. 생성할 파일 목록 (즉시 실행)                                                                                                        
+     ┌───────────────────────────────────┬────────────────────────┬─────────────┐                                                           
+     │               파일                │          용도          │ 읽는 터미널 │                                                           
+     ├───────────────────────────────────┼────────────────────────┼─────────────┤                                                           
+     │ .agent/prompts/_context.yaml      │ 전체맥락 (Big Picture) │ 모든 터미널 │                                                           
+     ├───────────────────────────────────┼────────────────────────┼─────────────┤                                                           
+     │ .agent/prompts/worker-b-task.yaml │ Terminal B 작업 지시   │ Terminal B  │                                                           
+     ├───────────────────────────────────┼────────────────────────┼─────────────┤                                                           
+     │ .agent/prompts/worker-c-task.yaml │ Terminal C 작업 지시   │ Terminal C  │                                                           
+     ├───────────────────────────────────┼────────────────────────┼─────────────┤                                                           
+     │ .agent/prompts/worker-d-task.yaml │ Terminal D 작업 지시   │ Terminal D  │                                                           
+     └───────────────────────────────────┴────────────────────────┴─────────────┘                                                           
+     ---                                                                                                                                    
+     1. 목표                                                                                                                                
+                                                                                                                                            
+     1. 세션 추적: CLAUDE_SESSION_ID 파일 기반 레지스트리로 터미널 식별                                                                     
+     2. Machine-Readable 프롬프트: Worker 프롬프트를 YAML 파일로 전달                                                                       
+     3. Orchestrator 워크플로우 최적화: Main Agent가 파일 생성 → Worker가 파일 읽기                                                         
+                                                                                                                                            
+     ---                                                                                                                                    
+     2. 핵심 설계 결정                                                                                                                      
+                                                                                                                                            
+     2.1 환경변수 대신 파일 기반 세션 레지스트리                                                                                            
+                                                                                                                                            
+     문제: Hook의 export는 부모 프로세스로 전파 불가 (shell 한계)                                                                           
+                                                                                                                                            
+     해결: .agent/tmp/current_session.json 파일 사용                                                                                        
+                                                                                                                                            
+     {                                                                                                                                      
+       "sessionId": "1769181929-610430",                                                                                                    
+       "startTime": "2026-01-24T00:00:00Z",                                                                                                 
+       "pid": "610430",                                                                                                                     
+       "status": "active"                                                                                                                   
+     }                                                                                                                                      
+                                                                                                                                            
+     2.2 Worker 프롬프트 파일 구조                                                                                                          
+                                                                                                                                            
+     ---                                                                                                                                    
+     promptId: abc12345                                                                                                                     
+     sessionId: 1769181929-610430                                                                                                           
+     timestamp: 2026-01-24T00:00:00Z                                                                                                        
+     subagentType: Explore                                                                                                                  
+     model: opus                                                                                                                            
+     outputFormat: L1/L2/L3                                                                                                                 
+     cacheInputHash: def67890                                                                                                               
+     ---                                                                                                                                    
+                                                                                                                                            
+     ## Task Description                                                                                                                    
+     {Original prompt content}                                                                                                              
+                                                                                                                                            
+     ## Output Format                                                                                                                       
+     {L1/L2/L3 instructions}                                                                                                                
+                                                                                                                                            
+     2.3 프롬프트 파일 Lifecycle                                                                                                            
+                                                                                                                                            
+     pending/ → active/ → completed/                                                                                                        
+        │          │           │                                                                                                            
+        │          │           └── 완료 후 아카이브 (audit trail)                                                                           
+        │          └── Worker 실행 중                                                                                                       
+        └── Main Agent가 생성, Worker 대기                                                                                                  
+                                                                                                                                            
+     ---                                                                                                                                    
+     3. 디렉토리 구조                                                                                                                       
+                                                                                                                                            
+     .agent/                                                                                                                                
+     ├── prompts/                    # NEW                                                                                                  
+     │   ├── pending/                # 대기 중인 프롬프트                                                                                   
+     │   │   └── {session8}-{promptId}.yaml                                                                                                 
+     │   ├── active/                 # 실행 중                                                                                              
+     │   └── completed/              # 완료됨                                                                                               
+     ├── tmp/                                                                                                                               
+     │   ├── current_session.json    # NEW: 세션 레지스트리                                                                                 
+     │   └── sessions/                                                                                                                      
+     └── outputs/                    # 기존 L3 파일                                                                                         
+                                                                                                                                            
+     ---                                                                                                                                    
+     4. 수정 파일 목록                                                                                                                      
+     ┌────────────────────────────────────────────────────┬────────────────────────────────────────────────────┬──────────┐                 
+     │                        파일                        │                     수정 내용                      │ 우선순위 │                 
+     ├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────┤                 
+     │ .claude/hooks/session-start.sh                     │ current_session.json 생성, prompts 디렉토리 초기화 │ P1       │                 
+     ├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────┤                 
+     │ .claude/hooks/task-pipeline/pd-task-interceptor.sh │ 세션 ID 파일 읽기, 프롬프트 파일 생성              │ P1       │                 
+     ├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────┤                 
+     │ .claude/hooks/task-pipeline/pd-task-processor.sh   │ 프롬프트 파일 lifecycle 관리                       │ P2       │                 
+     ├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────┤                 
+     │ .claude/hooks/session-health.sh                    │ 세션 ID 파일에서 읽기                              │ P2       │                 
+     ├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┼──────────┤                 
+     │ .claude/hooks/session-end.sh                       │ 세션 상태 업데이트                                 │ P3       │                 
+     └────────────────────────────────────────────────────┴────────────────────────────────────────────────────┴──────────┘                 
+     ---                                                                                                                                    
+     5. 구현 단계                                                                                                                           
+                                                                                                                                            
+     Phase 1: 세션 레지스트리 (session-start.sh)                                                                                            
+                                                                                                                                            
+     위치: 라인 301 이후                                                                                                                    
+                                                                                                                                            
+     # Write current session to file registry                                                                                               
+     CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"                                                                             
+     cat > "$CURRENT_SESSION_FILE" << SESSION_EOF                                                                                           
+     {                                                                                                                                      
+       "sessionId": "$SESSION_ID",                                                                                                          
+       "startTime": "$TIMESTAMP",                                                                                                           
+       "pid": "$$",                                                                                                                         
+       "status": "active"                                                                                                                   
+     }                                                                                                                                      
+     SESSION_EOF                                                                                                                            
+                                                                                                                                            
+     # Create prompts directories                                                                                                           
+     mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null                                                                        
+     mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null                                                                         
+     mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null                                                                      
+                                                                                                                                            
+     Phase 2: 프롬프트 파일 생성 (pd-task-interceptor.sh)                                                                                   
+                                                                                                                                            
+     위치: 라인 160 이후 (세션 ID 읽기)                                                                                                     
+                                                                                                                                            
+     # Read session from file registry                                                                                                      
+     SESSION_REGISTRY="${HOME}/.agent/tmp/current_session.json"                                                                             
+     ORCHESTRATOR_SESSION_ID="unknown"                                                                                                      
+     if [ -f "$SESSION_REGISTRY" ]; then                                                                                                    
+         ORCHESTRATOR_SESSION_ID=$(json_get '.sessionId' "$(cat "$SESSION_REGISTRY")")                                                      
+     fi                                                                                                                                     
+                                                                                                                                            
+     위치: 라인 290 이후 (새 함수)                                                                                                          
+                                                                                                                                            
+     create_worker_prompt_file() {                                                                                                          
+         local subagent_type="$1"                                                                                                           
+         local original_prompt="$2"                                                                                                         
+         local cache_hash="$3"                                                                                                              
+                                                                                                                                            
+         local prompt_id=$(date +%s | tail -c 9)                                                                                            
+         local session_prefix="${ORCHESTRATOR_SESSION_ID:0:8}"                                                                              
+         local prompt_file="${WORKSPACE_ROOT}/.agent/prompts/pending/${session_prefix}-${prompt_id}.yaml"                                   
+                                                                                                                                            
+         cat > "$prompt_file" << PROMPT_EOF                                                                                                 
+     ---                                                                                                                                    
+     promptId: $prompt_id                                                                                                                   
+     sessionId: $ORCHESTRATOR_SESSION_ID                                                                                                    
+     timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)                                                                                              
+     subagentType: $subagent_type                                                                                                           
+     model: opus                                                                                                                            
+     outputFormat: L1/L2/L3                                                                                                                 
+     cacheInputHash: $cache_hash                                                                                                            
+     ---                                                                                                                                    
+                                                                                                                                            
+     $original_prompt                                                                                                                       
+                                                                                                                                            
+     $L1L2L3_PROMPT                                                                                                                         
+     PROMPT_EOF                                                                                                                             
+                                                                                                                                            
+         echo "$prompt_file"                                                                                                                
+     }                                                                                                                                      
+                                                                                                                                            
+     Phase 3: 프롬프트 Lifecycle (pd-task-processor.sh)                                                                                     
+                                                                                                                                            
+     위치: 라인 270 이후                                                                                                                    
+                                                                                                                                            
+     # Move prompt file: pending → completed                                                                                                
+     PROMPT_FILE=$(json_get '.tool_input._workerPromptFile' "$INPUT")                                                                       
+     if [[ -n "$PROMPT_FILE" && -f "$PROMPT_FILE" ]]; then                                                                                  
+         COMPLETED_DIR="${WORKSPACE_ROOT}/.agent/prompts/completed"                                                                         
+         mv "$PROMPT_FILE" "$COMPLETED_DIR/" 2>/dev/null || true                                                                            
+     fi                                                                                                                                     
+                                                                                                                                            
+     ---                                                                                                                                    
+     6. 성능 목표                                                                                                                           
+     ┌────────────────────┬──────┬──────────────────────┐                                                                                   
+     │        작업        │ 목표 │         방법         │                                                                                   
+     ├────────────────────┼──────┼──────────────────────┤                                                                                   
+     │ 세션 파일 읽기     │ <1ms │ 단일 JSON 파일       │                                                                                   
+     ├────────────────────┼──────┼──────────────────────┤                                                                                   
+     │ 프롬프트 파일 쓰기 │ <2ms │ 사전 생성된 디렉토리 │                                                                                   
+     ├────────────────────┼──────┼──────────────────────┤                                                                                   
+     │ 전체 오버헤드      │ <5ms │ jq 우선 사용         │                                                                                   
+     └────────────────────┴──────┴──────────────────────┘                                                                                   
+     ---                                                                                                                                    
+     7. 검증 방법                                                                                                                           
+                                                                                                                                            
+     7.1 세션 ID 확인                                                                                                                       
+                                                                                                                                            
+     cat ~/.agent/tmp/current_session.json                                                                                                  
+     # 예상: {"sessionId": "...", "status": "active"}                                                                                       
+                                                                                                                                            
+     7.2 프롬프트 파일 생성 확인                                                                                                            
+                                                                                                                                            
+     ls -la .agent/prompts/pending/                                                                                                         
+     # Task 호출 후 YAML 파일 존재 확인                                                                                                     
+                                                                                                                                            
+     7.3 Lifecycle 확인                                                                                                                     
+                                                                                                                                            
+     # Task 완료 후                                                                                                                         
+     ls -la .agent/prompts/completed/                                                                                                       
+     # 프롬프트 파일이 이동됨 확인                                                                                                          
+                                                                                                                                            
+     7.4 성능 벤치마크                                                                                                                      
+                                                                                                                                            
+     # 10회 Task 실행 시간 측정                                                                                                             
+     time for i in {1..10}; do                                                                                                              
+       # Task subagent 호출                                                                                                                 
+     done                                                                                                                                   
+     # 기존 대비 <5ms 증가 확인                                                                                                             
+                                                                                                                                            
+     ---                                                                                                                                    
+     8. Rollback Plan                                                                                                                       
+                                                                                                                                            
+     문제 발생 시:                                                                                                                          
+     1. session-start.sh에서 current_session.json 생성 제거                                                                                 
+     2. pd-task-interceptor.sh에서 프롬프트 파일 생성 제거                                                                                  
+     3. 기존 inline JSON 방식으로 자동 폴백                                                                                                 
+     4. .agent/prompts/ 디렉토리는 유지 (데이터 손실 없음)                                                                                  
+                                                                                                                                            
+     ---                                                                                                                                    
+     9. Task Decomposition (N개 터미널 병렬 작업)                                                                                           
+                                                                                                                                            
+     9.1 전체 컨텍스트 파일 구조                                                                                                            
+                                                                                                                                            
+     핵심 원칙: 각 Worker가 전체 흐름 + 자신의 작업 범위를 동시에 파악                                                                      
+                                                                                                                                            
+     .agent/prompts/                                                                                                                        
+     ├── _context.yaml              # 전체 프로젝트 컨텍스트 (모든 Worker 공유)                                                             
+     ├── _progress.yaml             # 실시간 진행 상황 (Worker가 업데이트)                                                                  
+     ├── pending/                                                                                                                           
+     │   ├── worker-b-task.yaml     # Terminal B 전용                                                                                       
+     │   ├── worker-c-task.yaml     # Terminal C 전용                                                                                       
+     │   └── worker-d-task.yaml     # Terminal D 전용                                                                                       
+     └── completed/                                                                                                                         
+                                                                                                                                            
+     9.2 _context.yaml (전체 흐름 - 모든 Worker 필독)                                                                                       
+                                                                                                                                            
+     # .agent/prompts/_context.yaml                                                                                                         
+     # 모든 Worker가 작업 시작 전 반드시 읽어야 함                                                                                          
+                                                                                                                                            
+     version: "1.0"                                                                                                                         
+     project: "Session-Aware Worker Prompt System"                                                                                          
+     orchestrator: "Terminal-A (Main Agent)"                                                                                                
+     lastUpdated: "2026-01-24T00:30:00Z"                                                                                                    
+                                                                                                                                            
+     # 전체 목표 (Big Picture)                                                                                                              
+     objectives:                                                                                                                            
+       - "세션 추적: CLAUDE_SESSION_ID 파일 기반 레지스트리"                                                                                
+       - "Machine-Readable 프롬프트: YAML 파일 전달"                                                                                        
+       - "성능 목표: <5ms 오버헤드"                                                                                                         
+                                                                                                                                            
+     # 구현 단계 (전체 흐름)                                                                                                                
+     phases:                                                                                                                                
+       phase1:                                                                                                                              
+         name: "세션 레지스트리"                                                                                                            
+         status: pending  # pending | in_progress | completed                                                                               
+         owner: "Terminal-B"                                                                                                                
+         files:                                                                                                                             
+           - ".claude/hooks/session-start.sh"                                                                                               
+         dependencies: []                                                                                                                   
+                                                                                                                                            
+       phase2:                                                                                                                              
+         name: "프롬프트 파일 생성"                                                                                                         
+         status: pending                                                                                                                    
+         owner: "Terminal-C"                                                                                                                
+         files:                                                                                                                             
+           - ".claude/hooks/task-pipeline/pd-task-interceptor.sh"                                                                           
+         dependencies: ["phase1"]  # phase1 완료 후 시작                                                                                    
+                                                                                                                                            
+       phase3:                                                                                                                              
+         name: "프롬프트 Lifecycle"                                                                                                         
+         status: pending                                                                                                                    
+         owner: "Terminal-D"                                                                                                                
+         files:                                                                                                                             
+           - ".claude/hooks/task-pipeline/pd-task-processor.sh"                                                                             
+         dependencies: ["phase2"]                                                                                                           
+                                                                                                                                            
+     # 공유 규칙                                                                                                                            
+     sharedRules:                                                                                                                           
+       - "수정 전 반드시 Read로 파일 확인"                                                                                                  
+       - "완료 시 _progress.yaml 업데이트"                                                                                                  
+       - "충돌 시 Orchestrator에 보고"                                                                                                      
+                                                                                                                                            
+     9.3 _progress.yaml (실시간 진행 상황)                                                                                                  
+                                                                                                                                            
+     # .agent/prompts/_progress.yaml                                                                                                        
+     # Worker가 작업 시작/완료 시 업데이트                                                                                                  
+                                                                                                                                            
+     lastUpdated: "2026-01-24T00:30:00Z"                                                                                                    
+                                                                                                                                            
+     terminals:                                                                                                                             
+       terminal-b:                                                                                                                          
+         status: "in_progress"  # idle | in_progress | completed | blocked                                                                  
+         currentTask: "phase1"                                                                                                              
+         startedAt: "2026-01-24T00:30:00Z"                                                                                                  
+         lastActivity: "2026-01-24T00:35:00Z"                                                                                               
+                                                                                                                                            
+       terminal-c:                                                                                                                          
+         status: "idle"                                                                                                                     
+         currentTask: null                                                                                                                  
+         blockedBy: "phase1"    # 의존성으로 대기 중                                                                                        
+                                                                                                                                            
+       terminal-d:                                                                                                                          
+         status: "idle"                                                                                                                     
+         currentTask: null                                                                                                                  
+         blockedBy: "phase2"                                                                                                                
+                                                                                                                                            
+     completedTasks:                                                                                                                        
+       - taskId: "phase0-setup"                                                                                                             
+         completedBy: "terminal-a"                                                                                                          
+         completedAt: "2026-01-24T00:25:00Z"                                                                                                
+                                                                                                                                            
+     9.4 Worker별 Task 파일 구조                                                                                                            
+                                                                                                                                            
+     Terminal B Task: worker-b-task.yaml                                                                                                    
+                                                                                                                                            
+     ---                                                                                                                                    
+     # Worker Task Manifest                                                                                                                 
+     taskId: "phase1-session-registry"                                                                                                      
+     assignedTo: "Terminal-B"                                                                                                               
+     orchestrator: "Terminal-A"                                                                                                             
+                                                                                                                                            
+     # 전체 컨텍스트 참조 (필수)                                                                                                            
+     contextFile: ".agent/prompts/_context.yaml"                                                                                            
+     progressFile: ".agent/prompts/_progress.yaml"                                                                                          
+                                                                                                                                            
+     # 내 작업 범위                                                                                                                         
+     scope:                                                                                                                                 
+       phase: "phase1"                                                                                                                      
+       name: "세션 레지스트리 구현"                                                                                                         
+                                                                                                                                            
+       # 수정 대상 파일 (이것만 수정)                                                                                                       
+       targetFiles:                                                                                                                         
+         - path: ".claude/hooks/session-start.sh"                                                                                           
+           sections:                                                                                                                        
+             - "라인 301 이후: current_session.json 생성"                                                                                   
+             - "prompts 디렉토리 초기화"                                                                                                    
+           readOnly: false                                                                                                                  
+                                                                                                                                            
+       # 참조용 파일 (읽기만)                                                                                                               
+       referenceFiles:                                                                                                                      
+         - path: ".claude/hooks/session-end.sh"                                                                                             
+           reason: "세션 종료 패턴 참고"                                                                                                    
+                                                                                                                                            
+     # 의존성                                                                                                                               
+     dependencies: []  # 없음 - 즉시 시작 가능                                                                                              
+                                                                                                                                            
+     # 완료 조건                                                                                                                            
+     completionCriteria:                                                                                                                    
+       - "current_session.json 파일 생성 로직 추가"                                                                                         
+       - ".agent/prompts/ 디렉토리 생성 로직 추가"                                                                                          
+       - "테스트: 새 세션 시작 시 파일 생성 확인"                                                                                           
+                                                                                                                                            
+     # 완료 후 행동                                                                                                                         
+     onComplete:                                                                                                                            
+       - "progress.yaml 업데이트: terminal-b.status = completed"                                                                            
+       - "context.yaml 업데이트: phase1.status = completed"                                                                                 
+       - "Orchestrator에 보고"                                                                                                              
+     ---                                                                                                                                    
+                                                                                                                                            
+     ## Task Description                                                                                                                    
+                                                                                                                                            
+     session-start.sh에 세션 레지스트리 파일 생성 로직을 추가합니다.                                                                        
+                                                                                                                                            
+     ### 구현 내용                                                                                                                          
+                                                                                                                                            
+     1. **current_session.json 생성** (라인 301 이후)                                                                                       
+                                                                                                                                            
+     \`\`\`bash                                                                                                                             
+     CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"                                                                             
+     cat > "$CURRENT_SESSION_FILE" << SESSION_EOF                                                                                           
+     {                                                                                                                                      
+       "sessionId": "$SESSION_ID",                                                                                                          
+       "startTime": "$TIMESTAMP",                                                                                                           
+       "pid": "$$",                                                                                                                         
+       "status": "active"                                                                                                                   
+     }                                                                                                                                      
+     SESSION_EOF                                                                                                                            
+     \`\`\`                                                                                                                                 
+                                                                                                                                            
+     2. **prompts 디렉토리 생성**                                                                                                           
+                                                                                                                                            
+     \`\`\`bash                                                                                                                             
+     mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null                                                                        
+     mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null                                                                         
+     mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null                                                                      
+     \`\`\`                                                                                                                                 
+                                                                                                                                            
+     ### 검증 방법                                                                                                                          
+                                                                                                                                            
+     \`\`\`bash                                                                                                                             
+     # 새 터미널에서 Claude 시작 후                                                                                                         
+     cat ~/.agent/tmp/current_session.json                                                                                                  
+     ls -la .agent/prompts/                                                                                                                 
+     \`\`\`                                                                                                                                 
+                                                                                                                                            
+     9.5 Orchestrator 워크플로우                                                                                                            
+                                                                                                                                            
+     ┌─────────────────────────────────────────────────────────────┐                                                                        
+     │ Terminal-A (Orchestrator)                                   │                                                                        
+     │                                                             │                                                                        
+     │ 1. _context.yaml 생성 (전체 흐름 정의)                       │                                                                       
+     │ 2. _progress.yaml 초기화                                    │                                                                        
+     │ 3. Worker Task 파일 생성 (worker-b/c/d-task.yaml)          │                                                                         
+     │ 4. Worker들에게 "파일 읽어서 작업해" 지시                    │                                                                       
+     │ 5. _progress.yaml 모니터링                                  │                                                                        
+     │ 6. 완료 시 검증 및 다음 단계 배포                            │                                                                       
+     └──────────────────────┬──────────────────────────────────────┘                                                                        
+                            │                                                                                                               
+            ┌───────────────┼───────────────┐                                                                                               
+            ▼               ▼               ▼                                                                                               
+     ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                                                                                        
+     │ Terminal-B  │ │ Terminal-C  │ │ Terminal-D  │                                                                                        
+     │             │ │             │ │             │                                                                                        
+     │ 1. Read     │ │ 1. Read     │ │ 1. Read     │                                                                                        
+     │  _context   │ │  _context   │ │  _context   │                                                                                        
+     │             │ │             │ │             │                                                                                        
+     │ 2. Read     │ │ 2. Read     │ │ 2. Read     │                                                                                        
+     │  worker-b   │ │  worker-c   │ │  worker-d   │                                                                                        
+     │  -task.yaml │ │  -task.yaml │ │  -task.yaml │                                                                                        
+     │             │ │             │ │             │                                                                                        
+     │ 3. 작업     │ │ 3. 대기     │ │ 3. 대기     │                                                                                        
+     │  (phase1)   │ │  (phase1   │ │  (phase2   │                                                                                          
+     │             │ │   완료대기) │ │   완료대기) │                                                                                        
+     │             │ │             │ │             │                                                                                        
+     │ 4. Update   │ │             │ │             │                                                                                        
+     │  _progress  │ │             │ │             │                                                                                        
+     └─────────────┘ └─────────────┘ └─────────────┘                                                                                        
+                                                                                                                                            
+     ---                                                                                                                                    
+     10. 현재 구현을 위한 Task 분배                                                                                                         
+                                                                                                                                            
+     Terminal-B 프롬프트 (Phase 1: 세션 레지스트리)                                                                                         
+                                                                                                                                            
+     ## 작업 지시                                                                                                                           
+                                                                                                                                            
+     1. 먼저 컨텍스트 파일을 읽어주세요:                                                                                                    
+        - .agent/prompts/_context.yaml (전체 흐름)                                                                                          
+        - .agent/prompts/worker-b-task.yaml (내 작업)                                                                                       
+                                                                                                                                            
+     2. 작업 대상 파일 확인:                                                                                                                
+        - .claude/hooks/session-start.sh                                                                                                    
+                                                                                                                                            
+     3. 구현:                                                                                                                               
+        - 라인 301 이후에 current_session.json 생성 로직 추가                                                                               
+        - prompts 디렉토리 초기화 로직 추가                                                                                                 
+                                                                                                                                            
+     4. 완료 후:                                                                                                                            
+        - .agent/prompts/_progress.yaml 업데이트                                                                                            
+        - L1/L2/L3 형식으로 결과 보고                                                                                                       
+                                                                                                                                            
+     Terminal-C 프롬프트 (Phase 2: 프롬프트 파일 생성)                                                                                      
+                                                                                                                                            
+     ## 작업 지시                                                                                                                           
+                                                                                                                                            
+     1. 먼저 컨텍스트 파일을 읽어주세요:                                                                                                    
+        - .agent/prompts/_context.yaml (전체 흐름)                                                                                          
+        - .agent/prompts/_progress.yaml (현재 진행 상황)                                                                                    
+        - .agent/prompts/worker-c-task.yaml (내 작업)                                                                                       
+                                                                                                                                            
+     2. 의존성 확인:                                                                                                                        
+        - phase1 (Terminal-B) 완료 여부 확인                                                                                                
+        - 미완료 시 대기                                                                                                                    
+                                                                                                                                            
+     3. 작업 대상 파일:                                                                                                                     
+        - .claude/hooks/task-pipeline/pd-task-interceptor.sh                                                                                
+                                                                                                                                            
+     4. 구현:                                                                                                                               
+        - 세션 ID 파일 읽기 로직                                                                                                            
+        - create_worker_prompt_file() 함수 추가                                                                                             
+                                                                                                                                            
+     Terminal-D 프롬프트 (Phase 3: 프롬프트 Lifecycle)                                                                                      
+                                                                                                                                            
+     ## 작업 지시                                                                                                                           
+                                                                                                                                            
+     1. 먼저 컨텍스트 파일을 읽어주세요:                                                                                                    
+        - .agent/prompts/_context.yaml (전체 흐름)                                                                                          
+        - .agent/prompts/_progress.yaml (현재 진행 상황)                                                                                    
+        - .agent/prompts/worker-d-task.yaml (내 작업)                                                                                       
+                                                                                                                                            
+     2. 의존성 확인:                                                                                                                        
+        - phase2 (Terminal-C) 완료 여부 확인                                                                                                
+                                                                                                                                            
+     3. 작업 대상 파일:                                                                                                                     
+        - .claude/hooks/task-pipeline/pd-task-processor.sh                                                                                  
+                                                                                                                                            
+     4. 구현:                                                                                                                               
+        - 프롬프트 파일 lifecycle 관리 (pending → completed)                                                                                
+                                                                                                                                            
+     ---                                                                                                                                    
+     11. Worker가 전체 흐름을 잃지 않는 방법                                                                                                
+                                                                                                                                            
+     11.1 매 작업 시작 전 체크리스트                                                                                                        
+                                                                                                                                            
+     # Worker 체크리스트 (모든 터미널 공통)                                                                                                 
+     beforeStart:                                                                                                                           
+       - [ ] Read .agent/prompts/_context.yaml   # 전체 목표 확인                                                                           
+       - [ ] Read .agent/prompts/_progress.yaml  # 현재 진행 상황                                                                           
+       - [ ] Read 내 task 파일                   # 내 작업 범위 확인                                                                        
+       - [ ] dependencies 확인                   # 선행 작업 완료 여부                                                                      
+                                                                                                                                            
+     duringWork:                                                                                                                            
+       - [ ] targetFiles만 수정                  # 범위 초과 금지                                                                           
+       - [ ] referenceFiles는 읽기만             # 참조용                                                                                   
+                                                                                                                                            
+     afterComplete:                                                                                                                         
+       - [ ] _progress.yaml 업데이트             # 상태 반영                                                                                
+       - [ ] L1/L2/L3 형식으로 결과 보고         # 표준 출력                                                                                
+                                                                                                                                            
+     11.2 컨텍스트 유지 구조                                                                                                                
+                                                                                                                                            
+     ┌────────────────────────────────────────────────────┐                                                                                 
+     │ _context.yaml (불변)                               │                                                                                 
+     │ - 전체 목표                                        │                                                                                 
+     │ - 모든 Phase 목록                                  │                                                                                 
+     │ - 의존성 그래프                                    │                                                                                 
+     │ → Worker는 "내가 어디에 있는지" 항상 파악 가능     │                                                                                 
+     └────────────────────────────────────────────────────┘                                                                                 
+                           │                                                                                                                
+                           ▼                                                                                                                
+     ┌────────────────────────────────────────────────────┐                                                                                 
+     │ _progress.yaml (가변)                              │                                                                                 
+     │ - 실시간 진행 상황                                 │                                                                                 
+     │ - 누가 무엇을 하고 있는지                          │                                                                                 
+     │ → Worker는 "다른 터미널 상황"도 파악 가능          │                                                                                 
+     └────────────────────────────────────────────────────┘                                                                                 
+                           │                                                                                                                
+                           ▼                                                                                                                
+     ┌────────────────────────────────────────────────────┐                                                                                 
+     │ worker-{x}-task.yaml (터미널별)                    │                                                                                 
+     │ - 내 작업 범위만 명시                              │                                                                                 
+     │ - 수정 대상 파일 목록                              │                                                                                 
+     │ - 완료 조건                                        │                                                                                 
+     │ → Worker는 "내 일에만 집중" 가능                   │                                                                                 
+     └────────────────────────────────────────────────────┘                                                                                 
+                                                                                                                                            
+     ---                                                                                                                                    
+                                                                                                                                            
+     ## APPENDIX A: _context.yaml (Full Content)                                                                                            
+                                                                                                                                            
+     ```yaml                                                                                                                                
+     # =============================================================================                                                        
+     # Global Context for Session-Aware Worker Prompt System                                                                                
+     # =============================================================================                                                        
+     # This file provides the BIG PICTURE for all Workers.                                                                                  
+     # Every Worker MUST read this file BEFORE starting their task.                                                                         
+     #                                                                                                                                      
+     # Location: .agent/prompts/_context.yaml                                                                                               
+     # Language: English (Machine-Readable)                                                                                                 
+     # =============================================================================                                                        
+                                                                                                                                            
+     version: "1.0"                                                                                                                         
+     project: "session-aware-worker-prompt-system"                                                                                          
+     orchestrator: "Terminal-A"                                                                                                             
+     createdAt: "2026-01-24T00:30:00Z"                                                                                                      
+     lastUpdated: "2026-01-24T00:30:00Z"                                                                                                    
+                                                                                                                                            
+     # =============================================================================                                                        
+     # PROJECT OBJECTIVES (Why are we doing this?)                                                                                          
+     # =============================================================================                                                        
+     objectives:                                                                                                                            
+       primary:                                                                                                                             
+         - "Enable session tracking via file-based CLAUDE_SESSION_ID registry"                                                              
+         - "Implement Machine-Readable worker prompt files (YAML format)"                                                                   
+         - "Optimize Orchestrator workflow: Main Agent creates → Worker reads"                                                              
+                                                                                                                                            
+       constraints:                                                                                                                         
+         - "Performance overhead must be < 5ms"                                                                                             
+         - "Must be compatible with existing L1/L2/L3 caching"                                                                              
+         - "Must not break existing pd-task-interceptor.sh / pd-task-processor.sh"                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # ARCHITECTURE OVERVIEW                                                                                                                
+     # =============================================================================                                                        
+     architecture:                                                                                                                          
+       sessionRegistry:                                                                                                                     
+         description: "File-based session ID storage (replaces env var export)"                                                             
+         location: "~/.agent/tmp/current_session.json"                                                                                      
+         format: "JSON"                                                                                                                     
+         fields:                                                                                                                            
+           - sessionId                                                                                                                      
+           - startTime                                                                                                                      
+           - pid                                                                                                                            
+           - status                                                                                                                         
+                                                                                                                                            
+       promptFiles:                                                                                                                         
+         description: "Worker task files in YAML format"                                                                                    
+         baseDirectory: ".agent/prompts/"                                                                                                   
+         structure:                                                                                                                         
+           pending: "Tasks waiting to be picked up"                                                                                         
+           active: "Tasks currently being processed"                                                                                        
+           completed: "Archived tasks (audit trail)"                                                                                        
+                                                                                                                                            
+       lifecycle:                                                                                                                           
+         flow: "pending → active → completed"                                                                                               
+         managedBy: "pd-task-processor.sh"                                                                                                  
+                                                                                                                                            
+     # =============================================================================                                                        
+     # IMPLEMENTATION PHASES                                                                                                                
+     # =============================================================================                                                        
+     phases:                                                                                                                                
+       phase1:                                                                                                                              
+         id: "phase1"                                                                                                                       
+         name: "Session Registry Implementation"                                                                                            
+         description: "Create current_session.json and prompts directory structure"                                                         
+         owner: "Terminal-B"                                                                                                                
+         status: "pending"                                                                                                                  
+         priority: "P0"                                                                                                                     
+                                                                                                                                            
+         targetFiles:                                                                                                                       
+           - path: ".claude/hooks/session-start.sh"                                                                                         
+             action: "MODIFY"                                                                                                               
+             sections:                                                                                                                      
+               - "Line 301+: Add current_session.json creation"                                                                             
+               - "Add prompts directory initialization"                                                                                     
+                                                                                                                                            
+         dependencies: []                                                                                                                   
+         blockedBy: []                                                                                                                      
+                                                                                                                                            
+         deliverables:                                                                                                                      
+           - "current_session.json created on session start"                                                                                
+           - ".agent/prompts/ directories created"                                                                                          
+                                                                                                                                            
+         verificationSteps:                                                                                                                 
+           - "Start new Claude session"                                                                                                     
+           - "Check: cat ~/.agent/tmp/current_session.json"                                                                                 
+           - "Check: ls -la .agent/prompts/"                                                                                                
+                                                                                                                                            
+       phase2:                                                                                                                              
+         id: "phase2"                                                                                                                       
+         name: "Prompt File Generation"                                                                                                     
+         description: "Read session ID from file, generate worker prompt YAML files"                                                        
+         owner: "Terminal-C"                                                                                                                
+         status: "pending"                                                                                                                  
+         priority: "P1"                                                                                                                     
+                                                                                                                                            
+         targetFiles:                                                                                                                       
+           - path: ".claude/hooks/task-pipeline/pd-task-interceptor.sh"                                                                     
+             action: "MODIFY"                                                                                                               
+             sections:                                                                                                                      
+               - "Line 160+: Add session ID file reading"                                                                                   
+               - "Line 290+: Add create_worker_prompt_file() function"                                                                      
+               - "Line 374+: Add workerPromptFile to hook output"                                                                           
+                                                                                                                                            
+         dependencies:                                                                                                                      
+           - "phase1"                                                                                                                       
+         blockedBy:                                                                                                                         
+           - "phase1"                                                                                                                       
+                                                                                                                                            
+         deliverables:                                                                                                                      
+           - "Session ID read from current_session.json"                                                                                    
+           - "YAML prompt files created in .agent/prompts/pending/"                                                                         
+                                                                                                                                            
+         verificationSteps:                                                                                                                 
+           - "Run Task subagent"                                                                                                            
+           - "Check: ls -la .agent/prompts/pending/"                                                                                        
+           - "Verify YAML structure"                                                                                                        
+                                                                                                                                            
+       phase3:                                                                                                                              
+         id: "phase3"                                                                                                                       
+         name: "Prompt Lifecycle Management"                                                                                                
+         description: "Move prompt files through lifecycle stages"                                                                          
+         owner: "Terminal-D"                                                                                                                
+         status: "pending"                                                                                                                  
+         priority: "P2"                                                                                                                     
+                                                                                                                                            
+         targetFiles:                                                                                                                       
+           - path: ".claude/hooks/task-pipeline/pd-task-processor.sh"                                                                       
+             action: "MODIFY"                                                                                                               
+             sections:                                                                                                                      
+               - "Line 270+: Add prompt file lifecycle management"                                                                          
+                                                                                                                                            
+         dependencies:                                                                                                                      
+           - "phase2"                                                                                                                       
+         blockedBy:                                                                                                                         
+           - "phase2"                                                                                                                       
+                                                                                                                                            
+         deliverables:                                                                                                                      
+           - "Prompt files moved: pending → completed"                                                                                      
+           - "Audit trail maintained"                                                                                                       
+                                                                                                                                            
+         verificationSteps:                                                                                                                 
+           - "Complete a Task"                                                                                                              
+           - "Check: ls -la .agent/prompts/completed/"                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # DEPENDENCY GRAPH                                                                                                                     
+     # =============================================================================                                                        
+     dependencyGraph: |                                                                                                                     
+       phase1 (Terminal-B)                                                                                                                  
+           │                                                                                                                                
+           ▼                                                                                                                                
+       phase2 (Terminal-C)                                                                                                                  
+           │                                                                                                                                
+           ▼                                                                                                                                
+       phase3 (Terminal-D)                                                                                                                  
+                                                                                                                                            
+     # =============================================================================                                                        
+     # GLOBAL CONSIDERATIONS (Workers MUST think about these)                                                                               
+     # =============================================================================                                                        
+     globalConsiderations:                                                                                                                  
+       performance:                                                                                                                         
+         - "Every file read adds latency - minimize I/O"                                                                                    
+         - "Use jq if available (faster than python3)"                                                                                      
+         - "Cache session ID after first read"                                                                                              
+                                                                                                                                            
+       compatibility:                                                                                                                       
+         - "Existing L1/L2/L3 format must continue working"                                                                                 
+         - "SKIP_AGENTS list must be respected"                                                                                             
+         - "Cache hit logic must not be broken"                                                                                             
+                                                                                                                                            
+       errorHandling:                                                                                                                       
+         - "If session file missing, fall back to 'unknown'"                                                                                
+         - "If prompts directory missing, create it"                                                                                        
+         - "Never fail silently - log errors"                                                                                               
+                                                                                                                                            
+       testing:                                                                                                                             
+         - "Test with all subagent types: Explore, Plan, general-purpose"                                                                   
+         - "Test with SKIP_AGENTS: claude-code-guide, onboarding-guide"                                                                     
+         - "Measure execution time before and after"                                                                                        
+                                                                                                                                            
+     # =============================================================================                                                        
+     # SHARED RULES                                                                                                                         
+     # =============================================================================                                                        
+     sharedRules:                                                                                                                           
+       beforeModifying:                                                                                                                     
+         - "ALWAYS Read the target file first"                                                                                              
+         - "ALWAYS check _progress.yaml for conflicts"                                                                                      
+         - "NEVER modify files outside your targetFiles list"                                                                               
+                                                                                                                                            
+       afterCompleting:                                                                                                                     
+         - "Update _progress.yaml with your status"                                                                                         
+         - "Report results in L1/L2/L3 format"                                                                                              
+         - "Notify Orchestrator if blocked"                                                                                                 
+                                                                                                                                            
+       onConflict:                                                                                                                          
+         - "Stop immediately"                                                                                                               
+         - "Do NOT force changes"                                                                                                           
+         - "Report to Orchestrator with details"                                                                                            
+                                                                                                                                            
+     # =============================================================================                                                        
+     # REFERENCE FILES (Read-Only for context)                                                                                              
+     # =============================================================================                                                        
+     referenceFiles:                                                                                                                        
+       - path: ".claude/hooks/session-end.sh"                                                                                               
+         reason: "See existing session termination pattern"                                                                                 
+       - path: ".claude/hooks/session-health.sh"                                                                                            
+         reason: "See existing SESSION_ID usage attempt"                                                                                    
+       - path: ".claude/cache/l1l2l3_prompt_escaped.txt"                                                                                    
+         reason: "See cached L1/L2/L3 prompt format"                                                                                        
+       - path: ".claude/registry.yaml"                                                                                                      
+         reason: "See component registration pattern"                                                                                       
+                                                                                                                                            
+     ---                                                                                                                                    
+     APPENDIX B: worker-b-task.yaml (Full Content)                                                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # Worker Task: Terminal-B - Session Registry Implementation                                                                            
+     # =============================================================================                                                        
+     # Read this file AFTER reading _context.yaml                                                                                           
+     #                                                                                                                                      
+     # Location: .agent/prompts/worker-b-task.yaml                                                                                          
+     # Language: English (Machine-Readable)                                                                                                 
+     # =============================================================================                                                        
+                                                                                                                                            
+     taskId: "phase1-session-registry"                                                                                                      
+     assignedTo: "Terminal-B"                                                                                                               
+     orchestrator: "Terminal-A"                                                                                                             
+     createdAt: "2026-01-24T00:30:00Z"                                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # CONTEXT REFERENCE                                                                                                                    
+     # =============================================================================                                                        
+     contextFile: ".agent/prompts/_context.yaml"                                                                                            
+     progressFile: ".agent/prompts/_progress.yaml"                                                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # MY SCOPE                                                                                                                             
+     # =============================================================================                                                        
+     scope:                                                                                                                                 
+       phaseId: "phase1"                                                                                                                    
+       phaseName: "Session Registry Implementation"                                                                                         
+                                                                                                                                            
+       description: |                                                                                                                       
+         Implement file-based session ID registry in session-start.sh.                                                                      
+         This replaces the ineffective environment variable export.                                                                         
+                                                                                                                                            
+     # =============================================================================                                                        
+     # TARGET FILES (I can MODIFY these)                                                                                                    
+     # =============================================================================                                                        
+     targetFiles:                                                                                                                           
+       - path: ".claude/hooks/session-start.sh"                                                                                             
+         readOnly: false                                                                                                                    
+         modifications:                                                                                                                     
+           - location: "After line 301 (after session state JSON creation)"                                                                 
+             action: "ADD current_session.json creation"                                                                                    
+             code: |                                                                                                                        
+               # Write current session to file registry (for cross-hook access)                                                             
+               CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"                                                                   
+               cat > "$CURRENT_SESSION_FILE" << SESSION_EOF                                                                                 
+               {                                                                                                                            
+                 "sessionId": "$SESSION_ID",                                                                                                
+                 "startTime": "$TIMESTAMP",                                                                                                 
+                 "pid": "$$",                                                                                                               
+                 "status": "active"                                                                                                         
+               }                                                                                                                            
+               SESSION_EOF                                                                                                                  
+                                                                                                                                            
+           - location: "After mkdir for sessions directory"                                                                                 
+             action: "ADD prompts directory initialization"                                                                                 
+             code: |                                                                                                                        
+               # Create prompts directories for worker task files                                                                           
+               mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null                                                              
+               mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null                                                               
+               mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null                                                            
+                                                                                                                                            
+     # =============================================================================                                                        
+     # REFERENCE FILES (I can only READ these)                                                                                              
+     # =============================================================================                                                        
+     referenceFiles:                                                                                                                        
+       - path: ".claude/hooks/session-end.sh"                                                                                               
+         reason: "See pattern for updating session status to 'completed'"                                                                   
+       - path: ".claude/hooks/session-health.sh"                                                                                            
+         reason: "See how SESSION_ID is currently used (falls back to 'unknown')"                                                           
+                                                                                                                                            
+     # =============================================================================                                                        
+     # DEPENDENCIES                                                                                                                         
+     # =============================================================================                                                        
+     dependencies: []                                                                                                                       
+     blockedBy: []                                                                                                                          
+     canStartImmediately: true                                                                                                              
+                                                                                                                                            
+     # =============================================================================                                                        
+     # COMPLETION CRITERIA                                                                                                                  
+     # =============================================================================                                                        
+     completionCriteria:                                                                                                                    
+       required:                                                                                                                            
+         - "current_session.json is created at ~/.agent/tmp/ on session start"                                                              
+         - "JSON contains: sessionId, startTime, pid, status fields"                                                                        
+         - ".agent/prompts/{pending,active,completed} directories are created"                                                              
+                                                                                                                                            
+       verification:                                                                                                                        
+         - command: "cat ~/.agent/tmp/current_session.json"                                                                                 
+           expected: "Valid JSON with sessionId field"                                                                                      
+         - command: "ls -la .agent/prompts/"                                                                                                
+           expected: "pending/, active/, completed/ directories exist"                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # GLOBAL CONTEXT CONSIDERATIONS                                                                                                        
+     # =============================================================================                                                        
+     # Before implementing, think about these from _context.yaml:                                                                           
+     globalContextChecklist:                                                                                                                
+       - question: "Does my implementation add < 5ms overhead?"                                                                             
+         consideration: "Use cat heredoc instead of jq for JSON creation (faster)"                                                          
+                                                                                                                                            
+       - question: "Am I compatible with existing session state?"                                                                           
+         consideration: "current_session.json is ADDITIONAL, not replacing session_*.json"                                                  
+                                                                                                                                            
+       - question: "What if prompts directory already exists?"                                                                              
+         consideration: "mkdir -p is idempotent, no error if exists"                                                                        
+                                                                                                                                            
+       - question: "Should I update session-end.sh to set status='completed'?"                                                              
+         consideration: "OUT OF SCOPE for phase1, but note for phase3 or future"                                                            
+                                                                                                                                            
+     # =============================================================================                                                        
+     # OUTPUT FORMAT                                                                                                                        
+     # =============================================================================                                                        
+     outputFormat: "L1/L2/L3"                                                                                                               
+     l2OutputPath: ".agent/outputs/Explore/phase1-session-registry.md"                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # ON COMPLETE                                                                                                                          
+     # =============================================================================                                                        
+     onComplete:                                                                                                                            
+       - "Update .agent/prompts/_progress.yaml: terminal-b.status = 'completed'"                                                            
+       - "Update .agent/prompts/_progress.yaml: terminal-b.completedAt = <timestamp>"                                                       
+       - "Report to Orchestrator (Terminal-A) with L1 summary"                                                                              
+       - "Notify Terminal-C that phase1 is complete (unblocks phase2)"                                                                      
+                                                                                                                                            
+     ---                                                                                                                                    
+     APPENDIX C: worker-c-task.yaml (Full Content)                                                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # Worker Task: Terminal-C - Prompt File Generation                                                                                     
+     # =============================================================================                                                        
+     # Read this file AFTER reading _context.yaml                                                                                           
+     #                                                                                                                                      
+     # Location: .agent/prompts/worker-c-task.yaml                                                                                          
+     # Language: English (Machine-Readable)                                                                                                 
+     # =============================================================================                                                        
+                                                                                                                                            
+     taskId: "phase2-prompt-generation"                                                                                                     
+     assignedTo: "Terminal-C"                                                                                                               
+     orchestrator: "Terminal-A"                                                                                                             
+     createdAt: "2026-01-24T00:30:00Z"                                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # CONTEXT REFERENCE                                                                                                                    
+     # =============================================================================                                                        
+     contextFile: ".agent/prompts/_context.yaml"                                                                                            
+     progressFile: ".agent/prompts/_progress.yaml"                                                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # MY SCOPE                                                                                                                             
+     # =============================================================================                                                        
+     scope:                                                                                                                                 
+       phaseId: "phase2"                                                                                                                    
+       phaseName: "Prompt File Generation"                                                                                                  
+                                                                                                                                            
+       description: |                                                                                                                       
+         Modify pd-task-interceptor.sh to:                                                                                                  
+         1. Read session ID from current_session.json (not env var)                                                                         
+         2. Generate YAML prompt files for worker tasks                                                                                     
+         3. Include prompt file path in hook output                                                                                         
+                                                                                                                                            
+     # =============================================================================                                                        
+     # TARGET FILES (I can MODIFY these)                                                                                                    
+     # =============================================================================                                                        
+     targetFiles:                                                                                                                           
+       - path: ".claude/hooks/task-pipeline/pd-task-interceptor.sh"                                                                         
+         readOnly: false                                                                                                                    
+         modifications:                                                                                                                     
+           - location: "Around line 160 (after SKIP_AGENTS check)"                                                                          
+             action: "ADD session ID file reading"                                                                                          
+             code: |                                                                                                                        
+               # Read session from file registry (env var export doesn't work in hooks)                                                     
+               SESSION_REGISTRY="${HOME}/.agent/tmp/current_session.json"                                                                   
+               ORCHESTRATOR_SESSION_ID="unknown"                                                                                            
+               if [ -f "$SESSION_REGISTRY" ]; then                                                                                          
+                   ORCHESTRATOR_SESSION_ID=$(json_get '.sessionId' "$(cat "$SESSION_REGISTRY")")                                            
+               fi                                                                                                                           
+               [ -z "$ORCHESTRATOR_SESSION_ID" ] && ORCHESTRATOR_SESSION_ID="unknown"                                                       
+                                                                                                                                            
+           - location: "Around line 290 (before build_updated_input)"                                                                       
+             action: "ADD create_worker_prompt_file() function"                                                                             
+             code: |                                                                                                                        
+               create_worker_prompt_file() {                                                                                                
+                   local subagent_type="$1"                                                                                                 
+                   local original_prompt="$2"                                                                                               
+                   local cache_hash="$3"                                                                                                    
+                                                                                                                                            
+                   local prompt_id=$(date +%s | tail -c 9)                                                                                  
+                   local session_prefix="${ORCHESTRATOR_SESSION_ID:0:8}"                                                                    
+                   local prompt_file="${WORKSPACE_ROOT}/.agent/prompts/pending/${session_prefix}-${prompt_id}.yaml"                         
+                                                                                                                                            
+                   mkdir -p "$(dirname "$prompt_file")" 2>/dev/null                                                                         
+                                                                                                                                            
+                   cat > "$prompt_file" << PROMPT_YAML_EOF                                                                                  
+               ---                                                                                                                          
+               promptId: "$prompt_id"                                                                                                       
+               sessionId: "$ORCHESTRATOR_SESSION_ID"                                                                                        
+               timestamp: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"                                                                                  
+               subagentType: "$subagent_type"                                                                                               
+               model: "opus"                                                                                                                
+               outputFormat: "L1/L2/L3"                                                                                                     
+               cacheInputHash: "$cache_hash"                                                                                                
+               ---                                                                                                                          
+                                                                                                                                            
+               $original_prompt                                                                                                             
+               PROMPT_YAML_EOF                                                                                                              
+                                                                                                                                            
+                   echo "$prompt_file"                                                                                                      
+               }                                                                                                                            
+                                                                                                                                            
+           - location: "Around line 310 (after UPDATED_INPUT creation)"                                                                     
+             action: "ADD prompt file creation call"                                                                                        
+             code: |                                                                                                                        
+               # Create worker prompt file                                                                                                  
+               ORIGINAL_PROMPT=$(json_get '.prompt' "$TOOL_INPUT")                                                                          
+               PROMPT_FILE_PATH=$(create_worker_prompt_file "$SUBAGENT_TYPE" "$ORIGINAL_PROMPT" "${CACHE_INPUT_HASH:-}")                    
+                                                                                                                                            
+     # =============================================================================                                                        
+     # REFERENCE FILES (I can only READ these)                                                                                              
+     # =============================================================================                                                        
+     referenceFiles:                                                                                                                        
+       - path: "~/.agent/tmp/current_session.json"                                                                                          
+         reason: "See session ID format (created by phase1)"                                                                                
+       - path: ".claude/cache/l1l2l3_prompt_escaped.txt"                                                                                    
+         reason: "See existing cached L1/L2/L3 prompt"                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # DEPENDENCIES                                                                                                                         
+     # =============================================================================                                                        
+     dependencies:                                                                                                                          
+       - "phase1"                                                                                                                           
+     blockedBy:                                                                                                                             
+       - "phase1"                                                                                                                           
+     canStartImmediately: false                                                                                                             
+                                                                                                                                            
+     waitCondition: |                                                                                                                       
+       Check .agent/prompts/_progress.yaml                                                                                                  
+       If terminal-b.status == 'completed', proceed                                                                                         
+       Otherwise, wait                                                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # COMPLETION CRITERIA                                                                                                                  
+     # =============================================================================                                                        
+     completionCriteria:                                                                                                                    
+       required:                                                                                                                            
+         - "Session ID is read from current_session.json"                                                                                   
+         - "create_worker_prompt_file() function exists and works"                                                                          
+         - "YAML files are created in .agent/prompts/pending/"                                                                              
+                                                                                                                                            
+       verification:                                                                                                                        
+         - command: "Run Task(subagent_type='Explore', prompt='test')"                                                                      
+           expected: "File created in .agent/prompts/pending/"                                                                              
+         - command: "cat .agent/prompts/pending/*.yaml"                                                                                     
+           expected: "Valid YAML with promptId, sessionId, subagentType"                                                                    
+                                                                                                                                            
+     # =============================================================================                                                        
+     # GLOBAL CONTEXT CONSIDERATIONS                                                                                                        
+     # =============================================================================                                                        
+     globalContextChecklist:                                                                                                                
+       - question: "Does this add < 5ms overhead?"                                                                                          
+         consideration: "File write is ~2ms, acceptable"                                                                                    
+                                                                                                                                            
+       - question: "What if session file doesn't exist?"                                                                                    
+         consideration: "Fall back to 'unknown' - already handled in code"                                                                  
+                                                                                                                                            
+       - question: "Should I include L1/L2/L3 prompt in the YAML file?"                                                                     
+         consideration: "NO - L1/L2/L3 is injected via additionalContext, not in file"                                                      
+                                                                                                                                            
+       - question: "Does this work with SKIP_AGENTS?"                                                                                       
+         consideration: "For SKIP_AGENTS, we exit early before this code runs - OK"                                                         
+                                                                                                                                            
+     # =============================================================================                                                        
+     # OUTPUT FORMAT                                                                                                                        
+     # =============================================================================                                                        
+     outputFormat: "L1/L2/L3"                                                                                                               
+     l2OutputPath: ".agent/outputs/Explore/phase2-prompt-generation.md"                                                                     
+                                                                                                                                            
+     # =============================================================================                                                        
+     # ON COMPLETE                                                                                                                          
+     # =============================================================================                                                        
+     onComplete:                                                                                                                            
+       - "Update .agent/prompts/_progress.yaml: terminal-c.status = 'completed'"                                                            
+       - "Report to Orchestrator (Terminal-A) with L1 summary"                                                                              
+       - "Notify Terminal-D that phase2 is complete (unblocks phase3)"                                                                      
+                                                                                                                                            
+     ---                                                                                                                                    
+     APPENDIX D: worker-d-task.yaml (Full Content)                                                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # Worker Task: Terminal-D - Prompt Lifecycle Management                                                                                
+     # =============================================================================                                                        
+     # Read this file AFTER reading _context.yaml                                                                                           
+     #                                                                                                                                      
+     # Location: .agent/prompts/worker-d-task.yaml                                                                                          
+     # Language: English (Machine-Readable)                                                                                                 
+     # =============================================================================                                                        
+                                                                                                                                            
+     taskId: "phase3-prompt-lifecycle"                                                                                                      
+     assignedTo: "Terminal-D"                                                                                                               
+     orchestrator: "Terminal-A"                                                                                                             
+     createdAt: "2026-01-24T00:30:00Z"                                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # CONTEXT REFERENCE                                                                                                                    
+     # =============================================================================                                                        
+     contextFile: ".agent/prompts/_context.yaml"                                                                                            
+     progressFile: ".agent/prompts/_progress.yaml"                                                                                          
+                                                                                                                                            
+     # =============================================================================                                                        
+     # MY SCOPE                                                                                                                             
+     # =============================================================================                                                        
+     scope:                                                                                                                                 
+       phaseId: "phase3"                                                                                                                    
+       phaseName: "Prompt Lifecycle Management"                                                                                             
+                                                                                                                                            
+       description: |                                                                                                                       
+         Modify pd-task-processor.sh to manage prompt file lifecycle:                                                                       
+         - Move completed prompt files from pending/ to completed/                                                                          
+         - Maintain audit trail for all processed prompts                                                                                   
+                                                                                                                                            
+     # =============================================================================                                                        
+     # TARGET FILES (I can MODIFY these)                                                                                                    
+     # =============================================================================                                                        
+     targetFiles:                                                                                                                           
+       - path: ".claude/hooks/task-pipeline/pd-task-processor.sh"                                                                           
+         readOnly: false                                                                                                                    
+         modifications:                                                                                                                     
+           - location: "Around line 270 (after logging section)"                                                                            
+             action: "ADD prompt file lifecycle management"                                                                                 
+             code: |                                                                                                                        
+               # =============================================================================                                              
+               # Prompt File Lifecycle Management                                                                                           
+               # =============================================================================                                              
+                                                                                                                                            
+               # Find and move prompt file: pending → completed                                                                             
+               if [[ -n "$ORCHESTRATOR_SESSION_ID" && "$ORCHESTRATOR_SESSION_ID" != "unknown" ]]; then                                      
+                   PENDING_DIR="${WORKSPACE_ROOT}/.agent/prompts/pending"                                                                   
+                   COMPLETED_DIR="${WORKSPACE_ROOT}/.agent/prompts/completed"                                                               
+                                                                                                                                            
+                   # Find prompt file by session prefix and recent timestamp                                                                
+                   SESSION_PREFIX="${ORCHESTRATOR_SESSION_ID:0:8}"                                                                          
+                   PROMPT_FILE=$(find "$PENDING_DIR" -name "${SESSION_PREFIX}-*.yaml" -mmin -5 2>/dev/null | head -1)                       
+                                                                                                                                            
+                   if [[ -n "$PROMPT_FILE" && -f "$PROMPT_FILE" ]]; then                                                                    
+                       mkdir -p "$COMPLETED_DIR" 2>/dev/null                                                                                
+                       mv "$PROMPT_FILE" "$COMPLETED_DIR/" 2>/dev/null || true                                                              
+                                                                                                                                            
+                       # Log the move for audit                                                                                             
+                       echo "$(date -Iseconds) | Moved: $(basename "$PROMPT_FILE") | Session: $ORCHESTRATOR_SESSION_ID" >>                  
+     "${WORKSPACE_ROOT}/.agent/logs/prompt_lifecycle.log"                                                                                   
+                   fi                                                                                                                       
+               fi                                                                                                                           
+                                                                                                                                            
+           - location: "Around line 160 (near session ID extraction)"                                                                       
+             action: "ADD session ID reading from file"                                                                                     
+             code: |                                                                                                                        
+               # Read orchestrator session ID from file registry                                                                            
+               SESSION_REGISTRY="${HOME}/.agent/tmp/current_session.json"                                                                   
+               ORCHESTRATOR_SESSION_ID="unknown"                                                                                            
+               if [ -f "$SESSION_REGISTRY" ]; then                                                                                          
+                   ORCHESTRATOR_SESSION_ID=$(json_get '.sessionId' "$(cat "$SESSION_REGISTRY")")                                            
+               fi                                                                                                                           
+                                                                                                                                            
+     # =============================================================================                                                        
+     # REFERENCE FILES (I can only READ these)                                                                                              
+     # =============================================================================                                                        
+     referenceFiles:                                                                                                                        
+       - path: ".claude/hooks/task-pipeline/pd-task-interceptor.sh"                                                                         
+         reason: "See how prompt files are created (phase2)"                                                                                
+       - path: ".agent/prompts/pending/"                                                                                                    
+         reason: "See prompt file format"                                                                                                   
+                                                                                                                                            
+     # =============================================================================                                                        
+     # DEPENDENCIES                                                                                                                         
+     # =============================================================================                                                        
+     dependencies:                                                                                                                          
+       - "phase1"                                                                                                                           
+       - "phase2"                                                                                                                           
+     blockedBy:                                                                                                                             
+       - "phase2"                                                                                                                           
+     canStartImmediately: false                                                                                                             
+                                                                                                                                            
+     waitCondition: |                                                                                                                       
+       Check .agent/prompts/_progress.yaml                                                                                                  
+       If terminal-c.status == 'completed', proceed                                                                                         
+       Otherwise, wait                                                                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # COMPLETION CRITERIA                                                                                                                  
+     # =============================================================================                                                        
+     completionCriteria:                                                                                                                    
+       required:                                                                                                                            
+         - "Prompt files are moved from pending/ to completed/ after Task completion"                                                       
+         - "Audit log is created at .agent/logs/prompt_lifecycle.log"                                                                       
+                                                                                                                                            
+       verification:                                                                                                                        
+         - command: "Run Task and complete it"                                                                                              
+           expected: "Prompt file moved to .agent/prompts/completed/"                                                                       
+         - command: "cat .agent/logs/prompt_lifecycle.log"                                                                                  
+           expected: "Log entry with timestamp and filename"                                                                                
+                                                                                                                                            
+     # =============================================================================                                                        
+     # GLOBAL CONTEXT CONSIDERATIONS                                                                                                        
+     # =============================================================================                                                        
+     globalContextChecklist:                                                                                                                
+       - question: "What if prompt file doesn't exist?"                                                                                     
+         consideration: "find returns empty, mv is skipped - safe"                                                                          
+                                                                                                                                            
+       - question: "What if multiple prompt files match?"                                                                                   
+         consideration: "head -1 takes the first one, should be OK for now"                                                                 
+                                                                                                                                            
+       - question: "Does this add < 5ms overhead?"                                                                                          
+         consideration: "find + mv is ~3ms, acceptable"                                                                                     
+                                                                                                                                            
+       - question: "Should I also update session-end.sh?"                                                                                   
+         consideration: "OPTIONAL - could add cleanup of stale pending files"                                                               
+                                                                                                                                            
+     # =============================================================================                                                        
+     # OUTPUT FORMAT                                                                                                                        
+     # =============================================================================                                                        
+     outputFormat: "L1/L2/L3"                                                                                                               
+     l2OutputPath: ".agent/outputs/Explore/phase3-prompt-lifecycle.md"                                                                      
+                                                                                                                                            
+     # =============================================================================                                                        
+     # ON COMPLETE                                                                                                                          
+     # =============================================================================                                                        
+     onComplete:                                                                                                                            
+       - "Update .agent/prompts/_progress.yaml: terminal-d.status = 'completed'"                                                            
+       - "Report to Orchestrator (Terminal-A) with L1 summary"                                                                              
+       - "All phases complete - notify Orchestrator for final verification"                                                                 
+                                                                                                                                            
+     ---                                                                                                                                    
+     APPENDIX E: _progress.yaml (Initial State)                                                                                             
+                                                                                                                                            
+     # =============================================================================                                                        
+     # Progress Tracker for Session-Aware Worker Prompt System                                                                              
+     # =============================================================================                                                        
+     # Workers UPDATE this file when starting/completing tasks.                                                                             
+     # Orchestrator MONITORS this file for progress.                                                                                        
+     #                                                                                                                                      
+     # Location: .agent/prompts/_progress.yaml                                                                                              
+     # Language: English (Machine-Readable)                                                                                                 
+     # =============================================================================                                                        
+                                                                                                                                            
+     version: "1.0"                                                                                                                         
+     projectId: "session-aware-worker-prompt-system"                                                                                        
+     lastUpdated: "2026-01-24T00:30:00Z"                                                                                                    
+                                                                                                                                            
+     # =============================================================================                                                        
+     # TERMINAL STATUS                                                                                                                      
+     # =============================================================================                                                        
+     terminals:                                                                                                                             
+       terminal-a:                                                                                                                          
+         role: "Orchestrator"                                                                                                               
+         status: "monitoring"                                                                                                               
+         currentTask: null                                                                                                                  
+                                                                                                                                            
+       terminal-b:                                                                                                                          
+         role: "Worker"                                                                                                                     
+         status: "idle"                                                                                                                     
+         currentTask: null                                                                                                                  
+         assignedPhase: "phase1"                                                                                                            
+         blockedBy: []                                                                                                                      
+         startedAt: null                                                                                                                    
+         completedAt: null                                                                                                                  
+                                                                                                                                            
+       terminal-c:                                                                                                                          
+         role: "Worker"                                                                                                                     
+         status: "idle"                                                                                                                     
+         currentTask: null                                                                                                                  
+         assignedPhase: "phase2"                                                                                                            
+         blockedBy: ["phase1"]                                                                                                              
+         startedAt: null                                                                                                                    
+         completedAt: null                                                                                                                  
+                                                                                                                                            
+       terminal-d:                                                                                                                          
+         role: "Worker"                                                                                                                     
+         status: "idle"                                                                                                                     
+         currentTask: null                                                                                                                  
+         assignedPhase: "phase3"                                                                                                            
+         blockedBy: ["phase2"]                                                                                                              
+         startedAt: null                                                                                                                    
+         completedAt: null                                                                                                                  
+                                                                                                                                            
+     # =============================================================================                                                        
+     # PHASE STATUS                                                                                                                         
+     # =============================================================================                                                        
+     phases:                                                                                                                                
+       phase1:                                                                                                                              
+         status: "pending"                                                                                                                  
+         owner: "terminal-b"                                                                                                                
+         startedAt: null                                                                                                                    
+         completedAt: null                                                                                                                  
+                                                                                                                                            
+       phase2:                                                                                                                              
+         status: "pending"                                                                                                                  
+         owner: "terminal-c"                                                                                                                
+         startedAt: null                                                                                                                    
+         completedAt: null                                                                                                                  
+                                                                                                                                            
+       phase3:                                                                                                                              
+         status: "pending"                                                                                                                  
+         owner: "terminal-d"                                                                                                                
+         startedAt: null                                                                                                                    
+         completedAt: null                                                                                                                  
+                                                                                                                                            
+     # =============================================================================                                                        
+     # COMPLETED TASKS                                                                                                                      
+     # =============================================================================                                                        
+     completedTasks: []                                                                                                                     
+                                                                                                                                            
+     # =============================================================================                                                        
+     # BLOCKERS / ISSUES                                                                                                                    
+     # =============================================================================                                                        
+     blockers: []                                                                                                                           
+  ⎿  PostToolUse:ExitPlanMode hook error

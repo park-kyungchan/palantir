@@ -1,0 +1,141 @@
+# =============================================================================
+# Worker Task: Terminal-D - Prompt Lifecycle Management
+# =============================================================================
+# Read this file AFTER reading _context.yaml
+#
+# Location: .agent/prompts/worker-d-task.yaml
+# Language: English (Machine-Readable)
+# =============================================================================
+
+taskId: "phase3-prompt-lifecycle"
+assignedTo: "Terminal-D"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-24T00:30:00Z"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+contextFile: ".agent/prompts/_context.yaml"
+progressFile: ".agent/prompts/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+scope:
+  phaseId: "phase3"
+  phaseName: "Prompt Lifecycle Management"
+
+  description: |
+    Modify pd-task-processor.sh to manage prompt file lifecycle:
+    - Move completed prompt files from pending/ to completed/
+    - Maintain audit trail for all processed prompts
+
+# =============================================================================
+# TARGET FILES (I can MODIFY these)
+# =============================================================================
+targetFiles:
+  - path: ".claude/hooks/task-pipeline/pd-task-processor.sh"
+    readOnly: false
+    modifications:
+      - location: "Around line 270 (after logging section)"
+        action: "ADD prompt file lifecycle management"
+        code: |
+          # =============================================================================
+          # Prompt File Lifecycle Management
+          # =============================================================================
+
+          # Find and move prompt file: pending → completed
+          if [[ -n "$ORCHESTRATOR_SESSION_ID" && "$ORCHESTRATOR_SESSION_ID" != "unknown" ]]; then
+              PENDING_DIR="${WORKSPACE_ROOT}/.agent/prompts/pending"
+              COMPLETED_DIR="${WORKSPACE_ROOT}/.agent/prompts/completed"
+
+              # Find prompt file by session prefix and recent timestamp
+              SESSION_PREFIX="${ORCHESTRATOR_SESSION_ID:0:8}"
+              PROMPT_FILE=$(find "$PENDING_DIR" -name "${SESSION_PREFIX}-*.yaml" -mmin -5 2>/dev/null | head -1)
+
+              if [[ -n "$PROMPT_FILE" && -f "$PROMPT_FILE" ]]; then
+                  mkdir -p "$COMPLETED_DIR" 2>/dev/null
+                  mv "$PROMPT_FILE" "$COMPLETED_DIR/" 2>/dev/null || true
+
+                  # Log the move for audit
+                  echo "$(date -Iseconds) | Moved: $(basename "$PROMPT_FILE") | Session: $ORCHESTRATOR_SESSION_ID" >> "${WORKSPACE_ROOT}/.agent/logs/prompt_lifecycle.log"
+              fi
+          fi
+
+      - location: "Around line 160 (near session ID extraction)"
+        action: "ADD session ID reading from file"
+        code: |
+          # Read orchestrator session ID from file registry
+          SESSION_REGISTRY="${HOME}/.agent/tmp/current_session.json"
+          ORCHESTRATOR_SESSION_ID="unknown"
+          if [ -f "$SESSION_REGISTRY" ]; then
+              ORCHESTRATOR_SESSION_ID=$(json_get '.sessionId' "$(cat "$SESSION_REGISTRY")")
+          fi
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+referenceFiles:
+  - path: ".claude/hooks/task-pipeline/pd-task-interceptor.sh"
+    reason: "See how prompt files are created (phase2)"
+  - path: ".agent/prompts/pending/"
+    reason: "See prompt file format"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies:
+  - "phase1"
+  - "phase2"
+blockedBy:
+  - "phase2"
+canStartImmediately: false
+
+waitCondition: |
+  Check .agent/prompts/_progress.yaml
+  If terminal-c.status == 'completed', proceed
+  Otherwise, wait
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+completionCriteria:
+  required:
+    - "Prompt files are moved from pending/ to completed/ after Task completion"
+    - "Audit log is created at .agent/logs/prompt_lifecycle.log"
+
+  verification:
+    - command: "Run Task and complete it"
+      expected: "Prompt file moved to .agent/prompts/completed/"
+    - command: "cat .agent/logs/prompt_lifecycle.log"
+      expected: "Log entry with timestamp and filename"
+
+# =============================================================================
+# GLOBAL CONTEXT CONSIDERATIONS
+# =============================================================================
+globalContextChecklist:
+  - question: "What if prompt file doesn't exist?"
+    consideration: "find returns empty, mv is skipped - safe"
+
+  - question: "What if multiple prompt files match?"
+    consideration: "head -1 takes the first one, should be OK for now"
+
+  - question: "Does this add < 5ms overhead?"
+    consideration: "find + mv is ~3ms, acceptable"
+
+  - question: "Should I also update session-end.sh?"
+    consideration: "OPTIONAL - could add cleanup of stale pending files"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/outputs/Explore/phase3-prompt-lifecycle.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "Update .agent/prompts/_progress.yaml: terminal-d.status = 'completed'"
+  - "Report to Orchestrator (Terminal-A) with L1 summary"
+  - "All phases complete - notify Orchestrator for final verification"

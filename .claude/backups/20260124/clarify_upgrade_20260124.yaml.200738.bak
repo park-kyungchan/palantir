@@ -1,0 +1,237 @@
+# /clarify Skill Upgrade Specification
+# Generated: 2026-01-24T18:XX:XXZ
+# Status: decisions_complete (ready for implementation)
+# Purpose: Compact 후 지속 작업을 위한 결정사항 문서화
+
+metadata:
+  id: clarify_upgrade_20260124
+  version: "2.0.0"  # 업그레이드 후 버전
+  created_at: 2026-01-24
+  status: in_progress
+  author: user_interaction
+  session_context: "Compact 전 결정사항 기록"
+
+original_request: |
+  "/clarify" 개선 및 고도화 및 최신화를 진행해야하니까,
+  모든 내용들 빠짐없이 나에게 보고해.
+  그리고 CHANGELOG.md를 읽어보고 또한 Hooks/Parameters 모두 빠짐없이
+  하나씩 나에게 물어보면서 취사선택 하면서 진행할것임을 고려해라.
+
+decisions:
+  # ============================================================================
+  # FRONTMATTER DECISIONS
+  # ============================================================================
+  frontmatter:
+    argument_hint:
+      decision: "추가"
+      value: "요청 텍스트 또는 이전 clarify 로그 경로"
+      rationale: "사용자가 /clarify 입력 시 자동완성 힌트 제공"
+
+    allowed_tools:
+      decision: "제한"
+      value:
+        - Read
+        - Grep
+        - Glob
+        - AskUserQuestion
+        - Task
+        - WebSearch
+      rationale: "PE 기법 검색/사용자 질문에만 집중"
+
+    disable_model_invocation:
+      decision: "true"
+      rationale: "사용자만 직접 /clarify 호출 가능 (자동 호출 방지)"
+
+    skill_level_hooks:
+      decision: "추가"
+      details: "Stop hook으로 YAML finalize, downstream_skills 자동 기록"
+
+  # ============================================================================
+  # LOGGING SYSTEM DECISIONS
+  # ============================================================================
+  logging:
+    format:
+      decision: "YAML 단일"
+      previous: "JSONL + Markdown"
+      rationale: "Machine-Readable + Human-Readable 통합"
+
+    location:
+      decision: ".agent/clarify/{slug}.yaml"
+      rationale: "에이전트 작업 디렉토리에 통합"
+
+    schema_sections:
+      - metadata
+      - original_request
+      - rounds
+      - final_output
+
+    pipeline_fields:
+      - downstream_skills  # 연결 스킬 추적
+      - task_references    # Task ID 연결
+      - context_hash       # 무결성 해시
+      - decision_trace     # 선택 이유 기록
+
+    design_constraint: |
+      Semantic Integrity가 가장 중요하지만
+      개별적으로 사용할 때도 충분히 독립적 사용이 가능해야 함
+
+  # ============================================================================
+  # HOOK SYSTEM DECISIONS
+  # ============================================================================
+  hooks:
+    user_prompt_submit:
+      decision: "생략"
+      rationale: "disable-model-invocation과 일관성 유지"
+
+    stop_hook:
+      decision: "추가"
+      details: "YAML finalize, downstream_skills 자동 기록"
+
+    clarify_qa_logger:
+      decision: "YAML 통합"
+      details: "JSONL 제거, 모든 Q&A를 YAML rounds에 직접 기록"
+
+    timeout:
+      decision: "설정"
+      value: 150000  # 2.5분
+      rationale: "장시간 대기 방지"
+
+  # ============================================================================
+  # PE TECHNIQUE DECISIONS
+  # ============================================================================
+  pe_techniques:
+    source:
+      decision: "내장 PE 라이브러리"
+      rationale: "외부 의존성 제거, 스킬 내부에 PE 레퍼런스 포함"
+
+    included_techniques:
+      basic:
+        - name: "Chain of Thought (CoT)"
+          use_case: "단계별 사고 유도 - 분석/디버깅용"
+        - name: "Few-Shot"
+          use_case: "예시 제공 - 코드 생성/형식 지정용"
+        - name: "Role Prompting"
+          use_case: "역할 부여 - 전문가 관점 유도"
+        - name: "Structured Output"
+          use_case: "출력 형식 지정 - 복잡한 출력 표준화"
+
+      extended:
+        - name: "Task Decomposition"
+          use_case: "작업 분해 - 대규모 작업 관리용"
+          note: "/orchestrate에 더 적합할 수 있음"
+        - name: "Constraint Setting"
+          use_case: "제약 조건 명시 - 범위 제한용"
+        - name: "Self-Consistency"
+          use_case: "다중 샘플링 + 투표 - 신뢰성 향상"
+        - name: "Tree of Thoughts"
+          use_case: "분기 탐색 - 복잡한 문제 해결용"
+
+  # ============================================================================
+  # ASK USER QUESTION DECISIONS
+  # ============================================================================
+  ask_user_question:
+    metadata_source:
+      decision: "적용"
+      value: "clarify-round-N"
+      rationale: "추적용 소스 식별자"
+
+    multi_select:
+      decision: "활성화"
+      rationale: "일부 질문에서 다중 선택 허용"
+
+    recommended_hint:
+      decision: "강화"
+      rationale: "모든 질문에 추천 옵션 명시"
+
+  # ============================================================================
+  # BEHAVIOR DECISIONS
+  # ============================================================================
+  behavior:
+    routing:
+      decision: "수동"
+      details: "승인 후 사용자가 직접 다음 단계 선택"
+
+    max_rounds:
+      decision: "무제한"
+      details: "사용자가 직접 종료 결정"
+
+    resume_flag:
+      decision: "추가"
+      usage: "/clarify --resume {slug}"
+      rationale: "이전 세션 재개 가능"
+
+  # ============================================================================
+  # CLEANUP DECISIONS
+  # ============================================================================
+  cleanup:
+    deprecated_agent:
+      file: ".claude/agents/_deprecated_clarify-agent.md"
+      decision: "삭제"
+
+    jsonl_logs:
+      path: ".agent/logs/clarify/*.jsonl"
+      decision: "삭제"
+
+    markdown_logs:
+      path: ".agent/plans/clarify_*.md"
+      decision: "삭제"
+
+  # ============================================================================
+  # PENDING DECISIONS (Compact 후 결정 필요)
+  # ============================================================================
+  helpers_sh:
+    decision: "YAML 호환 재작성"
+    details: "yq/Python 기반으로 YAML 스키마와 호환되게 재작성"
+    decided_at: "2026-01-24T19:XX:XXZ"
+
+# ============================================================================
+# PARALLEL WORK: 스킬 생성 스킬
+# ============================================================================
+parallel_tasks:
+  skill_factory:
+    agent_id: "a44a41b"
+    status: "completed"
+    description: |
+      모든 스킬에 일관된 "취사선택 + 최신화 + 고도화" 과정을
+      적용할 수 있는 메타 스킬 설계
+    output: "Agent 응답에 포함됨 (12-round Q&A 템플릿, P1-P4 Access Pattern)"
+
+# ============================================================================
+# NEXT STEPS (Compact 후)
+# ============================================================================
+next_steps:
+  - "[DONE] helpers.sh 처리 방식 결정 → YAML 호환 재작성"
+  - "[DONE] 스킬 생성 스킬 Agent 결과 확인 → completed"
+  - "[IN_PROGRESS] SKILL.md 실제 업데이트 작성"
+  - "[IN_PROGRESS] 새 YAML 스키마 상세 정의"
+  - "[TODO] Hook 스크립트 업데이트"
+  - "[TODO] helpers.sh YAML 재작성"
+  - "[TODO] Cleanup deprecated files"
+  - "[TODO] 테스트 및 검증"
+
+# ============================================================================
+# FINAL FRONTMATTER (예상)
+# ============================================================================
+expected_frontmatter: |
+  ---
+  name: clarify
+  description: PE 기법을 적용하여 사용자 요청을 반복적으로 개선
+  user-invocable: true
+  disable-model-invocation: true
+  context: fork
+  model: sonnet
+  version: "2.0.0"
+  argument-hint: "요청 텍스트 또는 이전 clarify 로그 경로"
+  allowed-tools:
+    - Read
+    - Grep
+    - Glob
+    - AskUserQuestion
+    - Task
+    - WebSearch
+  hooks:
+    Stop:
+      - type: command
+        command: "/home/palantir/.claude/hooks/clarify-finalize.sh"
+        timeout: 150000
+  ---

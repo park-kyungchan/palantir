@@ -1,0 +1,463 @@
+---
+name: clarify
+description: |
+  Single entry point for all complex tasks with Socratic requirement clarification.
+  Captures all Q&A exchanges with full traceability for design rationale.
+  Outputs structured schema for E2E pipeline: clarify→orchestrate→assign→worker→collect→synthesis.
+  Use for any task requiring careful requirement analysis before action.
+user-invocable: true
+disable-model-invocation: true
+argument-hint: [request-description]
+context: fork
+model: opus
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Task
+  - Write
+  - AskUserQuestion
+  - TodoWrite
+hooks:
+  PostToolUse:
+    - matcher: "AskUserQuestion"
+      hooks:
+        - type: command
+          command: "/home/palantir/.claude/hooks/clarify-qa-logger.sh"
+version: "2.1.0"
+---
+
+# /clarify - Socratic Requirement Clarification
+
+> **Version:** 2.1.0 | **Role:** E2E Pipeline Entry Point
+> **Principle:** 완벽한 요구사항 파악 → 완벽한 추적 가능성 → 완벽한 실행
+
+---
+
+## Input
+
+Request: $0
+Session: ${CLAUDE_SESSION_ID}
+
+---
+
+## Core Protocol: Socratic Questioning
+
+### 목표
+사용자의 **진짜 의도**를 파악하기 위해 가정을 질문으로 검증한다.
+
+### Socratic Question Types
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| **Clarifying** | 모호한 용어 정의 | "X라고 하셨는데, 구체적으로 어떤 의미인가요?" |
+| **Probing Assumptions** | 숨겨진 가정 발굴 | "Y가 전제되어 있는 것 같은데, 맞나요?" |
+| **Probing Reasons** | 이유/동기 파악 | "왜 이 방식을 선호하시나요?" |
+| **Exploring Implications** | 결과 예측 | "이렇게 하면 Z가 발생할 수 있는데, 괜찮으신가요?" |
+| **Viewpoint Questioning** | 대안 탐색 | "다른 관점에서 보면 어떨까요?" |
+
+---
+
+## Phase 1: Initial Exploration (초기 탐색)
+
+### 1.1 Request Decomposition
+
+```yaml
+request_analysis:
+  original: "$0"
+
+  components:
+    - what: ""        # 무엇을
+    - why: ""         # 왜
+    - how: ""         # 어떻게 (제약조건)
+    - who: ""         # 누구를 위해
+    - when: ""        # 언제까지
+
+  ambiguous_points: []   # 명확화 필요
+  assumptions: []        # 검증 필요한 가정
+  implicit_needs: []     # 명시되지 않은 요구
+```
+
+### 1.2 Socratic Opening Questions
+
+첫 번째 질문 세트 (3-4개):
+
+```python
+AskUserQuestion(
+    questions=[
+        {
+            "question": "이 작업의 핵심 목표는 무엇인가요?",
+            "header": "목표",
+            "options": [
+                {"label": "새로운 기능 구현", "description": "없던 것을 만듦"},
+                {"label": "기존 기능 개선", "description": "있는 것을 더 좋게"},
+                {"label": "문제 해결/버그 수정", "description": "잘못된 것을 고침"},
+                {"label": "분석/조사", "description": "현황 파악"}
+            ],
+            "multiSelect": False
+        },
+        {
+            "question": "결과물의 품질 기준은 무엇인가요?",
+            "header": "품질기준",
+            "options": [
+                {"label": "빠른 프로토타입", "description": "작동만 하면 됨"},
+                {"label": "프로덕션 레벨", "description": "배포 가능한 수준"},
+                {"label": "완벽한 품질", "description": "테스트/문서 포함"}
+            ],
+            "multiSelect": False
+        },
+        {
+            "question": "시간/리소스 제약이 있나요?",
+            "header": "제약사항",
+            "options": [
+                {"label": "긴급함", "description": "가능한 빨리"},
+                {"label": "여유있음", "description": "품질 우선"},
+                {"label": "특정 기한", "description": "데드라인 있음"}
+            ],
+            "multiSelect": False
+        }
+    ]
+)
+```
+
+---
+
+## Phase 2: Deep-Dive Questioning (심층 탐색)
+
+### 2.1 Follow-Up Based on Phase 1
+
+Phase 1 응답을 기반으로 심층 질문:
+
+```python
+# 응답 분석 후 동적 질문 생성
+if goal == "새로운 기능 구현":
+    follow_up = [
+        {"question": "유사한 기존 기능이나 참고할 코드가 있나요?", ...},
+        {"question": "이 기능의 사용자는 누구인가요?", ...}
+    ]
+elif goal == "문제 해결/버그 수정":
+    follow_up = [
+        {"question": "문제가 언제부터 발생했나요?", ...},
+        {"question": "재현 단계를 알고 계신가요?", ...}
+    ]
+```
+
+### 2.2 Assumption Verification
+
+발견된 가정을 명시적으로 검증:
+
+```python
+AskUserQuestion(
+    questions=[{
+        "question": f"""
+제가 이해한 내용을 확인해주세요:
+
+**가정 1:** {assumption_1}
+**가정 2:** {assumption_2}
+
+맞나요?
+""",
+        "header": "가정 검증",
+        "options": [
+            {"label": "모두 맞음", "description": "진행"},
+            {"label": "일부 수정 필요", "description": "피드백 입력"},
+            {"label": "잘못됨", "description": "다시 설명"}
+        ],
+        "multiSelect": False
+    }]
+)
+```
+
+---
+
+## Phase 3: Scope Definition (범위 정의)
+
+### 3.1 DO/DON'T Explicit Definition
+
+```python
+AskUserQuestion(
+    questions=[
+        {
+            "question": "반드시 포함해야 할 영역은?",
+            "header": "DO (포함)",
+            "options": [
+                {"label": "핵심 로직", "description": "메인 기능"},
+                {"label": "테스트", "description": "단위/통합 테스트"},
+                {"label": "문서화", "description": "README, 주석"},
+                {"label": "에러 처리", "description": "예외 상황 대응"}
+            ],
+            "multiSelect": True  # 여러 개 선택 가능
+        },
+        {
+            "question": "제외할 영역은?",
+            "header": "DON'T (제외)",
+            "options": [
+                {"label": "UI/디자인", "description": "외관 변경 불필요"},
+                {"label": "성능 최적화", "description": "나중에 처리"},
+                {"label": "호환성", "description": "특정 환경만 지원"}
+            ],
+            "multiSelect": True
+        }
+    ]
+)
+```
+
+### 3.2 Priority Assignment
+
+```yaml
+scope:
+  include:
+    - area: "인증 로직"
+      priority: CRITICAL
+      reason: "사용자가 핵심 목표로 지정"
+      relatedQuestionId: "qa-abc123"
+
+    - area: "에러 처리"
+      priority: HIGH
+      reason: "품질 기준이 프로덕션 레벨"
+      relatedQuestionId: "qa-def456"
+
+  exclude:
+    - area: "UI 변경"
+      reason: "사용자가 제외 지정"
+      relatedQuestionId: "qa-ghi789"
+```
+
+---
+
+## Phase 4: Decision Recording (결정 기록)
+
+### 4.1 Decision Schema
+
+**모든 결정은 이유와 함께 기록:**
+
+```yaml
+decisions:
+  - id: "dec-001"
+    decision: "JWT 토큰 방식으로 인증 구현"
+    rationale: "사용자가 상태 비저장(stateless) 선호 + 모바일 지원 필요"
+    alternatives:
+      - option: "세션 기반 인증"
+        rejectedReason: "모바일 앱에서 쿠키 관리 복잡"
+      - option: "OAuth2 위임"
+        rejectedReason: "외부 의존성 최소화 요청"
+    relatedQuestionIds: ["qa-auth-001", "qa-mobile-002"]
+    madeAt: "2026-01-24T10:30:00Z"
+```
+
+### 4.2 Why-Chain (왜 이렇게 설계했는가?)
+
+결정 → 질문 → 응답 역추적 가능:
+
+```
+Decision: JWT 사용
+    ↑
+Question: "인증 방식 선호?"
+Answer: "상태 비저장 선호"
+    ↑
+Question: "왜 상태 비저장?"
+Answer: "모바일 앱 지원 필요"
+    ↑
+Original Request: "인증 시스템 구축"
+```
+
+---
+
+## Phase 5: Approval & Handoff
+
+### 5.1 Final Confirmation
+
+```python
+AskUserQuestion(
+    questions=[{
+        "question": f"""
+## 최종 확인
+
+**목표:** {primary_goal}
+
+**범위:**
+- DO: {include_list}
+- DON'T: {exclude_list}
+
+**주요 결정:**
+1. {decision_1} (이유: {rationale_1})
+2. {decision_2} (이유: {rationale_2})
+
+**예상 작업:**
+{task_decomposition}
+
+이대로 진행할까요?
+""",
+        "header": "최종 승인",
+        "options": [
+            {"label": "승인 - 다음 단계로", "description": "조사/실행 시작"},
+            {"label": "수정 필요", "description": "일부 조정"},
+            {"label": "처음부터", "description": "요구사항 재정의"}
+        ],
+        "multiSelect": False
+    }]
+)
+```
+
+### 5.2 Generate Output Schema
+
+승인 후 스키마 파일 생성:
+
+```python
+output_path = f".agent/outputs/clarify/{session_id}-clarification.json"
+
+schema = {
+    "meta": {
+        "sessionId": session_id,
+        "taskId": f"clarify-{session_id[:8]}",
+        "timestamp": datetime.now().isoformat(),
+        "version": "2.0.0",
+        "auditLogPath": f".agent/logs/clarify/{session_id}-qa-audit.jsonl"
+    },
+    "clarification": {
+        "topic": original_request,
+        "primaryGoal": primary_goal,
+        "phases": all_phases_with_qa,
+        "summary": final_summary,
+        "confidenceLevel": "complete"
+    },
+    "scope": {
+        "include": include_items,
+        "exclude": exclude_items
+    },
+    "decisions": all_decisions,
+    "handoff": {
+        "nextPhase": "investigate",
+        "orchestrationHint": {
+            "parallelizable": is_parallelizable,
+            "suggestedWorkers": worker_count,
+            "estimatedComplexity": complexity
+        },
+        "taskDecomposition": decomposed_tasks
+    }
+}
+
+Write(file_path=output_path, content=json.dumps(schema, indent=2))
+```
+
+---
+
+## E2E Pipeline Handoff
+
+### Output Consumption by Downstream Skills
+
+```
+/clarify output → .agent/outputs/clarify/{sessionId}-clarification.json
+                        │
+                        ▼
+/orchestrate reads → handoff.taskDecomposition
+                        │
+                        ▼
+/assign reads → scope.include (범위), decisions (맥락)
+                        │
+                        ▼
+/worker reads → decisions + rationale (왜 이렇게?)
+                        │
+                        ▼
+/collect aggregates → meta.sessionId로 연결
+                        │
+                        ▼
+/synthesis reads → 전체 decisions → "왜 이렇게 설계했는가?" 추적
+```
+
+### Schema Reference Paths
+
+| Downstream Skill | Reads From | Uses |
+|------------------|------------|------|
+| `/orchestrate` | `handoff.taskDecomposition` | 작업 분배 |
+| `/assign` | `scope.include` | 워커별 범위 |
+| `/worker` | `decisions[].rationale` | 설계 이유 참조 |
+| `/collect` | `meta.sessionId` | 결과 연결 |
+| `/synthesis` | `decisions[]` + audit log | 완전한 추적 |
+
+---
+
+## Audit Log Format (JSONL)
+
+Hook이 자동 기록하는 형식:
+
+```jsonl
+{"id":"qa-001","timestamp":"2026-01-24T10:00:00Z","sessionId":"abc123","event":"clarification_qa","questions":[{"question":"목표는?","header":"목표"}],"answers":{"목표는?":"새로운 기능 구현"},"answerType":"selected-option"}
+{"id":"qa-002","timestamp":"2026-01-24T10:01:00Z","sessionId":"abc123","event":"clarification_qa","questions":[{"question":"품질 기준?","header":"품질"}],"answers":{"품질 기준?":"프로덕션 레벨"},"answerType":"selected-option"}
+```
+
+### Audit Log → Decision Tracing
+
+```python
+# 감사 로그에서 결정 근거 추적
+def trace_decision_rationale(decision_id, audit_log_path):
+    decision = get_decision(decision_id)
+    related_qa = []
+
+    for qa_id in decision['relatedQuestionIds']:
+        qa = find_in_audit_log(audit_log_path, qa_id)
+        related_qa.append(qa)
+
+    return {
+        "decision": decision['decision'],
+        "rationale": decision['rationale'],
+        "evidence": related_qa  # 원본 Q&A
+    }
+```
+
+---
+
+## Error Handling
+
+| 상황 | 처리 |
+|------|------|
+| 사용자 무응답 | 3회 재시도 후 현재 상태 저장 |
+| 모호한 응답 | Follow-up 질문 자동 생성 |
+| 세션 중단 | Resume 가능 (audit log 기반) |
+| 충돌하는 응답 | Probing question으로 해결 |
+
+---
+
+## Resume Support
+
+```bash
+# 중단된 세션 재개
+/clarify --resume {session_id}
+
+# 이전 Q&A 로드
+audit_log = Read(f".agent/logs/clarify/{session_id}-qa-audit.jsonl")
+previous_state = reconstruct_from_audit(audit_log)
+continue_from(previous_state.last_phase)
+```
+
+---
+
+## Example Complete Flow
+
+```bash
+/clarify "사용자 인증 시스템 구축"
+
+# Phase 1: 초기 탐색
+Q: "핵심 목표는?" → A: "새로운 기능 구현"
+Q: "품질 기준은?" → A: "프로덕션 레벨"
+Q: "시간 제약?" → A: "여유있음"
+
+# Phase 2: 심층 탐색
+Q: "유사 기능 참고?" → A: "기존 OAuth 연동 코드"
+Q: "사용자는?" → A: "모바일 + 웹"
+Q: "왜 자체 구현?" → A: "외부 의존성 최소화"
+
+# Phase 3: 범위 정의
+Q: "포함할 영역?" → A: ["핵심 로직", "테스트", "에러 처리"]
+Q: "제외할 영역?" → A: ["UI/디자인"]
+
+# Phase 4: 결정 기록
+Decision: "JWT 방식" (이유: 상태비저장 + 모바일)
+Decision: "자체 구현" (이유: 외부 의존성 최소화)
+
+# Phase 5: 최종 승인
+→ "승인"
+
+# Output: .agent/outputs/clarify/{sessionId}-clarification.json
+# Audit: .agent/logs/clarify/{sessionId}-qa-audit.jsonl
+```

@@ -1,0 +1,13 @@
+{
+  "id": "4",
+  "subject": "Implement /worker skill",
+  "description": "Create /worker skill for individual worker operations: start (claim task), status (show my task), done (mark completed). Uses TaskList to find assigned tasks, TaskUpdate to change status",
+  "activeForm": "Implementing /worker skill",
+  "status": "pending",
+  "blocks": [
+    "7"
+  ],
+  "blockedBy": [
+    "1"
+  ]
+}

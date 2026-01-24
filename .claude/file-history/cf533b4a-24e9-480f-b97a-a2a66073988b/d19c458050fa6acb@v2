@@ -1,0 +1,151 @@
+---
+name: commit-push-pr
+description: |
+  Boris Cherny Pattern 6: Commit changes, push to remote, create/update PR.
+  All-in-one git workflow command used dozens of times daily.
+user-invocable: true
+allowed-tools: Bash, Read, Task
+argument-hint: [commit message]
+---
+
+# /commit-push-pr Command (Boris Cherny Pattern 6)
+
+Automates the complete git workflow: commit → push → PR in one command.
+
+## Arguments
+$ARGUMENTS - Optional commit message (auto-generated if not provided)
+
+---
+
+## Pre-flight Checks
+
+Before executing, verify:
+```bash
+# Check git status
+git status --porcelain
+
+# Check current branch (avoid direct main/master commits)
+git branch --show-current
+```
+
+**Safety Rules:**
+- NEVER commit directly to `main` or `master` without explicit approval
+- ALWAYS run `/governance` or `/quality-check` before commit for critical changes
+- WARN if committing sensitive files (.env, credentials, secrets)
+
+---
+
+## Execution Strategy
+
+### Phase 1: Analyze Changes
+
+```bash
+# View untracked and modified files
+git status
+
+# View staged changes
+git diff --cached
+
+# View unstaged changes
+git diff
+
+# Recent commit history for style reference
+git log --oneline -5
+```
+
+### Phase 2: Stage and Commit
+
+If `$ARGUMENTS` provided, use as commit message.
+Otherwise, generate descriptive message based on:
+- Nature of changes (feature, fix, refactor, docs, test)
+- Affected files and modules
+- "Why" over "what"
+
+**Commit Message Format:**
+```
+<type>: <concise description>
+
+<optional body explaining why>
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+```
+
+**Types:** feat, fix, refactor, docs, test, chore, style
+
+### Phase 3: Push to Remote
+
+```bash
+# Push with upstream tracking
+git push -u origin $(git branch --show-current)
+```
+
+### Phase 4: Create/Update PR (Optional)
+
+If `gh` CLI available:
+```bash
+# Check if PR exists for current branch
+gh pr view --json state 2>/dev/null
+
+# Create PR if none exists
+gh pr create --title "<title>" --body "$(cat <<'EOF'
+## Summary
+<bullet points>
+
+## Test plan
+- [ ] Unit tests pass
+- [ ] Manual verification
+
+Generated with Claude Code
+EOF
+)"
+```
+
+---
+
+## Safety Validations
+
+### Blocked Operations
+
+| Condition | Action |
+|-----------|--------|
+| Branch is `main` or `master` | WARN and ask for confirmation |
+| Committing `.env*` files | BLOCK unless explicit approval |
+| Committing `*credentials*` | BLOCK - security risk |
+| Empty commit | SKIP - nothing to commit |
+
+---
+
+## Output Format
+
+```markdown
+## Commit Summary
+
+**Branch:** feature/xyz
+**Commit:** abc1234
+**Message:** feat: Add new authentication flow
+
+### Files Changed
+- src/auth/login.py (+42, -10)
+- tests/test_auth.py (+25, -0)
+
+### Push Status
+Pushed to origin/feature/xyz
+
+### PR Status
+PR #123 created: https://github.com/owner/repo/pull/123
+```
+
+---
+
+## Example Usage
+
+```bash
+# Auto-generate commit message
+/commit-push-pr
+
+# Provide commit message
+/commit-push-pr "feat: Add user authentication flow"
+
+# Fix commit
+/commit-push-pr "fix: Resolve null pointer in login handler"
+```

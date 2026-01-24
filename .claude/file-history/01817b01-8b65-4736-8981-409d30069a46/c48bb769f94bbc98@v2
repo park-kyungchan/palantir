@@ -1,0 +1,109 @@
+# =============================================================================
+# Progress Tracker: Skill Pipeline Enhancement
+# =============================================================================
+# Orchestrator: Terminal-A
+# Last Updated: 2026-01-24T18:15:00Z
+# Synced with Native Task System
+# =============================================================================
+
+version: "1.0"
+projectId: "skill-pipeline-enhancement"
+projectStatus: "IN_PROGRESS"
+lastUpdated: "2026-01-24T18:15:00Z"
+
+# =============================================================================
+# CURRENT PROJECT
+# =============================================================================
+currentProject:
+  name: "E2E Skill Pipeline Implementation"
+  goal: "Complete skill pipeline: /collect, /synthesis, /worker"
+  principle: "Sequential execution via Task dependencies"
+
+# =============================================================================
+# TERMINAL STATUS
+# =============================================================================
+terminals:
+  terminal-a:
+    role: "Orchestrator"
+    status: "active"
+    currentTask: "Orchestrating skill implementation"
+    nativeTaskId: null
+
+  terminal-b:
+    role: "Worker"
+    status: "assigned"
+    currentTask: "Implement /collect skill (P0)"
+    nativeTaskId: "2"
+    promptFile: ".agent/prompts/pending/worker-b-collect.yaml"
+    blockedBy: []
+    startedAt: null
+    completedAt: null
+
+# =============================================================================
+# TASK STATUS (Synced with Native Task System)
+# =============================================================================
+tasks:
+  "2":
+    subject: "Implement /collect skill (P0)"
+    status: "pending"
+    owner: "terminal-b"
+    priority: "P0"
+    blockedBy: []
+    promptFile: ".agent/prompts/pending/worker-b-collect.yaml"
+
+  "3":
+    subject: "Implement /synthesis skill (P0)"
+    status: "pending"
+    owner: null
+    priority: "P0"
+    blockedBy: ["2"]
+    promptFile: null
+
+  "4":
+    subject: "Implement /worker skill (P1)"
+    status: "pending"
+    owner: null
+    priority: "P1"
+    blockedBy: ["3"]
+    promptFile: null
+
+# =============================================================================
+# EXECUTION PHASES
+# =============================================================================
+executionPhases:
+  phase-1:
+    name: "Critical Skills (P0)"
+    status: "in_progress"
+    tasks: ["2", "3"]
+    description: "Implement /collect and /synthesis to complete E2E pipeline"
+
+  phase-2:
+    name: "UX Improvement (P1)"
+    status: "pending"
+    tasks: ["4"]
+    blockedBy: ["phase-1"]
+    description: "Implement /worker for better worker experience"
+
+# =============================================================================
+# COMPLETED TASKS
+# =============================================================================
+completedTasks: []
+
+# =============================================================================
+# BLOCKERS
+# =============================================================================
+blockers: []
+
+# =============================================================================
+# WORKER INSTRUCTIONS
+# =============================================================================
+workerInstructions:
+  terminal-b:
+    action: "START"
+    command: |
+      1. TaskUpdate(taskId="2", status="in_progress")
+      2. Read .agent/prompts/_context.yaml
+      3. Read .agent/prompts/pending/worker-b-collect.yaml
+      4. Implement /collect skill
+      5. TaskUpdate(taskId="2", status="completed")
+      6. Notify Orchestrator

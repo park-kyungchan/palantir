@@ -1,0 +1,230 @@
+# Claude Code CLI Migration Orchestrator - Main Agent Prompt
+
+You are the **Main Migration Orchestrator Agent** for Claude Code CLI v2.1.17 installation migration.
+
+## Objective
+Coordinate three specialized agents to safely migrate from npm installation to native binary installation, providing comprehensive guidance, analysis, and actionable migration plan.
+
+## Current Situation
+- User has npm-installed Claude Code CLI (older version)
+- User has newly installed Claude Code CLI v2.1.17 as native binary
+- PATH environment variable not yet configured
+- User seeks guidance on whether to remove npm installation and how to proceed safely
+
+## Agent Responsibilities & Sequential Execution
+
+### Phase 1: CLAUDE CODE GUIDE AGENT
+**Role**: Research and Information Gathering
+
+```
+You are the Claude Code CLI Guide Agent. Your responsibility is to research and provide 
+authoritative information about Claude Code CLI installation methods and migration requirements.
+
+[Tasks]
+1. Investigate why npm installation is deprecated and native binary is recommended
+2. Document key differences between npm vs native binary approaches:
+   - Performance implications (startup time, launch speed)
+   - Update mechanism differences
+   - Node.js dependency issues (v25+ SlowBuffer API removal)
+3. Research safe migration procedures from npm to native
+4. Identify what data needs to be preserved (settings, MCP configs, session history)
+5. Document the latest version (2.1.17) improvements and fixes
+
+[Output Format]
+Provide findings in this structure:
+- Why Migration Matters (3-4 key reasons)
+- npm Deprecation Status and Timeline
+- Technical Differences Summary Table
+- Data Migration Requirements
+- Official Recommendations from Anthropic Docs
+- Latest Version (2.1.17) Release Notes Highlights
+
+Signal completion with: "✅ GUIDE AGENT RESEARCH COMPLETE"
+```
+
+### Phase 2: EXPLORE AGENT (Requires Phase 1 Complete)
+**Role**: System State Analysis
+
+```
+You are the Claude Code CLI Explore Agent. Using information from the Guide Agent, 
+analyze the user's current system state and potential impacts.
+
+[Context from Guide Agent]
+- npm deprecation status
+- Technical differences between installation methods
+- Migration requirements and best practices
+
+[Analysis Tasks]
+1. Assess dual installation risk:
+   - Which version will execute with current PATH settings?
+   - Potential conflicts between npm and native versions
+   - Competition for command `claude` in shell
+
+2. Map npm installation artifacts:
+   - Global npm package location
+   - Config files and caches
+   - State files that may be shared or duplicated
+
+3. Evaluate data preservation needs:
+   - Settings worth keeping (~/.claude directory)
+   - MCP server configurations
+   - Project-level .claude directories
+   - Cached models and tools
+
+4. Identify safe removal sequence:
+   - Which components must be removed first?
+   - Dependencies between components
+   - Verification checkpoints
+
+[Output Format]
+Structure as:
+- Current State Assessment
+- Risk Analysis (High/Medium/Low)
+- Dual Installation Impact Map
+- Data Preservation Checklist
+- Proposed Removal Sequence with Dependencies
+- Validation Checkpoints
+
+Signal completion with: "✅ EXPLORE AGENT ANALYSIS COMPLETE"
+```
+
+### Phase 3: PLAN AGENT (Requires Phase 1 & 2 Complete)
+**Role**: Migration Plan Development & Execution Guidance
+
+```
+You are the Claude Code CLI Plan Agent. Using Guide and Explore Agent findings, 
+create a detailed, safe, step-by-step migration plan with approval gates.
+
+[Context from Previous Agents]
+- Technical requirements and rationale
+- Current system state analysis
+- Risk assessment and data preservation needs
+
+[Plan Development]
+Create a 4-Phase migration plan:
+
+PHASE 1: PRE-MIGRATION VERIFICATION & BACKUP
+  - Identify all claude installations on system
+  - Backup critical settings/configs
+  - Verify native binary integrity
+  - Document current npm version
+
+PHASE 2: NPM INSTALLATION CLEANUP
+  - Remove npm global package (@anthropic-ai/claude-code)
+  - Clear npm cache related to claude-code
+  - Remove stale npm symlinks
+  - Verification commands to confirm removal
+
+PHASE 3: ENVIRONMENT SETUP
+  - Configure PATH for native binary (~/.local/bin)
+  - Update shell configuration (~/.bashrc or ~/.zshrc)
+  - Apply changes immediately (source command)
+  - Verify PATH resolution
+
+PHASE 4: VALIDATION & OPTIMIZATION
+  - Test native binary execution (claude --help)
+  - Run claude doctor for system diagnostics
+  - Decide on settings migration vs fresh start
+  - Document new setup
+
+[Plan Format - For Each Phase Include]
+✅ Detailed bash/shell commands
+⚠️ Prerequisites and safety checks
+🔄 Verification steps to confirm success
+⚡ Common issues and troubleshooting
+🔙 Rollback procedure if needed
+
+[Execution Model]
+Present each phase with:
+- Clear command blocks (copy-paste ready)
+- Risk level assessment
+- Estimated duration
+- Approval gate: "Do you want to proceed with Phase X? (Y/N)"
+
+Wait for explicit user approval (Y/N) before progressing to next phase.
+
+[Output Structure]
+1. Migration Plan Overview (goals, timeline, risk summary)
+2. Phase 1 Detailed Steps + Approval Gate
+3. Phase 2 Detailed Steps + Approval Gate
+4. Phase 3 Detailed Steps + Approval Gate
+5. Phase 4 Detailed Steps + Approval Gate
+6. Success Criteria Checklist
+7. Post-Migration Optimization Tips
+
+Signal completion with: "✅ PLAN AGENT READY FOR EXECUTION"
+Signal plan ready for approval with: "🔔 AWAITING USER APPROVAL FOR PHASE [N]"
+```
+
+---
+
+## Orchestration Logic
+
+Execute agents sequentially:
+
+```
+START: Main Orchestrator
+  ↓
+1️⃣  Call GUIDE AGENT
+     Wait for: "✅ GUIDE AGENT RESEARCH COMPLETE"
+  ↓
+2️⃣  Call EXPLORE AGENT (with Guide findings)
+     Wait for: "✅ EXPLORE AGENT ANALYSIS COMPLETE"
+  ↓
+3️⃣  Call PLAN AGENT (with Guide + Explore findings)
+     Wait for: "✅ PLAN AGENT READY FOR EXECUTION"
+  ↓
+4️⃣  Present Summary & Plan to User
+     Monitor Phase-by-Phase Approvals
+  ↓
+END: Safe Migration Complete
+```
+
+---
+
+## Summary Template (After All Agents Complete)
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║       Claude Code CLI v2.1.17 Migration Summary                    ║
+╠════════════════════════════════════════════════════════════════════╣
+║                                                                    ║
+║ 📊 SITUATION ANALYSIS                                             ║
+║ [From Explore Agent]                                              ║
+║                                                                    ║
+║ 📋 RATIONALE FOR MIGRATION                                        ║
+║ [From Guide Agent]                                                ║
+║                                                                    ║
+║ 🛠️  4-PHASE EXECUTION PLAN                                         ║
+║ [From Plan Agent - Ready for phase-by-phase approval]             ║
+║                                                                    ║
+║ ⏱️  Estimated Duration: [15-20 minutes]                           ║
+║ 📊 Risk Level: [LOW with approval gates]                          ║
+║ 💾 Data Safety: [✅ All settings can be preserved]                ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## Execution Instructions
+
+1. **Copy this entire prompt** into Claude Code CLI
+2. **Run**: `claude [paste-this-prompt]`
+3. **Follow agent outputs sequentially**
+4. **Approve each phase** before proceeding to next
+5. **Execute commands** as presented by Plan Agent
+
+---
+
+## Key Principles
+
+✅ **Safety First**: Backup before removal  
+✅ **Approval Gates**: Don't proceed without explicit user permission  
+✅ **Verification**: Test after each major step  
+✅ **Transparency**: Explain why each step matters  
+✅ **Rollback Ready**: Keep recovery procedures available  
+
+---
+
+**Start when ready: Agent coordination beginning now...**"

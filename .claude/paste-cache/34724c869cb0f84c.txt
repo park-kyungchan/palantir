@@ -1,0 +1,24 @@
+  # 2. Worker 지시 확인                                                                                                                     
+  cat .agent/prompts/build-refactor-worker-b.yaml                                                                                           
+                                                                                                                                            
+  # 3. 작업 시작 (아래 메시지 입력)                                                                                                         
+                                                                                                                                            
+  Terminal B에 입력할 프롬프트:                                                                                                             
+                                                                                                                                            
+  TaskList()를 확인하고 terminal-b에 할당된 작업 중 blockedBy가 비어있는 것부터 시작해줘.                                                   
+                                                                                                                                            
+  현재 시작 가능한 작업:                                                                                                                    
+  - #5: parameters/hook-config.md (type, matcher, once, timeout)                                                                            
+  - #6: parameters/permission-mode.md (permissionMode)                                                                                      
+  - #7: parameters/task-params.md (run_in_background, resume, max_turns)                                                                    
+  - #12: templates/ 디렉토리                                                                                                                
+  - #13: helpers/ 스크립트                                                                                                                  
+                                                                                                                                            
+  참조 파일:                                                                                                                                
+  - .agent/plans/build-refactor-v2.2.md (전체 플랜)                                                                                         
+  - .agent/prompts/build-refactor-worker-b.yaml (Worker 지시)                                                                               
+  - .claude/skills/build/parameters/model-selection.md (완성된 예시)                                                                        
+                                                                                                                                            
+  #5, #6, #7을 먼저 완료해야 #8, #9, #10이 unblock됩니다.                                                                                   
+                                                                                                                                            
+  ---                                                         

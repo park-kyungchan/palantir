@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://palantir.local/schemas/task-v2.schema.json",
+  "title": "Task Schema V2",
+  "description": "Extended Task schema for Progressive Disclosure integration and cross-session state management",
+  "type": "object",
+  "required": ["id", "subject", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9]{8}$",
+      "description": "Unique 8-character task identifier"
+    },
+    "subject": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Brief task title in imperative form"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of what needs to be done"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "completed", "blocked"],
+      "description": "Current task status"
+    },
+    "activeForm": {
+      "type": "string",
+      "description": "Present continuous form shown in spinner (e.g., 'Running tests')"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Session ID or agent name that owns this task"
+    },
+    "blockedBy": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Task IDs that must complete before this task can start"
+    },
+    "blocks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Task IDs that are waiting on this task to complete"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of task creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of last update"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of task completion"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["skill", "agent", "user", "system"],
+          "description": "Origin of task creation"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+          "description": "Task priority level"
+        },
+        "phase": {
+          "type": "string",
+          "description": "Project phase this task belongs to"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Custom tags for categorization"
+        }
+      },
+      "additionalProperties": true
+    },
+    "l1Summary": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "L1 summary output (max 500 tokens)"
+    },
+    "l2Path": {
+      "type": "string",
+      "pattern": "^\\.agent/outputs/.*\\.md$",
+      "description": "Path to L2/L3 detail file"
+    },
+    "progressiveDisclosure": {
+      "type": "object",
+      "description": "Progressive Disclosure metadata",
+      "properties": {
+        "priority": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        },
+        "requiresL2Read": {
+          "type": "boolean",
+          "default": false
+        },
+        "recommendedRead": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "anchor": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "l2Index": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "anchor": { "type": "string" },
+              "tokens": { "type": "integer" },
+              "priority": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

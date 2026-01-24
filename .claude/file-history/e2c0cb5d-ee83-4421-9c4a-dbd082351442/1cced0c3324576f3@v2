@@ -1,0 +1,43 @@
+taskId: "orch-gap-b1"
+assignedTo: "Terminal-B"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-24T09:50:00Z"
+priority: "P1"
+
+scope:
+  description: |
+    현재 Orchestration 인프라의 Gap 분석 - Part 1
+
+    조사 대상:
+    1. /orchestrate 스킬의 현재 기능과 한계
+    2. /assign 스킬의 현재 기능과 한계
+    3. 두 스킬 간의 역할 중복/불명확성 분석
+
+    분석 관점:
+    - "조사/분석 Orchestrating" 단계를 위해 누락된 기능
+    - "Task Decomposition" 로직의 부재
+    - Description이 자동 매칭에 부적합한 부분
+
+context:
+  workflow: |
+    사용자 요청 → 조사/분석 Orchestrating → 결과 수집 →
+    계획 종합 → 계획 작성 → 승인 대기 →
+    Task Decomposition → Worker 프롬프트 → 결과 수집 → Loop
+
+targetFiles:
+  - path: ".claude/skills/orchestrate/SKILL.md"
+    action: "ANALYZE"
+  - path: ".claude/skills/assign/SKILL.md"
+    action: "ANALYZE"
+
+deliverables:
+  - "orchestrate-assign-gap-report.md in .agent/outputs/Worker/"
+
+completionCriteria:
+  - "/orchestrate와 /assign의 역할 차이점 명확히 정의"
+  - "누락된 기능 목록 작성"
+  - "Description 개선안 제시"
+
+onComplete:
+  - "Update _progress.yaml: terminal-b.status = 'completed'"
+  - "Report to Terminal-A with L1 format"

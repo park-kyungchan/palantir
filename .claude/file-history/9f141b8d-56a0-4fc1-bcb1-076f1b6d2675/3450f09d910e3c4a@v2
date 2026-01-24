@@ -1,0 +1,127 @@
+#!/bin/bash
+# =============================================================================
+# Claude Code - Parallel Session Notification Hook
+# =============================================================================
+# Boris Cherny Pattern: "I use system notifications to know when a Claude needs input"
+#
+# Hook Type: SubagentStop
+# Triggers: When a subagent completes
+#
+# Environment Variables (from Claude Code):
+#   CLAUDE_SESSION_ID - Current session ID
+#   CLAUDE_SUBAGENT_ID - Subagent that finished (if applicable)
+#   CLAUDE_TOOL_INPUT - JSON input from tool call
+#
+# Exit Codes:
+#   0 - Success, continue
+#   2 - Block (prevents subagent from stopping)
+# =============================================================================
+
+set -e
+
+# Configuration
+WORKSPACE_ROOT="${ORION_WORKSPACE_ROOT:-/home/palantir}"
+AGENT_TMP_DIR="$WORKSPACE_ROOT/park-kyungchan/palantir/.agent/tmp"
+NOTIFICATION_LOG="$AGENT_TMP_DIR/parallel_notifications.jsonl"
+
+# Ensure log directory exists
+mkdir -p "$AGENT_TMP_DIR" 2>/dev/null || true
+
+# Parse input
+TOOL_INPUT="${CLAUDE_TOOL_INPUT:-{}}"
+SESSION_ID="${CLAUDE_SESSION_ID:-unknown}"
+TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# Extract subagent info if available
+if command -v jq &> /dev/null; then
+    SUBAGENT_ID=$(echo "$TOOL_INPUT" | jq -r '.subagent_id // "unknown"' 2>/dev/null || echo "unknown")
+    TAB_ID=$(echo "$TOOL_INPUT" | jq -r '.tab_id // 0' 2>/dev/null || echo "0")
+    TASK=$(echo "$TOOL_INPUT" | jq -r '.task // "Task"' 2>/dev/null || echo "Task")
+    STATUS=$(echo "$TOOL_INPUT" | jq -r '.status // "completed"' 2>/dev/null || echo "completed")
+else
+    SUBAGENT_ID="unknown"
+    TAB_ID="0"
+    TASK="Task"
+    STATUS="completed"
+fi
+
+# Determine notification urgency based on status
+case "$STATUS" in
+    "completed")
+        URGENCY="low"
+        TITLE="✅ Tab $TAB_ID Complete"
+        ;;
+    "failed")
+        URGENCY="critical"
+        TITLE="❌ Tab $TAB_ID Failed"
+        ;;
+    "needs_input")
+        URGENCY="critical"
+        TITLE="🔔 Tab $TAB_ID Awaiting Input"
+        ;;
+    *)
+        URGENCY="normal"
+        TITLE="📋 Tab $TAB_ID: $STATUS"
+        ;;
+esac
+
+# Log notification
+echo "{\"timestamp\":\"$TIMESTAMP\",\"session_id\":\"$SESSION_ID\",\"subagent_id\":\"$SUBAGENT_ID\",\"tab_id\":$TAB_ID,\"status\":\"$STATUS\",\"task\":\"$TASK\"}" >> "$NOTIFICATION_LOG"
+
+# Send desktop notification based on platform
+send_notification() {
+    local title="$1"
+    local message="$2"
+    local urgency="$3"
+
+    case "$(uname -s)" in
+        Linux*)
+            # Linux: Use notify-send
+            if command -v notify-send &> /dev/null; then
+                notify-send \
+                    --urgency="$urgency" \
+                    --app-name="Claude Code" \
+                    "$title" \
+                    "$message" 2>/dev/null || true
+            fi
+            ;;
+        Darwin*)
+            # macOS: Use osascript
+            osascript -e "display notification \"$message\" with title \"$title\" sound name \"default\"" 2>/dev/null || true
+            ;;
+        MINGW*|MSYS*|CYGWIN*)
+            # Windows: Use PowerShell toast
+            powershell -Command "
+                [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+                \$template = [Windows.UI.Notifications.ToastTemplateType]::ToastText02
+                \$xml = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(\$template)
+                \$xml.GetElementsByTagName('text')[0].AppendChild(\$xml.CreateTextNode('$title')) | Out-Null
+                \$xml.GetElementsByTagName('text')[1].AppendChild(\$xml.CreateTextNode('$message')) | Out-Null
+                \$toast = [Windows.UI.Notifications.ToastNotification]::new(\$xml)
+                [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Claude Code').Show(\$toast)
+            " 2>/dev/null || true
+            ;;
+    esac
+}
+
+# Send WebSocket notification to observe server (if available)
+send_websocket_notification() {
+    local ws_url="${ORION_OBSERVE_WS:-ws://localhost:8765}"
+    local payload="{\"type\":\"subagent_notification\",\"session_id\":\"$SESSION_ID\",\"tab_id\":$TAB_ID,\"status\":\"$STATUS\",\"task\":\"$TASK\"}"
+
+    # Try websocat if available
+    if command -v websocat &> /dev/null; then
+        echo "$payload" | timeout 2 websocat "$ws_url" 2>/dev/null || true
+    fi
+}
+
+# Only send notifications for non-trivial events
+if [ "$TAB_ID" != "0" ] || [ "$STATUS" = "failed" ] || [ "$STATUS" = "needs_input" ]; then
+    send_notification "$TITLE" "Task: ${TASK:0:100}" "$URGENCY"
+    send_websocket_notification
+fi
+
+# Output for Claude Code hook system
+echo "{\"status\":\"notified\",\"tab_id\":$TAB_ID,\"timestamp\":\"$TIMESTAMP\"}"
+
+exit 0

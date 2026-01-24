@@ -1,0 +1,13 @@
+  ---                                                                                                                                       
+  📌 터미널 C 지시 (Hook 에러 조사)                                                                                                         
+                                                                                                                                            
+  Hook 에러 조사 및 수정:                                                                                                                   
+                                                                                                                                            
+  1. task_execution.log에서 priority: UNKNOWN 발생 원인 분석                                                                                
+  2. pd-task-processor.sh의 YAML 파싱 로직 점검                                                                                             
+  3. Explore subagent가 L1 포맷을 준수하지 않는 경우 처리 개선                                                                              
+                                                                                                                                            
+  조사 결과를 .agent/outputs/Explore/ 에 L1/L2 형식으로 보고해.                                                                             
+  Task 생성: "Hook 에러 조사 및 수정"                                                                                                       
+                                                                                                                                            
+  --- 

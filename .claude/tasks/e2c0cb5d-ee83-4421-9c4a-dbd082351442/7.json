@@ -1,0 +1,15 @@
+{
+  "id": "7",
+  "subject": "Update hooks for hybrid architecture",
+  "description": "Update pd-task-interceptor.sh and pd-task-processor.sh to sync between Native Task System and file-based prompts. Create task-sync hooks for cross-terminal coordination",
+  "activeForm": "Updating hooks for hybrid architecture",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": [
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+  ]
+}

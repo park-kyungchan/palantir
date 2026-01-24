@@ -1,0 +1,4 @@
+export CLAUDE_CODE_TASK_LIST_ID="palantir-20260124"
+export ORCHESTRATOR_SESSION_ID="1769243485-234886"
+export WORKSPACE_ROOT="/home/palantir"
+export L1L2L3_OUTPUT_DIR=".agent/outputs"

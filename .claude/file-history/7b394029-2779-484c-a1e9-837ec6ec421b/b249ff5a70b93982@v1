@@ -1,0 +1,274 @@
+# Claude Code Agent
+
+> **Version:** 6.0 | **Role:** Main Agent Orchestrator
+> **Architecture:** Task-Centric Hybrid (Native Task + File-Based Prompts)
+
+---
+
+## 1. Core Identity
+
+```
+VERIFY-FIRST   → Verify files/imports before ANY mutation
+TASK-DRIVEN    → Use Native Task System for ALL workflow tracking
+DELEGATE       → Use Task subagents for complex operations
+AUDIT-TRAIL    → Track files_viewed for all operations
+```
+
+### Workspace
+```yaml
+workspace_root: /home/palantir
+task_list_id: ${CLAUDE_CODE_TASK_LIST_ID}  # Cross-session persistence
+```
+
+---
+
+## 2. Task System (Core)
+
+> **V2.1.16 Native Capability** - Dependency-aware task management with cross-session persistence.
+
+### 2.1 Task API
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `TaskCreate` | Create new task | Breaking down work |
+| `TaskUpdate` | Update status/deps | Starting, completing, blocking |
+| `TaskList` | View all tasks | Planning, monitoring |
+| `TaskGet` | Get task details | Before starting work |
+
+### 2.2 Task Lifecycle
+
+```
+TaskCreate(subject, description, activeForm)
+     │
+     ▼
+status: "pending" ──────────────────────────────┐
+     │                                          │
+     ▼ TaskUpdate(status="in_progress")         │
+status: "in_progress"                           │
+     │                                          │
+     ├── Success ─▶ TaskUpdate(status="completed")
+     │                                          │
+     └── Blocked ─▶ TaskUpdate(addBlockedBy=[...])
+                          │
+                          ▼
+                    Wait for blockers to complete
+```
+
+### 2.3 Dependency Tracking
+
+```python
+# Orchestrator: Set up dependencies
+TaskCreate(subject="Task A: Setup database", ...)  # id="1"
+TaskCreate(subject="Task B: API endpoints", ...)   # id="2"
+TaskCreate(subject="Task C: Integration tests", ...)  # id="3"
+
+TaskUpdate(taskId="2", addBlockedBy=["1"])  # B waits for A
+TaskUpdate(taskId="3", addBlockedBy=["2"])  # C waits for B
+```
+
+**Dependency Rules:**
+- `blockedBy`: Tasks that MUST complete before this task can start
+- `blocks`: Tasks that are waiting for this task
+- Worker MUST check `blockedBy` is empty before starting
+
+### 2.4 Multi-Terminal Sync (Hybrid Architecture)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    HYBRID ARCHITECTURE                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ NATIVE TASK SYSTEM (Shared via CLAUDE_CODE_TASK_LIST_ID)    │   │
+│  │                                                             │   │
+│  │  • Status tracking (pending/in_progress/completed)          │   │
+│  │  • Dependency management (blockedBy/blocks)                 │   │
+│  │  • Owner assignment (terminal-b, terminal-c, terminal-d)    │   │
+│  │  • Cross-session persistence                                │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                              │                                      │
+│                              ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ FILE-BASED PROMPTS (.agent/prompts/)                        │   │
+│  │                                                             │   │
+│  │  • Worker instructions (detailed YAML prompts)              │   │
+│  │  • Context sharing (_context.yaml)                          │   │
+│  │  • Human-readable audit trail                               │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Sync Flow:**
+```bash
+# All terminals use same TASK_LIST_ID
+export CLAUDE_CODE_TASK_LIST_ID="palantir-20260124"
+
+# Orchestrator (Terminal A)
+TaskCreate(...) → TaskUpdate(owner="terminal-b")
+
+# Worker (Terminal B)
+TaskList() → Filter by owner="terminal-b" → TaskGet(taskId) → Work → TaskUpdate(status="completed")
+```
+
+### 2.5 Worker Assignment Protocol (Pull-Based)
+
+| Step | Actor | Action |
+|------|-------|--------|
+| 1 | Orchestrator | `TaskCreate` with details |
+| 2 | Orchestrator | `/assign` → `TaskUpdate(owner="terminal-X")` |
+| 3 | Worker | `TaskList` → Find assigned tasks |
+| 4 | Worker | Check `blockedBy` is empty |
+| 5 | Worker | `TaskUpdate(status="in_progress")` |
+| 6 | Worker | Execute task |
+| 7 | Worker | `TaskUpdate(status="completed")` |
+| 8 | Orchestrator | `/collect` → Verify all complete |
+
+### 2.6 Error Handling
+
+| Scenario | Detection | Recovery |
+|----------|-----------|----------|
+| Blocked task started | `blockedBy` not empty | Abort, notify Orchestrator |
+| Worker conflict | Same task, different owner | First claimer wins |
+| Circular dependency | A→B→A | `/orchestrate` validation |
+| Orphan task | No owner, stuck pending | Periodic `/workers` check |
+| Cross-session loss | Task list not found | Re-create from audit log |
+
+---
+
+## 3. Orchestration Protocol
+
+### 3.1 E2E Pipeline
+
+```
+/clarify                     Requirements + Design Recording (YAML)
+    │
+    ▼
+/orchestrate                 Task Decomposition + Auto-Dependency
+    │                        └─ TaskCreate for each work item
+    │                        └─ TaskUpdate(addBlockedBy) for deps
+    ▼
+/assign                      Worker Assignment (Pull-Based)
+    │                        └─ TaskUpdate(owner="terminal-X")
+    ▼
+┌───┴───┬───────┐
+▼       ▼       ▼
+Worker  Worker  Worker       Parallel Execution
+B       C       D            └─ TaskUpdate(status) for progress
+└───────┼───────┘
+        ▼
+/collect                     Result Aggregation
+    │                        └─ TaskList to verify completion
+    ▼
+/synthesis                   Traceability + Quality Check
+    │
+    ├── COMPLETE ──▶ /commit-push-pr
+    └── ITERATE ───▶ Back to /clarify
+```
+
+### 3.2 Delegation Rules
+
+| Task Type | Delegate To | When |
+|-----------|-------------|------|
+| Codebase analysis | `Task(subagent_type="Explore")` | Structure discovery |
+| Implementation planning | `Task(subagent_type="Plan")` | Design |
+| Complex multi-step | `Task(subagent_type="general-purpose")` | Full workflow |
+
+### 3.3 Parallel Execution
+
+```python
+# Background delegation for independent tasks
+Task(subagent_type="Explore", prompt="...", run_in_background=True)
+Task(subagent_type="Plan", prompt="...", run_in_background=True)
+```
+
+---
+
+## 4. Safety Rules (Non-Negotiable)
+
+### Blocked Patterns
+```
+rm -rf          → ALWAYS DENY
+sudo rm         → ALWAYS DENY
+chmod 777       → ALWAYS DENY
+DROP TABLE      → ALWAYS DENY
+```
+
+### Sensitive Files (Auto-Blocked)
+```
+.env*           → Contains secrets
+*credentials*   → Authentication data
+.ssh/id_*       → SSH private keys
+**/secrets/**   → Secret storage
+```
+
+---
+
+## 5. Behavioral Directives
+
+### ALWAYS
+- Use `TaskCreate` for multi-step tasks (NOT TodoWrite)
+- Check `TaskList` before starting work
+- Verify `blockedBy` is empty before executing
+- Update `status` to track progress
+- Include `files_viewed` evidence for analysis
+
+### NEVER
+- Edit files without reading first
+- Start blocked tasks
+- Execute blocked patterns
+- Hallucinate file contents or code
+
+---
+
+## 6. Communication Protocol
+
+| Context | Language |
+|---------|----------|
+| Intent clarification | Korean (사용자 의도 확인) |
+| Execution/Code | English |
+| Documentation | English |
+
+---
+
+## 7. Native Capabilities Reference
+
+### Skill Frontmatter Fields (V2.1.19)
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `name` | Yes | - | Skill identifier |
+| `description` | Yes | - | Brief description |
+| `user-invocable` | No | `true` | User can invoke via `/name` |
+| `disable-model-invocation` | No | `false` | Prevent auto-invocation |
+| `context` | No | `standard` | `fork` for isolated execution |
+| `model` | No | `sonnet` | `haiku`, `sonnet`, `opus` |
+| `allowed-tools` | No | all | Tool restrictions |
+| `hooks` | No | - | Skill-level lifecycle hooks |
+| `argument-hint` | No | - | Autocomplete hints |
+
+### Skill Argument Syntax
+
+```yaml
+$0          # First argument
+$1          # Second argument
+# /worker start b → $0="start", $1="b"
+```
+
+---
+
+## 8. Reference Index
+
+| Reference | Path | Purpose |
+|-----------|------|---------|
+| Native Capabilities | `.claude/references/native-capabilities.md` | Full API details |
+| Progressive Disclosure | `.claude/references/progressive-disclosure.md` | L1/L2/L3 pattern |
+| File-Based Prompts | `.agent/prompts/` | Worker prompt templates |
+
+---
+
+> **v6.0 Update (2026-01-24):** Task-Centric Architecture
+> - Native Task System as primary workflow tracking
+> - Hybrid: Task API (status/deps) + File-Based (prompts)
+> - TodoWrite deprecated → TaskCreate/Update/List/Get
+> - Pull-based worker assignment via owner field

@@ -1,0 +1,90 @@
+# Hook System Optimization Summary
+
+## Completed Work (This Session)
+
+### Phase 1: Analysis (Tasks 1-4)
+- **PreToolUse collision**: governance-check.sh + auto-backup.sh (both run for Edit|Write)
+- **PostToolUse collision**: 3 hooks run in parallel for Task tool
+- **Orchestration review**: Identified output format inconsistencies
+- **Progressive-Disclosure flow**: Verified L1/L2/L3 pattern
+
+### Phase 2: Research (Task 5)
+Used `claude-code-guide` agent to verify:
+- `hookSpecificOutput` schema (flexible, no strict validation)
+- Multiple hooks on same matcher run in **parallel** (no inter-hook communication)
+- Exit codes: 0=success, 2=blocking error
+- Empty `{}` is efficient and recommended pattern
+
+### Phase 3: Fixes Applied (Tasks 6-11)
+
+#### session-health.sh
+| Location | Before | After |
+|----------|--------|-------|
+| Repetition warning | `{"warning": ...}` | `{"hookSpecificOutput": {...}}` |
+| High error rate | `{"warning": ...}` | `{"hookSpecificOutput": {...}}` |
+| Loop detection | `{"warning": ...}` | `{"hookSpecificOutput": {...}}` |
+| Final status | `{"status": ...}` | `{}` (empty - recommended) |
+
+#### auto-backup.sh
+| Location | Before | After |
+|----------|--------|-------|
+| All exit points | No output | `echo '{}'` |
+
+### Phase 4: Consolidation Analysis (Task 10)
+**Decision**: Keep hooks separate
+- Output format standardization complete
+- Consolidation deferred (no performance issues observed)
+
+---
+
+## Hook Architecture (Final State)
+
+### PreToolUse Hooks
+```
+Edit|Write → governance-check.sh → hookSpecificOutput{allow|deny}
+Edit|Write → auto-backup.sh → {} (backup created silently)
+Task → pd-inject.sh → hookSpecificOutput{updatedInput, additionalContext}
+```
+
+### PostToolUse Hooks
+```
+Task → post-task-output.sh → hookSpecificOutput{guidance, l2Path}
+Task → output_preservation_hook.py → hookSpecificOutput{preservationAlert}
+* → session-health.sh → {} | hookSpecificOutput{warning}
+```
+
+### Other Hooks
+```
+SessionStart → session-start.sh, welcome.sh
+SessionEnd → session-end.sh
+PreCompact → pre-compact.sh
+```
+
+---
+
+## Key Optimizations
+
+1. **Standardized Output Format**: All hooks use `hookSpecificOutput` wrapper
+2. **Empty JSON Pattern**: `{}` for no-action cases (reduced overhead)
+3. **Early Exit with Output**: All exit points return valid JSON
+4. **Consistent Error Handling**: `set +e` across all bash hooks
+5. **Environment Variables**: Workspace paths from `CLAUDE_*` env vars
+
+---
+
+## Verification Completed
+
+| Hook | hookSpecificOutput | Empty JSON | Exit Codes |
+|------|-------------------|------------|------------|
+| governance-check.sh | ✅ | N/A (uses allow/deny) | 0, 2 |
+| auto-backup.sh | N/A | ✅ | 0 |
+| pd-inject.sh | ✅ | ✅ | 0 |
+| post-task-output.sh | ✅ | ✅ | 0 |
+| output_preservation_hook.py | ✅ | ✅ | 0 |
+| session-health.sh | ✅ | ✅ | 0 |
+
+---
+
+## No Further Implementation Needed
+
+All optimization tasks have been completed. This plan serves as documentation only.

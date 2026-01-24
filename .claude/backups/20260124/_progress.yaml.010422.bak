@@ -1,0 +1,88 @@
+# =============================================================================
+# Progress Tracker for Session-Aware Worker Prompt System
+# =============================================================================
+# Workers UPDATE this file when starting/completing tasks.
+# Orchestrator MONITORS this file for progress.
+#
+# Location: .agent/prompts/_progress.yaml
+# Language: English (Machine-Readable)
+# =============================================================================
+
+version: "1.0"
+projectId: "session-aware-worker-prompt-system"
+lastUpdated: "2026-01-24T01:15:00Z"
+
+# =============================================================================
+# TERMINAL STATUS
+# =============================================================================
+terminals:
+  terminal-a:
+    role: "Orchestrator"
+    status: "monitoring"
+    currentTask: null
+
+  terminal-b:
+    role: "Worker"
+    status: "completed"
+    currentTask: "phase1-session-registry"
+    assignedPhase: "phase1"
+    blockedBy: []
+    startedAt: "2026-01-24T01:00:00Z"
+    completedAt: "2026-01-24T01:05:00Z"
+
+  terminal-c:
+    role: "Worker"
+    status: "completed"
+    currentTask: "phase2-prompt-generation"
+    assignedPhase: "phase2"
+    blockedBy: []
+    startedAt: "2026-01-24T01:10:00Z"
+    completedAt: "2026-01-24T01:15:00Z"
+
+  terminal-d:
+    role: "Worker"
+    status: "idle"
+    currentTask: null
+    assignedPhase: "phase3"
+    blockedBy: ["phase2"]
+    startedAt: null
+    completedAt: null
+
+# =============================================================================
+# PHASE STATUS
+# =============================================================================
+phases:
+  phase1:
+    status: "completed"
+    owner: "terminal-b"
+    startedAt: "2026-01-24T01:00:00Z"
+    completedAt: "2026-01-24T01:05:00Z"
+
+  phase2:
+    status: "assigned"
+    owner: "terminal-c"
+    startedAt: null
+    completedAt: null
+
+  phase3:
+    status: "pending"
+    owner: "terminal-d"
+    startedAt: null
+    completedAt: null
+
+# =============================================================================
+# COMPLETED TASKS
+# =============================================================================
+completedTasks:
+  - taskId: "phase1-session-registry"
+    phase: "phase1"
+    completedBy: "terminal-b"
+    completedAt: "2026-01-24T01:05:00Z"
+    deliverables:
+      - "current_session.json creation in ~/.agent/tmp/"
+      - ".agent/prompts/{pending,active,completed} directory initialization"
+
+# =============================================================================
+# BLOCKERS / ISSUES
+# =============================================================================
+blockers: []

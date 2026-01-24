@@ -1,0 +1,58 @@
+---
+name: orchestrate
+description: Plan and distribute tasks to worker terminals in parallel
+context: fork
+user-invocable: true
+---
+
+# Orchestrator: Task Distribution
+
+You are the Main Agent Orchestrator. Analyze the task and distribute work to available workers.
+
+## Input
+$ARGUMENTS
+
+## Current State
+
+### Session Registry
+Read orchestrator session:
+```bash
+cat ~/.agent/tmp/current_session.json 2>/dev/null || echo '{"sessionId": "unknown"}'
+```
+
+### Worker Progress
+```bash
+cat .agent/prompts/_progress.yaml 2>/dev/null | head -100
+```
+
+### Pending Tasks
+```bash
+ls -la .agent/prompts/pending/ 2>/dev/null || echo "No pending tasks"
+```
+
+## Your Task
+
+1. **Analyze Dependencies**: Identify which tasks can run in parallel
+2. **Assign Workers**: Create/update worker task YAML files
+3. **Update Progress**: Modify `_progress.yaml` with assignments
+4. **Output Instructions**: Provide copy-paste commands for each terminal
+
+## Output Format (L1)
+
+```yaml
+orchestrationId: {8-char-id}
+parallelTasks:
+  - terminal: "B"
+    taskFile: ".agent/prompts/pending/worker-b-{task}.yaml"
+    canStartNow: true
+  - terminal: "C"
+    taskFile: ".agent/prompts/pending/worker-c-{task}.yaml"
+    canStartNow: true | false
+    blockedBy: ["task-id"]
+nextAction: "Copy terminal instructions below"
+```
+
+## Rules
+- MAXIMIZE parallel execution
+- Only block tasks with TRUE dependencies (same file modifications)
+- Different files/directories = parallel OK

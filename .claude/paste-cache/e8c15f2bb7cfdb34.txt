@@ -1,0 +1,24 @@
+  ## 작업 지시: Phase 3 - Prompt Lifecycle Management                                                                                       
+                                                                                                                                            
+  1. 먼저 컨텍스트 파일을 읽어주세요:                                                                                                       
+     - .agent/prompts/_context.yaml (전체 흐름)                                                                                             
+     - .agent/prompts/_progress.yaml (현재 진행 상황)                                                                                       
+     - .agent/prompts/worker-d-task.yaml (내 작업)                                                                                          
+                                                                                                                                            
+  2. 의존성 확인:                                                                                                                           
+     - Phase 1 (Terminal B) ✅ 완료됨                                                                                                       
+     - Phase 2 (Terminal C) ✅ 완료됨 - 작업 시작 가능                                                                                      
+                                                                                                                                            
+  3. 작업 대상 파일:                                                                                                                        
+     - .claude/hooks/task-pipeline/pd-task-processor.sh                                                                                     
+                                                                                                                                            
+  4. 구현 내용:                                                                                                                             
+     - 세션 ID 파일 읽기 로직 (라인 160 근처)                                                                                               
+     - 프롬프트 파일 lifecycle 관리 (라인 270 근처)                                                                                         
+       - pending/ → completed/ 이동                                                                                                         
+       - audit log 기록 (.agent/logs/prompt_lifecycle.log)                                                                                  
+                                                                                                                                            
+  5. 완료 후:                                                                                                                               
+     - _progress.yaml 업데이트: terminal-d.status = 'completed'                                                                             
+     - L1/L2/L3 형식으로 결과 보고                                                                                                          
+     - 모든 Phase 완료 → Final Verification 요청

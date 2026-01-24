@@ -64,3 +64,5 @@ kc-palantir-*.json:Zone.Identifier
 
 # Personal configs
 .gitconfig
+*.Zone.Identifier
+*:Zone.Identifier

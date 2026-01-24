@@ -1,0 +1,288 @@
+#!/bin/bash
+# =============================================================================
+# pd-task-interceptor.sh - Unified PreToolUse Hook for Task Subagents
+# =============================================================================
+# Consolidated from: pd-inject.sh + pd-pretooluse.sh
+# Injects L1/L2/L3 format instructions into Task subagent prompts.
+# Adds run_in_background=true and model="opus" for complex analysis.
+# Skips injection for conversational agents.
+#
+# Matcher: Task
+# Version: 2.0.0 (Unified)
+# Exit Codes:
+#   0 - Allow (with JSON output)
+# =============================================================================
+
+# Don't exit on error - handle failures gracefully
+set +e
+
+#=============================================================================
+# Configuration
+#=============================================================================
+
+CACHE_DIR="${HOME}/.claude/cache/l1l2"
+CACHE_TTL_SECONDS="${CACHE_TTL:-3600}"  # Default: 1 hour
+CACHE_ENABLED="${CACHE_ENABLED:-true}"
+
+# Ensure cache directory exists
+mkdir -p "$CACHE_DIR" 2>/dev/null
+
+#=============================================================================
+# JSON Helper (with jq fallback to python3)
+#=============================================================================
+
+HAS_JQ=false
+if command -v jq &> /dev/null; then
+    HAS_JQ=true
+fi
+
+json_get() {
+    local field="$1"
+    local json="$2"
+
+    if $HAS_JQ; then
+        echo "$json" | jq -r "$field // empty" 2>/dev/null || echo ""
+    else
+        echo "$json" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    keys = '$field'.lstrip('.').split('.')
+    val = data
+    for k in keys:
+        if isinstance(val, dict):
+            val = val.get(k, '')
+        else:
+            val = ''
+    print(val if val else '')
+except:
+    print('')
+" 2>/dev/null || echo ""
+    fi
+}
+
+#=============================================================================
+# Caching Functions
+#=============================================================================
+
+compute_input_hash() {
+    local input="$1"
+    # Extract only prompt and subagent_type for hash (stable cache key)
+    if $HAS_JQ; then
+        echo "$input" | jq -r '.prompt + .subagent_type' 2>/dev/null | md5sum | cut -d' ' -f1
+    else
+        echo "$input" | python3 -c "
+import sys, json, hashlib
+try:
+    data = json.load(sys.stdin)
+    key = (data.get('prompt', '') + data.get('subagent_type', ''))
+    print(hashlib.md5(key.encode()).hexdigest())
+except:
+    print('')
+" 2>/dev/null
+    fi
+}
+
+check_cache() {
+    local hash="$1"
+    local cache_file="${CACHE_DIR}/${hash}.json"
+
+    if [[ ! -f "$cache_file" ]]; then
+        echo ""
+        return 1
+    fi
+
+    # Check TTL
+    local file_age=$(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0)))
+    if [[ $file_age -gt $CACHE_TTL_SECONDS ]]; then
+        rm -f "$cache_file" 2>/dev/null
+        echo ""
+        return 1
+    fi
+
+    # Increment hits counter
+    if $HAS_JQ; then
+        local hits=$(jq -r '.metadata.hits // 0' "$cache_file" 2>/dev/null)
+        local new_hits=$((hits + 1))
+        jq --argjson h "$new_hits" '.metadata.hits = $h | .metadata.lastHit = now' "$cache_file" > "${cache_file}.tmp" 2>/dev/null && mv "${cache_file}.tmp" "$cache_file"
+    fi
+
+    cat "$cache_file"
+    return 0
+}
+
+#=============================================================================
+# Main Logic
+#=============================================================================
+
+# Read input from stdin
+INPUT=$(cat)
+
+# Extract tool name
+TOOL_NAME=$(json_get '.tool_name' "$INPUT")
+
+# Only process Task tool
+if [[ "$TOOL_NAME" != "Task" ]]; then
+    echo '{}'
+    exit 0
+fi
+
+# Extract current tool input and subagent type
+TOOL_INPUT=$(json_get '.tool_input' "$INPUT")
+SUBAGENT_TYPE=$(json_get '.tool_input.subagent_type' "$INPUT")
+
+# Conversational agents: skip L1/L2/L3 format injection
+# These agents have natural conversation flows that shouldn't be constrained
+SKIP_AGENTS=(
+    "prompt-assistant"
+    "onboarding-guide"
+    "statusline-setup"
+    "claude-code-guide"
+)
+
+for skip in "${SKIP_AGENTS[@]}"; do
+    if [[ "$SUBAGENT_TYPE" == "$skip" ]]; then
+        # Allow without L1/L2/L3 format injection
+        cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow"
+  }
+}
+RESPONSE
+        exit 0
+    fi
+done
+
+#=============================================================================
+# Cache Check (before Task execution)
+#=============================================================================
+
+if [[ "$CACHE_ENABLED" == "true" ]]; then
+    INPUT_HASH=$(compute_input_hash "$TOOL_INPUT")
+    if [[ -n "$INPUT_HASH" ]]; then
+        CACHED_RESULT=$(check_cache "$INPUT_HASH")
+        if [[ -n "$CACHED_RESULT" ]]; then
+            # Cache hit - return cached L1 summary directly
+            CACHED_L1=$(json_get '.l1Summary' "$CACHED_RESULT")
+            CACHED_AGENT_ID=$(json_get '.metadata.originalAgentId' "$CACHED_RESULT")
+            cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "block",
+    "reason": "Cache hit - returning cached L1 result",
+    "cachedResult": {
+      "l1Summary": $(echo "$CACHED_L1" | jq -Rs . 2>/dev/null || echo '""'),
+      "cacheHit": true,
+      "inputHash": "$INPUT_HASH",
+      "originalAgentId": "$CACHED_AGENT_ID"
+    }
+  }
+}
+RESPONSE
+            exit 0
+        fi
+    fi
+    # Store hash for processor to use
+    export CACHE_INPUT_HASH="$INPUT_HASH"
+fi
+
+# L1/L2/L3 Format Prompt (V3.0.0 - Unified Progressive Disclosure)
+L1L2L3_PROMPT='## OUTPUT FORMAT REQUIREMENT: L1/L2/L3 Progressive Disclosure (MANDATORY)
+
+Your output MUST follow this structure:
+
+### L1 Summary (Return to Main Agent - MAX 500 TOKENS)
+```yaml
+taskId: {auto-generate unique 8-char id}
+agentType: {Explore|Plan|general-purpose}
+summary: |
+  1-2 sentence summary (max 200 chars)
+status: success | partial | failed
+
+# Progressive Disclosure Fields (REQUIRED)
+priority: CRITICAL | HIGH | MEDIUM | LOW
+recommendedRead:
+  - anchor: "#anchor-name"
+    reason: "Brief explanation why this should be read"
+
+findingsCount: {number}
+criticalCount: {number}
+
+l2Index:
+  - anchor: "#section-name"
+    tokens: {estimated tokens for this section}
+    priority: CRITICAL | HIGH | MEDIUM | LOW
+    description: "what this section contains"
+
+l2Path: .agent/outputs/{agentType}/{taskId}.md
+requiresL2Read: true | false
+nextActionHint: "suggested next step"
+```
+
+### L3 Detail (Save to File)
+Save detailed findings to: .agent/outputs/{agentType}/{taskId}.md
+- Use markdown anchors: `## Section Name {#anchor-name}`
+- Include estimated token count per section in header comment
+- Structure sections to match l2Index entries
+
+### Priority Guidelines
+- CRITICAL: criticalCount > 0 OR blocking issues found
+- HIGH: status == partial OR major issues requiring attention
+- MEDIUM: status == success with notable findings (findingsCount > 5)
+- LOW: status == success with minimal findings
+
+CONSTRAINT: L1 MUST NOT EXCEED 500 TOKENS. Be concise.'
+
+#=============================================================================
+# Build Updated Input
+#=============================================================================
+
+build_updated_input() {
+    local tool_input="$1"
+
+    if $HAS_JQ; then
+        echo "$tool_input" | jq '. + {
+            run_in_background: true,
+            model: "opus"
+        }' 2>/dev/null
+    else
+        echo "$tool_input" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    data['run_in_background'] = True
+    data['model'] = 'opus'
+    print(json.dumps(data))
+except:
+    print('{}')
+" 2>/dev/null || echo '{}'
+    fi
+}
+
+escape_json_string() {
+    local str="$1"
+
+    if $HAS_JQ; then
+        echo "$str" | jq -Rs . 2>/dev/null
+    else
+        echo "$str" | python3 -c "
+import json, sys
+print(json.dumps(sys.stdin.read()))
+" 2>/dev/null || echo '""'
+    fi
+}
+
+UPDATED_INPUT=$(build_updated_input "$TOOL_INPUT")
+ESCAPED_L1L2L3=$(escape_json_string "$L1L2L3_PROMPT")
+
+# Output with additionalContext for L1/L2/L3 prompt
+cat <<RESPONSE
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedInput": $UPDATED_INPUT,
+    "additionalContext": $ESCAPED_L1L2L3
+  }
+}
+RESPONSE

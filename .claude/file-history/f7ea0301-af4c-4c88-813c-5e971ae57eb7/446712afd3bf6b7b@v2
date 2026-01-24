@@ -1,0 +1,161 @@
+# /build Refactoring - Terminal B Worker Prompt
+# Generated: 2026-01-24
+# Task List ID: Use same as Terminal A (cc <same-id>)
+
+worker_id: terminal-b
+role: Worker
+
+# ============================================================================
+# INSTRUCTIONS
+# ============================================================================
+
+instructions: |
+  ## 작업 개요
+  /build 스킬 리팩토링의 병렬 작업자입니다.
+
+  ## 시작 전 확인사항
+  1. TaskList() 실행하여 terminal-b 할당 작업 확인
+  2. Task #1 (Phase 1: 디렉토리 구조) 완료 대기
+  3. blockedBy가 비어있는 작업부터 시작
+
+  ## 할당된 작업 (8개)
+
+  ### Phase 2 (파라미터 모듈) - 3개
+  - #5: hook-config.md (type, matcher, once, timeout)
+  - #6: permission-mode.md (permissionMode)
+  - #7: task-params.md (run_in_background, resume, max_turns)
+
+  ### Phase 3 (빌더) - 3개
+  - #8: agent-builder.md
+  - #9: skill-builder.md
+  - #10: hook-builder.md
+
+  ### Phase 5 (템플릿/헬퍼) - 2개
+  - #12: templates/ 파일들
+  - #13: helpers/ 스크립트들
+
+  ## 파라미터 모듈 작성 패턴
+
+  ```markdown
+  ---
+  name: {module-name}
+  description: Shared parameter selection for {purpose}
+  context: fork
+  model: haiku
+  ---
+
+  # {Module Name}
+
+  ## Purpose
+  {모듈 목적}
+
+  ## Round 1: {First Parameter}
+  AskUserQuestion(...)
+
+  ## Output Format
+  {반환 형식}
+  ```
+
+  ## 빌더 작성 패턴
+
+  ```markdown
+  ---
+  name: {builder-name}
+  description: Component builder for {type}
+  context: fork
+  model: sonnet
+  ---
+
+  # {Builder Name}
+
+  ## Round 1: Component-Specific Q&A
+  ...
+
+  ## Round N: Delegate to Parameter Modules
+  Call: parameters/{module}.md
+  ```
+
+  ## 작업 흐름
+  1. TaskUpdate(taskId, status="in_progress") - 시작
+  2. 작업 수행
+  3. TaskUpdate(taskId, status="completed") - 완료
+  4. TaskList() - 다음 작업 확인
+
+  ## 참조 파일
+  - Plan: .agent/plans/build-refactor-v2.2.md
+  - clarify 헬퍼 예시: .claude/skills/clarify/helpers.sh
+  - clarify SKILL 예시: .claude/skills/clarify/SKILL.md
+
+# ============================================================================
+# ASSIGNED TASKS
+# ============================================================================
+
+assigned_tasks:
+  phase_2:
+    - id: "5"
+      subject: "Phase 2D: hook-config.md"
+      output: ".claude/skills/build/parameters/hook-config.md"
+      params:
+        - "type: command|prompt"
+        - "matcher: regex string"
+        - "once: boolean (V2.1.16+)"
+        - "timeout: number (ms)"
+        - "command: string (type=command)"
+        - "prompt: string (type=prompt)"
+
+    - id: "6"
+      subject: "Phase 2E: permission-mode.md"
+      output: ".claude/skills/build/parameters/permission-mode.md"
+      params:
+        - "permissionMode: default|acceptEdits|dontAsk|bypassPermissions|plan"
+
+    - id: "7"
+      subject: "Phase 2F: task-params.md"
+      output: ".claude/skills/build/parameters/task-params.md"
+      params:
+        - "run_in_background: boolean (V2.1.16+)"
+        - "resume: string (agent ID)"
+        - "max_turns: number"
+        - "allowed_tools: array"
+
+  phase_3:
+    - id: "8"
+      subject: "Phase 3A: agent-builder.md"
+      output: ".claude/skills/build/builders/agent-builder.md"
+      blockedBy: ["2", "3", "4", "5", "6", "7"]
+
+    - id: "9"
+      subject: "Phase 3B: skill-builder.md"
+      output: ".claude/skills/build/builders/skill-builder.md"
+      blockedBy: ["2", "3", "4", "5", "6", "7"]
+
+    - id: "10"
+      subject: "Phase 3C: hook-builder.md"
+      output: ".claude/skills/build/builders/hook-builder.md"
+      blockedBy: ["2", "3", "4", "5", "6", "7"]
+
+  phase_5:
+    - id: "12"
+      subject: "Phase 5A: 템플릿"
+      outputs:
+        - ".claude/skills/build/templates/agent-template.yaml"
+        - ".claude/skills/build/templates/skill-template.yaml"
+        - ".claude/skills/build/templates/hook-bash-template.sh"
+        - ".claude/skills/build/templates/hook-python-template.py"
+
+    - id: "13"
+      subject: "Phase 5B: 헬퍼"
+      outputs:
+        - ".claude/skills/build/helpers/validation.sh"
+        - ".claude/skills/build/helpers/state-manager.sh"
+
+# ============================================================================
+# SYNC PROTOCOL
+# ============================================================================
+
+sync:
+  check_interval: "After each task completion"
+  on_completion: |
+    1. TaskUpdate(status="completed")
+    2. TaskList() to find next available task
+    3. Check if dependent tasks are unblocked
