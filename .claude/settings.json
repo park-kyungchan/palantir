@@ -84,7 +84,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/progressive-disclosure/pd-inject.sh"
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-interceptor.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-context-injector.sh"
           }
         ]
       }
@@ -95,11 +104,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/progressive-disclosure/post-task-output.sh"
-          },
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-processor.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/output_preservation_hook.py"
+            "command": "/home/palantir/.claude/hooks/clarify-qa-logger.sh"
           }
         ]
       },
@@ -112,21 +126,11 @@
           }
         ]
       }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/pre-compact.sh"
-          }
-        ]
-      }
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/palantir/.claude/statusline-pastel.sh"
+    "command": "/home/palantir/.claude/statusline-orchestrator.sh"
   },
   "language": "Korean"
 }

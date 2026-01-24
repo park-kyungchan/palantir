@@ -34,6 +34,12 @@ AUDIT_LOG_FILE="$AUDIT_LOG_DIR/audit_session_${SESSION_ID}.jsonl"
 mkdir -p "$SESSION_STATE_DIR" 2>/dev/null
 mkdir -p "$AUDIT_LOG_DIR" 2>/dev/null
 
+# Create prompts directories for worker task files
+WORKSPACE_ROOT="${CLAUDE_WORKSPACE_ROOT:-$(pwd)}"
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/pending" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/active" 2>/dev/null
+mkdir -p "${WORKSPACE_ROOT}/.agent/prompts/completed" 2>/dev/null
+
 #=============================================================================
 # JSON Helper Functions (Unified)
 #=============================================================================
@@ -189,6 +195,72 @@ json_log_entry() {
 }
 
 #=============================================================================
+# Task List Integration (CLAUDE_CODE_TASK_LIST_ID)
+#=============================================================================
+
+# Check for shared Task List ID
+TASK_LIST_ID="${CLAUDE_CODE_TASK_LIST_ID:-}"
+TASK_DIR="${HOME}/.claude/tasks"
+PENDING_TASKS_COUNT=0
+PENDING_TASKS_SUMMARY=""
+
+load_task_list_state() {
+    if [ -z "$TASK_LIST_ID" ]; then
+        return
+    fi
+
+    # Find task files for this task list
+    local task_files=$(find "$TASK_DIR" -name "*${TASK_LIST_ID}*.json" 2>/dev/null)
+
+    if [ -z "$task_files" ]; then
+        return
+    fi
+
+    # Count pending tasks
+    for task_file in $task_files; do
+        if [ -f "$task_file" ]; then
+            local status
+            if $HAS_JQ; then
+                status=$(jq -r '.status // "unknown"' "$task_file" 2>/dev/null)
+            else
+                status=$(python3 -c "
+import json
+try:
+    with open('$task_file') as f:
+        print(json.load(f).get('status', 'unknown'))
+except:
+    print('unknown')
+" 2>/dev/null)
+            fi
+
+            if [ "$status" = "pending" ] || [ "$status" = "in_progress" ]; then
+                PENDING_TASKS_COUNT=$((PENDING_TASKS_COUNT + 1))
+
+                # Extract subject for summary
+                local subject
+                if $HAS_JQ; then
+                    subject=$(jq -r '.subject // "Unknown task"' "$task_file" 2>/dev/null)
+                else
+                    subject=$(python3 -c "
+import json
+try:
+    with open('$task_file') as f:
+        print(json.load(f).get('subject', 'Unknown task'))
+except:
+    print('Unknown task')
+" 2>/dev/null)
+                fi
+
+                PENDING_TASKS_SUMMARY="${PENDING_TASKS_SUMMARY}- [${status}] ${subject}\n"
+            fi
+        fi
+    done
+}
+
+# Load task list state if TASK_LIST_ID is set
+load_task_list_state
+
+#=============================================================================
 # Main Logic
 #=============================================================================
 
@@ -234,6 +306,60 @@ TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 SESSION_STATE=$(create_session_state "$SESSION_ID" "$TIMESTAMP" "$PREVIOUS_SESSION" "$EVIDENCE_FILE" "$AUDIT_LOG_FILE")
 echo "$SESSION_STATE" > "$SESSION_FILE"
 
+# Write current session to file registry (for cross-hook access)
+CURRENT_SESSION_FILE="$AGENT_TMP_DIR/current_session.json"
+cat > "$CURRENT_SESSION_FILE" << SESSION_EOF
+{
+  "sessionId": "$SESSION_ID",
+  "startTime": "$TIMESTAMP",
+  "pid": "$$",
+  "status": "active"
+}
+SESSION_EOF
+
+#=============================================================================
+# E1: Export shared Task List ID via CLAUDE_ENV_FILE
+#=============================================================================
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+    # CHANGED (2026-01-24): Removed auto-generation of TASK_LIST_ID
+    # User must explicitly set CLAUDE_CODE_TASK_LIST_ID before starting claude
+    # Example: CLAUDE_CODE_TASK_LIST_ID=palantir-dev claude
+    # Or use cc wrapper: cc palantir-dev
+    if [ -n "$CLAUDE_CODE_TASK_LIST_ID" ]; then
+        PROJECT_TASK_ID="$CLAUDE_CODE_TASK_LIST_ID"
+    else
+        PROJECT_TASK_ID=""  # No auto-generation - leave empty if not set
+    fi
+
+    # Also store in session registry for Worker reference
+    if [ -f "$CURRENT_SESSION_FILE" ]; then
+        TMP_FILE=$(mktemp)
+        if $HAS_JQ; then
+            jq --arg tid "$PROJECT_TASK_ID" '. + {taskListId: $tid}' "$CURRENT_SESSION_FILE" > "$TMP_FILE" 2>/dev/null
+        else
+            python3 -c "
+import json
+with open('$CURRENT_SESSION_FILE') as f:
+    data = json.load(f)
+data['taskListId'] = '$PROJECT_TASK_ID'
+print(json.dumps(data, indent=2))
+" > "$TMP_FILE" 2>/dev/null
+        fi
+        mv "$TMP_FILE" "$CURRENT_SESSION_FILE" 2>/dev/null || true
+    fi
+fi
+
+#=============================================================================
+# E4: Persist session variables for all Bash commands
+#=============================================================================
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+    cat >> "$CLAUDE_ENV_FILE" <<ENVVARS
+export ORCHESTRATOR_SESSION_ID="$SESSION_ID"
+export WORKSPACE_ROOT="$WORKSPACE_ROOT"
+export L1L2L3_OUTPUT_DIR=".agent/outputs"
+ENVVARS
+fi
+
 # Set up audit log for session
 json_log_entry "session_start" "session_id" "$SESSION_ID" "previous_session" "$PREVIOUS_SESSION" >> "$AUDIT_LOG_FILE"
 
@@ -243,11 +369,49 @@ json_log_entry "session_start" "session_id" "$SESSION_ID" "previous_session" "$P
 # export CLAUDE_EVIDENCE_FILE="$EVIDENCE_FILE"
 
 # Output session info (for Claude to consume via stdout)
-# Using json_object ensures proper escaping
-json_object \
-    "status" "initialized" \
-    "session_id" "$SESSION_ID" \
-    "evidence_file" "$EVIDENCE_FILE" \
-    "agent_tmp_dir" "$AGENT_TMP_DIR"
+# Include Task List info if available
+if [ -n "$TASK_LIST_ID" ] && [ "$PENDING_TASKS_COUNT" -gt 0 ]; then
+    if $HAS_JQ; then
+        jq -n \
+            --arg status "initialized" \
+            --arg session_id "$SESSION_ID" \
+            --arg evidence_file "$EVIDENCE_FILE" \
+            --arg agent_tmp_dir "$AGENT_TMP_DIR" \
+            --arg task_list_id "$TASK_LIST_ID" \
+            --argjson pending_tasks_count "$PENDING_TASKS_COUNT" \
+            '{
+                status: $status,
+                session_id: $session_id,
+                evidence_file: $evidence_file,
+                agent_tmp_dir: $agent_tmp_dir,
+                task_list: {
+                    id: $task_list_id,
+                    pending_count: $pending_tasks_count,
+                    message: "Previous session has \($pending_tasks_count) pending task(s). Use TaskList to review."
+                }
+            }'
+    else
+        python3 -c "
+import json
+print(json.dumps({
+    'status': 'initialized',
+    'session_id': '$SESSION_ID',
+    'evidence_file': '$EVIDENCE_FILE',
+    'agent_tmp_dir': '$AGENT_TMP_DIR',
+    'task_list': {
+        'id': '$TASK_LIST_ID',
+        'pending_count': $PENDING_TASKS_COUNT,
+        'message': 'Previous session has $PENDING_TASKS_COUNT pending task(s). Use TaskList to review.'
+    }
+}))
+" 2>/dev/null
+    fi
+else
+    json_object \
+        "status" "initialized" \
+        "session_id" "$SESSION_ID" \
+        "evidence_file" "$EVIDENCE_FILE" \
+        "agent_tmp_dir" "$AGENT_TMP_DIR"
+fi
 
 exit 0

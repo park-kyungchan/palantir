@@ -1,39 +1,42 @@
 {
-  "numStartups": 28,
-  "installMethod": "global",
+  "numStartups": 56,
+  "installMethod": "native",
+  "autoUpdates": false,
   "theme": "dark-daltonized",
   "tipsHistory": {
     "new-user-warmup": 8,
     "plan-mode-for-complex-tasks": 17,
-    "terminal-setup": 21,
-    "memory-command": 16,
-    "theme-command": 21,
-    "colorterm-truecolor": 1,
-    "shift-enter-setup": 22,
+    "terminal-setup": 51,
+    "memory-command": 46,
+    "theme-command": 41,
+    "colorterm-truecolor": 31,
+    "shift-enter-setup": 54,
     "status-line": 2,
     "stickers-command": 23,
     "prompt-queue": 3,
-    "enter-to-steer-in-relatime": 23,
-    "todo-list": 23,
-    "install-github-app": 24,
-    "install-slack-app": 24,
-    "drag-and-drop-images": 24,
-    "double-esc-code-restore": 24,
-    "continue": 24,
-    "shift-tab": 24,
-    "image-paste": 24,
+    "enter-to-steer-in-relatime": 43,
+    "todo-list": 43,
+    "install-github-app": 54,
+    "install-slack-app": 54,
+    "drag-and-drop-images": 54,
+    "double-esc-code-restore": 55,
+    "continue": 55,
+    "shift-tab": 56,
+    "image-paste": 44,
     "ultrathink-keyword": 14,
-    "desktop-app": 20,
-    "web-app": 20,
-    "mobile-app": 21,
-    "guest-passes": 28,
-    "custom-agents": 21,
-    "default-permission-mode-config": 28,
-    "permissions": 21,
-    "rename-conversation": 26,
-    "custom-commands": 26
+    "desktop-app": 50,
+    "web-app": 50,
+    "mobile-app": 51,
+    "guest-passes": 54,
+    "custom-agents": 51,
+    "default-permission-mode-config": 48,
+    "permissions": 51,
+    "rename-conversation": 56,
+    "custom-commands": 56,
+    "agent-flag": 43,
+    "git-worktrees": 51
   },
-  "promptQueueUseCount": 298,
+  "promptQueueUseCount": 368,
   "showExpandedTodos": true,
   "cachedStatsigGates": {
     "tengu_prompt_suggestion": true,
@@ -61,7 +64,9 @@
       "color": ""
     },
     "tengu_react_vulnerability_warning": false,
-    "tengu_tool_search_unsupported_models": null,
+    "tengu_tool_search_unsupported_models": [
+      "haiku"
+    ],
     "tengu_ant_attribution_header_new": true,
     "tengu_scratch": false,
     "tengu_log_segment_events": false,
@@ -72,22 +77,25 @@
     "enhanced_telemetry_beta": false,
     "tengu_code_diff_cli": true,
     "tengu_bash_haiku_prefetch": true,
-    "tengu_permission_explainer": false,
+    "tengu_permission_explainer": true,
     "tengu_session_memory": false,
     "tengu_sm_compact": false,
     "tengu_compact_streaming_retry": false,
     "tengu_prompt_suggestion": true,
     "tengu_keybinding_customization": false,
-    "tengu_claudeai_mcp_connectors": false,
+    "tengu_claudeai_mcp_connectors": true,
     "tengu_attribution_header": true,
-    "tengu_plan_mode_interview_phase": false
+    "tengu_plan_mode_interview_phase": false,
+    "tengu_brass_pebble": false,
+    "tengu_cache_plum_violet": false,
+    "tengu_file_write_optimization": false
   },
   "userID": "686ed4acad815732f5f0dc4ccf1b5f4a50ce529b6d26605dade4ff54ef55ebc4",
   "firstStartTime": "2026-01-09T06:49:15.799Z",
   "sonnet45MigrationComplete": true,
   "opus45MigrationComplete": true,
   "thinkingMigrationComplete": true,
-  "changelogLastFetched": 1769060413405,
+  "changelogLastFetched": 1769252813889,
   "oauthAccount": {
     "accountUuid": "aee35519-1347-4893-a6d6-342921c4fbf1",
     "emailAddress": "packr0723@gmail.com",
@@ -104,11 +112,11 @@
   "groveConfigCache": {
     "aee35519-1347-4893-a6d6-342921c4fbf1": {
       "grove_enabled": true,
-      "timestamp": 1768986322218
+      "timestamp": 1769177389327
     }
   },
   "bypassPermissionsModeAccepted": true,
-  "lastReleaseNotesSeen": "2.1.15",
+  "lastReleaseNotesSeen": "2.1.19",
   "projects": {
     "/mnt/c/Users/packr": {
       "allowedTools": [],
@@ -184,37 +192,37 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 3.2710157500000006,
-      "lastAPIDuration": 365969,
-      "lastAPIDurationWithoutRetries": 365956,
-      "lastToolDuration": 6695,
-      "lastDuration": 13164373,
-      "lastLinesAdded": 814,
+      "lastCost": 1.9728525,
+      "lastAPIDuration": 458550,
+      "lastAPIDurationWithoutRetries": 458532,
+      "lastToolDuration": 1621,
+      "lastDuration": 6773778,
+      "lastLinesAdded": 2883,
       "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 103058,
-      "lastTotalOutputTokens": 17932,
-      "lastTotalCacheCreationInputTokens": 343037,
-      "lastTotalCacheReadInputTokens": 1104617,
+      "lastTotalInputTokens": 14770,
+      "lastTotalOutputTokens": 29521,
+      "lastTotalCacheCreationInputTokens": 97030,
+      "lastTotalCacheReadInputTokens": 1235232,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 95986,
-          "outputTokens": 246,
+          "inputTokens": 14604,
+          "outputTokens": 233,
           "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 0.097216
+          "costUSD": 0.015769000000000002
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 7072,
-          "outputTokens": 17686,
-          "cacheReadInputTokens": 1104617,
-          "cacheCreationInputTokens": 343037,
+          "inputTokens": 166,
+          "outputTokens": 29288,
+          "cacheReadInputTokens": 1235232,
+          "cacheCreationInputTokens": 97030,
           "webSearchRequests": 0,
-          "costUSD": 3.173799750000001
+          "costUSD": 1.9570835
         }
       },
-      "lastSessionId": "83003028-a7df-4f49-b0bb-f68872161123",
+      "lastSessionId": "34664322-eba1-4fa3-9fc1-b6efc7bc043f",
       "hasCompletedProjectOnboarding": true,
       "exampleFilesGeneratedAt": 1768825067197
     },
@@ -245,7 +253,7 @@
     "89016125-9720-4767-bbab-74580d4b602c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1769059566543
+      "timestamp": 1769251567511
     }
   },
   "officialMarketplaceAutoInstallAttempted": true,
@@ -298,7 +306,7 @@
         "referral_link": "https://claude.ai/referral/x65A7fa1Gg"
       },
       "referrer_reward": null,
-      "timestamp": 1769153198922
+      "timestamp": 1769253958556
     }
   },
   "skillUsage": {
@@ -311,8 +319,8 @@
       "lastUsedAt": 1768912159029
     },
     "statusline": {
-      "usageCount": 1,
-      "lastUsedAt": 1768010136825
+      "usageCount": 3,
+      "lastUsedAt": 1769182277566
     },
     "deep-audit": {
       "usageCount": 17,
@@ -331,23 +339,44 @@
       "lastUsedAt": 1768903478699
     },
     "plan-draft": {
-      "usageCount": 13,
-      "lastUsedAt": 1769060676344
+      "usageCount": 14,
+      "lastUsedAt": 1769172092151
     },
     "commit-push-pr": {
       "usageCount": 3,
       "lastUsedAt": 1769155167883
     },
     "build": {
-      "usageCount": 8,
-      "lastUsedAt": 1769153566936
+      "usageCount": 10,
+      "lastUsedAt": 1769252966645
+    },
+    "teleport": {
+      "usageCount": 1,
+      "lastUsedAt": 1769173180115
+    },
+    "worker-start": {
+      "usageCount": 1,
+      "lastUsedAt": 1769186090255
+    },
+    "clarify": {
+      "usageCount": 18,
+      "lastUsedAt": 1769249681137
+    },
+    "explore-l1l2l3": {
+      "usageCount": 2,
+      "lastUsedAt": 1769214428648
+    },
+    "worker": {
+      "usageCount": 2,
+      "lastUsedAt": 1769253936610
     }
   },
-  "lastPlanModeUse": 1769151231237,
+  "lastPlanModeUse": 1769239370294,
   "passesUpsellSeenCount": 4,
   "opusProMigrationComplete": true,
   "cachedChromeExtensionInstalled": false,
   "feedbackSurveyState": {
-    "lastShownTime": 1769066585332
-  }
+    "lastShownTime": 1769236561711
+  },
+  "autoUpdatesProtectedForNative": true
 }

@@ -144,6 +144,38 @@ if [ -f "$AUDIT_LOG_FILE" ]; then
     fi
 fi
 
+#=============================================================================
+# Compact State Management (Migrated from pre-compact.sh)
+# Task-based state is now managed by Claude Code's native Task system
+# This section creates a lightweight summary for session continuity
+#=============================================================================
+
+COMPACT_STATE_DIR="${HOME}/.agent/compact-state"
+mkdir -p "$COMPACT_STATE_DIR" 2>/dev/null
+
+# Create compact summary for quick resume (replaces pre-compact functionality)
+COMPACT_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+COMPACT_SUMMARY_FILE="$COMPACT_STATE_DIR/compact_summary_${COMPACT_TIMESTAMP}.md"
+
+cat > "$COMPACT_SUMMARY_FILE" << COMPACT_EOF
+# Session End Summary
+> Session ID: ${SESSION_ID}
+> Timestamp: $(date '+%Y-%m-%d %H:%M:%S')
+> Status: Session ended normally
+
+## Quick Resume Instructions
+1. Claude Code Task system automatically persists tasks to ~/.claude/tasks/
+2. Use TaskList to see pending tasks from previous sessions
+3. Reference .claude/CLAUDE.md for governance rules
+
+## Session Metrics
+- Evidence entries: ${EVIDENCE_COUNT:-0}
+- Pending tasks saved: ${PENDING_COUNT:-0}
+COMPACT_EOF
+
+# Cleanup old compact summaries (keep last 5)
+ls -t "$COMPACT_STATE_DIR"/compact_summary_*.md 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+
 # Log session end
 echo '{"type":"session_end","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","session_id":"'$SESSION_ID'","status":"completed"}' >> "$AUDIT_LOG_FILE"
 
