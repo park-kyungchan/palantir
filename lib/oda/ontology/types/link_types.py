@@ -187,6 +187,7 @@ class LinkTypeConstraints(BaseModel):
         required: At least one link required
         allowed_source_statuses: Source object statuses that allow linking
         allowed_target_statuses: Target object statuses that allow linking
+        custom_validator: Optional custom validation function name
     """
     min_cardinality: int = Field(default=0, ge=0)
     max_cardinality: Optional[int] = Field(default=None, ge=1)
@@ -199,6 +200,10 @@ class LinkTypeConstraints(BaseModel):
     allowed_target_statuses: List[str] = Field(
         default_factory=lambda: ["active"],
         description="Target statuses that allow linking"
+    )
+    custom_validator: Optional[str] = Field(
+        default=None,
+        description="Name of custom validator function in validators registry",
     )
 
     @model_validator(mode="after")
@@ -219,6 +224,7 @@ class LinkTypeConstraints(BaseModel):
             max_links=self.max_cardinality,
             unique=self.unique_target,
             required_target_status=self.allowed_target_statuses[0] if self.allowed_target_statuses else None,
+            custom_validator=self.custom_validator,
         )
 
 
