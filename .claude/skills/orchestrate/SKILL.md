@@ -7,7 +7,7 @@ user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "2.1.0"
+version: "3.0.0"
 argument-hint: "<task-description>"
 ---
 
@@ -558,13 +558,278 @@ After `/orchestrate` completes:
 
 ---
 
-## 10. Future Enhancements
+## 10. Autonomous Execution Protocol (자율 실행 프로토콜)
+
+> **V3.0 Feature** - Workers execute autonomously until project completion
+
+### 10.1 Overview
+
+Enables each terminal to:
+1. Monitor other terminals' task status
+2. Automatically start tasks when blockers complete
+3. Continue execution until all assigned tasks are done
+4. Report to Orchestrator on completion
+
+### 10.2 _context.yaml Autonomous Section
+
+When generating `_context.yaml`, include:
+
+```yaml
+# =============================================================================
+# AUTONOMOUS EXECUTION PROTOCOL (자율 실행 프로토콜)
+# =============================================================================
+autonomousProtocol:
+  enabled: true
+  pollIntervalSeconds: 30
+
+  executionLoop: |
+    WHILE project NOT completed:
+      1. TaskList() → 전체 Task 상태 확인
+      2. Filter by owner == MY_TERMINAL
+      3. FOR each myTask:
+           IF myTask.status == "pending":
+             IF myTask.blockedBy ALL completed:
+               → TaskUpdate(taskId, status="in_progress")
+               → Execute task
+               → TaskUpdate(taskId, status="completed")
+             ELSE:
+               → Log "Waiting for blockers: {blockedBy}"
+      4. IF all myTasks completed:
+           → Report final status
+      5. Sleep(pollIntervalSeconds)
+
+  checkBlockers: |
+    function checkBlockersCompleted(taskId):
+      task = TaskGet(taskId)
+      FOR each blockerId in task.blockedBy:
+        IF TaskGet(blockerId).status != "completed":
+          RETURN false
+      RETURN true
+
+  selfAssignment:
+    primary: "Execute tasks assigned to my terminal"
+    secondary: "If all my tasks done, check for unassigned tasks"
+    forbidden: "Never take tasks assigned to other terminals"
+
+  completionDetection:
+    projectComplete: "All tasks have status='completed'"
+    terminalComplete: "All tasks with owner=MY_TERMINAL have status='completed'"
+
+  errorRecovery:
+    onTaskFailure:
+      - "Log error to .agent/logs/{terminal}.log"
+      - "TaskUpdate(taskId, metadata.error='{error}')"
+      - "Continue with next available task"
+    onDeadlock:
+      - "Detect: No progress for 3 poll cycles"
+      - "Action: Report to Orchestrator with blockers list"
+```
+
+### 10.3 Worker Prompt Autonomous Section
+
+For each worker prompt file, include:
+
+```yaml
+# =============================================================================
+# AUTONOMOUS EXECUTION INSTRUCTIONS (자율 실행 지침)
+# =============================================================================
+autonomousExecution:
+  enabled: true
+  myTerminal: "${terminalId}"
+  myTasks: ${JSON.stringify(assignedTaskIds)}
+
+  executionSequence:
+${phases.filter(p => p.owner === terminalId).map((p, i) => `
+    - step: ${i + 1}
+      taskId: "${taskMap[p.id]}"
+      name: "${p.name}"
+      blockedBy: ${JSON.stringify(p.dependencies.map(d => taskMap[d]))}
+      action: "${p.dependencies.length === 0 ? 'START IMMEDIATELY' : 'Wait for blockers, then start'}"
+      onComplete: "${getUnblockedTasks(p.id)}"
+`).join('')}
+
+  monitoringLoop: |
+    REPEAT until all myTasks completed:
+      1. TaskList() → Check current status
+      2. FOR each taskId in myTasks:
+           task = TaskGet(taskId)
+           IF task.status == "pending" AND allBlockersComplete(task):
+             TaskUpdate(taskId, status="in_progress")
+             EXECUTE task
+             TaskUpdate(taskId, status="completed")
+      3. Check cross-terminal dependencies
+      4. IF all myTasks completed:
+           REPORT "Terminal-X: All tasks completed"
+           EXIT loop
+
+  crossTerminalDeps:
+${getCrossTerminalDeps(terminalId)}
+
+  completionCriteria:
+    allTasksCompleted: ${JSON.stringify(assignedTaskIds)}
+    outputGenerated: ".agent/outputs/${terminalId}/report.md"
+    progressUpdated: "_progress.yaml reflects ${terminalId}.status = 'completed'"
+```
+
+### 10.4 _progress.yaml Autonomous Section
+
+```yaml
+# =============================================================================
+# AUTONOMOUS EXECUTION CONFIG (자율 실행 설정)
+# =============================================================================
+autonomousExecution:
+  enabled: true
+  mode: "ACTIVE"
+  startedAt: null
+  estimatedCompletion: null
+
+  polling:
+    intervalSeconds: 30
+    maxRetries: 3
+    backoffMultiplier: 2
+
+  dependencyRules:
+    checkMethod: "TaskGet(blockerId).status == 'completed'"
+    autoUnblock: true
+    notifyOnUnblock: true
+
+  coordination:
+    method: "Native Task System + _progress.yaml"
+    syncInterval: 30
+    conflictResolution: "first-claimer-wins"
+
+  completionTracking:
+    projectComplete:
+      condition: "ALL tasks status == 'completed'"
+      action: "Notify Orchestrator, generate final report"
+
+${terminals.map(t => `
+    ${t}Complete:
+      condition: "Tasks ${getTerminalTasks(t)} status == 'completed'"
+      action: "Update ${t}.status = 'completed'"
+`).join('')}
+
+  crossDependencies:
+${generateCrossDependencies(phases, taskMap)}
+
+  errorHandling:
+    onTaskFailure:
+      action: "Log, mark task as blocked, notify Orchestrator"
+      retryCount: 2
+      escalateAfter: 2
+    onDeadlock:
+      detection: "No progress for 3 poll cycles"
+      action: "Report to Orchestrator with dependency graph"
+    onConflict:
+      detection: "Multiple terminals claim same task"
+      action: "First claimer wins, others skip"
+
+# =============================================================================
+# START COMMAND FOR WORKERS
+# =============================================================================
+workerStartCommands:
+${terminals.map(t => `
+  ${t}: |
+    /worker start ${t.split('-')[1]}
+`).join('')}
+```
+
+### 10.5 Helper Functions for Autonomous Protocol
+
+```javascript
+function generateCrossDependencies(phases, taskMap) {
+  const crossDeps = []
+
+  for (const phase of phases) {
+    for (const dep of phase.dependencies) {
+      const depPhase = phases.find(p => p.id === dep)
+      if (depPhase && depPhase.owner !== phase.owner) {
+        crossDeps.push({
+          from: phase.owner,
+          task: taskMap[phase.id],
+          waitFor: [{
+            terminal: depPhase.owner,
+            task: taskMap[dep]
+          }]
+        })
+      }
+    }
+  }
+
+  return crossDeps.map(cd => `
+    - from: "${cd.from}"
+      task: "${cd.task}"
+      waitFor:
+        - terminal: "${cd.waitFor[0].terminal}"
+          task: "${cd.waitFor[0].task}"
+  `).join('')
+}
+
+function getCrossTerminalDeps(terminalId) {
+  // Returns YAML for cross-terminal dependencies
+  const deps = crossDependencies.filter(cd => cd.from === terminalId)
+  return deps.map(d => `
+    task${d.task}_requires: "Task #${d.waitFor[0].task} from ${d.waitFor[0].terminal}"
+    checkMethod: "TaskGet('${d.waitFor[0].task}').status == 'completed'"
+  `).join('\n')
+}
+```
+
+### 10.6 Autonomous Execution Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    AUTONOMOUS EXECUTION FLOW                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Orchestrator                                                       │
+│       │                                                             │
+│       ▼                                                             │
+│  /orchestrate → Creates Tasks + autonomousExecution config          │
+│       │                                                             │
+│       ▼                                                             │
+│  /assign → Sets owner for each task                                 │
+│       │                                                             │
+│       ├─────────────────┬─────────────────┐                         │
+│       ▼                 ▼                 ▼                         │
+│  Terminal-B         Terminal-C         Terminal-D                   │
+│       │                 │                 │                         │
+│       ▼                 ▼                 ▼                         │
+│  Read prompt        Read prompt        Read prompt                  │
+│       │                 │                 │                         │
+│       ▼                 ▼                 ▼                         │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │              AUTONOMOUS EXECUTION LOOP                      │    │
+│  │                                                            │    │
+│  │  1. TaskList() → Check all task status                     │    │
+│  │  2. Find my pending tasks with no blockers                 │    │
+│  │  3. Execute task → TaskUpdate(status="completed")          │    │
+│  │  4. Repeat until all my tasks done                         │    │
+│  │  5. Report completion                                      │    │
+│  └────────────────────────────────────────────────────────────┘    │
+│                              │                                      │
+│                              ▼                                      │
+│                    All terminals complete                           │
+│                              │                                      │
+│                              ▼                                      │
+│                    /collect (verify)                                │
+│                              │                                      │
+│                              ▼                                      │
+│                    /synthesis (finalize)                            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 11. Future Enhancements
 
 1. **Template support:** Pre-defined orchestration templates
 2. **Auto-recovery:** Resume interrupted orchestration
 3. **Visualization:** ASCII dependency graph
 4. **Estimation:** Time estimates per phase
 5. **Optimization:** Auto-detect parallelizable phases
+6. **Autonomous Mode:** Self-healing task execution
 
 ---
 
@@ -587,6 +852,7 @@ After `/orchestrate` completes:
 |---------|--------|
 | 1.0.0 | Task orchestration engine |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
+| 3.0.0 | Autonomous Execution Protocol 추가 |
 
 ---
 

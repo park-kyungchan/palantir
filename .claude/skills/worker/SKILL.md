@@ -5,9 +5,9 @@ description: |
 user-invocable: true
 disable-model-invocation: false
 context: standard
-model: haiku
-version: "2.1.0"
-argument-hint: "<start|done|status|block> [taskId|reason]"
+model: sonnet
+version: "3.0.0"
+argument-hint: "<start|done|status|block> [b|c|d|terminal-id] [taskId]"
 ---
 
 # /worker - Worker Self-Service Commands
@@ -33,7 +33,12 @@ argument-hint: "<start|done|status|block> [taskId|reason]"
 ### User Syntax
 
 ```bash
-# Start next assigned task
+# Start with terminal ID (RECOMMENDED)
+/worker start b          # Start as terminal-b
+/worker start c          # Start as terminal-c
+/worker start b 16       # Start as terminal-b, specific task #16
+
+# Start without terminal ID (requires env/session config)
 /worker start
 /worker start 3          # Start specific task #3
 
@@ -43,6 +48,7 @@ argument-hint: "<start|done|status|block> [taskId|reason]"
 
 # Check status
 /worker status
+/worker status b         # Check terminal-b status
 /worker status --all     # Show all assigned tasks
 
 # Report blocker
@@ -53,42 +59,96 @@ argument-hint: "<start|done|status|block> [taskId|reason]"
 ### Arguments
 
 - `$0`: Subcommand (`start`, `done`, `status`, `block`)
-- `$1`: Optional task ID or blocker reason
+- `$1`: Terminal ID (b, c, d) OR task ID OR reason
+- `$2`: Optional task ID (when $1 is terminal ID)
+
+### Terminal ID Shortcuts
+
+| Shortcut | Full ID |
+|----------|---------|
+| `b` | `terminal-b` |
+| `c` | `terminal-c` |
+| `d` | `terminal-d` |
+| `terminal-b` | `terminal-b` |
 
 ---
 
 ## 3. Worker Identity
 
 ```javascript
+// Terminal shortcut mapping (also used in Main Router)
+const TERMINAL_SHORTCUTS = {
+  'b': 'terminal-b',
+  'c': 'terminal-c',
+  'd': 'terminal-d',
+  'terminal-b': 'terminal-b',
+  'terminal-c': 'terminal-c',
+  'terminal-d': 'terminal-d'
+}
+
+function normalizeTerminalId(input) {
+  // Convert shortcuts to full terminal ID
+  if (!input) return null
+  let lower = input.toLowerCase().trim()
+  return TERMINAL_SHORTCUTS[lower] || input
+}
+
 function getWorkerId() {
   // Priority order for worker identification:
 
   // 1. Environment variable (set by orchestrator)
   if (process.env.WORKER_ID) {
-    return process.env.WORKER_ID
+    return normalizeTerminalId(process.env.WORKER_ID)
   }
 
-  // 2. Session environment file
+  // 2. Session environment file (set by /worker start b)
   sessionEnvPath = ".claude/session-env/worker-id"
   if (fileExists(sessionEnvPath)) {
-    return Read(sessionEnvPath).trim()
+    let savedId = Read(sessionEnvPath).trim()
+    return normalizeTerminalId(savedId)
   }
 
   // 3. Terminal context (if available)
   if (process.env.TERMINAL_ID) {
-    return process.env.TERMINAL_ID
+    return normalizeTerminalId(process.env.TERMINAL_ID)
   }
 
-  // 4. Interactive prompt (first time)
-  console.log("⚠️  Worker ID not configured.")
-  workerId = askUser("Enter your Worker ID (e.g., terminal-b):")
+  // 4. Interactive prompt with clear options
+  console.log(`
+⚠️  Worker ID not configured.
+
+Which terminal are you?
+  b = terminal-b
+  c = terminal-c
+  d = terminal-d
+
+Tip: Use "/worker start b" to set identity automatically.
+`)
+
+  // Use AskUserQuestion for structured input
+  response = AskUserQuestion({
+    questions: [{
+      question: "Which terminal are you?",
+      header: "Terminal",
+      options: [
+        { label: "terminal-b", description: "Worker B" },
+        { label: "terminal-c", description: "Worker C" },
+        { label: "terminal-d", description: "Worker D" }
+      ],
+      multiSelect: false
+    }]
+  })
+
+  workerId = response.answers["Terminal"] || "terminal-b"
 
   // Save for session
+  Bash("mkdir -p .claude/session-env")
   Write({
     file_path: sessionEnvPath,
     content: workerId
   })
 
+  console.log(`✅ Worker ID set to: ${workerId}`)
   return workerId
 }
 
@@ -743,31 +803,82 @@ function extractInstructions(promptContent) {
 ## 6. Main Router
 
 ```javascript
+// Terminal ID shortcuts mapping
+const TERMINAL_SHORTCUTS = {
+  'b': 'terminal-b',
+  'c': 'terminal-c',
+  'd': 'terminal-d',
+  'terminal-b': 'terminal-b',
+  'terminal-c': 'terminal-c',
+  'terminal-d': 'terminal-d'
+}
+
+function parseTerminalId(param) {
+  // Check if param is a terminal shortcut
+  if (param && TERMINAL_SHORTCUTS[param.toLowerCase()]) {
+    return TERMINAL_SHORTCUTS[param.toLowerCase()]
+  }
+  return null
+}
+
+function isTaskId(param) {
+  // Task IDs are numeric strings
+  return param && !isNaN(param) && parseInt(param) > 0
+}
+
 function worker(args) {
   // Parse subcommand
   let subcommand = args[0]?.toLowerCase()
-  let param = args.slice(1).join(' ')
+  let param1 = args[1]  // Could be terminal ID or task ID
+  let param2 = args[2]  // Could be task ID when param1 is terminal
 
   switch (subcommand) {
     case 'start':
-      let startTaskId = param && !isNaN(param) ? param : null
+      let terminalId = parseTerminalId(param1)
+      let startTaskId = null
+
+      if (terminalId) {
+        // /worker start b [taskId]
+        setWorkerId(terminalId)  // Set worker identity
+        startTaskId = isTaskId(param2) ? param2 : null
+      } else if (isTaskId(param1)) {
+        // /worker start 16
+        startTaskId = param1
+      }
+      // else: /worker start (no params)
+
       return workerStart(startTaskId)
 
     case 'done':
-      let doneTaskId = param && !isNaN(param) ? param : null
+      let doneTerminalId = parseTerminalId(param1)
+      let doneTaskId = null
+
+      if (doneTerminalId) {
+        setWorkerId(doneTerminalId)
+        doneTaskId = isTaskId(param2) ? param2 : null
+      } else if (isTaskId(param1)) {
+        doneTaskId = param1
+      }
+
       return workerDone(doneTaskId)
 
     case 'status':
-      let showAll = param === '--all'
+      let statusTerminalId = parseTerminalId(param1)
+      let showAll = param1 === '--all' || param2 === '--all'
+
+      if (statusTerminalId) {
+        setWorkerId(statusTerminalId)
+      }
+
       return workerStatus(showAll)
 
     case 'block':
       // Check if first param is task ID
       let blockTaskId = null
-      let reason = param
+      let reason = args.slice(1).join(' ')
 
-      if (param.match(/^\d+\s/)) {
-        let parts = param.split(/\s+/)
+      if (reason.match(/^\d+\s/)) {
+        let parts = reason.split(/\s+/)
         blockTaskId = parts[0]
         reason = parts.slice(1).join(' ')
       }
@@ -779,20 +890,40 @@ function worker(args) {
 === /worker - Self-Service Commands ===
 
 Usage:
-  /worker start [taskId]     Start assigned task
-  /worker done [taskId]      Mark task as complete
-  /worker status [--all]     Show current status
-  /worker block "reason"     Report a blocker
+  /worker start <b|c|d> [taskId]   Start as terminal-X (RECOMMENDED)
+  /worker start [taskId]           Start assigned task
+  /worker done [taskId]            Mark task as complete
+  /worker status [b|c|d] [--all]   Show current status
+  /worker block "reason"           Report a blocker
+
+Terminal Shortcuts:
+  b = terminal-b, c = terminal-c, d = terminal-d
 
 Examples:
-  /worker start              Start next available task
-  /worker start 3            Start specific task #3
-  /worker done               Complete current task
-  /worker status --all       Show all assigned tasks
+  /worker start b                  Start as terminal-b
+  /worker start b 16               Start terminal-b on task #16
+  /worker start c                  Start as terminal-c
+  /worker done                     Complete current task
+  /worker status b --all           Show all terminal-b tasks
   /worker block "Need API docs"
 `)
       return { status: "help" }
   }
+}
+
+function setWorkerId(terminalId) {
+  // Store worker ID in session for subsequent calls
+  let sessionEnvPath = ".claude/session-env/worker-id"
+
+  // Ensure directory exists
+  Bash("mkdir -p .claude/session-env")
+
+  Write({
+    file_path: sessionEnvPath,
+    content: terminalId
+  })
+
+  console.log(`🔧 Worker ID set to: ${terminalId}`)
 }
 ```
 
@@ -814,29 +945,52 @@ Examples:
 
 ## 8. Example Workflows
 
-### 8.1 Complete Workflow
+### 8.1 Complete Workflow (Recommended)
 
 ```bash
-# 1. Check what's assigned to me
-/worker status
+# 1. Start as terminal-b (RECOMMENDED - sets identity)
+/worker start b
 
-# 2. Start working
-/worker start
+# 2. (Do the work on first assigned task...)
 
-# 3. (Do the work...)
-
-# 4. Mark complete
+# 3. Mark complete
 /worker done
 
-# 5. Start next task
+# 4. Start next task (identity already set)
 /worker start
+
+# 5. Repeat until all tasks done
 ```
 
-### 8.2 Handling Blockers
+### 8.2 Start Specific Task
+
+```bash
+# Start terminal-b on task #16 specifically
+/worker start b 16
+
+# Or if identity already set:
+/worker start 16
+```
+
+### 8.3 Multi-Terminal Parallel Execution
+
+```bash
+# Terminal B window:
+/worker start b
+# → Starts on Task #16
+
+# Terminal C window (separate terminal):
+/worker start c
+# → Starts on Task #17
+
+# Both work in parallel, checking blockedBy automatically
+```
+
+### 8.4 Handling Blockers
 
 ```bash
 # 1. Start task
-/worker start
+/worker start b
 
 # 2. Encounter blocker
 /worker block "Need database credentials for testing"
@@ -848,12 +1002,31 @@ Examples:
 /worker start 3
 ```
 
+### 8.5 Check Status
+
+```bash
+# Check my status (requires identity set)
+/worker status
+
+# Check specific terminal's status
+/worker status b
+/worker status c --all
+```
+
 ---
 
 ## 9. Testing Checklist
 
+**Terminal ID Shortcuts (NEW v3.0):**
+- [ ] /worker start b - sets identity to terminal-b
+- [ ] /worker start c - sets identity to terminal-c
+- [ ] /worker start b 16 - terminal-b + specific task
+- [ ] /worker status b - check terminal-b status
+- [ ] /worker status c --all - terminal-c detailed
+
+**Core Functionality:**
 - [ ] /worker start - first task
-- [ ] /worker start - specific task ID
+- [ ] /worker start - specific task ID (numeric)
 - [ ] /worker start - all tasks blocked
 - [ ] /worker start - already in progress
 - [ ] /worker done - mark complete
@@ -863,11 +1036,18 @@ Examples:
 - [ ] /worker status --all - detailed display
 - [ ] /worker block - with reason
 - [ ] /worker block - without reason (error)
+
+**Identity Management:**
 - [ ] Worker ID detection (env var)
 - [ ] Worker ID detection (session file)
+- [ ] Worker ID from shortcut (b → terminal-b)
+- [ ] Interactive prompt fallback
+
+**File Operations:**
 - [ ] Prompt file discovery
 - [ ] Prompt file move on done
 - [ ] Progress file update
+- [ ] Session env file creation
 
 ---
 
@@ -901,6 +1081,7 @@ Examples:
 |---------|--------|
 | 1.0.0 | Worker self-service commands |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
+| 3.0.0 | Terminal ID shortcuts (b, c, d) 지원, `/worker start b` 형식 추가 |
 
 ---
 

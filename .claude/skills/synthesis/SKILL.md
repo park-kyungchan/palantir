@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "2.1.0"
+version: "2.2.0"
 argument-hint: "[--strict | --lenient]"
 ---
 
@@ -346,9 +346,10 @@ function makeDecision(matrixResult, validationResult, options) {
       `Partial Requirements: ${matrixResult.stats.partial}`
     ]
 
-    // Generate clarify prompt
-    gapDescriptions = gaps.map(g => g.requirement).slice(0, 3).join(", ")
-    nextAction = `/clarify "Address gaps: ${gapDescriptions}"`
+    // Generate RSIL prompt for automated gap analysis
+    // Track iteration count for progressive refinement
+    let iteration_count = (options.iteration || 0) + 1
+    nextAction = `/rsil-plan --iteration ${iteration_count}`
   }
 
   return {
@@ -507,6 +508,7 @@ Consider addressing warnings in a follow-up iteration.`
   }
 
   // ITERATE
+  let iteration_count = decisionResult.iteration || 1
   return `**Status: ITERATE** 🔄
 
 **Rationale:**
@@ -517,10 +519,11 @@ ${decisionResult.gaps.map((g, i) => `${i + 1}. ${g.requirementId}: ${g.requireme
 
 **Next Action:**
 \`\`\`bash
-${decisionResult.nextAction}
+/rsil-plan --iteration ${iteration_count}
 \`\`\`
 
-Return to /clarify to refine requirements and address gaps.`
+RSIL will perform code-level gap analysis and create remediation plan.
+For manual iteration, use: /clarify "Address gaps: ..."`
 }
 ```
 
@@ -909,16 +912,23 @@ Threshold: 95%  # Strict mode requires 95%
 ### 7.1 Pipeline Position
 
 ```
-/clarify → /orchestrate → /assign → Workers → /collect → /synthesis → /commit-push-pr
-                                                            ↑
-                                                      [THIS SKILL]
-                                                            │
-                                        ┌───────────────────┴───────────────────┐
-                                        │                                       │
-                                    COMPLETE                                ITERATE
-                                        │                                       │
-                                        ▼                                       ▼
-                              /commit-push-pr                              /clarify
+/clarify → /research → /planning → /orchestrate → /assign → Workers → /collect → /synthesis
+                                                                                       ↑
+                                                                                 [THIS SKILL]
+                                                                                       │
+                                              ┌────────────────────────────────────────┴────────────────────────────────────────┐
+                                              │                                                                                 │
+                                          COMPLETE                                                                          ITERATE
+                                              │                                                                                 │
+                                              ▼                                                                                 ▼
+                                    /commit-push-pr                                                                     /rsil-plan (2nd+ Loop)
+                                                                                                                               │
+                                                                                                               ┌───────────────┴───────────────┐
+                                                                                                               │                               │
+                                                                                                        Auto-Remediate                     Escalate
+                                                                                                               │                               │
+                                                                                                               ▼                               ▼
+                                                                                                         /orchestrate                      /clarify
 ```
 
 ### 7.2 Input Dependencies
@@ -933,7 +943,8 @@ Threshold: 95%  # Strict mode requires 95%
 | Destination | File | Purpose |
 |-------------|------|---------|
 | /commit-push-pr | `.agent/outputs/synthesis/synthesis_report.md` | Completion evidence |
-| /clarify | Gaps list | Iteration guidance |
+| /rsil-plan | Gaps list + synthesis report | Code-level gap analysis (2nd+ loops) |
+| /clarify | Gaps list | Manual iteration (escalation only) |
 
 ---
 
@@ -999,6 +1010,7 @@ Threshold: 95%  # Strict mode requires 95%
 |---------|--------|
 | 1.0.0 | Traceability matrix generation |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
+| 2.2.0 | /rsil-plan integration for ITERATE path |
 
 ---
 

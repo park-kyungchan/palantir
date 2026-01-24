@@ -1,6 +1,6 @@
 # Claude Code Agent
 
-> **Version:** 6.0 | **Role:** Main Agent Orchestrator
+> **Version:** 7.0 | **Role:** Main Agent Orchestrator
 > **Architecture:** Task-Centric Hybrid (Native Task + File-Based Prompts)
 
 ---
@@ -17,307 +17,197 @@ AUDIT-TRAIL    → Track files_viewed for all operations
 ### Workspace
 ```yaml
 workspace_root: /home/palantir
-task_list_id: ${CLAUDE_CODE_TASK_LIST_ID}  # Cross-session persistence
+task_list_id: ${CLAUDE_CODE_TASK_LIST_ID}
 ```
 
-### Task List ID Configuration
-
-> **중요:** Task List ID는 settings.json에 하드코딩하지 않음.
-> 실행 시 동적으로 선택하여 프로젝트별/작업별 유연한 관리 가능.
-
-**실행 방법 (~/.bashrc의 `cc` wrapper 사용):**
+### Multi-Terminal Execution
 ```bash
-cc                    # 기본 실행 (task list 없음)
-cc palantir-dev       # palantir-dev task list 사용
-cc my-feature-123     # 작업별 task list 생성/사용
-```
-
-**Multi-Terminal 협업 시:**
-```bash
-# 모든 터미널에서 동일한 ID로 실행
-cc palantir-dev       # Terminal A (Orchestrator)
-cc palantir-dev       # Terminal B (Worker)
-cc palantir-dev       # Terminal C (Worker)
+cc <task-list-id>       # All terminals use same ID
+cc palantir-dev         # Example: shared task list
 ```
 
 ---
 
-## 2. Task System (Core)
+## 2. Task System
 
-> **V2.1.16 Native Capability** - Dependency-aware task management with cross-session persistence.
+> Native Task API for dependency-aware task management
 
-### 2.1 Task API
+| Tool | Purpose |
+|------|---------|
+| `TaskCreate` | Create task with subject, description, activeForm |
+| `TaskUpdate` | Update status (pending→in_progress→completed) |
+| `TaskList` | View all tasks |
+| `TaskGet` | Get task details before starting |
 
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `TaskCreate` | Create new task | Breaking down work |
-| `TaskUpdate` | Update status/deps | Starting, completing, blocking |
-| `TaskList` | View all tasks | Planning, monitoring |
-| `TaskGet` | Get task details | Before starting work |
-
-### 2.2 Task Lifecycle
-
+### Lifecycle
 ```
-TaskCreate(subject, description, activeForm)
-     │
-     ▼
-status: "pending" ──────────────────────────────┐
-     │                                          │
-     ▼ TaskUpdate(status="in_progress")         │
-status: "in_progress"                           │
-     │                                          │
-     ├── Success ─▶ TaskUpdate(status="completed")
-     │                                          │
-     └── Blocked ─▶ TaskUpdate(addBlockedBy=[...])
-                          │
-                          ▼
-                    Wait for blockers to complete
+pending → in_progress → completed
+            ↓
+         blocked → wait for blockers
 ```
 
-### 2.3 Dependency Tracking
-
-```python
-# Orchestrator: Set up dependencies
-TaskCreate(subject="Task A: Setup database", ...)  # id="1"
-TaskCreate(subject="Task B: API endpoints", ...)   # id="2"
-TaskCreate(subject="Task C: Integration tests", ...)  # id="3"
-
-TaskUpdate(taskId="2", addBlockedBy=["1"])  # B waits for A
-TaskUpdate(taskId="3", addBlockedBy=["2"])  # C waits for B
-```
-
-**Dependency Rules:**
-- `blockedBy`: Tasks that MUST complete before this task can start
-- `blocks`: Tasks that are waiting for this task
+### Dependency Rules
+- `blockedBy`: Tasks that MUST complete first
 - Worker MUST check `blockedBy` is empty before starting
 
-### 2.4 Multi-Terminal Sync (Hybrid Architecture)
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    HYBRID ARCHITECTURE                               │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ NATIVE TASK SYSTEM (Shared via CLAUDE_CODE_TASK_LIST_ID)    │   │
-│  │                                                             │   │
-│  │  • Status tracking (pending/in_progress/completed)          │   │
-│  │  • Dependency management (blockedBy/blocks)                 │   │
-│  │  • Owner assignment (terminal-b, terminal-c, terminal-d)    │   │
-│  │  • Cross-session persistence                                │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                      │
-│                              ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ FILE-BASED PROMPTS (.agent/prompts/)                        │   │
-│  │                                                             │   │
-│  │  • Worker instructions (detailed YAML prompts)              │   │
-│  │  • Context sharing (_context.yaml)                          │   │
-│  │  • Human-readable audit trail                               │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Sync Flow:**
-```bash
-# All terminals use same TASK_LIST_ID (via cc wrapper)
-cc <task-list-id>    # e.g., cc palantir-dev
-
-# Orchestrator (Terminal A)
-TaskCreate(...) → TaskUpdate(owner="terminal-b")
-
-# Worker (Terminal B)
-TaskList() → Filter by owner="terminal-b" → TaskGet(taskId) → Work → TaskUpdate(status="completed")
-```
-
-### 2.5 Worker Assignment Protocol (Pull-Based)
-
-| Step | Actor | Action |
-|------|-------|--------|
-| 1 | Orchestrator | `TaskCreate` with details |
-| 2 | Orchestrator | `/assign` → `TaskUpdate(owner="terminal-X")` |
-| 3 | Worker | `TaskList` → Find assigned tasks |
-| 4 | Worker | Check `blockedBy` is empty |
-| 5 | Worker | `TaskUpdate(status="in_progress")` |
-| 6 | Worker | Execute task |
-| 7 | Worker | `TaskUpdate(status="completed")` |
-| 8 | Orchestrator | `/collect` → Verify all complete |
-
-### 2.6 Error Handling
-
-| Scenario | Detection | Recovery |
-|----------|-----------|----------|
-| Blocked task started | `blockedBy` not empty | Abort, notify Orchestrator |
-| Worker conflict | Same task, different owner | First claimer wins |
-| Circular dependency | A→B→A | `/orchestrate` validation |
-| Orphan task | No owner, stuck pending | Periodic `/workers` check |
-| Cross-session loss | Task list not found | Re-create from audit log |
-
 ---
 
-## 3. Orchestration Protocol
-
-### 3.1 E2E Pipeline
+## 3. E2E Pipeline
 
 ```
-/clarify                     Requirements + Design Recording (YAML)
+/clarify          Requirements + Design Recording
     │
     ▼
-/orchestrate                 Task Decomposition + Auto-Dependency
-    │                        └─ TaskCreate for each work item
-    │                        └─ TaskUpdate(addBlockedBy) for deps
+/research         Deep Codebase + External Analysis
+    │
     ▼
-/assign                      Worker Assignment (Pull-Based)
-    │                        └─ TaskUpdate(owner="terminal-X")
+/planning         YAML Planning + Plan Agent Review
+    │
+    ▼
+/orchestrate      Task Decomposition + Dependencies
+    │
+    ▼
+/assign           Worker Assignment (owner field)
+    │
     ▼
 ┌───┴───┬───────┐
 ▼       ▼       ▼
-Worker  Worker  Worker       Parallel Execution
-B       C       D            └─ TaskUpdate(status) for progress
+Worker  Worker  Worker    Parallel Execution
+B       C       D
 └───────┼───────┘
         ▼
-/collect                     Result Aggregation
-    │                        └─ TaskList to verify completion
+/collect          Result Aggregation
+    │
     ▼
-/synthesis                   Traceability + Quality Check
+/synthesis        Traceability + Quality Check
     │
     ├── COMPLETE ──▶ /commit-push-pr
-    └── ITERATE ───▶ Back to /clarify
-```
-
-### 3.2 Delegation Rules
-
-| Task Type | Delegate To | When |
-|-----------|-------------|------|
-| Codebase analysis | `Task(subagent_type="Explore")` | Structure discovery |
-| Implementation planning | `Task(subagent_type="Plan")` | Design |
-| Complex multi-step | `Task(subagent_type="general-purpose")` | Full workflow |
-
-### 3.3 Parallel Execution
-
-```python
-# Background delegation for independent tasks
-Task(subagent_type="Explore", prompt="...", run_in_background=True)
-Task(subagent_type="Plan", prompt="...", run_in_background=True)
+    └── ITERATE ───▶ /rsil-plan → /orchestrate
 ```
 
 ---
 
-## 4. Safety Rules (Non-Negotiable)
+## 4. Skill Inventory
+
+| Skill | Purpose | Model |
+|-------|---------|-------|
+| `/clarify` | Requirements elicitation with PE techniques | opus |
+| `/research` | Post-clarify codebase + external analysis | opus |
+| `/planning` | YAML planning with Plan Agent review | opus |
+| `/orchestrate` | Task decomposition + dependency setup | sonnet |
+| `/assign` | Worker assignment to terminals | sonnet |
+| `/worker` | Worker self-service (start, done, status) | sonnet |
+| `/collect` | Aggregate worker results | sonnet |
+| `/synthesis` | Traceability matrix + quality validation | opus |
+| `/rsil-plan` | Gap analysis + remediation planning | opus |
+| `/build` | Generate skills, hooks, agents | sonnet |
+| `/build-research` | Research for build operations | sonnet |
+| `/commit-push-pr` | Git commit and PR creation | sonnet |
+| `/docx-automation` | DOCX document generation | sonnet |
+
+---
+
+## 5. Safety Rules
 
 ### Blocked Patterns
 ```
-rm -rf          → ALWAYS DENY
-sudo rm         → ALWAYS DENY
-chmod 777       → ALWAYS DENY
-DROP TABLE      → ALWAYS DENY
+rm -rf, sudo rm, chmod 777, DROP TABLE → ALWAYS DENY
 ```
 
-### Sensitive Files (Auto-Blocked)
+### Sensitive Files
 ```
-.env*           → Contains secrets
-*credentials*   → Authentication data
-.ssh/id_*       → SSH private keys
-**/secrets/**   → Secret storage
+.env*, *credentials*, .ssh/id_*, **/secrets/** → Auto-Blocked
 ```
 
 ---
 
-## 5. Behavioral Directives
+## 6. Behavioral Directives
 
-### 🚨 ACTION-FIRST MANDATE (최우선 원칙)
+### ACTION-FIRST (최우선 원칙)
 
-> **분석만 하지 말고 즉시 실행하라. 문제를 발견하면 바로 고쳐라.**
+> **문제 발견 → 즉시 수정 → 결과 보고** (질문 단계 없음)
 
 | 상황 | ❌ 금지 | ✅ 필수 |
 |------|--------|--------|
-| 문제 발견 | "문제가 있습니다" 보고만 | **즉시 수정 후** 결과 보고 |
-| 파일 구조 이상 | "형식이 다릅니다" 분석만 | **즉시 표준화** 후 보고 |
-| 누락된 필드 | "필드가 없습니다" 나열 | **즉시 추가** 후 보고 |
-| 선택지 제시 | "어떻게 할까요?" 질문 | **최선의 선택 실행** 후 보고 |
-| 확인 필요 | 분석 → 질문 → 대기 | **실행 → 결과 보고** (롤백 가능) |
+| 문제 발견 | 보고만 | 즉시 수정 후 보고 |
+| 선택지 있음 | 질문 | 최선책 실행 |
 
-**위반 시 행동 패턴:**
-```
-1. 문제 발견 → 2. 즉시 수정 → 3. 수정 결과 보고
-                  ↑
-           (질문/확인 단계 없음)
-```
-
-**예외 (질문 허용):**
-- 사용자 의도가 명확하지 않은 경우 (요구사항 불명확)
-- 파괴적 작업 (데이터 삭제, 롤백 불가능한 변경)
-- 비용/시간이 큰 작업 (외부 API 호출, 대규모 리팩토링)
+**예외:** 요구사항 불명확, 파괴적 작업, 고비용 작업
 
 ### ALWAYS
-- Use `TaskCreate` for multi-step tasks (NOT TodoWrite)
-- Check `TaskList` before starting work
-- Verify `blockedBy` is empty before executing
-- Update `status` to track progress
-- Include `files_viewed` evidence for analysis
-- **FIX issues immediately upon discovery** (발견 즉시 수정)
-- **EXECUTE first, report results** (실행 우선, 결과 보고)
+- TaskCreate for multi-step tasks
+- Check blockedBy before executing
+- Fix issues immediately
 
 ### NEVER
-- Edit files without reading first
+- Edit without reading first
 - Start blocked tasks
-- Execute blocked patterns
-- Hallucinate file contents or code
-- **Ask "what should I do?" when the answer is obvious** (명백한 답에 질문 금지)
-- **Report problems without fixing them** (수정 없이 문제만 보고 금지)
-- **Present options when one is clearly better** (명확한 최선책 있을 때 선택지 제시 금지)
+- Report without fixing
 
 ---
 
-## 6. Communication Protocol
+## 7. Directory Structure
 
-| Context | Language |
-|---------|----------|
-| Intent clarification | Korean (사용자 의도 확인) |
-| Execution/Code | English |
-| Documentation | English |
+```
+.claude/
+├── CLAUDE.md              # This file
+├── settings.json          # Claude Code settings
+├── skills/                # Skill definitions
+│   ├── clarify/
+│   ├── research/
+│   ├── planning/
+│   ├── orchestrate/
+│   ├── assign/
+│   ├── worker/
+│   ├── collect/
+│   ├── synthesis/
+│   ├── rsil-plan/
+│   ├── build/
+│   ├── build-research/
+│   ├── commit-push-pr/
+│   └── docx-automation/
+├── hooks/                 # Lifecycle hooks
+│   ├── session-start.sh
+│   ├── session-end.sh
+│   ├── clarify-finalize.sh
+│   ├── research-finalize.sh
+│   └── planning-finalize.sh
+├── agents/                # Custom agents
+│   ├── onboarding-guide.md
+│   ├── pd-readonly-analyzer.md
+│   └── pd-skill-loader.md
+└── references/            # Documentation
+    ├── pd-patterns.md
+    └── skill-access-matrix.md
 
----
-
-## 7. Native Capabilities Reference
-
-### Skill Frontmatter Fields (V2.1.19)
-
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `name` | Yes | - | Skill identifier |
-| `description` | Yes | - | Brief description |
-| `user-invocable` | No | `true` | User can invoke via `/name` |
-| `disable-model-invocation` | No | `false` | Prevent auto-invocation |
-| `context` | No | `standard` | `fork` for isolated execution |
-| `model` | No | `sonnet` | `haiku`, `sonnet`, `opus` |
-| `allowed-tools` | No | all | Tool restrictions |
-| `hooks` | No | - | Skill-level lifecycle hooks |
-| `argument-hint` | No | - | Autocomplete hints |
-
-### Skill Argument Syntax
-
-```yaml
-$0          # First argument
-$1          # Second argument
-# /worker start b → $0="start", $1="b"
+.agent/
+├── prompts/               # Worker prompts
+│   ├── _context.yaml      # Global context
+│   ├── _progress.yaml     # Progress tracking
+│   └── pending/           # Worker task files
+├── research/              # Research outputs
+├── plans/                 # Planning documents
+├── clarify/               # Clarification records
+└── outputs/               # Worker outputs
 ```
 
 ---
 
-## 8. Reference Index
+## 8. Skill Frontmatter (V2.1.19)
 
-| Reference | Path | Purpose |
-|-----------|------|---------|
-| Native Capabilities | `.claude/references/native-capabilities.md` | Full API details |
-| Progressive Disclosure | `.claude/references/progressive-disclosure.md` | L1/L2/L3 pattern |
-| File-Based Prompts | `.agent/prompts/` | Worker prompt templates |
+| Field | Required | Default |
+|-------|----------|---------|
+| `name` | Yes | - |
+| `description` | Yes | - |
+| `user-invocable` | No | true |
+| `model` | No | sonnet |
+| `allowed-tools` | No | all |
+| `hooks` | No | - |
 
 ---
 
-> **v6.0 Update (2026-01-24):** Task-Centric Architecture
-> - Native Task System as primary workflow tracking
-> - Hybrid: Task API (status/deps) + File-Based (prompts)
-> - TodoWrite deprecated → TaskCreate/Update/List/Get
-> - Pull-based worker assignment via owner field
+> **v7.0 (2026-01-24):** Enhanced Pipeline
+> - Added /research, /planning, /rsil-plan skills
+> - Directory structure documentation
+> - Skill inventory with model specifications
+> - Removed deprecated files and redundant sections
