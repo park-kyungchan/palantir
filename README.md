@@ -1,52 +1,347 @@
 # Palantir Development Workspace
 
-A personal development workspace featuring Ontology-Driven Architecture (ODA) for AI agent orchestration, document processing utilities, and Personal AI Infrastructure (PAI) integration.
+> **Version:** 2.2.5 | **Architecture:** Task-Centric Hybrid
+> **Last Updated:** 2026-01-24
+
+[![Skills](https://img.shields.io/badge/Skills-10-blue)](#skills)
+[![Hooks](https://img.shields.io/badge/Hooks-8-green)](#hooks)
+[![Agents](https://img.shields.io/badge/Agents-3-purple)](#agents)
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      TASK-CENTRIC HYBRID ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                  │
+│   │  Terminal A │     │  Terminal B │     │  Terminal C │                  │
+│   │ Orchestrator│     │   Worker    │     │   Worker    │                  │
+│   └──────┬──────┘     └──────┬──────┘     └──────┬──────┘                  │
+│          │                   │                   │                          │
+│          └───────────────────┼───────────────────┘                          │
+│                              │                                              │
+│                              ▼                                              │
+│   ┌─────────────────────────────────────────────────────────────────────┐  │
+│   │              NATIVE TASK SYSTEM (Cross-Session Persistence)          │  │
+│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐   │  │
+│   │  │TaskCreate│  │TaskUpdate│  │ TaskList│  │ TaskGet │  │Dependencies│ │  │
+│   │  └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘   │  │
+│   └─────────────────────────────────────────────────────────────────────┘  │
+│                              │                                              │
+│                              ▼                                              │
+│   ┌─────────────────────────────────────────────────────────────────────┐  │
+│   │                    FILE-BASED PROMPTS (.agent/prompts/)              │  │
+│   │        Worker Instructions  •  Context Sharing  •  Audit Trail       │  │
+│   └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Workspace Structure
 
 ```
 /home/palantir/
-├── .agent/                    # Agent state, database, and runtime files
-├── .claude/                   # Claude Code configuration with ODA governance
-│   ├── CLAUDE.md              # Main agent orchestration rules (ODA v4.0)
-│   ├── references/            # Protocol references and capability docs
-│   ├── skills/                # Workflow definitions (/plan, /audit, etc.)
-│   └── agents/                # Specialized agent behaviors
-├── park-kyungchan/palantir/   # Main ODA project (Python/Pydantic)
-│   ├── lib/oda/               # ODA kernel and ontology system
-│   └── governance/            # Governance rules and policies
-├── hwpx/                      # HWPX document reconstruction pipeline
-├── lib/                       # Shared libraries
-│   └── owpml/                 # OWPML namespace definitions
-└── docs/                      # Documentation
+├── .agent/                         # Agent runtime state
+│   ├── builds/                     # /build concept research cache
+│   ├── prompts/                    # Worker prompt files (YAML)
+│   ├── outputs/                    # Skill execution outputs
+│   └── logs/                       # Audit logs
+│
+├── .claude/                        # Claude Code configuration
+│   ├── CLAUDE.md                   # Main Agent Orchestrator (v6.0)
+│   ├── skills/                     # Skill definitions (10 skills)
+│   │   ├── clarify/SKILL.md        # 📝 Requirements clarification
+│   │   ├── orchestrate/SKILL.md    # 🎯 Task decomposition
+│   │   ├── worker/SKILL.md         # 👷 Worker self-service
+│   │   ├── assign/SKILL.md         # 📋 Task assignment
+│   │   ├── collect/SKILL.md        # 📊 Result aggregation
+│   │   ├── synthesis/SKILL.md      # ✅ Quality validation
+│   │   ├── build/SKILL.md          # 🔨 Component builder
+│   │   ├── build-research/SKILL.md # 🔍 Research dispatcher
+│   │   ├── commit-push-pr/SKILL.md # 🚀 Git workflow
+│   │   └── docx-automation/SKILL.md# 📄 DOCX generation
+│   ├── agents/                     # Specialized agents
+│   ├── hooks/                      # Lifecycle hooks
+│   └── references/                 # Protocol documentation
+│
+├── park-kyungchan/palantir/        # Main project (Python/Pydantic)
+├── hwpx/                           # HWPX document pipeline
+├── lib/                            # Shared libraries
+└── docs/                           # Documentation
 ```
-
-## Key Projects
-
-### ODA Framework
-Ontology-Driven Architecture implementation with 3-Stage Protocol:
-1. **Stage A (SCAN)**: Establish reality with evidence
-2. **Stage B (TRACE)**: Verify before changes
-3. **Stage C (VERIFY)**: Quality gates
-
-### HWPX Pipeline
-PDF/HWPX document conversion for Hancom Office 2024.
-
-## Getting Started
-
-```bash
-cd park-kyungchan/palantir
-source .venv/bin/activate
-python scripts/engine.py init
-```
-
-## ODA Skills
-
-| Command | Purpose |
-|---------|--------|
-| `/plan` | 3-Stage planning |
-| `/audit` | Code audit |
-| `/deep-audit` | Deep analysis |
 
 ---
-*Powered by ODA v4.0*
+
+## Skills
+
+### Orchestration Pipeline
+
+```
+┌──────────┐    ┌─────────────┐    ┌────────┐    ┌─────────┐    ┌──────────┐
+│ /clarify │───▶│ /orchestrate│───▶│ /assign│───▶│ Workers │───▶│ /collect │
+└──────────┘    └─────────────┘    └────────┘    └─────────┘    └──────────┘
+     │                                                               │
+     │  Requirements                                    Results      │
+     │  Clarification                                Aggregation     │
+     │                                                               │
+     │               ┌────────────┐                                  │
+     └───────────────│ /synthesis │◀─────────────────────────────────┘
+                     └────────────┘
+                           │
+              ┌────────────┴────────────┐
+              ▼                         ▼
+       ┌─────────────────┐       ┌──────────┐
+       │ /commit-push-pr │       │ Iterate  │
+       └─────────────────┘       └──────────┘
+```
+
+### Skill Reference
+
+| Command | Version | Description | Invocation |
+|---------|---------|-------------|------------|
+| `/clarify` | 2.1.0 | PE 기법으로 요청 명확화, YAML 로그 생성 | `user` |
+| `/orchestrate` | 2.1.0 | 복잡한 태스크 분해, 의존성 설정 | `user` |
+| `/worker` | 2.1.0 | Worker 자체 서비스 (start/done/status/block) | `user` |
+| `/assign` | 2.1.0 | 태스크를 Worker 터미널에 할당 | `user` |
+| `/collect` | 2.1.0 | Worker 결과 수집, 완료 검증 | `user` |
+| `/synthesis` | 2.1.0 | 추적성 매트릭스, 품질 검증 | `user` |
+| `/build` | 2.2.0 | 컴포넌트 빌더 (Concept/Direct Mode) | `user` |
+| `/build-research` | 2.1.0 | 빌드 리서치 디스패처 | `internal` |
+| `/commit-push-pr` | 2.1.0 | Git 워크플로우 자동화 | `user` |
+| `/docx-automation` | 2.1.0 | DOCX 문서 생성 | `user` |
+
+---
+
+## /build Modes
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           /build Command Modes                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────────┐    │
+│  │      CONCEPT MODE           │    │        DIRECT MODE              │    │
+│  │  /build "Progressive-D..."  │    │  /build agent|skill|hook        │    │
+│  ├─────────────────────────────┤    ├─────────────────────────────────┤    │
+│  │                             │    │                                 │    │
+│  │  Phase 0: Research          │    │  Phase 3: Type Selection        │    │
+│  │     └─► /build-research     │    │     └─► AskUserQuestion         │    │
+│  │                             │    │                                 │    │
+│  │  Phase 1: Roadmap           │    │  Phase 4: Builder Delegation    │    │
+│  │     └─► Level 0/50/100      │    │     └─► builders/*.md           │    │
+│  │                             │    │                                 │    │
+│  │  Phase 2: Build Execution   │    │  Phase 5: Draft Generation      │    │
+│  │     └─► Multi-round Q&A     │    │     └─► templates/*             │    │
+│  │                             │    │                                 │    │
+│  └─────────────────────────────┘    └─────────────────────────────────┘    │
+│                                                                             │
+│                     ┌─────────────────────────────┐                         │
+│                     │   Phase 6: Confirmation     │                         │
+│                     │      └─► File Generation    │                         │
+│                     └─────────────────────────────┘                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Hooks
+
+### Lifecycle Events
+
+```
+                    Session Lifecycle
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  SessionStart ──▶ [Operations] ──▶ SessionEnd          │
+│       │                                    │            │
+│       ▼                                    ▼            │
+│  session-start.sh                   session-end.sh     │
+│  welcome.sh                                             │
+│  session-health.sh                                      │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+
+                    Tool Lifecycle
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  PreToolUse ──▶ [Tool Execution] ──▶ PostToolUse       │
+│       │                                    │            │
+│       ▼                                    ▼            │
+│  governance-check.sh              auto-backup.sh       │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+
+                    Skill Lifecycle
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  /clarify ──▶ [Q&A Rounds] ──▶ Finalize                │
+│       │              │              │                   │
+│       ▼              ▼              ▼                   │
+│   (start)    clarify-qa-logger  clarify-finalize       │
+│                     .sh              .sh                │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Hook Reference
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `session-start.sh` | SessionStart | 워크스페이스 초기화, 상태 복구 |
+| `session-end.sh` | SessionEnd | 상태 저장, 정리 |
+| `session-health.sh` | SessionStart | 헬스 체크 |
+| `welcome.sh` | SessionStart | 환영 메시지 |
+| `governance-check.sh` | PreToolUse | 안전 규칙 검증 |
+| `auto-backup.sh` | PostToolUse | 자동 백업 |
+| `clarify-qa-logger.sh` | Skill | Q&A 라운드 로깅 |
+| `clarify-finalize.sh` | Skill | clarify 완료 처리 |
+
+---
+
+## Agents
+
+| Agent | Purpose | Tools |
+|-------|---------|-------|
+| `onboarding-guide` | 신규 사용자 안내 | Read |
+| `pd-readonly-analyzer` | 읽기 전용 코드 분석 | Read, Grep, Glob, Task |
+| `pd-skill-loader` | 스킬 사전 로드 | Read, Grep, Glob, Write, Edit |
+
+---
+
+## Multi-Terminal Orchestration
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        MULTI-TERMINAL WORKFLOW                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Terminal A (Orchestrator)         Terminal B (Worker)                    │
+│   ─────────────────────────         ────────────────────                   │
+│                                                                             │
+│   1. /clarify                                                               │
+│      └─► Define requirements                                                │
+│                                                                             │
+│   2. /orchestrate                                                           │
+│      └─► TaskCreate(task1, task2, task3)                                   │
+│      └─► TaskUpdate(blockedBy=[...])                                       │
+│                                                                             │
+│   3. /assign terminal-b task1                                               │
+│      └─► TaskUpdate(owner="terminal-b")                                    │
+│                          │                                                  │
+│                          └───────────────▶  4. /worker start               │
+│                                                └─► TaskList()              │
+│                                                └─► TaskGet(task1)          │
+│                                                └─► TaskUpdate(in_progress) │
+│                                                                             │
+│                                             5. [Execute task]               │
+│                                                                             │
+│                                             6. /worker done                 │
+│                          ◀───────────────────  └─► TaskUpdate(completed)   │
+│                          │                                                  │
+│   7. /collect                                                               │
+│      └─► Verify all tasks completed                                        │
+│                                                                             │
+│   8. /synthesis                                                             │
+│      └─► Quality validation                                                │
+│                                                                             │
+│   9. /commit-push-pr                                                        │
+│      └─► Push changes                                                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Quick Start
+
+### 1. Start a Session
+
+```bash
+# Using cc wrapper (recommended)
+cc palantir-dev       # With task list ID for multi-terminal sync
+
+# Or direct
+claude
+```
+
+### 2. Clarify Requirements
+
+```bash
+/clarify "Add user authentication feature"
+```
+
+### 3. Orchestrate Tasks
+
+```bash
+/orchestrate          # Decompose into tasks with dependencies
+```
+
+### 4. Assign to Workers
+
+```bash
+/assign terminal-b 1  # Assign task #1 to terminal-b
+```
+
+### 5. Worker Execution (in Terminal B)
+
+```bash
+/worker start         # Check assigned tasks
+# ... do work ...
+/worker done          # Mark complete
+```
+
+### 6. Collect & Synthesize
+
+```bash
+/collect              # Aggregate results
+/synthesis            # Quality check
+```
+
+### 7. Commit & Push
+
+```bash
+/commit-push-pr       # Git workflow automation
+```
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.2.5 | 2026-01-24 | Task-Centric Architecture, Skills V2.1.0 |
+| 2.2.0 | 2026-01-23 | /build Concept Mode, Parameter Modules |
+| 2.1.0 | 2026-01-22 | Progressive Disclosure implementation |
+| 2.0.0 | 2026-01-21 | Hybrid Architecture (Native Task + File-Based) |
+
+---
+
+## Key Features
+
+### ✅ Semantic Integrity
+All skills follow V2.1.19 Skill Frontmatter Spec with consistent:
+- Version numbering
+- Tool configurations (YAML array format)
+- Parameter Module compatibility
+
+### ✅ Progressive Disclosure
+L1/L2/L3 pattern for context-efficient information delivery:
+- **L1**: Summary (≤500 tokens)
+- **L2**: Indexed sections on-demand
+- **L3**: Full document access
+
+### ✅ Cross-Session Persistence
+Native Task System maintains state across sessions via `CLAUDE_CODE_TASK_LIST_ID`.
+
+### ✅ Action-First Mandate
+> "발견 즉시 수정, 실행 우선, 결과 보고"
+
+---
+
+*Powered by Claude Code v6.0 | Task-Centric Hybrid Architecture*
