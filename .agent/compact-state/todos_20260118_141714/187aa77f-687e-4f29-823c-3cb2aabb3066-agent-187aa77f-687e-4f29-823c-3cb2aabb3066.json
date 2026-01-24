@@ -1,0 +1,32 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 - TodoWrite Enhancement 구현 | 5 Phases",
+    "status": "in_progress",
+    "activeForm": "Implementing TodoWrite + Agent ID Tracking enhancement"
+  },
+  {
+    "content": "[Phase 1] TodoWriteTracker 모듈 생성 | Files: lib/oda/planning/todowrite_tracker.py | Agent: Direct (done)",
+    "status": "completed",
+    "activeForm": "Completed TodoWriteTracker module creation"
+  },
+  {
+    "content": "[Phase 2] ExecutionOrchestrator 통합 | Files: execution_orchestrator.py | Agent: Direct",
+    "status": "in_progress",
+    "activeForm": "Integrating TodoWriteTracker into ExecutionOrchestrator"
+  },
+  {
+    "content": "[Phase 3] CLAUDE.md Section 2.6.5 추가 | Files: /home/palantir/.claude/CLAUDE.md | Agent: Direct",
+    "status": "pending",
+    "activeForm": "Adding TodoWrite + Agent ID Tracking Protocol section"
+  },
+  {
+    "content": "[Phase 4] /plan.md 간결화 | Files: .claude/skills/plan.md | Agent: Direct",
+    "status": "pending",
+    "activeForm": "Compressing /plan.md from 930 to ~150 lines"
+  },
+  {
+    "content": "[Phase 5] __init__.py exports 업데이트 | Files: lib/oda/planning/__init__.py | Agent: Direct",
+    "status": "pending",
+    "activeForm": "Updating package exports"
+  }
+]

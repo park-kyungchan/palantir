@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Explore /coding directory structure",
+    "status": "completed",
+    "activeForm": "Exploring /coding directory structure"
+  },
+  {
+    "content": "Research Palantir Dev/Delta required programming languages",
+    "status": "completed",
+    "activeForm": "Researching Palantir Dev/Delta requirements"
+  },
+  {
+    "content": "Clarify project location and current state with user",
+    "status": "completed",
+    "activeForm": "Clarifying project details with user"
+  },
+  {
+    "content": "Analyze actual /coding directory at correct path",
+    "status": "completed",
+    "activeForm": "Analyzing /coding directory"
+  },
+  {
+    "content": "Design dynamic learning system architecture",
+    "status": "in_progress",
+    "activeForm": "Designing learning system"
+  },
+  {
+    "content": "Create Gap Analysis and improvement roadmap",
+    "status": "pending",
+    "activeForm": "Creating Gap Analysis"
+  }
+]

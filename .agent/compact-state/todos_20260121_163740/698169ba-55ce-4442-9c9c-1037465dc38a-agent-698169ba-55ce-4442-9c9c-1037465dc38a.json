@@ -1,0 +1,17 @@
+[
+  {
+    "content": "Analyze current draft structure for Plan Agent optimization",
+    "status": "completed",
+    "activeForm": "Analyzing draft structure for Plan Agent"
+  },
+  {
+    "content": "Design Plan Agent optimized draft format",
+    "status": "in_progress",
+    "activeForm": "Designing Plan Agent optimized draft format"
+  },
+  {
+    "content": "Implement Round 20 via Plan Agent",
+    "status": "pending",
+    "activeForm": "Implementing Round 20 via Plan Agent"
+  }
+]

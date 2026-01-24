@@ -1,0 +1,47 @@
+[
+  {
+    "content": "ORCHESTRATOR | Delegated: 3 | Current: SYNTHESIZE | Plan: commands-skills-fix",
+    "status": "in_progress",
+    "activeForm": "Synthesizing implementation plan"
+  },
+  {
+    "content": "[COMPLETE] Deep Audit | -> Explore:a025bf9 | L2: 33 files analyzed",
+    "status": "completed",
+    "activeForm": "Audit completed"
+  },
+  {
+    "content": "[COMPLETE] Plan Subagent | -> Plan:aeb6187 | L2: 5-phase plan designed",
+    "status": "completed",
+    "activeForm": "Plan designed"
+  },
+  {
+    "content": "[SYNTHESIZE] 계획 종합 및 사용자 승인 | -> direct",
+    "status": "in_progress",
+    "activeForm": "Awaiting user approval"
+  },
+  {
+    "content": "[PENDING] Phase 1: CRITICAL 문제 해결 (3개 파일) | -> /execute",
+    "status": "pending",
+    "activeForm": "Fixing critical issues"
+  },
+  {
+    "content": "[PENDING] Phase 2: HIGH 문제 - name 필드 추가 (14개) | -> /execute",
+    "status": "pending",
+    "activeForm": "Adding name fields"
+  },
+  {
+    "content": "[PENDING] Phase 3: HIGH 문제 - tools/hint 추가 (4개) | -> /execute",
+    "status": "pending",
+    "activeForm": "Adding tools and hints"
+  },
+  {
+    "content": "[PENDING] Phase 4: MEDIUM 문제 - Skill 위임 패턴 해결 | -> /execute",
+    "status": "pending",
+    "activeForm": "Resolving delegation pattern"
+  },
+  {
+    "content": "[PENDING] Phase 5: 검증 및 일관성 확인 | -> Main Agent",
+    "status": "pending",
+    "activeForm": "Validation and consistency"
+  }
+]

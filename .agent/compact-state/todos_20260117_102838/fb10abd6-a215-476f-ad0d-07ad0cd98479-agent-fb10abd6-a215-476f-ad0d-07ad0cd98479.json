@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Phase 1: 현재 시스템 분석 (output_layer_manager.py, agent_registry.py)",
+    "status": "in_progress",
+    "activeForm": "Analyzing current system components"
+  },
+  {
+    "content": "Phase 2: PostToolUse Hook 구현 (실제 강제 메커니즘)",
+    "status": "pending",
+    "activeForm": "Implementing PostToolUse Hook"
+  },
+  {
+    "content": "Phase 3: OutputLayerManager 확장 (is_summary_only, read_layer_auto)",
+    "status": "pending",
+    "activeForm": "Extending OutputLayerManager"
+  },
+  {
+    "content": "Phase 4: CLAUDE.md Section 5 강화 (ALWAYS/NEVER 규칙)",
+    "status": "pending",
+    "activeForm": "Updating CLAUDE.md behavioral rules"
+  },
+  {
+    "content": "Phase 5: Hook 설정 파일 등록 (settings.json)",
+    "status": "pending",
+    "activeForm": "Registering Hook in settings"
+  },
+  {
+    "content": "Phase 6: 통합 테스트 및 검증",
+    "status": "pending",
+    "activeForm": "Running integration tests"
+  }
+]

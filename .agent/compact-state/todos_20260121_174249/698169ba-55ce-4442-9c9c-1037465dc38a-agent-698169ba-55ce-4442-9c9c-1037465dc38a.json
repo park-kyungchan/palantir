@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Scan ODA-related files to identify deletion targets",
+    "status": "completed",
+    "activeForm": "Scanning ODA-related files"
+  },
+  {
+    "content": "Identify files to KEEP (Ontology-Definition)",
+    "status": "completed",
+    "activeForm": "Identifying files to keep"
+  },
+  {
+    "content": "Remove lib/oda directory",
+    "status": "in_progress",
+    "activeForm": "Removing lib/oda directory"
+  },
+  {
+    "content": "Remove ODA-related .agent/ files (plans, logs, configs)",
+    "status": "pending",
+    "activeForm": "Removing ODA .agent/ files"
+  },
+  {
+    "content": "Remove ODA documentation and test directories",
+    "status": "pending",
+    "activeForm": "Removing ODA docs and tests"
+  },
+  {
+    "content": "Clean up scripts with ODA imports",
+    "status": "pending",
+    "activeForm": "Cleaning up scripts with ODA imports"
+  },
+  {
+    "content": "Update pyproject.toml ODA entries",
+    "status": "pending",
+    "activeForm": "Updating pyproject.toml"
+  }
+]

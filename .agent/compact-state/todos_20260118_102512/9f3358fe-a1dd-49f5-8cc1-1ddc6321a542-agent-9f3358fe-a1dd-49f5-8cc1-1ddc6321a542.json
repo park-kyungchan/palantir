@@ -1,0 +1,62 @@
+[
+  {
+    "content": "Phase 1: 요구사항 분석 및 범위 정의",
+    "status": "completed",
+    "activeForm": "Requirements analysis completed"
+  },
+  {
+    "content": "Phase 2: 개념별 통합 KB 구조 설계 - /plan 완료",
+    "status": "completed",
+    "activeForm": "KB structure plan completed"
+  },
+  {
+    "content": "Phase 2: 개념별 통합 KB 구조 설계 - /execute 대기",
+    "status": "pending",
+    "activeForm": "Awaiting user approval to execute"
+  },
+  {
+    "content": "Phase 3: 기초 개념 KB 생성 - /plan",
+    "status": "pending",
+    "activeForm": "Planning fundamental KB creation"
+  },
+  {
+    "content": "Phase 3: 기초 개념 KB 생성 - /execute",
+    "status": "pending",
+    "activeForm": "Executing fundamental KB creation"
+  },
+  {
+    "content": "Phase 4: 중급 개념 KB 생성 - /plan",
+    "status": "pending",
+    "activeForm": "Planning intermediate KB creation"
+  },
+  {
+    "content": "Phase 4: 중급 개념 KB 생성 - /execute",
+    "status": "pending",
+    "activeForm": "Executing intermediate KB creation"
+  },
+  {
+    "content": "Phase 5: SQL/Database KB - /plan",
+    "status": "pending",
+    "activeForm": "Planning SQL KB creation"
+  },
+  {
+    "content": "Phase 5: SQL/Database KB - /execute",
+    "status": "pending",
+    "activeForm": "Executing SQL KB creation"
+  },
+  {
+    "content": "Phase 6: Spark/Big Data KB - /plan",
+    "status": "pending",
+    "activeForm": "Planning Spark KB creation"
+  },
+  {
+    "content": "Phase 6: Spark/Big Data KB - /execute",
+    "status": "pending",
+    "activeForm": "Executing Spark KB creation"
+  },
+  {
+    "content": "Phase 7-10: 통합 및 마무리",
+    "status": "pending",
+    "activeForm": "Integration and finalization"
+  }
+]

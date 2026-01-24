@@ -1,0 +1,32 @@
+[
+  {
+    "content": "[Phase 0-3] Infrastructure + Core + Schema + Utility | All completed",
+    "status": "completed",
+    "activeForm": "Phases 0-3 complete"
+  },
+  {
+    "content": "[Phase 4] Git/Memory Commands Plan | Agent: Plan:a09ad28 (done)",
+    "status": "completed",
+    "activeForm": "Git/Memory planned"
+  },
+  {
+    "content": "[Phase 4-Exec] Add L1/L2 to 4 commands | Files: commit-push-pr, memory, memory-sync, teleport | Agent: general-purpose:pending",
+    "status": "in_progress",
+    "activeForm": "Adding L1/L2 to git/memory commands"
+  },
+  {
+    "content": "[Phase 5] Helper Skills (2) | Files: capability-advisor, help-korean | Agent: Plan:pending",
+    "status": "pending",
+    "activeForm": "Enhancing helper skills"
+  },
+  {
+    "content": "[Phase 6] CLAUDE.md Section 2.2 Cleanup | Files: .claude/CLAUDE.md | Agent: general-purpose:pending",
+    "status": "pending",
+    "activeForm": "Cleaning up CLAUDE.md"
+  },
+  {
+    "content": "[Phase 7] Integration Testing | Files: all modified files | Agent: Explore:pending",
+    "status": "pending",
+    "activeForm": "Testing Layer1/Layer2 integration"
+  }
+]

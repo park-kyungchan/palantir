@@ -1,0 +1,212 @@
+[
+  {
+    "content": "=== HOOK V2.1.9+ INTEGRATION (Auto-Compact Safe) ===",
+    "status": "completed",
+    "activeForm": "Plan header"
+  },
+  {
+    "content": "Deep Audit: Stage A SCAN 완료",
+    "status": "completed",
+    "activeForm": "Completed Stage A SCAN"
+  },
+  {
+    "content": "Deep Audit: Stage B TRACE 완료",
+    "status": "completed",
+    "activeForm": "Completed Stage B TRACE"
+  },
+  {
+    "content": "Deep Audit: Stage C VERIFY 완료",
+    "status": "completed",
+    "activeForm": "Completed Stage C VERIFY"
+  },
+  {
+    "content": "Plan 생성 완료 (.agent/plans/hook_v2_1_9_integration.md)",
+    "status": "completed",
+    "activeForm": "Created implementation plan"
+  },
+  {
+    "content": "--- Phase 1: additionalContext (orchestrator) ---",
+    "status": "in_progress",
+    "activeForm": "Starting Phase 1"
+  },
+  {
+    "content": "1.1 orchestrator_enforcement.py 읽기 (L233-260)",
+    "status": "pending",
+    "activeForm": "Reading orchestrator enforcement code"
+  },
+  {
+    "content": "1.2 BLOCK/WARN/AUTO_WRAP 출력에 hookSpecificOutput 추가",
+    "status": "pending",
+    "activeForm": "Adding hookSpecificOutput to decisions"
+  },
+  {
+    "content": "1.3 additionalContext에 delegation template 포함",
+    "status": "pending",
+    "activeForm": "Adding delegation template"
+  },
+  {
+    "content": "1.4 enforcement_config.yaml에 hook_execution 섹션 추가",
+    "status": "pending",
+    "activeForm": "Adding hook_execution config"
+  },
+  {
+    "content": "1.5 Phase 1 테스트 (BLOCK 모드 검증)",
+    "status": "pending",
+    "activeForm": "Testing Phase 1 changes"
+  },
+  {
+    "content": "--- Phase 2: additionalContext (validator) ---",
+    "status": "pending",
+    "activeForm": "Starting Phase 2"
+  },
+  {
+    "content": "2.1 validate_task_result.py 읽기 (L308-325)",
+    "status": "pending",
+    "activeForm": "Reading validator code"
+  },
+  {
+    "content": "2.2 결과 출력에 hookSpecificOutput 추가",
+    "status": "pending",
+    "activeForm": "Adding hookSpecificOutput to validator"
+  },
+  {
+    "content": "2.3 L2/L3 경로를 additionalContext에 포함",
+    "status": "pending",
+    "activeForm": "Adding layer paths to context"
+  },
+  {
+    "content": "2.4 validate_task_config.yaml에 설정 추가",
+    "status": "pending",
+    "activeForm": "Adding validator config"
+  },
+  {
+    "content": "2.5 Phase 2 테스트 (summary-only 감지)",
+    "status": "pending",
+    "activeForm": "Testing Phase 2 changes"
+  },
+  {
+    "content": "--- Phase 3: Setup Hook 신규 ---",
+    "status": "pending",
+    "activeForm": "Starting Phase 3"
+  },
+  {
+    "content": "3.1 setup.sh 스크립트 생성",
+    "status": "pending",
+    "activeForm": "Creating setup.sh script"
+  },
+  {
+    "content": "3.2 .agent 디렉토리 자동 생성 로직",
+    "status": "pending",
+    "activeForm": "Adding directory creation logic"
+  },
+  {
+    "content": "3.3 DB 상태 확인 및 보고 로직",
+    "status": "pending",
+    "activeForm": "Adding DB status check"
+  },
+  {
+    "content": "3.4 additionalContext로 초기화 결과 반환",
+    "status": "pending",
+    "activeForm": "Adding context output"
+  },
+  {
+    "content": "--- Phase 4: once:true 설정 ---",
+    "status": "pending",
+    "activeForm": "Starting Phase 4"
+  },
+  {
+    "content": "4.1 settings.json SessionStart 섹션 읽기",
+    "status": "pending",
+    "activeForm": "Reading settings.json"
+  },
+  {
+    "content": "4.2 welcome.sh에 once:true 추가",
+    "status": "pending",
+    "activeForm": "Adding once:true to welcome"
+  },
+  {
+    "content": "4.3 setup.sh에 once:true 추가",
+    "status": "pending",
+    "activeForm": "Adding once:true to setup"
+  },
+  {
+    "content": "4.4 Phase 3-4 테스트 (세션 재시작 검증)",
+    "status": "pending",
+    "activeForm": "Testing setup hook"
+  },
+  {
+    "content": "--- Phase 5: ask_permission 플로우 ---",
+    "status": "pending",
+    "activeForm": "Starting Phase 5"
+  },
+  {
+    "content": "5.1 permission_categories 설정 추가 (deny/ask/allow)",
+    "status": "pending",
+    "activeForm": "Adding permission categories"
+  },
+  {
+    "content": "5.2 카테고리별 permissionDecision 매핑",
+    "status": "pending",
+    "activeForm": "Mapping categories to decisions"
+  },
+  {
+    "content": "5.3 AUTO_WRAP 모드에 ask 결정 적용",
+    "status": "pending",
+    "activeForm": "Applying ask to AUTO_WRAP"
+  },
+  {
+    "content": "5.4 Phase 5 테스트 (borderline 명령 검증)",
+    "status": "pending",
+    "activeForm": "Testing ask_permission"
+  },
+  {
+    "content": "--- Phase 6: 보안 강화 ---",
+    "status": "pending",
+    "activeForm": "Starting Phase 6"
+  },
+  {
+    "content": "6.1 SecurityValidator import 추가 (선택적)",
+    "status": "pending",
+    "activeForm": "Adding SecurityValidator import"
+  },
+  {
+    "content": "6.2 Pre-execution 보안 검사 로직 추가",
+    "status": "pending",
+    "activeForm": "Adding security pre-check"
+  },
+  {
+    "content": "6.3 CRITICAL 위반 즉시 BLOCK 처리",
+    "status": "pending",
+    "activeForm": "Adding critical violation handling"
+  },
+  {
+    "content": "6.4 보안 컨텍스트 additionalContext 추가",
+    "status": "pending",
+    "activeForm": "Adding security context"
+  },
+  {
+    "content": "6.5 Phase 6 테스트 (dangerous command 검증)",
+    "status": "pending",
+    "activeForm": "Testing security hardening"
+  },
+  {
+    "content": "--- 최종 검증 ---",
+    "status": "pending",
+    "activeForm": "Final verification"
+  },
+  {
+    "content": "E2E 테스트: 모든 Phase 통합 검증",
+    "status": "pending",
+    "activeForm": "Running E2E tests"
+  },
+  {
+    "content": "CLAUDE.md 문서 업데이트 (필요시)",
+    "status": "pending",
+    "activeForm": "Updating documentation"
+  },
+  {
+    "content": "Plan 파일 상태 COMPLETED로 변경",
+    "status": "pending",
+    "activeForm": "Marking plan as completed"
+  }
+]

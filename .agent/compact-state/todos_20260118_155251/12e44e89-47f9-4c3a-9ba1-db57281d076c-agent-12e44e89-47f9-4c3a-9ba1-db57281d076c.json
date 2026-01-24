@@ -1,0 +1,47 @@
+[
+  {
+    "content": "[Phase 0] 요구사항 파싱 및 범위 분석 | Files: .claude/commands/, .claude/skills/ | Agent: Explore:pending",
+    "status": "in_progress",
+    "activeForm": "요구사항 파싱 및 범위 분석 중"
+  },
+  {
+    "content": "[Phase 1] 현재 commands/ 구조 분석 | Files: .claude/commands/*.md | Agent: Explore:pending",
+    "status": "pending",
+    "activeForm": "commands/ 구조 분석 중"
+  },
+  {
+    "content": "[Phase 2] 현재 skills/ 구조 분석 | Files: .claude/skills/*.md | Agent: Explore:pending",
+    "status": "pending",
+    "activeForm": "skills/ 구조 분석 중"
+  },
+  {
+    "content": "[Phase 3] ODA 3-Stage Protocol 분석 (Path 1) | Files: .claude/references/3-stage-protocol.md | Agent: Plan:pending",
+    "status": "pending",
+    "activeForm": "ODA Protocol 분석 중"
+  },
+  {
+    "content": "[Phase 4] Plan Subagent 아키텍처 분석 (Path 2) | Files: .claude/ | Agent: Plan:pending",
+    "status": "pending",
+    "activeForm": "Plan Subagent 분석 중"
+  },
+  {
+    "content": "[Phase 5] 분리 대상 파일 식별 | Files: .claude/commands/, .claude/skills/ | Agent: Explore:pending",
+    "status": "pending",
+    "activeForm": "분리 대상 파일 식별 중"
+  },
+  {
+    "content": "[Phase 6] Thin Wrapper 템플릿 설계 | Files: N/A | Agent: Plan:pending",
+    "status": "pending",
+    "activeForm": "Thin Wrapper 템플릿 설계 중"
+  },
+  {
+    "content": "[Phase 7] 마이그레이션 계획 수립 | Files: .agent/plans/ | Agent: Plan:pending",
+    "status": "pending",
+    "activeForm": "마이그레이션 계획 수립 중"
+  },
+  {
+    "content": "[Phase 8] Plan 파일 생성 및 사용자 승인 | Files: .agent/plans/commands_skills_separation.md | Agent: N/A",
+    "status": "pending",
+    "activeForm": "Plan 파일 생성 및 승인 대기 중"
+  }
+]

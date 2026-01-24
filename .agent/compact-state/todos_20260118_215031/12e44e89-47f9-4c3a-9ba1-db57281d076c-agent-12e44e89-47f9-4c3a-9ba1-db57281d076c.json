@@ -1,0 +1,37 @@
+[
+  {
+    "content": "Parse requirements: ODA 전체 삭제 + 재설계",
+    "status": "in_progress",
+    "activeForm": "Parsing requirements"
+  },
+  {
+    "content": "Check scope keywords (decomposition check)",
+    "status": "pending",
+    "activeForm": "Checking scope"
+  },
+  {
+    "content": "Execute ODA 3-Stage Protocol (Path 1)",
+    "status": "pending",
+    "activeForm": "Running ODA protocol"
+  },
+  {
+    "content": "Execute Plan Subagent analysis (Path 2)",
+    "status": "pending",
+    "activeForm": "Running Plan analysis"
+  },
+  {
+    "content": "Synthesize optimal approach",
+    "status": "pending",
+    "activeForm": "Synthesizing approaches"
+  },
+  {
+    "content": "Generate persistent plan file",
+    "status": "pending",
+    "activeForm": "Generating plan file"
+  },
+  {
+    "content": "Present for user approval",
+    "status": "pending",
+    "activeForm": "Awaiting approval"
+  }
+]

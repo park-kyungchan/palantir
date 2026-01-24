@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Clarify user requirements for ODA refactoring plan",
+    "status": "completed",
+    "activeForm": "Clarified user requirements"
+  },
+  {
+    "content": "Investigate MCP replacement with Native Capabilities",
+    "status": "completed",
+    "activeForm": "Investigated MCP replacement"
+  },
+  {
+    "content": "Explain data storage options and get user decision",
+    "status": "completed",
+    "activeForm": "Explained data storage options"
+  },
+  {
+    "content": "Summarize clarified requirements for user confirmation",
+    "status": "in_progress",
+    "activeForm": "Summarizing clarified requirements"
+  },
+  {
+    "content": "Execute /plan with clarified requirements",
+    "status": "pending",
+    "activeForm": "Executing /plan command"
+  }
+]

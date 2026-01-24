@@ -1,0 +1,32 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Orchestrating execution - delegation only"
+  },
+  {
+    "content": "✅ [Phase 1] 코드베이스 구조 분석 완료 | → Explore:a07f50e (done) | MathpixClient, Vision 컴포넌트 모두 존재 확인",
+    "status": "completed",
+    "activeForm": "Analyzing codebase structure for Stage B/C components"
+  },
+  {
+    "content": "[Phase 2] Task 1-3: Stage B 구현 (MathpixClient import + _run_stage_b) | → Delegate: general-purpose:pending | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Implementing Stage B with MathpixClient integration"
+  },
+  {
+    "content": "[Phase 3] Task 4-5: Stage C 구현 (VisionPipeline + fallback) | → Delegate: general-purpose:pending | Budget: 32K | Verify: Full Output 확보",
+    "status": "pending",
+    "activeForm": "Implementing Stage C with YOLO + Claude integration"
+  },
+  {
+    "content": "[Phase 4] Task 6: Integration Tests 작성 | → Delegate: general-purpose:pending | Budget: 32K | Verify: Full Output 확보",
+    "status": "pending",
+    "activeForm": "Writing integration tests for Stage B/C"
+  },
+  {
+    "content": "[Phase 5] 품질 검증 - 테스트 실행 및 린트 체크 | → Delegate: general-purpose:pending | Budget: 32K | Verify: Full Output 확보",
+    "status": "pending",
+    "activeForm": "Running quality verification tests"
+  }
+]

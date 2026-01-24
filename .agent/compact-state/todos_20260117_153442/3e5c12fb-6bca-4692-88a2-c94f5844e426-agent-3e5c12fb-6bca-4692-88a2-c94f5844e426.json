@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Stage A: SCAN - Map Ontology-Definition structure & gather Palantir metadata",
+    "status": "completed",
+    "activeForm": "Scanning Ontology-Definition landscape and gathering Palantir metadata"
+  },
+  {
+    "content": "Stage B: TRACE - Verify against Palantir AIP/Foundry component definitions",
+    "status": "in_progress",
+    "activeForm": "Tracing logic against Palantir reference metadata"
+  },
+  {
+    "content": "Stage C: VERIFY - Quality gate with external validation",
+    "status": "pending",
+    "activeForm": "Running quality verification with Palantir standards"
+  },
+  {
+    "content": "Synthesize findings with external reference alignment",
+    "status": "pending",
+    "activeForm": "Synthesizing audit results against Palantir definitions"
+  }
+]

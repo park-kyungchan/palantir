@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Create test_security.py for RestrictedViewPolicy tests",
+    "status": "completed",
+    "activeForm": "Creating test_security.py for RestrictedViewPolicy tests"
+  },
+  {
+    "content": "Create test_constraints.py for MandatoryControlConfig tests",
+    "status": "in_progress",
+    "activeForm": "Creating test_constraints.py for MandatoryControlConfig tests"
+  },
+  {
+    "content": "Create test_validation.py for validation module tests",
+    "status": "pending",
+    "activeForm": "Creating test_validation.py for validation module tests"
+  },
+  {
+    "content": "Run pytest to verify all tests pass",
+    "status": "pending",
+    "activeForm": "Running pytest to verify all tests pass"
+  }
+]

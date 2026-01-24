@@ -1,0 +1,47 @@
+[
+  {
+    "content": "[Phase 0] 요구사항 파싱 및 범위 분석 | Files: .claude/commands/, .claude/skills/ | Agent: Explore:completed",
+    "status": "completed",
+    "activeForm": "요구사항 파싱 및 범위 분석 완료"
+  },
+  {
+    "content": "[Phase 1] 현재 commands/ 구조 분석 | Files: .claude/commands/*.md (16파일) | Agent: Explore:af8e7e7 (done)",
+    "status": "completed",
+    "activeForm": "commands/ 구조 분석 완료"
+  },
+  {
+    "content": "[Phase 2] 현재 skills/ 구조 분석 | Files: .claude/skills/*.md (5파일) | Agent: Explore:ae680b1 (done)",
+    "status": "completed",
+    "activeForm": "skills/ 구조 분석 완료"
+  },
+  {
+    "content": "[Phase 3] ODA 3-Stage Protocol 분석 (Path 1) | Files: .claude/references/ | Agent: Plan:a3929cd (done)",
+    "status": "completed",
+    "activeForm": "ODA Protocol 분석 완료"
+  },
+  {
+    "content": "[Phase 4] Plan Subagent 아키텍처 분석 (Path 2) | Files: .claude/ | Agent: Plan:ae91d3c (done)",
+    "status": "completed",
+    "activeForm": "Plan Subagent 분석 완료"
+  },
+  {
+    "content": "[Phase 5] 분리 대상 파일 식별 및 통합 | Files: 7개 command -> skill | Agent: Synthesis done",
+    "status": "completed",
+    "activeForm": "분리 대상 파일 식별 완료"
+  },
+  {
+    "content": "[Phase 6] Thin Wrapper 템플릿 설계 | Files: N/A | Agent: N/A (done)",
+    "status": "completed",
+    "activeForm": "Thin Wrapper 템플릿 설계 완료"
+  },
+  {
+    "content": "[Phase 7] 마이그레이션 계획 수립 | Files: .agent/plans/ | Agent: N/A (done)",
+    "status": "completed",
+    "activeForm": "마이그레이션 계획 수립 완료"
+  },
+  {
+    "content": "[Phase 8] Plan 파일 생성 및 사용자 승인 | Files: .agent/plans/commands_skills_separation.md | Agent: AWAITING_APPROVAL",
+    "status": "in_progress",
+    "activeForm": "Plan 파일 생성 완료 - 승인 대기 중"
+  }
+]

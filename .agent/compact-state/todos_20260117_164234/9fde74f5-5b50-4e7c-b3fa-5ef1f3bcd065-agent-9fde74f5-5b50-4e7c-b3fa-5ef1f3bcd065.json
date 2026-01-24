@@ -1,0 +1,37 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: Hybrid Execution Model 품질 고도화 진행",
+    "status": "in_progress",
+    "activeForm": "Orchestrating quality enhancement"
+  },
+  {
+    "content": "/deep-audit.md 분석 - 동일한 순차 실행 문제 확인",
+    "status": "completed",
+    "activeForm": "Analyzing /deep-audit.md"
+  },
+  {
+    "content": "세 명령어 통합 분석 - 공통 패턴과 차이점 정리",
+    "status": "completed",
+    "activeForm": "Analyzing common patterns"
+  },
+  {
+    "content": "Hybrid Execution Model 설계 - hybrid_execution.py 모듈 생성",
+    "status": "completed",
+    "activeForm": "Creating hybrid_execution.py module"
+  },
+  {
+    "content": "/execute.md 개선 구현",
+    "status": "completed",
+    "activeForm": "Implementing /execute.md enhancements"
+  },
+  {
+    "content": "/plan.md 개선 구현",
+    "status": "in_progress",
+    "activeForm": "Implementing /plan.md enhancements"
+  },
+  {
+    "content": "/deep-audit.md 개선 구현",
+    "status": "pending",
+    "activeForm": "Implementing /deep-audit.md enhancements"
+  }
+]

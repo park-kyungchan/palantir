@@ -1,0 +1,17 @@
+[
+  {
+    "content": "execute.md 복원",
+    "status": "completed",
+    "activeForm": "execute.md 복원 완료"
+  },
+  {
+    "content": "claude-code-guide로 /plan과 /execute 정합성 검토",
+    "status": "in_progress",
+    "activeForm": "/plan과 /execute 정합성 검토 중"
+  },
+  {
+    "content": "L1/L2 계획 승인 대기",
+    "status": "pending",
+    "activeForm": "계획 승인 대기 중"
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "content": "E2E 연구 프롬프트 작성 (Step 1-10)",
+    "status": "in_progress",
+    "activeForm": "Building research prompt document via E2E questions"
+  },
+  {
+    "content": "Palantir AIP/Foundry 공식 자료 연구",
+    "status": "pending",
+    "activeForm": "Researching official Palantir materials"
+  },
+  {
+    "content": "ODA 대규모 리팩토링 계획 수립",
+    "status": "pending",
+    "activeForm": "Creating comprehensive refactoring plan"
+  },
+  {
+    "content": "Phase 1: Ontology 모듈 리팩토링",
+    "status": "pending",
+    "activeForm": "Refactoring Ontology module based on research"
+  },
+  {
+    "content": "Phase 2: Agent 모듈 리팩토링",
+    "status": "pending",
+    "activeForm": "Refactoring Agent module based on research"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: 직접 실행 금지 - Task()로 Subagent에 위임 | 결과 검증 필수",
+    "status": "in_progress",
+    "activeForm": "Orchestrating execution - delegation only"
+  },
+  {
+    "content": "[Phase 1] Circuit Breaker 구현 | → Delegate: general-purpose:deploying | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 1 to general-purpose"
+  },
+  {
+    "content": "[Phase 2] Caching Layer 구현 | → Delegate: general-purpose:deploying | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 2 to general-purpose"
+  },
+  {
+    "content": "[Phase 3] Async Queue 구현 | → Delegate: general-purpose:deploying | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 3 to general-purpose"
+  },
+  {
+    "content": "[Phase 4] API Key Management 구현 | → Delegate: general-purpose:deploying | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 4 to general-purpose"
+  },
+  {
+    "content": "[Phase 5] Prometheus Metrics 구현 | → Delegate: general-purpose:deploying | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 5 to general-purpose"
+  },
+  {
+    "content": "[Phase 6] OpenTelemetry Tracing 구현 | → Delegate: general-purpose:deploying | Budget: 32K | Verify: Full Output 확보",
+    "status": "in_progress",
+    "activeForm": "Delegating Phase 6 to general-purpose"
+  },
+  {
+    "content": "[Phase 7] Deployment Guide 작성 | → Delegate: general-purpose:pending | Budget: 32K | Verify: Full Output 확보",
+    "status": "pending",
+    "activeForm": "Delegating Phase 7 to general-purpose"
+  },
+  {
+    "content": "[Verification] Final verification 및 품질 검증 | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Running final verification"
+  }
+]

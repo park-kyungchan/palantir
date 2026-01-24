@@ -1,0 +1,12 @@
+[
+  {
+    "content": "⚠️ ISSUE: Ontology Schema Commands 파일 미존재 확인됨",
+    "status": "in_progress",
+    "activeForm": "파일 생성 상태 확인 중"
+  },
+  {
+    "content": "⏳ REMINDER: Metadata 동적 설계 논의 필요 | 작업 완료 후 진행",
+    "status": "pending",
+    "activeForm": "Metadata 동적 설계 논의 대기"
+  }
+]

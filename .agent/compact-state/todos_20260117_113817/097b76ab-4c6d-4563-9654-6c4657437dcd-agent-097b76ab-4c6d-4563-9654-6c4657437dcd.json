@@ -1,0 +1,27 @@
+[
+  {
+    "content": "Clarify user requirements for ODA refactoring plan",
+    "status": "in_progress",
+    "activeForm": "Clarifying user requirements for ODA refactoring plan"
+  },
+  {
+    "content": "Investigate MCP replacement with Native Capabilities",
+    "status": "in_progress",
+    "activeForm": "Investigating MCP replacement with Native Capabilities"
+  },
+  {
+    "content": "Explain data storage options and get user decision",
+    "status": "pending",
+    "activeForm": "Explaining data storage options"
+  },
+  {
+    "content": "Execute /plan with clarified requirements",
+    "status": "pending",
+    "activeForm": "Executing /plan command"
+  },
+  {
+    "content": "Create Ontology-Definition/ submodule structure",
+    "status": "pending",
+    "activeForm": "Creating Ontology-Definition/ submodule structure"
+  }
+]

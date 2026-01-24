@@ -1,0 +1,27 @@
+[
+  {
+    "content": "🎯 ORCHESTRATOR: Phase 2 실행 중 | 직접 실행 금지 - Task()로 Subagent에 위임",
+    "status": "in_progress",
+    "activeForm": "Orchestrating Phase 2 execution"
+  },
+  {
+    "content": "[Phase 2-1] Create regeneration/ module (~1,200 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "in_progress",
+    "activeForm": "Delegating regeneration module to general-purpose"
+  },
+  {
+    "content": "[Phase 2-2] Create schemas/regeneration.py (~150 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating regeneration schema"
+  },
+  {
+    "content": "[Phase 2-3] Create export/ module (~450 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating export module"
+  },
+  {
+    "content": "[Phase 2-4] Create schemas/export.py (~100 LOC) | → Delegate: general-purpose:pending | Budget: 32K",
+    "status": "pending",
+    "activeForm": "Delegating export schema"
+  }
+]

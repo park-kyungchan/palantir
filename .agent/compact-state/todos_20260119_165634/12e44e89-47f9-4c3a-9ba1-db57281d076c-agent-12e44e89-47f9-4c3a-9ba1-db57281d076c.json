@@ -1,0 +1,97 @@
+[
+  {
+    "content": "ORCHESTRATOR | Phase 1-2 완료 | Current: Phase 3 | Plan: l1_l2_orchestrating_loop",
+    "status": "in_progress",
+    "activeForm": "Phase 3: ActionTypes 병렬 생성 중"
+  },
+  {
+    "content": "[COMPLETED] Phase 1.1: ObjectType AgentOutputL1 | agent: a20c0c0",
+    "status": "completed",
+    "activeForm": "AgentOutputL1 생성 완료"
+  },
+  {
+    "content": "[COMPLETED] Phase 1.2: ObjectType AgentOutputL2 | agent: afb0c99",
+    "status": "completed",
+    "activeForm": "AgentOutputL2 생성 완료"
+  },
+  {
+    "content": "[COMPLETED] Phase 1.3: ObjectType DelegationPrompt | agent: a871aea",
+    "status": "completed",
+    "activeForm": "DelegationPrompt 생성 완료"
+  },
+  {
+    "content": "[COMPLETED] Phase 1.4: ObjectType OrchestrationState | agent: af57459",
+    "status": "completed",
+    "activeForm": "OrchestrationState 생성 완료"
+  },
+  {
+    "content": "[COMPLETED] Phase 2.1: LinkType L1ReferencesL2 | agent: aea4b00",
+    "status": "completed",
+    "activeForm": "L1ReferencesL2 생성 완료"
+  },
+  {
+    "content": "[COMPLETED] Phase 2.2: LinkType AgentProducesOutput | agent: acaae68",
+    "status": "completed",
+    "activeForm": "AgentProducesOutput 생성 완료"
+  },
+  {
+    "content": "[COMPLETED] Phase 2.3: LinkType StateContainsOutput | agent: ad0d1bd",
+    "status": "completed",
+    "activeForm": "StateContainsOutput 생성 완료"
+  },
+  {
+    "content": "[IN_PROGRESS] Phase 3.1: ActionType DelegateToAgent | -> general-purpose:deploying",
+    "status": "in_progress",
+    "activeForm": "DelegateToAgent 정의 생성 중"
+  },
+  {
+    "content": "[IN_PROGRESS] Phase 3.2: ActionType ValidateL2Exists | -> general-purpose:deploying",
+    "status": "in_progress",
+    "activeForm": "ValidateL2Exists 정의 생성 중"
+  },
+  {
+    "content": "[IN_PROGRESS] Phase 3.3: ActionType OrchestrateWithL1 | -> general-purpose:deploying",
+    "status": "in_progress",
+    "activeForm": "OrchestrateWithL1 정의 생성 중"
+  },
+  {
+    "content": "[IN_PROGRESS] Phase 3.4: ActionType RetrieveL2Section | -> general-purpose:deploying",
+    "status": "in_progress",
+    "activeForm": "RetrieveL2Section 정의 생성 중"
+  },
+  {
+    "content": "[IN_PROGRESS] Phase 3.5: ActionType WriteL2ToFile | -> general-purpose:deploying",
+    "status": "in_progress",
+    "activeForm": "WriteL2ToFile 정의 생성 중"
+  },
+  {
+    "content": "[PENDING] Phase 4.1: Interaction OrchestrationRules | -> general-purpose:pending",
+    "status": "pending",
+    "activeForm": "OrchestrationRules 정의 대기"
+  },
+  {
+    "content": "[PENDING] Phase 4.2: Validator OutputFormatEnforcement | -> general-purpose:pending",
+    "status": "pending",
+    "activeForm": "OutputFormatEnforcement 검증기 대기"
+  },
+  {
+    "content": "[PENDING] Phase 4.3: Validator L2Storage+IndexConsistency | -> general-purpose:pending",
+    "status": "pending",
+    "activeForm": "L2Storage 검증기 대기"
+  },
+  {
+    "content": "[PENDING] Phase 5.1: Hook pre-task-delegation | -> general-purpose:pending",
+    "status": "pending",
+    "activeForm": "pre-task-delegation Hook 대기"
+  },
+  {
+    "content": "[PENDING] Phase 5.2: Hook post-task-output | -> general-purpose:pending",
+    "status": "pending",
+    "activeForm": "post-task-output Hook 대기"
+  },
+  {
+    "content": "[PENDING] Phase 5.3: Hook orchestration-loop | -> general-purpose:pending",
+    "status": "pending",
+    "activeForm": "orchestration-loop Hook 대기"
+  }
+]

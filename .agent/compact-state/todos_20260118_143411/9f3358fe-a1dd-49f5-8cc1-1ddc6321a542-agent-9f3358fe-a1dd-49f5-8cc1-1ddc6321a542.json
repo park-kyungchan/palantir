@@ -1,0 +1,27 @@
+[
+  {
+    "content": "/plan 요구사항 파싱: \"기존 KB 품질 검증\"을 위한 계획작성",
+    "status": "completed",
+    "activeForm": "요구사항 분석 완료"
+  },
+  {
+    "content": "Scope keyword 검사 (decomposition 필요여부)",
+    "status": "completed",
+    "activeForm": "Scope 검사 완료 - 63개 파일 발견"
+  },
+  {
+    "content": "KB 파일 목록 확인 및 분석 대상 정의",
+    "status": "completed",
+    "activeForm": "KB 목록 확인 완료"
+  },
+  {
+    "content": "Plan Subagent 분석 실행",
+    "status": "completed",
+    "activeForm": "Plan Subagent 분석 완료 (ab67153)"
+  },
+  {
+    "content": "최적 계획 합성 및 사용자 승인 요청",
+    "status": "in_progress",
+    "activeForm": "계획 합성 중"
+  }
+]
