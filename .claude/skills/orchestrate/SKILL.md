@@ -3,12 +3,13 @@ name: orchestrate
 description: |
   Break down complex tasks, create Native Tasks, generate worker prompts,
   set up dependencies for multi-terminal parallel execution.
+  Uses project-specific context files to avoid conflicts between projects.
 user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "3.0.0"
-argument-hint: "<task-description>"
+version: "3.1.0"
+argument-hint: "--plan-slug <slug> | <task-description>"
 ---
 
 # /orchestrate - Task Decomposition & Orchestration
@@ -48,11 +49,31 @@ argument-hint: "<task-description>"
 ### 3.1 Phase 1: Requirements Analysis
 
 ```javascript
-// 1. Parse user input
+// 1. Parse user input (support --plan-slug argument)
 input = args[0]
+let projectSlug = null
+
+// 1a. Check for --plan-slug argument
+if (input.startsWith('--plan-slug')) {
+  const planSlug = input.match(/--plan-slug\s+(\S+)/)?.[1]
+  if (planSlug) {
+    // Extract project name from planning document
+    const planPath = `.agent/plans/${planSlug}.yaml`
+    const planContent = Read({ file_path: planPath })
+    // Parse YAML frontmatter for project name
+    projectSlug = planContent.match(/project:\s*["']?([^"'\n]+)/)?.[1]
+      || planSlug  // fallback to slug if no project name found
+  }
+}
+
+// 1b. Generate projectSlug from task description if not from --plan-slug
+if (!projectSlug) {
+  projectSlug = slugify(input.split(' ').slice(0, 5).join('-'))
+}
 
 // 2. Use Chain of Thought to decompose
 analysis = analyzeTask(input)
+analysis.projectSlug = projectSlug  // Attach for file generation
 /*
 Output:
 {
@@ -111,9 +132,13 @@ for (phase of analysis.phases) {
 
 ### 3.4 Phase 4: Generate Context Files
 
-#### _context.yaml
+> **V3.1 Multi-Project Isolation**: Uses project-specific filenames to avoid conflicts
+
+#### _context-{projectSlug}.yaml
 
 ```javascript
+const projectSlug = analysis.projectSlug  // From Phase 1
+
 contextContent = `
 version: "1.0"
 project: "${analysis.project}"
@@ -141,7 +166,7 @@ ${generateDependencyGraph(analysis.phases)}
 
 sharedRules:
   - "ALWAYS Read target file before modifying"
-  - "Update _progress.yaml after completion"
+  - "Update _progress-{projectSlug}.yaml after completion"
   - "Report in L1/L2/L3 format"
   - "Check blockedBy before starting work"
 
@@ -149,12 +174,12 @@ referenceFiles: ${JSON.stringify(analysis.referenceFiles || [])}
 `
 
 Write({
-  file_path: ".agent/prompts/_context.yaml",
+  file_path: `.agent/prompts/_context-${projectSlug}.yaml`,
   content: contextContent
 })
 ```
 
-#### _progress.yaml
+#### _progress-{projectSlug}.yaml
 
 ```javascript
 progressContent = `
@@ -190,7 +215,7 @@ blockers: []
 `
 
 Write({
-  file_path: ".agent/prompts/_progress.yaml",
+  file_path: `.agent/prompts/_progress-${projectSlug}.yaml`,
   content: progressContent
 })
 ```
@@ -203,7 +228,7 @@ for (phase of analysis.phases) {
 # =============================================================================
 # Worker Task: ${phase.suggestedOwner || `Worker-${phase.index}`} - ${phase.name}
 # =============================================================================
-# Read this file AFTER reading _context.yaml
+# Read this file AFTER reading _context-{projectSlug}.yaml
 #
 # Location: .agent/prompts/pending/worker-${phase.suggestedOwner || phase.index}-task.yaml
 # Language: English (Machine-Readable)
@@ -218,8 +243,8 @@ createdAt: "${new Date().toISOString()}"
 # =============================================================================
 # CONTEXT REFERENCE
 # =============================================================================
-contextFile: ".agent/prompts/_context.yaml"
-progressFile: ".agent/prompts/_progress.yaml"
+contextFile: ".agent/prompts/_context-${projectSlug}.yaml"
+progressFile: ".agent/prompts/_progress-${projectSlug}.yaml"
 
 # =============================================================================
 # MY SCOPE
@@ -259,7 +284,7 @@ canStartImmediately: ${phase.dependencies.length === 0}
 
 ${phase.dependencies.length > 0 ? `
 waitCondition: |
-  Check .agent/prompts/_progress.yaml
+  Check .agent/prompts/_progress-${projectSlug}.yaml
   If ${phase.dependencies.map(d => `phase${d}.status`).join(' AND ')} == 'completed', proceed
   Otherwise, wait
 ` : ''}
@@ -297,14 +322,14 @@ l2OutputPath: ".agent/outputs/Worker/${phase.id}-${slugify(phase.name)}.md"
 # =============================================================================
 onComplete:
   - "TaskUpdate(taskId='${taskMap[phase.id]}', status='completed')"
-  - "Update .agent/prompts/_progress.yaml: ${phase.suggestedOwner}.status = 'completed'"
+  - "Update .agent/prompts/_progress-${projectSlug}.yaml: ${phase.suggestedOwner}.status = 'completed'"
   - "Report to Orchestrator with L1 summary"
   ${phase.index < analysis.phases.length - 1 ? `- "Notify next worker that ${phase.dependencies[0] || 'this phase'} is complete"` : ''}
 `
 
   filename = phase.suggestedOwner
-    ? `worker-${phase.suggestedOwner}-task.yaml`
-    : `worker-${String.fromCharCode(97 + phase.index)}-task.yaml`
+    ? `worker-${phase.suggestedOwner}-${projectSlug}-task.yaml`
+    : `worker-${String.fromCharCode(97 + phase.index)}-${projectSlug}-task.yaml`
 
   Write({
     file_path: `.agent/prompts/pending/${filename}`,
@@ -345,9 +370,9 @@ ${analysis.phases.map((p, i) => `
 `).join('\n')}
 
 Files Generated:
-  ✅ .agent/prompts/_context.yaml (global context)
-  ✅ .agent/prompts/_progress.yaml (progress tracker)
-${analysis.phases.map((p, i) => `  ✅ .agent/prompts/pending/worker-${p.suggestedOwner || String.fromCharCode(97 + i)}-task.yaml`).join('\n')}
+  ✅ .agent/prompts/_context-${projectSlug}.yaml (project context)
+  ✅ .agent/prompts/_progress-${projectSlug}.yaml (progress tracker)
+${analysis.phases.map((p, i) => `  ✅ .agent/prompts/pending/worker-${p.suggestedOwner || String.fromCharCode(97 + i)}-${projectSlug}-task.yaml`).join('\n')}
 
 Next Steps:
   1. Use /assign to assign tasks to terminals
@@ -463,7 +488,7 @@ function slugify(text) {
 | **Invalid input** | Empty or malformed task description | Prompt user for clarification |
 | **Too many phases** | > 10 phases | Ask user to break down further |
 | **Circular dependency** | A → B → A | Reject, ask user to fix |
-| **File conflicts** | _context.yaml already exists | Ask: overwrite or append? |
+| **File conflicts** | _context-{projectSlug}.yaml already exists | Ask: overwrite or append? |
 | **TaskCreate failure** | Native API error | Log error, abort orchestration |
 
 ---
@@ -570,9 +595,9 @@ Enables each terminal to:
 3. Continue execution until all assigned tasks are done
 4. Report to Orchestrator on completion
 
-### 10.2 _context.yaml Autonomous Section
+### 10.2 _context-{projectSlug}.yaml Autonomous Section
 
-When generating `_context.yaml`, include:
+When generating `_context-{projectSlug}.yaml`, include:
 
 ```yaml
 # =============================================================================
@@ -668,10 +693,10 @@ ${getCrossTerminalDeps(terminalId)}
   completionCriteria:
     allTasksCompleted: ${JSON.stringify(assignedTaskIds)}
     outputGenerated: ".agent/outputs/${terminalId}/report.md"
-    progressUpdated: "_progress.yaml reflects ${terminalId}.status = 'completed'"
+    progressUpdated: "_progress-${projectSlug}.yaml reflects ${terminalId}.status = 'completed'"
 ```
 
-### 10.4 _progress.yaml Autonomous Section
+### 10.4 _progress-{projectSlug}.yaml Autonomous Section
 
 ```yaml
 # =============================================================================
@@ -694,7 +719,7 @@ autonomousExecution:
     notifyOnUnblock: true
 
   coordination:
-    method: "Native Task System + _progress.yaml"
+    method: "Native Task System + _progress-{projectSlug}.yaml"
     syncInterval: 30
     conflictResolution: "first-claimer-wins"
 
@@ -853,6 +878,7 @@ function getCrossTerminalDeps(terminalId) {
 | 1.0.0 | Task orchestration engine |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
 | 3.0.0 | Autonomous Execution Protocol 추가 |
+| 3.1.0 | Multi-project isolation: `--plan-slug` 지원, 프로젝트별 context/progress 파일 분리 |
 
 ---
 

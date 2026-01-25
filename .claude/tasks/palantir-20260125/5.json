@@ -1,0 +1,21 @@
+{
+  "id": "5",
+  "subject": "Shift-Left E2E Integration Test",
+  "description": "Phase 5: 전체 파이프라인에서 validation gates 작동 테스트\n\n테스트 시나리오:\n1. 잘못된 요구사항 → Gate 1에서 warning\n2. 존재하지 않는 scope → Gate 2에서 error\n3. 잘못된 target file → Gate 3에서 warning\n4. 순환 dependency → Gate 4에서 error\n5. blockedBy 미완료 → Gate 5에서 block\n\nTarget Files:\n- .claude/tests/shift-left-e2e-test.sh (create)\n- .claude/tests/README.md (create)\n\nReference: .claude/skills/shared/validation-gates.sh",
+  "activeForm": "Running Shift-Left E2E tests",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": [
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "metadata": {
+    "phaseId": "phase5-e2e-testing",
+    "priority": "P0",
+    "owner": "orchestrator",
+    "projectSlug": "shift-left-philosophy"
+  },
+  "owner": "orchestrator"
+}

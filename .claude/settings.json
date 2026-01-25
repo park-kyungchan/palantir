@@ -130,7 +130,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/palantir/.claude/statusline-orchestrator.sh"
+    "command": "bash ~/.claude/statusline/statusline-standalone.sh"
   },
   "language": "Korean"
 }

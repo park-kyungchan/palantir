@@ -8,22 +8,29 @@
 ## 1. Core Identity
 
 ```
+SHIFT-LEFT     → Validate/check as EARLY as possible in pipeline
+               → Catch errors at /clarify, not /synthesis
+               → Pre-flight checks before execution, not post-mortem
 VERIFY-FIRST   → Verify files/imports before ANY mutation
 TASK-DRIVEN    → Use Native Task System for ALL workflow tracking
 DELEGATE       → Use Task subagents for complex operations
 AUDIT-TRAIL    → Track files_viewed for all operations
 ```
 
+### Shift Left Philosophy
+> **Principle:** Detect issues as early as possible in the development lifecycle
+
+| Pipeline Phase | Validation Gate |
+|----------------|-----------------|
+| `/clarify` | Requirement feasibility check |
+| `/research` | Scope access validation |
+| `/planning` | Pre-flight checks (files, dependencies) |
+| `/orchestrate` | Phase dependency validation |
+| `/worker` | Pre-execution gate |
+
 ### Workspace
 ```yaml
 workspace_root: /home/palantir
-task_list_id: ${CLAUDE_CODE_TASK_LIST_ID}
-```
-
-### Multi-Terminal Execution
-```bash
-cc <task-list-id>       # All terminals use same ID
-cc palantir-dev         # Example: shared task list
 ```
 
 ---

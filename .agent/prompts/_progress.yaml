@@ -1,120 +1,129 @@
 # =============================================================================
-# Progress Tracker: E2E Skill Pipeline Testing
+# Progress Tracker: V2.1.19 Pipeline Compliance Enhancement
 # =============================================================================
-# Orchestrator: Terminal-A
-# Last Updated: 2026-01-24T19:00:00Z
-# Synced with Native Task System
+# Updated by workers as they complete tasks
 # =============================================================================
 
-version: "2.0"
-projectId: "skill-pipeline-e2e-test"
-projectStatus: "IN_PROGRESS"
-lastUpdated: "2026-01-24T19:00:00Z"
-
-# =============================================================================
-# CURRENT PROJECT
-# =============================================================================
-currentProject:
-  name: "E2E Skill Pipeline Testing"
-  goal: "Code-level exploration of all pipeline skills before E2E test"
-  principle: "Parallel exploration via Task distribution"
+version: "1.0"
+projectId: "v2.1.19-pipeline-compliance"
+lastUpdated: "2026-01-25T15:00:00Z"
 
 # =============================================================================
 # TERMINAL STATUS
 # =============================================================================
 terminals:
-  terminal-a:
-    role: "Orchestrator"
-    status: "active"
-    currentTask: "Task #5: Exploring Core Pipeline Skills (background)"
-    nativeTaskId: "5"
-
   terminal-b:
     role: "Worker"
-    status: "assigned"
-    currentTask: "Task #6: Explore New Skills (collect, synthesis, worker)"
-    nativeTaskId: "6"
-    promptFile: ".agent/prompts/pending/worker-b-explore-new-skills.yaml"
+    status: "idle"
+    currentTask: null
+    assignedPhase: "phase2-build-research-docs"
+    nativeTaskId: "1"
     blockedBy: []
-    nextTask:
-      taskId: "7"
-      promptFile: ".agent/prompts/pending/worker-b-explore-support-skills.yaml"
+    startedAt: null
+    completedAt: null
+
+  terminal-c:
+    role: "Worker"
+    status: "idle"
+    currentTask: null
+    assignedPhase: "phase4-e2e-test"
+    nativeTaskId: "2"
+    blockedBy: []
+    startedAt: null
+    completedAt: null
+
+  orchestrator:
+    role: "Orchestrator"
+    status: "active"
+    currentTask: null
+    assignedPhase: "phase5-validation"
+    nativeTaskId: "3"
+    blockedBy: ["1", "2"]
+    startedAt: null
+    completedAt: null
 
 # =============================================================================
-# TASK STATUS (Synced with Native Task System)
+# PHASE STATUS
 # =============================================================================
-tasks:
-  "2":
-    subject: "Implement /collect skill (P0)"
-    status: "completed"
-    owner: "terminal-b"
-    priority: "P0"
-    blockedBy: []
-    promptFile: ".agent/prompts/pending/worker-b-collect.yaml"
-    completedAt: "2026-01-24T18:20:00Z"
-
-  "3":
-    subject: "Implement /synthesis skill (P0)"
-    status: "completed"
-    owner: "terminal-b"
-    priority: "P0"
-    blockedBy: []
-    promptFile: ".agent/prompts/pending/worker-b-synthesis.yaml"
-    completedAt: "2026-01-24T18:28:00Z"
-
-  "4":
-    subject: "Implement /worker skill (P1)"
+phases:
+  phase2-build-research-docs:
+    nativeTaskId: "1"
     status: "pending"
     owner: "terminal-b"
-    priority: "P1"
-    blockedBy: []  # Unblocked now
-    promptFile: ".agent/prompts/pending/worker-b-worker.yaml"
+    startedAt: null
+    completedAt: null
+
+  phase4-e2e-test:
+    nativeTaskId: "2"
+    status: "pending"
+    owner: "terminal-c"
+    startedAt: null
+    completedAt: null
+
+  phase5-validation:
+    nativeTaskId: "3"
+    status: "pending"
+    owner: "orchestrator"
+    startedAt: null
+    completedAt: null
 
 # =============================================================================
-# EXECUTION PHASES
+# COMPLETION TRACKING
 # =============================================================================
-executionPhases:
-  phase-1:
-    name: "Critical Skills (P0)"
-    status: "completed"
-    tasks: ["2", "3"]
-    description: "Implement /collect and /synthesis to complete E2E pipeline"
-    completedAt: "2026-01-24T18:28:00Z"
-
-  phase-2:
-    name: "UX Improvement (P1)"
-    status: "in_progress"
-    tasks: ["4"]
-    description: "Implement /worker for better worker experience"
-
-# =============================================================================
-# COMPLETED TASKS
-# =============================================================================
-completedTasks:
-  - taskId: "2"
-    subject: "Implement /collect skill (P0)"
-    completedAt: "2026-01-24T18:20:00Z"
-    deliverable: ".claude/skills/collect/SKILL.md"
-
-  - taskId: "3"
-    subject: "Implement /synthesis skill (P0)"
-    completedAt: "2026-01-24T18:28:00Z"
-    deliverable: ".claude/skills/synthesis/SKILL.md"
-
-# =============================================================================
-# BLOCKERS
-# =============================================================================
+completedTasks: []
 blockers: []
 
 # =============================================================================
-# WORKER INSTRUCTIONS
+# AUTONOMOUS EXECUTION CONFIG
 # =============================================================================
-workerInstructions:
-  terminal-b:
-    action: "START"
-    command: |
-      1. TaskUpdate(taskId="4", status="in_progress")
-      2. Read .agent/prompts/pending/worker-b-worker.yaml
-      3. Implement /worker skill
-      4. TaskUpdate(taskId="4", status="completed")
-      5. Notify Orchestrator - PIPELINE COMPLETE!
+autonomousExecution:
+  enabled: true
+  mode: "ACTIVE"
+  startedAt: null
+  estimatedCompletion: null
+
+  polling:
+    intervalSeconds: 30
+    maxRetries: 3
+    backoffMultiplier: 2
+
+  coordination:
+    method: "Native Task System + _progress.yaml"
+    syncInterval: 30
+    conflictResolution: "first-claimer-wins"
+
+  completionTracking:
+    projectComplete:
+      condition: "ALL tasks status == 'completed'"
+      action: "Notify Orchestrator, generate final report"
+
+    terminal-b-Complete:
+      condition: "Task 1 status == 'completed'"
+      action: "Update terminal-b.status = 'completed'"
+
+    terminal-c-Complete:
+      condition: "Task 2 status == 'completed'"
+      action: "Update terminal-c.status = 'completed'"
+
+# =============================================================================
+# CROSS DEPENDENCIES
+# =============================================================================
+crossDependencies:
+  - from: "orchestrator"
+    task: "3"
+    waitFor:
+      - terminal: "terminal-b"
+        task: "1"
+      - terminal: "terminal-c"
+        task: "2"
+
+# =============================================================================
+# WORKER START COMMANDS
+# =============================================================================
+workerStartCommands:
+  terminal-b: "/worker start b"
+  terminal-c: "/worker start c"
+
+# =============================================================================
+# END OF PROGRESS
+# =============================================================================

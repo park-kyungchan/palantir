@@ -1,0 +1,20 @@
+{
+  "id": "1",
+  "subject": "Gate 1-2 Integration: /clarify, /research",
+  "description": "Phase 1: /clarify와 /research 스킬에 validation gates 통합\n\nGate 1 (/clarify):\n- Stop hook에서 validate_requirement_feasibility() 호출\n- Warning 시 사용자에게 알림 후 진행 허용\n- Error 시 추가 clarification 요청\n\nGate 2 (/research):\n- Setup hook에서 validate_scope_access() 호출\n- Scope 경로 존재 여부 사전 검증\n- 접근 불가 시 조기 종료\n\nTarget Files:\n- .claude/skills/clarify/SKILL.md (modify)\n- .claude/hooks/clarify-validate.sh (create)\n- .claude/skills/research/SKILL.md (modify)\n- .claude/hooks/research-validate.sh (create)\n\nReference: .claude/skills/shared/validation-gates.sh",
+  "activeForm": "Integrating Gate 1-2 into /clarify and /research",
+  "status": "pending",
+  "blocks": [
+    "3",
+    "5"
+  ],
+  "blockedBy": [],
+  "metadata": {
+    "phaseId": "phase1-clarify-research-gates",
+    "priority": "P0",
+    "owner": "terminal-b",
+    "projectSlug": "shift-left-philosophy",
+    "promptFile": ".agent/prompts/pending/worker-terminal-b-shift-left-philosophy.yaml"
+  },
+  "owner": "terminal-b"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "3",
+  "subject": "Gate 5 Integration: /worker",
+  "description": "Phase 3: /worker 스킬에 pre-execution gate 통합\n\nGate 5 (/worker start):\n- Task 시작 전 pre_execution_gate() 호출\n- blockedBy 완료 여부 검증\n- Target file 접근 권한 검증\n- 실패 시 worker blocked 상태로 전환\n\nTarget Files:\n- .claude/skills/worker/SKILL.md (modify)\n- .claude/hooks/worker-preflight.sh (create)\n\nReference: .claude/skills/shared/validation-gates.sh",
+  "activeForm": "Integrating Gate 5 into /worker",
+  "status": "pending",
+  "blocks": [
+    "5"
+  ],
+  "blockedBy": [
+    "1"
+  ],
+  "metadata": {
+    "phaseId": "phase3-worker-gate",
+    "priority": "P1",
+    "owner": "terminal-b",
+    "projectSlug": "shift-left-philosophy",
+    "promptFile": ".agent/prompts/pending/worker-terminal-b-shift-left-philosophy.yaml"
+  },
+  "owner": "terminal-b"
+}
