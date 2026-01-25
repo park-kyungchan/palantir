@@ -84,15 +84,66 @@ done
 ### 2.2 Initialize Research Session
 
 ```bash
-# Generate research ID
+# Source centralized slug generator
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/slug-generator.sh"
+
+# Generate research ID using centralized slug generator
 if [[ -n "$CLARIFY_SLUG" ]]; then
-    RESEARCH_ID="${CLARIFY_SLUG}"
+    # Reuse workload ID from /clarify
+    CLARIFY_YAML=".agent/clarify/${CLARIFY_SLUG}.yaml"
+
+    if [[ -f "$CLARIFY_YAML" ]]; then
+        # Try to extract workload_id from clarify YAML (nested or top-level)
+        # Priority 1: yq for reliable nested YAML parsing
+        if command -v yq &> /dev/null; then
+            WORKLOAD_ID=$(yq -r '.metadata.workload_id // .workload_id // .metadata.id // empty' "$CLARIFY_YAML" 2>/dev/null || echo "")
+        fi
+
+        # Priority 2: grep fallback for nested workload_id
+        if [[ -z "$WORKLOAD_ID" ]]; then
+            WORKLOAD_ID=$(grep -oP '^\s*workload_id:\s*["\x27]?\K[^"\x27\s]+' "$CLARIFY_YAML" | head -1 || echo "")
+        fi
+
+        # Priority 3: grep for metadata.id (common in clarify YAML)
+        if [[ -z "$WORKLOAD_ID" ]]; then
+            # Extract id from metadata section
+            WORKLOAD_ID=$(awk '/^metadata:/,/^[a-z]/{if(/^\s+id:/) print $2}' "$CLARIFY_YAML" | tr -d '"' | head -1 || echo "")
+        fi
+
+        # Priority 4: use clarify slug as fallback
+        if [[ -z "$WORKLOAD_ID" ]]; then
+            WORKLOAD_ID="${CLARIFY_SLUG}"
+        fi
+    else
+        # Clarify file not found, use slug as workload ID
+        WORKLOAD_ID="${CLARIFY_SLUG}"
+    fi
+
+    # Derive research slug from workload ID
+    RESEARCH_ID=$(generate_slug_from_workload "$WORKLOAD_ID")
+
+    # Initialize workload directory (ensure directories exist)
+    source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-tracker.sh"
+    init_workload_directories "$WORKLOAD_ID"
 else
-    RESEARCH_ID=$(echo "$QUERY" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | head -c 20)
+    # Independent execution: generate new workload ID
+    WORKLOAD_ID=$(generate_workload_id "$QUERY")
+    RESEARCH_ID=$(generate_slug_from_workload "$WORKLOAD_ID")
+
+    # Initialize workload context for independent research
+    init_workload "$WORKLOAD_ID" "research" "$QUERY"
 fi
 
-OUTPUT_PATH=".agent/research/${RESEARCH_ID}.md"
-mkdir -p .agent/research
+# Store workload ID in output file metadata (Workload-scoped)
+WORKLOAD_DIR=".agent/prompts/${RESEARCH_ID}"
+OUTPUT_PATH="${WORKLOAD_DIR}/research.md"
+mkdir -p "${WORKLOAD_DIR}"
+
+# Log workload context
+echo "Research Session Initialized:" >&2
+echo "  Workload ID: $WORKLOAD_ID" >&2
+echo "  Research Slug: $RESEARCH_ID" >&2
+echo "  Output: $OUTPUT_PATH" >&2
 ```
 
 ### 2.3 Load Clarify Context (if available)
