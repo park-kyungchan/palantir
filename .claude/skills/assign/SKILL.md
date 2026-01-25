@@ -2,19 +2,21 @@
 name: assign
 description: |
   Assign Native Tasks to worker terminals, update ownership, sync progress tracking.
+  Supports Sub-Orchestrator mode for hierarchical task decomposition.
 user-invocable: true
 disable-model-invocation: false
 context: standard
 model: sonnet
-version: "2.1.0"
-argument-hint: "<task-id> <terminal-id> | auto"
+version: "3.0.0"
+argument-hint: "<task-id> <terminal-id> [--sub-orchestrator] | auto"
 ---
 
 # /assign - Task Assignment to Workers
 
-> **Version:** 1.0
+> **Version:** 3.0.0
 > **Role:** Assign Native Tasks to workers via owner field
 > **Architecture:** Hybrid (TaskUpdate + _progress.yaml sync)
+> **New:** Sub-Orchestrator mode for hierarchical decomposition
 
 ---
 
@@ -22,9 +24,28 @@ argument-hint: "<task-id> <terminal-id> | auto"
 
 **Task Assignment Agent** that:
 1. Assigns Native Tasks to specific terminals via `TaskUpdate(owner=...)`
-2. Updates `.agent/prompts/_progress.yaml`
+2. Updates workload-scoped `_progress.yaml`
 3. Supports manual and auto-assignment modes
 4. Validates dependencies before assignment
+5. **NEW:** Enables Sub-Orchestrator mode for workers to decompose tasks
+
+### 1.1 Workload Context Setup
+
+```bash
+# Source workload management modules
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-files.sh"
+
+# Get current active workload
+ACTIVE_WORKLOAD=$(get_active_workload)
+WORKLOAD_SLUG=$(get_active_workload_slug)
+
+# Determine progress file path (workload-scoped or global fallback)
+if [[ -n "$WORKLOAD_SLUG" ]]; then
+    PROGRESS_PATH=$(get_workload_progress_path "$WORKLOAD_SLUG")
+else
+    PROGRESS_PATH=".agent/prompts/_progress.yaml"
+fi
+```
 
 ---
 
@@ -37,6 +58,9 @@ argument-hint: "<task-id> <terminal-id> | auto"
 /assign 1 terminal-b          # Assign Task #1 to Terminal B
 /assign 2 terminal-c          # Assign Task #2 to Terminal C
 
+# Sub-Orchestrator mode (Worker can decompose task)
+/assign 1 terminal-b --sub-orchestrator
+
 # Auto assignment
 /assign auto                  # Auto-assign all unassigned tasks
 
@@ -48,6 +72,7 @@ argument-hint: "<task-id> <terminal-id> | auto"
 
 - `$0`: Task ID or "auto"
 - `$1`: Terminal ID (e.g., "terminal-b", "terminal-c")
+- `--sub-orchestrator` (optional): Enable Sub-Orchestrator mode for this worker
 
 ---
 
@@ -56,7 +81,10 @@ argument-hint: "<task-id> <terminal-id> | auto"
 ### 3.1 Mode: Manual Assignment
 
 ```javascript
-function manualAssign(taskId, terminalId) {
+function manualAssign(taskId, terminalId, options = {}) {
+  // Parse options
+  const isSubOrchestrator = options.subOrchestrator || false
+
   // 1. Validate task exists
   task = TaskGet({taskId})
   if (!task) {
@@ -90,19 +118,29 @@ function manualAssign(taskId, terminalId) {
     }
   }
 
-  // 4. Assign owner
+  // 4. Determine hierarchy level
+  const currentHierarchy = task.metadata?.hierarchyLevel || 0
+  const newHierarchyLevel = isSubOrchestrator ? currentHierarchy : currentHierarchy
+
+  // 5. Assign owner and set metadata
   TaskUpdate({
     taskId: taskId,
-    owner: terminalId
+    owner: terminalId,
+    metadata: {
+      hierarchyLevel: newHierarchyLevel,
+      subOrchestratorMode: isSubOrchestrator,
+      canDecompose: isSubOrchestrator
+    }
   })
 
-  console.log(`✅ Task #${taskId} assigned to ${terminalId}`)
+  const modeLabel = isSubOrchestrator ? " (Sub-Orchestrator)" : ""
+  console.log(`✅ Task #${taskId} assigned to ${terminalId}${modeLabel}`)
 
-  // 5. Update _progress.yaml
-  updateProgressFile(taskId, terminalId, task)
+  // 6. Update _progress.yaml
+  updateProgressFile(taskId, terminalId, task, isSubOrchestrator)
 
-  // 6. Show next actions
-  printNextActions(task, terminalId)
+  // 7. Show next actions
+  printNextActions(task, terminalId, isSubOrchestrator)
 }
 ```
 
@@ -121,8 +159,9 @@ function autoAssign() {
 
   console.log(`Found ${unassigned.length} unassigned tasks`)
 
-  // 2. Read _progress.yaml to find available terminals
-  progressData = Read(".agent/prompts/_progress.yaml")
+  // 2. Read _progress.yaml to find available terminals (workload-scoped)
+  progressPath = getWorkloadProgressPath()  // Uses active workload or global fallback
+  progressData = Read(progressPath)
   terminals = parseYAML(progressData).terminals || {}
 
   availableTerminals = Object.keys(terminals).filter(tid =>
@@ -191,9 +230,9 @@ function autoAssign() {
 ### 3.3 Helper: updateProgressFile
 
 ```javascript
-function updateProgressFile(taskId, terminalId, task) {
-  // Read current progress
-  progressPath = ".agent/prompts/_progress.yaml"
+function updateProgressFile(taskId, terminalId, task, isSubOrchestrator = false) {
+  // Read current progress (workload-scoped)
+  progressPath = getWorkloadProgressPath()  // Uses active workload or global fallback
   let progressData = {}
 
   if (fileExists(progressPath)) {
@@ -214,12 +253,14 @@ function updateProgressFile(taskId, terminalId, task) {
   // Update terminal info
   if (!progressData.terminals[terminalId]) {
     progressData.terminals[terminalId] = {
-      role: "Worker",
+      role: isSubOrchestrator ? "Sub-Orchestrator" : "Worker",
       status: "idle",
       currentTask: null,
       assignedPhase: task.metadata?.phaseId || null,
       nativeTaskId: taskId,
       blockedBy: task.blockedBy || [],
+      subOrchestratorMode: isSubOrchestrator,
+      hierarchyLevel: task.metadata?.hierarchyLevel || 0,
       startedAt: null,
       completedAt: null
     }
@@ -227,6 +268,11 @@ function updateProgressFile(taskId, terminalId, task) {
     progressData.terminals[terminalId].nativeTaskId = taskId
     progressData.terminals[terminalId].assignedPhase = task.metadata?.phaseId || null
     progressData.terminals[terminalId].blockedBy = task.blockedBy || []
+    progressData.terminals[terminalId].subOrchestratorMode = isSubOrchestrator
+    progressData.terminals[terminalId].hierarchyLevel = task.metadata?.hierarchyLevel || 0
+    if (isSubOrchestrator) {
+      progressData.terminals[terminalId].role = "Sub-Orchestrator"
+    }
   }
 
   // Update phase info
@@ -235,6 +281,7 @@ function updateProgressFile(taskId, terminalId, task) {
       nativeTaskId: taskId,
       status: task.status,
       owner: terminalId,
+      subOrchestratorMode: isSubOrchestrator,
       startedAt: null,
       completedAt: null
     }
@@ -254,20 +301,32 @@ function updateProgressFile(taskId, terminalId, task) {
 ### 3.4 Helper: printNextActions
 
 ```javascript
-function printNextActions(task, terminalId) {
-  console.log(`\n=== Next Actions for ${terminalId} ===`)
+function printNextActions(task, terminalId, isSubOrchestrator = false) {
+  const modeLabel = isSubOrchestrator ? " (Sub-Orchestrator)" : ""
+  console.log(`\n=== Next Actions for ${terminalId}${modeLabel} ===`)
+
+  if (isSubOrchestrator) {
+    console.log(`\n🔧 Sub-Orchestrator Mode Enabled:`)
+    console.log(`  • Can decompose this task into subtasks`)
+    console.log(`  • Use /orchestrate to break down complex work`)
+    console.log(`  • Created subtasks will have hierarchyLevel = ${(task.metadata?.hierarchyLevel || 0) + 1}`)
+  }
 
   if (task.blockedBy && task.blockedBy.length > 0) {
-    console.log(`⏸️  Wait for blockers to complete:`)
+    console.log(`\n⏸️  Wait for blockers to complete:`)
     for (blockerId of task.blockedBy) {
       blocker = TaskGet({taskId: blockerId})
       console.log(`  - Task #${blockerId}: ${blocker.subject} (${blocker.status})`)
     }
     console.log(`\nWhen ready, run: /worker start`)
   } else {
-    console.log(`✅ No blockers - ready to start!`)
+    console.log(`\n✅ No blockers - ready to start!`)
     console.log(`\nRun in ${terminalId}:`)
-    console.log(`  /worker start`)
+    if (isSubOrchestrator) {
+      console.log(`  /worker start  (can use /orchestrate if task needs decomposition)`)
+    } else {
+      console.log(`  /worker start`)
+    }
   }
 
   // Show prompt file location
@@ -323,7 +382,91 @@ function printWorkerInstructions(assignments) {
 
 ---
 
-## 5. Example Usage
+## 4.5. Sub-Orchestrator Mode
+
+### 4.5.1 Overview
+
+Sub-Orchestrator mode enables workers to **decompose assigned tasks** into subtasks, creating a hierarchical task structure.
+
+**Use Cases:**
+- Complex tasks that need further breakdown
+- Worker has domain expertise to decompose optimally
+- Dynamic decomposition based on runtime findings
+
+### 4.5.2 Hierarchical Task Levels
+
+```
+Level 0 (Main):           /orchestrate by Main Orchestrator
+    │
+    ├─ Task #1 ──────────> Assigned to terminal-b (--sub-orchestrator)
+    │   │
+    │   └─ Level 1:       terminal-b runs /orchestrate
+    │       ├─ Subtask #1.1
+    │       ├─ Subtask #1.2
+    │       └─ Subtask #1.3
+    │
+    └─ Task #2 ──────────> Assigned to terminal-c (regular worker)
+```
+
+### 4.5.3 Metadata Fields
+
+When `--sub-orchestrator` is used, the following metadata is set:
+
+```javascript
+{
+  hierarchyLevel: 0,           // Current level (0 = main, 1 = sub, 2 = sub-sub)
+  subOrchestratorMode: true,   // Enables decomposition capability
+  canDecompose: true           // Permission to create subtasks
+}
+```
+
+### 4.5.4 Worker Capabilities
+
+| Mode | Can Execute Task | Can Decompose | Subtask Level |
+|------|------------------|---------------|---------------|
+| Regular Worker | ✅ | ❌ | N/A |
+| Sub-Orchestrator | ✅ | ✅ | hierarchyLevel + 1 |
+
+### 4.5.5 Workflow Example
+
+```bash
+# 1. Main orchestrator creates tasks
+/orchestrate "Implement authentication system"
+# → Creates Task #1, #2, #3
+
+# 2. Assign with Sub-Orchestrator mode
+/assign 1 terminal-b --sub-orchestrator
+# ✅ Task #1 assigned to terminal-b (Sub-Orchestrator)
+# → hierarchyLevel: 0, canDecompose: true
+
+# 3. Worker decomposes task (in terminal-b)
+/worker start
+# Worker reads task, decides to decompose
+/orchestrate "Break down authentication into components"
+# → Creates Subtask #1.1, #1.2, #1.3 with hierarchyLevel: 1
+
+# 4. Sub-orchestrator assigns subtasks to itself or others
+/assign 4 terminal-b    # Subtask #1.1
+/assign 5 terminal-c    # Subtask #1.2
+```
+
+### 4.5.6 Progress Tracking
+
+Sub-Orchestrator assignments are tracked in `_progress.yaml`:
+
+```yaml
+terminals:
+  terminal-b:
+    role: "Sub-Orchestrator"
+    nativeTaskId: "1"
+    subOrchestratorMode: true
+    hierarchyLevel: 0
+    status: "in_progress"
+```
+
+---
+
+## 6. Example Usage
 
 ### Example 1: Manual Assignment
 
@@ -400,9 +543,51 @@ Reassign to terminal-d? (y/n): y
 ✅ Updated _progress.yaml
 ```
 
+### Example 4: Sub-Orchestrator Assignment
+
+```bash
+/assign 1 terminal-b --sub-orchestrator
+```
+
+**Output:**
+```
+✅ Task #1 assigned to terminal-b (Sub-Orchestrator)
+
+=== Next Actions for terminal-b (Sub-Orchestrator) ===
+
+🔧 Sub-Orchestrator Mode Enabled:
+  • Can decompose this task into subtasks
+  • Use /orchestrate to break down complex work
+  • Created subtasks will have hierarchyLevel = 1
+
+✅ No blockers - ready to start!
+
+Run in terminal-b:
+  /worker start  (can use /orchestrate if task needs decomposition)
+
+Prompt file: .agent/prompts/pending/worker-b-task.yaml
+```
+
+**Sub-Orchestrator Workflow:**
+```bash
+# 1. Worker receives complex task with sub-orchestrator mode
+/worker start b
+
+# 2. If task is too complex, decompose it
+/orchestrate "Break down feature X into subtasks"
+# → Creates child Tasks #4, #5, #6 (hierarchyLevel = 1)
+
+# 3. Optionally assign subtasks (or work on them directly)
+/assign 4 terminal-b
+/assign 5 terminal-c
+
+# 4. Complete parent task when all subtasks done
+/worker done
+```
+
 ---
 
-## 6. Integration Points
+## 7. Integration Points
 
 ### 6.1 With /orchestrate
 
@@ -431,8 +616,9 @@ Reassign to terminal-d? (y/n): y
 
 ---
 
-## 7. Testing Checklist
+## 8. Testing Checklist
 
+**Basic Assignment:**
 - [ ] Manual assign unblocked task
 - [ ] Manual assign blocked task
 - [ ] Auto assign with 3 tasks
@@ -442,6 +628,14 @@ Reassign to terminal-d? (y/n): y
 - [ ] Progress file update
 - [ ] Task not found error
 - [ ] All tasks already assigned scenario
+
+**Sub-Orchestrator Mode:**
+- [ ] Assign with --sub-orchestrator flag
+- [ ] Assign with --sub short flag
+- [ ] hierarchyLevel metadata set correctly
+- [ ] subOrchestratorMode in _progress.yaml
+- [ ] printNextActions shows Sub-Orchestrator info
+- [ ] Child tasks inherit correct hierarchyLevel
 
 ---
 
@@ -464,6 +658,7 @@ Reassign to terminal-d? (y/n): y
 |---------|--------|
 | 1.0.0 | Task assignment to workers |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
+| 3.0.0 | Sub-Orchestrator 모드 추가: --sub-orchestrator 플래그, hierarchyLevel 메타데이터, Worker 분해 권한 |
 
 ---
 

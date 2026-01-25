@@ -1,14 +1,14 @@
 ---
 name: orchestrate
 description: |
-  Break down complex tasks, create Native Tasks, generate worker prompts,
-  set up dependencies for multi-terminal parallel execution.
-  Uses project-specific context files to avoid conflicts between projects.
+  Break down complex tasks into phases, create Native Tasks with dependencies,
+  and generate worker prompts. Pure task decomposition - no owner assignment.
+  Use /assign for terminal assignment after orchestration.
 user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "3.1.0"
+version: "4.0.0"
 argument-hint: "--plan-slug <slug> | <task-description>"
 hooks:
   PreToolUse:
@@ -18,22 +18,28 @@ hooks:
       matcher: "TaskCreate"
 ---
 
-# /orchestrate - Task Decomposition & Orchestration
+# /orchestrate - Task Decomposition Engine
 
-> **Version:** 1.0
-> **Role:** Task decomposition + Native Task creation + Worker prompt generation
+> **Version:** 4.0
+> **Role:** Pure task decomposition + Native Task creation + Worker prompt generation
 > **Architecture:** Hybrid (Native Task System + File-Based Prompts)
+> **Note:** Does NOT assign owners - use /assign for terminal assignment
 
 ---
 
 ## 1. Purpose
 
-**Orchestrator Agent** that:
+**Task Decomposition Engine** that:
 1. Breaks down complex tasks into phases
 2. Creates Native Tasks via `TaskCreate`
 3. Sets up dependencies via `TaskUpdate(addBlockedBy)`
 4. Generates worker prompt files (`.agent/prompts/`)
-5. Initializes global context and progress tracking
+5. Initializes workload-specific context and progress tracking
+
+**What /orchestrate does NOT do:**
+- Does NOT assign tasks to terminals (use `/assign`)
+- Does NOT include autonomous execution logic (handled by `/worker`)
+- Does NOT set `owner` field on tasks (remains null until `/assign`)
 
 ---
 
@@ -77,9 +83,15 @@ if (!projectSlug) {
   projectSlug = slugify(input.split(' ').slice(0, 5).join('-'))
 }
 
+// 1c. Generate workload ID with timestamp
+const workloadId = Bash(`source .claude/skills/shared/slug-generator.sh && generate_workload_id "${projectSlug}"`).trim()
+const workloadSlug = Bash(`source .claude/skills/shared/slug-generator.sh && generate_slug_from_workload "${workloadId}"`).trim()
+
 // 2. Use Chain of Thought to decompose
 analysis = analyzeTask(input)
 analysis.projectSlug = projectSlug  // Attach for file generation
+analysis.workloadId = workloadId    // Full workload ID
+analysis.workloadSlug = workloadSlug // Derived slug for directories
 /*
 Output:
 {
@@ -119,10 +131,31 @@ if (gate4Result.warnings.length > 0) {
   gate4Result.warnings.forEach(w => console.log(`   - ${w}`))
 }
 
-console.log("✅ Gate 4 PASSED - Proceeding to Task creation")
+console.log("✅ Gate 4 PASSED - Proceeding to workload initialization")
 ```
 
-### 3.3 Phase 3: Native Task Creation
+### 3.3 Phase 3: Initialize Workload Directory (Validate-Before-Create)
+
+```javascript
+// Initialize workload directory BEFORE creating tasks
+// This ensures all file paths exist when workers reference them
+
+const workloadId = analysis.workloadId
+const workloadSlug = analysis.workloadSlug
+
+// Source workload management
+Bash(`source .claude/skills/shared/workload-tracker.sh && init_workload_directories "${workloadId}"`)
+
+// Set as active workload
+Bash(`source .claude/skills/shared/workload-files.sh && set_active_workload "${workloadId}"`)
+
+// Get prompt directory path for reference
+const workloadPromptDir = `.agent/prompts/${workloadSlug}`
+
+console.log(`📁 Workload directory initialized: ${workloadPromptDir}`)
+```
+
+### 3.4 Phase 4: Native Task Creation
 
 ```javascript
 // Create tasks in dependency order
@@ -145,7 +178,7 @@ for (phase of analysis.phases) {
 }
 ```
 
-### 3.3 Phase 3: Dependency Setup
+### 3.5 Phase 5: Dependency Setup
 
 ```javascript
 // Set up blockers
@@ -163,17 +196,19 @@ for (phase of analysis.phases) {
 }
 ```
 
-### 3.4 Phase 4: Generate Context Files
+### 3.6 Phase 6: Generate Context Files
 
 > **V3.1 Multi-Project Isolation**: Uses project-specific filenames to avoid conflicts
 
-#### _context-{projectSlug}.yaml
+#### _context-{workloadSlug}.yaml
 
 ```javascript
-const projectSlug = analysis.projectSlug  // From Phase 1
+const workloadId = analysis.workloadId      // From Phase 1 (full ID)
+const workloadSlug = analysis.workloadSlug  // From Phase 1 (slug for directories)
 
 contextContent = `
 version: "1.0"
+workload_id: "${workloadId}"
 project: "${analysis.project}"
 orchestrator: "Terminal-A"
 createdAt: "${new Date().toISOString()}"
@@ -187,7 +222,7 @@ ${analysis.phases.map(p => `
   ${p.id}:
     id: "${p.id}"
     name: "${p.name}"
-    owner: "${p.suggestedOwner || 'unassigned'}"
+    owner: "unassigned"  # Use /assign to set owner
     nativeTaskId: "${taskMap[p.id]}"
     status: "pending"
     dependencies: ${JSON.stringify(p.dependencies)}
@@ -207,22 +242,25 @@ referenceFiles: ${JSON.stringify(analysis.referenceFiles || [])}
 `
 
 Write({
-  file_path: `.agent/prompts/_context-${projectSlug}.yaml`,
+  file_path: `.agent/prompts/${workloadSlug}/_context.yaml`,
   content: contextContent
 })
 ```
 
-#### _progress-{projectSlug}.yaml
+#### _progress-{workloadSlug}.yaml
 
 ```javascript
 progressContent = `
 version: "1.0"
+workload_id: "${workloadId}"
 projectId: "${analysis.project}"
 lastUpdated: "${new Date().toISOString()}"
 
 terminals:
-${analysis.phases.map(p => `
-  ${p.suggestedOwner || `terminal-${String.fromCharCode(97 + p.index)}`}:
+  # Terminal assignments will be added by /assign
+  # Format: terminal-b, terminal-c, terminal-d
+${analysis.phases.map((p, i) => `
+  terminal-${String.fromCharCode(98 + i)}:
     role: "Worker"
     status: "idle"
     currentTask: null
@@ -238,7 +276,7 @@ ${analysis.phases.map(p => `
   ${p.id}:
     nativeTaskId: "${taskMap[p.id]}"
     status: "pending"
-    owner: "${p.suggestedOwner || 'unassigned'}"
+    owner: "unassigned"  # Use /assign to set owner
     startedAt: null
     completedAt: null
 `).join('\n')}
@@ -248,36 +286,44 @@ blockers: []
 `
 
 Write({
-  file_path: `.agent/prompts/_progress-${projectSlug}.yaml`,
+  file_path: `.agent/prompts/${workloadSlug}/_progress.yaml`,
   content: progressContent
 })
 ```
 
-### 3.5 Phase 5: Generate Worker Prompt Files
+### 3.7 Phase 7: Generate Worker Prompt Files
 
 ```javascript
+// Initialize workload directory structure (using slug for directory name)
+Bash(`source .claude/skills/shared/workload-files.sh && init_workload_directory "${workloadSlug}"`)
+Bash(`source .claude/skills/shared/workload-files.sh && set_active_workload "${workloadId}"`)
+
+// Workload directory uses slug, but active workload tracks full ID
+workloadPromptDir = `.agent/prompts/${workloadSlug}`
+
 for (phase of analysis.phases) {
   workerPromptContent = `
 # =============================================================================
-# Worker Task: ${phase.suggestedOwner || `Worker-${phase.index}`} - ${phase.name}
+# Worker Task: Phase ${phase.index} - ${phase.name}
 # =============================================================================
-# Read this file AFTER reading _context-{projectSlug}.yaml
+# Read this file AFTER reading _context.yaml in workload directory
 #
-# Location: .agent/prompts/pending/worker-${phase.suggestedOwner || phase.index}-task.yaml
+# Location: ${workloadPromptDir}/pending/worker-phase-${phase.index}-task.yaml
 # Language: English (Machine-Readable)
 # =============================================================================
 
 taskId: "${phase.id}"
 nativeTaskId: "${taskMap[phase.id]}"
-assignedTo: "${phase.suggestedOwner || `Worker-${phase.index}`}"
-orchestrator: "Terminal-A"
+assignedTo: "unassigned"  # Use /assign to set owner
+orchestrator: "orchestrate"
 createdAt: "${new Date().toISOString()}"
 
 # =============================================================================
 # CONTEXT REFERENCE
 # =============================================================================
-contextFile: ".agent/prompts/_context-${projectSlug}.yaml"
-progressFile: ".agent/prompts/_progress-${projectSlug}.yaml"
+workload_id: "${workloadId}"
+contextFile: "${workloadPromptDir}/_context.yaml"
+progressFile: "${workloadPromptDir}/_progress.yaml"
 
 # =============================================================================
 # MY SCOPE
@@ -355,17 +401,15 @@ l2OutputPath: ".agent/outputs/Worker/${phase.id}-${slugify(phase.name)}.md"
 # =============================================================================
 onComplete:
   - "TaskUpdate(taskId='${taskMap[phase.id]}', status='completed')"
-  - "Update .agent/prompts/_progress-${projectSlug}.yaml: ${phase.suggestedOwner}.status = 'completed'"
+  - "Update ${workloadPromptDir}/_progress.yaml: worker status = 'completed'"
   - "Report to Orchestrator with L1 summary"
   ${phase.index < analysis.phases.length - 1 ? `- "Notify next worker that ${phase.dependencies[0] || 'this phase'} is complete"` : ''}
 `
 
-  filename = phase.suggestedOwner
-    ? `worker-${phase.suggestedOwner}-${projectSlug}-task.yaml`
-    : `worker-${String.fromCharCode(97 + phase.index)}-${projectSlug}-task.yaml`
+  filename = `worker-phase-${phase.index}-${projectSlug}-task.yaml`
 
   Write({
-    file_path: `.agent/prompts/pending/${filename}`,
+    file_path: `${workloadPromptDir}/pending/${filename}`,
     content: workerPromptContent
   })
 
@@ -373,7 +417,7 @@ onComplete:
   TaskUpdate({
     taskId: taskMap[phase.id],
     metadata: {
-      promptFile: `.agent/prompts/pending/${filename}`,
+      promptFile: `${workloadPromptDir}/pending/${filename}`,
       phaseId: phase.id,
       priority: phase.priority || "P1"
     }
@@ -383,7 +427,7 @@ onComplete:
 }
 ```
 
-### 3.6 Phase 6: Summary Output
+### 3.8 Phase 8: Summary Output
 
 ```javascript
 // Generate summary
@@ -397,15 +441,15 @@ Workers Needed: ${analysis.estimatedWorkers}
 Tasks:
 ${analysis.phases.map((p, i) => `
   #${taskMap[p.id]}: ${p.name}
-    - Owner: ${p.suggestedOwner || 'unassigned'}
+    - Owner: unassigned (use /assign)
     - Blocked by: ${p.dependencies.length > 0 ? p.dependencies.map(d => `Task #${taskMap[d]}`).join(', ') : 'None (can start immediately)'}
-    - Prompt: .agent/prompts/pending/worker-${p.suggestedOwner || String.fromCharCode(97 + i)}-task.yaml
+    - Prompt: .agent/prompts/pending/worker-phase-${i+1}-task.yaml
 `).join('\n')}
 
 Files Generated:
   ✅ .agent/prompts/_context-${projectSlug}.yaml (project context)
   ✅ .agent/prompts/_progress-${projectSlug}.yaml (progress tracker)
-${analysis.phases.map((p, i) => `  ✅ .agent/prompts/pending/worker-${p.suggestedOwner || String.fromCharCode(97 + i)}-${projectSlug}-task.yaml`).join('\n')}
+${analysis.phases.map((p, i) => `  ✅ .agent/prompts/pending/worker-phase-${i+1}-${projectSlug}-task.yaml`).join('\n')}
 
 Next Steps:
   1. Use /assign to assign tasks to terminals
@@ -460,7 +504,6 @@ Break down this task into phases:
       "name": "Phase Name",
       "description": "What this phase does",
       "dependencies": [],
-      "suggestedOwner": "terminal-b",
       "targetFiles": [
         {"path": "...", "sections": [...]}
       ],
@@ -720,271 +763,7 @@ After `/orchestrate` completes:
 
 ---
 
-## 10. Autonomous Execution Protocol (자율 실행 프로토콜)
-
-> **V3.0 Feature** - Workers execute autonomously until project completion
-
-### 10.1 Overview
-
-Enables each terminal to:
-1. Monitor other terminals' task status
-2. Automatically start tasks when blockers complete
-3. Continue execution until all assigned tasks are done
-4. Report to Orchestrator on completion
-
-### 10.2 _context-{projectSlug}.yaml Autonomous Section
-
-When generating `_context-{projectSlug}.yaml`, include:
-
-```yaml
-# =============================================================================
-# AUTONOMOUS EXECUTION PROTOCOL (자율 실행 프로토콜)
-# =============================================================================
-autonomousProtocol:
-  enabled: true
-  pollIntervalSeconds: 30
-
-  executionLoop: |
-    WHILE project NOT completed:
-      1. TaskList() → 전체 Task 상태 확인
-      2. Filter by owner == MY_TERMINAL
-      3. FOR each myTask:
-           IF myTask.status == "pending":
-             IF myTask.blockedBy ALL completed:
-               → TaskUpdate(taskId, status="in_progress")
-               → Execute task
-               → TaskUpdate(taskId, status="completed")
-             ELSE:
-               → Log "Waiting for blockers: {blockedBy}"
-      4. IF all myTasks completed:
-           → Report final status
-      5. Sleep(pollIntervalSeconds)
-
-  checkBlockers: |
-    function checkBlockersCompleted(taskId):
-      task = TaskGet(taskId)
-      FOR each blockerId in task.blockedBy:
-        IF TaskGet(blockerId).status != "completed":
-          RETURN false
-      RETURN true
-
-  selfAssignment:
-    primary: "Execute tasks assigned to my terminal"
-    secondary: "If all my tasks done, check for unassigned tasks"
-    forbidden: "Never take tasks assigned to other terminals"
-
-  completionDetection:
-    projectComplete: "All tasks have status='completed'"
-    terminalComplete: "All tasks with owner=MY_TERMINAL have status='completed'"
-
-  errorRecovery:
-    onTaskFailure:
-      - "Log error to .agent/logs/{terminal}.log"
-      - "TaskUpdate(taskId, metadata.error='{error}')"
-      - "Continue with next available task"
-    onDeadlock:
-      - "Detect: No progress for 3 poll cycles"
-      - "Action: Report to Orchestrator with blockers list"
-```
-
-### 10.3 Worker Prompt Autonomous Section
-
-For each worker prompt file, include:
-
-```yaml
-# =============================================================================
-# AUTONOMOUS EXECUTION INSTRUCTIONS (자율 실행 지침)
-# =============================================================================
-autonomousExecution:
-  enabled: true
-  myTerminal: "${terminalId}"
-  myTasks: ${JSON.stringify(assignedTaskIds)}
-
-  executionSequence:
-${phases.filter(p => p.owner === terminalId).map((p, i) => `
-    - step: ${i + 1}
-      taskId: "${taskMap[p.id]}"
-      name: "${p.name}"
-      blockedBy: ${JSON.stringify(p.dependencies.map(d => taskMap[d]))}
-      action: "${p.dependencies.length === 0 ? 'START IMMEDIATELY' : 'Wait for blockers, then start'}"
-      onComplete: "${getUnblockedTasks(p.id)}"
-`).join('')}
-
-  monitoringLoop: |
-    REPEAT until all myTasks completed:
-      1. TaskList() → Check current status
-      2. FOR each taskId in myTasks:
-           task = TaskGet(taskId)
-           IF task.status == "pending" AND allBlockersComplete(task):
-             TaskUpdate(taskId, status="in_progress")
-             EXECUTE task
-             TaskUpdate(taskId, status="completed")
-      3. Check cross-terminal dependencies
-      4. IF all myTasks completed:
-           REPORT "Terminal-X: All tasks completed"
-           EXIT loop
-
-  crossTerminalDeps:
-${getCrossTerminalDeps(terminalId)}
-
-  completionCriteria:
-    allTasksCompleted: ${JSON.stringify(assignedTaskIds)}
-    outputGenerated: ".agent/outputs/${terminalId}/report.md"
-    progressUpdated: "_progress-${projectSlug}.yaml reflects ${terminalId}.status = 'completed'"
-```
-
-### 10.4 _progress-{projectSlug}.yaml Autonomous Section
-
-```yaml
-# =============================================================================
-# AUTONOMOUS EXECUTION CONFIG (자율 실행 설정)
-# =============================================================================
-autonomousExecution:
-  enabled: true
-  mode: "ACTIVE"
-  startedAt: null
-  estimatedCompletion: null
-
-  polling:
-    intervalSeconds: 30
-    maxRetries: 3
-    backoffMultiplier: 2
-
-  dependencyRules:
-    checkMethod: "TaskGet(blockerId).status == 'completed'"
-    autoUnblock: true
-    notifyOnUnblock: true
-
-  coordination:
-    method: "Native Task System + _progress-{projectSlug}.yaml"
-    syncInterval: 30
-    conflictResolution: "first-claimer-wins"
-
-  completionTracking:
-    projectComplete:
-      condition: "ALL tasks status == 'completed'"
-      action: "Notify Orchestrator, generate final report"
-
-${terminals.map(t => `
-    ${t}Complete:
-      condition: "Tasks ${getTerminalTasks(t)} status == 'completed'"
-      action: "Update ${t}.status = 'completed'"
-`).join('')}
-
-  crossDependencies:
-${generateCrossDependencies(phases, taskMap)}
-
-  errorHandling:
-    onTaskFailure:
-      action: "Log, mark task as blocked, notify Orchestrator"
-      retryCount: 2
-      escalateAfter: 2
-    onDeadlock:
-      detection: "No progress for 3 poll cycles"
-      action: "Report to Orchestrator with dependency graph"
-    onConflict:
-      detection: "Multiple terminals claim same task"
-      action: "First claimer wins, others skip"
-
-# =============================================================================
-# START COMMAND FOR WORKERS
-# =============================================================================
-workerStartCommands:
-${terminals.map(t => `
-  ${t}: |
-    /worker start ${t.split('-')[1]}
-`).join('')}
-```
-
-### 10.5 Helper Functions for Autonomous Protocol
-
-```javascript
-function generateCrossDependencies(phases, taskMap) {
-  const crossDeps = []
-
-  for (const phase of phases) {
-    for (const dep of phase.dependencies) {
-      const depPhase = phases.find(p => p.id === dep)
-      if (depPhase && depPhase.owner !== phase.owner) {
-        crossDeps.push({
-          from: phase.owner,
-          task: taskMap[phase.id],
-          waitFor: [{
-            terminal: depPhase.owner,
-            task: taskMap[dep]
-          }]
-        })
-      }
-    }
-  }
-
-  return crossDeps.map(cd => `
-    - from: "${cd.from}"
-      task: "${cd.task}"
-      waitFor:
-        - terminal: "${cd.waitFor[0].terminal}"
-          task: "${cd.waitFor[0].task}"
-  `).join('')
-}
-
-function getCrossTerminalDeps(terminalId) {
-  // Returns YAML for cross-terminal dependencies
-  const deps = crossDependencies.filter(cd => cd.from === terminalId)
-  return deps.map(d => `
-    task${d.task}_requires: "Task #${d.waitFor[0].task} from ${d.waitFor[0].terminal}"
-    checkMethod: "TaskGet('${d.waitFor[0].task}').status == 'completed'"
-  `).join('\n')
-}
-```
-
-### 10.6 Autonomous Execution Flow
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    AUTONOMOUS EXECUTION FLOW                         │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  Orchestrator                                                       │
-│       │                                                             │
-│       ▼                                                             │
-│  /orchestrate → Creates Tasks + autonomousExecution config          │
-│       │                                                             │
-│       ▼                                                             │
-│  /assign → Sets owner for each task                                 │
-│       │                                                             │
-│       ├─────────────────┬─────────────────┐                         │
-│       ▼                 ▼                 ▼                         │
-│  Terminal-B         Terminal-C         Terminal-D                   │
-│       │                 │                 │                         │
-│       ▼                 ▼                 ▼                         │
-│  Read prompt        Read prompt        Read prompt                  │
-│       │                 │                 │                         │
-│       ▼                 ▼                 ▼                         │
-│  ┌────────────────────────────────────────────────────────────┐    │
-│  │              AUTONOMOUS EXECUTION LOOP                      │    │
-│  │                                                            │    │
-│  │  1. TaskList() → Check all task status                     │    │
-│  │  2. Find my pending tasks with no blockers                 │    │
-│  │  3. Execute task → TaskUpdate(status="completed")          │    │
-│  │  4. Repeat until all my tasks done                         │    │
-│  │  5. Report completion                                      │    │
-│  └────────────────────────────────────────────────────────────┘    │
-│                              │                                      │
-│                              ▼                                      │
-│                    All terminals complete                           │
-│                              │                                      │
-│                              ▼                                      │
-│                    /collect (verify)                                │
-│                              │                                      │
-│                              ▼                                      │
-│                    /synthesis (finalize)                            │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 11. Future Enhancements
+## 10. Future Enhancements
 
 1. **Template support:** Pre-defined orchestration templates
 2. **Auto-recovery:** Resume interrupted orchestration
