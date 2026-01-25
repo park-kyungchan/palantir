@@ -19,6 +19,10 @@ allowed-tools:
   - Task
   - Bash
 hooks:
+  Setup:
+    - type: command
+      command: "/home/palantir/.claude/hooks/research-validate.sh"
+      timeout: 10000
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/research-finalize.sh"
@@ -80,15 +84,66 @@ done
 ### 2.2 Initialize Research Session
 
 ```bash
-# Generate research ID
+# Source centralized slug generator
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/slug-generator.sh"
+
+# Generate research ID using centralized slug generator
 if [[ -n "$CLARIFY_SLUG" ]]; then
-    RESEARCH_ID="${CLARIFY_SLUG}"
+    # Reuse workload ID from /clarify
+    CLARIFY_YAML=".agent/clarify/${CLARIFY_SLUG}.yaml"
+
+    if [[ -f "$CLARIFY_YAML" ]]; then
+        # Try to extract workload_id from clarify YAML (nested or top-level)
+        # Priority 1: yq for reliable nested YAML parsing
+        if command -v yq &> /dev/null; then
+            WORKLOAD_ID=$(yq -r '.metadata.workload_id // .workload_id // .metadata.id // empty' "$CLARIFY_YAML" 2>/dev/null || echo "")
+        fi
+
+        # Priority 2: grep fallback for nested workload_id
+        if [[ -z "$WORKLOAD_ID" ]]; then
+            WORKLOAD_ID=$(grep -oP '^\s*workload_id:\s*["\x27]?\K[^"\x27\s]+' "$CLARIFY_YAML" | head -1 || echo "")
+        fi
+
+        # Priority 3: grep for metadata.id (common in clarify YAML)
+        if [[ -z "$WORKLOAD_ID" ]]; then
+            # Extract id from metadata section
+            WORKLOAD_ID=$(awk '/^metadata:/,/^[a-z]/{if(/^\s+id:/) print $2}' "$CLARIFY_YAML" | tr -d '"' | head -1 || echo "")
+        fi
+
+        # Priority 4: use clarify slug as fallback
+        if [[ -z "$WORKLOAD_ID" ]]; then
+            WORKLOAD_ID="${CLARIFY_SLUG}"
+        fi
+    else
+        # Clarify file not found, use slug as workload ID
+        WORKLOAD_ID="${CLARIFY_SLUG}"
+    fi
+
+    # Derive research slug from workload ID
+    RESEARCH_ID=$(generate_slug_from_workload "$WORKLOAD_ID")
+
+    # Initialize workload directory (ensure directories exist)
+    source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-tracker.sh"
+    init_workload_directories "$WORKLOAD_ID"
 else
-    RESEARCH_ID=$(echo "$QUERY" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | head -c 20)
+    # Independent execution: generate new workload ID
+    WORKLOAD_ID=$(generate_workload_id "$QUERY")
+    RESEARCH_ID=$(generate_slug_from_workload "$WORKLOAD_ID")
+
+    # Initialize workload context for independent research
+    init_workload "$WORKLOAD_ID" "research" "$QUERY"
 fi
 
-OUTPUT_PATH=".agent/research/${RESEARCH_ID}.md"
-mkdir -p .agent/research
+# Store workload ID in output file metadata (Workload-scoped)
+WORKLOAD_DIR=".agent/prompts/${RESEARCH_ID}"
+OUTPUT_PATH="${WORKLOAD_DIR}/research.md"
+mkdir -p "${WORKLOAD_DIR}"
+
+# Log workload context
+echo "Research Session Initialized:" >&2
+echo "  Workload ID: $WORKLOAD_ID" >&2
+echo "  Research Slug: $RESEARCH_ID" >&2
+echo "  Output: $OUTPUT_PATH" >&2
 ```
 
 ### 2.3 Load Clarify Context (if available)
@@ -383,10 +438,53 @@ if complexity_detected(area):
 
 ---
 
-## 8. Exit Conditions
+## 8. Shift-Left Validation (Gate 2)
 
-### 8.1 Normal Exit (Success)
+### 8.1 Purpose
 
+Gate 2 validates scope access **before** starting research:
+- Verifies target paths exist and are readable
+- Prevents wasted effort on inaccessible directories
+- Warns about overly broad scopes
+
+### 8.2 Hook Integration
+
+```yaml
+hooks:
+  Setup:
+    - research-validate.sh  # Gate 2: Scope Access Validation
+  Stop:
+    - research-finalize.sh  # Pipeline integration
+```
+
+### 8.3 Validation Results
+
+| Result | Behavior | User Action |
+|--------|----------|-------------|
+| `passed` | ✅ Start research | None required |
+| `passed_with_warnings` | ⚠️ Warn about broad scope, proceed | Consider narrowing scope |
+| `failed` | ❌ Block execution, show error | Fix scope path, retry |
+
+### 8.4 Scope Validation Examples
+
+```bash
+# Valid scope - passes
+/research --scope src/auth/ "authentication patterns"
+
+# Missing path - fails
+/research --scope nonexistent/ "query"
+
+# Too broad - warning
+/research --scope . "query"  # Warning: scope very broad
+```
+
+---
+
+## 9. Exit Conditions
+
+### 9.1 Normal Exit (Success)
+
+- Gate 2 validation passes
 - Research report generated at `.agent/research/{id}.md`
 - L1 summary returned to Main Agent
 - Stop hook triggers: `research-finalize.sh`
@@ -438,8 +536,12 @@ if complexity_detected(area):
 - [ ] `/research "test query"` basic execution
 - [ ] `/research --clarify-slug {slug}` context loading
 - [ ] `/research --scope {path}` scoped analysis
+- [ ] `/research --scope nonexistent/` failure handling
+- [ ] `/research --scope .` broad scope warning
+- [ ] Gate 2 validation execution
 - [ ] `/research --external` external resource gathering
 - [ ] L1/L2/L3 output format validation
+- [ ] Setup hook trigger verification
 - [ ] Stop hook trigger verification
 - [ ] Pipeline integration with `/planning`
 

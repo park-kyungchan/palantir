@@ -1,0 +1,310 @@
+# =============================================================================
+# Planning Document: V2.1.19 Pipeline Compliance & Enhancement
+# =============================================================================
+# Generated: 2026-01-25T14:35:00Z
+# Status: draft (awaiting Plan Agent review)
+# Research Source: .agent/research/v2.1.19-pipeline-review-20260125.md
+
+metadata:
+  id: "v2.1.19-pipeline-review-20260125"
+  version: "1.0.0"
+  created_at: "2026-01-25T14:35:00Z"
+  updated_at: "2026-01-25T14:35:00Z"
+  status: "draft"
+  research_source: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+  clarify_source: ".agent/clarify/clarify_upgrade_20260124.yaml"
+
+project:
+  name: "V2.1.19 Pipeline Compliance Enhancement"
+  description: |
+    Claude Code CLI V2.1.19 파이프라인 완전 호환성 검토 및 보완.
+    Research 결과 7/13 스킬이 완전 호환, 6개 스킬에 version 필드 추가 필요.
+    E2E 파이프라인은 정상 작동 확인됨.
+  objectives:
+    - "6개 스킬에 version 필드 추가"
+    - "유틸리티 스킬 문서화 완료"
+    - "E2E 파이프라인 통합 테스트 스크립트 작성"
+    - "argument-hint 일관성 확보"
+
+# =============================================================================
+# PHASES - Implementation Breakdown
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: Version Field Addition (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase1-version-fields"
+    name: "Add Version Fields to Skills"
+    description: |
+      Research에서 확인된 6개 스킬에 version 필드 추가:
+      - clarify, orchestrate, assign
+      - build, build-research, commit-push-pr, docx-automation
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: ".claude/skills/clarify/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/orchestrate/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/assign/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/build/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/build-research/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/commit-push-pr/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/docx-automation/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+
+    referenceFiles:
+      - path: ".claude/skills/research/SKILL.md"
+        reason: "V2.1.19 compliant frontmatter example"
+      - path: ".claude/skills/worker/SKILL.md"
+        reason: "Version field format reference"
+
+    completionCriteria:
+      - "All 7 skill files have version: field in frontmatter"
+      - "Version follows semver format (e.g., 1.0.0)"
+      - "Grep validation passes for version field presence"
+
+    verificationSteps:
+      - command: "grep -r 'version:' .claude/skills/*/SKILL.md | wc -l"
+        expected: "13 (all skills have version)"
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Utility Skills Documentation (P1)
+  # ---------------------------------------------------------------------------
+  - id: "phase2-utility-docs"
+    name: "Complete Utility Skills Documentation"
+    description: |
+      유틸리티 스킬 문서 완성:
+      - /build: 스킬/훅/에이전트 생성기
+      - /build-research: 빌드 전 리서치
+      - /commit-push-pr: Git 워크플로우
+      - /docx-automation: DOCX 생성
+    priority: "P1"
+    owner: "terminal-c"
+    dependencies: []
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/build/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling"]
+      - path: ".claude/skills/build-research/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling"]
+      - path: ".claude/skills/commit-push-pr/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling"]
+      - path: ".claude/skills/docx-automation/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling"]
+
+    referenceFiles:
+      - path: ".claude/skills/research/SKILL.md"
+        reason: "Documentation quality reference"
+      - path: ".claude/skills/planning/SKILL.md"
+        reason: "Comprehensive documentation example"
+
+    completionCriteria:
+      - "Each skill has at least 2 usage examples"
+      - "Error handling section documents common errors"
+      - "Invocation syntax is clearly documented"
+
+    verificationSteps:
+      - command: "grep -c '## Error' .claude/skills/build/SKILL.md"
+        expected: "1 or more"
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Argument-Hint Consistency (P2)
+  # ---------------------------------------------------------------------------
+  - id: "phase3-argument-hints"
+    name: "Standardize Argument Hints"
+    description: |
+      모든 스킬의 argument-hint 필드 일관성 확보.
+      형식: <required> [optional] --flag <value>
+    priority: "P2"
+    owner: "terminal-b"
+    dependencies: ["phase1-version-fields"]
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: ".claude/skills/clarify/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter.argument-hint"]
+      - path: ".claude/skills/orchestrate/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter.argument-hint"]
+      - path: ".claude/skills/assign/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter.argument-hint"]
+
+    referenceFiles:
+      - path: ".claude/skills/research/SKILL.md"
+        reason: "argument-hint format example"
+
+    completionCriteria:
+      - "All skills with arguments have argument-hint field"
+      - "Format follows <required> [optional] convention"
+
+    verificationSteps:
+      - command: "grep 'argument-hint:' .claude/skills/*/SKILL.md | wc -l"
+        expected: "At least 9 skills with argument hints"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: E2E Integration Test Script (P2)
+  # ---------------------------------------------------------------------------
+  - id: "phase4-e2e-test"
+    name: "Create E2E Integration Test Script"
+    description: |
+      파이프라인 E2E 테스트 스크립트 작성.
+      모든 스킬의 호출 가능성 및 데이터 핸드오프 검증.
+    priority: "P2"
+    owner: "terminal-c"
+    dependencies: ["phase1-version-fields", "phase2-utility-docs"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/tests/e2e-pipeline-test.sh"
+        action: "create"
+      - path: ".claude/tests/README.md"
+        action: "create"
+
+    referenceFiles:
+      - path: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+        reason: "Test scenarios documented in L3"
+
+    completionCriteria:
+      - "Test script validates skill invocation syntax"
+      - "Test script checks data handoff paths exist"
+      - "README documents how to run tests"
+
+    verificationSteps:
+      - command: "bash -n .claude/tests/e2e-pipeline-test.sh"
+        expected: "No syntax errors"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: Final Validation (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase5-validation"
+    name: "Final V2.1.19 Compliance Validation"
+    description: |
+      모든 변경사항 검증 및 최종 확인.
+      Research 리포트 대비 개선사항 확인.
+    priority: "P0"
+    owner: "orchestrator"
+    dependencies: ["phase1-version-fields", "phase2-utility-docs", "phase3-argument-hints", "phase4-e2e-test"]
+    estimatedComplexity: "low"
+
+    targetFiles: []
+
+    referenceFiles:
+      - path: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+        reason: "Original findings comparison"
+
+    completionCriteria:
+      - "All 13 skills have version field"
+      - "Utility skills have complete documentation"
+      - "E2E test script passes"
+      - "No P0 items remain open"
+
+    verificationSteps:
+      - command: "grep -r 'version:' .claude/skills/*/SKILL.md | wc -l"
+        expected: "13"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase3-argument-hints"
+      to: "phase1-version-fields"
+      reason: "Version fields must be added before standardizing other frontmatter"
+    - from: "phase4-e2e-test"
+      to: "phase1-version-fields"
+      reason: "Tests should verify completed version compliance"
+    - from: "phase4-e2e-test"
+      to: "phase2-utility-docs"
+      reason: "Tests should validate documented behavior"
+    - from: "phase5-validation"
+      to: "phase1-version-fields"
+      reason: "Validation requires all changes complete"
+    - from: "phase5-validation"
+      to: "phase2-utility-docs"
+      reason: "Validation requires all changes complete"
+    - from: "phase5-validation"
+      to: "phase3-argument-hints"
+      reason: "Validation requires all changes complete"
+    - from: "phase5-validation"
+      to: "phase4-e2e-test"
+      reason: "Validation requires all changes complete"
+
+  external: []
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "pending"
+  reviewedAt: null
+  reviewedBy: null
+  iterationCount: 0
+  comments: []
+  approvalCriteria:
+    - "All phases have clear completion criteria"
+    - "Dependencies form acyclic graph"
+    - "Target files are specified for each phase"
+    - "Risk mitigation strategies identified"
+    - "Parallelization opportunities identified"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Phase 1 & Phase 2 can run in parallel (no dependencies between them)
+    - Terminal B: Phase 1 (version fields)
+    - Terminal C: Phase 2 (utility docs)
+
+    After both complete:
+    - Terminal B: Phase 3 (argument hints)
+    - Terminal C: Phase 4 (E2E test)
+
+    Final: Phase 5 requires all previous phases
+
+  criticalPath: |
+    phase1-version-fields → phase3-argument-hints → phase5-validation
+    phase2-utility-docs → phase4-e2e-test → phase5-validation
+
+  riskMitigation: |
+    - LOW: Missing skill files → Check existence before editing
+    - LOW: YAML syntax errors → Validate YAML after each edit
+    - LOW: Test script failures → Manual fallback verification
+
+  estimatedEffort: |
+    Phase 1: ~15 min (7 files, simple edits)
+    Phase 2: ~30 min (4 files, moderate content)
+    Phase 3: ~10 min (3 files, simple edits)
+    Phase 4: ~20 min (2 files, scripting)
+    Phase 5: ~10 min (verification only)
+    Total: ~85 min (with parallelization: ~45 min)
+
+# =============================================================================
+# END OF PLANNING DOCUMENT
+# =============================================================================

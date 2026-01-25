@@ -1,0 +1,323 @@
+# =============================================================================
+# Progress Tracker: Ontology-Definition Enhancement
+# =============================================================================
+# Orchestrator: Terminal-A
+# Last Updated: 2026-01-25T14:40:00Z
+# Synced with Native Task System
+# =============================================================================
+
+version: "3.0"
+projectId: "ontology-definition-enhancement"
+projectStatus: "READY_FOR_EXECUTION"
+lastUpdated: "2026-01-25T14:40:00Z"
+
+# =============================================================================
+# CURRENT PROJECT
+# =============================================================================
+currentProject:
+  name: "Ontology-Definition Package Enhancement"
+  goal: "docs/Ontology.md 기준 Ontology-Definition 패키지 완전 커버리지 달성"
+  principle: "Terminal-B와 Terminal-C 병렬 실행으로 최적화"
+
+# =============================================================================
+# TERMINAL STATUS
+# =============================================================================
+terminals:
+  terminal-a:
+    role: "Orchestrator"
+    status: "active"
+    currentTask: "Orchestration complete - awaiting worker start"
+
+  terminal-b:
+    role: "Worker"
+    status: "ready"
+    currentTask: null
+    assignedTasks:
+      - taskId: "1"
+        subject: "Phase 1: PropertyType 정교화"
+        canStartImmediately: true
+      - taskId: "3"
+        subject: "Phase 3: ObjectSet 타입 정의 추가"
+        blockedBy: ["1"]
+      - taskId: "5"
+        subject: "Phase 5: Rules Engine 타입 정의 추가"
+        blockedBy: ["3"]
+      - taskId: "7"
+        subject: "Phase 7: Versioning & Governance 지원 추가"
+        blockedBy: ["1"]
+    promptFile: ".agent/prompts/pending/worker-terminal-b-ontology.yaml"
+
+  terminal-c:
+    role: "Worker"
+    status: "ready"
+    currentTask: null
+    assignedTasks:
+      - taskId: "2"
+        subject: "Phase 2: Function 타입 정의 추가"
+        blockedBy: ["1"]
+      - taskId: "4"
+        subject: "Phase 4: Automation 타입 정의 추가"
+        blockedBy: ["2", "3"]
+      - taskId: "6"
+        subject: "Phase 6: Writeback 설정 타입 추가"
+        blockedBy: ["4"]
+      - taskId: "8"
+        subject: "Phase 8: ActionType ValueSource 정교화"
+        blockedBy: ["2"]
+    promptFile: ".agent/prompts/pending/worker-terminal-c-ontology.yaml"
+
+# =============================================================================
+# TASK STATUS (Synced with Native Task System)
+# =============================================================================
+tasks:
+  "1":
+    subject: "Phase 1: PropertyType 정교화"
+    status: "pending"
+    owner: "Terminal-B"
+    priority: "P0"
+    blockedBy: []
+    phaseId: "phase1-property-enhancement"
+    targetFiles:
+      - "ontology_definition/types/property_def.py"
+      - "ontology_definition/core/enums.py"
+    startedAt: null
+    completedAt: null
+
+  "2":
+    subject: "Phase 2: Function 타입 정의 추가"
+    status: "pending"
+    owner: "Terminal-C"
+    priority: "P0"
+    blockedBy: ["1"]
+    phaseId: "phase2-function-type"
+    targetFiles:
+      - "ontology_definition/types/function.py"
+      - "ontology_definition/core/enums.py"
+      - "ontology_definition/types/__init__.py"
+    startedAt: null
+    completedAt: null
+
+  "3":
+    subject: "Phase 3: ObjectSet 타입 정의 추가"
+    status: "pending"
+    owner: "Terminal-B"
+    priority: "P0"
+    blockedBy: ["1"]
+    phaseId: "phase3-objectset-type"
+    targetFiles:
+      - "ontology_definition/types/objectset.py"
+      - "ontology_definition/types/__init__.py"
+    startedAt: null
+    completedAt: null
+
+  "4":
+    subject: "Phase 4: Automation 타입 정의 추가"
+    status: "pending"
+    owner: "Terminal-C"
+    priority: "P1"
+    blockedBy: ["2", "3"]
+    phaseId: "phase4-automation-type"
+    targetFiles:
+      - "ontology_definition/types/automation.py"
+      - "ontology_definition/core/enums.py"
+    startedAt: null
+    completedAt: null
+
+  "5":
+    subject: "Phase 5: Rules Engine 타입 정의 추가"
+    status: "pending"
+    owner: "Terminal-B"
+    priority: "P1"
+    blockedBy: ["3"]
+    phaseId: "phase5-rules-engine"
+    targetFiles:
+      - "ontology_definition/types/rules_engine.py"
+      - "ontology_definition/types/__init__.py"
+    startedAt: null
+    completedAt: null
+
+  "6":
+    subject: "Phase 6: Writeback 설정 타입 추가"
+    status: "pending"
+    owner: "Terminal-C"
+    priority: "P1"
+    blockedBy: ["4"]
+    phaseId: "phase6-writeback"
+    targetFiles:
+      - "ontology_definition/types/writeback.py"
+    startedAt: null
+    completedAt: null
+
+  "7":
+    subject: "Phase 7: Versioning & Governance 지원 추가"
+    status: "pending"
+    owner: "Terminal-B"
+    priority: "P1"
+    blockedBy: ["1"]
+    phaseId: "phase7-versioning"
+    targetFiles:
+      - "ontology_definition/versioning/__init__.py"
+      - "ontology_definition/versioning/schema_change.py"
+      - "ontology_definition/versioning/migration.py"
+      - "ontology_definition/versioning/proposal.py"
+    startedAt: null
+    completedAt: null
+
+  "8":
+    subject: "Phase 8: ActionType ValueSource 정교화"
+    status: "pending"
+    owner: "Terminal-C"
+    priority: "P2"
+    blockedBy: ["2"]
+    phaseId: "phase8-valuesource-enhancement"
+    targetFiles:
+      - "ontology_definition/types/action_type.py"
+    startedAt: null
+    completedAt: null
+
+  "9":
+    subject: "Phase 9: 테스트 및 문서화"
+    status: "pending"
+    owner: "All"
+    priority: "P0"
+    blockedBy: ["1", "2", "3", "4", "5", "6", "7", "8"]
+    phaseId: "phase9-testing"
+    targetFiles:
+      - "tests/test_function.py"
+      - "tests/test_objectset.py"
+      - "tests/test_automation.py"
+      - "tests/test_rules_engine.py"
+      - "tests/test_writeback.py"
+      - "tests/test_versioning.py"
+      - "README.md"
+    startedAt: null
+    completedAt: null
+
+# =============================================================================
+# EXECUTION SUMMARY
+# =============================================================================
+executionSummary:
+  totalTasks: 9
+  pending: 9
+  inProgress: 0
+  completed: 0
+  blocked: 8
+
+  parallelizableNow:
+    - taskId: "1"
+      owner: "Terminal-B"
+      subject: "Phase 1: PropertyType 정교화"
+
+# =============================================================================
+# WORKER INSTRUCTIONS
+# =============================================================================
+workerInstructions:
+  terminal-b:
+    action: "START"
+    command: |
+      1. TaskUpdate(taskId="1", status="in_progress")
+      2. Read .agent/prompts/pending/worker-terminal-b-ontology.yaml
+      3. Modify ontology_definition/types/property_def.py
+      4. Modify ontology_definition/core/enums.py
+      5. TaskUpdate(taskId="1", status="completed")
+      6. Continue with Task #3, #5, #7
+
+  terminal-c:
+    action: "WAIT"
+    command: |
+      1. Wait for Task #1 to complete
+      2. Then TaskUpdate(taskId="2", status="in_progress")
+      3. Read .agent/prompts/pending/worker-terminal-c-ontology.yaml
+      4. Create ontology_definition/types/function.py
+      5. TaskUpdate(taskId="2", status="completed")
+      6. Continue with Task #4, #6, #8
+
+# =============================================================================
+# BLOCKERS
+# =============================================================================
+blockers: []
+
+# =============================================================================
+# COMPLETED TASKS
+# =============================================================================
+completedTasks: []
+
+# =============================================================================
+# AUTONOMOUS EXECUTION CONFIG (자율 실행 설정)
+# =============================================================================
+autonomousExecution:
+  enabled: true
+  mode: "ACTIVE"
+  startedAt: null
+  estimatedCompletion: null
+
+  polling:
+    intervalSeconds: 30
+    maxRetries: 3
+    backoffMultiplier: 2
+
+  dependencyRules:
+    checkMethod: "TaskGet(blockerId).status == 'completed'"
+    autoUnblock: true
+    notifyOnUnblock: true
+
+  coordination:
+    method: "Native Task System + _progress.yaml"
+    syncInterval: 30
+    conflictResolution: "first-claimer-wins"
+
+  completionTracking:
+    projectComplete:
+      condition: "ALL tasks #1-#9 status == 'completed'"
+      action: "Notify Orchestrator, generate final report"
+
+    terminalBComplete:
+      condition: "Tasks #1, #3, #5, #7 status == 'completed'"
+      action: "Update terminal-b.status = 'completed'"
+
+    terminalCComplete:
+      condition: "Tasks #2, #4, #6, #8 status == 'completed'"
+      action: "Update terminal-c.status = 'completed'"
+
+  crossDependencies:
+    - from: "Terminal-C"
+      task: "2"
+      waitFor:
+        - terminal: "Terminal-B"
+          task: "1"
+
+    - from: "Terminal-C"
+      task: "4"
+      waitFor:
+        - terminal: "Terminal-B"
+          task: "3"
+
+    - from: "Both"
+      task: "9"
+      waitFor:
+        - terminal: "Terminal-B"
+          task: "7"
+        - terminal: "Terminal-C"
+          task: "8"
+
+  errorHandling:
+    onTaskFailure:
+      action: "Log, mark task as blocked, notify Orchestrator"
+      retryCount: 2
+      escalateAfter: 2
+
+    onDeadlock:
+      detection: "No progress for 3 poll cycles"
+      action: "Report to Orchestrator with dependency graph"
+
+# =============================================================================
+# START COMMAND FOR WORKERS
+# =============================================================================
+workerStartCommands:
+  terminal-b: |
+    # Terminal-B Worker 시작 명령
+    /worker start b
+
+  terminal-c: |
+    # Terminal-C Worker 시작 명령 (Task #1 완료 후)
+    /worker start c

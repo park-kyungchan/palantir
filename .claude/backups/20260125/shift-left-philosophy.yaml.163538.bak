@@ -1,0 +1,409 @@
+# =============================================================================
+# Planning Document: Shift Left Philosophy Integration
+# =============================================================================
+# Generated: 2026-01-25T16:30:00Z
+# Status: draft (awaiting Plan Agent review)
+# Research Source: .agent/research/shift-left-philosophy.md
+# =============================================================================
+
+metadata:
+  id: "shift-left-philosophy"
+  version: "1.0.0"
+  created_at: "2026-01-25T16:30:00Z"
+  updated_at: "2026-01-25T16:30:00Z"
+  status: "draft"
+  research_source: ".agent/research/shift-left-philosophy.md"
+  clarify_source: null
+
+project:
+  name: "Shift Left Philosophy - Skill Integration"
+  description: |
+    validation-gates.sh 모듈을 E2E 파이프라인의 각 스킬에 통합.
+
+    현재 상태:
+    - CLAUDE.md에 SHIFT-LEFT 원칙 추가됨 ✅
+    - validation-gates.sh 모듈 생성됨 ✅ (5개 게이트 함수)
+
+    남은 작업:
+    - 각 스킬에 validation gate 호출 통합
+    - Setup Hook을 통한 자동 gate 실행
+
+  objectives:
+    - "/clarify에 Gate 1 (requirement feasibility) 통합"
+    - "/research에 Gate 2 (scope access) 통합"
+    - "/planning에 Gate 3 (pre-flight checks) 통합"
+    - "/orchestrate에 Gate 4 (dependency validation) 통합"
+    - "/worker에 Gate 5 (pre-execution gate) 통합"
+    - "Observability 추가 (validation metrics)"
+
+# =============================================================================
+# CURRENT STATE
+# =============================================================================
+
+currentState:
+  completed:
+    - "CLAUDE.md SHIFT-LEFT directive 추가"
+    - "validation-gates.sh 모듈 생성 (5개 gate 함수)"
+    - "Gate 1-5 함수 구현 완료"
+
+  remaining:
+    - "스킬별 hook 통합"
+    - "E2E 테스트"
+
+# =============================================================================
+# PHASES - Implementation Breakdown
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: Clarify + Research Integration (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase1-clarify-research-gates"
+    name: "Gate 1-2 Integration: /clarify, /research"
+    description: |
+      /clarify와 /research 스킬에 validation gates 통합.
+
+      Gate 1 (/clarify):
+      - Stop hook에서 validate_requirement_feasibility() 호출
+      - Warning 시 사용자에게 알림 후 진행 허용
+      - Error 시 추가 clarification 요청
+
+      Gate 2 (/research):
+      - Setup hook에서 validate_scope_access() 호출
+      - Scope 경로 존재 여부 사전 검증
+      - 접근 불가 시 조기 종료
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "medium"
+    estimatedTime: "30 min"
+
+    targetFiles:
+      - path: ".claude/skills/clarify/SKILL.md"
+        action: "modify"
+        sections: ["hooks - add validation gate reference"]
+      - path: ".claude/hooks/clarify-validate.sh"
+        action: "create"
+      - path: ".claude/skills/research/SKILL.md"
+        action: "modify"
+        sections: ["hooks - add setup hook"]
+      - path: ".claude/hooks/research-validate.sh"
+        action: "create"
+
+    referenceFiles:
+      - path: ".claude/skills/shared/validation-gates.sh"
+        reason: "Source validation functions"
+
+    completionCriteria:
+      - "/clarify hooks에 validation gate 참조 추가"
+      - "clarify-validate.sh가 Gate 1 호출"
+      - "/research에 Setup hook 추가"
+      - "research-validate.sh가 Gate 2 호출"
+      - "모든 hook 스크립트가 bash -n 통과"
+
+    verificationSteps:
+      - command: "bash -n .claude/hooks/clarify-validate.sh"
+        expected: "exit 0"
+      - command: "bash -n .claude/hooks/research-validate.sh"
+        expected: "exit 0"
+      - command: "grep -c 'validation-gates' .claude/skills/clarify/SKILL.md"
+        expected: "1 or more"
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Planning + Orchestrate Integration (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase2-planning-orchestrate-gates"
+    name: "Gate 3-4 Integration: /planning, /orchestrate"
+    description: |
+      /planning과 /orchestrate 스킬에 validation gates 통합.
+
+      Gate 3 (/planning):
+      - Plan Agent 리뷰 전 pre_flight_checks() 호출
+      - Target files 존재/생성 가능 여부 검증
+      - Circular dependency 조기 탐지
+
+      Gate 4 (/orchestrate):
+      - Task 생성 전 validate_phase_dependencies() 호출
+      - 중복 phase ID 탐지
+      - 정의되지 않은 dependency 탐지
+    priority: "P0"
+    owner: "terminal-c"
+    dependencies: []
+    estimatedComplexity: "medium"
+    estimatedTime: "30 min"
+
+    targetFiles:
+      - path: ".claude/skills/planning/SKILL.md"
+        action: "modify"
+        sections: ["execution protocol - add pre-flight check"]
+      - path: ".claude/hooks/planning-preflight.sh"
+        action: "create"
+      - path: ".claude/skills/orchestrate/SKILL.md"
+        action: "modify"
+        sections: ["execution protocol - add dependency validation"]
+      - path: ".claude/hooks/orchestrate-validate.sh"
+        action: "create"
+
+    referenceFiles:
+      - path: ".claude/skills/shared/validation-gates.sh"
+        reason: "Source validation functions"
+
+    completionCriteria:
+      - "/planning에 pre-flight check 추가"
+      - "planning-preflight.sh가 Gate 3 호출"
+      - "/orchestrate에 dependency validation 추가"
+      - "orchestrate-validate.sh가 Gate 4 호출"
+      - "모든 hook 스크립트가 bash -n 통과"
+
+    verificationSteps:
+      - command: "bash -n .claude/hooks/planning-preflight.sh"
+        expected: "exit 0"
+      - command: "bash -n .claude/hooks/orchestrate-validate.sh"
+        expected: "exit 0"
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Worker Integration (P1)
+  # ---------------------------------------------------------------------------
+  - id: "phase3-worker-gate"
+    name: "Gate 5 Integration: /worker"
+    description: |
+      /worker 스킬에 pre-execution gate 통합.
+
+      Gate 5 (/worker start):
+      - Task 시작 전 pre_execution_gate() 호출
+      - blockedBy 완료 여부 검증
+      - Target file 접근 권한 검증
+      - 실패 시 worker blocked 상태로 전환
+    priority: "P1"
+    owner: "terminal-b"
+    dependencies: ["phase1-clarify-research-gates"]
+    estimatedComplexity: "low"
+    estimatedTime: "20 min"
+
+    targetFiles:
+      - path: ".claude/skills/worker/SKILL.md"
+        action: "modify"
+        sections: ["worker start - add pre-execution gate"]
+      - path: ".claude/hooks/worker-preflight.sh"
+        action: "create"
+
+    referenceFiles:
+      - path: ".claude/skills/shared/validation-gates.sh"
+        reason: "Source validation functions"
+
+    completionCriteria:
+      - "/worker start에 pre-execution gate 추가"
+      - "worker-preflight.sh가 Gate 5 호출"
+      - "Gate 실패 시 명확한 에러 메시지 출력"
+
+    verificationSteps:
+      - command: "bash -n .claude/hooks/worker-preflight.sh"
+        expected: "exit 0"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: Observability & Metrics (P2)
+  # ---------------------------------------------------------------------------
+  - id: "phase4-observability"
+    name: "Validation Metrics & Dashboard"
+    description: |
+      Shift-Left 효과 측정을 위한 메트릭 수집.
+
+      1. 로그 집계:
+         - .agent/logs/validation_gates.log 분석
+         - Gate별 pass/warning/fail 카운트
+
+      2. 대시보드:
+         - _progress.yaml에 validation 섹션 추가
+         - Gate별 성공률 시각화
+
+      3. 개선 지표:
+         - "Shift Left Ratio": 조기 탐지된 문제 / 전체 문제
+         - "Prevention Rate": Gate에서 차단된 문제 수
+    priority: "P2"
+    owner: "terminal-c"
+    dependencies: ["phase2-planning-orchestrate-gates"]
+    estimatedComplexity: "medium"
+    estimatedTime: "25 min"
+
+    targetFiles:
+      - path: ".claude/hooks/validation-metrics.sh"
+        action: "create"
+      - path: ".agent/prompts/_progress.yaml"
+        action: "modify"
+        sections: ["add validation_metrics section"]
+
+    referenceFiles:
+      - path: ".agent/logs/validation_gates.log"
+        reason: "Parse validation logs"
+
+    completionCriteria:
+      - "validation-metrics.sh가 로그 분석"
+      - "_progress.yaml에 validation 섹션 존재"
+      - "Gate별 통계 출력 가능"
+
+    verificationSteps:
+      - command: "bash -n .claude/hooks/validation-metrics.sh"
+        expected: "exit 0"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: E2E Testing (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase5-e2e-testing"
+    name: "Shift-Left E2E Integration Test"
+    description: |
+      전체 파이프라인에서 validation gates 작동 테스트.
+
+      테스트 시나리오:
+      1. 잘못된 요구사항 → Gate 1에서 warning
+      2. 존재하지 않는 scope → Gate 2에서 error
+      3. 잘못된 target file → Gate 3에서 warning
+      4. 순환 dependency → Gate 4에서 error
+      5. blockedBy 미완료 → Gate 5에서 block
+    priority: "P0"
+    owner: "orchestrator"
+    dependencies: ["phase1-clarify-research-gates", "phase2-planning-orchestrate-gates", "phase3-worker-gate", "phase4-observability"]
+    estimatedComplexity: "medium"
+    estimatedTime: "30 min"
+
+    targetFiles:
+      - path: ".claude/tests/shift-left-e2e-test.sh"
+        action: "create"
+      - path: ".claude/tests/README.md"
+        action: "create"
+        sections: ["shift-left test documentation"]
+
+    referenceFiles:
+      - path: ".claude/skills/shared/validation-gates.sh"
+        reason: "Test all gate functions"
+
+    completionCriteria:
+      - "테스트 스크립트가 5개 시나리오 모두 테스트"
+      - "모든 테스트 통과"
+      - "README에 테스트 방법 문서화"
+
+    verificationSteps:
+      - command: "bash -n .claude/tests/shift-left-e2e-test.sh"
+        expected: "exit 0"
+      - command: "bash .claude/tests/shift-left-e2e-test.sh"
+        expected: "All tests passed"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase3-worker-gate"
+      to: "phase1-clarify-research-gates"
+      reason: "Clarify/Research gate 패턴 참조"
+    - from: "phase4-observability"
+      to: "phase2-planning-orchestrate-gates"
+      reason: "Planning/Orchestrate gate 로그 필요"
+    - from: "phase5-e2e-testing"
+      to: "phase1-clarify-research-gates"
+      reason: "Gate 1-2 테스트"
+    - from: "phase5-e2e-testing"
+      to: "phase2-planning-orchestrate-gates"
+      reason: "Gate 3-4 테스트"
+    - from: "phase5-e2e-testing"
+      to: "phase3-worker-gate"
+      reason: "Gate 5 테스트"
+    - from: "phase5-e2e-testing"
+      to: "phase4-observability"
+      reason: "메트릭 테스트"
+
+  external: []
+
+# =============================================================================
+# PARALLELIZATION STRATEGY
+# =============================================================================
+
+parallelization:
+  strategy: |
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │  Phase 1 (Terminal-B) ─────────┬──→ Phase 3 (Terminal-B) ───────┐  │
+    │                                │                                 │  │
+    │  Phase 2 (Terminal-C) ─────────┼──→ Phase 4 (Terminal-C) ───────┼──→ Phase 5
+    │                                │                                 │  │
+    └─────────────────────────────────────────────────────────────────────┘
+
+    Timeline:
+    ├── 0-30min:  Phase 1 + Phase 2 (병렬)
+    ├── 30-50min: Phase 3 + Phase 4 (병렬)
+    └── 50-80min: Phase 5 (순차)
+
+  criticalPath: "Phase 1 → Phase 3 → Phase 5 (약 80분)"
+
+  terminalAssignment:
+    terminal-b:
+      - "phase1-clarify-research-gates"
+      - "phase3-worker-gate"
+    terminal-c:
+      - "phase2-planning-orchestrate-gates"
+      - "phase4-observability"
+    orchestrator:
+      - "phase5-e2e-testing"
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "approved"
+  reviewedAt: "2026-01-25T16:35:00Z"
+  reviewedBy: "Plan Agent"
+  iterationCount: 1
+  comments:
+    - round: 1
+      status: "APPROVED"
+      findings:
+        - "[MINOR] Phase 5 README.md action: modify → create 수정"
+        - "[MINOR] Phase 4에서 validation_gates.log 존재 체크 권장"
+        - "의존성 그래프 비순환 확인"
+        - "병렬 Phase 간 파일 충돌 없음"
+        - "완료 기준 모두 측정 가능"
+      resolution: "Minor 이슈 수정 후 승인"
+
+  approvalCriteria:
+    - "All phases have clear completion criteria"
+    - "Dependencies form acyclic graph"
+    - "Target files are specified for each phase"
+    - "Risk mitigation strategies identified"
+    - "Parallelization opportunities identified"
+
+# =============================================================================
+# RISK MITIGATION
+# =============================================================================
+
+riskMitigation:
+  - risk: "Validation overhead로 파이프라인 속도 저하"
+    severity: "LOW"
+    mitigation: "Gate 함수는 경량 검증만 수행, 타임아웃 설정"
+
+  - risk: "False positive로 정상 작업 차단"
+    severity: "MEDIUM"
+    mitigation: "Warning은 진행 허용, Error만 차단"
+
+  - risk: "기존 hook과 충돌"
+    severity: "LOW"
+    mitigation: "새 hook 파일 생성, 기존 hook 수정 최소화"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  estimatedTotalTime: "~80분 (병렬 실행 시)"
+
+  prerequisites:
+    - "validation-gates.sh 모듈 존재 확인 ✅"
+    - "CLAUDE.md SHIFT-LEFT 원칙 존재 확인 ✅"
+    - "Terminal-B, Terminal-C 준비"
+
+  rollbackPlan: |
+    각 스킬의 hooks 섹션만 수정하므로 롤백 용이:
+    git checkout -- .claude/skills/{skill}/SKILL.md
+
+# =============================================================================
+# END OF PLANNING DOCUMENT
+# =============================================================================

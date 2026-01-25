@@ -1,9 +1,0 @@
-{
-  "id": "1",
-  "subject": "Test: Task 공유 테스트",
-  "description": "CLAUDE_CODE_TASK_LIST_ID가 같으면 다른 터미널에서도 이 Task가 보이는지 테스트",
-  "activeForm": "Testing task sharing",
-  "status": "pending",
-  "blocks": [],
-  "blockedBy": []
-}

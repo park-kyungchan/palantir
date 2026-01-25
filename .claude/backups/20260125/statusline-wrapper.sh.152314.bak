@@ -1,0 +1,43 @@
+#!/bin/bash
+# =============================================================================
+# Statusline Wrapper with Pastel Background Colors
+# =============================================================================
+# Wraps the original statusline output with per-line pastel backgrounds
+
+# Pastel background colors (ANSI 48;2;R;G;B format)
+BG_SKY="\033[48;2;166;200;244m"      # Soft Sky Blue - Line 1
+BG_MINT="\033[48;2;166;244;166m"     # Soft Mint Green - Line 2
+BG_LAVENDER="\033[48;2;230;166;244m" # Soft Lavender - Line 3
+FG_DARK="\033[38;2;40;40;40m"        # Dark text for readability
+RESET="\033[0m"
+
+# Read stdin (JSON from Claude Code)
+INPUT=$(cat)
+
+# Run original statusline and capture output
+OUTPUT=$(echo "$INPUT" | ~/.claude/statusline/statusline.sh 2>/dev/null)
+
+# If statusline fails, just pass through
+if [ -z "$OUTPUT" ]; then
+    exit 0
+fi
+
+# Apply background colors to each line
+LINE_NUM=0
+while IFS= read -r line; do
+    ((LINE_NUM++))
+
+    # Skip empty lines
+    if [ -z "$line" ]; then
+        echo ""
+        continue
+    fi
+
+    # Apply different background per line
+    case $LINE_NUM in
+        1) echo -e "${BG_SKY}${FG_DARK} ${line} ${RESET}" ;;
+        2) echo -e "${BG_MINT}${FG_DARK} ${line} ${RESET}" ;;
+        3) echo -e "${BG_LAVENDER}${FG_DARK} ${line} ${RESET}" ;;
+        *) echo -e "$line" ;;
+    esac
+done <<< "$OUTPUT"

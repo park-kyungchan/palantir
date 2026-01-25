@@ -103,8 +103,14 @@ function readRequirements() {
 ### 3.2 Phase 2: Read Collection Report
 
 ```javascript
-function readCollectionReport() {
-  reportPath = ".agent/outputs/collection_report.md"
+function readCollectionReport(workloadSlug) {
+  // Workload-scoped path (primary) with global fallback
+  const primaryPath = workloadSlug
+    ? `.agent/prompts/${workloadSlug}/collection_report.md`
+    : null
+  const fallbackPath = ".agent/outputs/collection_report.md"
+
+  let reportPath = primaryPath && fileExists(primaryPath) ? primaryPath : fallbackPath
 
   if (!fileExists(reportPath)) {
     console.log("⚠️  Collection report not found. Run /collect first.")
@@ -454,8 +460,10 @@ criticalIssues: ${validationResult.criticalIssueCount}
 \`\`\`
 `
 
-  // Ensure output directory exists
-  outputDir = ".agent/outputs/synthesis"
+  // Workload-scoped output directory
+  outputDir = workloadSlug
+    ? `.agent/prompts/${workloadSlug}/synthesis`
+    : ".agent/outputs/synthesis"  // Fallback (deprecated)
   Bash(`mkdir -p ${outputDir}`)
 
   // Write report

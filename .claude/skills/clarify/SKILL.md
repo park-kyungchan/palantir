@@ -8,7 +8,7 @@ user-invocable: true
 disable-model-invocation: true
 context: fork
 model: sonnet
-version: "2.1.0"
+version: "2.2.0"
 argument-hint: "<request> | --resume <slug>"
 allowed-tools:
   - Read
@@ -19,6 +19,9 @@ allowed-tools:
   - WebSearch
 hooks:
   Stop:
+    - type: command
+      command: "/home/palantir/.claude/hooks/clarify-validate.sh"
+      timeout: 10000
     - type: command
       command: "/home/palantir/.claude/hooks/clarify-finalize.sh"
       timeout: 150000
@@ -42,7 +45,8 @@ hooks:
 if [[ "$ARGUMENTS" == --resume* ]]; then
     RESUME_MODE=true
     SLUG="${ARGUMENTS#--resume }"
-    LOG_PATH=".agent/clarify/${SLUG}.yaml"
+    # Workload-scoped path (V2.2.0)
+    LOG_PATH=".agent/prompts/${SLUG}/clarify.yaml"
 else
     RESUME_MODE=false
     USER_INPUT="$ARGUMENTS"
@@ -57,10 +61,12 @@ source /home/palantir/.claude/skills/clarify/helpers.sh
 
 # Generate unique session
 SLUG=$(yaml_generate_slug "$USER_INPUT")
-LOG_PATH=".agent/clarify/${SLUG}.yaml"
+# Workload-scoped path (V2.2.0)
+WORKLOAD_DIR=".agent/prompts/${SLUG}"
+LOG_PATH="${WORKLOAD_DIR}/clarify.yaml"
 
-# Create YAML log
-mkdir -p .agent/clarify
+# Create workload directory and YAML log
+mkdir -p "${WORKLOAD_DIR}"
 yaml_init_log "$LOG_PATH" "$USER_INPUT"
 ```
 
@@ -87,7 +93,7 @@ fi
 ### 2.1 Full Schema
 
 ```yaml
-# .agent/clarify/{slug}.yaml
+# .agent/prompts/{slug}/clarify.yaml (Workload-scoped V2.2.0)
 metadata:
   id: "{slug}"
   version: "2.0.0"
@@ -300,7 +306,9 @@ metadata:
 
 - User selects "승인"
 - YAML status: `completed`
-- Stop hook triggers: `clarify-finalize.sh`
+- Stop hooks trigger:
+  1. `clarify-validate.sh` - Gate 1: Requirement Feasibility Validation
+  2. `clarify-finalize.sh` - Finalization and pipeline integration
 
 ### 6.2 Abnormal Exit
 
@@ -367,14 +375,14 @@ if approved:
 ### 8.2 Log Reuse
 
 ```bash
-# 이전 세션 목록
-ls .agent/clarify/*.yaml
+# 이전 세션 목록 (Workload-scoped)
+ls .agent/prompts/*/clarify.yaml
 
 # 특정 세션 재개
 /clarify --resume {slug}
 
 # 로그 검색
-grep -l "Chain of Thought" .agent/clarify/*.yaml
+grep -l "Chain of Thought" .agent/prompts/*/clarify.yaml
 ```
 
 ### 8.3 Task Delegation Pattern (V2.1.16+)
@@ -416,13 +424,43 @@ Task(
 
 ---
 
-## 10. Testing Checklist
+## 10. Shift-Left Validation (Gate 1)
+
+### 10.1 Purpose
+
+Gate 1 validates requirement feasibility **before** proceeding to `/research`:
+- Detects potentially missing files early
+- Identifies vague requirements needing clarification
+- Catches destructive operations before execution
+
+### 10.2 Hook Integration
+
+```yaml
+hooks:
+  Stop:
+    - clarify-validate.sh  # Gate 1: Requirement Feasibility
+    - clarify-finalize.sh  # Pipeline integration
+```
+
+### 10.3 Validation Results
+
+| Result | Behavior | User Action |
+|--------|----------|-------------|
+| `passed` | ✅ Continue to next phase | None required |
+| `passed_with_warnings` | ⚠️ Display warnings, allow proceed | Review warnings |
+| `failed` | ❌ Block progression, request clarification | Address errors, re-run `/clarify` |
+
+---
+
+## 11. Testing Checklist
 
 - [ ] `/clarify "테스트 요청"` 기본 실행
 - [ ] `/clarify --resume {slug}` 재개 테스트
 - [ ] YAML 로그 스키마 검증
 - [ ] AskUserQuestion metadata.source 확인
 - [ ] Stop hook 트리거 확인
+- [ ] Gate 1 validation 실행 확인
+- [ ] Warning/Error 표시 확인
 - [ ] 다중 라운드 진행 테스트
 - [ ] Pipeline downstream_skills 추적 테스트
 
@@ -447,3 +485,4 @@ Task(
 |---------|--------|
 | 2.0.0 | YAML 로깅, Stop hook, PE 내장 라이브러리 |
 | 2.1.0 | `TodoWrite` 제거, Task API 표준화, 파라미터 모듈 호환성 |
+| 2.2.0 | Workload-scoped 출력 경로 (V7.1 호환) |

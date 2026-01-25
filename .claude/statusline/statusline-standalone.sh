@@ -1,0 +1,152 @@
+#!/bin/bash
+# =============================================================================
+# Claude Code Statusline - Standalone (No external dependencies)
+# =============================================================================
+# Native implementation using only Claude Code JSON + git + environment variables
+#
+# Data Sources:
+#   - Claude Code JSON (stdin): model, output_style, mcp_servers, workspace
+#   - Environment: CLAUDE_CODE_TASK_LIST_ID
+#   - Filesystem: ~/.claude/tasks/{id}/*.json
+#   - Git: branch, status
+# =============================================================================
+
+# Pastel background colors
+BG_LINE1="\033[48;2;200;220;255m"     # Light Periwinkle Blue
+BG_LINE2="\033[48;2;220;200;255m"     # Light Lavender
+BG_LINE3="\033[48;2;200;255;220m"     # Light Mint Green
+
+# Dark text for high contrast
+FG_DARK="\033[38;2;30;30;50m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
+# Read Claude Code JSON from stdin
+INPUT=$(cat)
+
+# =============================================================================
+# JSON Extraction Helpers
+# =============================================================================
+json_get() {
+    local path="$1"
+    if command -v jq &>/dev/null; then
+        echo "$INPUT" | jq -r "$path // empty" 2>/dev/null
+    fi
+}
+
+# =============================================================================
+# Line 1: Current Directory + Git Info
+# =============================================================================
+get_dir_and_git() {
+    local cwd=""
+    local branch=""
+    local status_icon=""
+
+    # Get current directory from JSON or pwd
+    cwd=$(json_get '.workspace.current_dir')
+    [ -z "$cwd" ] && cwd=$(pwd)
+
+    # Shorten path: replace $HOME with ~, show only last 2 dirs
+    cwd="${cwd/#$HOME/~}"
+    local short_cwd=$(echo "$cwd" | awk -F'/' '{if(NF>2) print $(NF-1)"/"$NF; else print $0}')
+
+    # Get current branch
+    branch=$(git branch --show-current 2>/dev/null)
+
+    # Build output
+    local result="📂 ${short_cwd}"
+
+    if [ -n "$branch" ]; then
+        # Check if dirty
+        if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+            status_icon="*"  # Dirty
+        fi
+        result="${result} │ 🌿 ${branch}${status_icon}"
+    fi
+
+    echo "$result"
+}
+
+# =============================================================================
+# Line 2: MCP Status (show all servers with ✓/✗)
+# =============================================================================
+get_mcp_status() {
+    local result=""
+
+    if command -v jq &>/dev/null; then
+        # Get each server name and status
+        local servers=$(echo "$INPUT" | jq -r '.mcp_servers[]? | "\(.name):\(.status)"' 2>/dev/null)
+
+        while IFS= read -r server; do
+            [ -z "$server" ] && continue
+            local name="${server%%:*}"
+            local status="${server##*:}"
+
+            # Status indicator: ✓ for connected, ✗ for everything else
+            local icon="✗"
+            [ "$status" = "connected" ] && icon="✓"
+
+            [ -n "$result" ] && result="$result │ "
+            result="${result}${name}:${icon}"
+        done <<< "$servers"
+    fi
+
+    [ -n "$result" ] && echo "$result"
+}
+
+# =============================================================================
+# Line 3: Task API Status
+# =============================================================================
+get_task_status() {
+    local task_base="$HOME/.claude/tasks"
+    local task_list_id="${CLAUDE_CODE_TASK_LIST_ID:-}"
+    local task_count=0
+    local completed_count=0
+
+    [ -z "$task_list_id" ] && return
+
+    local task_dir="${task_base}/${task_list_id}"
+
+    if [ -d "$task_dir" ] && ls "${task_dir}"/*.json &>/dev/null; then
+        if command -v jq &>/dev/null; then
+            for f in "${task_dir}"/*.json; do
+                [ -f "$f" ] || continue
+                ((task_count++))
+                local status=$(jq -r '.status // "unknown"' "$f" 2>/dev/null)
+                [ "$status" = "completed" ] && ((completed_count++))
+            done
+        else
+            for f in "${task_dir}"/*.json; do
+                [ -f "$f" ] || continue
+                ((task_count++))
+                grep -q '"status".*"completed"' "$f" 2>/dev/null && ((completed_count++))
+            done
+        fi
+    fi
+
+    if [ $task_count -gt 0 ]; then
+        echo "📋 ${task_list_id} │ ✓${completed_count}/${task_count}"
+    elif [ -n "$task_list_id" ]; then
+        echo "📋 ${task_list_id}"
+    fi
+}
+
+# =============================================================================
+# Build Output Lines
+# =============================================================================
+
+# Line 1: Directory + Git info
+LINE1=$(get_dir_and_git)
+
+# Line 2: MCP status (each server)
+LINE2=$(get_mcp_status)
+
+# Line 3: Task status
+LINE3=$(get_task_status)
+
+# =============================================================================
+# Output with Pastel Backgrounds
+# =============================================================================
+[ -n "$LINE1" ] && echo -e "${BG_LINE1}${FG_DARK}${BOLD} ${LINE1} ${RESET}"
+[ -n "$LINE2" ] && echo -e "${BG_LINE2}${FG_DARK}${BOLD} ${LINE2} ${RESET}"
+[ -n "$LINE3" ] && echo -e "${BG_LINE3}${FG_DARK}${BOLD} ${LINE3} ${RESET}"

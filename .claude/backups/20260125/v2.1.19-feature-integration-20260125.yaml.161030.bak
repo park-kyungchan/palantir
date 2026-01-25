@@ -1,0 +1,559 @@
+# =============================================================================
+# Planning Document: V2.1.19 Feature Integration
+# =============================================================================
+# Generated: 2026-01-25T16:05:00Z
+# Status: draft (awaiting Plan Agent review)
+# Research Source: CHANGELOG.md (V2.0.0 ~ V2.1.19) + claude-code-guide analysis
+# =============================================================================
+
+metadata:
+  id: "v2.1.19-feature-integration-20260125"
+  version: "1.0.0"
+  created_at: "2026-01-25T16:05:00Z"
+  updated_at: "2026-01-25T16:05:00Z"
+  status: "draft"
+  research_source: "/home/palantir/CHANGELOG.md"
+
+# =============================================================================
+# PROJECT OVERVIEW
+# =============================================================================
+
+project:
+  name: "V2.1.19 Feature Integration - 통합적이면서 개별 사용 가능한 스킬 시스템"
+  description: |
+    Claude Code V2.0.0 ~ V2.1.19의 모든 고도화/정교화된 최신 기능들을
+    현재 E2E 파이프라인 스킬에 통합.
+
+    핵심 원칙:
+    1. 통합적 사용: 전체 파이프라인으로 순차 실행 가능
+    2. 개별 사용: 각 스킬을 독립적으로 호출 가능
+    3. 점진적 적용: 기존 기능 유지하면서 신규 기능 추가
+
+  objectives:
+    - "모든 스킬 Frontmatter V2.1.19 표준화 (version, argument-hint, allowed-tools)"
+    - "Hook 시스템 확충 (Setup, PreToolUse, PostToolUse)"
+    - "context: fork/standard 최적화 및 agent 필드 명시"
+    - "Background Tasks 활용으로 병렬 처리 성능 향상"
+    - "에이전트 보안 정책 강화 (disallowedTools, permissionMode)"
+
+# =============================================================================
+# FEATURE ANALYSIS SUMMARY
+# =============================================================================
+
+featureAnalysis:
+  fromChangelog:
+    # Skills System (V2.0.20+)
+    skills:
+      - feature: "context: fork"
+        version: "V2.1.0"
+        status: "implemented"
+        appliesTo: ["/clarify", "/research"]
+      - feature: "agent field"
+        version: "V2.1.0"
+        status: "not_implemented"
+        appliesTo: ["all fork context skills"]
+      - feature: "hooks in frontmatter"
+        version: "V2.1.0"
+        status: "partial"
+        appliesTo: ["/clarify", "/research", "/planning"]
+      - feature: "YAML-style allowed-tools"
+        version: "V2.1.0"
+        status: "partial"
+        appliesTo: ["all skills"]
+      - feature: "skills auto-discovery"
+        version: "V2.1.6"
+        status: "implemented"
+        note: "Nested .claude/skills/ 자동 발견"
+
+    # Hooks System (V1.0.38+)
+    hooks:
+      - feature: "Stop Hook"
+        version: "V1.0.38"
+        status: "implemented"
+        appliesTo: ["/clarify", "/research", "/planning"]
+      - feature: "Setup Hook"
+        version: "V2.1.10"
+        status: "not_implemented"
+        appliesTo: ["all skills - 초기화 용도"]
+      - feature: "PreToolUse additionalContext"
+        version: "V2.1.9"
+        status: "not_implemented"
+        appliesTo: ["Task 생성 검증"]
+      - feature: "once: true config"
+        version: "V2.1.0"
+        status: "not_implemented"
+        appliesTo: ["Setup hooks"]
+      - feature: "prompt-based stop hooks"
+        version: "V2.0.41"
+        status: "not_implemented"
+        appliesTo: ["model parameter 지정"]
+
+    # Task System (V2.1.16+)
+    tasks:
+      - feature: "dependency tracking"
+        version: "V2.1.16"
+        status: "implemented"
+        appliesTo: ["/orchestrate"]
+      - feature: "background agent support"
+        version: "V2.0.60"
+        status: "not_implemented"
+        appliesTo: ["/research 병렬화"]
+      - feature: "$0, $1 argument syntax"
+        version: "V2.1.19"
+        status: "not_implemented"
+        appliesTo: ["argument parsing"]
+
+    # Agent System
+    agents:
+      - feature: "disallowedTools"
+        version: "V2.0.30"
+        status: "not_implemented"
+        appliesTo: ["pd-readonly-analyzer"]
+      - feature: "permissionMode"
+        version: "V2.0.43"
+        status: "not_implemented"
+        appliesTo: ["secure agents"]
+      - feature: "hooks in agent frontmatter"
+        version: "V2.1.0"
+        status: "not_implemented"
+        appliesTo: ["all agents"]
+
+# =============================================================================
+# PHASES - Implementation Breakdown
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: Frontmatter 표준화 (P0 - Critical)
+  # ---------------------------------------------------------------------------
+  - id: "phase1-frontmatter-standardization"
+    name: "Frontmatter V2.1.19 표준화"
+    description: |
+      모든 13개 스킬의 frontmatter를 V2.1.19 표준에 맞게 개선.
+
+      추가할 필드:
+      - version: semantic versioning
+      - argument-hint: CLI 사용 힌트
+      - allowed-tools: YAML 배열 형식
+      - disable-model-invocation: 명시적 선언
+
+      이미 구현된 필드 유지:
+      - name, description, model, context, user-invocable, hooks
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "medium"
+    estimatedTime: "30 min"
+
+    targetFiles:
+      - path: ".claude/skills/clarify/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/research/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/planning/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/orchestrate/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/assign/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/worker/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/collect/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/synthesis/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/rsil-plan/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/build/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/build-research/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/commit-push-pr/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+      - path: ".claude/skills/docx-automation/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter"]
+
+    completionCriteria:
+      - "모든 13개 스킬에 version 필드 존재"
+      - "모든 스킬에 argument-hint 필드 존재"
+      - "allowed-tools가 YAML 배열 형식"
+      - "YAML 구문 오류 없음"
+
+    verificationSteps:
+      - command: "grep -l '^version:' .claude/skills/*/SKILL.md | wc -l"
+        expected: "13"
+      - command: "grep -l '^argument-hint:' .claude/skills/*/SKILL.md | wc -l"
+        expected: "13"
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Hook 시스템 확충 (P1 - High)
+  # ---------------------------------------------------------------------------
+  - id: "phase2-hook-system-enhancement"
+    name: "Hook 시스템 확충 (Setup, PreToolUse, PostToolUse)"
+    description: |
+      V2.1.0+ 신규 Hook 타입 추가:
+
+      1. Setup Hook (once: true):
+         - 스킬 초기화 시 디렉토리 생성
+         - 환경 검증
+
+      2. PreToolUse Hook (additionalContext):
+         - Task 생성 전 유효성 검증
+         - 컨텍스트 주입
+
+      3. PostToolUse Hook:
+         - Task 결과 로깅
+         - 검증 자동화
+
+      적용 스킬: orchestrate, worker, collect, synthesis, rsil-plan
+    priority: "P1"
+    owner: "terminal-c"
+    dependencies: []
+    estimatedComplexity: "high"
+    estimatedTime: "45 min"
+
+    targetFiles:
+      - path: ".claude/hooks/skill-setup.sh"
+        action: "create"
+      - path: ".claude/hooks/task-validator.sh"
+        action: "create"
+      - path: ".claude/hooks/task-logger.sh"
+        action: "create"
+      - path: ".claude/skills/orchestrate/SKILL.md"
+        action: "modify"
+        sections: ["hooks"]
+      - path: ".claude/skills/worker/SKILL.md"
+        action: "modify"
+        sections: ["hooks"]
+      - path: ".claude/skills/collect/SKILL.md"
+        action: "modify"
+        sections: ["hooks"]
+      - path: ".claude/skills/synthesis/SKILL.md"
+        action: "modify"
+        sections: ["hooks"]
+      - path: ".claude/skills/rsil-plan/SKILL.md"
+        action: "modify"
+        sections: ["hooks"]
+
+    completionCriteria:
+      - "skill-setup.sh 생성 및 실행 가능"
+      - "task-validator.sh가 JSON additionalContext 반환"
+      - "orchestrate, worker, collect, synthesis에 Setup hook 추가"
+      - "orchestrate에 PreToolUse/PostToolUse hook 추가"
+
+    verificationSteps:
+      - command: "bash -n .claude/hooks/skill-setup.sh"
+        expected: "No syntax errors (exit 0)"
+      - command: "bash -n .claude/hooks/task-validator.sh"
+        expected: "No syntax errors (exit 0)"
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Agent 필드 및 보안 강화 (P1 - High)
+  # ---------------------------------------------------------------------------
+  - id: "phase3-agent-security-enhancement"
+    name: "Agent 필드 명시 및 보안 정책 강화"
+    description: |
+      1. context: fork 스킬에 agent 필드 명시:
+         - /clarify: agent: "general-purpose" (PE 기법)
+         - /research: agent: "Explore" (codebase 분석)
+
+      2. 에이전트 보안 정책:
+         - pd-readonly-analyzer: disallowedTools 추가
+         - 신규: pd-secure-reviewer (permissionMode: require-confirmation)
+
+      3. allowed-tools 정밀화:
+         - Bash(pattern:*) 와일드카드 활용
+         - 불필요한 도구 제거
+    priority: "P1"
+    owner: "terminal-b"
+    dependencies: ["phase1-frontmatter-standardization"]
+    estimatedComplexity: "medium"
+    estimatedTime: "25 min"
+
+    targetFiles:
+      - path: ".claude/skills/clarify/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter - agent field"]
+      - path: ".claude/skills/research/SKILL.md"
+        action: "modify"
+        sections: ["frontmatter - agent field"]
+      - path: ".claude/agents/pd-readonly-analyzer.md"
+        action: "modify"
+        sections: ["frontmatter - disallowedTools"]
+      - path: ".claude/agents/pd-secure-reviewer.md"
+        action: "create"
+
+    completionCriteria:
+      - "/clarify와 /research에 agent 필드 존재"
+      - "pd-readonly-analyzer에 disallowedTools 목록"
+      - "pd-secure-reviewer 에이전트 생성"
+
+    verificationSteps:
+      - command: "grep -c 'agent:' .claude/skills/clarify/SKILL.md"
+        expected: "1"
+      - command: "grep -c 'disallowedTools:' .claude/agents/pd-readonly-analyzer.md"
+        expected: "1"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: Background Tasks 및 병렬화 (P2 - Medium)
+  # ---------------------------------------------------------------------------
+  - id: "phase4-background-tasks-parallelization"
+    name: "Background Tasks 활용 및 병렬 처리 최적화"
+    description: |
+      V2.0.60+ Background Agent 기능 활용:
+
+      1. /research 스킬 개선:
+         - Codebase 분석: run_in_background: true
+         - External 조사: 병렬 실행
+
+      2. /synthesis 스킬 개선:
+         - 트레이서빌리티 검증: 배경 실행
+         - 메인 합성: 동기 실행
+
+      3. 성능 목표:
+         - /research: 30-50% 시간 단축
+         - 전체 파이프라인: 20% 효율 향상
+    priority: "P2"
+    owner: "terminal-c"
+    dependencies: ["phase2-hook-system-enhancement"]
+    estimatedComplexity: "high"
+    estimatedTime: "40 min"
+
+    targetFiles:
+      - path: ".claude/skills/research/SKILL.md"
+        action: "modify"
+        sections: ["execution protocol - parallelization"]
+      - path: ".claude/skills/synthesis/SKILL.md"
+        action: "modify"
+        sections: ["execution protocol - background validation"]
+
+    completionCriteria:
+      - "/research에 병렬 실행 패턴 문서화"
+      - "/synthesis에 배경 검증 패턴 문서화"
+      - "run_in_background 사용 예시 포함"
+
+    verificationSteps:
+      - command: "grep -c 'run_in_background' .claude/skills/research/SKILL.md"
+        expected: "1 or more"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: E2E 통합 테스트 및 문서화 (P0 - Critical)
+  # ---------------------------------------------------------------------------
+  - id: "phase5-e2e-testing-documentation"
+    name: "E2E 통합 테스트 및 문서화"
+    description: |
+      1. 테스트 스크립트:
+         - 13개 스킬 frontmatter 검증
+         - Hook 실행 테스트
+         - 개별 스킬 독립 실행 테스트
+         - 통합 파이프라인 테스트
+
+      2. 문서화:
+         - 개별 사용 가이드 (각 스킬별)
+         - 통합 사용 가이드 (E2E 파이프라인)
+         - V2.1.19 신규 기능 활용 가이드
+    priority: "P0"
+    owner: "orchestrator"
+    dependencies: ["phase1-frontmatter-standardization", "phase2-hook-system-enhancement", "phase3-agent-security-enhancement", "phase4-background-tasks-parallelization"]
+    estimatedComplexity: "medium"
+    estimatedTime: "30 min"
+
+    targetFiles:
+      - path: ".claude/tests/e2e-v2119-test.sh"
+        action: "create"
+      - path: ".claude/tests/README.md"
+        action: "create"
+      - path: ".claude/references/v2119-feature-guide.md"
+        action: "create"
+
+    completionCriteria:
+      - "테스트 스크립트가 모든 스킬 검증"
+      - "개별/통합 사용 가이드 문서화"
+      - "모든 테스트 통과"
+
+    verificationSteps:
+      - command: "bash -n .claude/tests/e2e-v2119-test.sh"
+        expected: "No syntax errors (exit 0)"
+      - command: "bash .claude/tests/e2e-v2119-test.sh"
+        expected: "All tests passed"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase3-agent-security-enhancement"
+      to: "phase1-frontmatter-standardization"
+      reason: "Frontmatter 표준화 후 agent 필드 추가"
+    - from: "phase4-background-tasks-parallelization"
+      to: "phase2-hook-system-enhancement"
+      reason: "Hook 시스템 구축 후 병렬화 패턴 적용"
+    - from: "phase5-e2e-testing-documentation"
+      to: "phase1-frontmatter-standardization"
+      reason: "모든 개선사항 완료 후 테스트"
+    - from: "phase5-e2e-testing-documentation"
+      to: "phase2-hook-system-enhancement"
+      reason: "모든 개선사항 완료 후 테스트"
+    - from: "phase5-e2e-testing-documentation"
+      to: "phase3-agent-security-enhancement"
+      reason: "모든 개선사항 완료 후 테스트"
+    - from: "phase5-e2e-testing-documentation"
+      to: "phase4-background-tasks-parallelization"
+      reason: "모든 개선사항 완료 후 테스트"
+
+  external: []
+
+# =============================================================================
+# PARALLELIZATION STRATEGY
+# =============================================================================
+
+parallelization:
+  strategy: |
+    Phase 1 (Terminal-B) ───┐
+                            ├──→ Phase 3 (Terminal-B) ───┐
+    Phase 2 (Terminal-C) ───┤                            │
+                            └──→ Phase 4 (Terminal-C) ───┼──→ Phase 5 (Orchestrator)
+                                                         │
+    Timeline:                                            │
+    ├── 0-30min: Phase 1 + Phase 2 (병렬)                │
+    ├── 30-55min: Phase 3 + Phase 4 (병렬)               │
+    └── 55-85min: Phase 5 (순차)                         │
+
+  criticalPath: "Phase 2 → Phase 4 → Phase 5 (약 85분)"
+
+  terminalAssignment:
+    terminal-b:
+      - "phase1-frontmatter-standardization"
+      - "phase3-agent-security-enhancement"
+    terminal-c:
+      - "phase2-hook-system-enhancement"
+      - "phase4-background-tasks-parallelization"
+    orchestrator:
+      - "phase5-e2e-testing-documentation"
+
+# =============================================================================
+# INDIVIDUAL vs INTEGRATED USAGE MATRIX
+# =============================================================================
+
+usageMatrix:
+  skills:
+    # 파이프라인 스킬
+    - name: "/clarify"
+      individualUsage: "✅ 독립 실행 가능"
+      integratedUsage: "✅ 파이프라인 시작점"
+      example: "/clarify '사용자 인증 기능 추가'"
+
+    - name: "/research"
+      individualUsage: "✅ 독립 실행 가능"
+      integratedUsage: "✅ /clarify 후 실행 권장"
+      example: "/research --clarify-slug auth-impl"
+
+    - name: "/planning"
+      individualUsage: "✅ 독립 실행 가능"
+      integratedUsage: "✅ /research 후 실행 권장"
+      example: "/planning --research-slug auth-impl"
+
+    - name: "/orchestrate"
+      individualUsage: "✅ 독립 실행 가능"
+      integratedUsage: "✅ /planning 후 실행 권장"
+      example: "/orchestrate --plan-slug auth-impl"
+
+    - name: "/worker"
+      individualUsage: "✅ 독립 실행 가능"
+      integratedUsage: "✅ /orchestrate 후 실행"
+      example: "/worker start terminal-b"
+
+    - name: "/collect"
+      individualUsage: "⚠️ Worker 결과 필요"
+      integratedUsage: "✅ Worker 완료 후 실행"
+      example: "/collect"
+
+    - name: "/synthesis"
+      individualUsage: "⚠️ 수집 결과 필요"
+      integratedUsage: "✅ /collect 후 실행"
+      example: "/synthesis"
+
+    - name: "/rsil-plan"
+      individualUsage: "⚠️ Gap 분석 필요"
+      integratedUsage: "✅ /synthesis ITERATE 시 실행"
+      example: "/rsil-plan --iteration 1"
+
+    # 유틸리티 스킬
+    - name: "/build"
+      individualUsage: "✅ 완전 독립"
+      integratedUsage: "N/A"
+      example: "/build skill my-skill"
+
+    - name: "/commit-push-pr"
+      individualUsage: "✅ 완전 독립"
+      integratedUsage: "✅ /synthesis COMPLETE 후 실행"
+      example: "/commit-push-pr"
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "pending"
+  reviewedAt: null
+  reviewedBy: null
+  iterationCount: 0
+  comments: []
+
+  approvalCriteria:
+    - "All phases have clear completion criteria"
+    - "Dependencies form acyclic graph"
+    - "Target files are specified for each phase"
+    - "Risk mitigation strategies identified"
+    - "Parallelization opportunities identified"
+    - "Individual vs Integrated usage documented"
+
+# =============================================================================
+# RISK MITIGATION
+# =============================================================================
+
+riskMitigation:
+  - risk: "Frontmatter 변경으로 기존 스킬 동작 중단"
+    severity: "MEDIUM"
+    mitigation: "각 스킬 수정 후 즉시 기본 테스트 실행"
+
+  - risk: "Hook 스크립트 오류로 스킬 실행 실패"
+    severity: "LOW"
+    mitigation: "bash -n 구문 검증 + 타임아웃 설정"
+
+  - risk: "Background Task 동기화 문제"
+    severity: "MEDIUM"
+    mitigation: "명시적 완료 대기 패턴 사용"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  estimatedTotalTime: "~85분 (병렬 실행 시)"
+
+  prerequisites:
+    - "Terminal-B, Terminal-C 준비"
+    - "현재 작업 브랜치: feature/v2.2.5-configs-and-tooling"
+
+  rollbackPlan: |
+    각 스킬 파일은 .claude/backups/{date}/ 에 백업됨
+    문제 발생 시: git checkout -- .claude/skills/{skill}/SKILL.md
+
+# =============================================================================
+# END OF PLANNING DOCUMENT
+# =============================================================================

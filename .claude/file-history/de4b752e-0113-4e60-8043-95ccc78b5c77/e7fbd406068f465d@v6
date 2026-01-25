@@ -1,0 +1,682 @@
+# /ontology-objecttype - ObjectType Definition Assistant
+
+> **Version:** 1.1.0
+> **Model:** opus
+> **User-Invocable:** true
+
+---
+
+## 1. Purpose
+
+기존 프로젝트를 **Ontology-Driven-Architecture (ODA)**로 마이그레이션하는 첫 단계:
+**"무엇을 ObjectType으로 정의할 것인가?"**를 도출하고 승인받는 Interactive Assistant.
+
+### 핵심 원칙: 실시간 추론 기반 분석
+
+| 원칙 | 설명 |
+|------|------|
+| **목적** | **Ontology ObjectType을 정확히 정의**하기 위한 분석 |
+| **방식** | 미리 정의된 답이 아닌, **매 프롬프트마다 실시간 추론** |
+| **범위** | 해당 클래스가 ObjectType인가? DataType은? Cardinality는? |
+| **출력** | L1→L2→L3 Progressive Disclosure + 판단 근거 |
+
+> **Note**: Palantir AIP/Foundry를 사용하는 기업들처럼, 각 클래스와 속성을
+> **그때그때 조사/분석**하여 ObjectType 정의의 정확성을 높입니다.
+
+---
+
+## 2. Invocation
+
+```bash
+# 프로젝트 분석 시작
+/ontology-objecttype analyze /home/palantir/my-project
+
+# 특정 파일만 분석
+/ontology-objecttype analyze /home/palantir/my-project/models.py
+
+# 이전 분석 이어서 진행
+/ontology-objecttype resume <session-id>
+
+# 도움말
+/ontology-objecttype help
+```
+
+---
+
+## 3. Command Parsing
+
+```python
+args = "{user_args}"
+command = args.split()[0] if args else "help"
+
+commands = {
+    "analyze": "프로젝트/파일 분석하여 ObjectType 후보 도출",
+    "resume": "이전 분석 세션 이어서 진행",
+    "help": "사용법 안내"
+}
+
+if command == "analyze":
+    target_path = args.split()[1] if len(args.split()) > 1 else None
+    if not target_path:
+        # Prompt for path
+        pass
+    # Start analysis workflow
+
+elif command == "resume":
+    session_id = args.split()[1] if len(args.split()) > 1 else None
+    # Load session state
+
+elif command == "help":
+    # Show usage
+    pass
+```
+
+---
+
+## 4. Analysis Patterns
+
+### 4.1 Detection Targets
+
+| Pattern | Detection Method | Example |
+|---------|-----------------|---------|
+| **Python class** | `class ClassName:` | `class Employee:` |
+| **SQLAlchemy ORM** | `Base` 또는 `declarative_base()` 상속 | `class User(Base):` |
+| **Django ORM** | `models.Model` 상속 | `class Article(models.Model):` |
+| **Pydantic** | `BaseModel` 상속 | `class Config(BaseModel):` |
+
+### 4.2 Property Extraction
+
+각 클래스에서 추출하는 정보:
+
+| 항목 | Source | Foundry Mapping |
+|------|--------|-----------------|
+| **클래스명** | Class definition | `ObjectType.api_name` |
+| **필드/속성** | Class attributes | `PropertyDefinition` |
+| **타입 힌트** | Type annotations | `DataType` |
+| **PK 후보** | `id`, `pk`, `*_id` 패턴 | `primary_key` |
+| **FK/관계** | ForeignKey, relationship | `LinkType` 후보 |
+
+### 4.3 Grep Patterns
+
+```python
+PATTERNS = {
+    "python_class": r"^class\s+([A-Z][a-zA-Z0-9_]*)\s*[:\(]",
+    "sqlalchemy": r"class\s+(\w+)\s*\(\s*(?:Base|.*declarative_base)",
+    "django": r"class\s+(\w+)\s*\(\s*models\.Model\s*\)",
+    "pydantic": r"class\s+(\w+)\s*\(\s*(?:BaseModel|.*BaseModel)",
+    "field_def": r"^\s+(\w+)\s*[=:]\s*",
+    "type_hint": r":\s*([A-Za-z_][A-Za-z0-9_\[\], ]*)",
+    "foreign_key": r"ForeignKey\s*\(\s*['\"]?(\w+)",
+    "relationship": r"relationship\s*\(\s*['\"](\w+)"
+}
+```
+
+---
+
+## 5. Workflow: L1 → L2 → L3 Progressive Disclosure
+
+### 5.1 L1 - Summary (첫 번째 출력)
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  ObjectType 후보 분석 완료                                    ║
+╠══════════════════════════════════════════════════════════════╣
+║  📁 분석 대상: /home/palantir/my-project                      ║
+║  📊 발견된 클래스: 12개                                       ║
+║  ✅ ObjectType 후보: 8개                                      ║
+║  ⚠️ 검토 필요: 2개                                            ║
+║  ❌ 제외 추천: 2개 (Helper/Utility 클래스)                    ║
+╚══════════════════════════════════════════════════════════════╝
+
+🔍 분석 요약: [실시간 추론으로 해당 프로젝트 특성에 맞는 판단 제공]
+
+다음 단계: "L2" 입력하여 상세 목록 확인
+```
+
+### 5.2 L2 - Detailed List (두 번째 출력)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ObjectType 후보 상세 목록                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ✅ 권장 ObjectType (8개)                                   │
+│  ─────────────────────────────────────────────              │
+│  1. Employee (models/employee.py:15)                        │
+│     └─ Properties: 6개 | PK: employee_id | FK: department_id│
+│                                                             │
+│  2. Department (models/department.py:8)                     │
+│     └─ Properties: 4개 | PK: department_id | FK: -          │
+│                                                             │
+│  3. Project (models/project.py:22)                          │
+│     └─ Properties: 8개 | PK: project_id | FK: owner_id      │
+│     └─ 🔗 Relationship: Employee (N:1)                      │
+│  ...                                                        │
+│                                                             │
+│  ⚠️ 검토 필요 (2개)                                         │
+│  ─────────────────────────────────────────────              │
+│  A. EmployeeDTO (dto/employee_dto.py:5)                     │
+│     └─ 이유: DTO 패턴, 별도 ObjectType 또는 제외 검토       │
+│                                                             │
+│  B. AuditMixin (mixins/audit.py:3)                          │
+│     └─ 이유: Mixin 패턴, SharedProperty로 변환 검토         │
+│                                                             │
+│  ❌ 제외 추천 (2개)                                         │
+│  ─────────────────────────────────────────────              │
+│  - DatabaseHelper (utils/db.py:10) - 유틸리티               │
+│  - ConfigLoader (config/loader.py:5) - 설정 로더            │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+🔍 제외/검토 판단 근거: [실시간 추론으로 각 클래스의 제외 이유 분석]
+
+다음 단계: 번호 입력하여 L3 상세 확인 (예: "1" 또는 "1,2,3")
+또는: "approve all" / "approve 1,2,3" / "exclude A,B"
+```
+
+### 5.3 L3 - Deep Dive with Learning (세 번째 출력)
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  L3: Employee ObjectType 상세                                ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  📍 Source: models/employee.py:15                            ║
+║                                                              ║
+║  ┌─ Original Code ─────────────────────────────────────────┐ ║
+║  │ class Employee(Base):                                   │ ║
+║  │     __tablename__ = 'employees'                         │ ║
+║  │     employee_id = Column(String, primary_key=True)      │ ║
+║  │     name = Column(String(100), nullable=False)          │ ║
+║  │     email = Column(String, unique=True)                 │ ║
+║  │     department_id = Column(String, ForeignKey(...))     │ ║
+║  │     hire_date = Column(Date)                            │ ║
+║  │     is_active = Column(Boolean, default=True)           │ ║
+║  └─────────────────────────────────────────────────────────┘ ║
+║                                                              ║
+║  ┌─ Proposed ObjectType ───────────────────────────────────┐ ║
+║  │ employee_type = ObjectType(                             │ ║
+║  │     api_name="Employee",                                │ ║
+║  │     display_name="Employee",                            │ ║
+║  │     primary_key=PrimaryKeyDefinition(                   │ ║
+║  │         property_api_name="employeeId"                  │ ║
+║  │     ),                                                  │ ║
+║  │     properties=[...]  # 아래 상세                       │ ║
+║  │ )                                                       │ ║
+║  └─────────────────────────────────────────────────────────┘ ║
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║  📋 Properties (6개)                                         ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  1. employeeId (String) ⭐ Primary Key                       ║
+║     ├─ Source: employee_id                                   ║
+║     ├─ Foundry Type: STRING                                  ║
+║     └─ Constraints: required=True, unique=True               ║
+║                                                              ║
+║     🔍 추론: PK로 적합한가?                                  ║
+║        → [실시간 분석 결과가 여기에 표시됨]                  ║
+║                                                              ║
+║  2. name (String)                                            ║
+║     ├─ Source: name                                          ║
+║     ├─ Foundry Type: STRING                                  ║
+║     └─ Constraints: required=True                            ║
+║                                                              ║
+║  3. email (String)                                           ║
+║     ├─ Source: email                                         ║
+║     ├─ Foundry Type: STRING                                  ║
+║     └─ Constraints: unique=True                              ║
+║                                                              ║
+║     🔍 추론: unique 제약이 맞는가?                           ║
+║        → [실시간 분석 결과가 여기에 표시됨]                  ║
+║                                                              ║
+║  4. departmentId (String) 🔗 Foreign Key                     ║
+║     ├─ Source: department_id                                 ║
+║     ├─ Foundry Type: STRING                                  ║
+║     └─ LinkType 후보: Employee → Department                  ║
+║                                                              ║
+║     🔍 추론: 어떤 Cardinality인가?                           ║
+║        → [실시간 분석: MANY_TO_ONE 판단 근거]                ║
+║                                                              ║
+║  5. hireDate (Date)                                          ║
+║     ├─ Source: hire_date                                     ║
+║     ├─ Foundry Type: DATE                                    ║
+║     └─ Constraints: -                                        ║
+║                                                              ║
+║     🔍 추론: DATE vs TIMESTAMP?                              ║
+║        → [실시간 분석: 시간대 필요 여부 판단]                ║
+║                                                              ║
+║  6. isActive (Boolean)                                       ║
+║     ├─ Source: is_active                                     ║
+║     ├─ Foundry Type: BOOLEAN                                 ║
+║     └─ Default: True                                         ║
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║  🔗 Detected Relationships                                   ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  Employee → Department (MANY_TO_ONE)                         ║
+║  ├─ Via: departmentId                                        ║
+║  └─ LinkType 후보: EmployeeToDepartment                      ║
+║                                                              ║
+║  🔍 추론 근거:                                               ║
+║     → 한 Department에 여러 Employee 소속 가능                ║
+║     → Employee는 하나의 Department에만 소속                  ║
+║     → FK가 Employee(Many) 쪽에 위치 → MANY_TO_ONE            ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+선택하세요:
+  [A] Approve - 이 ObjectType 승인
+  [E] Edit - Property 수정 (직접 편집)
+  [S] Skip - 나중에 결정
+  [?] Question - 추가 학습 질문
+```
+
+---
+
+## 6. 실시간 추론 프로토콜
+
+### 6.0 참조 체계 (CRITICAL)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  실시간 추론 참조 체계                                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  📘 ontology-definition 패키지                               │
+│     /home/palantir/park-kyungchan/palantir/Ontology-Definition
+│     ├── ontology_definition/types/    # 타입 정의           │
+│     ├── ontology_definition/core/     # Enum, Base 클래스   │
+│     └── tests/                        # 사용 예제           │
+│                                                             │
+│     🎯 목적: "어떻게 정의하는가" (구문, 구조, 타입)          │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  🌐 외부 검증된 자료 (항상 참조)                             │
+│     ├── Context7 (MCP) - Palantir 공식 문서                 │
+│     ├── Tavily (MCP, 차후 설치) - 검증된 기술 자료          │
+│     ├── WebFetch - 특정 URL 직접 참조                       │
+│     └── WebSearch - 실제 AIP/Foundry 사용 기업 사례         │
+│                                                             │
+│     🎯 목적: "왜 이렇게 정의해야 하는가"                     │
+│        - 실제 기업의 ObjectType 정의 사례                   │
+│        - 이 정의의 장점/단점 분석                           │
+│        - ODA 전체 관점에서의 영향 분석                      │
+│        - 결정하는데 도움 제공                               │
+│                                                             │
+│     ⚠️ 검증된 자료 기준 (MUST):                             │
+│        아래 출처만 신뢰하고, 그 외는 참조하지 않음          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+#### 6.0.0 공신력 있는 검증된 자료 기준 (CRITICAL)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ✅ 신뢰할 수 있는 출처 (ONLY THESE)                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1️⃣ Palantir 공식 자료                                      │
+│     ├── palantir.com/docs/*                                 │
+│     ├── palantir.com/platforms/*                            │
+│     ├── Palantir GitHub (github.com/palantir/*)             │
+│     └── Palantir 공식 블로그/발표 자료                      │
+│                                                             │
+│  2️⃣ 공식 기술 문서                                          │
+│     ├── Foundry 공식 문서                                   │
+│     ├── AIP 공식 문서                                       │
+│     └── Ontology SDK 문서                                   │
+│                                                             │
+│  3️⃣ 검증된 기업 사례 (공식 발표만)                          │
+│     ├── Palantir 고객 사례 연구 (Case Studies)              │
+│     ├── 기업 공식 기술 블로그 (engineering.*.com)           │
+│     ├── 컨퍼런스 발표 자료 (FoundryCon, etc.)               │
+│     └── 학술 논문 / 백서                                    │
+│                                                             │
+│  4️⃣ 신뢰할 수 있는 기술 플랫폼                              │
+│     ├── Stack Overflow (높은 투표 수 답변)                  │
+│     ├── GitHub Discussions (공식 저장소)                    │
+│     └── 공식 커뮤니티 포럼                                  │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  ❌ 참조 금지 (DO NOT USE)                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  • 개인 블로그 (검증되지 않은 의견)                         │
+│  • Medium 일반 글 (공식 계정 제외)                          │
+│  • 비공식 튜토리얼                                          │
+│  • Reddit/Twitter 등 SNS (공식 계정 제외)                   │
+│  • 출처 불명의 자료                                         │
+│  • AI 생성 콘텐츠 (검증되지 않은)                           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.0.0.1 자료 검증 프로토콜
+
+```python
+async def verify_source_credibility(source_url):
+    """
+    자료 출처의 공신력을 검증한다.
+    검증되지 않은 자료는 사용하지 않는다.
+    """
+
+    TRUSTED_DOMAINS = [
+        "palantir.com",
+        "github.com/palantir",
+        "foundry.palantir.com",
+        # 기업 공식 기술 블로그
+        "engineering.*.com",
+        "tech.*.com",
+        # 학술/공식
+        "arxiv.org",
+        "acm.org",
+        "ieee.org",
+    ]
+
+    TRUSTED_PATTERNS = [
+        r"palantir\.com/docs/",
+        r"palantir\.com/platforms/",
+        r"github\.com/palantir/",
+        r"/case-study/",
+        r"/customer-stories/",
+    ]
+
+    # 1. 도메인 검증
+    if not any(domain in source_url for domain in TRUSTED_DOMAINS):
+        return SourceVerification(
+            trusted=False,
+            reason="도메인이 신뢰할 수 있는 목록에 없음"
+        )
+
+    # 2. 패턴 검증
+    if not any(re.match(pattern, source_url) for pattern in TRUSTED_PATTERNS):
+        return SourceVerification(
+            trusted=False,
+            reason="URL 패턴이 공식 자료 형식이 아님"
+        )
+
+    return SourceVerification(trusted=True)
+```
+```
+
+#### 6.0.1 ontology-definition 참조
+
+```python
+# "어떻게 정의하는가" - 구문/구조 참조
+DEFINITION_REFERENCES = [
+    # 타입 정의
+    "ontology_definition/types/object_type.py",      # ObjectType 구조
+    "ontology_definition/types/property_def.py",     # PropertyDefinition
+    "ontology_definition/types/link_type.py",        # LinkType (관계 분석 시)
+
+    # Enum 정의 (DataType, Cardinality 등)
+    "ontology_definition/core/enums.py",
+
+    # 사용 예제
+    "tests/test_object_type.py",
+    "tests/test_automation.py",
+]
+```
+
+#### 6.0.2 외부 자료 참조 (항상)
+
+```python
+# "왜 이렇게 정의해야 하는가" - 실제 사례 + 장단점 분석
+async def enrich_with_real_world_context(object_type_candidate):
+    """
+    각 ObjectType 후보에 대해 실제 사례와 장단점을 분석하여
+    사용자의 결정을 돕는다.
+    """
+
+    # 1. 실제 기업 사례 검색
+    examples = await search_real_world_examples(
+        object_type_name=object_type_candidate.name,
+        domain=object_type_candidate.domain
+    )
+
+    # 2. 이 정의 방식의 장단점 분석
+    pros_cons = await analyze_definition_tradeoffs(
+        object_type_candidate,
+        oda_perspective=True  # ODA 전체 관점
+    )
+
+    # 3. 결정 지원 정보 구성
+    return DecisionSupport(
+        examples=examples,
+        pros=pros_cons.advantages,
+        cons=pros_cons.disadvantages,
+        oda_impact=pros_cons.oda_wide_impact,
+        recommendation=pros_cons.recommendation
+    )
+```
+
+#### 6.0.3 결정 지원 출력 형식
+
+```
+┌─ Employee ObjectType 정의 결정 지원 ────────────────────────┐
+│                                                             │
+│  📘 정의 방법 (ontology-definition 기준):                   │
+│     ObjectType(api_name="Employee", ...)                    │
+│                                                             │
+│  🌐 실제 기업 사례:                                         │
+│     - [사례 1] 금융사 A: Employee를 Person의 하위 타입으로  │
+│       정의하여 고객/직원 통합 관리                          │
+│     - [사례 2] 제조사 B: Employee에 조직도 Link 포함하여    │
+│       계층 구조 탐색 최적화                                 │
+│                                                             │
+│  ✅ 장점:                                                   │
+│     - 독립 ObjectType으로 CRUD 단순화                       │
+│     - Department와 MANY_TO_ONE Link로 조직 탐색 용이        │
+│                                                             │
+│  ⚠️ 단점/고려사항:                                          │
+│     - 직원 수 많을 시 ObjectSet 쿼리 성능 고려 필요         │
+│     - 퇴사자 처리: isActive vs 별도 ArchiveEmployee 검토    │
+│                                                             │
+│  🔄 ODA 전체 관점:                                          │
+│     - ActionType: CreateEmployee, UpdateEmployee 필요       │
+│     - LinkType: EmployeeToDepartment, EmployeeToProject     │
+│     - Automation: 입사일 기준 온보딩 자동화 가능            │
+│                                                             │
+│  💡 권장사항:                                                │
+│     현재 정의 방식 적합. 단, isActive 필드 대신             │
+│     employmentStatus (ACTIVE/TERMINATED/ON_LEAVE) Enum      │
+│     사용 시 더 유연한 상태 관리 가능.                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.1 분석 시 판단해야 할 질문들
+
+각 클래스/속성을 분석할 때 **실시간으로 추론**하여 답변:
+
+| 판단 항목 | 추론 질문 |
+|----------|----------|
+| **ObjectType 적합성** | 이 클래스가 비즈니스 도메인의 핵심 엔티티인가? |
+| **Primary Key** | 어떤 속성이 PK로 적합한가? 그 근거는? |
+| **DataType 매핑** | Python 타입 → Foundry DataType 매핑이 정확한가? |
+| **Required 여부** | nullable=False인 필드가 실제로 required인가? |
+| **Relationship** | FK가 어떤 Cardinality를 나타내는가? |
+| **제외 판단** | Helper/DTO/Mixin인가? 왜 ObjectType이 아닌가? |
+
+### 6.2 추론 출력 형식
+
+```
+┌─ 분석: Employee 클래스 ─────────────────────────────────────┐
+│                                                             │
+│  Q: 이 클래스가 ObjectType으로 적합한가?                    │
+│  A: ✅ 적합함                                               │
+│     - 근거 1: 비즈니스 도메인의 핵심 엔티티 (직원)          │
+│     - 근거 2: 고유 식별자(employee_id) 보유                 │
+│     - 근거 3: 독립적인 생명주기 (CRUD 대상)                 │
+│                                                             │
+│  Q: department_id는 어떤 관계를 나타내는가?                 │
+│  A: MANY_TO_ONE (Employee → Department)                     │
+│     - 근거: 한 부서에 여러 직원, 직원은 하나의 부서 소속    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Interactive Q&A (`?` 명령)
+
+사용자가 `?`를 입력하면 **해당 맥락에서 실시간 추론**으로 응답:
+
+```
+> ? 이 email 필드가 unique여야 하나요?
+
+[실시간 분석]
+현재 코드: email = Column(String, unique=True)
+
+분석 결과:
+- 현재 DB 스키마에서 unique=True로 설정됨
+- 비즈니스 규칙상 직원 이메일은 고유해야 함 (일반적)
+- ObjectType 정의 시: constraints=PropertyConstraints(unique=True)
+
+권장: unique=True 유지
+```
+
+---
+
+## 7. Approval Workflow
+
+### 7.1 Commands
+
+| Command | Description |
+|---------|-------------|
+| `L2` | L1에서 L2 상세 목록으로 |
+| `1` 또는 `1,2,3` | 특정 항목 L3 상세 보기 |
+| `approve all` | 모든 권장 항목 승인 |
+| `approve 1,2,3` | 특정 항목만 승인 |
+| `exclude A,B` | 검토 필요 항목 제외 |
+| `edit 1` | 특정 항목 Property 편집 |
+| `?` | 학습 질문 모드 |
+| `done` | 승인 완료, scaffold 생성 |
+
+### 7.2 Session State
+
+```json
+{
+  "session_id": "obj-a1b2c3",
+  "target_path": "/home/palantir/my-project",
+  "analyzed_files": ["models/employee.py", "models/department.py"],
+  "candidates": [
+    {
+      "name": "Employee",
+      "source": "models/employee.py:15",
+      "status": "approved",
+      "properties": [...],
+      "relationships": [...]
+    }
+  ],
+  "excluded": ["DatabaseHelper", "ConfigLoader"],
+  "current_level": "L2",
+  "timestamp": "2026-01-25T16:00:00Z"
+}
+```
+
+---
+
+## 8. Output Generation
+
+### 8.1 On `done` Command
+
+```python
+async def generate_approved_types():
+    for candidate in approved_candidates:
+        # 1. Generate ObjectType scaffold
+        scaffold = generate_objecttype_scaffold(candidate)
+
+        # 2. Write to output directory
+        output_path = f".agent/ontology/{candidate.name.lower()}.py"
+        await Write({ "file_path": output_path, "content": scaffold })
+
+        # 3. Generate LinkType scaffolds for relationships
+        for rel in candidate.relationships:
+            link_scaffold = generate_linktype_scaffold(rel)
+            link_path = f".agent/ontology/links/{rel.name.lower()}.py"
+            await Write({ "file_path": link_path, "content": link_scaffold })
+
+    # 4. Generate summary report
+    report = generate_migration_report(approved_candidates)
+    await Write({ "file_path": ".agent/ontology/MIGRATION_REPORT.md", "content": report })
+```
+
+### 8.2 Output Structure
+
+```
+.agent/ontology/
+├── employee.py              # ObjectType definition
+├── department.py            # ObjectType definition
+├── project.py               # ObjectType definition
+├── links/
+│   ├── employee_to_department.py
+│   └── project_to_employee.py
+└── MIGRATION_REPORT.md      # Summary with learning notes
+```
+
+---
+
+## 9. Integration with /ontology-core
+
+```bash
+# After /ontology-objecttype generates files:
+
+# Validate generated ObjectTypes
+/ontology-core validate-all .agent/ontology/
+
+# Check link consistency
+/ontology-core check-links .agent/ontology/
+```
+
+---
+
+## 10. Tools Allowed
+
+### 10.1 Core Tools
+
+| Tool | Purpose |
+|------|---------|
+| `Read` | 소스 파일 + ontology-definition 패키지 읽기 |
+| `Glob` | 프로젝트 파일 탐색 |
+| `Grep` | 패턴 검색 (class, ORM 등) |
+| `Write` | ObjectType scaffold 생성 |
+| `AskUserQuestion` | L1/L2/L3 승인 워크플로우 |
+
+### 10.2 Reference Tools (실시간 추론용)
+
+| Tool | Purpose | 역할 |
+|------|---------|------|
+| `Read` (ontology-definition) | 로컬 패키지 타입/테스트 참조 | **"어떻게"** 정의하는가 |
+| `mcp__context7__query_docs` | Palantir 공식 문서 검색 | **"왜"** + 실제 사례 |
+| `WebSearch` | 실제 AIP/Foundry 사용 기업 사례 | **"왜"** + 장단점 |
+| `WebFetch` | 특정 URL 직접 참조 | **"왜"** + 상세 분석 |
+| `mcp__tavily__*` | 검증된 기술 자료 (차후 설치) | **"왜"** + 실제 사례 |
+
+> **Note**: 외부 자료는 **항상** 참조하여 결정 지원 정보를 제공합니다.
+
+---
+
+## 11. Error Handling
+
+| Error | Recovery |
+|-------|----------|
+| 경로 없음 | "경로를 찾을 수 없습니다. 확인해주세요." |
+| Python 파일 없음 | "분석 가능한 Python 파일이 없습니다." |
+| 클래스 없음 | "ObjectType 후보가 발견되지 않았습니다." |
+| 세션 만료 | "새 분석을 시작하거나 --resume으로 재개하세요." |
+
+---
+
+## 12. Future Roadmap
+
+| 스킬 | 범위 | 상태 |
+|------|------|------|
+| `/ontology-objecttype` | ObjectType 도출 + Learning | ✅ 현재 |
+| `/ontology-linktype` | LinkType 도출 (관계 분석) | 🔜 계획됨 |
+| `/ontology-actiontype` | ActionType 도출 (CRUD 분석) | 🔜 계획됨 |
+
+---
+
+**End of Skill Definition**
