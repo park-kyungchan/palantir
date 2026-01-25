@@ -122,9 +122,16 @@ async function loadClarify(slug) {
   // 1. Read clarify YAML
   const clarify = await Read({ file_path: `.agent/clarify/${slug}.yaml` })
 
-  // 2. Parse requirements
+  // 2. Parse requirements and extract workload_id (handle nested structures)
+  // Priority: metadata.workload_id > workload_id > metadata.id > slug
+  const workloadId = clarify.metadata?.workload_id
+    || clarify.workload_id
+    || clarify.metadata?.id
+    || slug
+
   return {
     originalRequest: clarify.original_request,
+    workloadId: workloadId,  // Properly extracted workload_id
     rounds: clarify.rounds,
     finalDecision: clarify.final_decision,
     requirements: extractRequirements(clarify.rounds)
@@ -145,6 +152,7 @@ async function loadClarify(slug) {
 
 metadata:
   id: "string"              # Unique planning document ID (slug-based)
+  workload_id: "string"     # Workload identifier (format: {topic}_{YYYYMMDD}_{HHMMSS})
   version: "string"         # Semantic version (1.0.0)
   created_at: "datetime"    # ISO 8601 timestamp
   updated_at: "datetime"    # Last modification timestamp
@@ -235,6 +243,7 @@ executionNotes:
 ```yaml
 metadata:
   id: "add-auth-feature"
+  workload_id: "user-authentication_20260125_143022"
   version: "1.0.0"
   status: "draft"
 
@@ -436,8 +445,10 @@ async function executePlanning(args) {
     }
   }
 
-  // 7. Save planning document
-  const outputPath = `.agent/plans/${targetSlug}.yaml`
+  // 7. Save planning document (Workload-scoped)
+  const workloadDir = `.agent/prompts/${targetSlug}`
+  await Bash({ command: `mkdir -p ${workloadDir}`, description: 'Ensure workload dir' })
+  const outputPath = `${workloadDir}/plan.yaml`
   await Write({
     file_path: outputPath,
     content: reviewResult.document
@@ -473,6 +484,7 @@ async function generatePlanningDocument(research, clarify) {
 
 metadata:
   id: "${slug}"
+  workload_id: "${clarify.workloadId}"
   version: "1.0.0"
   created_at: "${timestamp}"
   updated_at: "${timestamp}"
