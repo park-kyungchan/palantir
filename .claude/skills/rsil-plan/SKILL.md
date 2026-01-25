@@ -8,7 +8,7 @@ user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "1.0.0"
+version: "1.1.0"
 argument-hint: "[--iteration <n>] [--auto-remediate]"
 allowed-tools:
   - Read
@@ -85,11 +85,12 @@ The RSIL (Requirements-Synthesis Integration Loop) skill handles iteration cycle
 ### 3.1 Source Files
 
 ```javascript
+// Workload-scoped paths (V3.1.0)
 const sources = {
-  clarify: ".agent/clarify/{slug}.yaml",
-  research: ".agent/research/{slug}.md",
-  planning: ".agent/plans/{slug}.yaml",
-  synthesis: ".agent/outputs/synthesis/synthesis_report.md"
+  clarify: ".agent/prompts/{slug}/clarify.yaml",
+  research: ".agent/prompts/{slug}/research.md",
+  planning: ".agent/prompts/{slug}/plan.yaml",
+  synthesis: ".agent/prompts/{slug}/synthesis/synthesis_report.md"
 }
 ```
 
@@ -97,8 +98,8 @@ const sources = {
 
 ```javascript
 async function loadClarifyRequirements() {
-  // Find latest clarify log
-  const clarifyLogs = await Glob({ pattern: ".agent/clarify/*.yaml" })
+  // Find latest clarify log (Workload-scoped path)
+  const clarifyLogs = await Glob({ pattern: ".agent/prompts/*/clarify.yaml" })
 
   if (clarifyLogs.length === 0) {
     return { error: "No clarify logs found" }
@@ -133,7 +134,8 @@ async function loadClarifyRequirements() {
 
 ```javascript
 async function loadResearchFindings() {
-  const researchDocs = await Glob({ pattern: ".agent/research/*.md" })
+  // Workload-scoped path
+  const researchDocs = await Glob({ pattern: ".agent/prompts/*/research.md" })
 
   if (researchDocs.length === 0) {
     return { findings: [], riskAssessment: null }
@@ -160,7 +162,8 @@ async function loadResearchFindings() {
 
 ```javascript
 async function loadPlanningDocument() {
-  const planDocs = await Glob({ pattern: ".agent/plans/*.yaml" })
+  // Workload-scoped path
+  const planDocs = await Glob({ pattern: ".agent/prompts/*/plan.yaml" })
 
   if (planDocs.length === 0) {
     return { phases: [], dependencies: [] }
@@ -182,8 +185,11 @@ async function loadPlanningDocument() {
 ### 3.5 Load Synthesis Results (from /synthesis)
 
 ```javascript
-async function loadSynthesisResults() {
-  const synthesisPath = ".agent/outputs/synthesis/synthesis_report.md"
+async function loadSynthesisResults(workloadSlug) {
+  // Workload-scoped path
+  const synthesisPath = workloadSlug
+    ? `.agent/prompts/${workloadSlug}/synthesis/synthesis_report.md`
+    : ".agent/outputs/synthesis/synthesis_report.md"  // Fallback (deprecated)
 
   if (!await fileExists(synthesisPath)) {
     return { error: "Synthesis report not found" }
@@ -498,8 +504,8 @@ ${gap.action === 'complete_implementation'
 - Integration with existing code verified
 
 ### Context
-- Research: .agent/research/
-- Planning: .agent/plans/
+- Research: .agent/prompts/{slug}/research.md
+- Planning: .agent/prompts/{slug}/plan.yaml
 - Iteration: RSIL-${gap.iteration}
 `
 }
@@ -673,7 +679,7 @@ async function confirmDecision(decision, options) {
 
 ### 8.1 Gap Analysis Report
 
-**Path:** `.agent/rsil/iteration_{n}.md`
+**Path:** `.agent/prompts/{workload-slug}/rsil/iteration_{n}.md`
 
 ```markdown
 # RSIL Gap Analysis Report - Iteration {n}
@@ -743,7 +749,7 @@ async function confirmDecision(decision, options) {
 
 ### 8.2 Remediation Plan
 
-**Path:** `.agent/rsil/iteration_{n}_remediation.yaml`
+**Path:** `.agent/prompts/{workload-slug}/rsil/iteration_{n}_remediation.yaml`
 
 ```yaml
 metadata:
@@ -934,17 +940,17 @@ async function executeRSIL(args) {
 
 | Source | File | Data Used |
 |--------|------|-----------|
-| /clarify | `.agent/clarify/*.yaml` | Original requirements |
-| /research | `.agent/research/*.md` | Codebase patterns, risks |
-| /planning | `.agent/plans/*.yaml` | Phases, completion criteria |
-| /synthesis | `.agent/outputs/synthesis/` | Gap matrix, decision |
+| /clarify | `.agent/prompts/{slug}/clarify.yaml` | Original requirements |
+| /research | `.agent/prompts/{slug}/research.md` | Codebase patterns, risks |
+| /planning | `.agent/prompts/{slug}/plan.yaml` | Phases, completion criteria |
+| /synthesis | `.agent/prompts/{slug}/synthesis/` | Gap matrix, decision |
 
 ### 10.3 Output Destinations
 
 | Destination | File | Data Provided |
 |-------------|------|---------------|
 | Native Tasks | TaskCreate API | Remediation tasks |
-| /orchestrate | `.agent/rsil/` | Remediation plan YAML |
+| /orchestrate | `.agent/prompts/{slug}/rsil/` | Remediation plan YAML |
 | /clarify | Gap descriptions | Requirements to clarify |
 
 ---
@@ -1013,6 +1019,7 @@ const DEFAULT_CONFIG = {
 | Version | Change |
 |---------|--------|
 | 1.0.0 | Initial RSIL implementation |
+| 1.1.0 | Workload-scoped output paths (V7.1 compatibility) |
 
 ---
 
