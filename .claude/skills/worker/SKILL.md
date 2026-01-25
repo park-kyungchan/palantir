@@ -2,12 +2,13 @@
 name: worker
 description: |
   Worker self-service commands (start, done, status, block).
+  Supports Sub-Orchestrator mode for hierarchical task decomposition.
 user-invocable: true
 disable-model-invocation: false
 context: standard
 model: sonnet
-version: "3.1.0"
-argument-hint: "<start|done|status|block> [b|c|d|terminal-id] [taskId]"
+version: "4.0.0"
+argument-hint: "<start|done|status|block|orchestrate|delegate|collect-sub> [b|c|d|terminal-id] [taskId]"
 hooks:
   Setup:
     - type: command
@@ -17,9 +18,10 @@ hooks:
 
 # /worker - Worker Self-Service Commands
 
-> **Version:** 1.0
+> **Version:** 4.0.0
 > **Role:** Self-service commands for workers (start, done, status, block)
 > **Architecture:** Hybrid (Native Task System + File-Based Prompts)
+> **New:** Sub-Orchestrator mode (orchestrate, delegate, collect-sub)
 
 ---
 
@@ -30,6 +32,28 @@ hooks:
 2. Mark tasks as complete (`/worker done`)
 3. Check current status and progress (`/worker status`)
 4. Report blockers to orchestrator (`/worker block`)
+5. **NEW:** Decompose tasks into subtasks (`/worker orchestrate`)
+6. **NEW:** Delegate subtasks to sub-agents (`/worker delegate`)
+7. **NEW:** Collect and summarize sub-results (`/worker collect-sub`)
+
+### 1.1 Workload Context Setup
+
+```javascript
+// Source workload management modules (via helper functions)
+// getWorkloadProgressPath() - returns workload-scoped or global path
+// getActiveWorkloadSlug() - returns current active workload slug
+
+function getWorkloadProgressPath() {
+  // Try to get active workload slug
+  const workloadSlug = getActiveWorkloadSlug()
+
+  if (workloadSlug) {
+    return `.agent/prompts/${workloadSlug}/_progress.yaml`
+  }
+  // Fallback to global path
+  return ".agent/prompts/_progress.yaml"
+}
+```
 
 ---
 
@@ -59,11 +83,16 @@ hooks:
 # Report blocker
 /worker block "Need API docs"
 /worker block 3 "Waiting for auth module"  # Block specific task
+
+# Sub-Orchestrator commands (only when assigned with --sub-orchestrator)
+/worker orchestrate b    # Decompose current task into subtasks
+/worker delegate b       # Delegate subtasks to sub-agents
+/worker collect-sub b    # Collect sub-results and generate L1 summary
 ```
 
 ### Arguments
 
-- `$0`: Subcommand (`start`, `done`, `status`, `block`)
+- `$0`: Subcommand (`start`, `done`, `status`, `block`, `orchestrate`, `delegate`, `collect-sub`)
 - `$1`: Terminal ID (b, c, d) OR task ID OR reason
 - `$2`: Optional task ID (when $1 is terminal ID)
 
@@ -648,23 +677,47 @@ While waiting for resolution:
 
 ```javascript
 function findPromptFile(taskId) {
-  // Check pending directory
-  let pendingFiles = Glob(`.agent/prompts/pending/*task*.yaml`)
+  // Get active workload to determine search path
+  let activeWorkload = Bash(`source .claude/skills/shared/workload-files.sh && get_active_workload`).trim()
 
-  for (file of pendingFiles) {
-    let content = Read(file)
-    if (content.includes(`nativeTaskId: "${taskId}"`) ||
-        content.includes(`taskId: "${taskId}"`)) {
-      return file
+  let searchPaths = []
+
+  if (activeWorkload) {
+    // Get workload-specific prompt directory
+    let workloadSlug = Bash(`source .claude/skills/shared/slug-generator.sh && generate_slug_from_workload "${activeWorkload}"`).trim()
+    searchPaths.push(`.agent/prompts/${workloadSlug}/pending`)
+  }
+
+  // Fallback to global pending directory for backward compatibility
+  searchPaths.push(`.agent/prompts/pending`)
+
+  // Also check all workload directories
+  let allWorkloads = Bash(`source .claude/skills/shared/workload-files.sh && list_workloads`).trim().split('\n')
+  for (workload of allWorkloads) {
+    if (workload && workload !== 'pending' && workload !== 'completed') {
+      searchPaths.push(`.agent/prompts/${workload}/pending`)
     }
   }
 
-  // Check by worker naming convention
-  let workerFiles = Glob(`.agent/prompts/pending/worker-*-*.yaml`)
-  for (file of workerFiles) {
-    let content = Read(file)
-    if (content.includes(`nativeTaskId: "${taskId}"`)) {
-      return file
+  // Search in all paths
+  for (searchPath of searchPaths) {
+    let pendingFiles = Glob(`${searchPath}/*task*.yaml`)
+
+    for (file of pendingFiles) {
+      let content = Read(file)
+      if (content.includes(`nativeTaskId: "${taskId}"`) ||
+          content.includes(`taskId: "${taskId}"`)) {
+        return file
+      }
+    }
+
+    // Check by worker naming convention
+    let workerFiles = Glob(`${searchPath}/worker-*-*.yaml`)
+    for (file of workerFiles) {
+      let content = Read(file)
+      if (content.includes(`nativeTaskId: "${taskId}"`)) {
+        return file
+      }
     }
   }
 
@@ -676,9 +729,6 @@ function findPromptFile(taskId) {
 
 ```javascript
 function movePromptFile(taskId, fromDir, toDir) {
-  // Ensure target directory exists
-  Bash(`mkdir -p .agent/prompts/${toDir}`)
-
   let promptFile = findPromptFile(taskId)
 
   if (!promptFile) {
@@ -686,8 +736,19 @@ function movePromptFile(taskId, fromDir, toDir) {
     return false
   }
 
+  // Extract workload directory from prompt file path
+  // Path format: .agent/prompts/{workload-slug}/pending/worker-*.yaml
+  let pathParts = promptFile.split('/')
+  let workloadDir = pathParts.slice(0, -2).join('/')  // Remove /pending/filename
+
+  // Determine destination directory (within same workload)
+  let destDir = `${workloadDir}/${toDir}`
+
+  // Ensure target directory exists
+  Bash(`mkdir -p "${destDir}"`)
+
   let filename = promptFile.split('/').pop()
-  let destFile = `.agent/prompts/${toDir}/${filename}`
+  let destFile = `${destDir}/${filename}`
 
   Bash(`mv "${promptFile}" "${destFile}"`)
   console.log(`📁 Moved: ${promptFile} → ${destFile}`)
@@ -700,7 +761,8 @@ function movePromptFile(taskId, fromDir, toDir) {
 
 ```javascript
 function updateProgressFile(workerId, taskId, status) {
-  let progressPath = ".agent/prompts/_progress.yaml"
+  // Use workload-scoped progress path (active workload or global fallback)
+  let progressPath = getWorkloadProgressPath()
 
   if (!fileExists(progressPath)) {
     console.log("ℹ️  Progress file not found, skipping update")
@@ -741,7 +803,8 @@ function updateProgressFile(workerId, taskId, status) {
 
 ```javascript
 function addBlockerToProgress(blocker) {
-  let progressPath = ".agent/prompts/_progress.yaml"
+  // Use workload-scoped progress path (active workload or global fallback)
+  let progressPath = getWorkloadProgressPath()
 
   if (!fileExists(progressPath)) {
     return
@@ -800,6 +863,391 @@ function extractInstructions(promptContent) {
   }
 
   return instructions.slice(0, 30).join('\n') // Limit output
+}
+```
+
+---
+
+## 5.5. Sub-Orchestrator Functions
+
+### 5.5.1 workerOrchestrate
+
+```javascript
+function workerOrchestrate(specificTaskId = null) {
+  let workerId = getWorkerId()
+  console.log(`🔧 Sub-Orchestrator ${workerId}: Decomposing task...`)
+
+  // 1. Get current task
+  let task = getCurrentTask(specificTaskId)
+  if (!task) {
+    console.log(`❌ No task to decompose`)
+    return { status: "no_task" }
+  }
+
+  // 2. Check if Sub-Orchestrator mode is enabled
+  if (!task.metadata?.subOrchestratorMode) {
+    console.log(`❌ Sub-Orchestrator mode not enabled for this task`)
+    console.log(`   Use: /assign ${task.id} ${workerId} --sub-orchestrator`)
+    return { status: "mode_disabled" }
+  }
+
+  // 3. Read task details and prompt
+  let taskDetail = TaskGet({taskId: task.id})
+  console.log(`
+📋 Task to Decompose:
+   ID: #${task.id}
+   Subject: ${taskDetail.subject}
+   Description: ${taskDetail.description}
+`)
+
+  // 4. Delegate to /orchestrate skill
+  console.log(`\n🚀 Launching /orchestrate for task decomposition...`)
+  console.log(`   Hierarchy Level: ${task.metadata.hierarchyLevel + 1}`)
+
+  // Store parent task context
+  let contextFile = `.agent/tmp/suborchestrator-context-${workerId}.json`
+  Write({
+    file_path: contextFile,
+    content: JSON.stringify({
+      parentTaskId: task.id,
+      parentWorkerId: workerId,
+      hierarchyLevel: task.metadata.hierarchyLevel + 1,
+      timestamp: new Date().toISOString()
+    }, null, 2)
+  })
+
+  console.log(`
+✅ Ready to decompose task #${task.id}
+
+Next Step:
+  Run /orchestrate with your task breakdown
+  Example: /orchestrate "Break down ${taskDetail.subject} into subtasks"
+
+  Subtasks will be created with:
+  - hierarchyLevel: ${task.metadata.hierarchyLevel + 1}
+  - Parent: Task #${task.id}
+`)
+
+  return {
+    status: "ready_to_orchestrate",
+    taskId: task.id,
+    hierarchyLevel: task.metadata.hierarchyLevel + 1
+  }
+}
+```
+
+### 5.5.2 workerDelegate
+
+```javascript
+function workerDelegate(specificTaskId = null) {
+  let workerId = getWorkerId()
+  console.log(`📤 Sub-Orchestrator ${workerId}: Delegating subtasks...`)
+
+  // 1. Get current task
+  let task = getCurrentTask(specificTaskId)
+  if (!task) {
+    console.log(`❌ No task found`)
+    return { status: "no_task" }
+  }
+
+  // 2. Find subtasks (created by this worker's /orchestrate)
+  let allTasks = TaskList()
+  let subtasks = allTasks.filter(t =>
+    t.metadata?.hierarchyLevel === (task.metadata?.hierarchyLevel || 0) + 1 &&
+    t.metadata?.parentTaskId === task.id
+  )
+
+  if (subtasks.length === 0) {
+    console.log(`❌ No subtasks found for Task #${task.id}`)
+    console.log(`   Run /worker orchestrate first to create subtasks`)
+    return { status: "no_subtasks" }
+  }
+
+  console.log(`
+Found ${subtasks.length} subtasks to delegate:
+${subtasks.map(st => `  - Task #${st.id}: ${st.subject}`).join('\n')}
+`)
+
+  // 3. Auto-assign subtasks
+  console.log(`\n🔄 Auto-assigning subtasks...`)
+
+  // Use /assign auto for subtasks
+  console.log(`
+Next Step:
+  Use /assign to delegate subtasks:
+
+  Option 1 (Auto):
+    /assign auto
+
+  Option 2 (Manual):
+${subtasks.map((st, i) => `    /assign ${st.id} terminal-${String.fromCharCode(98 + i)}`).join('\n')}
+`)
+
+  return {
+    status: "ready_to_delegate",
+    subtaskCount: subtasks.length,
+    subtasks: subtasks.map(st => st.id)
+  }
+}
+```
+
+### 5.5.3 workerCollectSub
+
+```javascript
+function workerCollectSub(specificTaskId = null) {
+  let workerId = getWorkerId()
+  console.log(`📥 Sub-Orchestrator ${workerId}: Collecting sub-results...`)
+
+  // 1. Get current task
+  let task = getCurrentTask(specificTaskId)
+  if (!task) {
+    console.log(`❌ No task found`)
+    return { status: "no_task" }
+  }
+
+  // 2. Find subtasks
+  let allTasks = TaskList()
+  let subtasks = allTasks.filter(t =>
+    t.metadata?.hierarchyLevel === (task.metadata?.hierarchyLevel || 0) + 1 &&
+    t.metadata?.parentTaskId === task.id
+  )
+
+  if (subtasks.length === 0) {
+    console.log(`❌ No subtasks found for Task #${task.id}`)
+    return { status: "no_subtasks" }
+  }
+
+  // 3. Check completion status
+  let completedSubtasks = subtasks.filter(st => st.status === "completed")
+  let pendingSubtasks = subtasks.filter(st => st.status !== "completed")
+
+  console.log(`
+📊 Subtask Status:
+   Total: ${subtasks.length}
+   Completed: ${completedSubtasks.length}
+   Pending: ${pendingSubtasks.length}
+`)
+
+  if (pendingSubtasks.length > 0) {
+    console.log(`
+⏸️  Cannot collect - pending subtasks:
+${pendingSubtasks.map(st => `  - Task #${st.id}: ${st.subject} (${st.status})`).join('\n')}
+
+Wait for all subtasks to complete before collecting.
+`)
+    return { status: "pending_subtasks", pending: pendingSubtasks.length }
+  }
+
+  // 4. Collect L2/L3 results from subtasks
+  console.log(`\n📚 Collecting detailed results (L2/L3)...`)
+
+  let l2Results = []
+  let l3Results = []
+
+  for (subtask of completedSubtasks) {
+    let subtaskDetail = TaskGet({taskId: subtask.id})
+
+    // Collect L2 (summary) and L3 (full details)
+    l2Results.push({
+      taskId: subtask.id,
+      subject: subtaskDetail.subject,
+      summary: subtaskDetail.description || "No summary available"
+    })
+
+    // L3: Full output files if available
+    let outputPattern = `.agent/outputs/**/task-${subtask.id}-*.md`
+    let outputFiles = Glob(outputPattern)
+
+    if (outputFiles.length > 0) {
+      let fullContent = Read(outputFiles[0])
+      l3Results.push({
+        taskId: subtask.id,
+        file: outputFiles[0],
+        content: fullContent
+      })
+    }
+  }
+
+  // 5. Generate L1 summary
+  console.log(`\n✍️  Generating L1 summary for main orchestrator...`)
+
+  let l1Summary = `# Task #${task.id} Completion Summary (L1)
+
+## Overview
+Completed ${completedSubtasks.length} subtasks via Sub-Orchestrator decomposition.
+
+## Results Summary
+${l2Results.map((r, i) => `
+### Subtask ${i + 1}: ${r.subject}
+${r.summary}
+`).join('\n')}
+
+## Detailed Reports
+- L2 (Summaries): ${workloadSlug}/outputs/${workerId}/task-${task.id}-l2-summaries.md
+- L3 (Full Details): ${workloadSlug}/outputs/${workerId}/task-${task.id}-l3-details.md
+
+Generated: ${new Date().toISOString()}
+`
+
+  // 6. Save L1/L2/L3 to files (Workload-scoped)
+  let workloadSlug = await getActiveWorkload() || 'global'
+  let outputDir = `.agent/prompts/${workloadSlug}/outputs/${workerId}`
+  Bash(`mkdir -p ${outputDir}`)
+
+  // L1: Summary for main orchestrator
+  let l1File = `${outputDir}/task-${task.id}-l1-summary.md`
+  Write({ file_path: l1File, content: l1Summary })
+
+  // L2: Subtask summaries
+  let l2Content = l2Results.map(r => `## Task #${r.taskId}: ${r.subject}\n${r.summary}`).join('\n\n')
+  let l2File = `${outputDir}/task-${task.id}-l2-summaries.md`
+  Write({ file_path: l2File, content: l2Content })
+
+  // L3: Full details
+  let l3Content = l3Results.map(r => `## Task #${r.taskId}\nFile: ${r.file}\n\n${r.content}`).join('\n\n---\n\n')
+  let l3File = `${outputDir}/task-${task.id}-l3-details.md`
+  Write({ file_path: l3File, content: l3Content })
+
+  // 7. Context Pollution Prevention - Validate L1 before returning
+  let l1Validation = validateL1Summary(l1Summary)
+
+  if (!l1Validation.isValid) {
+    console.log(`\n⚠️  Context Pollution Prevention Triggered:`)
+    l1Validation.warnings.forEach(w => console.log(`  ${w}`))
+
+    // Sanitize L1 to prevent context overflow
+    l1Summary = sanitizeL1Summary(l1Summary)
+    Write({ file_path: l1File, content: l1Summary })  // Update sanitized version
+    console.log(`  ✅ L1 sanitized and saved`)
+  }
+
+  console.log(`
+✅ Collection Complete!
+
+Files Generated:
+  📄 L1 (Summary for Main): ${l1File} (${l1Validation.estimatedTokens} tokens)
+  📄 L2 (Subtask Summaries): ${l2File}
+  📄 L3 (Full Details): ${l3File}
+
+Context Pollution Check: ${l1Validation.isValid ? '✅ PASSED' : '⚠️ SANITIZED'}
+
+Next Step:
+  /worker done ${task.id}  # Mark parent task as complete
+`)
+
+  // 8. Return safe result (only L1 reference, no L2/L3 content)
+  return preventContextPollution({
+    status: "collected",
+    taskId: task.id,
+    subtaskCount: completedSubtasks.length,
+    files: { l1: l1File, l2: l2File, l3: l3File }
+  })
+}
+```
+
+### 5.5.4 getCurrentTask (Helper)
+
+```javascript
+function getCurrentTask(specificTaskId = null) {
+  let workerId = getWorkerId()
+  let myTasks = getMyTasks()
+
+  if (specificTaskId) {
+    return myTasks.find(t => t.id === specificTaskId)
+  }
+
+  // Get current in-progress task or first pending task
+  let inProgress = myTasks.find(t => t.status === "in_progress")
+  if (inProgress) return inProgress
+
+  let pending = myTasks.find(t => t.status === "pending")
+  return pending
+}
+```
+
+### 5.5.5 Context Pollution Prevention (Helper)
+
+```javascript
+// =============================================================================
+// Context Pollution Prevention
+// =============================================================================
+// Ensures L2/L3 content never leaks to Main Agent context
+// Validates L1 summary size and content
+
+const L1_MAX_TOKENS = 500       // Max tokens for L1 summary
+const L1_MAX_CHARS = 2000       // Approximate char limit (4 chars/token)
+const FORBIDDEN_L2L3_PATTERNS = [
+  /## Task #\d+\n.*\n.*\n/gm,   // Full task details
+  /```[\s\S]{500,}```/gm,       // Large code blocks
+  /File:.*\.md\n\n[\s\S]+/gm    // File content dumps
+]
+
+function validateL1Summary(l1Summary) {
+  let warnings = []
+  let isValid = true
+
+  // 1. Check length
+  if (l1Summary.length > L1_MAX_CHARS) {
+    warnings.push(`⚠️  L1 exceeds ${L1_MAX_CHARS} chars (${l1Summary.length} chars)`)
+    isValid = false
+  }
+
+  // 2. Check for L2/L3 content patterns
+  for (let pattern of FORBIDDEN_L2L3_PATTERNS) {
+    if (pattern.test(l1Summary)) {
+      warnings.push(`⚠️  L1 contains L2/L3 pattern: ${pattern.source.substring(0, 30)}...`)
+      isValid = false
+    }
+  }
+
+  // 3. Estimate token count (rough approximation)
+  let estimatedTokens = Math.ceil(l1Summary.length / 4)
+  if (estimatedTokens > L1_MAX_TOKENS) {
+    warnings.push(`⚠️  Estimated tokens (${estimatedTokens}) exceeds limit (${L1_MAX_TOKENS})`)
+    isValid = false
+  }
+
+  return { isValid, warnings, estimatedTokens }
+}
+
+function sanitizeL1Summary(l1Summary) {
+  let sanitized = l1Summary
+
+  // Remove large code blocks (keep only first 200 chars)
+  sanitized = sanitized.replace(/```[\s\S]{200,}```/gm, '```[truncated]```')
+
+  // Remove file content dumps
+  sanitized = sanitized.replace(/File:.*\.md\n\n[\s\S]+/gm, '[File content stored in L3]')
+
+  // Truncate if still too long
+  if (sanitized.length > L1_MAX_CHARS) {
+    sanitized = sanitized.substring(0, L1_MAX_CHARS - 50) + '\n\n[Truncated - see L2/L3 for details]'
+  }
+
+  return sanitized
+}
+
+function preventContextPollution(collectResult) {
+  // Ensure only L1 reference is returned, never actual L2/L3 content
+  let safeResult = {
+    status: collectResult.status,
+    taskId: collectResult.taskId,
+    subtaskCount: collectResult.subtaskCount,
+    // Only return file paths, not content
+    l1File: collectResult.files?.l1 || null,
+    l2File: collectResult.files?.l2 || null,  // Path only
+    l3File: collectResult.files?.l3 || null,  // Path only
+    // Validation metadata
+    contextPollutionCheck: "passed",
+    timestamp: new Date().toISOString()
+  }
+
+  // Never include: l2Content, l3Content, raw subtask details
+  delete safeResult.l2Content
+  delete safeResult.l3Content
+  delete safeResult.subtaskDetails
+
+  return safeResult
 }
 ```
 
@@ -890,26 +1338,75 @@ function worker(args) {
 
       return workerBlock(reason, blockTaskId)
 
+    case 'orchestrate':
+      // /worker orchestrate b [taskId]
+      let orchTerminalId = parseTerminalId(param1)
+      let orchTaskId = null
+
+      if (orchTerminalId) {
+        setWorkerId(orchTerminalId)
+        orchTaskId = isTaskId(param2) ? param2 : null
+      } else if (isTaskId(param1)) {
+        orchTaskId = param1
+      }
+
+      return workerOrchestrate(orchTaskId)
+
+    case 'delegate':
+      // /worker delegate b [taskId]
+      let delegateTerminalId = parseTerminalId(param1)
+      let delegateTaskId = null
+
+      if (delegateTerminalId) {
+        setWorkerId(delegateTerminalId)
+        delegateTaskId = isTaskId(param2) ? param2 : null
+      } else if (isTaskId(param1)) {
+        delegateTaskId = param1
+      }
+
+      return workerDelegate(delegateTaskId)
+
+    case 'collect-sub':
+      // /worker collect-sub b [taskId]
+      let collectTerminalId = parseTerminalId(param1)
+      let collectTaskId = null
+
+      if (collectTerminalId) {
+        setWorkerId(collectTerminalId)
+        collectTaskId = isTaskId(param2) ? param2 : null
+      } else if (isTaskId(param1)) {
+        collectTaskId = param1
+      }
+
+      return workerCollectSub(collectTaskId)
+
     default:
       console.log(`
 === /worker - Self-Service Commands ===
 
-Usage:
-  /worker start <b|c|d> [taskId]   Start as terminal-X (RECOMMENDED)
-  /worker start [taskId]           Start assigned task
-  /worker done [taskId]            Mark task as complete
-  /worker status [b|c|d] [--all]   Show current status
-  /worker block "reason"           Report a blocker
+Basic Commands:
+  /worker start <b|c|d> [taskId]     Start as terminal-X (RECOMMENDED)
+  /worker start [taskId]             Start assigned task
+  /worker done [taskId]              Mark task as complete
+  /worker status [b|c|d] [--all]     Show current status
+  /worker block "reason"             Report a blocker
+
+Sub-Orchestrator Commands (when enabled):
+  /worker orchestrate <b|c|d>        Decompose task into subtasks
+  /worker delegate <b|c|d>           Delegate subtasks to sub-agents
+  /worker collect-sub <b|c|d>        Collect sub-results (L1 summary)
 
 Terminal Shortcuts:
   b = terminal-b, c = terminal-c, d = terminal-d
 
 Examples:
-  /worker start b                  Start as terminal-b
-  /worker start b 16               Start terminal-b on task #16
-  /worker start c                  Start as terminal-c
-  /worker done                     Complete current task
-  /worker status b --all           Show all terminal-b tasks
+  /worker start b                    Start as terminal-b
+  /worker start b 16                 Start terminal-b on task #16
+  /worker orchestrate b              Decompose current task (Sub-Orchestrator)
+  /worker delegate b                 Delegate subtasks
+  /worker collect-sub b              Collect and summarize
+  /worker done                       Complete current task
+  /worker status b --all             Show all terminal-b tasks
   /worker block "Need API docs"
 `)
       return { status: "help" }
@@ -1116,6 +1613,15 @@ hooks:
 - [ ] Parent directory warning for new files
 - [ ] Validation logging to .agent/logs/validation_gates.log
 
+**Context Pollution Prevention (NEW v3.2):**
+- [ ] validateL1Summary detects oversized L1
+- [ ] validateL1Summary detects L2/L3 content patterns
+- [ ] sanitizeL1Summary truncates large L1 content
+- [ ] sanitizeL1Summary removes code block dumps
+- [ ] preventContextPollution returns only file paths
+- [ ] collect-sub never returns raw L2/L3 content
+- [ ] L1 token estimate stays under 500
+
 ---
 
 ## 10. Performance Targets
@@ -1150,6 +1656,7 @@ hooks:
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
 | 3.0.0 | Terminal ID shortcuts (b, c, d) 지원, `/worker start b` 형식 추가 |
 | 3.1.0 | Gate 5 Shift-Left Validation 통합, Setup hook 추가 |
+| 3.2.0 | Context Pollution Prevention: L1 검증, sanitize, L2/L3 격리 |
 
 ---
 
