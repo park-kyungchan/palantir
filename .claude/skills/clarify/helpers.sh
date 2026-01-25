@@ -23,6 +23,17 @@
 set -euo pipefail
 
 # ============================================================================
+# DEPENDENCIES
+# ============================================================================
+# Source shared slug generator
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHARED_DIR="${SCRIPT_DIR}/../shared"
+
+if [[ -f "${SHARED_DIR}/slug-generator.sh" ]]; then
+    source "${SHARED_DIR}/slug-generator.sh"
+fi
+
+# ============================================================================
 # CONSTANTS
 # ============================================================================
 CLARIFY_VERSION="2.1.0"
@@ -47,30 +58,39 @@ _timestamp() {
 
 # ============================================================================
 # yaml_generate_slug
-# Generate URL-safe slug from input text
+# Generate URL-safe slug from input text (DEPRECATED - use workload system)
 #
 # Args:
 #   $1 - Input text
 #
 # Output:
-#   Slug string (lowercase, hyphens, max 64 chars + timestamp)
+#   Slug string derived from workload ID
+#
+# Note: Now delegates to centralized slug-generator.sh
 # ============================================================================
 yaml_generate_slug() {
     local input="$1"
-    local timestamp
-    timestamp=$(date +%Y%m%d_%H%M%S)
 
-    # Normalize: lowercase, replace spaces/special chars with hyphens
-    local slug
-    slug=$(echo "$input" | \
-        tr '[:upper:]' '[:lower:]' | \
-        sed 's/[^a-z0-9가-힣]/-/g' | \
-        sed 's/--*/-/g' | \
-        sed 's/^-//' | \
-        sed 's/-$//' | \
-        cut -c1-40)
+    # Generate workload ID and derive slug
+    if command -v generate_workload_id &> /dev/null; then
+        local workload_id
+        workload_id=$(generate_workload_id "$input")
+        generate_slug_from_workload "$workload_id"
+    else
+        # Fallback to legacy implementation if slug-generator not available
+        local timestamp
+        timestamp=$(date +%Y%m%d_%H%M%S)
 
-    echo "${slug}_${timestamp}"
+        local slug
+        slug=$(echo "$input" | \
+            tr '[:upper:]' '[:lower:]' | \
+            tr -cs '[:alnum:]' '-' | \
+            sed 's/^-//' | \
+            sed 's/-$//' | \
+            cut -c1-40)
+
+        echo "${slug}_${timestamp}"
+    fi
 }
 
 # Backward compatibility alias
@@ -97,6 +117,15 @@ yaml_init_log() {
     # Ensure directory exists
     mkdir -p "$(dirname "$log_path")"
 
+    # Generate workload ID for this clarify session
+    local workload_id=""
+    if command -v generate_workload_id &> /dev/null; then
+        # Extract topic from original request (first 50 chars)
+        local topic
+        topic=$(echo "$original_request" | head -c 50 | tr '\n' ' ')
+        workload_id=$(generate_workload_id "$topic")
+    fi
+
     # Create initial YAML structure
     cat > "$log_path" << EOF
 # /clarify Session Log
@@ -105,6 +134,7 @@ yaml_init_log() {
 
 metadata:
   id: "${slug}"
+  workload_id: "${workload_id}"
   version: "${CLARIFY_VERSION}"
   created_at: "$(_timestamp)"
   updated_at: "$(_timestamp)"
