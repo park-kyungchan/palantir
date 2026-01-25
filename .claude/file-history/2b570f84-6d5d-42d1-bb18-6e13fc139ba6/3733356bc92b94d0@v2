@@ -1,0 +1,429 @@
+# Enhanced Pipeline Skills Implementation Plan
+# Generated: 2026-01-24T20:50:00Z
+# Status: draft (awaiting Plan Agent review)
+
+metadata:
+  id: "enhanced_pipeline_skills_20260124"
+  version: "1.0.0"
+  created_at: "2026-01-24T20:50:00Z"
+  updated_at: "2026-01-24T20:50:00Z"
+  status: "draft"
+  research_source: ".agent/research/enhanced_pipeline_skills_20260124.md"
+  clarify_source: "Local command /clarify output (2026-01-24)"
+
+project:
+  name: "Enhanced Orchestration Pipeline"
+  description: |
+    Add /research, /planning, and /rsil-plan skills to the orchestration pipeline
+    to improve requirement analysis, planning quality, and iterative refinement.
+  objectives:
+    - "Implement /research skill for post-clarify codebase and external analysis"
+    - "Implement /planning skill for YAML planning document generation with Plan Agent review"
+    - "Implement /rsil-plan skill for Requirements-Synthesis Integration Loop"
+    - "Integrate new skills into existing pipeline flow"
+    - "Enable multi-terminal parallel execution"
+
+# =============================================================================
+# PHASES - Implementation Breakdown
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # PHASE 1: /research Skill (Terminal-B)
+  # ---------------------------------------------------------------------------
+  - id: "phase1-research-skill"
+    name: "Implement /research Skill"
+    description: |
+      Create the /research skill for deep codebase analysis and external resource gathering.
+      This skill runs after /clarify to provide informed context for planning.
+
+      Key components:
+      - Codebase pattern analysis (Grep/Glob)
+      - External resource gathering (WebSearch)
+      - Risk assessment generation
+      - L1/L2/L3 output format
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/skills/research/SKILL.md"
+        action: "create"
+        sections:
+          - "frontmatter"
+          - "purpose"
+          - "execution_protocol"
+          - "output_format"
+          - "integration_points"
+
+    referenceFiles:
+      - path: "/home/palantir/.claude/skills/build-research/SKILL.md"
+        reason: "Similar research pattern to adapt"
+      - path: "/home/palantir/.claude/skills/clarify/SKILL.md"
+        reason: "Input format and hook patterns"
+
+    completionCriteria:
+      - "SKILL.md created with complete V2.1.19 frontmatter"
+      - "Execution protocol includes codebase analysis logic"
+      - "External resource gathering with WebSearch implemented"
+      - "L1/L2/L3 output format specified"
+      - "Integration with /clarify output documented"
+
+    verificationSteps:
+      - command: "cat /home/palantir/.claude/skills/research/SKILL.md | head -20"
+        expected: "Valid YAML frontmatter with name: research"
+      - command: "grep -c 'allowed-tools' /home/palantir/.claude/skills/research/SKILL.md"
+        expected: "1 (allowed-tools section exists)"
+
+  # ---------------------------------------------------------------------------
+  # PHASE 2: /planning Skill (Terminal-C)
+  # ---------------------------------------------------------------------------
+  - id: "phase2-planning-skill"
+    name: "Implement /planning Skill"
+    description: |
+      Create the /planning skill for YAML planning document generation.
+      Includes Plan Agent review loop for quality assurance.
+
+      Key components:
+      - Research report parsing
+      - Planning document schema (phases, dependencies, criteria)
+      - Plan Agent delegation via Task tool
+      - Review loop until approval
+    priority: "P0"
+    owner: "terminal-c"
+    dependencies: []
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/skills/planning/SKILL.md"
+        action: "create"
+        sections:
+          - "frontmatter"
+          - "purpose"
+          - "planning_schema"
+          - "plan_agent_review"
+          - "execution_protocol"
+
+    referenceFiles:
+      - path: "/home/palantir/.claude/skills/orchestrate/SKILL.md"
+        reason: "Phase decomposition patterns"
+      - path: "/home/palantir/.agent/plans/enhanced_pipeline_skills_20260124.yaml"
+        reason: "Example planning document format"
+
+    completionCriteria:
+      - "SKILL.md created with complete V2.1.19 frontmatter"
+      - "Planning document YAML schema fully specified"
+      - "Plan Agent review process documented"
+      - "Stop hook configuration for finalization"
+      - "Integration with /research output documented"
+
+    verificationSteps:
+      - command: "cat /home/palantir/.claude/skills/planning/SKILL.md | head -20"
+        expected: "Valid YAML frontmatter with name: planning"
+      - command: "grep -c 'planAgentReview' /home/palantir/.claude/skills/planning/SKILL.md"
+        expected: ">0 (Plan Agent review section exists)"
+
+  # ---------------------------------------------------------------------------
+  # PHASE 3: Hook Scripts (Both Terminals)
+  # ---------------------------------------------------------------------------
+  - id: "phase3a-research-hook"
+    name: "Create research-finalize.sh Hook"
+    description: |
+      Create Stop hook for /research skill finalization.
+      Validates output, suggests next skill (/planning).
+    priority: "P1"
+    owner: "terminal-b"
+    dependencies:
+      - "phase1-research-skill"
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/hooks/research-finalize.sh"
+        action: "create"
+
+    referenceFiles:
+      - path: "/home/palantir/.claude/hooks/clarify-finalize.sh"
+        reason: "Similar hook pattern"
+
+    completionCriteria:
+      - "Hook script created and executable"
+      - "Validates research output exists"
+      - "Suggests /planning as next step"
+
+    verificationSteps:
+      - command: "test -x /home/palantir/.claude/hooks/research-finalize.sh && echo 'executable'"
+        expected: "executable"
+
+  - id: "phase3b-planning-hook"
+    name: "Create planning-finalize.sh Hook"
+    description: |
+      Create Stop hook for /planning skill finalization.
+      Validates planning document, records Plan Agent approval.
+    priority: "P1"
+    owner: "terminal-c"
+    dependencies:
+      - "phase2-planning-skill"
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/hooks/planning-finalize.sh"
+        action: "create"
+
+    referenceFiles:
+      - path: "/home/palantir/.claude/hooks/clarify-finalize.sh"
+        reason: "Similar hook pattern"
+
+    completionCriteria:
+      - "Hook script created and executable"
+      - "Validates planning document schema"
+      - "Records Plan Agent review status"
+
+    verificationSteps:
+      - command: "test -x /home/palantir/.claude/hooks/planning-finalize.sh && echo 'executable'"
+        expected: "executable"
+
+  # ---------------------------------------------------------------------------
+  # PHASE 4: /rsil-plan Skill (Terminal-B)
+  # ---------------------------------------------------------------------------
+  - id: "phase4-rsil-plan-skill"
+    name: "Implement /rsil-plan Skill"
+    description: |
+      Create the /rsil-plan skill for Requirements-Synthesis Integration Loop.
+      Handles 2nd+ loop iterations with code-level gap analysis.
+
+      Key components:
+      - Multi-source loading (clarify, research, planning, synthesis)
+      - Code-level gap verification (Grep patterns)
+      - Remediation task generation
+      - Auto-remediate decision logic
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies:
+      - "phase1-research-skill"
+      - "phase2-planning-skill"
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/skills/rsil-plan/SKILL.md"
+        action: "create"
+        sections:
+          - "frontmatter"
+          - "purpose"
+          - "gap_analysis_protocol"
+          - "remediation_planning"
+          - "decision_logic"
+
+    referenceFiles:
+      - path: "/home/palantir/.claude/skills/synthesis/SKILL.md"
+        reason: "Traceability matrix and gap detection patterns"
+      - path: "/home/palantir/.claude/skills/research/SKILL.md"
+        reason: "Similar analysis patterns"
+
+    completionCriteria:
+      - "SKILL.md created with complete V2.1.19 frontmatter"
+      - "Gap analysis protocol with code-level verification"
+      - "Remediation task generation using TaskCreate"
+      - "Auto-remediate vs escalate decision logic"
+      - "Gap analysis report schema defined"
+
+    verificationSteps:
+      - command: "cat /home/palantir/.claude/skills/rsil-plan/SKILL.md | head -20"
+        expected: "Valid YAML frontmatter with name: rsil-plan"
+      - command: "grep -c 'TaskCreate' /home/palantir/.claude/skills/rsil-plan/SKILL.md"
+        expected: ">0 (Task creation for remediation)"
+
+  # ---------------------------------------------------------------------------
+  # PHASE 5: Integration Updates (Both Terminals)
+  # ---------------------------------------------------------------------------
+  - id: "phase5a-synthesis-update"
+    name: "Update /synthesis Integration"
+    description: |
+      Modify /synthesis skill to suggest /rsil-plan when decision is ITERATE.
+      Update decision block to include RSIL path.
+    priority: "P1"
+    owner: "terminal-c"
+    dependencies:
+      - "phase4-rsil-plan-skill"
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/skills/synthesis/SKILL.md"
+        action: "modify"
+        sections:
+          - "decision_block"
+          - "integration_points"
+
+    completionCriteria:
+      - "ITERATE decision suggests /rsil-plan"
+      - "Integration points updated with /rsil-plan"
+      - "Version bumped to 2.2.0"
+
+    verificationSteps:
+      - command: "grep '/rsil-plan' /home/palantir/.claude/skills/synthesis/SKILL.md"
+        expected: "Contains /rsil-plan reference"
+
+  - id: "phase5b-pipeline-documentation"
+    name: "Update CLAUDE.md Pipeline Documentation"
+    description: |
+      Update CLAUDE.md with enhanced pipeline flow diagram.
+      Include /research, /planning, /rsil-plan in E2E pipeline.
+    priority: "P1"
+    owner: "terminal-b"
+    dependencies:
+      - "phase1-research-skill"
+      - "phase2-planning-skill"
+      - "phase4-rsil-plan-skill"
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: "/home/palantir/.claude/CLAUDE.md"
+        action: "modify"
+        sections:
+          - "orchestration_protocol"
+          - "e2e_pipeline"
+
+    completionCriteria:
+      - "E2E Pipeline section updated with new skills"
+      - "Flow diagram includes /research → /planning path"
+      - "ITERATE path shows /rsil-plan"
+
+    verificationSteps:
+      - command: "grep '/research' /home/palantir/.claude/CLAUDE.md"
+        expected: "Contains /research in pipeline"
+
+  # ---------------------------------------------------------------------------
+  # PHASE 6: Testing (Both Terminals)
+  # ---------------------------------------------------------------------------
+  - id: "phase6-e2e-testing"
+    name: "End-to-End Pipeline Testing"
+    description: |
+      Test complete pipeline flow with new skills:
+      1. /clarify → /research → /planning → /orchestrate
+      2. Full loop to /synthesis → /rsil-plan (ITERATE case)
+    priority: "P0"
+    owner: "both"
+    dependencies:
+      - "phase5a-synthesis-update"
+      - "phase5b-pipeline-documentation"
+    estimatedComplexity: "medium"
+
+    completionCriteria:
+      - "1st Loop: /clarify through /synthesis completes"
+      - "/research generates L1/L2/L3 output"
+      - "/planning generates valid YAML with Plan Agent review"
+      - "ITERATE triggers /rsil-plan successfully"
+      - "/rsil-plan generates gap analysis and remediation plan"
+
+    verificationSteps:
+      - command: "ls -la /home/palantir/.agent/research/"
+        expected: "Research outputs exist"
+      - command: "ls -la /home/palantir/.agent/plans/*.yaml"
+        expected: "Planning documents exist"
+      - command: "ls -la /home/palantir/.agent/rsil/"
+        expected: "RSIL outputs exist (if ITERATE tested)"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase3a-research-hook"
+      to: "phase1-research-skill"
+      reason: "Hook requires skill to be defined first"
+
+    - from: "phase3b-planning-hook"
+      to: "phase2-planning-skill"
+      reason: "Hook requires skill to be defined first"
+
+    - from: "phase4-rsil-plan-skill"
+      to: "phase1-research-skill"
+      reason: "RSIL uses similar patterns from /research"
+
+    - from: "phase4-rsil-plan-skill"
+      to: "phase2-planning-skill"
+      reason: "RSIL loads planning documents"
+
+    - from: "phase5a-synthesis-update"
+      to: "phase4-rsil-plan-skill"
+      reason: "/synthesis must know about /rsil-plan to suggest it"
+
+    - from: "phase5b-pipeline-documentation"
+      to: "phase4-rsil-plan-skill"
+      reason: "Documentation requires all skills to be defined"
+
+    - from: "phase6-e2e-testing"
+      to: "phase5a-synthesis-update"
+      reason: "Testing requires all integrations complete"
+
+    - from: "phase6-e2e-testing"
+      to: "phase5b-pipeline-documentation"
+      reason: "Testing requires documentation complete"
+
+  external:
+    - name: "Claude Code V2.1.19"
+      version: "2.1.19+"
+      reason: "Required for skill frontmatter and native capabilities"
+
+# =============================================================================
+# WORKER PROMPT GENERATION
+# =============================================================================
+
+workerPrompts:
+  terminal-b:
+    phases:
+      - "phase1-research-skill"
+      - "phase3a-research-hook"
+      - "phase4-rsil-plan-skill"
+      - "phase5b-pipeline-documentation"
+    promptFile: ".agent/prompts/pending/worker-terminal-b-enhanced-pipeline.yaml"
+
+  terminal-c:
+    phases:
+      - "phase2-planning-skill"
+      - "phase3b-planning-hook"
+      - "phase5a-synthesis-update"
+    promptFile: ".agent/prompts/pending/worker-terminal-c-enhanced-pipeline.yaml"
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "pending"
+  reviewedAt: null
+  reviewedBy: null
+  comments: []
+  approvalCriteria:
+    - "All phases have clear completion criteria"
+    - "Dependencies form acyclic graph"
+    - "Target files are specified for each phase"
+    - "Owner assignment is balanced between terminals"
+    - "Verification steps are executable"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Phase 1 (Terminal-B) and Phase 2 (Terminal-C) can run in parallel.
+    Phase 3a and 3b can run in parallel after their respective dependencies.
+    Phase 4 requires both Phase 1 and Phase 2 to complete.
+    Phase 5a and 5b can run in parallel after Phase 4.
+    Phase 6 requires all phases to complete.
+
+  estimatedDuration: |
+    Phase 1: ~30 min (complex skill)
+    Phase 2: ~30 min (complex skill)
+    Phase 3a/3b: ~10 min each (simple hooks)
+    Phase 4: ~45 min (most complex)
+    Phase 5a/5b: ~15 min each
+    Phase 6: ~30 min
+
+    Sequential Total: ~3 hours
+    Parallel Total: ~1.5-2 hours (with Terminal-B and Terminal-C)
+
+  criticalPath: |
+    Phase 1/2 (parallel) → Phase 4 → Phase 5a/5b (parallel) → Phase 6

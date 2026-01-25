@@ -1,0 +1,412 @@
+# /ontology-core - Core Ontology Schema Validator
+
+> **Version:** 1.0.0
+> **Model:** opus
+> **User-Invocable:** true
+> **Auto-Invoke:** false
+
+---
+
+## 1. Purpose
+
+Validates and assists with **Core Ontology Types** in Ontology-Driven-Architecture (ODA) codebases:
+
+| Type | Description | Key Validations |
+|------|-------------|-----------------|
+| **ObjectType** | Entity schema definition | Primary key, properties, backing dataset |
+| **LinkType** | Relationship between ObjectTypes | Cardinality, foreign key, cascade policy |
+| **ActionType** | User action schema | Parameters, affected types, edit specs |
+| **PropertyDefinition** | Property within ObjectType | Data type, constraints, visibility |
+
+---
+
+## 2. Invocation
+
+```bash
+# Validate a specific file
+/ontology-core validate src/ontology/employee.py
+
+# Validate all ontology definitions in directory
+/ontology-core validate-all src/ontology/
+
+# Generate ObjectType scaffold
+/ontology-core scaffold ObjectType Employee
+
+# Check consistency across linked types
+/ontology-core check-links src/ontology/
+```
+
+---
+
+## 3. Validation Rules
+
+### 3.1 ObjectType Validation
+
+```yaml
+rules:
+  - id: OT-001
+    name: "Primary Key Required"
+    description: "Every ObjectType must have exactly one primary_key definition"
+    severity: ERROR
+    check: |
+      primary_key is not None AND
+      primary_key.property_api_name in [p.api_name for p in properties]
+
+  - id: OT-002
+    name: "Primary Key Property Must Exist"
+    description: "primary_key.property_api_name must reference an existing property"
+    severity: ERROR
+
+  - id: OT-003
+    name: "Unique Property Names"
+    description: "All property api_names must be unique within ObjectType"
+    severity: ERROR
+
+  - id: OT-004
+    name: "Valid Status"
+    description: "status must be one of: ACTIVE, DEPRECATED, EXPERIMENTAL"
+    severity: ERROR
+
+  - id: OT-005
+    name: "Endorsed Requires Active"
+    description: "endorsed=True requires status=ACTIVE"
+    severity: WARNING
+
+  - id: OT-006
+    name: "Backing Dataset RID Format"
+    description: "backing_dataset.dataset_rid must match Foundry RID pattern"
+    severity: ERROR
+    pattern: "^ri\\.foundry\\.[a-z]+\\.dataset\\.[a-zA-Z0-9-]+$"
+
+  - id: OT-007
+    name: "Property Data Type Valid"
+    description: "Each property must have valid DataType"
+    severity: ERROR
+```
+
+### 3.2 LinkType Validation
+
+```yaml
+rules:
+  - id: LT-001
+    name: "Source ObjectType Required"
+    description: "source_object_type must reference valid ObjectType"
+    severity: ERROR
+
+  - id: LT-002
+    name: "Target ObjectType Required"
+    description: "target_object_type must reference valid ObjectType"
+    severity: ERROR
+
+  - id: LT-003
+    name: "Cardinality Required"
+    description: "cardinality must be specified (ONE_TO_ONE, ONE_TO_MANY, etc.)"
+    severity: ERROR
+
+  - id: LT-004
+    name: "Foreign Key Implementation"
+    description: "FOREIGN_KEY implementation requires foreign_key_property"
+    severity: ERROR
+    when: "implementation.type == FOREIGN_KEY"
+
+  - id: LT-005
+    name: "Backing Table for N:N"
+    description: "MANY_TO_MANY cardinality requires BACKING_TABLE implementation"
+    severity: ERROR
+    when: "cardinality.type == MANY_TO_MANY"
+
+  - id: LT-006
+    name: "No Endorsed Status"
+    description: "LinkType does not support 'endorsed' (GAP-005)"
+    severity: WARNING
+    check: "endorsed is None or endorsed == False"
+
+  - id: LT-007
+    name: "Cascade Policy Consistency"
+    description: "CASCADE delete should only be used with ONE_TO_MANY from parent"
+    severity: WARNING
+```
+
+### 3.3 ActionType Validation
+
+```yaml
+rules:
+  - id: AT-001
+    name: "Unique Parameter Names"
+    description: "All parameter api_names must be unique within ActionType"
+    severity: ERROR
+
+  - id: AT-002
+    name: "Required Parameters First"
+    description: "Required parameters should be listed before optional ones"
+    severity: WARNING
+
+  - id: AT-003
+    name: "Affected ObjectType Exists"
+    description: "Each affected_object_type must reference valid ObjectType"
+    severity: ERROR
+
+  - id: AT-004
+    name: "Hazardous Flag"
+    description: "DELETE operations should mark hazardous=True"
+    severity: WARNING
+
+  - id: AT-005
+    name: "Edit Spec Property Valid"
+    description: "Edit specifications must reference valid properties"
+    severity: ERROR
+
+  - id: AT-006
+    name: "Implementation Required"
+    description: "ActionType must have implementation specification"
+    severity: ERROR
+
+  - id: AT-007
+    name: "No Endorsed Status"
+    description: "ActionType does not support 'endorsed'"
+    severity: WARNING
+```
+
+### 3.4 PropertyDefinition Validation
+
+```yaml
+rules:
+  - id: PD-001
+    name: "Valid Data Type"
+    description: "data_type.type must be valid DataType enum"
+    severity: ERROR
+
+  - id: PD-002
+    name: "Array Item Type"
+    description: "ARRAY type requires item_type specification"
+    severity: ERROR
+    when: "data_type.type == ARRAY"
+
+  - id: PD-003
+    name: "Struct Reference"
+    description: "STRUCT type requires struct_type_ref"
+    severity: ERROR
+    when: "data_type.type == STRUCT"
+
+  - id: PD-004
+    name: "Required Without Default"
+    description: "Required properties should not have default values"
+    severity: WARNING
+
+  - id: PD-005
+    name: "Primary Key Constraints"
+    description: "Primary key property must be required=True, unique=True"
+    severity: ERROR
+    when: "is_primary_key == True"
+```
+
+---
+
+## 4. Commands
+
+### 4.1 validate
+
+```bash
+/ontology-core validate <file_path>
+```
+
+Validates a single file containing ontology definitions.
+
+**Output:**
+```
+Validating: src/ontology/employee.py
+
+ObjectType: Employee
+  ✅ OT-001: Primary Key Required
+  ✅ OT-002: Primary Key Property Must Exist
+  ✅ OT-003: Unique Property Names
+  ⚠️ OT-005: Endorsed Requires Active (endorsed=True but status=EXPERIMENTAL)
+  ✅ OT-006: Backing Dataset RID Format
+
+PropertyDefinition: employeeId
+  ✅ PD-001: Valid Data Type
+  ✅ PD-005: Primary Key Constraints
+
+Summary: 6 passed, 1 warning, 0 errors
+```
+
+### 4.2 validate-all
+
+```bash
+/ontology-core validate-all <directory>
+```
+
+Validates all `.py` files in directory containing ontology definitions.
+
+### 4.3 scaffold
+
+```bash
+/ontology-core scaffold <type> <name>
+```
+
+Generates a template for the specified ontology type.
+
+**Example:**
+```bash
+/ontology-core scaffold ObjectType Employee
+```
+
+**Output (employee.py):**
+```python
+from ontology_definition.types import (
+    ObjectType,
+    PropertyDefinition,
+    DataTypeSpec,
+    PrimaryKeyDefinition,
+    PropertyConstraints,
+)
+from ontology_definition.core.enums import DataType, ObjectStatus
+
+employee_type = ObjectType(
+    api_name="Employee",
+    display_name="Employee",
+    description="TODO: Add description",
+    primary_key=PrimaryKeyDefinition(property_api_name="employeeId"),
+    properties=[
+        PropertyDefinition(
+            api_name="employeeId",
+            display_name="Employee ID",
+            data_type=DataTypeSpec(type=DataType.STRING),
+            constraints=PropertyConstraints(required=True, unique=True),
+        ),
+        # TODO(human): Add more properties
+    ],
+    status=ObjectStatus.ACTIVE,
+)
+```
+
+### 4.4 check-links
+
+```bash
+/ontology-core check-links <directory>
+```
+
+Cross-validates LinkType references against ObjectType definitions.
+
+**Output:**
+```
+Checking link consistency in: src/ontology/
+
+LinkType: EmployeeToDepartment
+  ✅ Source ObjectType 'Employee' exists
+  ✅ Target ObjectType 'Department' exists
+  ✅ Foreign key 'departmentId' exists in Employee
+
+LinkType: ProjectToEmployee
+  ❌ Source ObjectType 'Project' not found
+  ⚠️ Consider creating Project ObjectType first
+
+Summary: 3 passed, 1 warning, 1 error
+```
+
+---
+
+## 5. Integration with ontology-definition Package
+
+This agent uses the `ontology-definition` package for validation:
+
+```python
+# Import path
+from ontology_definition.types import (
+    ObjectType,
+    LinkType,
+    ActionType,
+    PropertyDefinition,
+)
+from ontology_definition.core.enums import (
+    DataType,
+    ObjectStatus,
+    Cardinality,
+    LinkImplementationType,
+)
+```
+
+### Package Location
+
+```
+/home/palantir/park-kyungchan/palantir/Ontology-Definition/
+├── ontology_definition/
+│   ├── types/
+│   │   ├── object_type.py
+│   │   ├── link_type.py
+│   │   ├── action_type.py
+│   │   └── property_def.py
+│   └── core/
+│       └── enums.py
+```
+
+---
+
+## 6. Tools Allowed
+
+| Tool | Purpose |
+|------|---------|
+| `Read` | Read ontology definition files |
+| `Glob` | Find ontology files in directory |
+| `Grep` | Search for specific patterns |
+| `Write` | Generate scaffold files |
+| `Bash` | Run validation scripts |
+
+---
+
+## 7. Output Format
+
+### L1 - Summary
+```
+✅ Validation Complete: 12 files, 45 rules passed, 3 warnings, 0 errors
+```
+
+### L2 - Per-File Results
+```
+src/ontology/employee.py: ✅ (15 passed, 1 warning)
+src/ontology/department.py: ✅ (12 passed)
+src/ontology/links.py: ❌ (10 passed, 2 errors)
+```
+
+### L3 - Detailed Report
+Full rule-by-rule breakdown with code snippets and fix suggestions.
+
+---
+
+## 8. Future Extensions
+
+> **Reminder for future skills:**
+
+| Skill | Scope |
+|-------|-------|
+| `/ontology-extended` | Interface, ValueType, StructType, SharedProperty, Function, Automation, Rules, Writeback |
+| `/ontology-migration` | Analyze existing code → Generate ODA migration plan |
+
+---
+
+## 9. Examples
+
+### Example 1: Validate Employee ObjectType
+
+```bash
+User: /ontology-core validate src/models/employee.py
+Agent: [Reads file, applies OT-001 through OT-007 rules, reports results]
+```
+
+### Example 2: Generate LinkType Scaffold
+
+```bash
+User: /ontology-core scaffold LinkType EmployeeToDepartment
+Agent: [Generates link_type template with MANY_TO_ONE cardinality]
+```
+
+### Example 3: Cross-Check Links
+
+```bash
+User: /ontology-core check-links src/ontology/
+Agent: [Finds all LinkTypes, verifies source/target ObjectTypes exist]
+```
+
+---
+
+**End of Agent Definition**

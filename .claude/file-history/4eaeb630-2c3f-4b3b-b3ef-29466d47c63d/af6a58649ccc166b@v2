@@ -1,0 +1,273 @@
+# =============================================================================
+# Planning Document: V2.1.19 Pipeline Compliance & Enhancement
+# =============================================================================
+# Generated: 2026-01-25T14:35:00Z
+# Updated: 2026-01-25T14:55:00Z (Plan Agent Review Iteration 2)
+# Status: approved
+# Research Source: .agent/research/v2.1.19-pipeline-review-20260125.md
+
+metadata:
+  id: "v2.1.19-pipeline-review-20260125"
+  version: "1.2.0"  # Updated after Plan Agent review iteration 2
+  created_at: "2026-01-25T14:35:00Z"
+  updated_at: "2026-01-25T14:55:00Z"
+  status: "approved"
+  research_source: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+  clarify_source: ".agent/clarify/clarify_upgrade_20260124.yaml"
+
+project:
+  name: "V2.1.19 Pipeline Compliance Enhancement"
+  description: |
+    Claude Code CLI V2.1.19 파이프라인 완전 호환성 검토 및 보완.
+
+    [Plan Agent Review 최종 결과]
+    - 모든 13개 스킬: version 및 argument-hint 완료
+    - 유틸리티 스킬 문서화: 대부분 완료, /build-research만 Gap 있음
+    - 필요 작업: /build-research 문서 개선 + E2E 테스트 스크립트
+
+    E2E 파이프라인은 정상 작동 확인됨.
+  objectives:
+    - "/build-research 스킬 문서화 개선 (Phase 2 - 축소됨)"
+    - "E2E 파이프라인 통합 테스트 스크립트 작성 (Phase 4)"
+    - "최종 V2.1.19 호환성 검증 (Phase 5)"
+
+# =============================================================================
+# CURRENT STATE VERIFICATION (Iteration 2 기반)
+# =============================================================================
+
+currentState:
+  versionFields:
+    status: "COMPLETE"
+    evidence: |
+      모든 13개 스킬에 version 필드 확인됨
+
+  argumentHints:
+    status: "COMPLETE"
+    evidence: |
+      모든 13개 스킬에 argument-hint 필드 확인됨
+
+  utilitySkillDocs:
+    status: "MOSTLY_COMPLETE"
+    details:
+      - skill: "/build"
+        lines: 389
+        errorHandling: true  # line 347
+        examples: true
+        integration: true    # line 358
+        gap: "없음"
+      - skill: "/build-research"
+        lines: 353
+        errorHandling: false
+        examples: false      # 구체적 예시 부족
+        integration: "partial"  # 파라미터 호환성만
+        gap: "Error Handling, Examples 섹션 필요"
+      - skill: "/commit-push-pr"
+        lines: 183
+        errorHandling: "partial"
+        examples: true
+        integration: "partial"
+        gap: "Minor - 이미 사용 가능"
+      - skill: "/docx-automation"
+        lines: 244
+        errorHandling: true  # line 163
+        examples: true       # line 177
+        integration: "partial"
+        gap: "Minor - 이미 사용 가능"
+
+# =============================================================================
+# PHASES - Implementation Breakdown (Final)
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: REMOVED (Version Fields already complete)
+  # Phase 3: REMOVED (Argument Hints already complete)
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Build-Research Documentation Only (P2 - Reduced Scope)
+  # ---------------------------------------------------------------------------
+  - id: "phase2-build-research-docs"
+    name: "Complete /build-research Documentation"
+    description: |
+      /build-research 스킬 문서화 개선:
+      - Error Handling 섹션 추가
+      - 구체적인 사용 예시 추가
+
+      다른 유틸리티 스킬은 이미 충분한 문서화 보유:
+      - /build: 389줄, Error Handling ✅, Examples ✅
+      - /commit-push-pr: 183줄, Examples ✅
+      - /docx-automation: 244줄, Error Handling ✅, Examples ✅
+    priority: "P2"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: ".claude/skills/build-research/SKILL.md"
+        action: "modify"
+        sections: ["error-handling", "examples"]
+
+    referenceFiles:
+      - path: ".claude/skills/build/SKILL.md"
+        reason: "Error Handling section pattern (line 347)"
+      - path: ".claude/skills/docx-automation/SKILL.md"
+        reason: "Examples section pattern (line 177)"
+
+    completionCriteria:
+      - "/build-research has ## Error Handling section"
+      - "/build-research has at least 2 usage examples"
+      - "Examples show expected input/output"
+
+    verificationSteps:
+      - command: "grep -c '## Error' .claude/skills/build-research/SKILL.md"
+        expected: "1 or more"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: E2E Integration Test Script (P2)
+  # ---------------------------------------------------------------------------
+  - id: "phase4-e2e-test"
+    name: "Create E2E Integration Test Script"
+    description: |
+      파이프라인 E2E 테스트 스크립트 작성.
+
+      테스트 범위:
+      1. 스킬 파일 존재 확인 (13개)
+      2. Frontmatter 유효성 검증 (name, description, version)
+      3. 데이터 핸드오프 경로 확인
+
+      Prerequisites:
+      - mkdir -p .claude/tests
+    priority: "P2"
+    owner: "terminal-c"
+    dependencies: []  # Removed dependency on phase2 for parallelization
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/tests/e2e-pipeline-test.sh"
+        action: "create"
+      - path: ".claude/tests/README.md"
+        action: "create"
+
+    referenceFiles:
+      - path: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+        reason: "Test scenarios documented in L3 section"
+
+    completionCriteria:
+      - "Directory .claude/tests/ exists"
+      - "Test script validates all 13 skill files exist"
+      - "Test script verifies required frontmatter fields"
+      - "README documents test execution"
+
+    verificationSteps:
+      - command: "bash -n .claude/tests/e2e-pipeline-test.sh"
+        expected: "No syntax errors (exit 0)"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: Final Validation (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase5-validation"
+    name: "Final V2.1.19 Compliance Validation"
+    description: |
+      모든 변경사항 검증 및 최종 확인.
+    priority: "P0"
+    owner: "orchestrator"
+    dependencies: ["phase2-build-research-docs", "phase4-e2e-test"]
+    estimatedComplexity: "low"
+
+    targetFiles: []
+
+    referenceFiles:
+      - path: ".claude/tests/e2e-pipeline-test.sh"
+        reason: "Run test script"
+
+    completionCriteria:
+      - "/build-research has improved documentation"
+      - "E2E test script passes all checks"
+
+    verificationSteps:
+      - command: "bash .claude/tests/e2e-pipeline-test.sh"
+        expected: "All tests pass"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph (Final)
+# =============================================================================
+
+dependencies:
+  internal:
+    # Phase 2 and Phase 4 can run in PARALLEL (no dependencies between them)
+    - from: "phase5-validation"
+      to: "phase2-build-research-docs"
+      reason: "Validation requires documentation complete"
+    - from: "phase5-validation"
+      to: "phase4-e2e-test"
+      reason: "Validation requires test script complete"
+
+  external: []
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "approved"
+  reviewedAt: "2026-01-25T14:55:00Z"
+  reviewedBy: "Plan Agent"
+  iterationCount: 2
+  comments:
+    - round: 1
+      comment: |
+        NEEDS_REVISION:
+        - Phase 1, 3 obsolete (version/argument-hint already complete)
+      resolution: "Phase 1, 3 제거"
+    - round: 2
+      comment: |
+        NEEDS_REVISION:
+        - Phase 2 대부분 스킬 이미 문서화됨
+        - /build-research만 Gap 있음
+      resolution: |
+        - Phase 2 범위를 /build-research 한 파일로 축소
+        - Phase 2, 4를 병렬 실행 가능하도록 의존성 제거
+
+  approvalCriteria:
+    - "All phases have clear completion criteria" # ✅
+    - "Dependencies form acyclic graph"           # ✅
+    - "Target files are specified for each phase" # ✅
+    - "Risk mitigation strategies identified"     # ✅
+    - "Parallelization opportunities identified"  # ✅
+
+# =============================================================================
+# EXECUTION NOTES (Final)
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Phase 2 and Phase 4 can run in PARALLEL:
+    - Terminal B: Phase 2 (/build-research docs) ~10 min
+    - Terminal C: Phase 4 (E2E test script) ~20 min
+
+    Final (sequential):
+    - Phase 5 (validation) - Orchestrator ~5 min
+
+  criticalPath: |
+    Max(phase2, phase4) → phase5-validation
+    Estimated: ~25 min total (with parallelization)
+
+  riskMitigation: |
+    - LOW: Test script directory → mkdir -p .claude/tests
+    - LOW: YAML syntax errors → Validate after each edit
+
+  estimatedEffort: |
+    Phase 2: ~10 min (1 file, add 2 sections)
+    Phase 4: ~20 min (2 files, scripting)
+    Phase 5: ~5 min (verification only)
+    Total: ~35 min (parallel) / ~35 min (sequential)
+
+  removedPhases: |
+    - Phase 1 (version-fields): REMOVED - Already complete (13/13)
+    - Phase 3 (argument-hints): REMOVED - Already complete (13/13)
+    - Phase 2 (other utils): REDUCED - /build, /commit-push-pr, /docx-automation already documented
+
+# =============================================================================
+# END OF PLANNING DOCUMENT
+# =============================================================================

@@ -1,0 +1,280 @@
+# =============================================================================
+# Planning Document: V2.1.19 Pipeline Compliance & Enhancement
+# =============================================================================
+# Generated: 2026-01-25T14:35:00Z
+# Updated: 2026-01-25T14:45:00Z (Plan Agent Review Iteration 1)
+# Status: reviewing
+# Research Source: .agent/research/v2.1.19-pipeline-review-20260125.md
+
+metadata:
+  id: "v2.1.19-pipeline-review-20260125"
+  version: "1.1.0"  # Updated after Plan Agent review
+  created_at: "2026-01-25T14:35:00Z"
+  updated_at: "2026-01-25T14:45:00Z"
+  status: "reviewing"
+  research_source: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+  clarify_source: ".agent/clarify/clarify_upgrade_20260124.yaml"
+
+project:
+  name: "V2.1.19 Pipeline Compliance Enhancement"
+  description: |
+    Claude Code CLI V2.1.19 파이프라인 완전 호환성 검토 및 보완.
+
+    [Plan Agent Review 결과 업데이트]
+    - Research 리포트의 일부 데이터가 오래됨 (version 필드, argument-hint 이미 존재)
+    - 실제 확인 결과: 모든 13개 스킬이 version 및 argument-hint 보유
+    - Phase 1, 3 제거하고 실제 필요한 작업에 집중
+
+    E2E 파이프라인은 정상 작동 확인됨.
+  objectives:
+    - "유틸리티 스킬 문서화 개선 (Phase 2)"
+    - "E2E 파이프라인 통합 테스트 스크립트 작성 (Phase 4)"
+    - "최종 V2.1.19 호환성 검증 (Phase 5)"
+
+# =============================================================================
+# CURRENT STATE VERIFICATION (Plan Agent Review 기반)
+# =============================================================================
+
+currentState:
+  versionFields:
+    status: "COMPLETE"
+    evidence: |
+      모든 13개 스킬에 version 필드 확인됨:
+      - clarify: 2.1.0
+      - research: 1.0.0
+      - planning: 1.0.0
+      - orchestrate: 3.0.0
+      - assign: 2.1.0
+      - worker: 3.0.0
+      - collect: 2.1.0
+      - synthesis: 2.2.0
+      - rsil-plan: 1.0.0
+      - build: 2.2.0
+      - build-research: 2.1.0
+      - commit-push-pr: 2.1.0
+      - docx-automation: 2.1.0
+
+  argumentHints:
+    status: "COMPLETE"
+    evidence: |
+      모든 스킬에 argument-hint 필드 확인됨 (13개)
+
+# =============================================================================
+# PHASES - Implementation Breakdown (Revised)
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: REMOVED (Version Fields already complete)
+  # Phase 3: REMOVED (Argument Hints already complete)
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Utility Skills Documentation (P1)
+  # ---------------------------------------------------------------------------
+  - id: "phase2-utility-docs"
+    name: "Complete Utility Skills Documentation"
+    description: |
+      유틸리티 스킬 문서 품질 개선:
+      - /build: 스킬/훅/에이전트 생성기 - 예시 추가
+      - /build-research: 빌드 전 리서치 - 사용 시나리오 문서화
+      - /commit-push-pr: Git 워크플로우 - 에러 핸들링 문서화
+      - /docx-automation: DOCX 생성 - 템플릿 예시 추가
+
+      현재 이 스킬들은 기본 문서가 있으나,
+      /research나 /planning 수준의 상세 문서화가 부족함.
+    priority: "P1"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/build/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling", "usage-scenarios"]
+      - path: ".claude/skills/build-research/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling", "usage-scenarios"]
+      - path: ".claude/skills/commit-push-pr/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling", "usage-scenarios"]
+      - path: ".claude/skills/docx-automation/SKILL.md"
+        action: "modify"
+        sections: ["examples", "error-handling", "usage-scenarios"]
+
+    referenceFiles:
+      - path: ".claude/skills/research/SKILL.md"
+        reason: "Documentation quality reference (L1/L2/L3 pattern)"
+      - path: ".claude/skills/planning/SKILL.md"
+        reason: "Comprehensive documentation example"
+      - path: ".claude/skills/worker/SKILL.md"
+        reason: "Subcommand documentation pattern"
+
+    completionCriteria:
+      - "Each skill has at least 2 usage examples with expected output"
+      - "Error handling section documents at least 3 common errors"
+      - "Invocation syntax is clearly documented with argument descriptions"
+      - "Integration with pipeline is documented (upstream/downstream)"
+
+    verificationSteps:
+      - command: "grep -c '## Examples' .claude/skills/build/SKILL.md"
+        expected: "1 or more"
+      - command: "grep -c '## Error' .claude/skills/docx-automation/SKILL.md"
+        expected: "1 or more"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: E2E Integration Test Script (P2)
+  # ---------------------------------------------------------------------------
+  - id: "phase4-e2e-test"
+    name: "Create E2E Integration Test Script"
+    description: |
+      파이프라인 E2E 테스트 스크립트 작성.
+      모든 스킬의 호출 가능성 및 데이터 핸드오프 검증.
+
+      테스트 범위:
+      1. 스킬 파일 존재 확인
+      2. Frontmatter 유효성 검증
+      3. 데이터 핸드오프 경로 확인
+      4. 의존성 그래프 순환 검사
+    priority: "P2"
+    owner: "terminal-c"
+    dependencies: ["phase2-utility-docs"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/tests/e2e-pipeline-test.sh"
+        action: "create"
+      - path: ".claude/tests/README.md"
+        action: "create"
+
+    referenceFiles:
+      - path: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+        reason: "Test scenarios documented in L3 section"
+      - path: ".claude/CLAUDE.md"
+        reason: "Pipeline flow documentation"
+
+    completionCriteria:
+      - "Test script validates all 13 skill files exist"
+      - "Test script verifies required frontmatter fields (name, description, version)"
+      - "Test script checks data handoff paths (.agent/clarify, .agent/research, .agent/plans)"
+      - "README documents test execution and expected results"
+
+    verificationSteps:
+      - command: "bash -n .claude/tests/e2e-pipeline-test.sh"
+        expected: "No syntax errors (exit 0)"
+      - command: "test -f .claude/tests/README.md && echo exists"
+        expected: "exists"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: Final Validation (P0)
+  # ---------------------------------------------------------------------------
+  - id: "phase5-validation"
+    name: "Final V2.1.19 Compliance Validation"
+    description: |
+      모든 변경사항 검증 및 최종 확인.
+      E2E 테스트 스크립트 실행 및 결과 확인.
+    priority: "P0"
+    owner: "orchestrator"
+    dependencies: ["phase2-utility-docs", "phase4-e2e-test"]
+    estimatedComplexity: "low"
+
+    targetFiles: []
+
+    referenceFiles:
+      - path: ".agent/research/v2.1.19-pipeline-review-20260125.md"
+        reason: "Original findings comparison"
+      - path: ".claude/tests/e2e-pipeline-test.sh"
+        reason: "Run test script"
+
+    completionCriteria:
+      - "All 13 skills have version field (verified)"
+      - "Utility skills have improved documentation"
+      - "E2E test script passes all checks"
+      - "No P0 items remain open"
+
+    verificationSteps:
+      - command: "bash .claude/tests/e2e-pipeline-test.sh"
+        expected: "All tests pass"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph (Simplified)
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase4-e2e-test"
+      to: "phase2-utility-docs"
+      reason: "Tests should validate documented behavior"
+    - from: "phase5-validation"
+      to: "phase2-utility-docs"
+      reason: "Validation requires documentation complete"
+    - from: "phase5-validation"
+      to: "phase4-e2e-test"
+      reason: "Validation requires test script complete"
+
+  external: []
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "iterating"
+  reviewedAt: "2026-01-25T14:42:00Z"
+  reviewedBy: "Plan Agent (a32b340)"
+  iterationCount: 1
+  comments:
+    - round: 1
+      comment: |
+        NEEDS_REVISION:
+        1. [Research Data]: Stale - version fields already exist
+        2. [Phase 1]: OBSOLETE - all skills have version
+        3. [Phase 3]: OBSOLETE - all skills have argument-hint
+      resolution: |
+        - Phase 1 제거
+        - Phase 3 제거
+        - Phase 2, 4, 5만 유지
+        - 프로젝트 설명 업데이트
+        - 현재 상태 검증 섹션 추가
+
+  approvalCriteria:
+    - "All phases have clear completion criteria"
+    - "Dependencies form acyclic graph"
+    - "Target files are specified for each phase"
+    - "Risk mitigation strategies identified"
+    - "Parallelization opportunities identified"
+
+# =============================================================================
+# EXECUTION NOTES (Updated)
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Simplified execution flow:
+
+    Sequential (3 phases only):
+    1. Phase 2 (utility docs) - Terminal B
+    2. Phase 4 (E2E test) - Terminal C (after Phase 2)
+    3. Phase 5 (validation) - Orchestrator
+
+  criticalPath: |
+    phase2-utility-docs → phase4-e2e-test → phase5-validation
+
+  riskMitigation: |
+    - LOW: Skill file modification conflicts → Git stash before editing
+    - LOW: YAML syntax errors → Validate YAML after each edit
+    - LOW: Test script failures → Manual fallback verification
+
+  estimatedEffort: |
+    Phase 2: ~30 min (4 files, documentation improvement)
+    Phase 4: ~20 min (2 files, scripting)
+    Phase 5: ~10 min (verification only)
+    Total: ~60 min
+
+  removedPhases: |
+    - Phase 1 (version-fields): REMOVED - Already complete (13/13 skills)
+    - Phase 3 (argument-hints): REMOVED - Already complete (13/13 skills)
+
+# =============================================================================
+# END OF PLANNING DOCUMENT
+# =============================================================================

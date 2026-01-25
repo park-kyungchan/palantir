@@ -1,0 +1,151 @@
+# =============================================================================
+# Worker Task: Terminal-B - /build-research Documentation Enhancement
+# =============================================================================
+# Project: V2.1.19 Pipeline Compliance Enhancement
+# Read this file AFTER reading _context.yaml
+# =============================================================================
+
+assignedTo: "terminal-b"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-25T15:00:00Z"
+
+# =============================================================================
+# NATIVE TASK REFERENCE
+# =============================================================================
+nativeTaskId: "1"
+phaseId: "phase2-build-research-docs"
+phaseName: "Complete /build-research Documentation"
+
+# =============================================================================
+# CONTEXT REFERENCE (Separate from main project)
+# =============================================================================
+contextFile: ".agent/prompts/_context-v2119-pipeline.yaml"
+progressFile: ".agent/prompts/_progress.yaml"
+planningDocument: ".agent/plans/v2.1.19-pipeline-review-20260125.yaml"
+note: "This project uses separate context file to avoid conflicts with Ontology-Definition project"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+scope: |
+  /build-research 스킬 문서화 개선:
+  - ## Error Handling 섹션 추가
+  - 구체적인 사용 예시 추가 (최소 2개)
+
+  다른 유틸리티 스킬은 이미 충분한 문서화를 보유하므로 작업 불필요:
+  - /build: 389줄, Error Handling ✅, Examples ✅
+  - /commit-push-pr: 183줄, Examples ✅
+  - /docx-automation: 244줄, Error Handling ✅, Examples ✅
+
+# =============================================================================
+# TARGET FILES (I can MODIFY these)
+# =============================================================================
+targetFiles:
+  - path: ".claude/skills/build-research/SKILL.md"
+    action: "modify"
+    readOnly: false
+    sections:
+      - "## Error Handling"
+      - "## Examples"
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+referenceFiles:
+  - path: ".claude/skills/build/SKILL.md"
+    reason: "Error Handling section pattern (line 347)"
+    patternExample: |
+      ## Error Handling
+      | Error | Recovery |
+      |-------|----------|
+      | Invalid name | Re-prompt with validation hint |
+      | Draft not found | List available drafts |
+      | File exists | Ask overwrite confirmation |
+
+  - path: ".claude/skills/docx-automation/SKILL.md"
+    reason: "Examples section pattern (line 177)"
+    patternExample: |
+      ## Examples
+      ### Basic Export
+      ```python
+      exporter = DOCXExporter()
+      data = {"equations": [...]}
+      spec = exporter.export(data, options, "einstein_formula")
+      ```
+
+# =============================================================================
+# DETAILED INSTRUCTIONS
+# =============================================================================
+detailedInstructions: |
+  1. Read the current /build-research SKILL.md file
+  2. Analyze existing section 7 "## 7. Error Handling" (lines 258-267)
+     - Current state: Basic table exists but needs expansion
+  3. Enhance ## Error Handling section:
+     - Add more specific error types
+     - Include recovery strategies
+     - Follow /build pattern (table format)
+  4. Add/enhance ## Examples section:
+     - Add at least 2 concrete usage examples
+     - Show expected input and output
+     - Include concept mode example
+     - Include resume mode example
+  5. Verify changes don't break existing content
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies: []
+blockedBy: []
+canStartImmediately: true
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+completionCriteria:
+  required:
+    - "/build-research SKILL.md has ## Error Handling section with detailed table"
+    - "/build-research SKILL.md has at least 2 usage examples"
+    - "Examples show expected input/output"
+    - "No syntax errors in YAML frontmatter"
+
+  verification:
+    - command: "grep -c '## Error' .claude/skills/build-research/SKILL.md"
+      expected: "1 or more"
+    - command: "grep -c 'Example' .claude/skills/build-research/SKILL.md"
+      expected: "2 or more"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "TaskUpdate(taskId='1', status='completed')"
+  - "Update _progress.yaml: terminal-b.status = 'completed'"
+  - "Update _progress.yaml: phases.phase2-build-research-docs.status = 'completed'"
+  - "Report to Orchestrator with L1 summary"
+  - "Notify: Task #3 (phase5-validation) may now be partially unblocked"
+
+# =============================================================================
+# AUTONOMOUS EXECUTION
+# =============================================================================
+autonomousExecution:
+  enabled: true
+  myTerminal: "terminal-b"
+  myTasks: ["1"]
+
+  executionSequence:
+    - step: 1
+      taskId: "1"
+      name: "Complete /build-research Documentation"
+      blockedBy: []
+      action: "START IMMEDIATELY"
+      estimatedTime: "~10 min"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+reportPath: ".agent/outputs/terminal-b/v2119-docs-report.md"
+
+# =============================================================================
+# END OF WORKER PROMPT
+# =============================================================================

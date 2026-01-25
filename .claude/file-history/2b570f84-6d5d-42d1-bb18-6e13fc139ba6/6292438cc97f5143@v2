@@ -1,0 +1,210 @@
+# =============================================================================
+# Global Context for Enhanced Pipeline Skills Project
+# =============================================================================
+# This file provides the BIG PICTURE for all Workers.
+# Every Worker MUST read this file BEFORE starting their task.
+#
+# Location: .agent/prompts/_context.yaml
+# Language: English (Machine-Readable)
+# =============================================================================
+
+version: "3.0"
+project: "enhanced-pipeline-skills"
+projectName: "Enhanced Orchestration Pipeline Skills"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-24T21:00:00Z"
+lastUpdated: "2026-01-24T21:00:00Z"
+
+# =============================================================================
+# PROJECT OBJECTIVES
+# =============================================================================
+objectives:
+  primary:
+    - "Implement /research skill for post-clarify codebase and external analysis"
+    - "Implement /planning skill for YAML planning document generation with Plan Agent review"
+    - "Implement /rsil-plan skill for Requirements-Synthesis Integration Loop"
+    - "Integrate new skills into existing pipeline flow"
+    - "Enable multi-terminal parallel execution"
+
+  constraints:
+    - "All skills must use V2.1.19 frontmatter format"
+    - "Documentation must follow existing pattern (/clarify, /synthesis as reference)"
+    - "Must integrate with Native Task System"
+    - "Must NOT break existing skills"
+
+# =============================================================================
+# ARCHITECTURE OVERVIEW
+# =============================================================================
+architecture:
+  currentPipeline: |
+    /clarify → /orchestrate → /assign → Workers → /collect → /synthesis → /commit-push-pr
+                                                                  ↑
+                                                             [ITERATE loops back to /clarify]
+
+  targetPipeline: |
+    /clarify → /research → /planning → /orchestrate → /assign → Workers → /collect → /synthesis
+                   ↑           ↑                                                        │
+              [NEW SKILL]  [NEW SKILL]                                                  │
+                                                              ┌──────────────────────────┘
+                                                              │
+                                                    ┌─────────┴─────────┐
+                                                    │                   │
+                                                COMPLETE            ITERATE
+                                                    │                   │
+                                                    ▼                   ▼
+                                          /commit-push-pr        /rsil-plan ◄── NEW
+                                                                       │
+                                                         ┌─────────────┴─────────────┐
+                                                         │                           │
+                                                   Auto-Remediate                Escalate
+                                                         │                           │
+                                                         ▼                           ▼
+                                                   /orchestrate                  /clarify
+
+  skillsDirectory: ".claude/skills/"
+  outputDirectory: ".agent/outputs/"
+
+# =============================================================================
+# DEPENDENCY GRAPH
+# =============================================================================
+dependencyGraph: |
+  Task #16 (/research)  ──────────────────────────────────────┐
+          │                                                   │
+          ├──► Task #18 (research-finalize.sh)                │
+          │                                                   │
+          │                                                   ▼
+  Task #17 (/planning)  ───────────────────────► Task #20 (/rsil-plan)
+          │                                            │
+          ├──► Task #19 (planning-finalize.sh)         │
+          │                                            ▼
+          │                                 Task #21 (/synthesis update)
+          │                                            │
+          └──────────────────────────────► Task #22 (CLAUDE.md update)
+                                                       │
+                                                       ▼
+                                           Task #23 (E2E Testing)
+
+# =============================================================================
+# IMPLEMENTATION TASKS
+# =============================================================================
+tasks:
+  "16":
+    subject: "Implement /research skill"
+    owner: "terminal-b"
+    status: "pending"
+    priority: "P0"
+    blockedBy: []
+    canStartImmediately: true
+    phaseId: "phase1-research-skill"
+
+  "17":
+    subject: "Implement /planning skill"
+    owner: "terminal-c"
+    status: "pending"
+    priority: "P0"
+    blockedBy: []
+    canStartImmediately: true
+    phaseId: "phase2-planning-skill"
+
+  "18":
+    subject: "Create research-finalize.sh hook"
+    owner: "terminal-b"
+    status: "pending"
+    priority: "P1"
+    blockedBy: ["16"]
+    phaseId: "phase3a-research-hook"
+
+  "19":
+    subject: "Create planning-finalize.sh hook"
+    owner: "terminal-c"
+    status: "pending"
+    priority: "P1"
+    blockedBy: ["17"]
+    phaseId: "phase3b-planning-hook"
+
+  "20":
+    subject: "Implement /rsil-plan skill"
+    owner: "terminal-b"
+    status: "pending"
+    priority: "P0"
+    blockedBy: ["16", "17"]
+    phaseId: "phase4-rsil-plan-skill"
+
+  "21":
+    subject: "Update /synthesis integration for RSIL"
+    owner: "terminal-c"
+    status: "pending"
+    priority: "P1"
+    blockedBy: ["20"]
+    phaseId: "phase5a-synthesis-update"
+
+  "22":
+    subject: "Update CLAUDE.md pipeline documentation"
+    owner: "terminal-b"
+    status: "pending"
+    priority: "P1"
+    blockedBy: ["16", "17", "20"]
+    phaseId: "phase5b-pipeline-documentation"
+
+  "23":
+    subject: "E2E pipeline testing"
+    owner: "both"
+    status: "pending"
+    priority: "P0"
+    blockedBy: ["21", "22"]
+    phaseId: "phase6-e2e-testing"
+
+# =============================================================================
+# REFERENCE FILES
+# =============================================================================
+referenceFiles:
+  - path: ".agent/research/enhanced_pipeline_skills_20260124.md"
+    reason: "Research report with analysis findings"
+
+  - path: ".agent/plans/enhanced_pipeline_skills_20260124.yaml"
+    reason: "Planning document with phase specifications"
+
+  - path: ".claude/skills/synthesis/SKILL.md"
+    reason: "Reference for gap detection patterns"
+
+  - path: ".claude/skills/build-research/SKILL.md"
+    reason: "Reference for research patterns"
+
+  - path: ".claude/skills/orchestrate/SKILL.md"
+    reason: "Reference for phase decomposition"
+
+  - path: ".claude/skills/clarify/SKILL.md"
+    reason: "Reference for input format and hook patterns"
+
+# =============================================================================
+# WORKER PROTOCOL
+# =============================================================================
+workerProtocol:
+  onStart:
+    - "TaskList() - Check assigned tasks"
+    - "TaskGet(taskId) - Get full task details"
+    - "Verify blockedBy is empty"
+    - "TaskUpdate(status='in_progress')"
+    - "Read _context.yaml (this file)"
+    - "Read assigned promptFile"
+
+  onComplete:
+    - "TaskUpdate(status='completed')"
+    - "Output to .agent/outputs/{terminal}/"
+    - "Notify Orchestrator"
+
+  onBlocked:
+    - "DO NOT start blocked tasks"
+    - "Wait for blockers to complete"
+    - "Report to Orchestrator if critical"
+
+# =============================================================================
+# QUALITY CRITERIA
+# =============================================================================
+qualityCriteria:
+  - "V2.1.19 frontmatter compliance"
+  - "Documentation follows existing skill patterns"
+  - "Error handling section included"
+  - "Testing checklist included"
+  - "Example usage with outputs"
+  - "L1/L2/L3 Progressive Disclosure format"

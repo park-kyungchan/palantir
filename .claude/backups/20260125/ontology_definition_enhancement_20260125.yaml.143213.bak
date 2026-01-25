@@ -1,0 +1,566 @@
+# Ontology-Definition Enhancement Plan
+# Generated: 2026-01-25T14:30:00Z
+# Based on: Progressive-Deep-Dive analysis of docs/Ontology.md vs Ontology-Definition
+
+metadata:
+  id: "ontology-definition-enhancement-20260125"
+  version: "1.0.0"
+  created_at: "2026-01-25T14:30:00Z"
+  updated_at: "2026-01-25T14:30:00Z"
+  status: "draft"
+  research_source: "/home/palantir/park-kyungchan/palantir/docs/Ontology.md"
+  clarify_source: "Progressive-Deep-Dive Analysis"
+
+project:
+  name: "Ontology-Definition Package Enhancement"
+  description: |
+    docs/Ontology.md 문서 기준으로 Ontology-Definition Python 패키지를 고도화/정교화하는 프로젝트.
+
+    현재 구현 상태:
+    - Core Types: ObjectType, LinkType, ActionType, Interface ✅
+    - PropertyDefinition: DataTypeSpec (20 types), Constraints ✅
+    - Registry, Export/Import, Validation 기본 구현 ✅
+
+    Gap 분석 결과:
+    - Function (함수 정의) 타입 누락
+    - ObjectSet (필터/집합 연산) 타입 누락
+    - Automation (자동화 트리거) 타입 누락
+    - Rules Engine (비즈니스 규칙) 타입 누락
+    - Writeback (외부 시스템 동기화) 설정 누락
+    - Versioning & Governance (스키마 진화) 지원 누락
+    - PropertyType 세부 속성 정교화 필요
+
+  objectives:
+    - "docs/Ontology.md 완전 커버리지 달성"
+    - "Function, ObjectSet, Automation 타입 추가"
+    - "PropertyType 세부 속성 정교화 (isPrimaryKey, searchable, sortable)"
+    - "Versioning & Governance 지원 추가"
+    - "Pydantic 기반 타입 안전성 유지"
+    - "Foundry JSON 호환성 보장"
+
+# =============================================================================
+# PHASE 1: PropertyType 정교화 (P0 - 기반 작업)
+# =============================================================================
+
+phases:
+  - id: "phase1-property-enhancement"
+    name: "PropertyType 정교화"
+    description: |
+      docs/Ontology.md의 PropertyType 스펙에 맞게 PropertyDefinition 모델을 정교화:
+      - isPrimaryKey: boolean 추가
+      - isTitleKey: boolean 추가
+      - searchable: boolean 추가
+      - sortable: boolean 추가
+      - nullable: boolean (기본값 true) 추가
+      - visibility: enum (NORMAL | PROMINENT | HIDDEN) 추가
+    priority: "P0"
+    owner: "Terminal-B"
+    dependencies: []
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/property_def.py"
+        action: "modify"
+        sections:
+          - "PropertyDefinition class"
+          - "Add new fields: isPrimaryKey, isTitleKey, searchable, sortable, nullable, visibility"
+      - path: "Ontology-Definition/ontology_definition/core/enums.py"
+        action: "modify"
+        sections:
+          - "Add PropertyVisibility enum"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "PropertyType schema reference (lines 127-141)"
+
+    completionCriteria:
+      - "PropertyDefinition에 isPrimaryKey, isTitleKey, searchable, sortable, nullable, visibility 필드 추가"
+      - "PropertyVisibility enum (NORMAL, PROMINENT, HIDDEN) 추가"
+      - "to_foundry_dict() 및 from_foundry_dict() 업데이트"
+      - "기존 테스트 통과"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.property_def import PropertyDefinition; print('PropertyDefinition import OK')\""
+        expected: "PropertyDefinition import OK"
+
+  # =============================================================================
+  # PHASE 2: Function 타입 추가 (P0 - 핵심 누락 기능)
+  # =============================================================================
+
+  - id: "phase2-function-type"
+    name: "Function 타입 정의 추가"
+    description: |
+      docs/Ontology.md Section 6 기준 Function 타입 구현:
+      - FunctionType: @Function, @OntologyEditFunction, @Query 데코레이터 지원
+      - FunctionSignature: 입력/출력 타입 정의
+      - FunctionMetadata: className, methodName, version, apiName
+      - Edits declaration for @OntologyEditFunction
+    priority: "P0"
+    owner: "Terminal-C"
+    dependencies: ["phase1-property-enhancement"]
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/function.py"
+        action: "create"
+        sections:
+          - "FunctionDecorator enum"
+          - "FunctionParameter model"
+          - "FunctionSignature model"
+          - "Function model (OntologyEntity 상속)"
+      - path: "Ontology-Definition/ontology_definition/core/enums.py"
+        action: "modify"
+        sections:
+          - "Add FunctionType enum"
+          - "Add FunctionLanguage enum (TYPESCRIPT, PYTHON)"
+      - path: "Ontology-Definition/ontology_definition/types/__init__.py"
+        action: "modify"
+        sections:
+          - "Export Function, FunctionSignature"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "Function schema reference (lines 620-711)"
+
+    completionCriteria:
+      - "Function 모델이 @Function, @OntologyEditFunction, @Query 모든 타입 지원"
+      - "FunctionSignature로 입력/출력 타입 정의 가능"
+      - "@Edits 데코레이터 ObjectType 목록 지원"
+      - "to_foundry_dict() 및 from_foundry_dict() 구현"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.function import Function; print('Function import OK')\""
+        expected: "Function import OK"
+
+  # =============================================================================
+  # PHASE 3: ObjectSet 타입 추가 (P0 - 핵심 누락 기능)
+  # =============================================================================
+
+  - id: "phase3-objectset-type"
+    name: "ObjectSet 타입 정의 추가"
+    description: |
+      docs/Ontology.md Section 7 기준 ObjectSet 연산자 구현:
+      - FilterOperator: exactMatch, hasProperty, phrase, range 등
+      - SetOperation: union, intersect, subtract
+      - Aggregation: count, average, max, min, sum
+      - ObjectSetDefinition: 필터 체인 정의 모델
+    priority: "P0"
+    owner: "Terminal-B"
+    dependencies: ["phase1-property-enhancement"]
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/objectset.py"
+        action: "create"
+        sections:
+          - "FilterOperator enum"
+          - "SetOperation enum"
+          - "AggregationType enum"
+          - "FilterCondition model"
+          - "ObjectSetDefinition model"
+      - path: "Ontology-Definition/ontology_definition/types/__init__.py"
+        action: "modify"
+        sections:
+          - "Export ObjectSetDefinition, FilterCondition"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "ObjectSet operators reference (lines 714-822)"
+
+    completionCriteria:
+      - "모든 filter_operators 지원 (all_types, string, numeric_date, boolean, geo, array)"
+      - "Set operations (union, intersect, subtract) 지원"
+      - "Aggregation 연산 (count, average, max, min, sum) 지원"
+      - "Ordering 및 retrieval 옵션 지원"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.objectset import ObjectSetDefinition; print('ObjectSet import OK')\""
+        expected: "ObjectSet import OK"
+
+  # =============================================================================
+  # PHASE 4: Automation 타입 추가 (P1 - 중요 기능)
+  # =============================================================================
+
+  - id: "phase4-automation-type"
+    name: "Automation (Automate) 타입 정의 추가"
+    description: |
+      docs/Ontology.md Section 8 기준 Automation 타입 구현:
+      - AutomationCondition: TIME 또는 OBJECT_SET 기반 트리거
+      - AutomationEffect: ACTION, NOTIFICATION, FALLBACK
+      - RetryPolicy: CONSTANT, EXPONENTIAL
+      - Automation 메인 모델
+    priority: "P1"
+    owner: "Terminal-C"
+    dependencies: ["phase2-function-type", "phase3-objectset-type"]
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/automation.py"
+        action: "create"
+        sections:
+          - "ConditionType enum (TIME, OBJECT_SET)"
+          - "TimeCondition model (cron, timezone)"
+          - "ObjectSetCondition model"
+          - "EffectType enum"
+          - "ActionEffect, NotificationEffect models"
+          - "RetryPolicy model"
+          - "Automation model (OntologyEntity 상속)"
+      - path: "Ontology-Definition/ontology_definition/core/enums.py"
+        action: "modify"
+        sections:
+          - "Add AutomationConditionType enum"
+          - "Add AutomationEffectType enum"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "Automation schema reference (lines 825-916)"
+
+    completionCriteria:
+      - "TIME 및 OBJECT_SET 조건 타입 지원"
+      - "ACTION, NOTIFICATION, FALLBACK 효과 타입 지원"
+      - "Cron 표현식 및 시간대 설정 지원"
+      - "재시도 정책 (constant, exponential) 지원"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.automation import Automation; print('Automation import OK')\""
+        expected: "Automation import OK"
+
+  # =============================================================================
+  # PHASE 5: Rules Engine 타입 추가 (P1 - 중요 기능)
+  # =============================================================================
+
+  - id: "phase5-rules-engine"
+    name: "Rules Engine (Foundry Rules) 타입 정의 추가"
+    description: |
+      docs/Ontology.md Section 9 기준 Rules Engine 구현:
+      - LogicBoard: filter_board, aggregation_board, join_board, expression_board 등
+      - ActionRule: createObject, modifyObject, deleteObject 등 10가지 규칙 타입
+      - FoundryRule 메인 모델
+    priority: "P1"
+    owner: "Terminal-B"
+    dependencies: ["phase3-objectset-type"]
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/rules_engine.py"
+        action: "create"
+        sections:
+          - "LogicBoardType enum"
+          - "FilterBoard, AggregationBoard, JoinBoard models"
+          - "ExpressionBoard, WindowBoard models"
+          - "ActionRuleType enum (10 types)"
+          - "FoundryRule model"
+      - path: "Ontology-Definition/ontology_definition/types/__init__.py"
+        action: "modify"
+        sections:
+          - "Export FoundryRule, LogicBoard"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "Rules Engine schema reference (lines 920-997)"
+
+    completionCriteria:
+      - "모든 Logic Board 타입 지원 (filter, aggregation, join, expression, window, select, union)"
+      - "10가지 Action Rule 타입 지원"
+      - "입력/출력 데이터셋 정의 지원"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.rules_engine import FoundryRule; print('RulesEngine import OK')\""
+        expected: "RulesEngine import OK"
+
+  # =============================================================================
+  # PHASE 6: Writeback 설정 타입 추가 (P1 - 중요 기능)
+  # =============================================================================
+
+  - id: "phase6-writeback"
+    name: "Writeback 설정 타입 정의 추가"
+    description: |
+      docs/Ontology.md Section 10 기준 Writeback 구현:
+      - WritebackDataset: 내부 쓰기-백 데이터셋 설정
+      - WebhookConfig: writeback_webhook, side_effect_webhook
+      - ExportConfig: file_export, streaming_export, table_export
+    priority: "P1"
+    owner: "Terminal-C"
+    dependencies: ["phase4-automation-type"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/writeback.py"
+        action: "create"
+        sections:
+          - "WritebackDatasetConfig model"
+          - "WebhookType enum (WRITEBACK, SIDE_EFFECT)"
+          - "WritebackWebhookConfig model"
+          - "ExportTarget enum (S3, GCS, Azure_Blob, Kafka, etc.)"
+          - "ExportConfig model"
+          - "Writeback model"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "Writeback schema reference (lines 1001-1053)"
+
+    completionCriteria:
+      - "Internal writeback dataset 설정 지원"
+      - "Writeback webhook 및 side effect webhook 구분"
+      - "File/Streaming/Table export 설정 지원"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.writeback import Writeback; print('Writeback import OK')\""
+        expected: "Writeback import OK"
+
+  # =============================================================================
+  # PHASE 7: Versioning & Governance 추가 (P1 - 중요 기능)
+  # =============================================================================
+
+  - id: "phase7-versioning"
+    name: "Versioning & Governance 지원 추가"
+    description: |
+      docs/Ontology.md Section 11 기준 버전 관리 구현:
+      - SchemaChange: breaking_changes, non_breaking_changes 분류
+      - Migration: drop_property_edits, cast_property_type 등 지원
+      - TypeCast: 허용 타입 변환 매트릭스
+      - ProposalWorkflow: branch, proposal, review, merge 단계
+    priority: "P1"
+    owner: "Terminal-B"
+    dependencies: ["phase1-property-enhancement"]
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/versioning/__init__.py"
+        action: "create"
+        sections:
+          - "Module initialization"
+      - path: "Ontology-Definition/ontology_definition/versioning/schema_change.py"
+        action: "create"
+        sections:
+          - "ChangeType enum (BREAKING, NON_BREAKING)"
+          - "SchemaChange model"
+          - "BreakingChangeDetector class"
+      - path: "Ontology-Definition/ontology_definition/versioning/migration.py"
+        action: "create"
+        sections:
+          - "MigrationType enum"
+          - "Migration model"
+          - "TypeCastMatrix"
+      - path: "Ontology-Definition/ontology_definition/versioning/proposal.py"
+        action: "create"
+        sections:
+          - "ProposalStatus enum"
+          - "ProposalTask model"
+          - "OntologyProposal model"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "Versioning schema reference (lines 1057-1128)"
+
+    completionCriteria:
+      - "Breaking/Non-breaking 변경 사항 분류 지원"
+      - "6가지 마이그레이션 타입 지원"
+      - "타입 캐스트 매트릭스 구현"
+      - "Proposal 워크플로우 상태 관리"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.versioning import SchemaChange, Migration; print('Versioning import OK')\""
+        expected: "Versioning import OK"
+
+  # =============================================================================
+  # PHASE 8: ActionType ValueSource 정교화 (P2 - 정교화)
+  # =============================================================================
+
+  - id: "phase8-valuesource-enhancement"
+    name: "ActionType ValueSource 옵션 정교화"
+    description: |
+      docs/Ontology.md Section 5 기준 ValueSource 완전 구현:
+      - fromParameter: 파라미터에서 값 가져오기
+      - objectParameterProperty: 객체 파라미터의 속성 값
+      - staticValue: 정적 값
+      - currentUser: userId, groupIds, multipassAttribute
+      - currentTime: timestamp
+    priority: "P2"
+    owner: "Terminal-C"
+    dependencies: ["phase2-function-type"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: "Ontology-Definition/ontology_definition/types/action_type.py"
+        action: "modify"
+        sections:
+          - "Add ValueSource model"
+          - "Add ValueSourceType enum"
+          - "Update PropertyMapping to use ValueSource"
+
+    referenceFiles:
+      - path: "docs/Ontology.md"
+        reason: "ValueSource options reference (lines 569-576)"
+
+    completionCriteria:
+      - "5가지 ValueSource 타입 모두 지원"
+      - "PropertyMapping이 ValueSource 모델 사용"
+      - "currentUser 옵션에서 userId, groupIds, multipassAttribute 지원"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && python -c \"from ontology_definition.types.action_type import ValueSource; print('ValueSource import OK')\""
+        expected: "ValueSource import OK"
+
+  # =============================================================================
+  # PHASE 9: 테스트 및 문서화 (P0 - 품질 보장)
+  # =============================================================================
+
+  - id: "phase9-testing"
+    name: "테스트 및 문서화"
+    description: |
+      모든 새 타입에 대한 단위 테스트 및 문서화:
+      - 각 새 타입에 대한 pytest 테스트
+      - to_foundry_dict() / from_foundry_dict() 라운드트립 테스트
+      - README.md 업데이트
+      - 예제 코드 추가
+    priority: "P0"
+    owner: "All"
+    dependencies:
+      - "phase1-property-enhancement"
+      - "phase2-function-type"
+      - "phase3-objectset-type"
+      - "phase4-automation-type"
+      - "phase5-rules-engine"
+      - "phase6-writeback"
+      - "phase7-versioning"
+      - "phase8-valuesource-enhancement"
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: "Ontology-Definition/tests/test_function.py"
+        action: "create"
+      - path: "Ontology-Definition/tests/test_objectset.py"
+        action: "create"
+      - path: "Ontology-Definition/tests/test_automation.py"
+        action: "create"
+      - path: "Ontology-Definition/tests/test_rules_engine.py"
+        action: "create"
+      - path: "Ontology-Definition/tests/test_writeback.py"
+        action: "create"
+      - path: "Ontology-Definition/tests/test_versioning.py"
+        action: "create"
+      - path: "Ontology-Definition/README.md"
+        action: "modify"
+
+    completionCriteria:
+      - "모든 새 타입에 대한 테스트 커버리지 80% 이상"
+      - "Foundry JSON 라운드트립 테스트 통과"
+      - "README.md에 새 타입 사용 예제 포함"
+      - "pytest 전체 통과"
+
+    verificationSteps:
+      - command: "cd Ontology-Definition && pytest tests/ -v --tb=short"
+        expected: "All tests passed"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase2-function-type"
+      to: "phase1-property-enhancement"
+      reason: "Function이 PropertyDefinition 참조"
+    - from: "phase3-objectset-type"
+      to: "phase1-property-enhancement"
+      reason: "ObjectSet 필터가 Property 타입 사용"
+    - from: "phase4-automation-type"
+      to: "phase2-function-type"
+      reason: "Automation이 Function 참조 가능"
+    - from: "phase4-automation-type"
+      to: "phase3-objectset-type"
+      reason: "Automation 조건이 ObjectSet 사용"
+    - from: "phase5-rules-engine"
+      to: "phase3-objectset-type"
+      reason: "Rules가 ObjectSet 필터 사용"
+    - from: "phase6-writeback"
+      to: "phase4-automation-type"
+      reason: "Writeback webhook이 Automation과 연계"
+    - from: "phase7-versioning"
+      to: "phase1-property-enhancement"
+      reason: "Versioning이 Property 변경 추적"
+    - from: "phase8-valuesource-enhancement"
+      to: "phase2-function-type"
+      reason: "ValueSource가 Function 결과 참조 가능"
+    - from: "phase9-testing"
+      to: "phase8-valuesource-enhancement"
+      reason: "모든 구현 완료 후 테스트"
+
+  external:
+    - name: "pydantic"
+      version: ">=2.0.0"
+      reason: "모든 모델의 기반 라이브러리"
+    - name: "pytest"
+      version: ">=7.0.0"
+      reason: "테스트 프레임워크"
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "pending"
+  reviewedAt: null
+  reviewedBy: null
+  iterationCount: 0
+  comments: []
+  approvalCriteria:
+    - "모든 Phase가 명확한 completionCriteria를 가짐"
+    - "Dependencies가 비순환 그래프를 형성"
+    - "각 Phase의 targetFiles가 구체적으로 명시됨"
+    - "docs/Ontology.md의 모든 섹션이 커버됨"
+    - "Foundry JSON 호환성이 유지됨"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Phase 2 (Function)와 Phase 3 (ObjectSet)는 Phase 1 완료 후 병렬 실행 가능.
+    Phase 5 (Rules Engine)와 Phase 7 (Versioning)는 독립적으로 진행 가능.
+    Phase 9 (Testing)는 모든 구현 완료 후 실행.
+
+    병렬 그룹:
+    - Group A (Terminal-B): Phase 1 → Phase 3 → Phase 5 → Phase 7
+    - Group B (Terminal-C): (wait Phase1) → Phase 2 → Phase 4 → Phase 6 → Phase 8
+    - Final (All): Phase 9
+
+  estimatedDuration: |
+    Phase 1: 2시간
+    Phase 2-3: 3시간 (병렬)
+    Phase 4-5: 3시간 (병렬)
+    Phase 6-8: 3시간 (병렬)
+    Phase 9: 2시간
+    총 예상: 8-10시간 (병렬 실행 시)
+
+  criticalPath: |
+    Phase 1 → Phase 2 → Phase 4 → Phase 6 → Phase 9
+    또는
+    Phase 1 → Phase 3 → Phase 5 → Phase 9
+
+  riskMitigation: |
+    1. Pydantic 호환성 문제: 기존 테스트 먼저 실행하여 기반 안정성 확인
+    2. Foundry JSON 스키마 변경: to_foundry_dict() 단위 테스트로 호환성 검증
+    3. 순환 참조: forward reference 사용하고 model_rebuild() 호출
+    4. 대규모 변경: 각 Phase 완료 후 커밋하여 롤백 지점 확보
+
+# =============================================================================
+# GAP COVERAGE MATRIX
+# =============================================================================
+
+gapCoverageMatrix:
+  documentSection:
+    "1. ObjectType": "✅ 기존 구현 완료"
+    "2. PropertyType": "Phase 1에서 정교화"
+    "3. LinkType": "✅ 기존 구현 완료"
+    "4. Interface": "✅ 기존 구현 완료"
+    "5. ActionType": "Phase 8에서 ValueSource 정교화"
+    "6. Function": "Phase 2에서 신규 구현"
+    "7. ObjectSet": "Phase 3에서 신규 구현"
+    "8. Automation": "Phase 4에서 신규 구현"
+    "9. Rules Engine": "Phase 5에서 신규 구현"
+    "10. Writeback": "Phase 6에서 신규 구현"
+    "11. Versioning": "Phase 7에서 신규 구현"
+    "12. Decision Matrix": "README.md 문서화"

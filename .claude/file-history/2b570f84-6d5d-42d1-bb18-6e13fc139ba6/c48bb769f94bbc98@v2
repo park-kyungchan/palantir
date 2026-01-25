@@ -1,0 +1,205 @@
+# =============================================================================
+# Progress Tracker: Enhanced Pipeline Skills
+# =============================================================================
+# Orchestrator: Terminal-A
+# Last Updated: 2026-01-24T21:00:00Z
+# Synced with Native Task System
+# =============================================================================
+
+version: "3.0"
+projectId: "enhanced-pipeline-skills"
+projectStatus: "READY_FOR_EXECUTION"
+lastUpdated: "2026-01-24T21:25:00Z"
+
+# =============================================================================
+# CURRENT PROJECT
+# =============================================================================
+currentProject:
+  name: "Enhanced Orchestration Pipeline Skills"
+  goal: "Add /research, /planning, /rsil-plan skills to pipeline"
+  principle: "Parallel execution via Terminal-B and Terminal-C"
+
+# =============================================================================
+# TERMINAL STATUS
+# =============================================================================
+terminals:
+  terminal-a:
+    role: "Orchestrator"
+    status: "active"
+    currentTask: "Orchestration complete - awaiting worker start"
+
+  terminal-b:
+    role: "Worker"
+    status: "ready"
+    currentTask: null
+    assignedTasks:
+      - taskId: "16"
+        subject: "Implement /research skill"
+        canStartImmediately: true
+      - taskId: "18"
+        subject: "Create research-finalize.sh hook"
+        blockedBy: ["16"]
+      - taskId: "20"
+        subject: "Implement /rsil-plan skill"
+        blockedBy: ["16", "17"]
+      - taskId: "22"
+        subject: "Update CLAUDE.md pipeline documentation"
+        blockedBy: ["16", "17", "20"]
+    promptFile: ".agent/prompts/pending/worker-terminal-b-enhanced-pipeline.yaml"
+
+  terminal-c:
+    role: "Worker"
+    status: "ready"
+    currentTask: null
+    assignedTasks:
+      - taskId: "17"
+        subject: "Implement /planning skill"
+        canStartImmediately: true
+      - taskId: "19"
+        subject: "Create planning-finalize.sh hook"
+        blockedBy: ["17"]
+      - taskId: "21"
+        subject: "Update /synthesis integration for RSIL"
+        blockedBy: ["20"]
+    promptFile: ".agent/prompts/pending/worker-terminal-c-enhanced-pipeline.yaml"
+
+# =============================================================================
+# TASK STATUS (Synced with Native Task System)
+# =============================================================================
+tasks:
+  "16":
+    subject: "Implement /research skill"
+    status: "pending"
+    owner: "terminal-b"
+    priority: "P0"
+    blockedBy: []
+    phaseId: "phase1-research-skill"
+    targetFile: "/home/palantir/.claude/skills/research/SKILL.md"
+    startedAt: null
+    completedAt: null
+
+  "17":
+    subject: "Implement /planning skill"
+    status: "pending"
+    owner: "terminal-c"
+    priority: "P0"
+    blockedBy: []
+    phaseId: "phase2-planning-skill"
+    targetFile: "/home/palantir/.claude/skills/planning/SKILL.md"
+    startedAt: null
+    completedAt: null
+
+  "18":
+    subject: "Create research-finalize.sh hook"
+    status: "pending"
+    owner: "terminal-b"
+    priority: "P1"
+    blockedBy: ["16"]
+    phaseId: "phase3a-research-hook"
+    targetFile: "/home/palantir/.claude/hooks/research-finalize.sh"
+    startedAt: null
+    completedAt: null
+
+  "19":
+    subject: "Create planning-finalize.sh hook"
+    status: "pending"
+    owner: "terminal-c"
+    priority: "P1"
+    blockedBy: ["17"]
+    phaseId: "phase3b-planning-hook"
+    targetFile: "/home/palantir/.claude/hooks/planning-finalize.sh"
+    startedAt: null
+    completedAt: null
+
+  "20":
+    subject: "Implement /rsil-plan skill"
+    status: "pending"
+    owner: "terminal-b"
+    priority: "P0"
+    blockedBy: ["16", "17"]
+    phaseId: "phase4-rsil-plan-skill"
+    targetFile: "/home/palantir/.claude/skills/rsil-plan/SKILL.md"
+    startedAt: null
+    completedAt: null
+
+  "21":
+    subject: "Update /synthesis integration for RSIL"
+    status: "pending"
+    owner: "terminal-c"
+    priority: "P1"
+    blockedBy: ["20"]
+    phaseId: "phase5a-synthesis-update"
+    targetFile: "/home/palantir/.claude/skills/synthesis/SKILL.md"
+    startedAt: null
+    completedAt: null
+
+  "22":
+    subject: "Update CLAUDE.md pipeline documentation"
+    status: "pending"
+    owner: "terminal-b"
+    priority: "P1"
+    blockedBy: ["16", "17", "20"]
+    phaseId: "phase5b-pipeline-documentation"
+    targetFile: "/home/palantir/.claude/CLAUDE.md"
+    startedAt: null
+    completedAt: null
+
+  "23":
+    subject: "E2E pipeline testing"
+    status: "pending"
+    owner: "both"
+    priority: "P0"
+    blockedBy: ["21", "22"]
+    phaseId: "phase6-e2e-testing"
+    startedAt: null
+    completedAt: null
+
+# =============================================================================
+# EXECUTION SUMMARY
+# =============================================================================
+executionSummary:
+  totalTasks: 8
+  pending: 8
+  inProgress: 0
+  completed: 0
+  blocked: 6
+
+  parallelizableNow:
+    - taskId: "16"
+      owner: "terminal-b"
+      subject: "Implement /research skill"
+    - taskId: "17"
+      owner: "terminal-c"
+      subject: "Implement /planning skill"
+
+# =============================================================================
+# WORKER INSTRUCTIONS
+# =============================================================================
+workerInstructions:
+  terminal-b:
+    action: "START"
+    command: |
+      1. TaskUpdate(taskId="16", status="in_progress")
+      2. Read .agent/prompts/pending/worker-terminal-b-enhanced-pipeline.yaml
+      3. Create /home/palantir/.claude/skills/research/SKILL.md
+      4. TaskUpdate(taskId="16", status="completed")
+      5. Continue with Task #18 (hook), then Task #20 (rsil-plan)
+
+  terminal-c:
+    action: "START"
+    command: |
+      1. TaskUpdate(taskId="17", status="in_progress")
+      2. Read .agent/prompts/pending/worker-terminal-c-enhanced-pipeline.yaml
+      3. Create /home/palantir/.claude/skills/planning/SKILL.md
+      4. TaskUpdate(taskId="17", status="completed")
+      5. Continue with Task #19 (hook), then wait for Task #20 to complete
+
+# =============================================================================
+# BLOCKERS
+# =============================================================================
+blockers: []
+
+# =============================================================================
+# COMPLETED TASKS
+# =============================================================================
+completedTasks: []
