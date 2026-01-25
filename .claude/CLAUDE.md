@@ -31,7 +31,18 @@ AUDIT-TRAIL    → Track files_viewed for all operations
 ### Workspace
 ```yaml
 workspace_root: /home/palantir
+workload_management: .claude/references/workload-management.md
 ```
+
+### Workload Management
+> **Unified Slug Naming Convention** (2026-01-25)
+
+All skills use centralized workload management:
+- **Workload ID**: `{topic}_{YYYYMMDD}_{HHMMSS}`
+- **Slug**: `{topic}-{YYYYMMDD}`
+- **Directory**: `.agent/prompts/{slug}/`
+
+See [Workload Management Guide](.claude/references/workload-management.md) for details.
 
 ---
 
@@ -160,6 +171,10 @@ rm -rf, sudo rm, chmod 777, DROP TABLE → ALWAYS DENY
 ├── CLAUDE.md              # This file
 ├── settings.json          # Claude Code settings
 ├── skills/                # Skill definitions
+│   ├── shared/            # Shared modules
+│   │   ├── slug-generator.sh
+│   │   ├── workload-tracker.sh
+│   │   └── workload-files.sh
 │   ├── clarify/
 │   ├── research/
 │   ├── planning/
@@ -185,18 +200,47 @@ rm -rf, sudo rm, chmod 777, DROP TABLE → ALWAYS DENY
 │   └── pd-skill-loader.md
 └── references/            # Documentation
     ├── pd-patterns.md
-    └── skill-access-matrix.md
+    ├── skill-access-matrix.md
+    └── workload-management.md
 
 .agent/
-├── prompts/               # Worker prompts
-│   ├── _context.yaml      # Global context
-│   ├── _progress.yaml     # Progress tracking
-│   └── pending/           # Worker task files
-├── research/              # Research outputs
-├── plans/                 # Planning documents
-├── clarify/               # Clarification records
-└── outputs/               # Worker outputs
+├── prompts/                          # Workload-based outputs (V7.1)
+│   ├── _active_workload.yaml         # Active workload pointer
+│   │
+│   └── {workload-slug}/              # Per-workload directory
+│       ├── _context.yaml             # Orchestration context
+│       ├── _progress.yaml            # Progress tracking
+│       ├── pending/                  # Worker task prompts
+│       ├── completed/                # Completed task prompts
+│       │
+│       ├── research.md               # /research output
+│       ├── plan.yaml                 # /planning output
+│       ├── collection_report.md      # /collect output
+│       │
+│       ├── outputs/                  # Worker outputs
+│       │   ├── terminal-b/           # Per-terminal outputs
+│       │   ├── terminal-c/
+│       │   └── terminal-d/
+│       │
+│       └── synthesis/                # /synthesis output
+│           └── synthesis_report.md
+│
+├── logs/                             # Validation logs
+├── tmp/                              # Temporary files
+└── outputs/                          # Global outputs (DEPRECATED)
 ```
+
+### Workload Output Paths (V7.1)
+
+| Skill | Output Path |
+|-------|-------------|
+| `/clarify` | `.agent/prompts/{slug}/clarify.yaml` |
+| `/research` | `.agent/prompts/{slug}/research.md` |
+| `/planning` | `.agent/prompts/{slug}/plan.yaml` |
+| `/orchestrate` | `.agent/prompts/{slug}/_context.yaml` |
+| `/worker` | `.agent/prompts/{slug}/outputs/{terminal}/` |
+| `/collect` | `.agent/prompts/{slug}/collection_report.md` |
+| `/synthesis` | `.agent/prompts/{slug}/synthesis/synthesis_report.md` |
 
 ---
 
@@ -213,6 +257,12 @@ rm -rf, sudo rm, chmod 777, DROP TABLE → ALWAYS DENY
 
 ---
 
+> **v7.1 (2026-01-25):** Workload-Scoped Outputs
+> - All skill outputs now stored in `.agent/prompts/{workload-slug}/`
+> - Deprecated global paths: `.agent/research/`, `.agent/plans/`, `.agent/outputs/`
+> - Updated Directory Structure with per-workload output paths
+> - Added Workload Output Paths table
+>
 > **v7.0 (2026-01-24):** Enhanced Pipeline
 > - Added /research, /planning, /rsil-plan skills
 > - Directory structure documentation
