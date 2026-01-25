@@ -10,6 +10,12 @@ context: standard
 model: opus
 version: "3.1.0"
 argument-hint: "--plan-slug <slug> | <task-description>"
+hooks:
+  PreToolUse:
+    - type: command
+      command: "/home/palantir/.claude/hooks/orchestrate-validate.sh"
+      timeout: 30000
+      matcher: "TaskCreate"
 ---
 
 # /orchestrate - Task Decomposition & Orchestration
@@ -89,7 +95,34 @@ Output:
 */
 ```
 
-### 3.2 Phase 2: Native Task Creation
+### 3.2 Phase 2: Gate 4 Validation (Shift-Left)
+
+```javascript
+// Gate 4: Validate phase dependencies BEFORE creating tasks
+console.log("🔍 Running Gate 4: Phase dependency validation...")
+
+const phasesJson = JSON.stringify(analysis.phases.map(p => ({
+  id: p.id,
+  dependencies: p.dependencies || []
+})))
+
+const gate4Result = await validatePhaseDependencies(phasesJson)
+
+if (gate4Result.result === "failed") {
+  console.log("❌ Gate 4 FAILED - Fix errors before creating tasks:")
+  gate4Result.errors.forEach(e => console.log(`   - ${e}`))
+  return { status: "gate4_failed", errors: gate4Result.errors }
+}
+
+if (gate4Result.warnings.length > 0) {
+  console.log("⚠️  Gate 4 warnings:")
+  gate4Result.warnings.forEach(w => console.log(`   - ${w}`))
+}
+
+console.log("✅ Gate 4 PASSED - Proceeding to Task creation")
+```
+
+### 3.3 Phase 3: Native Task Creation
 
 ```javascript
 // Create tasks in dependency order
@@ -481,7 +514,110 @@ function slugify(text) {
 
 ---
 
-## 5. Error Handling
+## 5. Gate 4: Phase Dependency Validation
+
+### 5.1 Validation Function
+
+```javascript
+async function validatePhaseDependencies(phasesJson) {
+  // Source: .claude/skills/shared/validation-gates.sh -> validate_phase_dependencies()
+
+  const warnings = []
+  const errors = []
+
+  const phases = JSON.parse(phasesJson)
+
+  // 1. Check for duplicate phase IDs
+  const ids = phases.map(p => p.id)
+  const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i)
+
+  if (duplicates.length > 0) {
+    errors.push(`Duplicate phase IDs found: ${[...new Set(duplicates)].join(', ')}`)
+  }
+
+  // 2. Check for undefined dependencies
+  for (const phase of phases) {
+    for (const dep of (phase.dependencies || [])) {
+      if (!ids.includes(dep)) {
+        errors.push(`Undefined dependency: ${dep} (referenced by ${phase.id})`)
+      }
+    }
+  }
+
+  // 3. Detect circular dependencies
+  const cycles = detectCycles(phases)
+  if (cycles.length > 0) {
+    errors.push(`Circular dependencies detected: ${cycles.map(c => c.join(' → ')).join('; ')}`)
+  }
+
+  // 4. Warn about large phase count
+  if (phases.length > 10) {
+    warnings.push(`Large number of phases (${phases.length}) - consider breaking into sub-projects`)
+  }
+
+  // Determine result
+  let result = "passed"
+  if (errors.length > 0) result = "failed"
+  else if (warnings.length > 0) result = "passed_with_warnings"
+
+  return { gate: "ORCHESTRATE", result, warnings, errors }
+}
+```
+
+### 5.2 Cycle Detection (Topological Sort)
+
+```javascript
+function detectCycles(phases) {
+  const graph = new Map()
+  const inDegree = new Map()
+  const cycles = []
+
+  // Initialize
+  for (const phase of phases) {
+    graph.set(phase.id, phase.dependencies || [])
+    inDegree.set(phase.id, 0)
+  }
+
+  // Calculate in-degrees
+  for (const [id, deps] of graph) {
+    for (const dep of deps) {
+      inDegree.set(id, (inDegree.get(id) || 0) + 1)
+    }
+  }
+
+  // Kahn's algorithm for cycle detection
+  const queue = []
+  for (const [id, degree] of inDegree) {
+    if (degree === 0) queue.push(id)
+  }
+
+  let processed = 0
+  while (queue.length > 0) {
+    const node = queue.shift()
+    processed++
+
+    // Find phases that depend on this node
+    for (const [id, deps] of graph) {
+      if (deps.includes(node)) {
+        inDegree.set(id, inDegree.get(id) - 1)
+        if (inDegree.get(id) === 0) queue.push(id)
+      }
+    }
+  }
+
+  // If not all nodes processed, there's a cycle
+  if (processed < phases.length) {
+    const remaining = phases.filter(p => inDegree.get(p.id) > 0).map(p => p.id)
+    cycles.push(remaining)
+  }
+
+  return cycles
+}
+```
+
+---
+
+## 6. Error Handling
 
 | Error | Detection | Recovery |
 |-------|-----------|----------|
@@ -490,6 +626,7 @@ function slugify(text) {
 | **Circular dependency** | A → B → A | Reject, ask user to fix |
 | **File conflicts** | _context-{projectSlug}.yaml already exists | Ask: overwrite or append? |
 | **TaskCreate failure** | Native API error | Log error, abort orchestration |
+| **Gate 4 failed** | Duplicate IDs or undefined deps | Show errors, abort orchestration |
 
 ---
 

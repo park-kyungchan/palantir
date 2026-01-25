@@ -19,6 +19,10 @@ allowed-tools:
   - Task
   - Bash
 hooks:
+  Setup:
+    - type: command
+      command: "/home/palantir/.claude/hooks/research-validate.sh"
+      timeout: 10000
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/research-finalize.sh"
@@ -383,10 +387,53 @@ if complexity_detected(area):
 
 ---
 
-## 8. Exit Conditions
+## 8. Shift-Left Validation (Gate 2)
 
-### 8.1 Normal Exit (Success)
+### 8.1 Purpose
 
+Gate 2 validates scope access **before** starting research:
+- Verifies target paths exist and are readable
+- Prevents wasted effort on inaccessible directories
+- Warns about overly broad scopes
+
+### 8.2 Hook Integration
+
+```yaml
+hooks:
+  Setup:
+    - research-validate.sh  # Gate 2: Scope Access Validation
+  Stop:
+    - research-finalize.sh  # Pipeline integration
+```
+
+### 8.3 Validation Results
+
+| Result | Behavior | User Action |
+|--------|----------|-------------|
+| `passed` | ✅ Start research | None required |
+| `passed_with_warnings` | ⚠️ Warn about broad scope, proceed | Consider narrowing scope |
+| `failed` | ❌ Block execution, show error | Fix scope path, retry |
+
+### 8.4 Scope Validation Examples
+
+```bash
+# Valid scope - passes
+/research --scope src/auth/ "authentication patterns"
+
+# Missing path - fails
+/research --scope nonexistent/ "query"
+
+# Too broad - warning
+/research --scope . "query"  # Warning: scope very broad
+```
+
+---
+
+## 9. Exit Conditions
+
+### 9.1 Normal Exit (Success)
+
+- Gate 2 validation passes
 - Research report generated at `.agent/research/{id}.md`
 - L1 summary returned to Main Agent
 - Stop hook triggers: `research-finalize.sh`
@@ -438,8 +485,12 @@ if complexity_detected(area):
 - [ ] `/research "test query"` basic execution
 - [ ] `/research --clarify-slug {slug}` context loading
 - [ ] `/research --scope {path}` scoped analysis
+- [ ] `/research --scope nonexistent/` failure handling
+- [ ] `/research --scope .` broad scope warning
+- [ ] Gate 2 validation execution
 - [ ] `/research --external` external resource gathering
 - [ ] L1/L2/L3 output format validation
+- [ ] Setup hook trigger verification
 - [ ] Stop hook trigger verification
 - [ ] Pipeline integration with `/planning`
 

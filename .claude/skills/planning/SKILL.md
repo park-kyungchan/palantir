@@ -18,6 +18,11 @@ allowed-tools:
   - Grep
   - AskUserQuestion
 hooks:
+  PreToolUse:
+    - type: command
+      command: "/home/palantir/.claude/hooks/planning-preflight.sh"
+      timeout: 30000
+      matcher: "Task"
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/planning-finalize.sh"
@@ -390,6 +395,20 @@ async function executePlanning(args) {
   const research = await loadResearch(targetSlug)
   const clarify = await loadClarify(targetSlug)
 
+  // 3.5 Gate 3: Pre-flight Checks (Shift-Left Validation)
+  console.log("🔍 Running Gate 3: Pre-flight checks...")
+  const preflightResult = await runPreflightChecks(targetSlug, research, clarify)
+  if (preflightResult.result === "failed") {
+    console.log("❌ Gate 3 FAILED - Fix errors before proceeding:")
+    preflightResult.errors.forEach(e => console.log(`   - ${e}`))
+    return { status: "gate3_failed", errors: preflightResult.errors }
+  }
+  if (preflightResult.warnings.length > 0) {
+    console.log("⚠️  Gate 3 warnings:")
+    preflightResult.warnings.forEach(w => console.log(`   - ${w}`))
+  }
+  console.log("✅ Gate 3 PASSED")
+
   // 4. Generate initial planning document
   console.log("📝 Generating planning document...")
   const planningDoc = await generatePlanningDocument(research, clarify)
@@ -598,7 +617,99 @@ Outputs the complete YAML planning document.
 
 ---
 
-## 9. Error Handling
+## 9. Gate 3: Pre-flight Checks Integration
+
+### 9.1 Pre-flight Check Function
+
+```javascript
+async function runPreflightChecks(slug, research, clarify) {
+  // Source: .claude/skills/shared/validation-gates.sh -> pre_flight_checks()
+
+  const warnings = []
+  const errors = []
+
+  // 1. Validate target files from research recommendations
+  if (research.recommendations) {
+    const targetFiles = extractTargetFiles(research.recommendations)
+
+    for (const file of targetFiles) {
+      const fullPath = `${WORKSPACE_ROOT}/${file}`
+      const parentDir = path.dirname(fullPath)
+
+      if (!fs.existsSync(fullPath) && !fs.existsSync(parentDir)) {
+        warnings.push(`Target file parent directory missing: ${file}`)
+      }
+    }
+  }
+
+  // 2. Check for circular dependencies in proposed phases
+  const phases = extractPhases(research.recommendations)
+  const cycles = detectCircularDependencies(phases)
+
+  if (cycles.length > 0) {
+    errors.push(`Circular dependencies detected: ${cycles.join(' -> ')}`)
+  }
+
+  // 3. Validate requirement feasibility
+  if (clarify.requirements) {
+    for (const req of clarify.requirements) {
+      if (req.length < 10) {
+        warnings.push(`Requirement may be too vague: "${req}"`)
+      }
+    }
+  }
+
+  // Determine result
+  let result = "passed"
+  if (errors.length > 0) result = "failed"
+  else if (warnings.length > 0) result = "passed_with_warnings"
+
+  return { gate: "PLANNING", result, warnings, errors }
+}
+```
+
+### 9.2 Circular Dependency Detection
+
+```javascript
+function detectCircularDependencies(phases) {
+  const graph = new Map()
+  const visited = new Set()
+  const recursionStack = new Set()
+  const cycles = []
+
+  // Build adjacency list
+  for (const phase of phases) {
+    graph.set(phase.id, phase.dependencies || [])
+  }
+
+  function dfs(node, path) {
+    visited.add(node)
+    recursionStack.add(node)
+
+    for (const neighbor of (graph.get(node) || [])) {
+      if (!visited.has(neighbor)) {
+        dfs(neighbor, [...path, neighbor])
+      } else if (recursionStack.has(neighbor)) {
+        cycles.push([...path, neighbor])
+      }
+    }
+
+    recursionStack.delete(node)
+  }
+
+  for (const [node] of graph) {
+    if (!visited.has(node)) {
+      dfs(node, [node])
+    }
+  }
+
+  return cycles
+}
+```
+
+---
+
+## 10. Error Handling
 
 | Error | Detection | Recovery |
 |-------|-----------|----------|
@@ -607,6 +718,7 @@ Outputs the complete YAML planning document.
 | Invalid YAML | Parse error | Log error, show line number |
 | Plan Agent timeout | Task timeout | Retry once, then escalate |
 | Circular dependency | Graph analysis | Show cycle, ask user to break |
+| **Gate 3 failed** | Pre-flight check errors | Fix errors before proceeding |
 
 ---
 

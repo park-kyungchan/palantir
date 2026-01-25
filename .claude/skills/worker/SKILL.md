@@ -6,8 +6,13 @@ user-invocable: true
 disable-model-invocation: false
 context: standard
 model: sonnet
-version: "3.0.0"
+version: "3.1.0"
 argument-hint: "<start|done|status|block> [b|c|d|terminal-id] [taskId]"
+hooks:
+  Setup:
+    - type: command
+      command: "/home/palantir/.claude/hooks/worker-preflight.sh"
+      timeout: 10000
 ---
 
 # /worker - Worker Self-Service Commands
@@ -1015,7 +1020,61 @@ function setWorkerId(terminalId) {
 
 ---
 
-## 9. Testing Checklist
+## 9. Shift-Left Validation (Gate 5)
+
+### 9.1 Purpose
+
+Gate 5 validates task readiness **before** worker execution:
+- Verifies all `blockedBy` dependencies are completed
+- Checks target file access permissions
+- Validates prompt file integrity
+- Prevents workers from starting blocked/invalid tasks
+
+### 9.2 Hook Integration
+
+```yaml
+hooks:
+  Setup:
+    - worker-preflight.sh  # Gate 5: Pre-execution Validation
+```
+
+### 9.3 Validation Checks
+
+| Check | Description | Failure Action |
+|-------|-------------|----------------|
+| **BlockedBy Resolution** | All blocking tasks must be `completed` | Block task start |
+| **Target File Access** | Files to modify must be writable | Block task start |
+| **Parent Directory** | New file parents must exist | Warning |
+| **Prompt File** | Valid task prompt (optional) | Warning |
+
+### 9.4 Validation Results
+
+| Result | Behavior | User Action |
+|--------|----------|-------------|
+| `passed` | ✅ Start task immediately | None required |
+| `passed_with_warnings` | ⚠️ Start with warnings displayed | Review warnings |
+| `failed` | ❌ Block task start | Resolve errors first |
+
+### 9.5 Integration with /worker start
+
+```
+/worker start b
+    │
+    ▼
+┌───────────────────────────┐
+│  Gate 5: Pre-execution    │
+│  - Check blockedBy        │
+│  - Validate file access   │
+│  - Check prompt file      │
+└───────────────────────────┘
+    │
+    ├── PASSED ──▶ Start task, update status
+    └── FAILED ──▶ Show errors, suggest resolution
+```
+
+---
+
+## 10. Testing Checklist
 
 **Terminal ID Shortcuts (NEW v3.0):**
 - [ ] /worker start b - sets identity to terminal-b
@@ -1049,6 +1108,14 @@ function setWorkerId(terminalId) {
 - [ ] Progress file update
 - [ ] Session env file creation
 
+**Gate 5 Validation (NEW v3.1):**
+- [ ] Preflight hook executes on /worker start
+- [ ] BlockedBy check blocks incomplete dependencies
+- [ ] BlockedBy check passes when all deps complete
+- [ ] Target file access validation works
+- [ ] Parent directory warning for new files
+- [ ] Validation logging to .agent/logs/validation_gates.log
+
 ---
 
 ## 10. Performance Targets
@@ -1071,7 +1138,7 @@ function setWorkerId(terminalId) {
 | `model-selection.md` | ✅ | `model: sonnet` 설정 |
 | `context-mode.md` | ✅ | `context: standard` 사용 |
 | `tool-config.md` | ✅ | V2.1.0: Task delegation pattern |
-| `hook-config.md` | N/A | Skill 내 Hook 없음 |
+| `hook-config.md` | ✅ | Setup hook: worker-preflight.sh (Gate 5) |
 | `permission-mode.md` | N/A | Skill에는 해당 없음 |
 | `task-params.md` | ✅ | Task status + blockedBy management |
 
@@ -1082,6 +1149,7 @@ function setWorkerId(terminalId) {
 | 1.0.0 | Worker self-service commands |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
 | 3.0.0 | Terminal ID shortcuts (b, c, d) 지원, `/worker start b` 형식 추가 |
+| 3.1.0 | Gate 5 Shift-Left Validation 통합, Setup hook 추가 |
 
 ---
 

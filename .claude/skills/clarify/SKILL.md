@@ -20,6 +20,9 @@ allowed-tools:
 hooks:
   Stop:
     - type: command
+      command: "/home/palantir/.claude/hooks/clarify-validate.sh"
+      timeout: 10000
+    - type: command
       command: "/home/palantir/.claude/hooks/clarify-finalize.sh"
       timeout: 150000
 ---
@@ -300,7 +303,9 @@ metadata:
 
 - User selects "승인"
 - YAML status: `completed`
-- Stop hook triggers: `clarify-finalize.sh`
+- Stop hooks trigger:
+  1. `clarify-validate.sh` - Gate 1: Requirement Feasibility Validation
+  2. `clarify-finalize.sh` - Finalization and pipeline integration
 
 ### 6.2 Abnormal Exit
 
@@ -416,13 +421,43 @@ Task(
 
 ---
 
-## 10. Testing Checklist
+## 10. Shift-Left Validation (Gate 1)
+
+### 10.1 Purpose
+
+Gate 1 validates requirement feasibility **before** proceeding to `/research`:
+- Detects potentially missing files early
+- Identifies vague requirements needing clarification
+- Catches destructive operations before execution
+
+### 10.2 Hook Integration
+
+```yaml
+hooks:
+  Stop:
+    - clarify-validate.sh  # Gate 1: Requirement Feasibility
+    - clarify-finalize.sh  # Pipeline integration
+```
+
+### 10.3 Validation Results
+
+| Result | Behavior | User Action |
+|--------|----------|-------------|
+| `passed` | ✅ Continue to next phase | None required |
+| `passed_with_warnings` | ⚠️ Display warnings, allow proceed | Review warnings |
+| `failed` | ❌ Block progression, request clarification | Address errors, re-run `/clarify` |
+
+---
+
+## 11. Testing Checklist
 
 - [ ] `/clarify "테스트 요청"` 기본 실행
 - [ ] `/clarify --resume {slug}` 재개 테스트
 - [ ] YAML 로그 스키마 검증
 - [ ] AskUserQuestion metadata.source 확인
 - [ ] Stop hook 트리거 확인
+- [ ] Gate 1 validation 실행 확인
+- [ ] Warning/Error 표시 확인
 - [ ] 다중 라운드 진행 테스트
 - [ ] Pipeline downstream_skills 추적 테스트
 
