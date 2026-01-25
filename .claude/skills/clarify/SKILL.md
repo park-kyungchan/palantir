@@ -8,7 +8,7 @@ user-invocable: true
 disable-model-invocation: true
 context: fork
 model: sonnet
-version: "2.1.0"
+version: "2.2.0"
 argument-hint: "<request> | --resume <slug>"
 allowed-tools:
   - Read
@@ -45,7 +45,8 @@ hooks:
 if [[ "$ARGUMENTS" == --resume* ]]; then
     RESUME_MODE=true
     SLUG="${ARGUMENTS#--resume }"
-    LOG_PATH=".agent/clarify/${SLUG}.yaml"
+    # Workload-scoped path (V2.2.0)
+    LOG_PATH=".agent/prompts/${SLUG}/clarify.yaml"
 else
     RESUME_MODE=false
     USER_INPUT="$ARGUMENTS"
@@ -60,10 +61,12 @@ source /home/palantir/.claude/skills/clarify/helpers.sh
 
 # Generate unique session
 SLUG=$(yaml_generate_slug "$USER_INPUT")
-LOG_PATH=".agent/clarify/${SLUG}.yaml"
+# Workload-scoped path (V2.2.0)
+WORKLOAD_DIR=".agent/prompts/${SLUG}"
+LOG_PATH="${WORKLOAD_DIR}/clarify.yaml"
 
-# Create YAML log
-mkdir -p .agent/clarify
+# Create workload directory and YAML log
+mkdir -p "${WORKLOAD_DIR}"
 yaml_init_log "$LOG_PATH" "$USER_INPUT"
 ```
 
@@ -90,7 +93,7 @@ fi
 ### 2.1 Full Schema
 
 ```yaml
-# .agent/clarify/{slug}.yaml
+# .agent/prompts/{slug}/clarify.yaml (Workload-scoped V2.2.0)
 metadata:
   id: "{slug}"
   version: "2.0.0"
@@ -372,14 +375,14 @@ if approved:
 ### 8.2 Log Reuse
 
 ```bash
-# 이전 세션 목록
-ls .agent/clarify/*.yaml
+# 이전 세션 목록 (Workload-scoped)
+ls .agent/prompts/*/clarify.yaml
 
 # 특정 세션 재개
 /clarify --resume {slug}
 
 # 로그 검색
-grep -l "Chain of Thought" .agent/clarify/*.yaml
+grep -l "Chain of Thought" .agent/prompts/*/clarify.yaml
 ```
 
 ### 8.3 Task Delegation Pattern (V2.1.16+)
@@ -482,3 +485,4 @@ hooks:
 |---------|--------|
 | 2.0.0 | YAML 로깅, Stop hook, PE 내장 라이브러리 |
 | 2.1.0 | `TodoWrite` 제거, Task API 표준화, 파라미터 모듈 호환성 |
+| 2.2.0 | Workload-scoped 출력 경로 (V7.1 호환) |
