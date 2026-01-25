@@ -1,9 +1,0 @@
-{
-  "id": "8",
-  "subject": "Frontmatter 표준화 완료 - 스킬 기능 테스트",
-  "description": "5개 스킬(/orchestrate, /assign, /collect, /synthesis, /worker)의 frontmatter가 표준화되었습니다. 이제 실제 스킬 호출이 정상 작동하는지 테스트해야 합니다.\n\n테스트 항목:\n1. /orchestrate \"test task\" - 스킬이 로드되는지 확인\n2. /assign auto - 스킬이 로드되는지 확인\n3. /worker status - 스킬이 로드되는지 확인\n\n완료 기준:\n- 모든 스킬이 frontmatter 설정(model, context 등)을 올바르게 적용받는지 확인",
-  "activeForm": "Testing skill frontmatter",
-  "status": "pending",
-  "blocks": [],
-  "blockedBy": []
-}
