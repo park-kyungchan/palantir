@@ -1,0 +1,477 @@
+# =============================================================================
+# Planning Document: Ontology Skill Enhancement
+# =============================================================================
+# Generated: 2026-01-26T11:10:00Z
+# Status: draft (awaiting Plan Agent review)
+
+metadata:
+  id: "ontology-skill-enhancement-20260126"
+  workload_id: "ontology-skill-enhancement-20260126"
+  version: "1.0.0"
+  created_at: "2026-01-26T11:10:00Z"
+  updated_at: "2026-01-26T11:10:00Z"
+  status: "approved"
+  research_source: ".agent/prompts/ontology-skill-enhancement-20260126/research.md"
+  clarify_source: ".agent/prompts/ontology-skill-enhancement-20260126/clarify.yaml"
+
+# =============================================================================
+# PROJECT OVERVIEW
+# =============================================================================
+
+project:
+  name: "ObjectType 정의 상호작용 시스템 고도화"
+  description: |
+    사용자가 ObjectType을 정의할 때 Claude와 상호작용하며
+    의사결정을 내릴 수 있는 체계적인 Phase 1-4 워크플로우 구축.
+
+    - /ontology-objecttype: Phase 기반 인터랙티브 워크플로우로 전면 개편
+    - /ontology-why: 5가지 Integrity 관점 분석 강화
+    - 출력 형식: YAML 정의 + Semantic Integrity 검증
+
+  objectives:
+    - "Phase 1→2→3→4 체계적 워크플로우 구현 (REQ-001)"
+    - "Primary Key 전략 선택 가이드: single/composite/hashed (REQ-002)"
+    - "Property 타입/제약 상세 설정 지원 (REQ-003)"
+    - "Cardinality 결정 및 Link 구현 가이드 (REQ-004)"
+    - "Ontology Integrity 관점 상세 분석 (REQ-005)"
+    - "YAML 정의 + Semantic Integrity 검증 출력 (REQ-006)"
+
+  requirements_traceability:
+    REQ-001: "전체 워크플로우 - 모든 단계가 빠짐없이 안내"
+    REQ-002: "Primary Key 전략 - single/composite/hashed 선택"
+    REQ-003: "Property 타입/제약 - 20개 DataType + 제약조건"
+    REQ-004: "Relationship 설계 - Cardinality + Link 구현"
+    REQ-005: "설명 수준 - 상세 분석 (5가지 Integrity 관점)"
+    REQ-006: "출력 형식 - YAML + Semantic Integrity 검증"
+
+# =============================================================================
+# PHASES - Implementation Breakdown
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: /ontology-objecttype SKILL.md 전면 개편
+  # ---------------------------------------------------------------------------
+  - id: "phase1-objecttype-refactor"
+    name: "/ontology-objecttype 워크플로우 재설계"
+    description: |
+      현재 L1→L2→L3 선형 워크플로우를 Phase 1→2→3→4 인터랙티브
+      의사결정 트리로 전면 개편.
+
+      핵심 변경사항:
+      1. Section 5 (Workflow) 전체 재작성
+      2. AskUserQuestion 기반 Phase별 질문 구조
+      3. PK Strategy Selection UI 추가
+      4. Cardinality Decision Tree 추가
+      5. Output Format: Python → YAML 변경
+      6. Phase별 Validation Gate 실행 로직
+
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: ".claude/skills/ontology-objecttype/SKILL.md"
+        action: "modify"
+        sections:
+          - "Section 5: Workflow (lines 113-274) - 전체 재작성"
+          - "Section 6: Output Generation (lines 435-472) - YAML 변경"
+          - "Section 7: Approval Workflow (lines 404-434) - Phase-aware"
+
+    referenceFiles:
+      - path: "/home/palantir/park-kyungchan/palantir/docs/ObjectType_Reference.md"
+        reason: "Phase 1-4 워크플로우 + YAML 스키마 참조"
+      - path: "/home/palantir/park-kyungchan/palantir/Ontology-Definition/ontology_definition/types/object_type.py"
+        reason: "ObjectType 구조 + 검증 메서드 참조"
+      - path: "/home/palantir/park-kyungchan/palantir/Ontology-Definition/ontology_definition/core/enums.py"
+        reason: "20개 DataType 정의 참조"
+
+    completionCriteria:
+      - "Phase 1 (Context Clarification): source_type + domain 질문 구현"
+      - "Phase 2 (Entity Discovery): PK Strategy 3가지 선택 옵션 구현"
+      - "Phase 2 (Property Types): 20개 DataType + 제약조건 가이드 (REQ-003)"
+      - "Phase 3 (Link Definition): Cardinality 의사결정 트리 구현"
+      - "Phase 4 (Validation & Output): YAML 출력 + Gate 검증 구현"
+      - "모든 Phase에 AskUserQuestion 호출 포함"
+      - "각 Phase 종료 시 Validation Gate 실행 명세"
+
+    verificationSteps:
+      - command: "grep -c 'Phase 1\\|Phase 2\\|Phase 3\\|Phase 4' .claude/skills/ontology-objecttype/SKILL.md"
+        expected: "4 이상"
+      - command: "grep -c 'AskUserQuestion' .claude/skills/ontology-objecttype/SKILL.md"
+        expected: "4 이상"
+      - command: "grep -c 'single_column\\|composite\\|composite_hashed' .claude/skills/ontology-objecttype/SKILL.md"
+        expected: "3 이상"
+
+    subTasks:
+      - id: "1a-phase1-context"
+        name: "Phase 1: Context Clarification 구현"
+        description: |
+          Q1: Source type (code/schema/doc/manual) 선택
+          Q2: Business domain (free text)
+          Gate: source_validity
+        targetSection: "Section 5.1"
+
+      - id: "1b-phase2-entity"
+        name: "Phase 2: Entity Discovery 구현"
+        description: |
+          소스 분석 → 후보 추출
+          Q3: Primary Key Strategy 선택 (single/composite/hashed)
+          Gate: candidate_extraction, pk_determinism
+        targetSection: "Section 5.2"
+
+      - id: "1c-phase3-link"
+        name: "Phase 3: Link Definition 구현"
+        description: |
+          Q4: Relationships exist?
+          Q4a: Target ObjectType
+          Q4b: Cardinality (1:1, 1:N, N:1, M:N)
+          M:N → join table auto-configure
+          Gate: link_integrity
+        targetSection: "Section 5.3"
+
+      - id: "1d-phase4-output"
+        name: "Phase 4: Validation & Output 구현"
+        description: |
+          모든 Validation Gate 실행
+          YAML scaffold 생성
+          Semantic Integrity 검증
+          Gate: semantic_consistency
+        targetSection: "Section 5.4"
+
+      - id: "1e-yaml-output"
+        name: "Output Format: YAML 변경"
+        description: |
+          현재 Python scaffold → YAML 정의로 변경
+          ontology-objecttype.schema.yaml 스키마 적용
+        targetSection: "Section 6"
+
+      - id: "1f-property-types"
+        name: "Phase 2: Property Type/Constraint 가이드 구현"
+        description: |
+          20개 DataType 전체 지원 (REQ-003)
+          - Primitive: STRING, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, DECIMAL
+          - Temporal: DATE, TIMESTAMP, DATETIME, TIMESERIES
+          - Complex: ARRAY, STRUCT, JSON
+          - Spatial: GEOPOINT, GEOSHAPE
+          - Media: MEDIA_REFERENCE, BINARY, MARKDOWN
+          - AI/ML: VECTOR
+
+          타입별 제약조건 가이드:
+          - required/unique/nullable 설정
+          - ARRAY → array_item_type 필수
+          - STRUCT → struct_fields 필수
+          - VECTOR → vector_dimension 필수
+          - DECIMAL → precision/scale 필수
+
+          enums.py DataType 매핑 테이블 포함
+        targetSection: "Section 5.2"
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: /ontology-why SKILL.md 강화
+  # ---------------------------------------------------------------------------
+  - id: "phase2-why-enhancement"
+    name: "/ontology-why Integrity 분석 강화"
+    description: |
+      현재 형식 위주의 출력을 5가지 Ontology Integrity 관점
+      상세 분석으로 강화.
+
+      핵심 변경사항:
+      1. 5가지 Integrity 관점 구조화
+      2. 출력 형식에 모든 관점 포함
+      3. WebSearch/Context7 통합으로 실시간 문서 검색
+
+    priority: "P0"
+    owner: "terminal-c"
+    dependencies: []
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/ontology-why/SKILL.md"
+        action: "modify"
+        sections:
+          - "Section 3.2: Integrity 관점 확장"
+          - "Section 5: Output Format 강화"
+          - "Section 7: Tools - WebSearch 통합"
+
+    referenceFiles:
+      - path: "/home/palantir/park-kyungchan/palantir/docs/ObjectType_Reference.md"
+        reason: "Integrity 관점 정의 참조"
+
+    completionCriteria:
+      - "5가지 Integrity 관점 상세 정의 포함"
+      - "출력 형식에 모든 5개 관점 섹션 포함"
+      - "WebSearch 호출 로직 명세 포함"
+      - "Context7 MCP 쿼리 예시 포함"
+      - "Palantir 공식 문서 URL 수집 로직"
+
+    verificationSteps:
+      - command: "grep -c 'Immutability\\|Determinism\\|Referential Integrity\\|Semantic Consistency\\|Lifecycle' .claude/skills/ontology-why/SKILL.md"
+        expected: "5 이상"
+      - command: "grep -c 'WebSearch\\|mcp__context7' .claude/skills/ontology-why/SKILL.md"
+        expected: "2 이상"
+
+    subTasks:
+      - id: "2a-integrity-perspectives"
+        name: "5가지 Integrity 관점 구조화"
+        description: |
+          1. Immutability (불변성) - PK/식별자 변경 불가
+          2. Determinism (결정성) - 동일 입력 → 동일 출력
+          3. Referential Integrity (참조 무결성) - Link 일관성
+          4. Semantic Consistency (의미론적 일관성) - 타입/제약 의미
+          5. Lifecycle Management (생명주기) - 상태 변경 영향
+        targetSection: "Section 3.2"
+
+      - id: "2b-output-format"
+        name: "출력 형식 강화"
+        description: |
+          현재 형식에 5개 관점 모두 포함하도록 확장
+          각 관점별 분석 + 근거 URL 포함
+        targetSection: "Section 5"
+
+      - id: "2c-external-search"
+        name: "외부 문서 검색 통합"
+        description: |
+          WebSearch로 Palantir 공식 문서 검색
+          Context7 MCP로 공식 문서 쿼리
+          검증된 출처만 인용
+        targetSection: "Section 7"
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Validation Gate 규칙 정의
+  # ---------------------------------------------------------------------------
+  - id: "phase3-validation-gates"
+    name: "Validation Gate 규칙 정의"
+    description: |
+      각 Phase 종료 시 실행되는 Validation Gate 규칙 정의.
+      PreToolUse Hook 형태가 아닌 SKILL.md 내 규칙으로 정의.
+      (실제 Hook 스크립트 구현은 별도 작업)
+
+    priority: "P1"
+    owner: "terminal-b"
+    dependencies: ["phase1-objecttype-refactor"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/ontology-objecttype/SKILL.md"
+        action: "modify"
+        sections:
+          - "새 섹션: Validation Gates 추가"
+
+    referenceFiles:
+      - path: "/home/palantir/park-kyungchan/palantir/docs/ObjectType_Reference.md"
+        reason: "Gate 규칙 정의 (lines 256-335)"
+
+    completionCriteria:
+      - "source_validity Gate 규칙 정의"
+      - "candidate_extraction Gate 규칙 정의"
+      - "pk_determinism Gate 규칙 정의"
+      - "link_integrity Gate 규칙 정의"
+      - "semantic_consistency Gate 규칙 정의 (manual checklist)"
+      - "각 Gate 실패 시 오류 메시지 (한국어)"
+
+    verificationSteps:
+      - command: "grep -c 'source_validity\\|candidate_extraction\\|pk_determinism\\|link_integrity\\|semantic_consistency' .claude/skills/ontology-objecttype/SKILL.md"
+        expected: "5 이상"
+
+    subTasks:
+      - id: "3a-gate-definitions"
+        name: "5가지 Validation Gate 정의"
+        description: |
+          Gate 1: source_validity (Phase 1)
+          Gate 2: candidate_extraction (Phase 2)
+          Gate 3: pk_determinism (Phase 2)
+          Gate 4: link_integrity (Phase 3)
+          Gate 5: semantic_consistency (Phase 4)
+        targetSection: "신규 Section"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: 통합 테스트
+  # ---------------------------------------------------------------------------
+  - id: "phase4-integration-test"
+    name: "통합 테스트 시나리오 실행"
+    description: |
+      수정된 스킬들의 E2E 테스트 수행.
+      Employee ObjectType 정의 시나리오로 전체 워크플로우 검증.
+
+    priority: "P0"
+    owner: "terminal-d"
+    dependencies:
+      - "phase1-objecttype-refactor"
+      - "phase2-why-enhancement"
+      - "phase3-validation-gates"
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".agent/prompts/ontology-skill-enhancement-20260126/test-results.md"
+        action: "create"
+
+    referenceFiles:
+      - path: ".claude/skills/ontology-objecttype/SKILL.md"
+        reason: "수정된 워크플로우 검증"
+      - path: ".claude/skills/ontology-why/SKILL.md"
+        reason: "강화된 Integrity 분석 검증"
+
+    completionCriteria:
+      - "Phase 1→4 전체 워크플로우 완료 가능 (SC-001)"
+      - "PK 전략 3가지 옵션 + 근거 제공 확인 (SC-002)"
+      - "Cardinality 결정 가이드 제공 확인 (SC-003)"
+      - "WHY 질문에 5가지 관점 분석 제공 확인 (SC-004)"
+      - "YAML 출력 + Semantic 검증 통과 (SC-005)"
+
+    verificationSteps:
+      - command: "test -f .agent/prompts/ontology-skill-enhancement-20260126/test-results.md"
+        expected: "파일 존재"
+
+    testScenarios:
+      - id: "test-1"
+        name: "Employee ObjectType Phase 1→4"
+        steps:
+          - "/ontology-objecttype analyze Employee"
+          - "Phase 1: source=code, domain=HR"
+          - "Phase 2: PK=single_column (employeeId)"
+          - "Phase 3: Link to Department (MANY_TO_ONE)"
+          - "Phase 4: YAML 출력 확인"
+
+      - id: "test-2"
+        name: "PK Strategy Selection"
+        steps:
+          - "single_column 선택 → employeeId 사용"
+          - "composite 선택 → components 입력 요청 확인"
+          - "composite_hashed 선택 → SHA256 설명 확인"
+
+      - id: "test-3"
+        name: "/ontology-why Integrity 분석"
+        steps:
+          - "/ontology-why employeeId를 String으로 정의한 이유"
+          - "5가지 관점 모두 출력 확인"
+          - "Palantir URL 포함 확인"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase3-validation-gates"
+      to: "phase1-objecttype-refactor"
+      reason: "Gate 정의는 워크플로우 구조가 확정된 후 가능"
+
+    - from: "phase4-integration-test"
+      to: "phase1-objecttype-refactor"
+      reason: "테스트 대상 워크플로우가 먼저 구현되어야 함"
+
+    - from: "phase4-integration-test"
+      to: "phase2-why-enhancement"
+      reason: "WHY 질문 테스트를 위해 스킬 강화 필요"
+
+    - from: "phase4-integration-test"
+      to: "phase3-validation-gates"
+      reason: "Gate 검증 테스트를 위해 규칙 정의 필요"
+
+  external:
+    - name: "ontology-definition"
+      version: "local"
+      reason: "ObjectType, PropertyDefinition 구조 참조"
+
+    - name: "Context7 MCP"
+      version: "latest"
+      reason: "Palantir 공식 문서 검색"
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "approved"
+  reviewedAt: "2026-01-26T11:15:00Z"
+  reviewedBy: "Plan Agent (claude-opus-4-5)"
+  iterationCount: 2
+  comments:
+    - round: 1
+      comment: "REQ-003 (Property 타입/제약) missing explicit implementation coverage"
+      resolution: "Added subtask 1f-property-types + completion criterion"
+    - round: 2
+      comment: "All requirements covered, DAG verified, criteria measurable"
+      resolution: "APPROVED"
+
+  approvalCriteria:
+    - "모든 Phase에 명확한 완료 기준 정의"
+    - "Dependencies가 비순환 그래프(DAG) 형성"
+    - "각 Phase에 대상 파일 명시"
+    - "리스크 완화 전략 식별"
+    - "요구사항 추적성 확보 (REQ-001 ~ REQ-006)"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Phase 1 (ontology-objecttype) + Phase 2 (ontology-why)는 병렬 실행 가능
+    - Terminal-B: phase1-objecttype-refactor
+    - Terminal-C: phase2-why-enhancement
+
+    Phase 3, 4는 Phase 1, 2 완료 후 순차 실행
+
+  criticalPath: |
+    phase1-objecttype-refactor → phase3-validation-gates → phase4-integration-test
+    (가장 긴 의존성 체인)
+
+  estimatedDuration: |
+    - Phase 1: ~90 minutes (복잡도 높음)
+    - Phase 2: ~45 minutes
+    - Phase 3: ~30 minutes
+    - Phase 4: ~30 minutes
+    Total: ~2.5 hours (병렬 실행 시 ~1.5 hours)
+
+  riskMitigation:
+    - risk: "기존 워크플로우 호환성"
+      mitigation: "--legacy 플래그로 이전 L1/L2/L3 워크플로우 유지 옵션"
+
+    - risk: "YAML 스키마 검증 복잡도"
+      mitigation: "ObjectType_Reference.md의 기존 스키마 정의 재사용"
+
+    - risk: "외부 검색 Rate Limiting"
+      mitigation: "결과 캐싱 + ontology-definition 로컬 참조로 폴백"
+
+# =============================================================================
+# OUT OF SCOPE (명시적 제외)
+# =============================================================================
+
+outOfScope:
+  - "PySpark Pipeline 코드 생성"
+  - "TypeScript OSDK 클라이언트 생성"
+  - "실제 Hook 스크립트 구현 (별도 작업)"
+  - "locales/*.yaml 파일 생성 (Phase 2)"
+
+# =============================================================================
+# SUCCESS CRITERIA MAPPING
+# =============================================================================
+
+successCriteria:
+  SC-001:
+    criterion: "Phase 1→4 전체 워크플로우 완료 가능"
+    verification: "테스트 시나리오: Employee ObjectType 정의"
+    linkedPhases: ["phase1-objecttype-refactor", "phase4-integration-test"]
+
+  SC-002:
+    criterion: "PK 전략 선택 시 3가지 옵션 + 근거 제공"
+    verification: "single/composite/hashed 각각 선택 테스트"
+    linkedPhases: ["phase1-objecttype-refactor"]
+
+  SC-003:
+    criterion: "Cardinality 결정 시 가이드 제공"
+    verification: "1:N, M:N 관계 설정 시나리오 테스트"
+    linkedPhases: ["phase1-objecttype-refactor"]
+
+  SC-004:
+    criterion: "WHY 질문에 상세 Integrity 분석 제공"
+    verification: "PK String 이유 질문 시 5가지 관점 분석"
+    linkedPhases: ["phase2-why-enhancement"]
+
+  SC-005:
+    criterion: "YAML 출력 + Semantic 검증 통과"
+    verification: "생성된 YAML이 스키마 검증 통과"
+    linkedPhases: ["phase1-objecttype-refactor", "phase3-validation-gates"]

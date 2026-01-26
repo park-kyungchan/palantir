@@ -113,164 +113,908 @@ PATTERNS = {
 
 ---
 
-## 5. Workflow: L1 → L2 → L3 Progressive Disclosure
+## 5. Workflow: Phase 1 → 2 → 3 → 4 Interactive Decision Tree
 
-### 5.1 L1 - Summary (첫 번째 출력)
+**전환 핵심**: L1→L2→L3 선형 진행 → Phase별 인터랙티브 의사결정 트리
+
+| Phase | 목적 | 사용자 의사결정 | Validation Gate |
+|-------|------|----------------|-----------------|
+| **Phase 1** | Context Clarification | Source Type, Domain | source_validity |
+| **Phase 2** | Entity Discovery | PK Strategy, Properties | candidate_extraction, pk_determinism |
+| **Phase 3** | Link Definition | Relationships, Cardinality | link_integrity |
+| **Phase 4** | Validation & Output | YAML Generation | semantic_consistency |
+
+---
+
+### 5.1 Phase 1: Context Clarification
+
+**목적**: 분석 소스와 비즈니스 도메인 명확화
+
+```python
+# AskUserQuestion을 통한 인터랙티브 질문
+result = AskUserQuestion({
+    questions: [
+        {
+            question: "What is your source for this ObjectType definition?",
+            header: "Source Type",
+            options: [
+                {
+                    label: "Existing source code",
+                    description: "분석할 소스 코드가 있음 (Python, Java, TypeScript 등)"
+                },
+                {
+                    label: "Database schema",
+                    description: "데이터베이스 스키마에서 추출 (SQL DDL, ORM models)"
+                },
+                {
+                    label: "Business requirements",
+                    description: "비즈니스 요구사항 문서 기반 정의"
+                },
+                {
+                    label: "Manual definition",
+                    description: "수동으로 직접 정의 (새로운 도메인 모델)"
+                }
+            ],
+            multiSelect: false
+        },
+        {
+            question: "What is the business domain for this ObjectType?",
+            header: "Domain",
+            options: [
+                { label: "HR & Employee Management", description: "인사/직원 관리" },
+                { label: "Finance & Accounting", description: "재무/회계" },
+                { label: "Supply Chain & Logistics", description: "공급망/물류" },
+                { label: "Customer & Sales", description: "고객/영업" }
+            ],
+            multiSelect: false
+        }
+    ]
+})
+
+source_type = result["Source Type"]
+domain = result["Domain"]
+```
+
+**📌 Validation Gate: source_validity**
+- IF source == "code" → 파일 경로 접근 가능 여부 확인
+- IF source == "schema" → DDL 파싱 가능 여부 확인
+- IF source == "manual" → 기본 스키마 템플릿 제공
+
+**Output**:
+```
+╔═══════════════════════════════════════════╗
+║  Phase 1 Complete                         ║
+╠═══════════════════════════════════════════╣
+║  ✅ Source Type: Existing source code     ║
+║  ✅ Domain: HR & Employee Management      ║
+║  ✅ Gate: source_validity PASSED          ║
+╚═══════════════════════════════════════════╝
+
+→ Proceeding to Phase 2: Entity Discovery
+```
+
+---
+
+### 5.2 Phase 2: Entity Discovery
+
+**목적**: Entity 후보 추출 + Primary Key Strategy 결정 + Property 타입 매핑
+
+#### 5.2.1 Entity Candidate Extraction (source == "code"인 경우)
+
+```python
+# 코드 스캔으로 Entity 후보 추출
+candidates = scan_source_code(source_path, patterns={
+    "python_class": r"^class\s+([A-Z][a-zA-Z0-9_]*)\s*[:\(]",
+    "sqlalchemy": r"class\s+(\w+)\s*\(\s*(?:Base|.*declarative_base)",
+    "django": r"class\s+(\w+)\s*\(\s*models\.Model\s*\)",
+    "field_def": r"^\s+(\w+)\s*[=:]\s*",
+    "foreign_key": r"ForeignKey\s*\(\s*['\"]?(\w+)"
+})
+
+# 실시간 추론: ObjectType 적합 여부 판단
+for candidate in candidates:
+    is_objecttype = analyze_candidate(candidate)
+    # 판단 기준: Entity vs DTO vs Helper vs Config
+```
+
+**Output (Candidate List)**:
+```
+┌───────────────────────────────────────────────┐
+│  Found 12 Entity Candidates                   │
+├───────────────────────────────────────────────┤
+│  ✅ ObjectType 후보 (8개)                      │
+│  1. Employee (models/employee.py:15)          │
+│     └─ Properties: 6개 | PK candidate: employee_id
+│  2. Department (models/department.py:8)       │
+│  3. Project (models/project.py:22)            │
+│  ...                                          │
+│                                               │
+│  ⚠️ 검토 필요 (2개) - DTO/Mixin 패턴          │
+│  ❌ 제외 추천 (2개) - Helper/Config 클래스    │
+└───────────────────────────────────────────────┘
+
+Continue with: 1 (Employee) [Y/n]
+```
+
+#### 5.2.2 Primary Key Strategy Selection
+
+**핵심 의사결정**: PK를 어떻게 구성할 것인가?
+
+```python
+# AskUserQuestion으로 PK 전략 선택
+pk_strategy_result = AskUserQuestion({
+    questions: [{
+        question: "How should we generate the Primary Key for this ObjectType?",
+        header: "PK Strategy",
+        options: [
+            {
+                label: "single_column (단일 컬럼)",
+                description: """
+                기존 단일 컬럼을 PK로 사용
+                ✅ Pros: 단순함, 기존 데이터 활용
+                ❌ Cons: 컬럼이 유일성 보장해야 함
+                Example: employee_id, user_uuid
+                """
+            },
+            {
+                label: "composite (복합 키)",
+                description: """
+                여러 컬럼을 조합하여 PK 생성 (구분자: '_' or '|')
+                ✅ Pros: 자연키 활용, 비즈니스 의미 유지
+                ❌ Cons: 조합 순서 중요, 구분자 필요
+                Example: company_id + department_id → "ACME_HR"
+                """
+            },
+            {
+                label: "composite_hashed (복합 해시)",
+                description: """
+                복합키를 SHA256 해시로 변환 (고정 길이 64자)
+                ✅ Pros: 고정 길이, 충돌 최소화, 긴 조합키 압축
+                ❌ Cons: 원본 값 역추적 불가, 디버깅 어려움
+                Example: sha256(f"{org}_{dept}_{emp}") → "a3f2c..."
+                """
+            }
+        ],
+        multiSelect: false
+    }]
+})
+
+pk_strategy = pk_strategy_result["PK Strategy"]
+```
+
+**Implementation Code Generation**:
+
+```python
+# PK Strategy별 코드 생성 (YAML 스키마)
+if pk_strategy == "single_column":
+    pk_spec = f"""
+    primary_key:
+      source_columns: ["{pk_column}"]
+      strategy: single_column
+    """
+
+elif pk_strategy == "composite":
+    pk_spec = f"""
+    primary_key:
+      source_columns: {composite_columns}
+      strategy: composite
+      composite_spec:
+        separator: "_"
+        order: {composite_order}
+    """
+
+elif pk_strategy == "composite_hashed":
+    pk_spec = f"""
+    primary_key:
+      source_columns: {composite_columns}
+      strategy: composite_hashed
+      composite_spec:
+        hash_algorithm: sha256
+        order: {composite_order}
+    """
+```
+
+**📌 Validation Gate: pk_determinism**
+- PK 컬럼이 NOT NULL인가?
+- 단일 컬럼인 경우: UNIQUE 제약 존재하는가?
+- 복합 컬럼인 경우: 조합이 유일성을 보장하는가?
+
+#### 5.2.3 Property Type Mapping (REQ-003)
+
+**20개 DataType 가이드**:
+
+| Category | Types | Special Config |
+|----------|-------|----------------|
+| **Primitive** | STRING, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, DECIMAL | DECIMAL: precision, scale 필수 |
+| **Temporal** | DATE, TIMESTAMP, DATETIME, TIMESERIES | - |
+| **Complex** | ARRAY, STRUCT, JSON | ARRAY: arrayItemType 필수<br>STRUCT: structFields 필수 |
+| **Spatial** | GEOPOINT, GEOSHAPE | - |
+| **Media** | MEDIA_REFERENCE, BINARY, MARKDOWN | - |
+| **AI/ML** | VECTOR | vectorDimension 필수 |
+
+**Type Mapping Logic**:
+
+```python
+# enums.py 기반 타입 매핑
+from ontology_definition.core.enums import DataType
+
+type_mapping = {
+    "str": DataType.STRING,
+    "int": DataType.INTEGER,
+    "float": DataType.FLOAT,
+    "bool": DataType.BOOLEAN,
+    "datetime.date": DataType.DATE,
+    "datetime.datetime": DataType.TIMESTAMP,
+    "List[...]": DataType.ARRAY,  # → arrayItemType 추가 설정 필요
+    "Dict[...]": DataType.STRUCT,  # → structFields 추가 설정 필요
+}
+
+# 실시간 추론으로 최적 타입 결정
+for prop in properties:
+    suggested_type = infer_best_type(prop)
+    # 제약 조건 분석: nullable, unique, default_value
+```
+
+**Output**:
+```
+╔═══════════════════════════════════════════╗
+║  Phase 2 Complete: Employee               ║
+╠═══════════════════════════════════════════╣
+║  ✅ PK Strategy: single_column            ║
+║     └─ Column: employee_id (STRING)       ║
+║  ✅ Properties: 6개 매핑 완료              ║
+║     ├─ employeeId: STRING (PK)            ║
+║     ├─ name: STRING (required)            ║
+║     ├─ email: STRING (unique)             ║
+║     ├─ departmentId: STRING (FK 후보)     ║
+║     ├─ hireDate: DATE                     ║
+║     └─ isActive: BOOLEAN (default: true)  ║
+║  ✅ Gates: candidate_extraction,          ║
+║           pk_determinism PASSED           ║
+╚═══════════════════════════════════════════╝
+
+→ Proceeding to Phase 3: Link Definition
+```
+
+---
+
+### 5.3 Phase 3: Link Definition
+
+**목적**: Relationship 존재 여부 확인 + Cardinality 결정 + LinkType 정의
+
+#### 5.3.1 Relationship Detection
+
+```python
+# FK 패턴 자동 탐지
+fk_candidates = detect_foreign_keys(properties, patterns={
+    "sqlalchemy": r"ForeignKey\s*\(\s*['\"]?(\w+)",
+    "naming": r"(\w+)_id$",  # department_id → Department
+    "relationship": r"relationship\s*\(\s*['\"](\w+)"
+})
+
+# 사용자에게 관계 확인 질문
+has_relationship = AskUserQuestion({
+    questions: [{
+        question: "Does this ObjectType have relationships to other ObjectTypes?",
+        header: "Relationships",
+        options: [
+            { label: "Yes, define relationships now", description: "관계 정의 진행" },
+            { label: "No relationships", description: "독립적인 ObjectType" },
+            { label: "Skip for now", description: "나중에 정의" }
+        ],
+        multiSelect: false
+    }]
+})
+```
+
+#### 5.3.2 Cardinality Decision Tree
+
+**핵심 의사결정**: 관계의 Cardinality는?
+
+```python
+# 각 FK 후보에 대해 Cardinality 질문
+for fk in fk_candidates:
+    cardinality_result = AskUserQuestion({
+        questions: [{
+            question: f"What is the cardinality for {source_obj} → {target_obj}?",
+            header: "Cardinality",
+            options: [
+                {
+                    label: "ONE_TO_ONE (1:1)",
+                    description: """
+                    한 Employee는 하나의 Badge에 대응, Badge도 하나의 Employee에만 연결
+                    Implementation: FK on either side
+                    """
+                },
+                {
+                    label: "ONE_TO_MANY (1:N)",
+                    description: """
+                    한 Department는 여러 Employee를 가질 수 있음
+                    Implementation: FK on 'many' side (Employee.departmentId)
+                    """
+                },
+                {
+                    label: "MANY_TO_ONE (N:1)",
+                    description: """
+                    여러 Employee가 하나의 Department에 소속
+                    Implementation: FK on 'many' side (this ObjectType)
+                    """
+                },
+                {
+                    label: "MANY_TO_MANY (N:N)",
+                    description: """
+                    Employee ↔ Project 관계: 한 직원이 여러 프로젝트, 한 프로젝트에 여러 직원
+                    Implementation: JOIN TABLE required (EmployeeProject)
+                    """
+                }
+            ],
+            multiSelect: false
+        }]
+    })
+
+    cardinality = cardinality_result["Cardinality"]
+```
+
+**Cardinality별 구현 전략**:
+
+| Cardinality | FK 위치 | Backing Table | Example |
+|-------------|---------|---------------|---------|
+| ONE_TO_ONE | Either side | No | Employee ↔ Badge |
+| ONE_TO_MANY | "Many" side | No | Department(1) → Employee(N) |
+| MANY_TO_ONE | "Many" side (this) | No | Employee(N) → Department(1) |
+| MANY_TO_MANY | - | **Yes** | Employee ↔ Project |
+
+**📌 Validation Gate: link_integrity**
+- Target ObjectType이 존재하는가?
+- FK 컬럼 타입이 Target PK 타입과 일치하는가?
+- MANY_TO_MANY인 경우: Backing Table 자동 생성 제안
+
+**Output**:
+```
+╔═══════════════════════════════════════════╗
+║  Phase 3 Complete: Relationships          ║
+╠═══════════════════════════════════════════╣
+║  🔗 LinkType 1: EmployeeToDepartment      ║
+║     ├─ Source: Employee                   ║
+║     ├─ Target: Department                 ║
+║     ├─ Cardinality: MANY_TO_ONE (N:1)     ║
+║     ├─ FK: departmentId (on Employee)     ║
+║     └─ Implementation: FOREIGN_KEY        ║
+║                                           ║
+║  ✅ Gate: link_integrity PASSED           ║
+╚═══════════════════════════════════════════╝
+
+→ Proceeding to Phase 4: Validation & Output
+```
+
+---
+
+### 5.4 Phase 4: Validation & Output
+
+**목적**: 모든 Gate 검증 + YAML 생성 + 승인 워크플로우
+
+#### 5.4.1 Final Validation (semantic_consistency)
+
+```python
+# 모든 Validation Gate 실행
+validation_results = {
+    "source_validity": validate_source(source_type, source_path),
+    "candidate_extraction": validate_entity_candidates(candidates),
+    "pk_determinism": validate_primary_key(pk_strategy, pk_columns),
+    "link_integrity": validate_relationships(links)
+}
+
+all_passed = all(validation_results.values())
+```
+
+#### 5.4.2 YAML Output Generation (Python → YAML 변경)
+
+**Output Format**: `objecttype-{api_name}.yaml`
+
+```yaml
+# objecttype-Employee.yaml
+api_name: Employee
+display_name: Employee
+description: "Employee entity with department relationship"
+status: DRAFT
+
+primary_key:
+  source_columns:
+    - employee_id
+  strategy: single_column
+
+properties:
+  - api_name: employeeId
+    display_name: Employee ID
+    data_type: STRING
+    required: true
+
+  - api_name: name
+    display_name: Name
+    data_type: STRING
+    required: true
+
+  - api_name: email
+    display_name: Email
+    data_type: STRING
+    constraints:
+      unique: true
+
+  - api_name: departmentId
+    display_name: Department
+    data_type: STRING
+    # LinkType로 변환 예정
+
+  - api_name: hireDate
+    display_name: Hire Date
+    data_type: DATE
+
+  - api_name: isActive
+    display_name: Active Status
+    data_type: BOOLEAN
+    default_value: true
+
+links:
+  - link_type_name: EmployeeToDepartment
+    target_object_type: Department
+    cardinality: MANY_TO_ONE
+    foreign_key:
+      source_property: departmentId
+      target_property: departmentId
+
+validation_gates:
+  - source_validity: PASSED
+  - candidate_extraction: PASSED
+  - pk_determinism: PASSED
+  - link_integrity: PASSED
+  - semantic_consistency: PASSED
+```
+
+#### 5.4.3 Approval Workflow
+
+```python
+# 최종 승인 질문
+approval = AskUserQuestion({
+    questions: [{
+        question: "Review the generated ObjectType definition. Proceed?",
+        header: "Approval",
+        options: [
+            { label: "Approve", description: "정의 승인 및 저장" },
+            { label: "Edit", description: "YAML 직접 수정" },
+            { label: "Regenerate", description: "Phase 2부터 다시 시작" },
+            { label: "Cancel", description: "작업 취소" }
+        ],
+        multiSelect: false
+    }]
+})
+
+if approval["Approval"] == "Approve":
+    save_yaml(output_path)
+    print("✅ ObjectType definition saved to:", output_path)
+```
+
+**Final Output**:
+```
+╔═══════════════════════════════════════════╗
+║  Phase 4 Complete: ObjectType Defined     ║
+╠═══════════════════════════════════════════╣
+║  📄 Output File:                          ║
+║     objecttype-Employee.yaml              ║
+║                                           ║
+║  ✅ All Validation Gates: PASSED          ║
+║  ✅ PK Strategy: single_column            ║
+║  ✅ Properties: 6개 정의 완료              ║
+║  ✅ Links: 1개 정의 완료                  ║
+║                                           ║
+║  Next Steps:                              ║
+║  → Review YAML file                       ║
+║  → Define LinkType separately (/ontology-linktype)
+║  → Generate PySpark pipeline (optional)   ║
+╚═══════════════════════════════════════════╝
+```
+
+---
+
+## 5.5 Validation Gate 규칙 정의 (CRITICAL)
+
+**목적**: 각 Phase 종료 시 Ontology Integrity 검증을 통해 문제를 조기 발견 (Shift-Left)
+
+### 5.5.1 Gate 개요
+
+```yaml
+# validation-gates.yaml
+# Generated by: Task #3 (Validation Gate 규칙 정의)
+# Date: 2026-01-26
+
+validation_gates:
+  # ═══════════════════════════════════════════════════════════════
+  # Gate 1: source_validity (Phase 1 완료 시 실행)
+  # ═══════════════════════════════════════════════════════════════
+  - name: source_validity
+    phase: phase_1_context
+    type: automated
+    description: "분석 소스와 도메인 컨텍스트의 유효성 검증"
+    rules:
+      - id: SV-001
+        expr: "has(input.source_paths) && size(input.source_paths) > 0"
+        message: "At least one source path required"
+        message_ko: "최소 하나의 소스 경로가 필요합니다"
+        severity: ERROR
+
+      - id: SV-002
+        expr: "input.source_paths.all(p, p.startsWith('/') || p.startsWith('.'))"
+        message: "All source paths must be valid absolute or relative paths"
+        message_ko: "모든 소스 경로는 유효한 절대 또는 상대 경로여야 합니다"
+        severity: ERROR
+
+      - id: SV-003
+        expr: "input.domain_context != '' && size(input.domain_context) >= 3"
+        message: "Domain context must be provided (min 3 characters)"
+        message_ko: "도메인 컨텍스트를 제공해야 합니다 (최소 3자)"
+        severity: ERROR
+
+      - id: SV-004
+        expr: "input.source_type in ['code', 'schema', 'requirements', 'manual']"
+        message: "Source type must be one of: code, schema, requirements, manual"
+        message_ko: "소스 타입은 code, schema, requirements, manual 중 하나여야 합니다"
+        severity: ERROR
+
+  # ═══════════════════════════════════════════════════════════════
+  # Gate 2: candidate_extraction (Phase 2 시작 시 실행)
+  # ═══════════════════════════════════════════════════════════════
+  - name: candidate_extraction
+    phase: phase_2_entity
+    type: automated
+    description: "Entity 후보 추출의 완전성 및 유효성 검증"
+    rules:
+      - id: CE-001
+        expr: "size(candidates.entities) >= 1"
+        message: "At least one entity candidate must be identified"
+        message_ko: "최소 하나의 엔티티 후보가 식별되어야 합니다"
+        severity: ERROR
+
+      - id: CE-002
+        expr: "candidates.entities.all(e, has(e.class_name) && e.class_name != '')"
+        message: "All entity candidates must have a class name"
+        message_ko: "모든 엔티티 후보에는 클래스 이름이 있어야 합니다"
+        severity: ERROR
+
+      - id: CE-003
+        expr: "candidates.entities.all(e, has(e.primary_key_candidate))"
+        message: "All entities must have primary key candidates"
+        message_ko: "모든 엔티티에 기본 키 후보가 있어야 합니다"
+        severity: WARNING  # 경고: 수동 지정 허용
+
+      - id: CE-004
+        expr: "candidates.entities.all(e, size(e.properties) >= 1)"
+        message: "All entities must have at least one property"
+        message_ko: "모든 엔티티에는 최소 하나의 속성이 있어야 합니다"
+        severity: ERROR
+
+  # ═══════════════════════════════════════════════════════════════
+  # Gate 3: pk_determinism (Phase 2 PK 선택 후 실행)
+  # ═══════════════════════════════════════════════════════════════
+  - name: pk_determinism
+    phase: phase_2_entity
+    type: automated
+    description: "Primary Key의 Immutability와 Determinism 검증"
+    rules:
+      - id: PK-001
+        expr: "spec.primaryKey.strategy != '' && spec.primaryKey.propertyId != ''"
+        message: "Primary key strategy and property must be defined"
+        message_ko: "기본 키 전략과 속성이 정의되어야 합니다"
+        severity: ERROR
+
+      - id: PK-002
+        expr: "spec.primaryKey.strategy in ['single_column', 'composite', 'composite_hashed']"
+        message: "Primary key strategy must be one of: single_column, composite, composite_hashed"
+        message_ko: "기본 키 전략은 single_column, composite, composite_hashed 중 하나여야 합니다"
+        severity: ERROR
+
+      - id: PK-003
+        expr: "!spec.properties.exists(p, p.id == spec.primaryKey.propertyId && p.dataType != 'STRING')"
+        message: "Primary key must be STRING type for immutability and determinism"
+        message_ko: "기본 키는 불변성과 결정성을 위해 STRING 타입이어야 합니다"
+        severity: ERROR
+
+      - id: PK-004
+        expr: "spec.properties.filter(p, p.id == spec.primaryKey.propertyId)[0].required == true"
+        message: "Primary key property must be required (non-null)"
+        message_ko: "기본 키 속성은 필수(non-null)여야 합니다"
+        severity: ERROR
+
+      - id: PK-005
+        expr: "spec.primaryKey.strategy != 'composite' || (has(spec.primaryKey.compositeSpec) && size(spec.primaryKey.compositeSpec.columns) >= 2)"
+        message: "Composite key requires at least 2 columns"
+        message_ko: "복합 키는 최소 2개 컬럼이 필요합니다"
+        severity: ERROR
+
+      - id: PK-006
+        expr: "spec.primaryKey.strategy != 'composite_hashed' || (has(spec.primaryKey.compositeSpec) && spec.primaryKey.compositeSpec.hashAlgorithm == 'sha256')"
+        message: "Composite hashed key must use SHA256 algorithm"
+        message_ko: "복합 해시 키는 SHA256 알고리즘을 사용해야 합니다"
+        severity: ERROR
+
+  # ═══════════════════════════════════════════════════════════════
+  # Gate 4: link_integrity (Phase 3 완료 시 실행)
+  # ═══════════════════════════════════════════════════════════════
+  - name: link_integrity
+    phase: phase_3_link
+    type: automated
+    description: "LinkType 정의의 참조 무결성 검증"
+    rules:
+      - id: LI-001
+        expr: "spec.links.all(l, l.cardinality != 'MANY_TO_MANY' || has(l.joinTable))"
+        message: "Many-to-many links require join table configuration"
+        message_ko: "다대다(M:N) 링크에는 조인 테이블 구성이 필요합니다"
+        severity: ERROR
+
+      - id: LI-002
+        expr: "spec.links.all(l, l.cardinality == 'MANY_TO_MANY' || has(l.foreignKeyProperty))"
+        message: "Non-M:N links require foreign key property specification"
+        message_ko: "다대다가 아닌 링크에는 외래 키 속성 지정이 필요합니다"
+        severity: ERROR
+
+      - id: LI-003
+        expr: "spec.links.all(l, l.targetObjectType != '' && l.targetObjectType != spec.apiName)"
+        message: "Link target must be a different valid ObjectType"
+        message_ko: "링크 대상은 유효한 다른 ObjectType이어야 합니다"
+        severity: ERROR
+
+      - id: LI-004
+        expr: "spec.links.all(l, l.cardinality in ['ONE_TO_ONE', 'ONE_TO_MANY', 'MANY_TO_ONE', 'MANY_TO_MANY'])"
+        message: "Link cardinality must be valid"
+        message_ko: "링크 카디널리티는 유효한 값이어야 합니다"
+        severity: ERROR
+
+      - id: LI-005
+        expr: "spec.links.all(l, l.cardinality != 'MANY_TO_MANY' || (has(l.joinTable.sourceColumn) && has(l.joinTable.targetColumn)))"
+        message: "M:N join table must specify source and target columns"
+        message_ko: "M:N 조인 테이블은 소스 및 대상 컬럼을 지정해야 합니다"
+        severity: ERROR
+
+  # ═══════════════════════════════════════════════════════════════
+  # Gate 5: semantic_consistency (Phase 4 최종 검증)
+  # ═══════════════════════════════════════════════════════════════
+  - name: semantic_consistency
+    phase: phase_4_output
+    type: manual  # 자동 + 수동 체크리스트
+    description: "의미론적 일관성 및 비즈니스 규칙 정합성 최종 검증"
+    approvers: ["ontology-steward", "domain-expert"]
+    timeout: "24h"
+
+    # 자동 검증 규칙
+    automated_rules:
+      - id: SC-001
+        expr: "spec.apiName.matches('^[A-Z][a-zA-Z0-9]*$')"
+        message: "API name must be PascalCase"
+        message_ko: "API 이름은 PascalCase여야 합니다"
+        severity: ERROR
+
+      - id: SC-002
+        expr: "spec.displayName != '' && size(spec.displayName) >= 2"
+        message: "Display name is required"
+        message_ko: "표시 이름은 필수입니다"
+        severity: ERROR
+
+      - id: SC-003
+        expr: "spec.properties.all(p, p.apiName.matches('^[a-z][a-zA-Z0-9]*$'))"
+        message: "Property API names must be camelCase"
+        message_ko: "속성 API 이름은 camelCase여야 합니다"
+        severity: WARNING
+
+      - id: SC-004
+        expr: "spec.properties.all(p, p.dataType in VALID_DATA_TYPES)"
+        message: "All properties must have valid data types"
+        message_ko: "모든 속성은 유효한 데이터 타입을 가져야 합니다"
+        severity: ERROR
+
+    # 수동 체크리스트 (human review required)
+    manual_checklist:
+      - id: MC-001
+        description: "ObjectType이 자연어 비즈니스 개념에 매핑되는가?"
+        description_ko: "ObjectType이 자연어 비즈니스 개념에 매핑되는가?"
+
+      - id: MC-002
+        description: "Primary Key가 결정적(deterministic)이고 불변(immutable)인가?"
+        description_ko: "Primary Key가 결정적이고 불변인가?"
+
+      - id: MC-003
+        description: "의미 있는 모든 관계가 LinkType으로 모델링되었는가?"
+        description_ko: "의미 있는 모든 관계가 LinkType으로 모델링되었는가?"
+
+      - id: MC-004
+        description: "속성들이 적절한 데이터 타입을 사용하는가?"
+        description_ko: "속성들이 적절한 데이터 타입을 사용하는가?"
+
+      - id: MC-005
+        description: "비즈니스 도메인의 제약 조건이 정확히 반영되었는가?"
+        description_ko: "비즈니스 도메인의 제약 조건이 정확히 반영되었는가?"
+
+# 유효한 DataType 목록 (Gate SC-004 참조)
+VALID_DATA_TYPES:
+  primitive:
+    - STRING
+    - INTEGER
+    - LONG
+    - FLOAT
+    - DOUBLE
+    - BOOLEAN
+    - DECIMAL
+  temporal:
+    - DATE
+    - TIMESTAMP
+    - DATETIME
+    - TIMESERIES
+  complex:
+    - ARRAY
+    - STRUCT
+    - JSON
+  spatial:
+    - GEOPOINT
+    - GEOSHAPE
+  media:
+    - MEDIA_REFERENCE
+    - BINARY
+    - MARKDOWN
+  ai_ml:
+    - VECTOR
+```
+
+### 5.5.2 Gate 실행 프로토콜
+
+```python
+async def execute_validation_gate(gate_name: str, context: dict) -> ValidationResult:
+    """
+    Validation Gate 실행 및 결과 반환
+
+    Args:
+        gate_name: 실행할 Gate 이름
+        context: 검증 대상 데이터 (spec, candidates 등)
+
+    Returns:
+        ValidationResult: passed/failed + 상세 메시지
+    """
+
+    GATES = load_validation_gates()
+    gate = GATES[gate_name]
+
+    results = []
+    for rule in gate.rules:
+        try:
+            passed = evaluate_cel_expression(rule.expr, context)
+            if not passed:
+                results.append(RuleResult(
+                    rule_id=rule.id,
+                    passed=False,
+                    message=rule.message_ko,  # 한국어 우선
+                    severity=rule.severity
+                ))
+        except Exception as e:
+            results.append(RuleResult(
+                rule_id=rule.id,
+                passed=False,
+                message=f"규칙 평가 오류: {str(e)}",
+                severity="ERROR"
+            ))
+
+    # ERROR 심각도가 하나라도 있으면 Gate 실패
+    has_errors = any(r.severity == "ERROR" and not r.passed for r in results)
+
+    return ValidationResult(
+        gate_name=gate_name,
+        passed=not has_errors,
+        results=results,
+        timestamp=datetime.now().isoformat()
+    )
+```
+
+### 5.5.3 Gate 실패 시 처리
+
+```python
+async def handle_gate_failure(gate_result: ValidationResult, phase: str):
+    """
+    Gate 실패 시 사용자에게 명확한 오류 메시지와 해결 방안 제시
+    """
+
+    failed_rules = [r for r in gate_result.results if not r.passed]
+
+    output = f"""
+╔══════════════════════════════════════════════════════════════╗
+║  ❌ Validation Gate 실패: {gate_result.gate_name}
+╠══════════════════════════════════════════════════════════════╣
+║  Phase: {phase}
+║  실패 규칙: {len(failed_rules)}개
+║
+"""
+
+    for rule in failed_rules:
+        severity_icon = "🚫" if rule.severity == "ERROR" else "⚠️"
+        output += f"""
+║  {severity_icon} [{rule.rule_id}] {rule.severity}
+║     메시지: {rule.message}
+"""
+
+    output += """
+╠══════════════════════════════════════════════════════════════╣
+║  💡 해결 방법:
+"""
+
+    # Gate별 해결 방안 제시
+    if gate_result.gate_name == "source_validity":
+        output += """
+║     1. 소스 경로가 올바른지 확인하세요
+║     2. 도메인 컨텍스트를 명확히 입력하세요
+║     3. 소스 타입을 선택하세요 (code/schema/requirements/manual)
+"""
+    elif gate_result.gate_name == "pk_determinism":
+        output += """
+║     1. Primary Key를 STRING 타입으로 변경하세요
+║     2. PK 속성을 required=true로 설정하세요
+║     3. 복합 키 사용 시 최소 2개 컬럼을 지정하세요
+"""
+    elif gate_result.gate_name == "link_integrity":
+        output += """
+║     1. MANY_TO_MANY 관계에 조인 테이블을 정의하세요
+║     2. 외래 키 속성을 명시하세요
+║     3. 유효한 대상 ObjectType을 지정하세요
+"""
+
+    output += """
+╚══════════════════════════════════════════════════════════════╝
+
+다시 시도하시겠습니까? [Y/n]
+"""
+
+    print(output)
+
+    # 사용자 선택 대기
+    user_choice = await AskUserQuestion({
+        "questions": [{
+            "question": "Gate 실패를 해결하시겠습니까?",
+            "header": "Action",
+            "options": [
+                {"label": "수정 후 재검증", "description": "문제를 수정하고 Gate를 다시 실행"},
+                {"label": "무시하고 진행", "description": "경고만 있는 경우 진행 (ERROR 시 불가)"},
+                {"label": "이전 Phase로", "description": "이전 단계로 돌아가기"},
+                {"label": "작업 취소", "description": "전체 작업 중단"}
+            ],
+            "multiSelect": False
+        }]
+    })
+
+    return user_choice
+```
+
+### 5.5.4 Phase-Gate 매핑 요약
+
+| Phase | Gate | 검증 시점 | 실패 시 동작 |
+|-------|------|----------|-------------|
+| **Phase 1** | `source_validity` | Context 수집 완료 후 | Phase 1 재시작 |
+| **Phase 2** | `candidate_extraction` | Entity 스캔 완료 후 | 소스 재분석 또는 수동 입력 |
+| **Phase 2** | `pk_determinism` | PK 전략 선택 후 | PK 전략 재선택 |
+| **Phase 3** | `link_integrity` | 관계 정의 완료 후 | 관계 재정의 |
+| **Phase 4** | `semantic_consistency` | YAML 생성 전 | 수동 검토 + 자동 검증 |
+
+### 5.5.5 Gate 통과 출력 형식
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║  ObjectType 후보 분석 완료                                    ║
+║  ✅ Validation Gate 통과: pk_determinism                     ║
 ╠══════════════════════════════════════════════════════════════╣
-║  📁 분석 대상: /home/palantir/my-project                      ║
-║  📊 발견된 클래스: 12개                                       ║
-║  ✅ ObjectType 후보: 8개                                      ║
-║  ⚠️ 검토 필요: 2개                                            ║
-║  ❌ 제외 추천: 2개 (Helper/Utility 클래스)                    ║
-╚══════════════════════════════════════════════════════════════╝
-
-🔍 분석 요약: [실시간 추론으로 해당 프로젝트 특성에 맞는 판단 제공]
-
-다음 단계: "L2" 입력하여 상세 목록 확인
-```
-
-### 5.2 L2 - Detailed List (두 번째 출력)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ObjectType 후보 상세 목록                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ✅ 권장 ObjectType (8개)                                   │
-│  ─────────────────────────────────────────────              │
-│  1. Employee (models/employee.py:15)                        │
-│     └─ Properties: 6개 | PK: employee_id | FK: department_id│
-│                                                             │
-│  2. Department (models/department.py:8)                     │
-│     └─ Properties: 4개 | PK: department_id | FK: -          │
-│                                                             │
-│  3. Project (models/project.py:22)                          │
-│     └─ Properties: 8개 | PK: project_id | FK: owner_id      │
-│     └─ 🔗 Relationship: Employee (N:1)                      │
-│  ...                                                        │
-│                                                             │
-│  ⚠️ 검토 필요 (2개)                                         │
-│  ─────────────────────────────────────────────              │
-│  A. EmployeeDTO (dto/employee_dto.py:5)                     │
-│     └─ 이유: DTO 패턴, 별도 ObjectType 또는 제외 검토       │
-│                                                             │
-│  B. AuditMixin (mixins/audit.py:3)                          │
-│     └─ 이유: Mixin 패턴, SharedProperty로 변환 검토         │
-│                                                             │
-│  ❌ 제외 추천 (2개)                                         │
-│  ─────────────────────────────────────────────              │
-│  - DatabaseHelper (utils/db.py:10) - 유틸리티               │
-│  - ConfigLoader (config/loader.py:5) - 설정 로더            │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-
-🔍 제외/검토 판단 근거: [실시간 추론으로 각 클래스의 제외 이유 분석]
-
-다음 단계: 번호 입력하여 L3 상세 확인 (예: "1" 또는 "1,2,3")
-또는: "approve all" / "approve 1,2,3" / "exclude A,B"
-```
-
-### 5.3 L3 - Deep Dive with Learning (세 번째 출력)
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║  L3: Employee ObjectType 상세                                ║
-╠══════════════════════════════════════════════════════════════╣
+║  Phase: phase_2_entity                                       ║
+║  검증 규칙: 6개 모두 통과                                     ║
 ║                                                              ║
-║  📍 Source: models/employee.py:15                            ║
-║                                                              ║
-║  ┌─ Original Code ─────────────────────────────────────────┐ ║
-║  │ class Employee(Base):                                   │ ║
-║  │     __tablename__ = 'employees'                         │ ║
-║  │     employee_id = Column(String, primary_key=True)      │ ║
-║  │     name = Column(String(100), nullable=False)          │ ║
-║  │     email = Column(String, unique=True)                 │ ║
-║  │     department_id = Column(String, ForeignKey(...))     │ ║
-║  │     hire_date = Column(Date)                            │ ║
-║  │     is_active = Column(Boolean, default=True)           │ ║
-║  └─────────────────────────────────────────────────────────┘ ║
-║                                                              ║
-║  ┌─ Proposed ObjectType ───────────────────────────────────┐ ║
-║  │ employee_type = ObjectType(                             │ ║
-║  │     api_name="Employee",                                │ ║
-║  │     display_name="Employee",                            │ ║
-║  │     primary_key=PrimaryKeyDefinition(                   │ ║
-║  │         property_api_name="employeeId"                  │ ║
-║  │     ),                                                  │ ║
-║  │     properties=[...]  # 아래 상세                       │ ║
-║  │ )                                                       │ ║
-║  └─────────────────────────────────────────────────────────┘ ║
-║                                                              ║
-╠══════════════════════════════════════════════════════════════╣
-║  📋 Properties (6개)                                         ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  1. employeeId (String) ⭐ Primary Key                       ║
-║     ├─ Source: employee_id                                   ║
-║     ├─ Foundry Type: STRING                                  ║
-║     └─ Constraints: required=True, unique=True               ║
-║                                                              ║
-║     🔍 추론: PK로 적합한가?                                  ║
-║        → [실시간 분석 결과가 여기에 표시됨]                  ║
-║                                                              ║
-║  2. name (String)                                            ║
-║     ├─ Source: name                                          ║
-║     ├─ Foundry Type: STRING                                  ║
-║     └─ Constraints: required=True                            ║
-║                                                              ║
-║  3. email (String)                                           ║
-║     ├─ Source: email                                         ║
-║     ├─ Foundry Type: STRING                                  ║
-║     └─ Constraints: unique=True                              ║
-║                                                              ║
-║     🔍 추론: unique 제약이 맞는가?                           ║
-║        → [실시간 분석 결과가 여기에 표시됨]                  ║
-║                                                              ║
-║  4. departmentId (String) 🔗 Foreign Key                     ║
-║     ├─ Source: department_id                                 ║
-║     ├─ Foundry Type: STRING                                  ║
-║     └─ LinkType 후보: Employee → Department                  ║
-║                                                              ║
-║     🔍 추론: 어떤 Cardinality인가?                           ║
-║        → [실시간 분석: MANY_TO_ONE 판단 근거]                ║
-║                                                              ║
-║  5. hireDate (Date)                                          ║
-║     ├─ Source: hire_date                                     ║
-║     ├─ Foundry Type: DATE                                    ║
-║     └─ Constraints: -                                        ║
-║                                                              ║
-║     🔍 추론: DATE vs TIMESTAMP?                              ║
-║        → [실시간 분석: 시간대 필요 여부 판단]                ║
-║                                                              ║
-║  6. isActive (Boolean)                                       ║
-║     ├─ Source: is_active                                     ║
-║     ├─ Foundry Type: BOOLEAN                                 ║
-║     └─ Default: True                                         ║
-║                                                              ║
-╠══════════════════════════════════════════════════════════════╣
-║  🔗 Detected Relationships                                   ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  Employee → Department (MANY_TO_ONE)                         ║
-║  ├─ Via: departmentId                                        ║
-║  └─ LinkType 후보: EmployeeToDepartment                      ║
-║                                                              ║
-║  🔍 추론 근거:                                               ║
-║     → 한 Department에 여러 Employee 소속 가능                ║
-║     → Employee는 하나의 Department에만 소속                  ║
-║     → FK가 Employee(Many) 쪽에 위치 → MANY_TO_ONE            ║
+║  ✅ [PK-001] Primary key strategy defined                    ║
+║  ✅ [PK-002] Valid strategy: single_column                   ║
+║  ✅ [PK-003] PK type: STRING ✓                               ║
+║  ✅ [PK-004] PK required: true ✓                             ║
+║  ✅ [PK-005] N/A (not composite)                             ║
+║  ✅ [PK-006] N/A (not composite_hashed)                      ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 
-선택하세요:
-  [A] Approve - 이 ObjectType 승인
-  [E] Edit - Property 수정 (직접 편집)
-  [S] Skip - 나중에 결정
-  [?] Question - 추가 학습 질문
+→ Proceeding to Phase 3: Link Definition
 ```
 
 ---
@@ -587,81 +1331,407 @@ async def handle_question(question, context):
 
 ---
 
-## 7. Approval Workflow
+## 7. Approval Workflow (Phase-Aware)
 
-### 7.1 Commands
+### 7.1 Phase Progress Tracking
 
-| Command | Description |
-|---------|-------------|
-| `L2` | L1에서 L2 상세 목록으로 |
-| `1` 또는 `1,2,3` | 특정 항목 L3 상세 보기 |
-| `approve all` | 모든 권장 항목 승인 |
-| `approve 1,2,3` | 특정 항목만 승인 |
-| `exclude A,B` | 검토 필요 항목 제외 |
-| `edit 1` | 특정 항목 Property 편집 |
-| `?` | 학습 질문 모드 |
-| `done` | 승인 완료, scaffold 생성 |
+| Phase | Status | Actions Available |
+|-------|--------|-------------------|
+| **Phase 1** | `completed` | `continue`, `restart` |
+| **Phase 2** | `in_progress` | `approve entity`, `edit pk`, `regenerate` |
+| **Phase 3** | `pending` | `add link`, `skip`, `next` |
+| **Phase 4** | `pending` | `approve`, `edit yaml`, `cancel` |
 
-### 7.2 Session State
+### 7.2 Session State (Phase-Based)
 
 ```json
 {
   "session_id": "obj-a1b2c3",
   "target_path": "/home/palantir/my-project",
-  "analyzed_files": ["models/employee.py", "models/department.py"],
-  "candidates": [
-    {
-      "name": "Employee",
-      "source": "models/employee.py:15",
-      "status": "approved",
-      "properties": [...],
-      "relationships": [...]
+  "current_phase": "phase_2_entity",
+  "phase_results": {
+    "phase_1_context": {
+      "source_type": "Existing source code",
+      "domain": "HR & Employee Management",
+      "status": "completed",
+      "timestamp": "2026-01-26T11:00:00Z"
+    },
+    "phase_2_entity": {
+      "entity_name": "Employee",
+      "pk_strategy": "single_column",
+      "pk_column": "employee_id",
+      "properties": [
+        {
+          "api_name": "employeeId",
+          "data_type": "STRING",
+          "required": true,
+          "is_pk": true
+        },
+        {
+          "api_name": "name",
+          "data_type": "STRING",
+          "required": true
+        }
+      ],
+      "status": "in_progress",
+      "validation_gates": {
+        "candidate_extraction": "passed",
+        "pk_determinism": "passed"
+      }
+    },
+    "phase_3_link": {
+      "status": "pending"
+    },
+    "phase_4_output": {
+      "status": "pending"
     }
-  ],
-  "excluded": ["DatabaseHelper", "ConfigLoader"],
-  "current_level": "L2",
-  "timestamp": "2026-01-25T16:00:00Z"
+  },
+  "timestamp": "2026-01-26T11:30:00Z"
 }
 ```
 
+### 7.3 Phase Commands
+
+#### Phase 2 Commands
+
+| Command | Description |
+|---------|-------------|
+| `approve entity` | Entity 정의 승인, Phase 3로 진행 |
+| `edit pk <strategy>` | PK 전략 재선택 (single_column/composite/composite_hashed) |
+| `edit property <name>` | 특정 Property 수정 |
+| `add property` | Property 추가 |
+| `regenerate` | Phase 2 다시 시작 |
+
+#### Phase 3 Commands
+
+| Command | Description |
+|---------|-------------|
+| `add link` | 새 LinkType 추가 |
+| `edit link <name>` | 기존 LinkType 수정 |
+| `delete link <name>` | LinkType 제거 |
+| `skip` | Link 정의 건너뛰기 (나중에 정의) |
+| `next` | Phase 4로 진행 |
+
+#### Phase 4 Commands
+
+| Command | Description |
+|---------|-------------|
+| `approve` | YAML 승인 및 저장 |
+| `edit yaml` | YAML 직접 수정 모드 |
+| `preview` | YAML 미리보기 |
+| `cancel` | 전체 작업 취소 |
+| `back` | 이전 Phase로 돌아가기 |
+
 ---
 
-## 8. Output Generation
+## 8. Output Generation (YAML Format)
 
-### 8.1 On `done` Command
+**핵심 변경**: Python 코드 생성 → YAML 스키마 생성
+
+### 8.1 YAML Output Generation
 
 ```python
-async def generate_approved_types():
-    for candidate in approved_candidates:
-        # 1. Generate ObjectType scaffold
-        scaffold = generate_objecttype_scaffold(candidate)
+async def generate_yaml_output(phase_results):
+    """Phase 4에서 최종 YAML 생성"""
 
-        # 2. Write to output directory
-        output_path = f".agent/ontology/{candidate.name.lower()}.py"
-        await Write({ "file_path": output_path, "content": scaffold })
+    # 1. ObjectType YAML 생성
+    objecttype_yaml = generate_objecttype_yaml(phase_results)
+    output_path = f".agent/ontology/objecttype-{api_name}.yaml"
+    await Write({
+        "file_path": output_path,
+        "content": objecttype_yaml
+    })
 
-        # 3. Generate LinkType scaffolds for relationships
-        for rel in candidate.relationships:
-            link_scaffold = generate_linktype_scaffold(rel)
-            link_path = f".agent/ontology/links/{rel.name.lower()}.py"
-            await Write({ "file_path": link_path, "content": link_scaffold })
+    # 2. LinkType YAML 생성 (관계가 있는 경우)
+    if phase_results["phase_3_link"]["links"]:
+        for link in phase_results["phase_3_link"]["links"]:
+            link_yaml = generate_linktype_yaml(link)
+            link_path = f".agent/ontology/linktype-{link['name']}.yaml"
+            await Write({
+                "file_path": link_path,
+                "content": link_yaml
+            })
 
-    # 4. Generate summary report
-    report = generate_migration_report(approved_candidates)
-    await Write({ "file_path": ".agent/ontology/MIGRATION_REPORT.md", "content": report })
+    # 3. Validation Report 생성
+    validation_report = generate_validation_report(phase_results)
+    await Write({
+        "file_path": f".agent/ontology/validation-{api_name}.md",
+        "content": validation_report
+    })
 ```
 
-### 8.2 Output Structure
+### 8.2 YAML Schema Template
+
+**ObjectType YAML Output** (`objecttype-{ApiName}.yaml`):
+
+```yaml
+# Generated by /ontology-objecttype
+# Date: 2026-01-26T11:30:00Z
+# Source: models/employee.py
+
+api_name: Employee
+display_name: Employee
+description: "Employee entity in HR domain"
+status: DRAFT
+
+# Primary Key Configuration
+primary_key:
+  source_columns:
+    - employee_id
+  strategy: single_column
+  # For composite:
+  # composite_spec:
+  #   separator: "_"
+  #   order: ["company_id", "employee_id"]
+  # For composite_hashed:
+  # composite_spec:
+  #   hash_algorithm: sha256
+  #   order: ["field1", "field2"]
+
+# Properties (20 DataType Support)
+properties:
+  - api_name: employeeId
+    display_name: Employee ID
+    data_type: STRING
+    required: true
+    description: "Primary identifier for employee"
+
+  - api_name: name
+    display_name: Full Name
+    data_type: STRING
+    required: true
+
+  - api_name: email
+    display_name: Email Address
+    data_type: STRING
+    constraints:
+      unique: true
+      pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+
+  - api_name: departmentId
+    display_name: Department
+    data_type: STRING
+    description: "Foreign key to Department (will be LinkType)"
+
+  - api_name: hireDate
+    display_name: Hire Date
+    data_type: DATE
+
+  - api_name: salary
+    display_name: Annual Salary
+    data_type: DECIMAL
+    decimal_config:
+      precision: 10
+      scale: 2
+
+  - api_name: skills
+    display_name: Skills
+    data_type: ARRAY
+    array_config:
+      item_type: STRING
+
+  - api_name: isActive
+    display_name: Active Status
+    data_type: BOOLEAN
+    default_value: true
+
+# Relationships (converted to LinkTypes)
+links:
+  - link_type_name: EmployeeToDepartment
+    target_object_type: Department
+    cardinality: MANY_TO_ONE
+    foreign_key:
+      source_property: departmentId
+      target_property: departmentId
+    cascade:
+      on_delete: RESTRICT
+      on_update: CASCADE
+
+# Validation Gates Results
+validation_gates:
+  source_validity: PASSED
+  candidate_extraction: PASSED
+  pk_determinism: PASSED
+  link_integrity: PASSED
+  semantic_consistency: PASSED
+
+# Phase Results Metadata
+metadata:
+  source_type: "Existing source code"
+  domain: "HR & Employee Management"
+  source_file: "models/employee.py"
+  generated_by: "/ontology-objecttype v1.1.0"
+  phase_1_timestamp: "2026-01-26T11:00:00Z"
+  phase_2_timestamp: "2026-01-26T11:15:00Z"
+  phase_3_timestamp: "2026-01-26T11:25:00Z"
+  phase_4_timestamp: "2026-01-26T11:30:00Z"
+```
+
+**LinkType YAML Output** (`linktype-{LinkName}.yaml`):
+
+```yaml
+# Generated by /ontology-objecttype (Phase 3)
+# Date: 2026-01-26T11:25:00Z
+
+api_name: EmployeeToDepartment
+display_name: Employee to Department
+description: "Many-to-One relationship from Employee to Department"
+status: DRAFT
+
+# Link Configuration
+source_object_type: Employee
+target_object_type: Department
+cardinality: MANY_TO_ONE
+
+# Implementation
+implementation:
+  type: FOREIGN_KEY
+  foreign_key_location: SOURCE
+  source_property: departmentId
+  target_property: departmentId
+
+# Cascade Policies
+cascade:
+  on_delete: RESTRICT  # Department 삭제 시 Employee가 있으면 거부
+  on_update: CASCADE   # Department ID 변경 시 Employee도 업데이트
+
+# Validation
+validation:
+  enforce_referential_integrity: true
+  allow_null_fk: false
+
+# Metadata
+metadata:
+  detected_from: "models/employee.py:L8 (ForeignKey)"
+  cardinality_decision: "Phase 3 User Selection"
+  generated_by: "/ontology-objecttype v1.1.0"
+```
+
+### 8.3 Output Structure (YAML-Based)
 
 ```
 .agent/ontology/
-├── employee.py              # ObjectType definition
-├── department.py            # ObjectType definition
-├── project.py               # ObjectType definition
-├── links/
-│   ├── employee_to_department.py
-│   └── project_to_employee.py
-└── MIGRATION_REPORT.md      # Summary with learning notes
+├── objecttype-Employee.yaml      # ObjectType YAML
+├── objecttype-Department.yaml    # ObjectType YAML
+├── objecttype-Project.yaml       # ObjectType YAML
+├── linktype-EmployeeToDepartment.yaml
+├── linktype-EmployeeToProject.yaml
+├── validation-Employee.md        # Validation report
+├── validation-Department.md
+└── MIGRATION_SUMMARY.md          # Overall migration summary
+```
+
+### 8.4 DataType-Specific YAML Examples
+
+**ARRAY Type**:
+```yaml
+- api_name: skills
+  data_type: ARRAY
+  array_config:
+    item_type: STRING
+    max_items: 50  # optional
+```
+
+**STRUCT Type**:
+```yaml
+- api_name: address
+  data_type: STRUCT
+  struct_config:
+    fields:
+      - name: street
+        type: STRING
+      - name: city
+        type: STRING
+      - name: zip
+        type: STRING
+```
+
+**VECTOR Type** (AI/ML):
+```yaml
+- api_name: embeddingVector
+  data_type: VECTOR
+  vector_config:
+    dimension: 768
+    distance_metric: COSINE  # COSINE, EUCLIDEAN, DOT_PRODUCT
+```
+
+**DECIMAL Type**:
+```yaml
+- api_name: price
+  data_type: DECIMAL
+  decimal_config:
+    precision: 10  # 전체 자릿수
+    scale: 2       # 소수점 자릿수
+```
+
+### 8.5 Migration to Python Code (Optional)
+
+YAML을 Python ObjectType 코드로 변환 (선택적):
+
+```python
+# Post-processing: YAML → Python Code Generation
+async def generate_python_from_yaml(yaml_path):
+    """
+    YAML 스키마를 ontology-definition 패키지 Python 코드로 변환
+    (선택적 기능, /ontology-codegen 스킬에서 처리)
+    """
+    yaml_data = load_yaml(yaml_path)
+
+    python_code = f'''
+from ontology_definition.types import ObjectType, PropertyDefinition
+from ontology_definition.core.enums import DataType, ObjectStatus
+
+{yaml_data["api_name"].lower()}_type = ObjectType(
+    api_name="{yaml_data["api_name"]}",
+    display_name="{yaml_data["display_name"]}",
+    status=ObjectStatus.{yaml_data["status"]},
+    primary_key=PrimaryKeyDefinition(
+        property_api_name="{yaml_data["primary_key"]["source_columns"][0]}"
+    ),
+    properties=[
+        PropertyDefinition(
+            api_name="{prop["api_name"]}",
+            data_type=DataType.{prop["data_type"]},
+            required={prop.get("required", False)}
+        )
+        for prop in yaml_data["properties"]
+    ]
+)
+'''
+
+    output_path = yaml_path.replace(".yaml", ".py")
+    await Write({"file_path": output_path, "content": python_code})
+
+    return output_path
+```
+
+**Output Example**:
+```python
+# employee_type.py (Generated from YAML)
+from ontology_definition.types import ObjectType, PropertyDefinition
+from ontology_definition.core.enums import DataType, ObjectStatus
+
+employee_type = ObjectType(
+    api_name="Employee",
+    display_name="Employee",
+    status=ObjectStatus.DRAFT,
+    primary_key=PrimaryKeyDefinition(
+        property_api_name="employeeId"
+    ),
+    properties=[
+        PropertyDefinition(
+            api_name="employeeId",
+            data_type=DataType.STRING,
+            required=True
+        ),
+        PropertyDefinition(
+            api_name="name",
+            data_type=DataType.STRING,
+            required=True
+        ),
+        # ... more properties
+    ]
+)
 ```
 
 ---

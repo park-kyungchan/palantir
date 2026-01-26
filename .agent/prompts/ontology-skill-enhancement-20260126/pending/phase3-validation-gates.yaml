@@ -1,0 +1,182 @@
+# =============================================================================
+# Worker Task: Phase 3 - Validation Gate 규칙 정의
+# =============================================================================
+# Workload: ontology-skill-enhancement-20260126
+# Native Task ID: 3
+# Created: 2026-01-26T11:20:00Z
+# =============================================================================
+
+taskId: "phase3-validation-gates"
+nativeTaskId: "3"
+assignedTo: "terminal-d"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-26T11:20:00Z"
+assignedAt: "2026-01-26T11:20:00Z"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+
+workload_id: "ontology-skill-enhancement-20260126"
+contextFile: ".agent/prompts/ontology-skill-enhancement-20260126/_context.yaml"
+progressFile: ".agent/prompts/ontology-skill-enhancement-20260126/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+
+scope:
+  phaseId: "phase3-validation-gates"
+  phaseName: "Validation Gate 규칙 정의"
+  priority: "P1"
+  description: |
+    각 Phase 종료 시 실행되는 Validation Gate 규칙 정의.
+    PreToolUse Hook 형태가 아닌 SKILL.md 내 규칙으로 정의.
+    (실제 Hook 스크립트 구현은 별도 작업)
+
+# =============================================================================
+# TARGET FILES (I can MODIFY these)
+# =============================================================================
+
+targetFiles:
+  - path: ".claude/skills/ontology-objecttype/SKILL.md"
+    readOnly: false
+    sections:
+      - "새 섹션: Validation Gates 추가"
+    modifications:
+      - "Add Validation Gates section after Output Generation"
+      - "Define 5 gate rules in YAML format"
+      - "Include Korean error messages"
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+
+referenceFiles:
+  - path: "/home/palantir/park-kyungchan/palantir/docs/ObjectType_Reference.md"
+    reason: "Gate 규칙 정의 (lines 256-335)"
+
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/research.md"
+    reason: "3.3 Validation Gate Implementation Details"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+dependencies: ["phase1-objecttype-refactor"]
+blockedBy: ["1"]
+canStartImmediately: false
+
+waitCondition: |
+  Check _progress.yaml
+  If phase1-objecttype-refactor.status == 'completed', proceed
+  Otherwise, wait
+
+# =============================================================================
+# IMPLEMENTATION GUIDE
+# =============================================================================
+
+implementationGuide:
+  gateDefinitions:
+    - gate: "source_validity"
+      phase: "Phase 1"
+      rules:
+        - expr: "has(input.source_paths) && size(input.source_paths) > 0"
+          message_ko: "최소 하나의 소스 경로가 필요합니다"
+        - expr: "input.domain_context != ''"
+          message_ko: "도메인 컨텍스트를 제공해야 합니다"
+
+    - gate: "candidate_extraction"
+      phase: "Phase 2"
+      rules:
+        - expr: "size(candidates.entities) >= 1"
+          message_ko: "최소 하나의 엔티티 후보가 식별되어야 합니다"
+        - expr: "candidates.entities.all(e, has(e.primary_key_candidate))"
+          message_ko: "모든 엔티티에 기본 키 후보가 있어야 합니다"
+
+    - gate: "pk_determinism"
+      phase: "Phase 2"
+      rules:
+        - expr: "spec.primaryKey.strategy != '' && spec.primaryKey.propertyId != ''"
+          message_ko: "기본 키 전략과 속성이 정의되어야 합니다"
+        - expr: "!spec.properties.exists(p, p.id == spec.primaryKey.propertyId && p.dataType != 'string')"
+          message_ko: "기본 키는 문자열 타입이어야 합니다"
+        - expr: "spec.properties.filter(p, p.id == spec.primaryKey.propertyId).all(p, p.required == true)"
+          message_ko: "기본 키는 필수(required) 속성이어야 합니다"
+
+    - gate: "link_integrity"
+      phase: "Phase 3"
+      rules:
+        - expr: "spec.links.all(l, l.cardinality != 'many_to_many' || has(l.joinTable))"
+          message_ko: "다대다 링크에는 조인 테이블 구성이 필요합니다"
+        - expr: "spec.links.all(l, l.targetObjectType != '')"
+          message_ko: "모든 링크에 대상 ObjectType이 지정되어야 합니다"
+
+    - gate: "semantic_consistency"
+      phase: "Phase 4"
+      type: "manual"
+      checklist:
+        - item: "ObjectType maps to natural-language business concept"
+          message_ko: "ObjectType이 자연어 비즈니스 개념과 일치하는지 확인"
+        - item: "Primary key is deterministic and immutable"
+          message_ko: "기본 키가 결정론적이고 불변인지 확인"
+        - item: "All meaningful relationships are modeled as LinkTypes"
+          message_ko: "모든 의미 있는 관계가 LinkType으로 모델링되었는지 확인"
+        - item: "Property types match their semantic meaning"
+          message_ko: "속성 타입이 의미론적 의미와 일치하는지 확인"
+
+  sectionFormat: |
+    ## X. Validation Gates
+
+    ### X.1 Gate Overview
+
+    | Gate | Phase | Type | Description |
+    |------|-------|------|-------------|
+    | source_validity | Phase 1 | Auto | 소스 경로 및 도메인 검증 |
+    | candidate_extraction | Phase 2 | Auto | 엔티티 후보 및 PK 후보 검증 |
+    | pk_determinism | Phase 2 | Auto | PK 전략 및 STRING 타입 검증 |
+    | link_integrity | Phase 3 | Auto | M:N 관계 join table 검증 |
+    | semantic_consistency | Phase 4 | Manual | 의미론적 일관성 체크리스트 |
+
+    ### X.2 Gate Definitions
+
+    [YAML definitions for each gate]
+
+    ### X.3 Gate Execution
+
+    [How gates are called at phase boundaries]
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+
+completionCriteria:
+  required:
+    - "source_validity Gate 규칙 정의"
+    - "candidate_extraction Gate 규칙 정의"
+    - "pk_determinism Gate 규칙 정의"
+    - "link_integrity Gate 규칙 정의"
+    - "semantic_consistency Gate 규칙 정의 (manual checklist)"
+    - "각 Gate 실패 시 오류 메시지 (한국어)"
+
+  verification:
+    - command: "grep -c 'source_validity\\|candidate_extraction\\|pk_determinism\\|link_integrity\\|semantic_consistency' .claude/skills/ontology-objecttype/SKILL.md"
+      expected: "5 이상"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/prompts/ontology-skill-enhancement-20260126/outputs/phase3-validation-gates.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+
+onComplete:
+  - "TaskUpdate(taskId='3', status='completed')"
+  - "Update _progress.yaml: phase3-validation-gates.status = 'completed'"
+  - "Move this file to completed/ directory"
+  - "Report L1 summary to Orchestrator"
+  - "Notify phase4-integration-test that dependency is resolved"
