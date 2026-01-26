@@ -1,0 +1,101 @@
+# =============================================================================
+# Worker Task: S1 - Traceability Matrix 생성
+# =============================================================================
+# Workload: cow-refactoring-20260126
+# Native Task ID: 9
+# =============================================================================
+
+taskId: "S1"
+nativeTaskId: "9"
+assignedTo: "unassigned"
+orchestrator: "Sub-Orchestrator (Terminal-B)"
+createdAt: "2026-01-26T18:53:00+09:00"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+workload_id: "cow-refactoring-20260126"
+contextFile: ".agent/prompts/cow-refactoring-20260126/_context.yaml"
+progressFile: ".agent/prompts/cow-refactoring-20260126/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+scope:
+  phaseId: "S1"
+  phaseName: "Traceability Matrix 생성"
+  description: |
+    요구사항 → 구현 추적 매트릭스 생성:
+    1. 각 Stage(B, D, F, G, H)에 대응하는 *_stage.py 파일 존재 확인
+    2. BaseStage 패턴 준수 여부 검증:
+       - validate() 메서드 구현 여부
+       - _execute_async() 메서드 구현 여부
+       - get_metrics() 메서드 구현 여부
+    3. pipeline.py에서 각 Stage 호출 확인
+
+# =============================================================================
+# TARGET FILES (I can MODIFY these)
+# =============================================================================
+targetFiles:
+  - path: ".agent/prompts/cow-refactoring-20260126/synthesis/synthesis_report.md"
+    readOnly: false
+    sections: ["1. Traceability Matrix"]
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+referenceFiles:
+  - path: "cow/src/mathpix_pipeline/stages/base.py"
+    reason: "BaseStage 패턴 정의 확인"
+  - path: "cow/src/mathpix_pipeline/stages/text_parse_stage.py"
+    reason: "Stage B 구현 검증"
+  - path: "cow/src/mathpix_pipeline/stages/alignment_stage.py"
+    reason: "Stage D 구현 검증"
+  - path: "cow/src/mathpix_pipeline/stages/regeneration_stage.py"
+    reason: "Stage F 구현 검증"
+  - path: "cow/src/mathpix_pipeline/stages/human_review_stage.py"
+    reason: "Stage G 구현 검증"
+  - path: "cow/src/mathpix_pipeline/stages/export_stage.py"
+    reason: "Stage H 구현 검증"
+  - path: "cow/src/mathpix_pipeline/pipeline.py"
+    reason: "Stage 통합 확인"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies: []
+blockedBy: []
+canStartImmediately: true
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+completionCriteria:
+  required:
+    - "모든 Stage 파일 존재 확인 완료"
+    - "BaseStage 패턴 준수 여부 검증 완료"
+    - "pipeline.py 통합 확인 완료"
+    - "Traceability Matrix 테이블 생성 완료"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+outputPath: ".agent/prompts/cow-refactoring-20260126/synthesis/synthesis_report.md"
+
+expectedOutputFormat: |
+  ## 1. Traceability Matrix
+
+  | Stage | File | validate() | _execute_async() | get_metrics() | pipeline.py 통합 |
+  |-------|------|------------|------------------|---------------|------------------|
+  | B     | text_parse_stage.py | ✅ | ✅ | ✅ | ✅ |
+  | D     | alignment_stage.py | ✅ | ✅ | ✅ | ✅ |
+  | ...   | ... | ... | ... | ... | ... |
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "TaskUpdate(taskId='9', status='completed')"
+  - "Update _progress.yaml: S1.status = 'completed'"
+  - "Notify S2 that blocker resolved"

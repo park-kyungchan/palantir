@@ -932,3 +932,137 @@ def create_mock_claude_interpreter(
     )
 
     return mock_interpreter
+
+
+# =============================================================================
+# Edge Case Responses
+# =============================================================================
+
+EMPTY_IMAGE_DETECTION: dict[str, Any] = {
+    """Detection response for empty/blank image."""
+    "model": "yolo26-v1",
+    "model_version": "2.6.0",
+    "inference_time_ms": 15.3,
+    "image_width": 800,
+    "image_height": 600,
+    "detections": [],
+    "detection_count": 0,
+}
+
+
+EMPTY_IMAGE_INTERPRETATION: dict[str, Any] = {
+    """Interpretation for empty/blank image."""
+    "model": "claude-opus-4-5",
+    "model_version": "20251101",
+    "inference_time_ms": 80.2,
+    "interpretation": {
+        "diagram_type": "unknown",
+        "diagram_type_confidence": 0.99,
+        "description": "This appears to be a blank or empty image with no "
+                       "mathematical content visible.",
+        "elements": [],
+        "relations": [],
+        "overall_confidence": 0.98,
+    },
+}
+
+
+LOW_CONFIDENCE_DETECTION: dict[str, Any] = {
+    """Detection response with very low confidence detections."""
+    "model": "yolo26-v1",
+    "model_version": "2.6.0",
+    "inference_time_ms": 52.8,
+    "image_width": 400,
+    "image_height": 400,
+    "detections": [
+        {
+            "id": "det-uncertain-001",
+            "class": "unknown",
+            "class_id": 12,
+            "confidence": 0.18,
+            "bbox": {
+                "x": 100,
+                "y": 150,
+                "width": 50,
+                "height": 30,
+            },
+            "attributes": {
+                "unclear": True,
+            },
+        },
+        {
+            "id": "det-uncertain-002",
+            "class": "label",
+            "class_id": 3,
+            "confidence": 0.22,
+            "bbox": {
+                "x": 200,
+                "y": 180,
+                "width": 40,
+                "height": 25,
+            },
+            "attributes": {
+                "blurry": True,
+            },
+        },
+    ],
+    "detection_count": 2,
+}
+
+
+COMPLEX_MULTI_ELEMENT_DETECTION: dict[str, Any] = {
+    """Detection response with many elements (stress test)."""
+    "model": "yolo26-v1",
+    "model_version": "2.6.0",
+    "inference_time_ms": 145.7,
+    "image_width": 1200,
+    "image_height": 800,
+    "detections": [
+        {
+            "id": f"det-stress-{i:03d}",
+            "class": ["axis", "curve", "point", "label", "grid"][i % 5],
+            "class_id": i % 5,
+            "confidence": 0.5 + (i % 50) / 100.0,
+            "bbox": {
+                "x": (i * 23) % 1100,
+                "y": (i * 17) % 700,
+                "width": 30 + (i % 20),
+                "height": 30 + (i % 15),
+            },
+        }
+        for i in range(50)
+    ],
+    "detection_count": 50,
+}
+
+
+API_ERROR_RESPONSE: dict[str, Any] = {
+    """Mock API error response structure."""
+    "error": {
+        "code": 500,
+        "message": "Internal server error",
+        "status": "INTERNAL",
+    }
+}
+
+
+MALFORMED_JSON_RESPONSE: str = """This is not valid JSON at all!
+It contains text {but not: proper JSON structure"""
+
+
+PARTIAL_JSON_RESPONSE: str = """{
+    "diagram_type": "function_graph",
+    "elements": [
+        {
+            "id": "elem_001",
+            "element_class": "curve"
+            /* Missing closing bracket and fields */
+"""
+
+
+# Update mappings to include edge cases
+_DETECTION_MAP["empty_image"] = EMPTY_IMAGE_DETECTION
+_DETECTION_MAP["low_confidence"] = LOW_CONFIDENCE_DETECTION
+_DETECTION_MAP["complex_multi"] = COMPLEX_MULTI_ELEMENT_DETECTION
+
+_INTERPRETATION_MAP["empty_image"] = EMPTY_IMAGE_INTERPRETATION
