@@ -6,7 +6,12 @@ Coordinates all 8 stages of the pipeline:
                                                         ↓
     H. Export ← G. HumanReview ← F. Regeneration ← E. SemanticGraph
 
-Module Version: 1.0.0
+All stages now use BaseStage wrappers (v1.6.0) for standardized:
+- Timing and metrics collection
+- Input validation
+- Error handling and recovery
+
+Module Version: 1.6.0
 """
 
 import asyncio
@@ -73,6 +78,35 @@ from .vision import (
 )
 from .vision.interpretation_layer import DiagramInterpreter, InterpretationConfig
 from .vision.gemini_client import GeminiVisionClient
+
+# Modular Stage Implementations (v1.6.0)
+from .stages import (
+    StageResult,
+    IngestionStage,
+    IngestionStageConfig,
+    VisionParseStage,
+    VisionParseStageConfig,
+    SemanticGraphStage,
+    SemanticGraphStageConfig,
+    # Stage B: Text Parse (v1.6.0)
+    TextParseStage,
+    TextParseStageConfig,
+    # Stage D: Alignment (v1.6.0)
+    AlignmentStage,
+    AlignmentStageConfig,
+    AlignmentInput,
+    # Stage F: Regeneration (v1.6.0)
+    RegenerationStage,
+    RegenerationStageConfig,
+    # Stage G: Human Review (v1.6.0)
+    HumanReviewStage,
+    HumanReviewStageConfig,
+    HumanReviewInput,
+    ReviewSummary,
+    # Stage H: Export (v1.6.0)
+    ExportStage,
+    ExportStageConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -272,6 +306,96 @@ class MathpixPipeline:
 
         # Stage H: Export
         self._export_engine = ExportEngine(config=self.export_config)
+
+        # =====================================================================
+        # Modular Stage Implementations (v1.6.0)
+        # These wrap existing components in BaseStage interface for
+        # standardized timing, validation, and metrics collection.
+        # =====================================================================
+
+        # Stage B: Text Parse
+        self._text_parse_stage = TextParseStage(
+            config=TextParseStageConfig(
+                mathpix_config=self.mathpix_config,
+                require_stored_path=False,  # Allow source_path fallback
+            ),
+        )
+
+        # Stage D: Alignment
+        self._alignment_stage = AlignmentStage(
+            config=AlignmentStageConfig(
+                base_alignment_threshold=self.alignment_config.base_alignment_threshold,
+                base_inconsistency_threshold=self.alignment_config.base_inconsistency_threshold,
+                enable_threshold_adjustment=self.alignment_config.enable_threshold_adjustment,
+                enable_auto_fix_detection=self.alignment_config.enable_auto_fix_detection,
+            ),
+            engine=self._alignment_engine,  # Reuse existing engine
+        )
+
+        # Stage E: Semantic Graph
+        self._semantic_graph_stage = SemanticGraphStage(
+            config=SemanticGraphStageConfig(
+                node_threshold=self.graph_config.node_threshold,
+                edge_threshold=self.graph_config.edge_threshold,
+                strict_validation=False,
+            ),
+            builder=self._graph_builder,  # Reuse existing builder
+        )
+
+        # Stage F: Regeneration
+        self._regeneration_stage = RegenerationStage(
+            config=RegenerationStageConfig(
+                output_formats=["latex", "svg"],
+                enable_delta_comparison=True,
+            ),
+            engine=self._regeneration_engine,  # Reuse existing engine
+        )
+
+        # Stage G: Human Review
+        self._human_review_stage = HumanReviewStage(
+            config=HumanReviewStageConfig(
+                enable_dynamic_thresholds=True,
+            ),
+        )
+
+        # Stage H: Export
+        self._export_stage = ExportStage(
+            config=ExportStageConfig(
+                parallel_exports=True,
+            ),
+            engine=self._export_engine,  # Reuse existing engine
+        )
+
+    def _apply_stage_result(
+        self,
+        stage_result: StageResult,
+        pipeline_result: PipelineResult,
+        stage: PipelineStage,
+    ) -> None:
+        """Apply StageResult to PipelineResult.
+
+        Helper method for integrating modular stages with pipeline.
+
+        Args:
+            stage_result: Result from BaseStage.run_async()
+            pipeline_result: Pipeline result to update
+            stage: Pipeline stage identifier
+        """
+        # Copy timing
+        if stage_result.timing:
+            pipeline_result.stage_timings.append(stage_result.timing)
+
+        # Copy warnings
+        for warning in stage_result.warnings:
+            pipeline_result.add_warning(warning, stage)
+
+        # Copy errors
+        for error in stage_result.errors:
+            pipeline_result.add_error(error, stage)
+
+        # Mark complete if successful
+        if stage_result.is_valid:
+            pipeline_result.mark_stage_complete(stage)
 
     @property
     def stats(self) -> dict:
@@ -917,10 +1041,8 @@ class MathpixPipeline:
     ) -> Optional[TextSpec]:
         """Run Stage B: Text Parse using Mathpix API.
 
-        Calls Mathpix API to extract:
-        - LaTeX equations
-        - Line segments with positions
-        - Content flags (has_diagram, has_graph, etc.)
+        Uses modular TextParseStage (v1.6.0) for standardized
+        timing, validation, and metrics collection.
 
         Args:
             ingestion_spec: Stage A output with image data
@@ -929,75 +1051,30 @@ class MathpixPipeline:
         Returns:
             TextSpec with extracted text elements
         """
-        timing = StageTiming(stage=PipelineStage.TEXT_PARSE)
-        result.stage_timings.append(timing)
-
-        try:
-            if not ingestion_spec:
-                result.add_warning(
-                    "Skipping text parse: no ingestion spec",
-                    PipelineStage.TEXT_PARSE,
-                )
-                timing.complete(success=True)
-                return None
-
-            # Initialize Mathpix client if not exists
-            if not hasattr(self, '_mathpix_client'):
-                if self.mathpix_config is None:
-                    # FAIL-FAST: Stage B requires valid Mathpix credentials
-                    error_msg = (
-                        "Mathpix config not provided. Stage B (TextParse) requires "
-                        "valid Mathpix credentials. Set MATHPIX_APP_ID and MATHPIX_APP_KEY "
-                        "environment variables or provide MathpixConfig."
-                    )
-                    result.add_error(error_msg, PipelineStage.TEXT_PARSE)
-                    timing.complete(success=False, error=error_msg)
-                    return None  # Return None with ERROR, not warning with empty spec
-
-                self._mathpix_client = MathpixClient(
-                    config=self.mathpix_config
-                )
-
-            # Get image bytes from storage
-            image_bytes = await self._storage_manager.get_image_bytes(
-                ingestion_spec.image_id
+        if not ingestion_spec:
+            result.add_warning(
+                "Skipping text parse: no ingestion spec",
+                PipelineStage.TEXT_PARSE,
             )
+            return None
 
-            if not image_bytes:
-                result.add_error(
-                    f"Could not load image bytes for {ingestion_spec.image_id}",
-                    PipelineStage.TEXT_PARSE,
-                )
-                timing.complete(success=False, error="Image not found")
-                return None
+        # Use modular stage implementation
+        stage_result = await self._text_parse_stage.run_async(ingestion_spec)
 
-            # Call Mathpix API
-            async with self._mathpix_client:
-                text_spec = await self._mathpix_client.process_image(
-                    image_bytes,
-                    image_id=ingestion_spec.image_id,
-                )
+        # Apply stage result to pipeline result
+        self._apply_stage_result(
+            stage_result,
+            result,
+            PipelineStage.TEXT_PARSE,
+        )
 
-            # Log extraction stats
+        if stage_result.output:
             logger.info(
-                f"Stage B completed: {len(text_spec.equations)} equations, "
-                f"{len(text_spec.line_segments)} line segments"
+                f"Stage B completed: {len(stage_result.output.equations)} equations, "
+                f"{len(stage_result.output.line_segments)} line segments"
             )
 
-            result.mark_stage_complete(PipelineStage.TEXT_PARSE)
-            timing.complete(success=True)
-
-            return text_spec
-
-        except MathpixError as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Mathpix API error: {e}", PipelineStage.TEXT_PARSE)
-            return None
-
-        except Exception as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Text parse failed: {e}", PipelineStage.TEXT_PARSE)
-            return None
+        return stage_result.output
 
     async def _run_stage_c(
         self,
@@ -1161,6 +1238,9 @@ class MathpixPipeline:
     ) -> Optional[AlignmentReport]:
         """Run Stage D: Alignment.
 
+        Uses modular AlignmentStage (v1.6.0) for standardized
+        timing, validation, and metrics collection.
+
         Args:
             text_spec: Stage B output
             vision_spec: Stage C output
@@ -1169,21 +1249,23 @@ class MathpixPipeline:
         Returns:
             AlignmentReport or None
         """
-        timing = StageTiming(stage=PipelineStage.ALIGNMENT)
-        result.stage_timings.append(timing)
+        # Create composite input for alignment stage
+        alignment_input = AlignmentInput(
+            text_spec=text_spec,
+            vision_spec=vision_spec,
+        )
 
-        try:
-            report = self._alignment_engine.align(text_spec, vision_spec)
+        # Use modular stage implementation
+        stage_result = await self._alignment_stage.run_async(alignment_input)
 
-            result.mark_stage_complete(PipelineStage.ALIGNMENT)
-            timing.complete(success=True)
+        # Apply stage result to pipeline result
+        self._apply_stage_result(
+            stage_result,
+            result,
+            PipelineStage.ALIGNMENT,
+        )
 
-            return report
-
-        except Exception as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Alignment failed: {e}", PipelineStage.ALIGNMENT)
-            return None
+        return stage_result.output
 
     async def _run_stage_e(
         self,
@@ -1192,6 +1274,9 @@ class MathpixPipeline:
     ) -> Optional[SemanticGraph]:
         """Run Stage E: Semantic Graph.
 
+        Uses modular SemanticGraphStage (v1.1.0) for standardized
+        timing, validation, and metrics collection.
+
         Args:
             alignment_report: Stage D output
             result: Pipeline result to update
@@ -1199,32 +1284,17 @@ class MathpixPipeline:
         Returns:
             SemanticGraph or None
         """
-        timing = StageTiming(stage=PipelineStage.SEMANTIC_GRAPH)
-        result.stage_timings.append(timing)
+        # Use modular stage implementation
+        stage_result = await self._semantic_graph_stage.run_async(alignment_report)
 
-        try:
-            build_result = self._graph_builder.build(alignment_report)
+        # Apply stage result to pipeline result
+        self._apply_stage_result(
+            stage_result,
+            result,
+            PipelineStage.SEMANTIC_GRAPH,
+        )
 
-            if not build_result.is_valid:
-                result.add_warning(
-                    f"Graph validation issues: {len(build_result.validation.issues)}",
-                    PipelineStage.SEMANTIC_GRAPH,
-                )
-
-            result.mark_stage_complete(PipelineStage.SEMANTIC_GRAPH)
-            timing.complete(success=True)
-
-            return build_result.graph
-
-        except GraphBuildError as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Graph build failed: {e}", PipelineStage.SEMANTIC_GRAPH)
-            return None
-
-        except Exception as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Semantic graph failed: {e}", PipelineStage.SEMANTIC_GRAPH)
-            return None
+        return stage_result.output
 
     async def _run_stage_f(
         self,
@@ -1233,6 +1303,9 @@ class MathpixPipeline:
     ) -> Optional[RegenerationSpec]:
         """Run Stage F: Regeneration.
 
+        Uses modular RegenerationStage (v1.6.0) for standardized
+        timing, validation, and metrics collection.
+
         Args:
             semantic_graph: Stage E output
             result: Pipeline result to update
@@ -1240,172 +1313,65 @@ class MathpixPipeline:
         Returns:
             RegenerationSpec or None
         """
-        timing = StageTiming(stage=PipelineStage.REGENERATION)
-        result.stage_timings.append(timing)
+        # Use modular stage implementation
+        stage_result = await self._regeneration_stage.run_async(semantic_graph)
 
-        try:
-            engine_result = await self._regeneration_engine.regenerate(
-                semantic_graph
-            )
+        # Apply stage result to pipeline result
+        self._apply_stage_result(
+            stage_result,
+            result,
+            PipelineStage.REGENERATION,
+        )
 
-            if not engine_result.success:
-                result.add_warning(
-                    f"Regeneration warnings: {engine_result.warnings}",
-                    PipelineStage.REGENERATION,
-                )
-
-            result.mark_stage_complete(PipelineStage.REGENERATION)
-            timing.complete(success=True)
-
-            return engine_result.spec
-
-        except Exception as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Regeneration failed: {e}", PipelineStage.REGENERATION)
-            return None
+        return stage_result.output
 
     async def _run_stage_g(
         self,
         result: PipelineResult,
         options: PipelineOptions,
-    ) -> Optional[Any]:
+    ) -> Optional[ReviewSummary]:
         """Run Stage G: Human Review.
 
-        Creates review tasks for items flagged during pipeline stages
-        based on confidence thresholds.
+        Uses modular HumanReviewStage (v1.6.0) for standardized
+        timing, validation, and metrics collection.
 
         Args:
             result: Pipeline result
             options: Pipeline options with review configuration
 
         Returns:
-            Review summary dict or None
+            ReviewSummary or None
         """
-        timing = StageTiming(stage=PipelineStage.HUMAN_REVIEW)
-        result.stage_timings.append(timing)
-
-        try:
-            # Check if human review is enabled
-            if not options.enable_human_review:
-                result.add_warning(
-                    "Human review disabled, auto-approving",
-                    PipelineStage.HUMAN_REVIEW,
-                )
-                result.mark_stage_complete(PipelineStage.HUMAN_REVIEW)
-                timing.complete(success=True)
-                return None
-
-            # Collect items needing review from semantic graph
-            review_threshold = options.min_confidence_threshold
-            items_for_review = self._collect_review_items(result, review_threshold)
-
-            if not items_for_review:
-                # All items passed confidence thresholds
-                logger.info(
-                    f"No items below threshold {review_threshold:.2f} for image {result.image_id}"
-                )
-                result.mark_stage_complete(PipelineStage.HUMAN_REVIEW)
-                timing.complete(success=True)
-                return None
-
-            # Create and return review summary (actual queue integration is optional)
-            review_summary = {
-                "image_id": result.image_id,
-                "items_flagged": len(items_for_review),
-                "items": items_for_review,
-                "threshold": review_threshold,
-                "review_required": True,
-            }
-
-            logger.info(
-                f"Stage G flagged {len(items_for_review)} items for review "
-                f"(threshold: {review_threshold:.2f})"
+        # Check if human review is enabled
+        if not options.enable_human_review:
+            result.add_warning(
+                "Human review disabled, auto-approving",
+                PipelineStage.HUMAN_REVIEW,
             )
-
             result.mark_stage_complete(PipelineStage.HUMAN_REVIEW)
-            timing.complete(success=True)
-
-            return review_summary
-
-        except Exception as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Human review failed: {e}", PipelineStage.HUMAN_REVIEW)
             return None
 
-    def _collect_review_items(
-        self,
-        result: PipelineResult,
-        threshold: float,
-    ) -> List[Dict[str, Any]]:
-        """Collect items from pipeline stages that need human review.
+        # Create composite input for human review stage
+        review_input = HumanReviewInput(
+            pipeline_result=result,
+        )
 
-        Args:
-            result: Pipeline result containing stage outputs
-            threshold: Confidence threshold below which items need review
+        # Use modular stage implementation
+        stage_result = await self._human_review_stage.run_async(review_input)
 
-        Returns:
-            List of items requiring review with metadata
-        """
-        items: List[Dict[str, Any]] = []
+        # Apply stage result to pipeline result
+        self._apply_stage_result(
+            stage_result,
+            result,
+            PipelineStage.HUMAN_REVIEW,
+        )
 
-        # Check semantic graph nodes if available
-        if result.semantic_graph and result.semantic_graph.nodes:
-            for node in result.semantic_graph.nodes:
-                if node.confidence and node.confidence.value < threshold:
-                    items.append({
-                        "element_type": "semantic_node",
-                        "element_id": node.id,
-                        "node_type": node.node_type.value if node.node_type else "unknown",
-                        "label": node.label,
-                        "confidence": node.confidence.value,
-                        "reason": (
-                            f"Node confidence {node.confidence.value:.2f} "
-                            f"below threshold {threshold:.2f}"
-                        ),
-                        "stage": PipelineStage.SEMANTIC_GRAPH.value,
-                    })
+        if stage_result.output:
+            logger.info(
+                f"Stage G flagged {stage_result.output.tasks_created} items for review"
+            )
 
-        # Check semantic graph edges if available
-        if result.semantic_graph and result.semantic_graph.edges:
-            for edge in result.semantic_graph.edges:
-                if edge.confidence and edge.confidence.value < threshold:
-                    items.append({
-                        "element_type": "semantic_edge",
-                        "element_id": edge.id,
-                        "edge_type": edge.edge_type.value if edge.edge_type else "unknown",
-                        "source_id": edge.source_id,
-                        "target_id": edge.target_id,
-                        "confidence": edge.confidence.value,
-                        "reason": (
-                            f"Edge confidence {edge.confidence.value:.2f} "
-                            f"below threshold {threshold:.2f}"
-                        ),
-                        "stage": PipelineStage.SEMANTIC_GRAPH.value,
-                    })
-
-        # Check alignment report matched pairs if available
-        if result.alignment_report and result.alignment_report.matched_pairs:
-            for pair in result.alignment_report.matched_pairs:
-                pair_confidence = getattr(pair, 'confidence', None)
-                if pair_confidence:
-                    conf_value = (
-                        pair_confidence.value
-                        if hasattr(pair_confidence, 'value')
-                        else pair_confidence
-                    )
-                    if conf_value < threshold:
-                        items.append({
-                            "element_type": "aligned_pair",
-                            "element_id": getattr(pair, 'id', 'unknown'),
-                            "confidence": conf_value,
-                            "reason": (
-                                f"Alignment confidence {conf_value:.2f} "
-                                f"below threshold {threshold:.2f}"
-                            ),
-                            "stage": PipelineStage.ALIGNMENT.value,
-                        })
-
-        return items
+        return stage_result.output
 
     async def _run_stage_h(
         self,
@@ -1414,6 +1380,9 @@ class MathpixPipeline:
     ) -> Optional[List[Any]]:
         """Run Stage H: Export.
 
+        Uses modular ExportStage (v1.6.0) for standardized
+        timing, validation, and metrics collection.
+
         Args:
             result: Pipeline result
             export_formats: List of format names
@@ -1421,43 +1390,38 @@ class MathpixPipeline:
         Returns:
             List of export specs or None
         """
-        timing = StageTiming(stage=PipelineStage.EXPORT)
-        result.stage_timings.append(timing)
-
-        try:
-            # Convert format strings to ExportFormat enums
-            formats = []
-            for fmt in export_formats:
-                try:
-                    formats.append(ExportFormat(fmt.lower()))
-                except ValueError:
-                    result.add_warning(
-                        f"Unknown export format: {fmt}",
-                        PipelineStage.EXPORT,
-                    )
-
-            if not formats:
-                formats = [ExportFormat.JSON]
-
-            # Export regeneration spec if available
-            if result.regeneration_spec:
-                exports = await self._export_engine.export_async(
-                    result.regeneration_spec,
-                    formats,
-                )
-            else:
-                # Export what we have
-                exports = []
-
-            result.mark_stage_complete(PipelineStage.EXPORT)
-            timing.complete(success=True)
-
-            return exports
-
-        except Exception as e:
-            timing.complete(success=False, error=str(e))
-            result.add_error(f"Export failed: {e}", PipelineStage.EXPORT)
+        if not result.regeneration_spec:
+            result.add_warning(
+                "Skipping export: no regeneration spec",
+                PipelineStage.EXPORT,
+            )
             return None
+
+        # Update export stage config with requested formats
+        formats = []
+        for fmt in export_formats:
+            try:
+                formats.append(ExportFormat(fmt.lower()))
+            except ValueError:
+                result.add_warning(
+                    f"Unknown export format: {fmt}",
+                    PipelineStage.EXPORT,
+                )
+
+        if formats:
+            self._export_stage.config.export_formats = formats
+
+        # Use modular stage implementation
+        stage_result = await self._export_stage.run_async(result.regeneration_spec)
+
+        # Apply stage result to pipeline result
+        self._apply_stage_result(
+            stage_result,
+            result,
+            PipelineStage.EXPORT,
+        )
+
+        return stage_result.output
 
     # =========================================================================
     # Utility Methods
