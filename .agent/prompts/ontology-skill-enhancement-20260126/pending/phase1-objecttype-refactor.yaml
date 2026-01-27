@@ -1,0 +1,206 @@
+# =============================================================================
+# Worker Task: Phase 1 - /ontology-objecttype 워크플로우 재설계
+# =============================================================================
+# Workload: ontology-skill-enhancement-20260126
+# Native Task ID: 1
+# Created: 2026-01-26T11:20:00Z
+# =============================================================================
+
+taskId: "phase1-objecttype-refactor"
+nativeTaskId: "1"
+assignedTo: "terminal-b"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-26T11:20:00Z"
+assignedAt: "2026-01-26T11:20:00Z"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+
+workload_id: "ontology-skill-enhancement-20260126"
+contextFile: ".agent/prompts/ontology-skill-enhancement-20260126/_context.yaml"
+progressFile: ".agent/prompts/ontology-skill-enhancement-20260126/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+
+scope:
+  phaseId: "phase1-objecttype-refactor"
+  phaseName: "/ontology-objecttype 워크플로우 재설계"
+  priority: "P0"
+  description: |
+    현재 L1→L2→L3 선형 워크플로우를 Phase 1→2→3→4 인터랙티브
+    의사결정 트리로 전면 개편.
+
+    핵심 변경사항:
+    1. Section 5 (Workflow) 전체 재작성
+    2. AskUserQuestion 기반 Phase별 질문 구조
+    3. PK Strategy Selection UI (single/composite/hashed)
+    4. Cardinality Decision Tree 추가
+    5. Output Format: Python → YAML 변경
+    6. 20개 DataType + 제약조건 가이드 (REQ-003)
+
+# =============================================================================
+# TARGET FILES (I can MODIFY these)
+# =============================================================================
+
+targetFiles:
+  - path: ".claude/skills/ontology-objecttype/SKILL.md"
+    readOnly: false
+    sections:
+      - "Section 5: Workflow (lines 113-274) - 전체 재작성"
+      - "Section 6: Output Generation (lines 435-472) - YAML 변경"
+      - "Section 7: Approval Workflow (lines 404-434) - Phase-aware"
+    modifications:
+      - "Replace L1/L2/L3 workflow with Phase 1-4 decision tree"
+      - "Add AskUserQuestion calls for each phase"
+      - "Add PK Strategy Selection (single_column/composite/composite_hashed)"
+      - "Add Cardinality Decision Tree"
+      - "Change output format from Python to YAML"
+      - "Add 20 DataType mapping table with constraints"
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+
+referenceFiles:
+  - path: "/home/palantir/park-kyungchan/palantir/docs/ObjectType_Reference.md"
+    reason: "Phase 1-4 워크플로우 + YAML 스키마 참조"
+    keyLines: "360-404 (Phase workflow), 89-154 (primaryKeySpec)"
+
+  - path: "/home/palantir/park-kyungchan/palantir/Ontology-Definition/ontology_definition/types/object_type.py"
+    reason: "ObjectType 구조 + 검증 메서드 참조"
+
+  - path: "/home/palantir/park-kyungchan/palantir/Ontology-Definition/ontology_definition/core/enums.py"
+    reason: "20개 DataType 정의 참조"
+
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/research.md"
+    reason: "Gap 분석 + 구현 권장사항"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+dependencies: []
+blockedBy: []
+canStartImmediately: true
+
+# =============================================================================
+# IMPLEMENTATION GUIDE
+# =============================================================================
+
+implementationGuide:
+  phase1_context:
+    description: "Context Clarification"
+    questions:
+      - "Q1: Source type (code/schema/doc/manual)"
+      - "Q2: Business domain (free text)"
+    gate: "source_validity"
+    askUserQuestion:
+      header: "Source Type"
+      options:
+        - label: "Existing source code"
+          description: "분석할 소스 코드가 있음"
+        - label: "Database schema"
+          description: "데이터베이스 스키마에서 추출"
+        - label: "Business requirements"
+          description: "비즈니스 요구사항 문서"
+        - label: "Manual definition"
+          description: "수동으로 직접 정의"
+
+  phase2_entity:
+    description: "Entity Discovery"
+    questions:
+      - "Q3: Primary Key Strategy"
+    gate: "candidate_extraction, pk_determinism"
+    pkStrategyOptions:
+      - strategy: "single_column"
+        description: "기존 단일 컬럼을 PK로 사용"
+        pros: "단순함, 기존 데이터 활용"
+        cons: "컬럼이 유일성 보장해야 함"
+      - strategy: "composite"
+        description: "여러 컬럼을 조합하여 PK 생성"
+        pros: "자연키 활용, 비즈니스 의미 유지"
+        cons: "조합 순서 중요, 구분자 필요"
+      - strategy: "composite_hashed"
+        description: "복합키를 SHA256 해시로 변환"
+        pros: "고정 길이, 충돌 최소화"
+        cons: "원본 값 역추적 불가"
+
+  phase2_properties:
+    description: "Property Type/Constraint 가이드"
+    dataTypes:
+      primitive: ["STRING", "INTEGER", "LONG", "FLOAT", "DOUBLE", "BOOLEAN", "DECIMAL"]
+      temporal: ["DATE", "TIMESTAMP", "DATETIME", "TIMESERIES"]
+      complex: ["ARRAY", "STRUCT", "JSON"]
+      spatial: ["GEOPOINT", "GEOSHAPE"]
+      media: ["MEDIA_REFERENCE", "BINARY", "MARKDOWN"]
+      aiml: ["VECTOR"]
+    specialConfig:
+      ARRAY: "array_item_type 필수"
+      STRUCT: "struct_fields 필수"
+      VECTOR: "vector_dimension 필수"
+      DECIMAL: "precision, scale 필수"
+
+  phase3_link:
+    description: "Link Definition"
+    questions:
+      - "Q4: Relationships exist?"
+      - "Q4a: Target ObjectType"
+      - "Q4b: Cardinality"
+    gate: "link_integrity"
+    cardinalityOptions:
+      - cardinality: "ONE_TO_ONE"
+        implementation: "FK on either side"
+      - cardinality: "ONE_TO_MANY"
+        implementation: "FK on 'many' side"
+      - cardinality: "MANY_TO_ONE"
+        implementation: "FK on 'many' side (this entity)"
+      - cardinality: "MANY_TO_MANY"
+        implementation: "JOIN TABLE required"
+
+  phase4_output:
+    description: "Validation & Output"
+    gate: "semantic_consistency"
+    outputFormat: "YAML (ontology-objecttype.schema.yaml)"
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+
+completionCriteria:
+  required:
+    - "Phase 1 (Context Clarification): source_type + domain 질문 구현"
+    - "Phase 2 (Entity Discovery): PK Strategy 3가지 선택 옵션 구현"
+    - "Phase 2 (Property Types): 20개 DataType + 제약조건 가이드 (REQ-003)"
+    - "Phase 3 (Link Definition): Cardinality 의사결정 트리 구현"
+    - "Phase 4 (Validation & Output): YAML 출력 + Gate 검증 구현"
+    - "모든 Phase에 AskUserQuestion 호출 포함"
+    - "각 Phase 종료 시 Validation Gate 실행 명세"
+
+  verification:
+    - command: "grep -c 'Phase 1\\|Phase 2\\|Phase 3\\|Phase 4' .claude/skills/ontology-objecttype/SKILL.md"
+      expected: "4 이상"
+    - command: "grep -c 'AskUserQuestion' .claude/skills/ontology-objecttype/SKILL.md"
+      expected: "4 이상"
+    - command: "grep -c 'single_column\\|composite\\|composite_hashed' .claude/skills/ontology-objecttype/SKILL.md"
+      expected: "3 이상"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/prompts/ontology-skill-enhancement-20260126/outputs/phase1-objecttype-refactor.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+
+onComplete:
+  - "TaskUpdate(taskId='1', status='completed')"
+  - "Update _progress.yaml: phase1-objecttype-refactor.status = 'completed'"
+  - "Move this file to completed/ directory"
+  - "Report L1 summary to Orchestrator"
+  - "Notify phase3-validation-gates that dependency is resolved"

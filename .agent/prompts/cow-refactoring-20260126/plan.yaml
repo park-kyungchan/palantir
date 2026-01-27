@@ -1,0 +1,239 @@
+# =============================================================================
+# Execution Plan: COW Pipeline Refactoring
+# =============================================================================
+# Workload: cow-refactoring-20260126
+# Created: 2026-01-26T12:05:00Z
+# Strategy: Parallel Agent Delegation + Test-First Refactoring
+# =============================================================================
+
+meta:
+  plan_id: "cow-refactoring-plan-v1"
+  workload: "cow-refactoring-20260126"
+  created_at: "2026-01-26T12:05:00Z"
+  estimated_duration: "2-3 hours"
+  model: "opus (orchestrator), sonnet (workers)"
+
+# =============================================================================
+# PHASE 1: Test Coverage Enhancement (Parallel - 3 Agents)
+# =============================================================================
+
+phase1_test_coverage:
+  name: "Test-First Foundation"
+  description: "누락된 Stage 테스트 추가로 안전한 리팩토링 기반 구축"
+  parallelizable: true
+  estimated_time: "45 minutes"
+
+  tasks:
+    - id: "P1-T1"
+      name: "Stage A/B Tests"
+      agent_id: "a801484"
+      status: "in_progress"
+      description: |
+        Stage A (Ingestion) 및 Stage B (Text Parse) 테스트 생성:
+        - test_ingestion.py: ImageLoader, ImageValidator, Preprocessor
+        - test_text_parse.py: MathpixClient mock 테스트
+      target_files:
+        - "/home/palantir/cow/tests/ingestion/test_ingestion.py"
+        - "/home/palantir/cow/tests/clients/test_text_parse.py"
+
+    - id: "P1-T2"
+      name: "Stage C Tests"
+      agent_id: "ae3d66b"
+      status: "in_progress"
+      description: |
+        Stage C (Vision Parse) 테스트 생성:
+        - test_vision_parse.py: YOLO detector, Gemini client, hybrid merger
+        - Mock responses for external APIs
+      target_files:
+        - "/home/palantir/cow/tests/vision/test_vision_parse.py"
+
+    - id: "P1-T3"
+      name: "Stage F/G/H Tests"
+      agent_id: "a1a5992"
+      status: "in_progress"
+      description: |
+        Stage F (Regeneration), G (Human Review), H (Export) 테스트 생성:
+        - test_regeneration.py: LaTeX/SVG generation
+        - test_human_review.py: Queue management, priority scoring
+        - test_export_engine.py: Multi-format export
+      target_files:
+        - "/home/palantir/cow/tests/regeneration/test_regeneration.py"
+        - "/home/palantir/cow/tests/human_review/test_human_review.py"
+        - "/home/palantir/cow/tests/export/test_export_engine.py"
+
+# =============================================================================
+# PHASE 2: Threshold Integration (Parallel with Phase 1)
+# =============================================================================
+
+phase2_threshold_integration:
+  name: "Phase 5 Completion"
+  description: "Dynamic threshold system을 Stage E, G에 통합"
+  parallelizable: true
+  estimated_time: "30 minutes"
+
+  tasks:
+    - id: "P2-T1"
+      name: "Stage E Threshold Integration"
+      agent_id: "a2d1b0f"
+      status: "in_progress"
+      description: |
+        semantic_graph/builder.py에서 static threshold 제거:
+        - node_threshold=0.60 → compute_effective_threshold()
+        - ThresholdContext 통합
+        - FeedbackStats 연동
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/semantic_graph/builder.py"
+
+    - id: "P2-T2"
+      name: "Stage G Threshold Integration"
+      agent_id: "a9cdfa1"
+      status: "in_progress"
+      description: |
+        human_review/priority_scorer.py에서 threshold 동적화:
+        - 정적 confidence threshold 제거
+        - 3-layer threshold system 통합
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/human_review/priority_scorer.py"
+
+# =============================================================================
+# PHASE 3: Pipeline Modularization (After Phase 1)
+# =============================================================================
+
+phase3_modularization:
+  name: "Stage Extraction"
+  description: "pipeline.py를 Stage별 모듈로 분리"
+  parallelizable: false
+  blocked_by: ["phase1_test_coverage"]
+  estimated_time: "60 minutes"
+  status: "pending"
+
+  tasks:
+    - id: "P3-T1"
+      name: "Create BaseStage Abstract Class"
+      status: "pending"
+      description: |
+        모든 Stage가 구현할 공통 인터페이스 정의:
+        - run(input) -> output
+        - validate(input) -> ValidationResult
+        - get_metrics() -> StageMetrics
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/stages/base.py"
+
+    - id: "P3-T2"
+      name: "Extract Priority Stages (A, C, E)"
+      status: "pending"
+      description: |
+        가장 복잡한 Stage들을 우선 추출:
+        - Stage A: IngestionStage
+        - Stage C: VisionParseStage
+        - Stage E: SemanticGraphStage
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/stages/ingestion_stage.py"
+        - "/home/palantir/cow/src/mathpix_pipeline/stages/vision_parse_stage.py"
+        - "/home/palantir/cow/src/mathpix_pipeline/stages/semantic_graph_stage.py"
+
+    - id: "P3-T3"
+      name: "Update Pipeline Orchestrator"
+      status: "pending"
+      description: |
+        pipeline.py를 Stage 호출 orchestrator로 전환:
+        - Stage 인스턴스 생성 및 주입
+        - _run_stage_*() 메서드를 Stage.run() 호출로 교체
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/pipeline.py"
+
+# =============================================================================
+# PHASE 4: Code Quality (After Phase 3)
+# =============================================================================
+
+phase4_code_quality:
+  name: "Code Quality Enhancement"
+  description: "Type annotations, exception handling 개선"
+  parallelizable: true
+  blocked_by: ["phase3_modularization"]
+  estimated_time: "45 minutes"
+  status: "pending"
+
+  tasks:
+    - id: "P4-T1"
+      name: "Type Annotation Modernization"
+      status: "pending"
+      description: |
+        Python 3.10+ 스타일로 type hints 현대화:
+        - Optional[X] → X | None
+        - List[X] → list[X]
+        - Dict[K, V] → dict[K, V]
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/**/*.py"
+
+    - id: "P4-T2"
+      name: "Exception Handling Refinement"
+      status: "pending"
+      description: |
+        Broad exception catches를 specific handling으로 개선:
+        - except Exception → except SpecificError
+        - Error chaining 추가
+        - Descriptive error messages
+      target_files:
+        - "/home/palantir/cow/src/mathpix_pipeline/pipeline.py"
+        - "/home/palantir/cow/src/mathpix_pipeline/stages/*.py"
+
+# =============================================================================
+# PHASE 5: Final Validation
+# =============================================================================
+
+phase5_validation:
+  name: "Final Validation & Report"
+  description: "전체 테스트 실행 및 최종 보고서 생성"
+  parallelizable: false
+  blocked_by: ["phase4_code_quality"]
+  estimated_time: "20 minutes"
+  status: "pending"
+
+  tasks:
+    - id: "P5-T1"
+      name: "Full Test Suite Execution"
+      status: "pending"
+      description: |
+        모든 테스트 실행 및 coverage 측정:
+        - pytest --cov=src/mathpix_pipeline
+        - Coverage report 생성
+
+    - id: "P5-T2"
+      name: "Generate Final Report"
+      status: "pending"
+      description: |
+        리팩토링 결과 보고서 생성:
+        - 변경 파일 목록
+        - 테스트 추가 현황
+        - Coverage 변화
+        - Architecture 개선 사항
+      target_files:
+        - "/home/palantir/.agent/prompts/cow-refactoring-20260126/synthesis/synthesis_report.md"
+
+# =============================================================================
+# EXECUTION STATUS
+# =============================================================================
+
+execution_status:
+  wave1:
+    status: "in_progress"
+    started_at: "2026-01-26T11:50:00Z"
+    agents:
+      - {task: "P1-T1", agent_id: "a801484", status: "running"}
+      - {task: "P1-T2", agent_id: "ae3d66b", status: "running"}
+      - {task: "P1-T3", agent_id: "a1a5992", status: "running"}
+      - {task: "P2-T1", agent_id: "a2d1b0f", status: "running"}
+      - {task: "P2-T2", agent_id: "a9cdfa1", status: "running"}
+
+  wave2:
+    status: "pending"
+    blocked_by: ["wave1"]
+
+  wave3:
+    status: "pending"
+    blocked_by: ["wave2"]
+
+  wave4:
+    status: "pending"
+    blocked_by: ["wave3"]

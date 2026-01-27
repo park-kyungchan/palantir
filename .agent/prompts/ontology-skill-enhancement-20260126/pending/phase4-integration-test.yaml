@@ -1,0 +1,243 @@
+# =============================================================================
+# Worker Task: Phase 4 - 통합 테스트 시나리오 실행
+# =============================================================================
+# Workload: ontology-skill-enhancement-20260126
+# Native Task ID: 4
+# Created: 2026-01-26T11:20:00Z
+# =============================================================================
+
+taskId: "phase4-integration-test"
+nativeTaskId: "4"
+assignedTo: "terminal-d"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-26T11:20:00Z"
+assignedAt: "2026-01-26T11:20:00Z"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+
+workload_id: "ontology-skill-enhancement-20260126"
+contextFile: ".agent/prompts/ontology-skill-enhancement-20260126/_context.yaml"
+progressFile: ".agent/prompts/ontology-skill-enhancement-20260126/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+
+scope:
+  phaseId: "phase4-integration-test"
+  phaseName: "통합 테스트 시나리오 실행"
+  priority: "P0"
+  description: |
+    수정된 스킬들의 E2E 테스트 수행.
+    Employee ObjectType 정의 시나리오로 전체 워크플로우 검증.
+
+# =============================================================================
+# TARGET FILES (I can CREATE/MODIFY these)
+# =============================================================================
+
+targetFiles:
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/test-results.md"
+    readOnly: false
+    action: "create"
+    description: "테스트 결과 문서 생성"
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+
+referenceFiles:
+  - path: ".claude/skills/ontology-objecttype/SKILL.md"
+    reason: "수정된 워크플로우 검증"
+
+  - path: ".claude/skills/ontology-why/SKILL.md"
+    reason: "강화된 Integrity 분석 검증"
+
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/clarify.yaml"
+    reason: "Success Criteria 정의 (SC-001 ~ SC-005)"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+dependencies:
+  - "phase1-objecttype-refactor"
+  - "phase2-why-enhancement"
+  - "phase3-validation-gates"
+blockedBy: ["1", "2", "3"]
+canStartImmediately: false
+
+waitCondition: |
+  Check _progress.yaml
+  If phase1-objecttype-refactor.status == 'completed'
+  AND phase2-why-enhancement.status == 'completed'
+  AND phase3-validation-gates.status == 'completed', proceed
+  Otherwise, wait
+
+# =============================================================================
+# TEST SCENARIOS
+# =============================================================================
+
+testScenarios:
+  - id: "test-1"
+    name: "Employee ObjectType Phase 1→4"
+    description: "전체 Phase 워크플로우 E2E 테스트"
+    successCriteria: "SC-001"
+    steps:
+      - step: 1
+        action: "/ontology-objecttype analyze Employee"
+        expected: "Phase 1 시작, Source type 질문"
+      - step: 2
+        action: "Phase 1: source=code, domain=HR"
+        expected: "source_validity Gate 통과"
+      - step: 3
+        action: "Phase 2: PK=single_column (employeeId)"
+        expected: "pk_determinism Gate 통과"
+      - step: 4
+        action: "Phase 3: Link to Department (MANY_TO_ONE)"
+        expected: "link_integrity Gate 통과"
+      - step: 5
+        action: "Phase 4: YAML 출력"
+        expected: "YAML 스키마 형식 + semantic_consistency 체크리스트"
+
+  - id: "test-2"
+    name: "PK Strategy Selection"
+    description: "3가지 PK 전략 선택 테스트"
+    successCriteria: "SC-002"
+    steps:
+      - step: 1
+        action: "single_column 선택"
+        expected: "employeeId 단일 컬럼 사용"
+      - step: 2
+        action: "composite 선택"
+        expected: "components 입력 요청 (companyCode + employeeNumber)"
+      - step: 3
+        action: "composite_hashed 선택"
+        expected: "SHA256 해시 설명 + 주의사항"
+
+  - id: "test-3"
+    name: "Cardinality Decision Guide"
+    description: "Cardinality 선택 가이드 테스트"
+    successCriteria: "SC-003"
+    steps:
+      - step: 1
+        action: "1:N 관계 설정 (Employee → Addresses)"
+        expected: "FK on 'many' side 안내"
+      - step: 2
+        action: "M:N 관계 설정 (Employee ↔ Projects)"
+        expected: "JOIN TABLE 자동 구성 안내"
+
+  - id: "test-4"
+    name: "/ontology-why Integrity 분석"
+    description: "WHY 질문 5가지 관점 테스트"
+    successCriteria: "SC-004"
+    steps:
+      - step: 1
+        action: "/ontology-why employeeId를 String으로 정의한 이유"
+        expected: "5가지 관점 (Immutability, Determinism, ...) 모두 출력"
+      - step: 2
+        action: "Palantir URL 포함 확인"
+        expected: "palantir.com/docs/* URL 최소 1개"
+
+  - id: "test-5"
+    name: "YAML Output + Semantic Validation"
+    description: "YAML 출력 형식 및 검증 테스트"
+    successCriteria: "SC-005"
+    steps:
+      - step: 1
+        action: "Phase 4 완료 후 YAML 출력"
+        expected: "ontology-objecttype.schema.yaml 형식 준수"
+      - step: 2
+        action: "semantic_consistency 체크리스트"
+        expected: "4가지 체크리스트 항목 표시"
+
+# =============================================================================
+# TEST RESULT TEMPLATE
+# =============================================================================
+
+testResultTemplate: |
+  # Integration Test Results: Ontology Skill Enhancement
+
+  > Workload: ontology-skill-enhancement-20260126
+  > Tested: {timestamp}
+  > Tester: {terminal_id}
+
+  ## Summary
+
+  | Test ID | Name | Status | Success Criteria |
+  |---------|------|--------|------------------|
+  | test-1 | Employee ObjectType Phase 1→4 | ⬜ | SC-001 |
+  | test-2 | PK Strategy Selection | ⬜ | SC-002 |
+  | test-3 | Cardinality Decision Guide | ⬜ | SC-003 |
+  | test-4 | /ontology-why Integrity 분석 | ⬜ | SC-004 |
+  | test-5 | YAML Output + Semantic Validation | ⬜ | SC-005 |
+
+  ## Detailed Results
+
+  ### Test 1: Employee ObjectType Phase 1→4
+
+  **Status:** ⬜ Not Started / ✅ Passed / ❌ Failed
+
+  **Steps:**
+  1. [ ] /ontology-objecttype analyze Employee
+  2. [ ] Phase 1: source=code, domain=HR
+  3. [ ] Phase 2: PK=single_column (employeeId)
+  4. [ ] Phase 3: Link to Department (MANY_TO_ONE)
+  5. [ ] Phase 4: YAML 출력
+
+  **Evidence:**
+  [Screenshot or output snippet]
+
+  **Notes:**
+  [Any observations or issues]
+
+  ---
+
+  [Repeat for test-2 through test-5]
+
+  ## Overall Result
+
+  - Total Tests: 5
+  - Passed: X
+  - Failed: X
+  - Skipped: X
+
+  ## Recommendations
+
+  [Any recommendations based on test results]
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+
+completionCriteria:
+  required:
+    - "Phase 1→4 전체 워크플로우 완료 가능 (SC-001)"
+    - "PK 전략 3가지 옵션 + 근거 제공 확인 (SC-002)"
+    - "Cardinality 결정 가이드 제공 확인 (SC-003)"
+    - "WHY 질문에 5가지 관점 분석 제공 확인 (SC-004)"
+    - "YAML 출력 + Semantic 검증 통과 (SC-005)"
+
+  verification:
+    - command: "test -f .agent/prompts/ontology-skill-enhancement-20260126/test-results.md"
+      expected: "파일 존재"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/prompts/ontology-skill-enhancement-20260126/outputs/phase4-integration-test.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+
+onComplete:
+  - "TaskUpdate(taskId='4', status='completed')"
+  - "Update _progress.yaml: phase4-integration-test.status = 'completed'"
+  - "Move this file to completed/ directory"
+  - "Report L1 summary to Orchestrator"
+  - "Notify Orchestrator that all phases are complete"
+  - "Trigger /collect if all tests pass"

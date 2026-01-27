@@ -21,7 +21,7 @@
 | Stage | Module | Status | Details |
 |-------|--------|--------|---------|
 | **D (Alignment)** | `alignment/engine.py` | ✅ Done | Uses `compute_effective_threshold()` at line 228 |
-| **E (SemanticGraph)** | `semantic_graph/builder.py` | ❌ Static | Uses `node_threshold=0.60`, `edge_threshold=0.55` |
+| **E (SemanticGraph)** | `semantic_graph/builder.py` | ✅ Done | v2.0.0: Dynamic thresholds via `_apply_dynamic_thresholds()` at line 453 |
 | **G (HumanReview)** | `human_review/priority_scorer.py` | ❌ Static | Uses `critical_confidence_threshold=0.30` etc. |
 
 ---
@@ -30,54 +30,42 @@
 
 | # | Phase | Task | Status | Files |
 |---|-------|------|--------|-------|
-| 5-1a | Stage E Threshold | Import `compute_effective_threshold`, `ThresholdConfig` | ⬜ pending | `semantic_graph/builder.py` |
-| 5-1b | Stage E Threshold | Add `ThresholdConfig` to `GraphBuilderConfig` | ⬜ pending | `semantic_graph/builder.py` |
-| 5-1c | Stage E Threshold | Use dynamic threshold for node/edge validation | ⬜ pending | `semantic_graph/builder.py`, `confidence.py` |
+| 5-1a | Stage E Threshold | Import `compute_effective_threshold`, `ThresholdConfig` | ✅ done | `semantic_graph/builder.py:29-34` |
+| 5-1b | Stage E Threshold | Add `ThresholdConfig` to `GraphBuilderConfig` | ✅ done | `semantic_graph/builder.py:94-157` |
+| 5-1c | Stage E Threshold | Use dynamic threshold for node/edge validation | ✅ done | `semantic_graph/builder.py:453-536` |
 | 5-1d | Stage G Threshold | Import threshold utilities to HumanReview | ⬜ pending | `human_review/priority_scorer.py` |
 | 5-1e | Stage G Threshold | Use dynamic threshold for priority scoring | ⬜ pending | `human_review/priority_scorer.py` |
 | 5-2a | Documentation | Update mathpix.md Stage E section | ⬜ pending | `docs/mathpix.md` |
 | 5-2b | Documentation | Update mathpix.md Stage G section | ⬜ pending | `docs/mathpix.md` |
-| 5-3 | Verification | Run full E2E test suite | ⬜ pending | `tests/` |
+| 5-3 | Verification | Add test coverage for dynamic thresholds | ⬜ pending | `tests/semantic_graph/test_builder_threshold.py` |
 
 ---
 
 ## Implementation Details
 
-### Phase 5-1a/b/c: Stage E Threshold Integration
+### Phase 5-1a/b/c: Stage E Threshold Integration ✅ COMPLETE
 
-**Current Code (builder.py:78-80):**
-```python
-@dataclass
-class GraphBuilderConfig:
-    node_threshold: float = 0.60  # Static
-    edge_threshold: float = 0.55  # Static
-```
+**Status:** Implemented in v2.0.0 of `semantic_graph/builder.py`
 
-**Target Code:**
-```python
-from ..schemas import (
-    ThresholdConfig,
-    ThresholdContext,
-    FeedbackStats,
-    compute_effective_threshold,
-)
+**Implementation Summary:**
+- **Lines 29-34**: Imported `ThresholdConfig`, `ThresholdContext`, `FeedbackStats`, `compute_effective_threshold`
+- **Lines 94-157**: Enhanced `GraphBuilderConfig` with:
+  - `threshold_config: Optional[ThresholdConfig]`
+  - `threshold_context: Optional[ThresholdContext]`
+  - `feedback_stats: Optional[FeedbackStats]`
+  - `get_effective_node_threshold(element_type)` method
+  - `get_effective_edge_threshold(edge_type)` method
+- **Lines 453-536**: Implemented `_apply_dynamic_thresholds()` method:
+  - Maps 28 node types to element types (points, curves, shapes, labels, equations, axes)
+  - Maps 13 edge types to element types
+  - Applies per-element dynamic thresholds using `compute_effective_threshold()`
+  - Updates `node.applied_threshold` and `edge.applied_threshold` fields
+- **Lines 414-416**: Integrated into main `build()` pipeline
+- **Lines 626-628**: Integrated into `build_from_components()` alternative entry point
 
-@dataclass
-class GraphBuilderConfig:
-    threshold_config: Optional[ThresholdConfig] = None
-    threshold_context: Optional[ThresholdContext] = None
-
-    # Fallback defaults (used when threshold_config is None)
-    default_node_threshold: float = 0.60
-    default_edge_threshold: float = 0.55
-
-    def get_node_threshold(self, element_type: str, feedback: FeedbackStats) -> float:
-        if self.threshold_config and self.threshold_context:
-            return compute_effective_threshold(
-                element_type, self.threshold_context, feedback, self.threshold_config
-            )
-        return self.default_node_threshold
-```
+**Backward Compatibility:**
+- Static fallback thresholds preserved: `node_threshold=0.60`, `edge_threshold=0.55`
+- Used when `threshold_config` is `None`
 
 ### Phase 5-1d/e: Stage G Threshold Integration
 

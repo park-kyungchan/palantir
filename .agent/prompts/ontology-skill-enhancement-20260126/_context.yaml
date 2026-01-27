@@ -1,0 +1,114 @@
+# =============================================================================
+# Orchestration Context: Ontology Skill Enhancement
+# =============================================================================
+# Workload: ontology-skill-enhancement-20260126
+# Created: 2026-01-26T11:20:00Z
+# =============================================================================
+
+version: "1.0"
+workload_id: "ontology-skill-enhancement-20260126"
+project: "ObjectType 정의 상호작용 시스템 고도화"
+orchestrator: "Terminal-A"
+createdAt: "2026-01-26T11:20:00Z"
+lastUpdated: "2026-01-26T11:20:00Z"
+
+# =============================================================================
+# OBJECTIVES
+# =============================================================================
+
+objectives:
+  primary:
+    - "Phase 1→2→3→4 체계적 워크플로우 구현 (REQ-001)"
+    - "Primary Key 전략 선택 가이드: single/composite/hashed (REQ-002)"
+    - "Property 타입/제약 상세 설정 지원 (REQ-003)"
+    - "Cardinality 결정 및 Link 구현 가이드 (REQ-004)"
+    - "Ontology Integrity 관점 상세 분석 (REQ-005)"
+    - "YAML 정의 + Semantic Integrity 검증 출력 (REQ-006)"
+
+# =============================================================================
+# PHASES
+# =============================================================================
+
+phases:
+  phase1-objecttype-refactor:
+    id: "phase1-objecttype-refactor"
+    name: "/ontology-objecttype 워크플로우 재설계"
+    owner: "unassigned"
+    nativeTaskId: "1"
+    status: "pending"
+    dependencies: []
+    targetFiles:
+      - ".claude/skills/ontology-objecttype/SKILL.md"
+
+  phase2-why-enhancement:
+    id: "phase2-why-enhancement"
+    name: "/ontology-why Integrity 분석 강화"
+    owner: "unassigned"
+    nativeTaskId: "2"
+    status: "pending"
+    dependencies: []
+    targetFiles:
+      - ".claude/skills/ontology-why/SKILL.md"
+
+  phase3-validation-gates:
+    id: "phase3-validation-gates"
+    name: "Validation Gate 규칙 정의"
+    owner: "unassigned"
+    nativeTaskId: "3"
+    status: "pending"
+    dependencies: ["phase1-objecttype-refactor"]
+    targetFiles:
+      - ".claude/skills/ontology-objecttype/SKILL.md"
+
+  phase4-integration-test:
+    id: "phase4-integration-test"
+    name: "통합 테스트 시나리오 실행"
+    owner: "unassigned"
+    nativeTaskId: "4"
+    status: "pending"
+    dependencies: ["phase1-objecttype-refactor", "phase2-why-enhancement", "phase3-validation-gates"]
+    targetFiles:
+      - ".agent/prompts/ontology-skill-enhancement-20260126/test-results.md"
+
+# =============================================================================
+# DEPENDENCY GRAPH
+# =============================================================================
+
+dependencyGraph: |
+  phase1-objecttype-refactor (no deps) ──┬──→ phase3-validation-gates ──┐
+                                         │                              │
+  phase2-why-enhancement (no deps) ──────┼──────────────────────────────┼──→ phase4-integration-test
+                                         │                              │
+                                         └──────────────────────────────┘
+
+  Parallel: phase1 + phase2
+  Sequential: phase3 (after phase1), phase4 (after all)
+
+# =============================================================================
+# SHARED RULES
+# =============================================================================
+
+sharedRules:
+  - "ALWAYS Read target file before modifying"
+  - "Update _progress.yaml after completion"
+  - "Report in L1/L2/L3 format"
+  - "Check blockedBy before starting work"
+  - "Follow V7.1 workload-scoped path convention"
+
+# =============================================================================
+# REFERENCE FILES
+# =============================================================================
+
+referenceFiles:
+  - path: "/home/palantir/park-kyungchan/palantir/docs/ObjectType_Reference.md"
+    reason: "Phase 1-4 워크플로우 + YAML 스키마 + Validation Gates"
+  - path: "/home/palantir/park-kyungchan/palantir/Ontology-Definition/ontology_definition/types/object_type.py"
+    reason: "ObjectType 구조 + 검증 메서드"
+  - path: "/home/palantir/park-kyungchan/palantir/Ontology-Definition/ontology_definition/core/enums.py"
+    reason: "20개 DataType 정의"
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/clarify.yaml"
+    reason: "요구사항 정의 (REQ-001 ~ REQ-006)"
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/research.md"
+    reason: "Gap 분석 + 구현 권장사항"
+  - path: ".agent/prompts/ontology-skill-enhancement-20260126/plan.yaml"
+    reason: "승인된 구현 계획"

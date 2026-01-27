@@ -1,0 +1,107 @@
+# =============================================================================
+# Worker Task: S3 - Completion Decision 결정
+# =============================================================================
+# Workload: cow-refactoring-20260126
+# Native Task ID: 11
+# =============================================================================
+
+taskId: "S3"
+nativeTaskId: "11"
+assignedTo: "unassigned"
+orchestrator: "Sub-Orchestrator (Terminal-B)"
+createdAt: "2026-01-26T18:53:00+09:00"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+workload_id: "cow-refactoring-20260126"
+contextFile: ".agent/prompts/cow-refactoring-20260126/_context.yaml"
+progressFile: ".agent/prompts/cow-refactoring-20260126/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+scope:
+  phaseId: "S3"
+  phaseName: "Completion Decision 결정"
+  description: |
+    최종 완료 여부 결정:
+    1. S1 Traceability Matrix 결과 검토
+    2. S2 Quality Metrics 결과 검토
+    3. 완료 기준 충족 여부 판단:
+       - 모든 Stage가 BaseStage 패턴 적용
+       - pipeline.py 통합 완료
+       - 테스트 통과
+    4. COMPLETE vs ITERATE 결정
+       - COMPLETE: 모든 기준 충족
+       - ITERATE: Gap 발견 시 /rsil-plan 권고
+
+# =============================================================================
+# TARGET FILES (I can MODIFY these)
+# =============================================================================
+targetFiles:
+  - path: ".agent/prompts/cow-refactoring-20260126/synthesis/synthesis_report.md"
+    readOnly: false
+    sections: ["3. Completion Decision"]
+
+# =============================================================================
+# REFERENCE FILES (I can only READ these)
+# =============================================================================
+referenceFiles:
+  - path: ".agent/prompts/cow-refactoring-20260126/synthesis/synthesis_report.md"
+    reason: "S1, S2 결과 검토"
+  - path: ".agent/prompts/cow-refactoring-20260126/handoff-terminal-b.yaml"
+    reason: "원본 요구사항 확인"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies: ["S1", "S2"]
+blockedBy: ["9", "10"]
+canStartImmediately: false
+
+waitCondition: |
+  Check _progress.yaml
+  If S1.status == 'completed' AND S2.status == 'completed', proceed
+  Otherwise, wait
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+completionCriteria:
+  required:
+    - "S1, S2 결과 종합 검토 완료"
+    - "완료 기준 충족 여부 판단 완료"
+    - "COMPLETE 또는 ITERATE 결정 완료"
+    - "synthesis_report.md 최종 완성"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+outputPath: ".agent/prompts/cow-refactoring-20260126/synthesis/synthesis_report.md"
+
+expectedOutputFormat: |
+  ## 3. Completion Decision
+
+  ### 3.1 Criteria Checklist
+  - [x] 모든 Stage가 BaseStage 패턴 적용
+  - [x] pipeline.py 통합 완료
+  - [x] 테스트 통과
+
+  ### 3.2 Decision
+  - [x] **COMPLETE** - 모든 기준 충족
+  - [ ] ITERATE - Gap 발견 (gaps: ...)
+
+  ### 3.3 Next Steps
+  - COMPLETE인 경우: /commit-push-pr 진행
+  - ITERATE인 경우: /rsil-plan으로 Gap 분석
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "TaskUpdate(taskId='11', status='completed')"
+  - "Update _progress.yaml: S3.status = 'completed'"
+  - "Update _progress.yaml: synthesis.status = 'completed'"
+  - "Report final decision to Main Orchestrator"
