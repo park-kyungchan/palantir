@@ -66,3 +66,22 @@ kc-palantir-*.json:Zone.Identifier
 .gitconfig
 *.Zone.Identifier
 *:Zone.Identifier
+
+# Agent runtime files (session-specific, not for version control)
+.agent/tmp/
+.agent/compact-state/
+.agent/logs/
+.agent/prompts/pending/
+.agent/prompts/completed/
+.agent/prompts/**/outputs/
+.agent/prompts/**/_progress.yaml
+
+# Claude session files
+.claude/session-env/
+.claude/file-history/
+.claude/shell-snapshots/
+.claude/backups/
+.claude/todos/
+.claude/tasks/
+.claude/statsig/
+.claude/stats-cache.json
