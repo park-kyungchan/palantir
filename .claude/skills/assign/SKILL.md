@@ -7,16 +7,17 @@ user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "3.0.0"
+version: "3.1.0"
 argument-hint: "<task-id> <terminal-id> [--sub-orchestrator] | auto"
+auto-sub-orchestrator: true  # /assign auto always enables Sub-Orchestrator mode
 ---
 
 # /assign - Task Assignment to Workers
 
-> **Version:** 3.0.0
+> **Version:** 3.1.0
 > **Role:** Assign Native Tasks to workers via owner field
 > **Architecture:** Hybrid (TaskUpdate + _progress.yaml sync)
-> **New:** Sub-Orchestrator mode for hierarchical decomposition
+> **New:** `/assign auto` always enables Sub-Orchestrator mode
 
 ---
 
@@ -61,8 +62,8 @@ fi
 # Sub-Orchestrator mode (Worker can decompose task)
 /assign 1 terminal-b --sub-orchestrator
 
-# Auto assignment
-/assign auto                  # Auto-assign all unassigned tasks
+# Auto assignment (always enables Sub-Orchestrator mode)
+/assign auto                  # Auto-assign all tasks with Sub-Orchestrator enabled
 
 # Reassignment
 /assign 1 terminal-d          # Reassign Task #1 to Terminal D
@@ -148,6 +149,9 @@ function manualAssign(taskId, terminalId, options = {}) {
 
 ```javascript
 function autoAssign() {
+  // Sub-Orchestrator mode is ALWAYS enabled for auto assignment
+  const isSubOrchestrator = true  // V3.1.0: Default enabled
+
   // 1. Get all unassigned tasks
   allTasks = TaskList()
   unassigned = allTasks.filter(t => !t.owner || t.owner === "")
@@ -203,18 +207,24 @@ function autoAssign() {
     terminalIndex++
   }
 
-  // 4. Execute assignments
+  // 4. Execute assignments (with Sub-Orchestrator mode)
   for (assignment of assignments) {
     TaskUpdate({
       taskId: assignment.taskId,
-      owner: assignment.terminalId
+      owner: assignment.terminalId,
+      metadata: {
+        hierarchyLevel: 0,
+        subOrchestratorMode: isSubOrchestrator,  // Always true for auto
+        canDecompose: isSubOrchestrator
+      }
     })
 
     task = TaskGet({taskId: assignment.taskId})
-    updateProgressFile(assignment.taskId, assignment.terminalId, task)
+    updateProgressFile(assignment.taskId, assignment.terminalId, task, isSubOrchestrator)
 
+    let modeLabel = isSubOrchestrator ? " (Sub-Orchestrator)" : ""
     let status = assignment.canStart ? "🟢 Ready" : "🔴 Blocked"
-    console.log(`${status} Task #${assignment.taskId} → ${assignment.terminalId}`)
+    console.log(`${status} Task #${assignment.taskId} → ${assignment.terminalId}${modeLabel}`)
   }
 
   // 5. Summary
@@ -487,7 +497,7 @@ Run in terminal-b:
 Prompt file: .agent/prompts/pending/worker-b-task.yaml
 ```
 
-### Example 2: Auto Assignment
+### Example 2: Auto Assignment (Sub-Orchestrator Default)
 
 ```bash
 /assign auto
@@ -497,32 +507,34 @@ Prompt file: .agent/prompts/pending/worker-b-task.yaml
 ```
 Found 3 unassigned tasks
 Generated 3 terminal IDs
+🔧 Sub-Orchestrator mode enabled for all assignments
 
-🟢 Ready Task #1 → terminal-b
-🔴 Blocked Task #2 → terminal-c
-🔴 Blocked Task #3 → terminal-d
+🟢 Ready Task #1 → terminal-b (Sub-Orchestrator)
+🔴 Blocked Task #2 → terminal-c (Sub-Orchestrator)
+🔴 Blocked Task #3 → terminal-d (Sub-Orchestrator)
 
 === Assignment Summary ===
 Total assigned: 3
 Can start now: 1
 Blocked: 2
+Mode: Sub-Orchestrator (all terminals)
 
 === Worker Instructions ===
 
 🟢 Ready to Start (1):
 
-terminal-b:
-  /worker start
+terminal-b (Sub-Orchestrator):
+  /worker start  (can use /orchestrate if task needs decomposition)
   → Task #1: Implement session registry
 
 🔴 Blocked (2):
 
-terminal-c:
+terminal-c (Sub-Orchestrator):
   (Wait for blockers to complete)
   → Task #2: Prompt file generation
   → Blocked by: 1
 
-terminal-d:
+terminal-d (Sub-Orchestrator):
   (Wait for blockers to complete)
   → Task #3: Lifecycle management
   → Blocked by: 2
@@ -659,6 +671,7 @@ Prompt file: .agent/prompts/pending/worker-b-task.yaml
 | 1.0.0 | Task assignment to workers |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
 | 3.0.0 | Sub-Orchestrator 모드 추가: --sub-orchestrator 플래그, hierarchyLevel 메타데이터, Worker 분해 권한 |
+| 3.1.0 | `/assign auto` 시 Sub-Orchestrator 모드 기본 활성화 (auto-sub-orchestrator: true) |
 
 ---
 

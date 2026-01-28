@@ -62,7 +62,15 @@ review_gate:
     - "design_flow_consistency: L2/L3 structure properly separated"
     - "gap_detection: Missing outputs identified"
     - "conclusion_clarity: Next action recommendations clear"
+    - "integrity_verified: All artifacts pass SHA256 verification"
+    - "chain_valid: Upstream manifest chain verified"
+    - "no_staleness: No stale artifacts detected"
   auto_approve: false
+  tamper_response:
+    on_tampered: "BLOCK_SYNTHESIS"
+    on_stale: "WARN_AND_CONTINUE"
+    on_missing: "BLOCK_SYNTHESIS"
+    integrity_threshold: 1.0
 
 selective_feedback:
   enabled: true
@@ -77,9 +85,9 @@ hooks:
 
 # /collect - Result Aggregation & Completion Verification
 
-> **Version:** 4.0.0
+> **Version:** 4.1.0
 > **Role:** Sub-Orchestrator for multi-source worker result aggregation (EFL Pattern)
-> **Architecture:** Agent Delegation + L2/L3 Structured Collection + Review Gate
+> **Architecture:** Agent Delegation + L2/L3 Structured Collection + Review Gate + Semantic Integrity
 
 ---
 
@@ -349,82 +357,305 @@ ${JSON.stringify(options, null, 2)}
 `
 }
 
-// Generate Phase 3-B prompt (L3 Vertical - Code reality check)
+// Generate Phase 3-B prompt (L3 Vertical - Semantic Integrity Verification)
+// V4.1: SHA256 hash-based verification using semantic-integrity.sh
 function generatePhase3BPrompt(workloadSlug, l2Result) {
-  const deliverables = extractDeliverablesFromL2(l2Result)
-  const crossReferences = extractCrossReferencesFromL2(l2Result)
+  const workers = extractWorkersFromL2(l2Result)
 
-  return `# Phase 3-B: L3 Vertical Verification
+  return `# Phase 3-B: L3 Semantic Integrity Verification
 
-**Objective:** Verify code reality - check if deliverables actually exist and references are valid.
+**Objective:** Verify artifact integrity using SHA256 hashes - ensure worker outputs match their manifests and upstream chain is valid.
 
 **Context from Phase 3-A (L2):**
 - Confidence: ${l2Result.internalLoop?.confidence || 'unknown'}
-- Deliverables identified: ${deliverables.length}
-- Cross-references: ${crossReferences.length}
+- Workers identified: ${workers.length}
 
 **Verification Tasks:**
 
-1. File existence check:
-   For each deliverable reported in L2:
+1. Collect worker manifests:
+   For each worker terminal:
    \`\`\`bash
-   ls -la <file_path>  # Check if file exists
-   wc -l <file_path>   # Get line count (non-empty check)
+   # Find manifest files
+   ls .agent/prompts/${workloadSlug}/outputs/terminal-*/task-*-manifest.yaml 2>/dev/null
+   ls .agent/outputs/terminal-*/task-*-manifest.yaml 2>/dev/null
    \`\`\`
 
-2. Reference accuracy:
-   For each cross-reference:
-   - Verify file paths are valid
-   - Check imports/dependencies resolve
-   - Validate function/class names exist
+2. Verify each manifest using semantic-integrity.sh:
+   \`\`\`bash
+   source .claude/skills/shared/semantic-integrity.sh
+   # For each manifest file:
+   verify_artifact_integrity "<file_path>" "<expected_hash>"
+   \`\`\`
 
-3. Link validation:
-   - Check internal links (file → file)
-   - Validate external references (docs, issues)
+3. Verify upstream chain:
+   \`\`\`bash
+   verify_upstream_chain "${workloadSlug}" "orchestrate"
+   \`\`\`
 
-4. Reality check scoring:
-   - verification_rate = verified_items / total_items
+4. Classify results:
+   - **VERIFIED**: Hash matches, file exists, upstream valid
+   - **TAMPERED**: Hash mismatch (content modified after completion)
+   - **MISSING**: File referenced but not found
+   - **STALE**: Upstream chain broken
+
+5. Calculate integrity_rate:
+   - integrity_rate = verified_count / total_count
    - Target: >= 95%
 
-**Deliverables to Verify:**
-${deliverables.map((d, i) => `${i + 1}. ${d.path} (reported by: ${d.worker})`).join('\n')}
+**Workers to Verify:**
+${workers.map((w, i) => `${i + 1}. ${w.worker_id} (tasks: ${w.tasks_completed?.join(', ') || 'N/A'})`).join('\n')}
 
-**Cross-References to Check:**
-${crossReferences.map((r, i) => `${i + 1}. ${r.file} (mentioned by: ${r.mentioned_by.join(', ')})`).join('\n')}
-
-**Output Format (L3 Verification Results):**
+**Output Format (L3 Semantic Integrity Results):**
 \`\`\`yaml
-l3_vertical:
-  file_checks:
-    - path: /path/to/file.py
-      exists: true
-      size_bytes: 1234
-      line_count: 45
-      status: verified
+l3_semantic_integrity:
+  artifacts:
+    - worker_id: terminal-b
+      task_id: "9"
+      manifest_path: .agent/outputs/terminal-b/task-9-manifest.yaml
+      status: VERIFIED
+      expected_hash: "abc123..."
+      actual_hash: "abc123..."
+      outputs:
+        - path: .agent/outputs/terminal-b/semantic-integrity.sh
+          status: VERIFIED
+          hash: "def456..."
 
-  reference_checks:
-    - file: /path/to/module.py
-      import: "from utils import helper"
-      resolved: true
-      status: verified
+    - worker_id: terminal-c
+      task_id: "10"
+      manifest_path: .agent/outputs/terminal-c/task-10-manifest.yaml
+      status: TAMPERED
+      expected_hash: "xyz789..."
+      actual_hash: "different..."
+      reason: "Content modified after manifest generation"
 
-  link_checks:
-    - type: internal
-      source: README.md
-      target: docs/guide.md
-      valid: true
+  chain_verification:
+    workload: "${workloadSlug}"
+    upstream_phase: "orchestrate"
+    chain_status: VERIFIED
+    context_hash: "upstream_hash..."
 
-  verification_summary:
-    total_items: 25
-    verified: 24
-    failed: 1
-    verification_rate: 0.96
+  integrity_summary:
+    total_artifacts: 5
+    verified: 4
+    tampered: 1
+    missing: 0
+    stale: 0
+    integrity_rate: 0.80
 
   failed_verifications:
-    - path: /path/missing.py
-      reason: "File does not exist"
+    - worker_id: terminal-c
+      task_id: "10"
+      status: TAMPERED
+      reason: "Hash mismatch detected"
 \`\`\`
 `
+}
+
+// Extract workers from L2 result for Phase 3-B
+function extractWorkersFromL2(l2Result) {
+  if (l2Result.result && typeof l2Result.result === 'string') {
+    const parsed = parseAgentResult(l2Result.result, 'l2_horizontal')
+    return parsed.workers || []
+  }
+  return []
+}
+
+// =============================================================================
+// verifySemanticIntegrity - SHA256 Hash-Based Verification (V4.1)
+// Uses semantic-integrity.sh shared module
+// =============================================================================
+async function verifySemanticIntegrity(workloadSlug, workers) {
+  console.log("  🔐 Running semantic integrity verification...")
+
+  const integrityResults = {
+    artifacts: [],
+    chainVerification: null,
+    summary: {
+      total: 0,
+      verified: 0,
+      tampered: 0,
+      missing: 0,
+      stale: 0,
+      integrityRate: 0
+    },
+    failedVerifications: []
+  }
+
+  // 1. Find all worker manifests
+  const manifestPaths = [
+    `.agent/prompts/${workloadSlug}/outputs/terminal-*/task-*-manifest.yaml`,
+    `.agent/outputs/terminal-*/task-*-manifest.yaml`
+  ]
+
+  let manifestFiles = []
+  for (const pattern of manifestPaths) {
+    try {
+      const files = await Glob({ pattern: pattern })
+      manifestFiles = manifestFiles.concat(files)
+    } catch (e) {
+      // Pattern didn't match, continue
+    }
+  }
+
+  console.log(`     Found ${manifestFiles.length} manifest files`)
+
+  // 2. Verify each manifest
+  for (const manifestPath of manifestFiles) {
+    try {
+      const manifestContent = await Read({ file_path: manifestPath })
+
+      // Extract metadata from manifest
+      const workerIdMatch = manifestPath.match(/terminal-([bcd])/)
+      const taskIdMatch = manifestPath.match(/task-(\d+)-manifest/)
+
+      const workerId = workerIdMatch ? `terminal-${workerIdMatch[1]}` : 'unknown'
+      const taskId = taskIdMatch ? taskIdMatch[1] : 'unknown'
+
+      // Call semantic-integrity.sh to verify
+      const verifyResult = await Bash({
+        command: `source .claude/skills/shared/semantic-integrity.sh 2>/dev/null && \
+                  verify_artifact_integrity "${manifestPath}" ""`,
+        description: `Verify integrity of ${manifestPath}`
+      })
+
+      const resultJson = JSON.parse(verifyResult.trim())
+
+      const artifact = {
+        worker_id: workerId,
+        task_id: taskId,
+        manifest_path: manifestPath,
+        status: resultJson.status || 'UNKNOWN',
+        expected_hash: resultJson.expected_hash || null,
+        actual_hash: resultJson.actual_hash || null,
+        outputs: []
+      }
+
+      // Extract output files from manifest and verify each
+      const outputsMatch = manifestContent.match(/outputs:\s*\n([\s\S]*?)(?:\n\n|integrity:|$)/)
+      if (outputsMatch) {
+        const outputLines = outputsMatch[1].match(/path:\s*"([^"]+)"/g) || []
+        for (const line of outputLines) {
+          const pathMatch = line.match(/path:\s*"([^"]+)"/)
+          if (pathMatch) {
+            const outputPath = pathMatch[1]
+            const outputVerify = await Bash({
+              command: `source .claude/skills/shared/semantic-integrity.sh 2>/dev/null && \
+                        verify_artifact_integrity "${outputPath}" "" 2>/dev/null || echo '{"status":"MISSING"}'`,
+              description: `Verify output ${outputPath}`
+            })
+
+            try {
+              const outputResult = JSON.parse(outputVerify.trim())
+              artifact.outputs.push({
+                path: outputPath,
+                status: outputResult.status || 'UNKNOWN',
+                hash: outputResult.actual_hash || null
+              })
+            } catch (e) {
+              artifact.outputs.push({
+                path: outputPath,
+                status: 'MISSING',
+                hash: null
+              })
+            }
+          }
+        }
+      }
+
+      integrityResults.artifacts.push(artifact)
+      integrityResults.summary.total++
+
+      // Update counters
+      switch (artifact.status) {
+        case 'VERIFIED': integrityResults.summary.verified++; break
+        case 'TAMPERED':
+          integrityResults.summary.tampered++
+          integrityResults.failedVerifications.push({
+            worker_id: workerId,
+            task_id: taskId,
+            status: 'TAMPERED',
+            reason: 'Hash mismatch detected'
+          })
+          break
+        case 'MISSING':
+          integrityResults.summary.missing++
+          integrityResults.failedVerifications.push({
+            worker_id: workerId,
+            task_id: taskId,
+            status: 'MISSING',
+            reason: 'Manifest file not found or unreadable'
+          })
+          break
+        case 'STALE':
+          integrityResults.summary.stale++
+          integrityResults.failedVerifications.push({
+            worker_id: workerId,
+            task_id: taskId,
+            status: 'STALE',
+            reason: 'Upstream chain broken'
+          })
+          break
+      }
+
+    } catch (e) {
+      console.log(`     ⚠️  Failed to verify ${manifestPath}: ${e.message}`)
+      integrityResults.summary.missing++
+    }
+  }
+
+  // 3. Verify upstream chain
+  try {
+    const chainResult = await Bash({
+      command: `source .claude/skills/shared/semantic-integrity.sh 2>/dev/null && \
+                verify_upstream_chain "${workloadSlug}" "orchestrate"`,
+      description: 'Verify upstream chain integrity'
+    })
+
+    const chainJson = JSON.parse(chainResult.trim())
+    integrityResults.chainVerification = {
+      workload: workloadSlug,
+      upstream_phase: 'orchestrate',
+      chain_status: chainJson.chain_valid ? 'VERIFIED' : 'BROKEN',
+      context_hash: chainJson.context_hash || null,
+      details: chainJson.phases || []
+    }
+
+    // If chain is broken, mark all as STALE
+    if (!chainJson.chain_valid) {
+      for (const artifact of integrityResults.artifacts) {
+        if (artifact.status === 'VERIFIED') {
+          artifact.status = 'STALE'
+          integrityResults.summary.verified--
+          integrityResults.summary.stale++
+          integrityResults.failedVerifications.push({
+            worker_id: artifact.worker_id,
+            task_id: artifact.task_id,
+            status: 'STALE',
+            reason: 'Upstream chain integrity broken'
+          })
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`     ⚠️  Chain verification failed: ${e.message}`)
+    integrityResults.chainVerification = {
+      workload: workloadSlug,
+      upstream_phase: 'orchestrate',
+      chain_status: 'UNKNOWN',
+      context_hash: null,
+      details: []
+    }
+  }
+
+  // 4. Calculate integrity rate
+  if (integrityResults.summary.total > 0) {
+    integrityResults.summary.integrityRate =
+      integrityResults.summary.verified / integrityResults.summary.total
+  }
+
+  console.log(`     ✅ Integrity check complete: ${integrityResults.summary.verified}/${integrityResults.summary.total} verified (${(integrityResults.summary.integrityRate * 100).toFixed(1)}%)`)
+
+  return integrityResults
 }
 
 // Fallback: Multi-Source Collection (V3.0 legacy - used when agent delegation fails)
@@ -608,14 +839,19 @@ async function collectFromSession() {
 
 ```javascript
 // P3: Aggregate Phase 3-A (L2 Horizontal) and Phase 3-B (L3 Vertical) results
-async function aggregateL2L3Results(delegationResult) {
+// V4.1: Includes Semantic Integrity verification results
+async function aggregateL2L3Results(delegationResult, workloadSlug) {
   console.log("\n📦 P3: Aggregating L2/L3 results...")
 
   const { l2Horizontal, l3Vertical } = delegationResult
 
   // Extract data from agent results
   const l2Data = parseAgentResult(l2Horizontal.result, 'l2_horizontal')
-  const l3Data = parseAgentResult(l3Vertical.result, 'l3_vertical')
+  const l3Data = parseAgentResult(l3Vertical.result, 'l3_semantic_integrity')
+
+  // Run semantic integrity verification (V4.1)
+  const workers = l2Data.workers || []
+  const semanticIntegrity = await verifySemanticIntegrity(workloadSlug, workers)
 
   // Merge L2 and L3 into structured collection
   const aggregated = {
@@ -625,11 +861,12 @@ async function aggregateL2L3Results(delegationResult) {
     crossReferences: l2Data.cross_references || [],
     l2Confidence: l2Data.confidence || 'unknown',
 
-    // From L3 Vertical (Code reality check)
+    // From L3 Vertical - Semantic Integrity (V4.1)
+    semanticIntegrity: semanticIntegrity,
     fileChecks: l3Data.file_checks || [],
     referenceChecks: l3Data.reference_checks || [],
-    verificationRate: l3Data.verification_summary?.verification_rate || 0,
-    failedVerifications: l3Data.failed_verifications || [],
+    verificationRate: semanticIntegrity.summary.integrityRate || 0,
+    failedVerifications: semanticIntegrity.failedVerifications || [],
 
     // Combined metrics
     completedWork: [],
@@ -638,7 +875,7 @@ async function aggregateL2L3Results(delegationResult) {
     confidence: 'unknown'
   }
 
-  // Combine confidence from L2 and L3
+  // Combine confidence from L2 and L3 (using integrity rate instead of file checks)
   aggregated.confidence = calculateCombinedConfidence(
     aggregated.l2Confidence,
     aggregated.verificationRate
@@ -837,15 +1074,37 @@ async function executeReviewGate(aggregated) {
     conclusion_clarity: aggregated.confidence !== 'unknown'
   }
 
+  // V4.1: Semantic Integrity criteria
+  const integrityChecks = checkSemanticIntegrity(aggregated)
+  criteriaChecks.integrity_verified = integrityChecks.allVerified
+  criteriaChecks.chain_valid = integrityChecks.chainValid
+  criteriaChecks.no_staleness = integrityChecks.noStaleness
+
   console.log(`\n  📊 Review Criteria:`)
   console.log(`     - Requirement Alignment: ${criteriaChecks.requirement_alignment}`)
   console.log(`     - L2/L3 Separation: ${criteriaChecks.design_flow_consistency}`)
   console.log(`     - Gap Detection: ${criteriaChecks.gap_detection}`)
   console.log(`     - Conclusion Clarity: ${criteriaChecks.conclusion_clarity}`)
+  console.log(`     - Integrity Verified: ${criteriaChecks.integrity_verified ? '✅' : '❌'}`)
+  console.log(`     - Chain Valid: ${criteriaChecks.chain_valid ? '✅' : '❌'}`)
+  console.log(`     - No Staleness: ${criteriaChecks.no_staleness ? '✅' : '❌'}`)
+
+  // V4.1: Tamper response handling
+  const tamperResponse = evaluateTamperResponse(integrityChecks)
+  if (tamperResponse.action === 'BLOCK_SYNTHESIS') {
+    console.log(`\n  🚫 BLOCKING SYNTHESIS: ${tamperResponse.reason}`)
+    review.approved = false
+    review.errors.push(tamperResponse.reason)
+  } else if (tamperResponse.action === 'WARN_AND_CONTINUE') {
+    console.log(`\n  ⚠️  WARNING: ${tamperResponse.reason}`)
+    review.warnings.push(tamperResponse.reason)
+  }
 
   return {
-    approved: review.approved,
+    approved: review.approved && integrityChecks.passesThreshold,
     criteriaChecks: criteriaChecks,
+    integrityChecks: integrityChecks,
+    tamperResponse: tamperResponse,
     review: review
   }
 }
@@ -877,6 +1136,76 @@ function checkL2L3Separation(aggregated) {
   if (hasL2Data && hasL3Data) return 'properly_separated'
   if (hasL2Data || hasL3Data) return 'partial_separation'
   return 'no_separation'
+}
+
+// V4.1: Check Semantic Integrity from aggregated results
+function checkSemanticIntegrity(aggregated) {
+  const integrity = aggregated.semanticIntegrity || {}
+  const summary = integrity.summary || { total: 0, verified: 0, tampered: 0, missing: 0, stale: 0 }
+  const chainVerification = integrity.chainVerification || { valid: true }
+
+  const allVerified = summary.verified === summary.total && summary.total > 0
+  const chainValid = chainVerification.valid === true
+  const noStaleness = summary.stale === 0
+  const integrityRate = summary.integrityRate || (summary.total > 0 ? summary.verified / summary.total : 1.0)
+
+  // Threshold from frontmatter (default 1.0)
+  const threshold = 1.0
+  const passesThreshold = integrityRate >= threshold
+
+  return {
+    allVerified,
+    chainValid,
+    noStaleness,
+    integrityRate,
+    passesThreshold,
+    summary,
+    hasTampered: summary.tampered > 0,
+    hasMissing: summary.missing > 0,
+    hasStale: summary.stale > 0
+  }
+}
+
+// V4.1: Evaluate tamper response based on integrity check results
+function evaluateTamperResponse(integrityChecks) {
+  // Priority: TAMPERED > MISSING > STALE
+  if (integrityChecks.hasTampered) {
+    return {
+      action: 'BLOCK_SYNTHESIS',
+      reason: `Tampered artifacts detected (${integrityChecks.summary.tampered} files) - SHA256 hash mismatch`,
+      severity: 'CRITICAL'
+    }
+  }
+
+  if (integrityChecks.hasMissing) {
+    return {
+      action: 'BLOCK_SYNTHESIS',
+      reason: `Missing artifacts detected (${integrityChecks.summary.missing} files) - Output files not found`,
+      severity: 'HIGH'
+    }
+  }
+
+  if (integrityChecks.hasStale) {
+    return {
+      action: 'WARN_AND_CONTINUE',
+      reason: `Stale artifacts detected (${integrityChecks.summary.stale} files) - Files modified after manifest generation`,
+      severity: 'MEDIUM'
+    }
+  }
+
+  if (!integrityChecks.chainValid) {
+    return {
+      action: 'BLOCK_SYNTHESIS',
+      reason: 'Upstream chain validation failed - Manifest chain broken',
+      severity: 'CRITICAL'
+    }
+  }
+
+  return {
+    action: 'PASS',
+    reason: 'All integrity checks passed',
+    severity: 'INFO'
+  }
 }
 ```
 
@@ -975,54 +1304,71 @@ ${aggregated.crossReferences.length > 0 ? aggregated.crossReferences.map(ref => 
 
 ---
 
-## Phase 3-B: L3 Vertical Verification (Code Reality Check)
+## Phase 3-B: L3 Semantic Integrity Verification (V4.1)
 
-### File Existence Checks
+> SHA256 hash-based verification using \`semantic-integrity.sh\`
 
-${aggregated.fileChecks.length > 0 ? `
-| File Path | Exists | Size | Lines | Status |
-|-----------|--------|------|-------|--------|
-${aggregated.fileChecks.map(check =>
-  `| \`${check.path}\` | ${check.exists ? '✅' : '❌'} | ${check.size_bytes || 'N/A'} | ${check.line_count || 'N/A'} | ${check.status} |`
+### Artifact Integrity
+
+${aggregated.semanticIntegrity?.artifacts?.length > 0 ? `
+| Worker | Task | Manifest | Status | Hash Match |
+|--------|------|----------|--------|------------|
+${aggregated.semanticIntegrity.artifacts.map(artifact =>
+  `| ${artifact.worker_id} | #${artifact.task_id} | \`${artifact.manifest_path.split('/').pop()}\` | ${getStatusEmoji(artifact.status)} ${artifact.status} | ${artifact.expected_hash === artifact.actual_hash ? '✅' : '❌'} |`
 ).join('\n')}
-` : '*No file checks performed*'}
+` : '*No manifests found for verification*'}
 
-### Reference Accuracy
+### Upstream Chain Verification
 
-${aggregated.referenceChecks.length > 0 ? aggregated.referenceChecks.map(check => `
-- **File:** \`${check.file}\`
-- **Import:** \`${check.import}\`
-- **Resolved:** ${check.resolved ? '✅' : '❌'}
-`).join('\n') : '*No reference checks performed*'}
+${aggregated.semanticIntegrity?.chainVerification ? `
+- **Workload:** ${aggregated.semanticIntegrity.chainVerification.workload}
+- **Upstream Phase:** ${aggregated.semanticIntegrity.chainVerification.upstream_phase}
+- **Chain Status:** ${getStatusEmoji(aggregated.semanticIntegrity.chainVerification.chain_status)} ${aggregated.semanticIntegrity.chainVerification.chain_status}
+- **Context Hash:** \`${aggregated.semanticIntegrity.chainVerification.context_hash || 'N/A'}\`
+` : '*Chain verification not performed*'}
 
-### Verification Summary
+### Integrity Summary
 
-- **Total Items:** ${aggregated.fileChecks.length + aggregated.referenceChecks.length}
-- **Verified:** ${Math.floor((aggregated.verificationRate || 0) * (aggregated.fileChecks.length + aggregated.referenceChecks.length))}
-- **Failed:** ${aggregated.failedVerifications.length}
-- **Verification Rate:** ${(aggregated.verificationRate * 100).toFixed(1)}%
+- **Total Artifacts:** ${aggregated.semanticIntegrity?.summary?.total || 0}
+- **Verified:** ${aggregated.semanticIntegrity?.summary?.verified || 0} ${getStatusEmoji('VERIFIED')}
+- **Tampered:** ${aggregated.semanticIntegrity?.summary?.tampered || 0} ${aggregated.semanticIntegrity?.summary?.tampered > 0 ? '⚠️' : ''}
+- **Missing:** ${aggregated.semanticIntegrity?.summary?.missing || 0}
+- **Stale:** ${aggregated.semanticIntegrity?.summary?.stale || 0}
+- **Integrity Rate:** ${((aggregated.semanticIntegrity?.summary?.integrityRate || 0) * 100).toFixed(1)}%
 
-${aggregated.failedVerifications.length > 0 ? `
-### Failed Verifications
+${aggregated.semanticIntegrity?.failedVerifications?.length > 0 ? `
+### Failed Integrity Checks
 
-${aggregated.failedVerifications.map(failure => `
-- **Path:** \`${failure.path}\`
+${aggregated.semanticIntegrity.failedVerifications.map(failure => `
+- **Worker:** ${failure.worker_id} | **Task:** #${failure.task_id}
+- **Status:** ${getStatusEmoji(failure.status)} ${failure.status}
 - **Reason:** ${failure.reason}
 `).join('\n')}
-` : ''}
+` : '### ✅ All Integrity Checks Passed'}
 
 ---
 
-## Phase 3.5: Review Gate Results
+## Phase 3.5: Review Gate Results (V4.1)
 
 **Status:** ${reviewGateResult.approved ? '✅ APPROVED' : '❌ NEEDS REVIEW'}
 
 ### Review Criteria
 
-- **Requirement Alignment:** ${reviewGateResult.criteriaChecks.requirement_alignment}
-- **Design Flow Consistency:** ${reviewGateResult.criteriaChecks.design_flow_consistency}
-- **Gap Detection:** ${reviewGateResult.criteriaChecks.gap_detection}
-- **Conclusion Clarity:** ${reviewGateResult.criteriaChecks.conclusion_clarity}
+| Criterion | Status |
+|-----------|--------|
+| Requirement Alignment | ${reviewGateResult.criteriaChecks.requirement_alignment} |
+| Design Flow Consistency | ${reviewGateResult.criteriaChecks.design_flow_consistency} |
+| Gap Detection | ${reviewGateResult.criteriaChecks.gap_detection} |
+| Conclusion Clarity | ${reviewGateResult.criteriaChecks.conclusion_clarity} |
+| **Integrity Verified** | ${reviewGateResult.criteriaChecks.integrity_verified ? '✅ Passed' : '❌ Failed'} |
+| **Chain Valid** | ${reviewGateResult.criteriaChecks.chain_valid ? '✅ Valid' : '❌ Broken'} |
+| **No Staleness** | ${reviewGateResult.criteriaChecks.no_staleness ? '✅ Fresh' : '⚠️ Stale'} |
+
+### Tamper Response
+
+- **Action:** ${reviewGateResult.tamperResponse?.action || 'PASS'}
+- **Severity:** ${reviewGateResult.tamperResponse?.severity || 'INFO'}
+${reviewGateResult.tamperResponse?.reason !== 'All integrity checks passed' ? `- **Reason:** ${reviewGateResult.tamperResponse?.reason}` : ''}
 
 ${reviewGateResult.review.warnings.length > 0 ? `
 ### Warnings
@@ -1114,7 +1460,7 @@ ${reviewGateResult.approved
 ## L2 Details
 See: \`.agent/prompts/${workloadSlug}/collection_report.md\`
 
-*Generated by /collect v4.0.0 (EFL Pattern) at ${timestamp}*
+*Generated by /collect v4.1.0 (EFL Pattern + Semantic Integrity) at ${timestamp}*
 `
 }
 
@@ -1169,6 +1515,19 @@ cat .agent/prompts/${aggregated.workloadSlug || 'global'}/_progress.yaml
 ### 3.6 Helper Functions
 
 ```javascript
+// Get status emoji for semantic integrity status (V4.1)
+function getStatusEmoji(status) {
+  switch (status) {
+    case 'VERIFIED': return '✅'
+    case 'TAMPERED': return '🔴'
+    case 'MISSING': return '❓'
+    case 'STALE': return '⚠️'
+    case 'BROKEN': return '🔴'
+    case 'UNKNOWN': return '❔'
+    default: return '❔'
+  }
+}
+
 // Parse agent result (extract YAML/JSON from agent output)
 function parseAgentResult(agentOutput, expectedSection) {
   try {
@@ -1417,7 +1776,7 @@ function getRecommendation(aggregated) {
 
 ```javascript
 async function collect(args) {
-  console.log("🔄 Starting collection with EFL Pattern (v4.0.0)...\n")
+  console.log("🔄 Starting collection with EFL Pattern (v4.1.0)...\n")
 
   // Parse arguments
   const options = {
@@ -1494,7 +1853,7 @@ async function collect(args) {
     // Display summary
     console.log(`
 ╔════════════════════════════════════════════════════════════════╗
-║                   Collection Complete (v4.0.0)                 ║
+║                   Collection Complete (v4.1.0)                 ║
 ╚════════════════════════════════════════════════════════════════╝
 
 📊 Results:
@@ -1747,6 +2106,7 @@ Next: Review and verify outputs
 | 2.1.0 | V2.1.19 Spec compliance |
 | 3.0.0 | **Multi-source collection**, File-first strategy, Fallback support |
 | 4.0.0 | **EFL Integration**: P1 (Sub-Orchestrator), P3 (L2/L3 structure), P5 (Review Gate), P6 (Internal Loop) |
+| 4.1.0 | **Semantic Integrity**: SHA256 hash-based verification, upstream chain validation, artifact status classification |
 
 ### V4.0.0 Detailed Changes
 
@@ -1777,6 +2137,41 @@ Next: Review and verify outputs
 - All existing command-line arguments supported
 - Legacy helper functions retained
 - Graceful degradation when agent delegation unavailable
+
+### V4.1.0 Detailed Changes
+
+**Semantic Integrity Verification:**
+- **Phase 3-B Replacement** - SHA256 hash-based verification replaces file-existence check
+- **`verifySemanticIntegrity()`** - New function integrates with `semantic-integrity.sh` shared module
+- **Artifact Status Classification** - VERIFIED, TAMPERED, MISSING, STALE states
+- **Upstream Chain Validation** - Verifies manifest chain integrity across pipeline phases
+
+**New Functions:**
+- `verifySemanticIntegrity(workloadSlug, workers)` - Main integrity verification orchestrator
+- `getStatusEmoji(status)` - Status-to-emoji mapping helper
+
+**L2 Report Enhancements:**
+- Phase 3-B section updated with Semantic Integrity format
+- Artifact integrity table with Worker, Task, Manifest, Status, Hash Match columns
+- Upstream chain verification results
+- Integrity summary metrics (total, verified, tampered, missing, stale, integrity_rate)
+
+**Integration Points:**
+- Calls `semantic-integrity.sh` via Bash for hash operations
+- Reads worker completion manifests from `.agent/outputs/{terminal}/`
+- Uses `verify_artifact_integrity()` and `verify_upstream_chain()` functions
+
+**Review Gate Enhancement (P5):**
+- **New Criteria** - `integrity_verified`, `chain_valid`, `no_staleness` added to review_gate.criteria
+- **Tamper Response** - Configurable actions: BLOCK_SYNTHESIS, WARN_AND_CONTINUE
+  - `on_tampered: BLOCK_SYNTHESIS` - Block when hash mismatch detected
+  - `on_stale: WARN_AND_CONTINUE` - Warn but allow when files modified after manifest
+  - `on_missing: BLOCK_SYNTHESIS` - Block when output files not found
+- **Integrity Threshold** - `integrity_threshold: 1.0` (100% verification required)
+- **New Functions**:
+  - `checkSemanticIntegrity(aggregated)` - Extract integrity status from aggregated results
+  - `evaluateTamperResponse(integrityChecks)` - Determine appropriate action based on severity
+- **L2 Report** - Review Gate section updated with integrity criteria table and tamper response details
 
 ---
 

@@ -1,0 +1,86 @@
+# =============================================================================
+# Worker Task: Phase 2 - Worker Completion Manifest Generation
+# =============================================================================
+
+taskId: "phase2-worker-manifest"
+nativeTaskId: "10"
+assignedTo: "unassigned"
+orchestrator: "orchestrate"
+createdAt: "2026-01-28T19:55:00+09:00"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+workload_id: "semantic_integrity_validation_20260128_193000"
+contextFile: ".agent/prompts/semantic-integrity-validation-20260128/_context.yaml"
+progressFile: ".agent/prompts/semantic-integrity-validation-20260128/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+scope:
+  phaseId: "phase2-worker-manifest"
+  phaseName: "Worker Completion Manifest Generation"
+  description: |
+    /worker 스킬에서 작업 완료 시 manifest.yaml을 자동 생성하도록 수정.
+    manifest에는 모든 출력 파일의 SHA256 해시와 upstream context hash 포함.
+
+# =============================================================================
+# TARGET FILES
+# =============================================================================
+targetFiles:
+  - path: ".claude/skills/worker/SKILL.md"
+    action: "modify"
+    sections:
+      - "onWorkerComplete() 함수에 manifest 생성 로직 추가"
+      - "완료 시 semantic-integrity.sh 호출"
+
+# =============================================================================
+# REFERENCE FILES
+# =============================================================================
+referenceFiles:
+  - path: ".claude/skills/shared/semantic-integrity.sh"
+    reason: "generate_worker_manifest() 호출"
+  - path: ".agent/prompts/{workload}/outputs/{terminal}/"
+    reason: "출력 디렉토리 구조 확인"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies: ["phase1-shared-module"]
+blockedBy: ["9"]
+canStartImmediately: false
+
+waitCondition: |
+  Check _progress.yaml
+  If phase1-shared-module.status == 'completed', proceed
+  Otherwise, wait
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+completionCriteria:
+  required:
+    - "Worker 완료 시 outputs/{terminal}/manifest.yaml 자동 생성"
+    - "manifest에 모든 .md 파일의 SHA256 해시 포함"
+    - "manifest에 context_hash (upstream orchestrate 해시) 포함"
+    - "기존 Worker 기능에 영향 없음"
+
+  verification:
+    - command: "grep -c 'generate_worker_manifest' .claude/skills/worker/SKILL.md"
+      expected: ">= 1"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/prompts/semantic-integrity-validation-20260128/outputs/phase2-output.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "TaskUpdate(taskId='10', status='completed')"
+  - "Update _progress.yaml: phase2-worker-manifest.status = 'completed'"
+  - "Report to Orchestrator with L1 summary"
+  - "Notify phase3-collect-l3-replace that dependency is complete"
