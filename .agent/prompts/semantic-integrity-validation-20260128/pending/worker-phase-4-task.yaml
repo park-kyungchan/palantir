@@ -1,0 +1,87 @@
+# =============================================================================
+# Worker Task: Phase 4 - Enhance Review Gate
+# =============================================================================
+
+taskId: "phase4-review-gate-enhance"
+nativeTaskId: "12"
+assignedTo: "unassigned"
+orchestrator: "orchestrate"
+createdAt: "2026-01-28T19:55:00+09:00"
+
+# =============================================================================
+# CONTEXT REFERENCE
+# =============================================================================
+workload_id: "semantic_integrity_validation_20260128_193000"
+contextFile: ".agent/prompts/semantic-integrity-validation-20260128/_context.yaml"
+progressFile: ".agent/prompts/semantic-integrity-validation-20260128/_progress.yaml"
+
+# =============================================================================
+# MY SCOPE
+# =============================================================================
+scope:
+  phaseId: "phase4-review-gate-enhance"
+  phaseName: "Enhance Review Gate with Integrity Criteria"
+  description: |
+    /collect의 Phase 3.5 Review Gate (P5)에
+    Semantic Integrity 검증 기준 추가.
+
+    변조 감지 시 BLOCK_SYNTHESIS 액션 트리거.
+
+# =============================================================================
+# TARGET FILES
+# =============================================================================
+targetFiles:
+  - path: ".claude/skills/collect/SKILL.md"
+    action: "modify"
+    sections:
+      - "review_gate frontmatter 업데이트"
+      - "executeReviewGate() 함수에 integrity 기준 추가"
+      - "tamper_response 액션 정의"
+
+# =============================================================================
+# REFERENCE FILES
+# =============================================================================
+referenceFiles:
+  - path: ".agent/prompts/enhanced-feedback-loop-pattern-20260127/plan-final.yaml"
+    reason: "Phase 3.5 Review Gate 패턴 (P5)"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+dependencies: ["phase3-collect-l3-replace"]
+blockedBy: ["11"]
+canStartImmediately: false
+
+waitCondition: |
+  Check _progress.yaml
+  If phase3-collect-l3-replace.status == 'completed', proceed
+  Otherwise, wait
+
+# =============================================================================
+# COMPLETION CRITERIA
+# =============================================================================
+completionCriteria:
+  required:
+    - "review_gate.criteria에 integrity_verified, chain_valid, no_staleness 추가"
+    - "tamper_response.on_tampered = BLOCK_SYNTHESIS"
+    - "tamper_response.on_stale = WARN_AND_CONTINUE"
+    - "Review Gate 통과 조건에 integrity_rate >= 1.0 포함"
+
+  verification:
+    - command: "grep -A5 'review_gate:' .claude/skills/collect/SKILL.md | grep 'integrity'"
+      expected: "integrity criteria found"
+
+# =============================================================================
+# OUTPUT FORMAT
+# =============================================================================
+outputFormat: "L1/L2/L3"
+l2OutputPath: ".agent/prompts/semantic-integrity-validation-20260128/outputs/phase4-output.md"
+
+# =============================================================================
+# ON COMPLETE
+# =============================================================================
+onComplete:
+  - "TaskUpdate(taskId='12', status='completed')"
+  - "Update _progress.yaml: phase4-review-gate-enhance.status = 'completed'"
+  - "Report to Orchestrator with L1 summary"
+  - "Notify phase5-integration-test that dependency is complete"

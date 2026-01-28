@@ -1,0 +1,377 @@
+# =============================================================================
+# Semantic Integrity Validation - Implementation Plan
+# =============================================================================
+# /collect L3 검증을 SHA256 해시 기반 Semantic Integrity로 교체
+# EFL Pattern (P1-P6) 통합 강화
+# =============================================================================
+
+metadata:
+  id: "semantic-integrity-validation"
+  workload_id: "semantic_integrity_validation_20260128_193000"
+  slug: "semantic-integrity-validation-20260128"
+  version: "1.1.0"
+  created_at: "2026-01-28T19:30:00+09:00"
+  updated_at: "2026-01-28T19:50:00+09:00"
+  status: "approved"
+
+  # Source references
+  research_source: "conversation context + /research --standalone output"
+  clarify_source: "conversation context"
+  efl_reference: ".agent/prompts/enhanced-feedback-loop-pattern-20260127/plan-final.yaml"
+
+project:
+  name: "Semantic Integrity Validation for /collect"
+  description: |
+    /collect 스킬의 L3 검증(Phase 3-B)을 기존 파일 존재 확인 방식에서
+    SHA256 해시 기반 Semantic Integrity Validation으로 교체한다.
+
+    이를 통해:
+    1. Worker 출력물 변조 감지
+    2. 파이프라인 무결성 체인 검증 (clarify → research → planning → orchestrate)
+    3. 암호학적 증거 기반 신뢰도 평가
+
+  objectives:
+    - "SHA256 해시 기반 아티팩트 무결성 검증 구현"
+    - "Worker 완료 시 manifest.yaml 자동 생성"
+    - "Upstream context hash 체인 검증"
+    - "변조 감지 시 파이프라인 중단 메커니즘"
+    - "EFL Pattern (P5 Review Gate) 강화"
+
+# =============================================================================
+# PHASES - Implementation Breakdown
+# =============================================================================
+
+phases:
+  # ---------------------------------------------------------------------------
+  # Phase 1: Shared Module 생성
+  # ---------------------------------------------------------------------------
+  - id: "phase1-shared-module"
+    name: "Semantic Integrity Shared Module"
+    description: |
+      SHA256 해시 계산, 검증, manifest 생성을 위한 공통 함수 모듈 생성.
+      모든 스킬에서 재사용 가능한 형태로 설계.
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: []
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/shared/semantic-integrity.sh"
+        action: "create"
+        sections:
+          - "compute_artifact_hash()"
+          - "generate_worker_manifest()"
+          - "verify_artifact_integrity()"
+          - "verify_upstream_chain()"
+          - "get_upstream_hash()"
+
+    referenceFiles:
+      - path: ".claude/skills/clarify/helpers.sh"
+        reason: "yaml_compute_hash() 구현 참조 (line 381-386)"
+      - path: ".claude/skills/shared/validation-feedback-loop.sh"
+        reason: "P4/P5/P6 pattern functions for integration"
+
+    completionCriteria:
+      - "compute_artifact_hash() 함수가 SHA256 해시 반환"
+      - "generate_worker_manifest() 함수가 유효한 YAML manifest 생성"
+      - "verify_artifact_integrity() 함수가 VERIFIED/TAMPERED/MISSING 상태 반환"
+      - "verify_upstream_chain() 함수가 전체 파이프라인 체인 검증"
+      - "단위 테스트 통과 (test-semantic-integrity.sh)"
+
+    verificationSteps:
+      - command: "source .claude/skills/shared/semantic-integrity.sh && type compute_artifact_hash"
+        expected: "function"
+      - command: "echo 'test' > /tmp/test.txt && source .claude/skills/shared/semantic-integrity.sh && compute_artifact_hash /tmp/test.txt"
+        expected: "SHA256 hash string (64 characters)"
+
+  # ---------------------------------------------------------------------------
+  # Phase 2: Worker 스킬 수정
+  # ---------------------------------------------------------------------------
+  - id: "phase2-worker-manifest"
+    name: "Worker Completion Manifest Generation"
+    description: |
+      /worker 스킬에서 작업 완료 시 manifest.yaml을 자동 생성하도록 수정.
+      manifest에는 모든 출력 파일의 SHA256 해시와 upstream context hash 포함.
+    priority: "P0"
+    owner: "terminal-c"
+    dependencies: ["phase1-shared-module"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/worker/SKILL.md"
+        action: "modify"
+        sections:
+          - "onWorkerComplete() 함수에 manifest 생성 로직 추가"
+          - "완료 시 semantic-integrity.sh 호출"
+
+    referenceFiles:
+      - path: ".claude/skills/shared/semantic-integrity.sh"
+        reason: "generate_worker_manifest() 호출"
+      - path: ".agent/prompts/{workload}/outputs/{terminal}/"
+        reason: "출력 디렉토리 구조 확인"
+
+    completionCriteria:
+      - "Worker 완료 시 outputs/{terminal}/manifest.yaml 자동 생성"
+      - "manifest에 모든 .md 파일의 SHA256 해시 포함"
+      - "manifest에 context_hash (upstream orchestrate 해시) 포함"
+      - "기존 Worker 기능에 영향 없음"
+
+    verificationSteps:
+      - command: "ls .agent/prompts/*/outputs/*/manifest.yaml 2>/dev/null | head -1"
+        expected: "manifest.yaml path (after worker completion)"
+
+  # ---------------------------------------------------------------------------
+  # Phase 3: Collect Phase 3-B 교체
+  # ---------------------------------------------------------------------------
+  - id: "phase3-collect-l3-replace"
+    name: "Replace /collect Phase 3-B with Semantic Integrity"
+    description: |
+      /collect 스킬의 Phase 3-B (L3 Vertical Verification)를
+      Semantic Integrity Validation으로 전면 교체.
+
+      기존: 파일 존재 + 참조 확인
+      신규: SHA256 해시 검증 + 체인 무결성
+    priority: "P0"
+    owner: "terminal-b"
+    dependencies: ["phase1-shared-module", "phase2-worker-manifest"]
+    estimatedComplexity: "high"
+
+    targetFiles:
+      - path: ".claude/skills/collect/SKILL.md"
+        action: "modify"
+        sections:
+          - "Phase 3-B: generatePhase3BPrompt() 전면 교체"
+          - "verifySemanticIntegrity() 함수 추가"
+          - "aggregateL2L3Results()에 integrity 결과 통합"
+          - "L2 Report에 semantic_integrity 섹션 추가"
+
+    referenceFiles:
+      - path: ".claude/skills/shared/semantic-integrity.sh"
+        reason: "검증 함수 호출"
+      - path: ".agent/prompts/enhanced-feedback-loop-pattern-20260127/plan-final.yaml"
+        reason: "EFL Phase 3-B 패턴 참조"
+
+    completionCriteria:
+      - "Phase 3-B가 SHA256 해시 기반 검증 수행"
+      - "VERIFIED/TAMPERED/MISSING/STALE 상태 분류"
+      - "integrity_rate 계산 (verified / total)"
+      - "chain_verification 결과 포함"
+      - "L2 Report에 Semantic Integrity 섹션 출력"
+
+    verificationSteps:
+      - command: "grep -c 'semantic_integrity' .claude/skills/collect/SKILL.md"
+        expected: ">= 5"
+      - command: "grep 'verify_artifact_integrity\\|verify_upstream_chain' .claude/skills/collect/SKILL.md"
+        expected: "Both functions referenced"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4: Review Gate 강화
+  # ---------------------------------------------------------------------------
+  - id: "phase4-review-gate-enhance"
+    name: "Enhance Review Gate with Integrity Criteria"
+    description: |
+      /collect의 Phase 3.5 Review Gate (P5)에
+      Semantic Integrity 검증 기준 추가.
+
+      변조 감지 시 BLOCK_SYNTHESIS 액션 트리거.
+    priority: "P1"
+    owner: "terminal-c"
+    dependencies: ["phase3-collect-l3-replace"]
+    estimatedComplexity: "medium"
+
+    targetFiles:
+      - path: ".claude/skills/collect/SKILL.md"
+        action: "modify"
+        sections:
+          - "review_gate frontmatter 업데이트"
+          - "executeReviewGate() 함수에 integrity 기준 추가"
+          - "tamper_response 액션 정의"
+
+    referenceFiles:
+      - path: ".agent/prompts/enhanced-feedback-loop-pattern-20260127/plan-final.yaml"
+        reason: "Phase 3.5 Review Gate 패턴 (P5)"
+
+    completionCriteria:
+      - "review_gate.criteria에 integrity_verified, chain_valid, no_staleness 추가"
+      - "tamper_response.on_tampered = BLOCK_SYNTHESIS"
+      - "tamper_response.on_stale = WARN_AND_CONTINUE"
+      - "Review Gate 통과 조건에 integrity_rate >= 1.0 포함"
+
+    verificationSteps:
+      - command: "grep -A5 'review_gate:' .claude/skills/collect/SKILL.md | grep 'integrity'"
+        expected: "integrity criteria found"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5: Integration Testing
+  # ---------------------------------------------------------------------------
+  - id: "phase5-integration-test"
+    name: "Integration Testing & Documentation"
+    description: |
+      전체 통합 테스트 및 문서 업데이트.
+      실제 워크플로우에서 변조 감지 시나리오 검증.
+    priority: "P2"
+    owner: "terminal-b"
+    dependencies: ["phase4-review-gate-enhance"]
+    estimatedComplexity: "low"
+
+    targetFiles:
+      - path: ".claude/skills/collect/SKILL.md"
+        action: "modify"
+        sections:
+          - "Version History 업데이트 (V5.0)"
+          - "Testing Checklist에 Semantic Integrity 항목 추가"
+
+      - path: ".agent/prompts/semantic-integrity-validation-20260128/test-results.md"
+        action: "create"
+        sections:
+          - "테스트 시나리오 및 결과"
+
+    referenceFiles:
+      - path: ".claude/skills/collect/SKILL.md"
+        reason: "기존 Testing Checklist 참조"
+
+    completionCriteria:
+      - "정상 케이스: 모든 해시 일치 → APPROVED"
+      - "변조 케이스: 해시 불일치 → BLOCK_SYNTHESIS"
+      - "체인 단절: upstream 변경 → STALE 경고"
+      - "Version History에 V5.0 변경사항 기록"
+
+    verificationSteps:
+      - command: "grep 'V5.0\\|5.0.0' .claude/skills/collect/SKILL.md"
+        expected: "Version 5.0 documented"
+
+# =============================================================================
+# DEPENDENCIES - Explicit Dependency Graph
+# =============================================================================
+
+dependencies:
+  internal:
+    - from: "phase2-worker-manifest"
+      to: "phase1-shared-module"
+      reason: "Worker manifest 생성에 semantic-integrity.sh 함수 필요"
+
+    - from: "phase3-collect-l3-replace"
+      to: "phase1-shared-module"
+      reason: "Collect L3 검증에 semantic-integrity.sh 함수 필요"
+
+    - from: "phase3-collect-l3-replace"
+      to: "phase2-worker-manifest"
+      reason: "Collect가 검증할 manifest.yaml이 Worker에서 생성되어야 함"
+
+    - from: "phase4-review-gate-enhance"
+      to: "phase3-collect-l3-replace"
+      reason: "Review Gate가 L3 검증 결과를 기반으로 판단"
+
+    - from: "phase5-integration-test"
+      to: "phase4-review-gate-enhance"
+      reason: "통합 테스트는 모든 구현 완료 후 수행"
+
+  external:
+    - name: "sha256sum"
+      version: "coreutils"
+      reason: "SHA256 해시 계산에 필요"
+
+# =============================================================================
+# PLAN AGENT REVIEW
+# =============================================================================
+
+planAgentReview:
+  status: "approved"
+  reviewedAt: "2026-01-28T19:50:00+09:00"
+  reviewedBy: "Plan Agent (a117a34)"
+  iterationCount: 2
+  comments:
+    - round: 1
+      comment: |
+        NEEDS_REVISION:
+        1. Reference file path error: workload-init.sh → clarify/helpers.sh
+        2. Missing EFL Pattern P2 note (should be N/A)
+        3. Version consistency check recommended
+      resolution: |
+        Fixed in v1.1.0:
+        - Updated referenceFiles to correct path
+        - Added P2 N/A explicit note
+        - Version incremented to 1.1.0
+
+  approvalCriteria:
+    - "All phases have clear completion criteria"
+    - "Dependencies form acyclic graph (verified: linear chain)"
+    - "Target files are specified for each phase"
+    - "Risk mitigation strategies identified"
+    - "EFL Pattern alignment verified (P1, P2-N/A, P3, P4, P5, P6)"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+executionNotes:
+  parallelization: |
+    Phase 1 완료 후 Phase 2, 3 병렬 실행 가능 (단, 3은 2에 의존하므로 순차):
+    - Phase 1: sequential (foundation)
+    - Phase 2 → Phase 3 → Phase 4: sequential chain
+    - Phase 5: sequential (after all)
+
+    실질적으로 linear dependency로 병렬화 제한적.
+
+  criticalPath: |
+    phase1 → phase2 → phase3 → phase4 → phase5
+    Critical path length: 5 phases
+
+  estimatedComplexity: "medium-high"
+
+  riskMitigation:
+    - risk: "기존 Worker가 manifest 없이 완료된 경우"
+      mitigation: "Fallback: manifest 없으면 해시 검증 건너뛰고 WARNING"
+
+    - risk: "SHA256 계산 성능 이슈 (대용량 파일)"
+      mitigation: "1MB 초과 파일은 첫 1MB만 해시 계산 옵션"
+
+    - risk: "파일 시스템 동기화 지연으로 인한 false positive"
+      mitigation: "P6 Internal Loop에서 sync 후 재검증 (max 3회)"
+
+# =============================================================================
+# EFL PATTERN ALIGNMENT
+# =============================================================================
+
+efl_alignment:
+  P1_sub_orchestrator:
+    applied: true
+    description: "/collect가 Phase 3-B Agent에게 Semantic Integrity 검증 위임"
+
+  P2_parallel_agent_deployment:
+    applied: false
+    description: "N/A - 해시 기반 검증은 순차적 특성으로 병렬화 불필요"
+    note: "파일별 해시 계산은 내부적으로 병렬화 가능하나 스킬 레벨에서는 적용 안 함"
+
+  P3_general_purpose_synthesis:
+    applied: true
+    description: "L2 Horizontal + L3 Vertical (Semantic Integrity) 구조 유지"
+
+  P4_selective_feedback:
+    applied: true
+    description: "TAMPERED 발견 시 CRITICAL severity → 즉시 피드백"
+
+  P5_review_gate:
+    applied: true
+    description: "Phase 3.5에서 integrity_verified, chain_valid 기준 추가"
+
+  P6_agent_internal_loop:
+    applied: true
+    description: "해시 불일치 시 파일 시스템 sync 후 max 3회 재검증"
+
+# =============================================================================
+# VERSION HISTORY
+# =============================================================================
+
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-28"
+    changes:
+      - "Initial planning document for Semantic Integrity Validation"
+      - "5 phases defined with clear dependencies"
+      - "EFL Pattern (P1-P6) alignment documented"
+      - "Risk mitigation strategies identified"
+
+# =============================================================================
+# END OF DOCUMENT
+# =============================================================================

@@ -11,11 +11,51 @@ model: opus
 version: "4.0.0"
 argument-hint: "--plan-slug <slug> | <task-description>"
 hooks:
+  Setup:
+    - shared/validation-feedback-loop.sh  # P4/P6: Load feedback loop module
   PreToolUse:
     - type: command
       command: "/home/palantir/.claude/hooks/orchestrate-validate.sh"
       timeout: 30000
       matcher: "TaskCreate"
+# P1: Agent Delegation (Sub-Orchestrator Mode)
+agent_delegation:
+  enabled: true  # Can operate as sub-orchestrator
+  max_sub_agents: 5  # Maximum parallel decomposition agents
+  delegation_strategy: "complexity-based"  # Delegate by task complexity
+  description: |
+    When task complexity is high (>5 phases), decompose into sub-orchestrations.
+    Each sub-agent handles specific domain (e.g., frontend tasks, backend tasks, infra tasks).
+# P4: Selective Feedback for Gate 4
+selective_feedback:
+  enabled: true
+  severity_filter: "warning"  # Only pass warnings and above
+  feedback_targets:
+    - gate: "ORCHESTRATE"
+      severity: ["error", "warning"]
+      action: "block_on_error"  # Block on errors, warn on warnings
+    - gate: "DEPENDENCY"
+      severity: ["error"]
+      action: "block"  # Always block on dependency errors
+  description: |
+    Severity-based filtering for Gate 4 validation warnings.
+    Errors block task creation. Warnings are logged but allow continuation.
+# P6: Agent Internal Feedback Loop
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    - "Each phase has clear completion criteria"
+    - "Dependencies form DAG (no cycles)"
+    - "Target files are specified for each phase"
+    - "Phase count is reasonable (3-10)"
+  refinement_triggers:
+    - "Missing completion criteria detected"
+    - "Circular dependency detected"
+    - "Phase too large (>3 target files)"
+  description: |
+    Local decomposition refinement loop before task creation.
+    Self-validates phase breakdown and iterates until quality threshold met.
 ---
 
 # /orchestrate - Task Decomposition Engine
@@ -107,10 +147,11 @@ Output:
 */
 ```
 
-### 3.2 Phase 2: Gate 4 Validation (Shift-Left)
+### 3.2 Phase 2: Gate 4 Validation with Selective Feedback (Shift-Left + P4)
 
 ```javascript
 // Gate 4: Validate phase dependencies BEFORE creating tasks
+// P4: Uses selective_feedback to filter by severity
 console.log("🔍 Running Gate 4: Phase dependency validation...")
 
 const phasesJson = JSON.stringify(analysis.phases.map(p => ({
@@ -120,18 +161,69 @@ const phasesJson = JSON.stringify(analysis.phases.map(p => ({
 
 const gate4Result = await validatePhaseDependencies(phasesJson)
 
-if (gate4Result.result === "failed") {
+// P4: Selective Feedback - Filter by severity
+const selectiveFeedback = applySelectiveFeedback(gate4Result, {
+  gate: "ORCHESTRATE",
+  severityFilter: "warning",  // Only pass warnings and above
+  action: "block_on_error"    // Block on errors, warn on warnings
+})
+
+if (selectiveFeedback.shouldBlock) {
   console.log("❌ Gate 4 FAILED - Fix errors before creating tasks:")
-  gate4Result.errors.forEach(e => console.log(`   - ${e}`))
-  return { status: "gate4_failed", errors: gate4Result.errors }
+  selectiveFeedback.errors.forEach(e => console.log(`   - ${e}`))
+  return { status: "gate4_failed", errors: selectiveFeedback.errors }
 }
 
-if (gate4Result.warnings.length > 0) {
-  console.log("⚠️  Gate 4 warnings:")
-  gate4Result.warnings.forEach(w => console.log(`   - ${w}`))
+// P4: Log warnings but allow continuation
+if (selectiveFeedback.warnings.length > 0) {
+  console.log("⚠️  Gate 4 warnings (non-blocking):")
+  selectiveFeedback.warnings.forEach(w => console.log(`   - ${w}`))
+  // Log to validation log for later review
+  logValidationWarnings("ORCHESTRATE", selectiveFeedback.warnings)
 }
 
 console.log("✅ Gate 4 PASSED - Proceeding to workload initialization")
+```
+
+#### P4: Selective Feedback Helper
+
+```javascript
+function applySelectiveFeedback(gateResult, config) {
+  const { severityFilter, action } = config
+
+  // Filter by severity
+  const severityLevels = { "error": 3, "warning": 2, "info": 1 }
+  const minLevel = severityLevels[severityFilter] || 2
+
+  const filteredErrors = gateResult.errors || []
+  const filteredWarnings = (gateResult.warnings || []).filter(w => {
+    // Keep warnings that meet severity threshold
+    return severityLevels["warning"] >= minLevel
+  })
+
+  // Determine blocking behavior
+  let shouldBlock = false
+  if (action === "block_on_error") {
+    shouldBlock = filteredErrors.length > 0
+  } else if (action === "block") {
+    shouldBlock = filteredErrors.length > 0 || filteredWarnings.length > 0
+  }
+
+  return {
+    shouldBlock,
+    errors: filteredErrors,
+    warnings: filteredWarnings,
+    originalResult: gateResult.result
+  }
+}
+
+function logValidationWarnings(gate, warnings) {
+  const logPath = ".agent/logs/validation_gates.log"
+  const timestamp = new Date().toISOString()
+  const logEntry = warnings.map(w => `[${timestamp}] [${gate}] [WARNING] ${w}`).join('\n')
+
+  Bash(`echo "${logEntry}" >> ${logPath}`)
+}
 ```
 
 ### 3.3 Phase 3: Initialize Workload Directory (Validate-Before-Create)
@@ -397,6 +489,23 @@ outputFormat: "L1/L2/L3"
 l2OutputPath: ".agent/outputs/Worker/${phase.id}-${slugify(phase.name)}.md"
 
 # =============================================================================
+# VALIDATION CRITERIA (P6: For internal feedback loop)
+# =============================================================================
+validation_criteria:
+  required:
+    - "All target files modified as specified"
+    - "Completion criteria met"
+    - "No regressions in existing tests"
+  optional:
+    - "Code follows existing patterns"
+    - "Documentation updated if applicable"
+  self_check: |
+    Before marking complete, verify:
+    1. All targetFiles have been modified
+    2. Each completionCriteria item is satisfied
+    3. Run verificationSteps commands and confirm expected output
+
+# =============================================================================
 # ON COMPLETE
 # =============================================================================
 onComplete:
@@ -472,16 +581,26 @@ return summary
 
 ## 4. Helper Functions
 
-### 4.1 analyzeTask(input)
+### 4.1 analyzeTask(input) with P6 Internal Feedback Loop
 
-Uses CoT to break down task:
+Uses CoT to break down task with self-validation loop:
 
 ```javascript
 function analyzeTask(input) {
-  // Use sequential thinking or claude-code-guide
-  analysis = Task({
-    subagent_type: "general-purpose",
-    prompt: `
+  // P6: Internal feedback loop for decomposition quality
+  const maxIterations = 3
+  let iteration = 0
+  let analysis = null
+  let validationResult = null
+
+  while (iteration < maxIterations) {
+    iteration++
+    console.log(`🔄 Decomposition iteration ${iteration}/${maxIterations}`)
+
+    // Use sequential thinking or claude-code-guide
+    analysis = Task({
+      subagent_type: "general-purpose",
+      prompt: `
 ## Task Analysis
 
 Break down this task into phases:
@@ -493,6 +612,14 @@ Break down this task into phases:
 - Suggest target files for each phase
 - Estimate 3-5 phases maximum
 - Include completion criteria
+
+${iteration > 1 ? `
+## Previous Iteration Feedback
+The previous decomposition had issues:
+${validationResult.issues.map(i => `- ${i}`).join('\n')}
+
+Please refine the decomposition to address these issues.
+` : ''}
 
 ## Output Format (JSON)
 {
@@ -519,11 +646,87 @@ Break down this task into phases:
   "estimatedWorkers": 3
 }
 `,
-    description: "Analyze task for orchestration"
-  })
+      description: "Analyze task for orchestration"
+    })
 
+    const parsed = JSON.parse(analysis)
+
+    // P6: Validate decomposition quality
+    validationResult = validateDecomposition(parsed)
+
+    if (validationResult.isValid) {
+      console.log(`✅ Decomposition validated on iteration ${iteration}`)
+      return parsed
+    }
+
+    console.log(`⚠️  Decomposition needs refinement:`)
+    validationResult.issues.forEach(i => console.log(`   - ${i}`))
+  }
+
+  // Max iterations reached - return best effort with warning
+  console.log(`⚠️  Max iterations reached. Using current decomposition with warnings.`)
   return JSON.parse(analysis)
 }
+```
+
+#### P6: Decomposition Validation
+
+```javascript
+function validateDecomposition(analysis) {
+  const issues = []
+
+  // Validation criteria from agent_internal_feedback_loop config
+  const criteria = {
+    hasCompletionCriteria: true,
+    noCycles: true,
+    hasTargetFiles: true,
+    reasonablePhaseCount: true
+  }
+
+  // Check 1: Each phase has clear completion criteria
+  for (const phase of analysis.phases) {
+    if (!phase.completionCriteria || phase.completionCriteria.length === 0) {
+      issues.push(`Phase "${phase.name}" missing completion criteria`)
+      criteria.hasCompletionCriteria = false
+    }
+  }
+
+  // Check 2: Dependencies form DAG (no cycles)
+  const cycles = detectCycles(analysis.phases)
+  if (cycles.length > 0) {
+    issues.push(`Circular dependency detected: ${cycles.join(' → ')}`)
+    criteria.noCycles = false
+  }
+
+  // Check 3: Target files are specified for each phase
+  for (const phase of analysis.phases) {
+    if (!phase.targetFiles || phase.targetFiles.length === 0) {
+      issues.push(`Phase "${phase.name}" missing target files`)
+      criteria.hasTargetFiles = false
+    }
+  }
+
+  // Check 4: Phase count is reasonable (3-10)
+  if (analysis.phases.length < 1) {
+    issues.push(`No phases defined`)
+    criteria.reasonablePhaseCount = false
+  } else if (analysis.phases.length > 10) {
+    issues.push(`Too many phases (${analysis.phases.length}) - consider sub-orchestration`)
+    criteria.reasonablePhaseCount = false
+  }
+
+  // Check 5: Phase not too large (refinement trigger)
+  for (const phase of analysis.phases) {
+    if (phase.targetFiles && phase.targetFiles.length > 3) {
+      issues.push(`Phase "${phase.name}" too large (${phase.targetFiles.length} files) - consider splitting`)
+    }
+  }
+
+  const isValid = Object.values(criteria).every(v => v === true)
+
+  return { isValid, issues, criteria }
+}
+```
 ```
 
 ### 4.2 generateDependencyGraph(phases)
@@ -741,6 +944,7 @@ After `/orchestrate` completes:
 
 ## 8. Testing Checklist
 
+**Core Functionality:**
 - [ ] Single-phase task (no dependencies)
 - [ ] Multi-phase linear task (A → B → C)
 - [ ] Multi-phase parallel task (A, B → C)
@@ -749,6 +953,28 @@ After `/orchestrate` completes:
 - [ ] File overwrite handling
 - [ ] TaskCreate error handling
 - [ ] Large task (>5 phases)
+
+**P1: Agent Delegation (Sub-Orchestrator):**
+- [ ] agent_delegation config present
+- [ ] max_sub_agents set to 5
+- [ ] delegation_strategy is "complexity-based"
+- [ ] Can delegate large tasks (>5 phases)
+
+**P4: Selective Feedback:**
+- [ ] selective_feedback config present
+- [ ] Errors block task creation
+- [ ] Warnings logged but don't block
+- [ ] Validation warnings logged to .agent/logs/validation_gates.log
+- [ ] Severity filter works correctly
+
+**P6: Internal Feedback Loop:**
+- [ ] agent_internal_feedback_loop config present
+- [ ] Max 3 iterations for decomposition
+- [ ] Validates completion criteria presence
+- [ ] Validates DAG (no cycles)
+- [ ] Validates target files presence
+- [ ] Validates phase count (3-10)
+- [ ] Worker prompts include validation_criteria section
 
 ---
 
@@ -780,12 +1006,14 @@ After `/orchestrate` completes:
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| `model-selection.md` | ✅ | `model: sonnet` 설정 |
+| `model-selection.md` | ✅ | `model: opus` for complex decomposition |
 | `context-mode.md` | ✅ | `context: standard` 사용 |
 | `tool-config.md` | ✅ | V2.1.0: Task delegation pattern |
-| `hook-config.md` | N/A | Skill 내 Hook 없음 |
+| `hook-config.md` | ✅ | PreToolUse hook: orchestrate-validate.sh |
 | `permission-mode.md` | N/A | Skill에는 해당 없음 |
 | `task-params.md` | ✅ | Task decomposition + dependencies |
+| `feedback-loop.md` | ✅ | P6: Internal feedback loop for decomposition |
+| `selective-feedback.md` | ✅ | P4: Severity-based Gate 4 filtering |
 
 ### Version History
 
@@ -795,6 +1023,10 @@ After `/orchestrate` completes:
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
 | 3.0.0 | Autonomous Execution Protocol 추가 |
 | 3.1.0 | Multi-project isolation: `--plan-slug` 지원, 프로젝트별 context/progress 파일 분리 |
+| 4.1.0 | **P1**: Added agent_delegation (sub-orchestrator mode) |
+| | **P4**: Added selective_feedback for Gate 4 (severity-based filtering) |
+| | **P6**: Added agent_internal_feedback_loop (decomposition self-validation) |
+| | Worker prompts now include validation_criteria section |
 
 ---
 

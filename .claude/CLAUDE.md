@@ -112,16 +112,16 @@ B       C       D
 | `/clarify` | Requirements elicitation with PE techniques | opus |
 | `/research` | Post-clarify codebase + external analysis | opus |
 | `/planning` | YAML planning with Plan Agent review | opus |
-| `/orchestrate` | Task decomposition + dependency setup | sonnet |
-| `/assign` | Worker assignment to terminals | sonnet |
-| `/worker` | Worker self-service (start, done, status) | sonnet |
-| `/collect` | Aggregate worker results | sonnet |
+| `/orchestrate` | Task decomposition + dependency setup | opus |
+| `/assign` | Worker assignment to terminals | opus |
+| `/worker` | Worker self-service (start, done, status) | opus |
+| `/collect` | Aggregate worker results | opus |
 | `/synthesis` | Traceability matrix + quality validation | opus |
 | `/rsil-plan` | Gap analysis + remediation planning | opus |
-| `/build` | Generate skills, hooks, agents | sonnet |
-| `/build-research` | Research for build operations | sonnet |
-| `/commit-push-pr` | Git commit and PR creation | sonnet |
-| `/docx-automation` | DOCX document generation | sonnet |
+| `/build` | Generate skills, hooks, agents | opus |
+| `/build-research` | Research for build operations | opus |
+| `/commit-push-pr` | Git commit and PR creation | opus |
+| `/docx-automation` | DOCX document generation | opus |
 
 ---
 

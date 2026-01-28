@@ -1,0 +1,55 @@
+# Workload Context - EFL Extension
+# Generated: 2026-01-28
+
+workload:
+  id: efl-extension_20260128_165000
+  slug: efl-extension-20260128
+  title: "Enhanced Feedback Loop Pattern Extension to All Skills"
+  status: PLANNING_COMPLETE
+  created_at: "2026-01-28T16:50:00+09:00"
+
+source_specification:
+  file: ".agent/prompts/enhanced-feedback-loop-pattern-20260127/plan-final.yaml"
+  version: "1.0.0"
+  principles: [P1, P2, P3, P4, P5, P6]
+
+orchestrating_plan:
+  file: ".agent/prompts/efl-extension-20260128/orchestrating-plan.yaml"
+  version: "1.0.0"
+  total_tasks: 8
+  total_effort: "17.5 hours"
+
+terminals:
+  main:
+    role: Orchestrator
+    status: ACTIVE
+    current_phase: orchestration
+
+  terminal_b:
+    role: "Infrastructure & Foundation"
+    workload_id: "terminal-b-efl-20260128"
+    tasks: [B-001, B-002, B-003, B-004]
+    phases: [1, 2]
+    status: PENDING
+
+  terminal_c:
+    role: "Mid-Pipeline Skills"
+    workload_id: "terminal-c-efl-20260128"
+    tasks: [C-001, C-002]
+    phases: [3]
+    status: PENDING
+
+  terminal_d:
+    role: "End-Pipeline Skills"
+    workload_id: "terminal-d-efl-20260128"
+    tasks: [D-001, D-002]
+    phases: [4]
+    status: PENDING
+
+phase_status:
+  phase_1: PENDING
+  phase_2: PENDING
+  phase_3: PENDING
+  phase_4: PENDING
+
+next_action: "Execute /assign to distribute tasks to terminals"

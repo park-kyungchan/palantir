@@ -8,7 +8,7 @@ user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "1.0.0"
+version: "2.0.0"
 argument-hint: "[--research-slug <slug>] [--auto-approve]"
 allowed-tools:
   - Read
@@ -18,6 +18,8 @@ allowed-tools:
   - Grep
   - AskUserQuestion
 hooks:
+  Setup:
+    - shared/parallel-agent.sh  # P2: Load parallel agent module
   PreToolUse:
     - type: command
       command: "/home/palantir/.claude/hooks/planning-preflight.sh"
@@ -27,11 +29,33 @@ hooks:
     - type: command
       command: "/home/palantir/.claude/hooks/planning-finalize.sh"
       timeout: 150000
+# P1: Agent Delegation (Sub-Orchestrator Mode)
+agent_delegation:
+  enabled: true  # Can operate as sub-orchestrator
+  max_sub_agents: 4  # Maximum parallel sub-planners
+  delegation_strategy: "phase-based"  # Delegate by implementation phase
+  description: |
+    When planning scope is large (>5 phases), break into sub-planning tasks.
+    Each sub-agent handles specific implementation area (e.g., frontend plan, backend plan, infra plan).
+# P2: Parallel Agent Configuration
+parallel_agent_config:
+  enabled: true  # Use parallel agents for faster planning
+  complexity_detection: "auto"  # Automatically detect complexity level
+  agent_count_by_complexity:
+    simple: 1      # Basic planning (single phase)
+    moderate: 2    # Standard planning (2-3 phases)
+    complex: 3     # Complex planning (4-6 phases)
+    very_complex: 4  # Comprehensive planning (7+ phases)
+  synchronization_strategy: "barrier"  # Wait for all agents (default)
+  aggregation_strategy: "merge"  # Merge all planning outputs
+  description: |
+    Parallel agent execution for faster comprehensive planning.
+    Complexity-based scaling: 1-4 agents based on phase count.
 ---
 
 # /planning - YAML Planning Document Generator
 
-> **Version:** 1.0.0
+> **Version:** 2.0.0
 > **Role:** Planning Document Generation with Plan Agent Review
 > **Pipeline Position:** After /research, Before /orchestrate
 
@@ -85,25 +109,25 @@ Generate structured YAML planning documents from research outputs that:
 
 ## 3. Input Processing
 
-### 3.1 Source Files
+### 3.1 Source Files (V7.1 Workload-Scoped)
 
 ```javascript
-// Required input files
-const researchPath = `.agent/research/${slug}.md`
-const clarifyPath = `.agent/clarify/${slug}.yaml`
+// V7.1: Workload-scoped paths
+const researchPath = `.agent/prompts/${slug}/research.md`
+const clarifyPath = `.agent/prompts/${slug}/clarify.yaml`
 
 // Optional: previous planning iterations
-const previousPlanPath = `.agent/plans/${slug}.yaml`
+const previousPlanPath = `.agent/prompts/${slug}/plan.yaml`
 ```
 
 ### 3.2 Research Loading
 
 ```javascript
 async function loadResearch(slug) {
-  // 1. Read research document
-  const research = await Read({ file_path: `.agent/research/${slug}.md` })
+  // V7.1: Load from workload-scoped path
+  const research = await Read({ file_path: `.agent/prompts/${slug}/research.md` })
 
-  // 2. Extract key sections
+  // Extract key sections
   const sections = {
     codebaseAnalysis: extractSection(research, '## Codebase Analysis'),
     externalResearch: extractSection(research, '## External Research'),
@@ -119,10 +143,10 @@ async function loadResearch(slug) {
 
 ```javascript
 async function loadClarify(slug) {
-  // 1. Read clarify YAML
-  const clarify = await Read({ file_path: `.agent/clarify/${slug}.yaml` })
+  // V7.1: Load from workload-scoped path
+  const clarify = await Read({ file_path: `.agent/prompts/${slug}/clarify.yaml` })
 
-  // 2. Parse requirements and extract workload_id (handle nested structures)
+  // Parse requirements and extract workload_id (handle nested structures)
   // Priority: metadata.workload_id > workload_id > metadata.id > slug
   const workloadId = clarify.metadata?.workload_id
     || clarify.workload_id
@@ -489,8 +513,8 @@ metadata:
   created_at: "${timestamp}"
   updated_at: "${timestamp}"
   status: "draft"
-  research_source: ".agent/research/${slug}.md"
-  clarify_source: ".agent/clarify/${slug}.yaml"
+  research_source: ".agent/prompts/${slug}/research.md"
+  clarify_source: ".agent/prompts/${slug}/clarify.yaml"
 
 project:
   name: "${clarify.originalRequest.substring(0, 50)}"
@@ -536,48 +560,116 @@ executionNotes:
 
 ## 7. Output Format (L1/L2/L3)
 
-### L1 - Summary (Default)
+### 7.1 L1 - Summary (YAML Return Format)
 
-```
-✅ Planning Complete
+**Purpose:** Machine-readable summary for main orchestrator (not emoji-based).
 
-📄 Document: .agent/plans/enhanced-pipeline-skills.yaml
-📊 Status: approved (Plan Agent reviewed)
-🔄 Phases: 6 phases identified
-⏱️ Estimated: ~2 hours (parallel execution)
+```yaml
+taskId: planning-{id}
+agentType: planning
+status: success
+summary: "Planning document generated with {phase_count} phases, status: {approved|needs_revision}"
 
-Next: /orchestrate --plan-slug enhanced-pipeline-skills
-```
+priority: HIGH
+l2Path: .agent/prompts/{workload-slug}/plan.yaml
+requiresL2Read: false
 
-### L2 - Phase Overview
+phases:
+  total: {count}
+  parallel_capable: {count}
+  critical_path_length: {count}
 
-```
-✅ Planning Complete
+planAgentReview:
+  status: "{approved|needs_revision|escalated}"
+  iterations: {count}
 
-📄 Document: .agent/plans/enhanced-pipeline-skills.yaml
+estimatedComplexity: "{low|medium|high}"
+nextActionHint: "/orchestrate --plan-slug {slug}"
 
-Phases:
-  1. phase1-research-skill (P0) - Terminal-B
-     └─ Create /research skill with codebase analysis
-  2. phase2-planning-skill (P0) - Terminal-C
-     └─ Create /planning skill with Plan Agent review
-  3. phase3a-research-hook (P1) - Terminal-B [depends: phase1]
-     └─ Create research-finalize.sh hook
-  4. phase3b-planning-hook (P1) - Terminal-C [depends: phase2]
-     └─ Create planning-finalize.sh hook
-  5. phase4-rsil-plan (P0) - Terminal-B [depends: phase1, phase2]
-     └─ Create /rsil-plan skill
-  6. phase5-testing (P0) - Both [depends: all above]
-     └─ E2E pipeline testing
-
-Plan Agent Review: ✅ Approved (2 iterations)
-
-Next: /orchestrate --plan-slug enhanced-pipeline-skills
+clarifySlug: "{clarify_slug}"
+researchSlug: "{research_slug}"
+planningSlug: "{planning_slug}"
 ```
 
-### L3 - Full Detail
+**Example:**
 
-Outputs the complete YAML planning document.
+```yaml
+taskId: planning-20260125_143022
+agentType: planning
+status: success
+summary: "Planning document generated with 6 phases, status: approved"
+
+priority: HIGH
+l2Path: .agent/prompts/user-auth-20260125/plan.yaml
+requiresL2Read: false
+
+phases:
+  total: 6
+  parallel_capable: 2
+  critical_path_length: 4
+
+planAgentReview:
+  status: "approved"
+  iterations: 2
+
+estimatedComplexity: "medium"
+nextActionHint: "/orchestrate --plan-slug user-auth-20260125"
+
+clarifySlug: "user-auth-20260125"
+researchSlug: "user-auth-20260125"
+planningSlug: "user-auth-20260125"
+```
+
+### 7.2 L2 - Phase Overview (Human-Readable)
+
+**Purpose:** Detailed phase breakdown for human review.
+
+```markdown
+# Planning Complete: {project_name}
+
+**Document:** .agent/prompts/{workload-slug}/plan.yaml
+**Status:** {approved|needs_revision} (Plan Agent reviewed)
+**Phases:** {count} phases identified
+**Complexity:** {low|medium|high}
+
+## Phase Breakdown
+
+| ID | Phase Name | Priority | Owner | Dependencies |
+|----|------------|----------|-------|--------------|
+| phase1 | {name} | P0 | terminal-b | - |
+| phase2 | {name} | P0 | terminal-c | - |
+| phase3 | {name} | P1 | terminal-b | phase1 |
+
+## Parallel Execution Opportunities
+
+Phases that can run in parallel:
+- Group 1: phase1, phase2 (independent)
+- Group 2: phase3a, phase3b (both depend on Group 1)
+
+## Critical Path
+
+Longest dependency chain: phase1 → phase3 → phase5 → phase6 (4 phases)
+
+## Plan Agent Review
+
+- **Status:** Approved ✅
+- **Iterations:** 2
+- **Issues Resolved:**
+  - Round 1: Added missing completion criteria for phase3
+  - Round 2: Clarified dependency between phase4 and phase5
+
+## Next Step
+
+```bash
+/orchestrate --plan-slug {planning_slug}
+```
+```
+
+### 7.3 L3 - Full Detail
+
+**Purpose:** Complete YAML planning document with all metadata.
+
+Outputs the entire planning document from `.agent/prompts/{workload-slug}/plan.yaml`.
 
 ---
 
@@ -586,45 +678,51 @@ Outputs the complete YAML planning document.
 ### 8.1 Upstream: /research
 
 ```bash
-# /research outputs to .agent/research/{slug}.md
+# V7.1: Workload-scoped paths
+# /research outputs to .agent/prompts/{workload-slug}/research.md
 # /planning reads this file for context
 ```
 
 ### 8.2 Downstream: /orchestrate
 
 ```bash
-# /planning outputs to .agent/plans/{slug}.yaml
+# V7.1: Workload-scoped paths
+# /planning outputs to .agent/prompts/{workload-slug}/plan.yaml
 # /orchestrate reads this to create Native Tasks
-/orchestrate --plan-slug enhanced-pipeline-skills
+/orchestrate --plan-slug {workload-slug}
 ```
 
-### 8.3 Pipeline Diagram
+### 8.3 Pipeline Diagram (V7.1 Workload-Scoped)
 
 ```
 /clarify ─────────────────────────────────────────────────────────────┐
     │                                                                 │
+    │ Outputs: .agent/prompts/{slug}/clarify.yaml                     │
     ▼                                                                 │
 /research ───────────────────────────────────────────────────────┐    │
     │                                                            │    │
+    │ Outputs: .agent/prompts/{slug}/research.md                 │    │
+    │ L1 Return: YAML summary                                    │    │
     ▼                                                            │    │
 /planning ◀──────────────────────────────────────────────────────┘    │
     │                                                                 │
-    ├── Load .agent/research/{slug}.md                                │
-    ├── Load .agent/clarify/{slug}.yaml ◀─────────────────────────────┘
+    ├── Load .agent/prompts/{slug}/research.md ◀──────────────────────┘
+    ├── Load .agent/prompts/{slug}/clarify.yaml ◀─────────────────────┘
     ├── Generate planning document
     ├── Plan Agent review loop
     │       │
-    │       ├── APPROVED → Save .agent/plans/{slug}.yaml
-    │       │                   │
+    │       ├── APPROVED → Save .agent/prompts/{slug}/plan.yaml
+    │       │             → Return L1 YAML summary
+    │       │
     │       └── REJECTED → Iterate (max 3) or Escalate
     │
     ▼
 /orchestrate
     │
-    ├── Read .agent/plans/{slug}.yaml
+    ├── Read .agent/prompts/{slug}/plan.yaml
     ├── TaskCreate for each phase
     ├── TaskUpdate(addBlockedBy) for dependencies
-    └── Generate worker prompts
+    └── Generate worker prompts → .agent/prompts/{slug}/pending/
 ```
 
 ---
@@ -759,19 +857,43 @@ function detectCircularDependencies(phases) {
 
 ## 11. Testing Checklist
 
-- [ ] Load research document from `.agent/research/`
-- [ ] Load clarify document from `.agent/clarify/`
+**Core Functionality:**
+- [ ] Load research document from `.agent/prompts/{slug}/research.md`
+- [ ] Load clarify document from `.agent/prompts/{slug}/clarify.yaml`
 - [ ] Generate valid YAML planning document
 - [ ] Plan Agent review identifies missing criteria
 - [ ] Review loop iterates until approved
 - [ ] Circular dependency detection works
-- [ ] Output saved to `.agent/plans/`
-- [ ] L1/L2/L3 output formats work
+- [ ] Output saved to `.agent/prompts/{slug}/plan.yaml`
 - [ ] Stop hook finalizes correctly
+
+**Output Formats:**
+- [ ] L1 returns YAML format (not emoji-based)
+- [ ] L1 includes l2Path and requiresL2Read fields
+- [ ] L2 human-readable phase overview works
+- [ ] L3 outputs complete YAML document
+
+**P1: Agent Delegation (Sub-Orchestrator):**
+- [ ] agent_delegation config present
+- [ ] max_sub_agents set to 4
+- [ ] delegation_strategy is "phase-based"
+- [ ] Can delegate large planning tasks (>5 phases)
+
+**P2: Parallel Agents:**
+- [ ] parallel_agent_config section present
+- [ ] Complexity detection works (1-4 agents)
+- [ ] Agent count scales by phase count
+- [ ] Synchronization strategy is "barrier"
+- [ ] Aggregation strategy is "merge"
+
+**V7.1 Workload-Scoped Paths:**
+- [ ] Uses .agent/prompts/{slug}/ directory structure
+- [ ] Backward compatible with old paths (fallback)
+- [ ] workload_id properly extracted from clarify
 
 ---
 
-## Parameter Module Compatibility (V2.1.0)
+## 12. Parameter Module Compatibility (V2.1.0)
 
 | Module | Status | Notes |
 |--------|--------|-------|
@@ -781,6 +903,19 @@ function detectCircularDependencies(phases) {
 | `hook-config.md` | ✅ | Stop hook for finalization |
 | `permission-mode.md` | N/A | No elevated permissions needed |
 | `task-params.md` | ✅ | Generates TaskCreate-ready phases |
+
+---
+
+## 13. Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0.0 | 2026-01-28 | **P1**: Added agent_delegation (sub-orchestrator mode) |
+| | | **P2**: Added parallel_agent_config (complexity-based scaling) |
+| | | **L1 Format**: Standardized to YAML (not emoji-based) |
+| | | **V7.1**: Workload-scoped paths (.agent/prompts/{slug}/) |
+| | | Added l2Path and requiresL2Read fields to L1 |
+| 1.0.0 | 2026-01-24 | Initial planning skill with Plan Agent review |
 
 ---
 

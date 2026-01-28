@@ -2,30 +2,125 @@
 name: synthesis
 description: |
   Traceability matrix, quality validation, completion decision.
+
+  **V3.0 Changes (EFL Integration):**
+  - P1: Skill as Sub-Orchestrator (agent delegation)
+  - P3: General-Purpose Synthesis (semantic matching replaces keyword matching)
+  - P5: Phase 3.5 Review Gate (holistic verification)
+  - P6: Agent Internal Feedback Loop with convergence detection
+
 user-invocable: true
 disable-model-invocation: false
 context: standard
 model: opus
-version: "2.2.0"
-argument-hint: "[--strict | --lenient]"
+version: "3.0.0"
+argument-hint: "[--strict | --lenient | --dry-run]"
+
+# EFL Configuration (Enhanced Feedback Loop)
+agent_delegation:
+  enabled: true
+  mode: "sub_orchestrator"
+  description: "Synthesis delegates to specialized agents for semantic analysis"
+  agents:
+    - type: "explore"
+      role: "Phase 3-A: Semantic requirement-deliverable matching"
+      output_format: "L2 traceability matrix with confidence scores"
+    - type: "explore"
+      role: "Phase 3-B: Quality validation (consistency, completeness, coherence)"
+      output_format: "L3 quality analysis with issue categorization"
+  return_format:
+    l1: "Synthesis decision (COMPLETE/ITERATE) with coverage"
+    l2_path: ".agent/prompts/{workload}/synthesis/synthesis_report.md"
+    requires_l2_read: false
+
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  convergence_detection:
+    enabled: true
+    metrics:
+      - "coverage_improvement_rate"
+      - "critical_issue_reduction"
+      - "gap_closure_velocity"
+    threshold: "improvement < 5% over last iteration"
+  validation_criteria:
+    completeness:
+      - "All requirements analyzed"
+      - "All deliverables cross-referenced"
+      - "Decision rationale clear"
+    quality:
+      - "Traceability matrix complete"
+      - "Quality checks executed"
+      - "Gaps identified with specificity"
+    internal_consistency:
+      - "Coverage calculation accurate"
+      - "Decision aligns with threshold"
+      - "No contradictions in validation results"
+
+review_gate:
+  enabled: true
+  phase: "3.5"
+  criteria:
+    - "requirement_alignment: All requirements addressed in traceability matrix"
+    - "design_flow_consistency: Quality validation results are coherent"
+    - "gap_detection: Missing/partial requirements clearly identified"
+    - "conclusion_clarity: Decision (COMPLETE/ITERATE) is unambiguous"
+  auto_approve: false
+
+selective_feedback:
+  enabled: true
+  threshold: "MEDIUM"
+  action_on_low: "log_only"
+  action_on_medium_plus: "trigger_review_gate"
+
+iteration_tracking:
+  enabled: true
+  max_pipeline_iterations: 5
+  convergence_detection: true
+  history_path: ".agent/prompts/{workload}/synthesis/iteration_history.yaml"
+
+hooks:
+  Setup:
+    - shared/validation-feedback-loop.sh  # P4/P5/P6 integration
 ---
 
 # /synthesis - Traceability & Quality Validation
 
-> **Version:** 1.0
-> **Role:** Cross-reference requirements ↔ deliverables, validate quality, decide COMPLETE or ITERATE
-> **Architecture:** Hybrid (Native Task System + File-Based Analysis)
+> **Version:** 3.0.0
+> **Role:** Sub-Orchestrator for semantic traceability analysis & completion decision (EFL Pattern)
+> **Architecture:** Agent Delegation + Semantic Matching + Convergence Detection + Review Gate
 
 ---
 
 ## 1. Purpose
 
-**Synthesis Agent** that:
-1. Reads original requirements from `/clarify` logs
-2. Reads collected deliverables from `/collect` report
-3. Builds traceability matrix (requirements ↔ deliverables)
-4. Validates quality (consistency, completeness, coherence)
-5. Makes COMPLETE or ITERATE decision
+**Synthesis Sub-Orchestrator** (P1) that:
+1. **Orchestration**: Delegates analysis to specialized agents (not direct execution)
+2. **Phase 3-A (Semantic Matching)**: AI-powered requirement-deliverable matching (P3)
+3. **Phase 3-B (Quality Validation)**: Consistency, completeness, coherence checks (P3)
+4. **Phase 3.5 Review Gate**: Holistic verification of synthesis results (P5)
+5. **Convergence Detection**: Tracks iteration progress and detects convergence (P6)
+6. **Decision**: Makes COMPLETE or ITERATE decision with remediation plan
+
+### Enhanced Feedback Loop (EFL) Integration
+
+| Pattern | Implementation |
+|---------|----------------|
+| **P1: Sub-Orchestrator** | Skill conducts agents, doesn't analyze directly |
+| **P3: Semantic Synthesis** | Replaces keyword matching with semantic analysis |
+| **P5: Review Gate** | Phase 3.5 holistic verification before decision |
+| **P6: Internal Loop + Convergence** | Agent self-validation + iteration tracking |
+| **P4: Selective Feedback** | Severity-based threshold (MEDIUM+) |
+
+### Key Changes in V3.0
+
+| Feature | V2.2 (Old) | V3.0 (New) |
+|---------|------------|-----------|
+| **Matching Algorithm** | Keyword-based (heuristic) | Semantic AI-powered matching |
+| **Agent Delegation** | Direct execution | Sub-Orchestrator pattern (P1) |
+| **Iteration Tracking** | Manual count | Convergence detection (P6) |
+| **Review Gate** | None | Phase 3.5 holistic verification (P5) |
+| **Internal Loop** | Single-pass | Agent self-validation (max 3 iterations) |
 
 ---
 
@@ -53,18 +148,408 @@ argument-hint: "[--strict | --lenient]"
 
 ---
 
-## 3. Execution Protocol
+## 3. Execution Protocol (EFL Pattern)
 
-### 3.1 Phase 1: Read Requirements
+### Overview: Sub-Orchestrator Flow
+
+```
+/synthesis (Main Skill - Orchestrator)
+    │
+    ├─▶ Phase 0: Setup & Context Loading
+    │   ├─▶ Read requirements from /clarify
+    │   ├─▶ Read collection report from /collect
+    │   └─▶ Load iteration history (if exists)
+    │
+    ├─▶ Phase 1: Agent Delegation (P1)
+    │   ├─▶ Agent 1 (Explore): Phase 3-A Semantic Matching
+    │   │   ├─▶ AI-powered requirement-deliverable matching
+    │   │   ├─▶ Internal Loop (P6): Self-validate, max 3 iterations
+    │   │   └─▶ Output: L2 traceability matrix with confidence scores
+    │   │
+    │   └─▶ Agent 2 (Explore): Phase 3-B Quality Validation
+    │       ├─▶ Consistency, completeness, coherence checks
+    │       ├─▶ Internal Loop (P6): Self-validate, max 3 iterations
+    │       └─▶ Output: L3 quality analysis with issue categorization
+    │
+    ├─▶ Phase 2: Convergence Detection (P6)
+    │   ├─▶ Compare with previous iteration (if exists)
+    │   ├─▶ Calculate improvement rate
+    │   └─▶ Detect convergence or progress stall
+    │
+    ├─▶ Phase 3: Selective Feedback Check (P4)
+    │   └─▶ If MEDIUM+ severity → Trigger iteration
+    │
+    ├─▶ Phase 3.5: Review Gate (P5)
+    │   └─▶ Holistic verification (requirement_alignment, etc.)
+    │
+    └─▶ Phase 4: Make Decision & Generate Report
+        ├─▶ COMPLETE → /commit-push-pr
+        └─▶ ITERATE → /rsil-plan or escalate
+```
+
+### 3.0 Phase 0: Setup & Context Loading
 
 ```javascript
-function readRequirements() {
-  // 1. Find latest clarify log
-  clarifyLogs = Glob(".agent/plans/clarify_*.md")
+async function loadSynthesisContext(workloadSlug) {
+  console.log("🔧 Phase 0: Loading synthesis context...")
+
+  // Source validation-feedback-loop.sh
+  await Bash({
+    command: 'source /home/palantir/.claude/skills/shared/validation-feedback-loop.sh',
+    description: 'Load P4/P5/P6 feedback loop functions'
+  })
+
+  // 1. Read requirements from /clarify
+  console.log("📋 Reading requirements...")
+  const requirementsResult = await readRequirements(workloadSlug)
+
+  if (requirementsResult.requirements.length === 0) {
+    throw new Error("No requirements found. Run /clarify first.")
+  }
+
+  console.log(`  Found ${requirementsResult.totalCount} requirements (P0: ${requirementsResult.p0Count}, P1: ${requirementsResult.p1Count})`)
+
+  // 2. Read collection report from /collect
+  console.log("📦 Reading collection report...")
+  const collectionResult = await readCollectionReport(workloadSlug)
+
+  if (!collectionResult.source) {
+    throw new Error("Collection report not found. Run /collect first.")
+  }
+
+  console.log(`  Found ${collectionResult.deliverables.length} deliverables`)
+
+  // 3. Load iteration history (P6 convergence detection)
+  console.log("📊 Loading iteration history...")
+  const iterationHistory = await loadIterationHistory(workloadSlug)
+
+  if (iterationHistory.iterations.length > 0) {
+    console.log(`  Previous iterations: ${iterationHistory.iterations.length}`)
+    console.log(`  Last coverage: ${iterationHistory.lastIteration?.coverage || 'N/A'}`)
+  }
+
+  return {
+    requirements: requirementsResult,
+    collection: collectionResult,
+    iterationHistory: iterationHistory,
+    workloadSlug: workloadSlug
+  }
+}
+```
+
+### 3.1 Phase 1: Agent Delegation (P1 - Sub-Orchestrator Pattern)
+
+```javascript
+// P1: Skill as Sub-Orchestrator - Delegates to agents instead of direct analysis
+async function delegateSynthesis(context, options) {
+  console.log("🎯 P1: Delegating synthesis to specialized agents...")
+
+  // Phase 3-A: Semantic Matching (Requirement-Deliverable Traceability)
+  console.log("\n🧠 Phase 3-A: Semantic Matching (AI-powered traceability)")
+  const semanticMatchingResult = await delegateToAgent({
+    agentType: 'explore',
+    task: 'phase3a_semantic_matching',
+    prompt: generatePhase3APrompt(context),
+    validationCriteria: {
+      required_sections: ['traceability_matrix', 'coverage_stats', 'confidence_scores'],
+      completeness_checks: ['all_requirements_analyzed', 'all_deliverables_cross_referenced'],
+      quality_thresholds: { min_confidence: 0.6 }
+    }
+  })
+
+  // Phase 3-B: Quality Validation (Consistency, Completeness, Coherence)
+  console.log("\n🔍 Phase 3-B: Quality Validation (3C checks)")
+  const qualityValidationResult = await delegateToAgent({
+    agentType: 'explore',
+    task: 'phase3b_quality_validation',
+    prompt: generatePhase3BPrompt(context, semanticMatchingResult),
+    validationCriteria: {
+      required_sections: ['consistency_check', 'completeness_check', 'coherence_check'],
+      completeness_checks: ['all_3c_checks_executed', 'critical_issues_identified'],
+      quality_thresholds: { max_critical_issues: 0 }
+    }
+  })
+
+  return {
+    semanticMatching: semanticMatchingResult,
+    qualityValidation: qualityValidationResult
+  }
+}
+
+// Delegate to agent with P6 internal feedback loop
+async function delegateToAgent(config) {
+  const { agentType, task, prompt, validationCriteria } = config
+
+  console.log(`  🤖 Spawning ${agentType} agent for ${task}...`)
+
+  // P6: Generate agent prompt with internal loop instructions
+  const agentPromptWithLoop = await Bash({
+    command: `source /home/palantir/.claude/skills/shared/validation-feedback-loop.sh && \
+              generate_agent_prompt_with_internal_loop "${agentType}" '${JSON.stringify(validationCriteria)}'`,
+    description: 'Generate agent prompt with P6 internal loop'
+  })
+
+  // Combine task prompt with internal loop instructions
+  const fullPrompt = `${agentPromptWithLoop}\n\n---\n\n${prompt}`
+
+  // Launch agent via Task tool
+  const agentResult = await Task({
+    subagent_type: agentType,
+    description: `${task} with internal loop`,
+    prompt: fullPrompt,
+    model: 'opus'  // Use opus for high-quality semantic analysis
+  })
+
+  // Extract internal loop metadata
+  const loopMetadata = extractInternalLoopMetadata(agentResult)
+
+  console.log(`  ✅ Agent completed: ${loopMetadata.iterations_used} iterations, status: ${loopMetadata.final_validation_status}`)
+
+  return {
+    task: task,
+    result: agentResult,
+    internalLoop: loopMetadata
+  }
+}
+
+// Generate Phase 3-A prompt (Semantic Matching - AI-powered)
+function generatePhase3APrompt(context) {
+  const { requirements, collection } = context
+
+  return `# Phase 3-A: Semantic Requirement-Deliverable Matching
+
+**Objective:** Build traceability matrix using AI-powered semantic analysis (not keyword matching).
+
+## Requirements to Analyze (${requirements.totalCount} total)
+
+${requirements.requirements.map((r, i) => `
+### ${i + 1}. ${r.id} (${r.priority})
+**Description:** ${r.description}
+**Category:** ${r.category}
+`).join('\n')}
+
+## Deliverables to Match (${collection.deliverables.length} total)
+
+${collection.deliverables.map((d, i) => `
+${i + 1}. **File:** \`${d.item}\`
+   **Task:** ${d.taskSubject || 'N/A'}
+   **Owner:** ${d.owner || 'N/A'}
+`).join('\n')}
+
+## Task Instructions
+
+### 1. Semantic Analysis (NOT Keyword Matching)
+
+For each requirement:
+- Understand the **semantic intent** (what the requirement actually means)
+- Analyze deliverable content for **conceptual match** (not just keyword overlap)
+- Consider:
+  - Does the deliverable address the core need of the requirement?
+  - Are there functional/semantic relationships beyond lexical similarity?
+  - Context clues: file paths, task descriptions, code patterns
+
+**Example:**
+- Requirement: "User authentication system"
+- Deliverable: \`auth/jwt-handler.py\` (HIGH confidence - semantic match)
+- Deliverable: \`utils/password-hash.py\` (MEDIUM confidence - supporting match)
+- Deliverable: \`ui/login-form.tsx\` (MEDIUM confidence - UI component)
+
+### 2. Confidence Scoring
+
+For each match, assign confidence score:
+- **0.9-1.0**: Strong semantic match (directly addresses requirement)
+- **0.7-0.89**: Good match (addresses requirement with minor gaps)
+- **0.5-0.69**: Moderate match (partially addresses requirement)
+- **0.3-0.49**: Weak match (tangentially related)
+- **0.0-0.29**: No match (unrelated)
+
+### 3. Coverage Calculation
+
+- **Covered (100%)**: At least one deliverable with confidence >= 0.7
+- **Partial (50%)**: At least one deliverable with confidence >= 0.4 and < 0.7
+- **Missing (0%)**: No deliverables with confidence >= 0.4
+
+## Output Format (L2 Traceability Matrix)
+
+\`\`\`yaml
+l2_semantic_matching:
+  traceability_matrix:
+    - requirement_id: "REQ-001"
+      requirement: "User authentication system"
+      priority: "P0"
+      status: "covered"  # covered | partial | missing
+      coverage: 100
+      matches:
+        - deliverable: "auth/jwt-handler.py"
+          confidence: 0.95
+          rationale: "Directly implements JWT authentication logic"
+        - deliverable: "utils/password-hash.py"
+          confidence: 0.75
+          rationale: "Provides password hashing for auth system"
+      notes: "Strong coverage with multiple supporting files"
+
+    # ... (one entry per requirement)
+
+  coverage_stats:
+    total_requirements: ${requirements.totalCount}
+    covered: 0  # Count of covered requirements
+    partial: 0  # Count of partial requirements
+    missing: 0  # Count of missing requirements
+    overall_coverage: 0.0  # Percentage (0-100)
+
+  confidence_scores:
+    average_confidence: 0.0  # Average confidence across all matches
+    high_confidence_matches: 0  # Count of matches with confidence >= 0.7
+    low_confidence_matches: 0  # Count of matches with confidence < 0.5
+\`\`\`
+
+## Important Notes
+
+- **Do NOT use simple keyword matching** - This is semantic analysis
+- Analyze file content if needed (use Read tool for key files)
+- Consider architectural patterns (e.g., MVC, layers)
+- Cross-reference task descriptions with requirement intent
+- Be conservative with confidence scores (better to underestimate than overestimate)
+`
+}
+
+// Generate Phase 3-B prompt (Quality Validation - 3C Checks)
+function generatePhase3BPrompt(context, semanticMatchingResult) {
+  const traceabilityMatrix = parseAgentResult(semanticMatchingResult.result, 'l2_semantic_matching')
+
+  return `# Phase 3-B: Quality Validation (Consistency, Completeness, Coherence)
+
+**Objective:** Validate synthesis quality using 3C checks.
+
+## Context from Phase 3-A (Semantic Matching)
+
+**Traceability Matrix:**
+- Total Requirements: ${traceabilityMatrix.coverage_stats?.total_requirements || context.requirements.totalCount}
+- Covered: ${traceabilityMatrix.coverage_stats?.covered || 0}
+- Partial: ${traceabilityMatrix.coverage_stats?.partial || 0}
+- Missing: ${traceabilityMatrix.coverage_stats?.missing || 0}
+- Overall Coverage: ${traceabilityMatrix.coverage_stats?.overall_coverage || 0}%
+
+## Quality Validation Tasks
+
+### 1. Consistency Check
+
+**Goal:** Detect conflicting or duplicate implementations.
+
+**Checks:**
+- Duplicate deliverables (same file modified by multiple tasks)
+- Conflicting patterns (e.g., two different auth implementations)
+- Inconsistent naming conventions
+- Architectural mismatches
+
+**For each issue found:**
+\`\`\`yaml
+- type: "duplicate" | "conflict" | "inconsistency"
+  description: "Clear description of the issue"
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+  affected_items: ["file1.py", "file2.py"]
+  recommendation: "How to resolve"
+\`\`\`
+
+### 2. Completeness Check
+
+**Goal:** Ensure all critical requirements are addressed.
+
+**Checks:**
+- All P0 requirements must be covered (not partial/missing)
+- No missing test files (look for .test., .spec., test_ patterns)
+- Documentation exists (README, API docs, etc.)
+- Error handling present
+- Security requirements addressed
+
+**For each issue found:**
+\`\`\`yaml
+- type: "p0_missing" | "no_tests" | "no_docs" | "missing_requirement"
+  description: "What is missing"
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+  requirement_id: "REQ-001"  # If applicable
+  recommendation: "What needs to be added"
+\`\`\`
+
+### 3. Coherence Check
+
+**Goal:** Verify components work together cohesively.
+
+**Checks:**
+- Orphan deliverables (deliverables not mapping to any requirement)
+- Integration gaps (components that don't connect)
+- Missing dependencies (required imports/modules not found)
+- Logical flow issues
+
+**For each issue found:**
+\`\`\`yaml
+- type: "orphan" | "integration_gap" | "missing_dependency"
+  description: "What breaks coherence"
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+  affected_items: ["item1", "item2"]
+  recommendation: "How to improve coherence"
+\`\`\`
+
+## Deliverables to Validate
+
+${context.collection.deliverables.map((d, i) => `${i + 1}. \`${d.item}\` (Task: ${d.taskSubject || 'N/A'})`).join('\n')}
+
+## Output Format (L3 Quality Analysis)
+
+\`\`\`yaml
+l3_quality_validation:
+  consistency_check:
+    passed: true | false
+    issues: [...]  # List of issues found
+
+  completeness_check:
+    passed: true | false
+    issues: [...]  # List of issues found
+    p0_missing_count: 0  # Count of P0 requirements not covered
+
+  coherence_check:
+    passed: true | false
+    issues: [...]  # List of issues found
+    orphan_count: 0  # Count of orphan deliverables
+
+  overall_validation:
+    passed: true | false  # True if no CRITICAL issues
+    critical_issue_count: 0
+    high_issue_count: 0
+    medium_issue_count: 0
+    low_issue_count: 0
+    total_issue_count: 0
+\`\`\`
+
+## Important Notes
+
+- Use Read tool to inspect actual file content when needed
+- Be thorough - check all aspects of 3C
+- Severity levels guide:
+  - CRITICAL: Blocks release (P0 missing, major conflicts)
+  - HIGH: Should fix before release (security, missing tests)
+  - MEDIUM: Fix in next iteration (minor inconsistencies)
+  - LOW: Nice to have (documentation improvements)
+`
+}
+
+// Legacy: Read Requirements (V2.2 - kept for fallback)
+function readRequirements(workloadSlug) {
+  // ... (existing implementation preserved for fallback)
+  // Find latest clarify log in workload or global paths
+  const clarifyPaths = [
+    workloadSlug ? `.agent/prompts/${workloadSlug}/clarify.yaml` : null,
+    '.agent/plans/clarify_*.md'
+  ].filter(Boolean)
+
+  let clarifyLogs = []
+  for (const pattern of clarifyPaths) {
+    clarifyLogs.push(...Glob(pattern))
+  }
 
   if (clarifyLogs.length === 0) {
     console.log("⚠️  No /clarify logs found")
-    return { requirements: [], source: null }
+    return { requirements: [], source: null, totalCount: 0, p0Count: 0, p1Count: 0 }
   }
 
   // Sort by date (newest first)
@@ -77,18 +562,9 @@ function readRequirements() {
   latestLog = clarifyLogs[0]
   console.log(`📋 Reading requirements from: ${latestLog}`)
 
-  // 2. Parse requirements
+  // Parse requirements
   content = Read(latestLog)
   requirements = parseRequirements(content)
-
-  /*
-  Output structure:
-  [
-    { id: "REQ-001", description: "User authentication", priority: "P0", category: "feature" },
-    { id: "REQ-002", description: "Input validation", priority: "P1", category: "security" },
-    ...
-  ]
-  */
 
   return {
     requirements: requirements,
@@ -100,7 +576,163 @@ function readRequirements() {
 }
 ```
 
-### 3.2 Phase 2: Read Collection Report
+### 3.2 Phase 2: Convergence Detection (P6)
+
+```javascript
+// P6: Track iteration progress and detect convergence
+async function detectConvergence(currentIteration, iterationHistory, options) {
+  console.log("\n📈 P6: Convergence Detection...")
+
+  if (iterationHistory.iterations.length === 0) {
+    console.log("  First iteration - no convergence data")
+    return {
+      converged: false,
+      reason: "first_iteration",
+      improvementRate: null,
+      recommendation: "continue"
+    }
+  }
+
+  const lastIteration = iterationHistory.lastIteration
+  const currentCoverage = currentIteration.coverage
+  const lastCoverage = lastIteration.coverage
+
+  // Calculate improvement rate
+  const improvementRate = currentCoverage - lastCoverage
+  const improvementPercent = ((improvementRate / (100 - lastCoverage)) * 100).toFixed(1)
+
+  console.log(`  Last coverage: ${lastCoverage}%`)
+  console.log(`  Current coverage: ${currentCoverage}%`)
+  console.log(`  Improvement: ${improvementRate > 0 ? '+' : ''}${improvementRate}% (${improvementPercent}% of gap)`)
+
+  // Convergence detection criteria
+  let converged = false
+  let reason = ""
+  let recommendation = "continue"
+
+  // Criterion 1: Improvement rate < 5% (stalled progress)
+  if (Math.abs(improvementRate) < 5) {
+    converged = true
+    reason = "improvement_rate_below_threshold"
+    recommendation = improvementRate >= 0 ? "escalate_to_manual" : "investigate_regression"
+    console.log(`  ⚠️  Convergence detected: Improvement < 5%`)
+  }
+
+  // Criterion 2: Critical issues not decreasing
+  const currentCritical = currentIteration.criticalIssueCount
+  const lastCritical = lastIteration.criticalIssueCount
+  const criticalReduction = lastCritical - currentCritical
+
+  console.log(`  Critical issues: ${lastCritical} → ${currentCritical} (${criticalReduction >= 0 ? '-' : '+'}${Math.abs(criticalReduction)})`)
+
+  if (criticalReduction <= 0 && currentCritical > 0) {
+    converged = true
+    reason = "critical_issues_not_reducing"
+    recommendation = "escalate_to_manual"
+    console.log(`  ⚠️  Convergence detected: Critical issues not reducing`)
+  }
+
+  // Criterion 3: Max iterations reached
+  if (iterationHistory.iterations.length >= options.maxIterations) {
+    converged = true
+    reason = "max_iterations_reached"
+    recommendation = "escalate_to_manual"
+    console.log(`  ⚠️  Max iterations (${options.maxIterations}) reached`)
+  }
+
+  // Criterion 4: Coverage plateau (3 consecutive iterations with <2% improvement)
+  if (iterationHistory.iterations.length >= 3) {
+    const last3Improvements = iterationHistory.iterations.slice(-3).map((it, i, arr) =>
+      i > 0 ? it.coverage - arr[i - 1].coverage : 0
+    ).filter(imp => imp !== 0)
+
+    if (last3Improvements.every(imp => imp < 2)) {
+      converged = true
+      reason = "coverage_plateau"
+      recommendation = "escalate_to_manual"
+      console.log(`  ⚠️  Coverage plateau detected (< 2% improvement over 3 iterations)`)
+    }
+  }
+
+  return {
+    converged: converged,
+    reason: reason,
+    improvementRate: improvementRate,
+    improvementPercent: improvementPercent,
+    criticalReduction: criticalReduction,
+    recommendation: recommendation,
+    iterationCount: iterationHistory.iterations.length + 1
+  }
+}
+
+// Load iteration history for convergence detection
+async function loadIterationHistory(workloadSlug) {
+  const historyPath = workloadSlug
+    ? `.agent/prompts/${workloadSlug}/synthesis/iteration_history.yaml`
+    : `.agent/outputs/synthesis/iteration_history.yaml`
+
+  if (!fileExists(historyPath)) {
+    return {
+      iterations: [],
+      lastIteration: null
+    }
+  }
+
+  const content = Read(historyPath)
+  const iterations = parseIterationHistory(content)
+
+  return {
+    iterations: iterations,
+    lastIteration: iterations.length > 0 ? iterations[iterations.length - 1] : null
+  }
+}
+
+// Save current iteration to history
+async function saveIterationHistory(workloadSlug, currentIteration) {
+  const historyPath = workloadSlug
+    ? `.agent/prompts/${workloadSlug}/synthesis/iteration_history.yaml`
+    : `.agent/outputs/synthesis/iteration_history.yaml`
+
+  const historyDir = historyPath.substring(0, historyPath.lastIndexOf('/'))
+  await Bash({ command: `mkdir -p ${historyDir}`, description: 'Create history directory' })
+
+  // Load existing history
+  let iterations = []
+  if (fileExists(historyPath)) {
+    const content = Read(historyPath)
+    iterations = parseIterationHistory(content)
+  }
+
+  // Append current iteration
+  iterations.push(currentIteration)
+
+  // Generate YAML content
+  const historyContent = `# Synthesis Iteration History
+# Workload: ${workloadSlug || 'global'}
+
+iterations:
+${iterations.map((it, i) => `
+  - iteration: ${i + 1}
+    timestamp: "${it.timestamp}"
+    coverage: ${it.coverage}
+    decision: "${it.decision}"
+    critical_issue_count: ${it.criticalIssueCount}
+    threshold: ${it.threshold}
+    improvement_from_last: ${i > 0 ? (it.coverage - iterations[i - 1].coverage).toFixed(1) : 0}
+`).join('')}
+
+metadata:
+  total_iterations: ${iterations.length}
+  converged: ${currentIteration.converged || false}
+  last_updated: "${currentIteration.timestamp}"
+`
+
+  Write({ file_path: historyPath, content: historyContent })
+  console.log(`  💾 Iteration history saved: ${historyPath}`)
+}
+```
+
+### 3.3 Phase 2 (Legacy): Read Collection Report
 
 ```javascript
 function readCollectionReport(workloadSlug) {
@@ -657,110 +1289,232 @@ function extractCategory(text) {
 
 ---
 
-## 4. Main Execution Flow
+## 4. Main Execution Flow (EFL Pattern)
 
 ```javascript
 async function synthesis(args) {
-  console.log("🔍 Starting synthesis...")
+  console.log("🔍 Starting synthesis with EFL Pattern (v3.0.0)...\n")
 
-  // 1. Parse arguments
-  let options = parseArgs(args)
-  // options: { mode: "standard" | "strict" | "lenient", dryRun: false }
-
-  console.log(`Mode: ${options.mode || 'standard'} | Dry Run: ${options.dryRun}`)
-
-  // 2. Read requirements from /clarify log
-  console.log("\n📋 Reading requirements...")
-  requirementsResult = readRequirements()
-
-  if (requirementsResult.requirements.length === 0) {
-    console.log("❌ No requirements found. Run /clarify first.")
-    return { status: "error", reason: "No requirements" }
+  // Parse arguments
+  let options = {
+    mode: args.includes('--strict') ? 'strict' : args.includes('--lenient') ? 'lenient' : 'standard',
+    dryRun: args.includes('--dry-run'),
+    maxIterations: 5,
+    workloadSlug: extractWorkloadSlug(args)
   }
 
-  console.log(`  Found ${requirementsResult.totalCount} requirements (P0: ${requirementsResult.p0Count}, P1: ${requirementsResult.p1Count})`)
+  console.log(`Mode: ${options.mode} | Dry Run: ${options.dryRun} | Max Iterations: ${options.maxIterations}`)
 
-  // 3. Read collection report
-  console.log("\n📦 Reading collection report...")
-  collectionResult = readCollectionReport()
+  try {
+    // Phase 0: Setup & Context Loading
+    console.log("\n🔧 Phase 0: Loading synthesis context...")
+    const context = await loadSynthesisContext(options.workloadSlug)
 
-  if (!collectionResult.source) {
-    console.log("❌ Collection report not found. Run /collect first.")
-    return { status: "error", reason: "No collection report" }
-  }
+    // Phase 1: Agent Delegation (P1)
+    let aggregated
+    let usingAgentDelegation = true
 
-  console.log(`  Found ${collectionResult.deliverables.length} deliverables`)
+    try {
+      console.log("\n🎯 Phase 1: Agent Delegation (P1 - Sub-Orchestrator)")
+      const delegationResult = await delegateSynthesis(context, options)
 
-  // 4. Build traceability matrix
-  console.log("\n📊 Building traceability matrix...")
-  matrixResult = buildTraceabilityMatrix(
-    requirementsResult.requirements,
-    collectionResult.deliverables
-  )
+      // Aggregate Phase 3-A (Semantic Matching) + Phase 3-B (Quality Validation)
+      console.log("\n📦 Aggregating L2/L3 results...")
+      aggregated = await aggregateSemanticAndQuality(delegationResult)
 
-  console.log(`
-Matrix Summary:
-  ✅ Covered: ${matrixResult.stats.covered}
-  ⚠️  Partial: ${matrixResult.stats.partial}
-  ❌ Missing: ${matrixResult.stats.missing}
-  📈 Coverage: ${matrixResult.stats.overallCoverage}
-`)
+    } catch (delegationError) {
+      console.log(`⚠️  Agent delegation failed: ${delegationError.message}`)
+      console.log(`   Falling back to keyword matching (V2.2)...\n`)
 
-  // 5. Validate quality
-  console.log("🔬 Validating quality...")
-  validationResult = validateQuality(matrixResult, collectionResult.deliverables)
+      usingAgentDelegation = false
 
-  console.log(`
-Quality Check:
-  Consistency: ${validationResult.consistency.passed ? '✅' : '❌'}
-  Completeness: ${validationResult.completeness.passed ? '✅' : '❌'}
-  Coherence: ${validationResult.coherence.passed ? '✅' : '❌'}
-  Critical Issues: ${validationResult.criticalIssueCount}
-`)
+      // Fallback to V2.2 keyword matching
+      const matrixResult = buildTraceabilityMatrix(
+        context.requirements.requirements,
+        context.collection.deliverables
+      )
+      const validationResult = validateQuality(matrixResult, context.collection.deliverables)
 
-  // 6. Make decision
-  console.log("⚖️  Making decision...")
-  decisionResult = makeDecision(matrixResult, validationResult, options)
+      aggregated = {
+        matrix: matrixResult,
+        validation: validationResult,
+        internalLoopMetadata: { totalIterations: 0 }
+      }
+    }
 
-  // 7. Generate report (unless dry run)
-  if (!options.dryRun) {
-    console.log("\n📝 Generating synthesis report...")
-    report = generateSynthesisReport(
-      requirementsResult,
-      collectionResult,
-      matrixResult,
-      validationResult,
-      decisionResult,
+    // Phase 2: Convergence Detection (P6)
+    let convergenceResult
+    if (usingAgentDelegation && context.iterationHistory.iterations.length > 0) {
+      const currentIteration = {
+        timestamp: new Date().toISOString(),
+        coverage: parseFloat(aggregated.matrix.stats.overallCoverage),
+        criticalIssueCount: aggregated.validation.criticalIssueCount,
+        threshold: getThreshold(options.mode),
+        decision: null  // Will be set after decision phase
+      }
+
+      convergenceResult = await detectConvergence(currentIteration, context.iterationHistory, options)
+    } else {
+      convergenceResult = {
+        converged: false,
+        reason: "first_iteration_or_fallback",
+        recommendation: "continue"
+      }
+    }
+
+    // Phase 3: Selective Feedback Check (P4)
+    if (usingAgentDelegation) {
+      const feedbackCheck = await checkSelectiveFeedback(aggregated)
+
+      if (feedbackCheck.needs_feedback) {
+        console.log(`\n⚠️  P4: Feedback required (${feedbackCheck.severity})`)
+      }
+    }
+
+    // Phase 3.5: Review Gate (P5)
+    let reviewGateResult
+    if (options.skipReviewGate) {
+      reviewGateResult = {
+        approved: true,
+        criteriaChecks: { skipped: true },
+        review: { warnings: [], errors: [] }
+      }
+    } else {
+      reviewGateResult = await executeReviewGate(aggregated, convergenceResult)
+    }
+
+    // Phase 4: Make Decision
+    console.log("\n⚖️  Phase 4: Making decision...")
+    const decisionResult = makeDecisionWithConvergence(
+      aggregated.matrix,
+      aggregated.validation,
+      convergenceResult,
       options
     )
-  }
 
-  // 8. Final output
+    // Save iteration history (P6)
+    if (usingAgentDelegation && !options.dryRun) {
+      const currentIteration = {
+        timestamp: new Date().toISOString(),
+        coverage: parseFloat(aggregated.matrix.stats.overallCoverage),
+        criticalIssueCount: aggregated.validation.criticalIssueCount,
+        threshold: decisionResult.threshold,
+        decision: decisionResult.decision,
+        converged: convergenceResult.converged
+      }
+
+      await saveIterationHistory(options.workloadSlug, currentIteration)
+    }
+
+    // Phase 5: Generate L1/L2 Report
+    let reportResult
+    if (!options.dryRun) {
+      console.log("\n📝 Phase 5: Generating L1/L2 synthesis report...")
+      reportResult = await generateSynthesisReportV3(
+        context,
+        aggregated,
+        reviewGateResult,
+        decisionResult,
+        convergenceResult,
+        options
+      )
+    }
+
+    // Display summary
+    displaySynthesisSummary(aggregated, decisionResult, convergenceResult, reviewGateResult, reportResult, options, usingAgentDelegation)
+
+    // Return L1 summary
+    return {
+      status: 'success',
+      l1Summary: reportResult?.l1Summary,
+      l2ReportPath: reportResult?.l2ReportPath,
+      decision: decisionResult.decision,
+      coverage: aggregated.matrix.stats.overallCoverage,
+      reviewApproved: reviewGateResult.approved,
+      converged: convergenceResult.converged,
+      eflMetadata: {
+        version: '3.0.0',
+        agentDelegation: usingAgentDelegation,
+        internalIterations: aggregated.internalLoopMetadata?.totalIterations || 0,
+        reviewGate: reviewGateResult.approved,
+        convergenceDetection: convergenceResult.converged
+      }
+    }
+
+  } catch (error) {
+    console.error(`\n❌ Synthesis failed: ${error.message}`)
+    console.error(`   Stack: ${error.stack}`)
+
+    return {
+      status: 'error',
+      error: error.message,
+      stack: error.stack
+    }
+  }
+}
+
+function displaySynthesisSummary(aggregated, decisionResult, convergenceResult, reviewGateResult, reportResult, options, usingAgentDelegation) {
   let decisionIcon = decisionResult.decision === "COMPLETE" ? "✅" :
                      decisionResult.decision === "COMPLETE_WITH_WARNINGS" ? "⚠️" : "🔄"
 
   console.log(`
-=== Synthesis Complete ===
+╔════════════════════════════════════════════════════════════════╗
+║                   Synthesis Complete (v3.0.0)                  ║
+╚════════════════════════════════════════════════════════════════╝
 
-Decision: ${decisionIcon} ${decisionResult.decision}
-Coverage: ${matrixResult.stats.overallCoverage}
-Threshold: ${decisionResult.threshold}%
+📊 Traceability Matrix:
+   Coverage: ${aggregated.matrix.stats.overallCoverage}
+   Threshold: ${decisionResult.threshold}%
+   Covered: ${aggregated.matrix.stats.covered}
+   Partial: ${aggregated.matrix.stats.partial}
+   Missing: ${aggregated.matrix.stats.missing}
 
-${decisionResult.rationale.map(r => `  - ${r}`).join('\n')}
+🔍 Quality Validation:
+   Consistency: ${aggregated.validation.consistency.passed ? '✅' : '❌'}
+   Completeness: ${aggregated.validation.completeness.passed ? '✅' : '❌'}
+   Coherence: ${aggregated.validation.coherence.passed ? '✅' : '❌'}
+   Critical Issues: ${aggregated.validation.criticalIssueCount}
+
+🚪 Review Gate (P5):
+   Status: ${reviewGateResult.approved ? '✅ APPROVED' : '❌ NEEDS REVIEW'}
+   Warnings: ${reviewGateResult.review.warnings.length}
+   Errors: ${reviewGateResult.review.errors.length}
+
+📈 Convergence (P6):
+   ${convergenceResult.converged ? `⚠️  CONVERGED (${convergenceResult.reason})` : `✅ Progressing (${convergenceResult.reason})`}
+   ${convergenceResult.improvementRate !== null ? `Improvement: ${convergenceResult.improvementRate > 0 ? '+' : ''}${convergenceResult.improvementRate}% (${convergenceResult.improvementPercent}% of gap)` : ''}
+   Iteration: ${convergenceResult.iterationCount || 1}
+   Recommendation: ${convergenceResult.recommendation}
+
+📁 Output:
+   ${reportResult ? `L1 Summary: ${reportResult.l1Summary.length} chars` : '(Dry run)'}
+   ${reportResult ? `L2 Report: ${reportResult.l2ReportPath}` : ''}
+
+🔄 EFL Metadata:
+   Pattern: ${usingAgentDelegation ? 'Agent Delegation (P1)' : 'Fallback (V2.2)'}
+   Internal Iterations: ${aggregated.internalLoopMetadata?.totalIterations || 0}
+
+═══════════════════════════════════════════════════════════════
+
+${decisionIcon} Decision: ${decisionResult.decision}
+
+${decisionResult.rationale.map(r => `  ${r}`).join('\n')}
 
 Next Action:
   ${decisionResult.nextAction}
 
-${!options.dryRun ? `Report: ${report.path}` : '(Dry run - no report generated)'}
+${convergenceResult.converged && convergenceResult.recommendation === 'escalate_to_manual' ? `
+⚠️  Convergence Alert:
+   Automated iteration has stalled. Consider:
+   1. Manual gap analysis
+   2. Requirements refinement
+   3. Architecture review
+` : ''}
 `)
+}
 
-  return {
-    status: "success",
-    decision: decisionResult.decision,
-    coverage: matrixResult.stats.overallCoverage,
-    nextAction: decisionResult.nextAction,
-    reportPath: options.dryRun ? null : report.path
-  }
+function getThreshold(mode) {
+  return mode === 'strict' ? 95 : mode === 'lenient' ? 60 : 80
 }
 ```
 
@@ -958,14 +1712,50 @@ Threshold: 95%  # Strict mode requires 95%
 
 ## 8. Testing Checklist
 
+### EFL Pattern Tests (V3.0)
+
+**P1: Sub-Orchestrator (Agent Delegation)**
+- [ ] Agent delegation to Phase 3-A (Semantic Matching)
+- [ ] Agent delegation to Phase 3-B (Quality Validation)
+- [ ] Agent prompt generation with internal loop instructions
+- [ ] Fallback to V2.2 keyword matching when delegation fails
+
+**P3: Semantic Synthesis**
+- [ ] Semantic matching replaces keyword matching
+- [ ] Confidence scores calculated accurately
+- [ ] AI-powered requirement-deliverable matching
+- [ ] L2/L3 structure properly separated
+
+**P4: Selective Feedback**
+- [ ] Severity-based feedback check (MEDIUM+ threshold)
+- [ ] LOW severity → log only
+- [ ] MEDIUM+ severity → trigger review/feedback
+
+**P5: Phase 3.5 Review Gate**
+- [ ] Review gate executes before decision
+- [ ] Review criteria checked (requirement_alignment, etc.)
+- [ ] Approved result allows progression
+- [ ] Failed review blocks with clear errors
+
+**P6: Internal Loop + Convergence Detection**
+- [ ] Agent prompts include internal loop instructions
+- [ ] Internal loop metadata extracted from agent results
+- [ ] Max 3 iterations enforced per agent
+- [ ] Convergence detection (improvement rate < 5%)
+- [ ] Coverage plateau detection (3 iterations < 2% improvement)
+- [ ] Critical issue stagnation detection
+- [ ] Max pipeline iterations enforced
+- [ ] Iteration history saved to YAML
+
+### V2.2 Legacy Tests (Fallback)
 - [ ] No clarify logs found scenario
 - [ ] No collection report scenario
 - [ ] All requirements covered (COMPLETE)
 - [ ] Partial coverage (COMPLETE_WITH_WARNINGS)
 - [ ] Low coverage (ITERATE)
 - [ ] Critical issues detected
-- [ ] --strict mode threshold
-- [ ] --lenient mode threshold
+- [ ] --strict mode threshold (95%)
+- [ ] --lenient mode threshold (60%)
 - [ ] --dry-run mode
 - [ ] Traceability matrix accuracy
 - [ ] Quality validation (consistency)
@@ -973,6 +1763,13 @@ Threshold: 95%  # Strict mode requires 95%
 - [ ] Quality validation (coherence)
 - [ ] Report generation
 - [ ] Decision rationale clarity
+
+### Integration Tests
+- [ ] End-to-end: /collect L1 → /synthesis → decision
+- [ ] Workload-scoped output paths
+- [ ] Iteration history tracking across multiple runs
+- [ ] Convergence alert triggers manual escalation
+- [ ] Review gate warnings display correctly
 
 ---
 
@@ -1012,6 +1809,19 @@ Threshold: 95%  # Strict mode requires 95%
 | `permission-mode.md` | N/A | Skill에는 해당 없음 |
 | `task-params.md` | ✅ | Task quality matrix + traceability |
 
+## Parameter Module Compatibility (V3.0.0)
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| `model-selection.md` | ✅ | `model: opus` (skill + agents for high-quality analysis) |
+| `context-mode.md` | ✅ | `context: standard` |
+| `tool-config.md` | ✅ | V3.0: Agent delegation + Task tool integration |
+| `hook-config.md` | ✅ | V3.0: Setup hook (validation-feedback-loop.sh) |
+| `permission-mode.md` | N/A | No elevated permissions |
+| `task-params.md` | ✅ | Traceability matrix + convergence tracking |
+
+---
+
 ### Version History
 
 | Version | Change |
@@ -1019,6 +1829,49 @@ Threshold: 95%  # Strict mode requires 95%
 | 1.0.0 | Traceability matrix generation |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
 | 2.2.0 | /rsil-plan integration for ITERATE path |
+| 3.0.0 | **EFL Integration**: P1 (Sub-Orchestrator), P3 (Semantic matching), P5 (Review Gate), P6 (Convergence detection) |
+
+### V3.0.0 Detailed Changes
+
+**Enhanced Feedback Loop (EFL) Patterns:**
+- **P1: Skill as Sub-Orchestrator** - Delegates to specialized agents instead of direct analysis
+- **P3: Semantic Synthesis** - AI-powered semantic matching replaces keyword-based heuristics
+- **P5: Phase 3.5 Review Gate** - Holistic verification before final decision
+- **P6: Agent Internal Feedback Loop + Convergence Detection** - Agent self-validation + iteration tracking with stall detection
+- **P4: Selective Feedback** - Severity-based threshold (MEDIUM+)
+
+**New Sections:**
+- `agent_delegation` frontmatter config
+- `agent_internal_feedback_loop` config with convergence detection
+- `review_gate` config with Phase 3.5 criteria
+- `selective_feedback` config with severity thresholds
+- `iteration_tracking` config for convergence detection
+- Setup hook: `shared/validation-feedback-loop.sh`
+
+**Modified Execution Flow:**
+1. Phase 0: Setup & Context Loading (NEW) - Loads requirements, collection, iteration history
+2. Phase 1: Agent delegation (NEW) - Replaces direct traceability matrix building
+   - Phase 3-A: Semantic requirement-deliverable matching (AI-powered)
+   - Phase 3-B: Quality validation (consistency, completeness, coherence)
+3. Phase 2: Convergence detection (NEW) - Tracks iteration progress, detects stalls
+4. Phase 3: Selective feedback check (NEW) - P4 integration
+5. Phase 3.5: Review gate (NEW) - P5 verification
+6. Phase 4: Make decision with convergence awareness (ENHANCED)
+7. Phase 5: Generate L1/L2 report + save iteration history (ENHANCED)
+
+**Convergence Detection Features:**
+- Improvement rate tracking (alerts if < 5% improvement)
+- Critical issue reduction monitoring
+- Coverage plateau detection (3 consecutive iterations < 2% improvement)
+- Max iterations enforcement (default: 5)
+- Iteration history persistence (`.agent/prompts/{workload}/synthesis/iteration_history.yaml`)
+- Automatic escalation recommendation when converged
+
+**Backward Compatibility:**
+- V2.2 keyword matching preserved as fallback
+- All existing command-line arguments supported
+- Legacy helper functions retained
+- Graceful degradation when agent delegation unavailable
 
 ---
 

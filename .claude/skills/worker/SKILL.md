@@ -6,7 +6,7 @@ description: |
 user-invocable: true
 disable-model-invocation: false
 context: standard
-model: sonnet
+model: opus
 version: "4.0.0"
 argument-hint: "<start|done|status|block|orchestrate|delegate|collect-sub> [b|c|d|terminal-id] [taskId]"
 hooks:
@@ -408,10 +408,13 @@ Run \`/worker start\` to begin a task first.
   // 3. Move prompt file to completed
   movePromptFile(currentTask.id, "pending", "completed")
 
-  // 4. Update progress file
+  // 4. Generate completion manifest with integrity hashes
+  let manifestResult = generateCompletionManifest(currentTask.id, workerId)
+
+  // 5. Update progress file
   updateProgressFile(workerId, currentTask.id, "completed")
 
-  // 5. Calculate progress
+  // 6. Calculate progress
   let allMyTasks = myTasks
   let completedTasks = allMyTasks.filter(t =>
     t.status === "completed" || t.id === currentTask.id
@@ -833,7 +836,95 @@ function addBlockerToProgress(blocker) {
 }
 ```
 
-### 5.5 extractInstructions
+### 5.5 generateCompletionManifest
+
+```javascript
+// =============================================================================
+// Generate completion manifest with SHA256 hashes for all output files
+// Uses semantic-integrity.sh shared module
+// =============================================================================
+function generateCompletionManifest(taskId, workerId) {
+  console.log(`📋 Generating completion manifest for task #${taskId}...`)
+
+  // 1. Get workload context
+  let workloadSlug = getActiveWorkloadSlug()
+  let outputDir = workloadSlug
+    ? `.agent/prompts/${workloadSlug}/outputs/${workerId}`
+    : `.agent/outputs/${workerId}`
+
+  // Ensure output directory exists
+  Bash(`mkdir -p "${outputDir}"`)
+
+  // 2. Collect output files (all .md files created by this worker)
+  let outputFiles = []
+
+  // Check workload-specific outputs
+  if (workloadSlug) {
+    let workloadOutputs = Glob(`.agent/prompts/${workloadSlug}/outputs/${workerId}/*.md`)
+    outputFiles = outputFiles.concat(workloadOutputs)
+  }
+
+  // Check global outputs (backward compatibility)
+  let globalOutputs = Glob(`.agent/outputs/${workerId}/*.md`)
+  outputFiles = outputFiles.concat(globalOutputs)
+
+  // Also check for task-specific outputs
+  let taskOutputs = Glob(`.agent/outputs/**/task-${taskId}-*.md`)
+  outputFiles = outputFiles.concat(taskOutputs)
+
+  // Deduplicate
+  outputFiles = [...new Set(outputFiles)]
+
+  if (outputFiles.length === 0) {
+    console.log(`ℹ️  No output files found for task #${taskId}`)
+    // Still generate manifest with empty outputs
+  }
+
+  // 3. Get upstream orchestrate artifact for context_hash
+  let upstreamArtifact = ""
+  if (workloadSlug) {
+    upstreamArtifact = `.agent/prompts/${workloadSlug}/_context.yaml`
+  }
+
+  // 4. Call semantic-integrity.sh to generate manifest
+  let outputFilesList = outputFiles.join(',')
+
+  // Use Bash to call the shell function
+  let manifestResult = Bash(`
+    source .claude/skills/shared/semantic-integrity.sh 2>/dev/null
+    generate_worker_manifest "${taskId}" "${workerId}" "${outputFilesList}" "orchestrate" "${upstreamArtifact}"
+  `)
+
+  let manifestPath = manifestResult.trim()
+
+  if (manifestPath && !manifestPath.startsWith("ERROR")) {
+    console.log(`✅ Manifest generated: ${manifestPath}`)
+
+    // Log manifest summary
+    let fileCount = outputFiles.length
+    console.log(`   📁 Output files tracked: ${fileCount}`)
+
+    if (upstreamArtifact) {
+      console.log(`   🔗 Upstream context: ${upstreamArtifact}`)
+    }
+
+    return {
+      success: true,
+      manifestPath: manifestPath,
+      outputFiles: outputFiles,
+      fileCount: fileCount
+    }
+  } else {
+    console.log(`⚠️  Manifest generation failed: ${manifestResult}`)
+    return {
+      success: false,
+      error: manifestResult
+    }
+  }
+}
+```
+
+### 5.6 extractInstructions
 
 ```javascript
 function extractInstructions(promptContent) {
@@ -1657,6 +1748,7 @@ hooks:
 | 3.0.0 | Terminal ID shortcuts (b, c, d) 지원, `/worker start b` 형식 추가 |
 | 3.1.0 | Gate 5 Shift-Left Validation 통합, Setup hook 추가 |
 | 3.2.0 | Context Pollution Prevention: L1 검증, sanitize, L2/L3 격리 |
+| 4.0.0 | Semantic Integrity Manifest: /worker done 시 SHA256 해시 manifest 자동 생성, Sub-Orchestrator 통합 |
 
 ---
 

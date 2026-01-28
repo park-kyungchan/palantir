@@ -8,7 +8,7 @@ description: |
 user-invocable: false
 disable-model-invocation: true
 context: fork
-model: sonnet
+model: opus
 allowed-tools:
   - Read
   - Grep
