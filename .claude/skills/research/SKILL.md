@@ -8,7 +8,7 @@ user-invocable: true
 disable-model-invocation: false
 context: fork
 model: opus
-version: "1.0.0"
+version: "2.0.0"
 argument-hint: "[--scope <path>] [--external] [--clarify-slug <slug>]"
 allowed-tools:
   - Read
@@ -23,10 +23,33 @@ hooks:
     - type: command
       command: "/home/palantir/.claude/hooks/research-validate.sh"
       timeout: 10000
+    - shared/parallel-agent.sh  # P2: Load parallel agent module
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/research-finalize.sh"
       timeout: 180000
+# P1: Agent Delegation (Sub-Orchestrator Mode)
+agent_delegation:
+  enabled: true  # Can operate as sub-orchestrator
+  max_sub_agents: 5  # Maximum parallel sub-agents
+  delegation_strategy: "scope-based"  # Delegate by codebase scope or topic
+  description: |
+    When research scope is large, break into sub-research tasks.
+    Each sub-agent handles specific scope (e.g., frontend, backend, API).
+# P2: Parallel Agent Configuration
+parallel_agent_config:
+  enabled: true  # Use parallel agents for faster research
+  complexity_detection: "auto"  # Automatically detect complexity level
+  agent_count_by_complexity:
+    simple: 2      # Basic research (single module)
+    moderate: 3    # Standard research (2-3 modules)
+    complex: 4     # Complex research (multiple systems)
+    very_complex: 5  # Comprehensive research (entire codebase)
+  synchronization_strategy: "barrier"  # Wait for all agents (default)
+  aggregation_strategy: "merge"  # Merge all research findings
+  description: |
+    Parallel agent execution for faster comprehensive analysis.
+    Complexity-based scaling: 2-5 agents based on research scope.
 ---
 
 # /research - Deep Codebase & External Analysis (V1.0.0)
@@ -244,6 +267,214 @@ report = {
     "recommendations": generate_recommendations(patterns, risks),
     "next_steps": suggest_planning_approach()
 }
+```
+
+---
+
+## 3.5 P1/P2 Integration: Agent Delegation & Parallel Execution (NEW in v2.0.0)
+
+### 3.5.1 Complexity Detection
+
+```bash
+#!/bin/bash
+# Automatically detect research complexity for P2
+
+detect_research_complexity() {
+    local query="$1"
+    local scope="$2"
+
+    # Count affected areas
+    local file_count=0
+    local module_count=0
+    local external_deps=0
+
+    if [[ -n "$scope" ]]; then
+        file_count=$(find "$scope" -type f \( -name "*.ts" -o -name "*.js" -o -name "*.py" \) 2>/dev/null | wc -l)
+        module_count=$(find "$scope" -mindepth 1 -maxdepth 2 -type d 2>/dev/null | wc -l)
+    else
+        # Global scope - check workspace
+        file_count=$(find . -path ./node_modules -prune -o -type f \( -name "*.ts" -o -name "*.js" -o -name "*.py" \) -print 2>/dev/null | wc -l)
+        module_count=$(find . -mindepth 1 -maxdepth 3 -type d ! -path "*/node_modules/*" ! -path "*/.git/*" 2>/dev/null | wc -l)
+    fi
+
+    # Check for external research flag
+    if [[ "$EXTERNAL" == "true" ]]; then
+        external_deps=1
+    fi
+
+    # Determine complexity
+    local complexity="simple"
+
+    if [[ $file_count -gt 100 ]] || [[ $module_count -gt 10 ]]; then
+        complexity="very_complex"
+    elif [[ $file_count -gt 50 ]] || [[ $module_count -gt 5 ]]; then
+        complexity="complex"
+    elif [[ $file_count -gt 20 ]] || [[ $module_count -gt 3 ]] || [[ $external_deps -eq 1 ]]; then
+        complexity="moderate"
+    fi
+
+    echo "$complexity"
+}
+```
+
+### 3.5.2 P2: Parallel Agent Execution
+
+```python
+# Source P2 module
+import sys
+sys.path.append(".claude/skills/shared")
+from parallel_agent import (
+    parallel_agent_spawn,
+    agent_synchronization,
+    result_aggregation,
+    get_agent_count_by_complexity
+)
+
+def execute_parallel_research(query, scope, complexity):
+    """
+    Execute research using multiple parallel agents.
+
+    Returns:
+        Aggregated research findings from all agents
+    """
+    # Get recommended agent count
+    agent_count = get_agent_count_by_complexity(complexity)
+
+    print(f"🔄 Parallel Research: {agent_count} agents for {complexity} complexity")
+
+    # Decompose research into scopes (P1 delegation)
+    research_scopes = decompose_research_scope(scope, agent_count)
+
+    # Spawn parallel agents
+    agent_ids = []
+    for i, sub_scope in enumerate(research_scopes):
+        agent_config = {
+            "agent_type": "Explore",  # Use Explore agent for research
+            "prompt": f"Research {query} in scope: {sub_scope}",
+            "description": f"Research sub-task {i+1}/{agent_count}",
+            "model": "sonnet",  # Use sonnet for sub-agents (opus for main)
+            "run_in_background": True
+        }
+
+        agent_id = parallel_agent_spawn(agent_config)
+        agent_ids.append(agent_id)
+
+        # Launch Task tool for actual execution
+        Task(
+            subagent_type="Explore",
+            description=f"Research {query} scope {i+1}",
+            prompt=agent_config["prompt"],
+            run_in_background=True
+        )
+
+    # Wait for all agents (barrier synchronization)
+    sync_result = agent_synchronization(
+        agent_ids=agent_ids,
+        wait_strategy="barrier"  # Wait for all
+    )
+
+    # Aggregate results (merge strategy)
+    aggregated = result_aggregation(
+        results_array=sync_result["agent_results"],
+        strategy="merge"  # Combine all findings
+    )
+
+    return aggregated
+```
+
+### 3.5.3 Scope Decomposition (P1 Sub-Orchestrator)
+
+```python
+def decompose_research_scope(scope, agent_count):
+    """
+    Decompose research scope into sub-scopes for parallel execution.
+
+    Strategies:
+    - Directory-based: Split by top-level directories
+    - Module-based: Split by detected modules
+    - Topic-based: Split by aspect (patterns, risks, integration, external)
+    """
+    if scope:
+        # Directory-based decomposition
+        top_dirs = Glob(f"{scope}/*", directories_only=True)
+
+        if len(top_dirs) >= agent_count:
+            # Assign directories to agents
+            scopes = distribute_evenly(top_dirs, agent_count)
+        else:
+            # Not enough directories, use module-based
+            scopes = detect_modules(scope, agent_count)
+    else:
+        # Topic-based decomposition for global scope
+        scopes = [
+            "codebase patterns and conventions",
+            "integration points and dependencies",
+            "risk assessment and security",
+            "external documentation and best practices"
+        ][:agent_count]
+
+    return scopes
+
+def distribute_evenly(items, count):
+    """Distribute items into count groups evenly."""
+    chunk_size = len(items) // count
+    return [items[i:i+chunk_size] for i in range(0, len(items), chunk_size)][:count]
+```
+
+### 3.5.4 Result Merging
+
+```python
+def merge_parallel_research_results(aggregated_result, complexity):
+    """
+    Merge parallel agent results into unified research report.
+
+    Handles:
+    - Deduplication of findings
+    - Conflict resolution (voting on disagreements)
+    - Priority assignment to findings
+    """
+    merged_report = {
+        "metadata": {
+            "parallel_execution": True,
+            "agent_count": len(aggregated_result["agent_results"]),
+            "complexity": complexity,
+            "execution_time": aggregated_result.get("execution_time", "N/A")
+        },
+        "codebase_analysis": {},
+        "external_findings": [],
+        "risk_assessment": {},
+        "integration_points": []
+    }
+
+    # Merge codebase patterns (deduplicate)
+    seen_patterns = set()
+    for result in aggregated_result["agent_results"]:
+        patterns = result.get("codebase_analysis", {}).get("patterns", [])
+        for pattern in patterns:
+            pattern_key = f"{pattern.get('file')}:{pattern.get('name')}"
+            if pattern_key not in seen_patterns:
+                seen_patterns.add(pattern_key)
+                merged_report["codebase_analysis"].setdefault("patterns", []).append(pattern)
+
+    # Merge risks (aggregate severity)
+    risk_votes = {}
+    for result in aggregated_result["agent_results"]:
+        risks = result.get("risk_assessment", {})
+        for risk_type, risk_data in risks.items():
+            if risk_type not in risk_votes:
+                risk_votes[risk_type] = []
+            risk_votes[risk_type].append(risk_data)
+
+    # Vote on risk severity (highest severity wins)
+    for risk_type, votes in risk_votes.items():
+        severities = [v.get("severity", "LOW") for v in votes]
+        # Priority: CRITICAL > HIGH > MEDIUM > LOW
+        merged_report["risk_assessment"][risk_type] = max(
+            votes,
+            key=lambda v: {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}.get(v.get("severity", "LOW"), 0)
+        )
+
+    return merged_report
 ```
 
 ---
@@ -533,6 +764,7 @@ hooks:
 
 ## 10. Testing Checklist
 
+### Basic Functionality
 - [ ] `/research "test query"` basic execution
 - [ ] `/research --clarify-slug {slug}` context loading
 - [ ] `/research --scope {path}` scoped analysis
@@ -544,6 +776,30 @@ hooks:
 - [ ] Setup hook trigger verification
 - [ ] Stop hook trigger verification
 - [ ] Pipeline integration with `/planning`
+
+### P1: Agent Delegation (Sub-Orchestrator)
+- [ ] Complexity detection: simple (≤10 files)
+- [ ] Complexity detection: moderate (11-30 files)
+- [ ] Complexity detection: complex (31-100 files)
+- [ ] Complexity detection: very_complex (>100 files)
+- [ ] Complexity detection: external flag forces very_complex
+- [ ] Scope decomposition: directory-based strategy
+- [ ] Scope decomposition: module-based strategy
+- [ ] Scope decomposition: topic-based strategy
+- [ ] Sub-agent spawn and state management
+- [ ] Max 5 sub-agents limit enforcement
+
+### P2: Parallel Agent Execution
+- [ ] Agent count mapping: simple → 2 agents
+- [ ] Agent count mapping: moderate → 3 agents
+- [ ] Agent count mapping: complex → 4 agents
+- [ ] Agent count mapping: very_complex → 5 agents
+- [ ] Parallel agent spawn via `parallel_agent_spawn()`
+- [ ] Barrier synchronization strategy
+- [ ] Merge aggregation strategy
+- [ ] Result deduplication across agents
+- [ ] Conflict resolution via voting
+- [ ] Agent timeout handling (10 minutes)
 
 ---
 
@@ -564,6 +820,7 @@ hooks:
 
 | Version | Change |
 |---------|--------|
+| 2.0.0 | P1 Agent Delegation and P2 Parallel Agent integration |
 | 1.0.0 | Initial /research skill implementation |
 
 ---

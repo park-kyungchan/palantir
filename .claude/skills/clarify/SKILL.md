@@ -7,8 +7,8 @@ description: |
 user-invocable: true
 disable-model-invocation: true
 context: fork
-model: sonnet
-version: "2.2.0"
+model: opus
+version: "2.3.0"
 argument-hint: "<request> | --resume <slug>"
 allowed-tools:
   - Read
@@ -18,6 +18,8 @@ allowed-tools:
   - Task
   - WebSearch
 hooks:
+  Setup:
+    - shared/validation-feedback-loop.sh  # P4: Load feedback loop module (disabled by default)
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/clarify-validate.sh"
@@ -25,6 +27,15 @@ hooks:
     - type: command
       command: "/home/palantir/.claude/hooks/clarify-finalize.sh"
       timeout: 150000
+# P4: Selective Feedback Configuration
+selective_feedback:
+  enabled: false  # Default: disabled (user intent capture should not be automated)
+  threshold: "MEDIUM"  # Severity levels: CRITICAL, HIGH, MEDIUM, LOW, INFO
+  auto_recommend: true  # Show recommendation when severity >= threshold
+  description: |
+    Selective feedback for requirement clarification phase.
+    Uses severity-based threshold (not numeric) to determine feedback necessity.
+    When enabled and threshold met, system recommends (but doesn't force) iteration.
 ---
 
 # /clarify - Prompt Engineering Loop (V2.1.0)
@@ -148,7 +159,7 @@ pipeline:
 
 ---
 
-## 3. Main Loop
+## 3. Main Loop (with P4 Selective Feedback)
 
 ```python
 APPROVED = False
@@ -173,6 +184,23 @@ while not APPROVED:
 
     # Step 4: 사용자에게 제시
     present_round_result(ROUND_NUM, current_input, technique, improved)
+
+    # Step 4.5: P4 Selective Feedback Check (NEW in v2.3.0)
+    # Check if requirements are clear enough or need iteration
+    validation_result = validate_requirement_clarity(improved)
+
+    feedback_check = check_selective_feedback_for_clarify(
+        config_path=".claude/skills/clarify/SKILL.md",
+        validation_result=validation_result
+    )
+
+    # If selective feedback is enabled and threshold met, show recommendation
+    if feedback_check["needs_feedback"] and feedback_check["auto_recommend"]:
+        present_feedback_recommendation(
+            severity=feedback_check["severity"],
+            reason=feedback_check["reason"],
+            validation_warnings=validation_result["warnings"]
+        )
 
     # Step 5: AskUserQuestion (enhanced)
     response = AskUserQuestion(
@@ -247,6 +275,133 @@ def select_pe_technique(input_text):
         return "Task Decomposition"
     else:
         return "Structured Output"  # Default
+```
+
+---
+
+## 4.4 P4 Integration: Selective Feedback Functions (NEW in v2.3.0)
+
+### 4.4.1 Requirement Clarity Validation
+
+```python
+def validate_requirement_clarity(improved_prompt):
+    """
+    Validate if requirements are clear enough for downstream phases.
+
+    Returns:
+        JSON: {
+            "gate": "CLARIFY",
+            "result": "passed" | "passed_with_warnings" | "failed",
+            "warnings": [...],
+            "errors": [...]
+        }
+    """
+    warnings = []
+    errors = []
+
+    # Check 1: Ambiguous language
+    ambiguous_terms = ["maybe", "possibly", "something like", "kind of"]
+    if any(term in improved_prompt.lower() for term in ambiguous_terms):
+        warnings.append("요구사항에 모호한 표현이 포함되어 있습니다")
+
+    # Check 2: Missing acceptance criteria
+    if "완료 기준" not in improved_prompt and "acceptance" not in improved_prompt.lower():
+        warnings.append("완료 기준(Acceptance Criteria)이 명시되지 않았습니다")
+
+    # Check 3: Overly brief (< 50 chars)
+    if len(improved_prompt) < 50:
+        warnings.append("요구사항이 너무 짧습니다 - 추가 상세 정보가 필요할 수 있습니다")
+
+    # Check 4: Missing context
+    context_keywords = ["배경", "목적", "이유", "왜", "context", "purpose"]
+    if not any(keyword in improved_prompt.lower() for keyword in context_keywords):
+        warnings.append("요구사항의 배경이나 목적이 명시되지 않았습니다")
+
+    # Determine result
+    if len(errors) > 0:
+        result = "failed"
+    elif len(warnings) >= 3:
+        result = "passed_with_warnings"
+    else:
+        result = "passed"
+
+    return {
+        "gate": "CLARIFY",
+        "result": result,
+        "warnings": warnings,
+        "errors": errors
+    }
+```
+
+### 4.4.2 Selective Feedback Check
+
+```bash
+#!/bin/bash
+# Integration with validation-feedback-loop.sh
+
+check_selective_feedback_for_clarify() {
+    local config_path="$1"
+    local validation_result="$2"
+
+    # Source P4 module
+    source /home/palantir/.claude/skills/shared/validation-feedback-loop.sh
+
+    # Call check_selective_feedback
+    feedback_check=$(check_selective_feedback "$config_path" "$validation_result")
+
+    # Extract auto_recommend setting from config
+    auto_recommend=$(grep "auto_recommend:" "$config_path" | awk '{print $2}')
+
+    # Add auto_recommend to result
+    echo "$feedback_check" | jq --argjson auto "$auto_recommend" '. + {auto_recommend: $auto}'
+}
+```
+
+### 4.4.3 Feedback Recommendation Presentation
+
+```python
+def present_feedback_recommendation(severity, reason, validation_warnings):
+    """
+    Present selective feedback recommendation to user (non-blocking).
+    """
+    severity_icon = {
+        "CRITICAL": "🔴",
+        "HIGH": "🟠",
+        "MEDIUM": "🟡",
+        "LOW": "🟢",
+        "INFO": "ℹ️"
+    }
+
+    icon = severity_icon.get(severity, "ℹ️")
+
+    print(f"""
+{icon} **Selective Feedback Recommendation**
+
+**Severity:** {severity}
+**Reason:** {reason}
+
+**Issues Detected:**
+{chr(10).join(f"  - {w}" for w in validation_warnings)}
+
+**Recommendation:**
+추가 명확화를 고려해보세요. 이 단계에서 요구사항을 명확히 하면
+다운스트림 단계(/research, /planning)에서 재작업을 줄일 수 있습니다.
+
+※ 이것은 추천사항일 뿐, 강제 사항이 아닙니다. 현재 요구사항으로도 진행 가능합니다.
+""")
+```
+
+### 4.4.4 Configuration Override
+
+```yaml
+# Example: Enable selective feedback for specific session
+# In clarify.yaml metadata section:
+metadata:
+  id: "user-auth-20260128"
+  version: "2.0.0"
+  selective_feedback_override:
+    enabled: true  # Override default (false)
+    threshold: "HIGH"  # Stricter than default (MEDIUM)
 ```
 
 ---
@@ -454,6 +609,7 @@ hooks:
 
 ## 11. Testing Checklist
 
+**Core Functionality:**
 - [ ] `/clarify "테스트 요청"` 기본 실행
 - [ ] `/clarify --resume {slug}` 재개 테스트
 - [ ] YAML 로그 스키마 검증
@@ -463,6 +619,16 @@ hooks:
 - [ ] Warning/Error 표시 확인
 - [ ] 다중 라운드 진행 테스트
 - [ ] Pipeline downstream_skills 추적 테스트
+
+**P4 Selective Feedback (NEW v2.3.0):**
+- [ ] selective_feedback frontmatter 파싱 확인
+- [ ] validate_requirement_clarity() 동작 확인
+- [ ] check_selective_feedback() 통합 테스트
+- [ ] Severity-based threshold (MEDIUM+) 확인
+- [ ] auto_recommend 플래그 동작 확인
+- [ ] 피드백 추천 표시 (강제 없음) 확인
+- [ ] enabled=false 기본값 동작 확인
+- [ ] Configuration override 테스트
 
 ---
 
@@ -486,3 +652,4 @@ hooks:
 | 2.0.0 | YAML 로깅, Stop hook, PE 내장 라이브러리 |
 | 2.1.0 | `TodoWrite` 제거, Task API 표준화, 파라미터 모듈 호환성 |
 | 2.2.0 | Workload-scoped 출력 경로 (V7.1 호환) |
+| 2.3.0 | **P4 Selective Feedback 통합** - Severity-based threshold (MEDIUM+), auto_recommend, enabled=false 기본값, validation-feedback-loop.sh 통합 |
