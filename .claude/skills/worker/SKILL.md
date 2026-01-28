@@ -6,7 +6,7 @@ description: |
 user-invocable: true
 disable-model-invocation: false
 context: standard
-model: sonnet
+model: opus
 version: "4.0.0"
 argument-hint: "<start|done|status|block|orchestrate|delegate|collect-sub> [b|c|d|terminal-id] [taskId]"
 hooks:

@@ -6,7 +6,7 @@ description: |
 user-invocable: true
 disable-model-invocation: false
 context: standard
-model: sonnet
+model: opus
 version: "3.0.0"
 argument-hint: "<task-id> <terminal-id> [--sub-orchestrator] | auto"
 ---
