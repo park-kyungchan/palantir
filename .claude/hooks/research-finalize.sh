@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# research-finalize.sh - Stop Hook for /research Skill
+# research-finalize.sh - Stop Hook for /research Skill (V2.0.0)
 #
 # Triggers: Stop event when /research skill completes
 # Purpose:
-#   1. Validate research output exists at .agent/research/
+#   1. Validate research output exists
 #   2. Log completion timestamp
 #   3. Suggest /planning as next step with research-slug
+#   4. Append handoff metadata for pipeline continuity (V2.0.0)
 #
 # Input (JSON stdin):
 #   - hook_event_name: "Stop"
@@ -14,15 +15,29 @@
 #
 # Output (JSON stdout):
 #   - continue: true (always continue)
-#   - hookSpecificOutput: finalization summary
+#   - hookSpecificOutput: finalization summary with handoff
+#
+# Path Strategy (V7.1):
+#   - Primary: .agent/prompts/{slug}/research.md
+#   - Fallback: .agent/research/{slug}.md (V6 compatibility)
 
 set -euo pipefail
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+# V7.1 workload-scoped path (primary)
+PROMPTS_DIR=".agent/prompts"
+# V6 legacy path (fallback)
 RESEARCH_OUTPUT_DIR=".agent/research"
 LOG_FILE=".agent/logs/research-finalize.log"
+
+# Source standalone module for handoff
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHARED_DIR="${SCRIPT_DIR}/../skills/shared"
+if [[ -f "${SHARED_DIR}/skill-standalone.sh" ]]; then
+    source "${SHARED_DIR}/skill-standalone.sh"
+fi
 
 # ============================================================================
 # LOGGING
@@ -61,10 +76,22 @@ main() {
     fi
 
     # Find the most recent research output
-    local latest_research
-    latest_research=$(find "$RESEARCH_OUTPUT_DIR" -name "*.md" -type f 2>/dev/null | \
-        xargs -I {} stat --printf="%Y %n\n" {} 2>/dev/null | \
-        sort -rn | head -1 | cut -d' ' -f2-)
+    # V7.1: Check workload-scoped paths first, then V6 fallback
+    local latest_research=""
+
+    # Strategy 1: V7.1 workload-scoped paths
+    if [[ -d "$PROMPTS_DIR" ]]; then
+        latest_research=$(find "$PROMPTS_DIR" -name "research.md" -type f 2>/dev/null | \
+            xargs -I {} stat --printf="%Y %n\n" {} 2>/dev/null | \
+            sort -rn | head -1 | cut -d' ' -f2-)
+    fi
+
+    # Strategy 2: V6 fallback
+    if [[ -z "$latest_research" ]] && [[ -d "$RESEARCH_OUTPUT_DIR" ]]; then
+        latest_research=$(find "$RESEARCH_OUTPUT_DIR" -name "*.md" -type f 2>/dev/null | \
+            xargs -I {} stat --printf="%Y %n\n" {} 2>/dev/null | \
+            sort -rn | head -1 | cut -d' ' -f2-)
+    fi
 
     if [[ -z "$latest_research" ]]; then
         log "INFO" "No research output found"
@@ -89,9 +116,17 @@ EOF
 
     log "INFO" "Found research output: ${latest_research}"
 
-    # Extract research slug from filename
+    # Extract research slug from path
+    # V7.1: .agent/prompts/{slug}/research.md -> extract {slug}
+    # V6: .agent/research/{slug}.md -> extract {slug}
     local research_slug
-    research_slug=$(basename "$latest_research" .md)
+    if [[ "$latest_research" == *"/prompts/"* ]]; then
+        # V7.1 path: extract slug from directory name
+        research_slug=$(echo "$latest_research" | sed -n 's|.*/prompts/\([^/]*\)/research\.md|\1|p')
+    else
+        # V6 path: extract slug from filename
+        research_slug=$(basename "$latest_research" .md)
+    fi
 
     log "INFO" "Research slug: ${research_slug}"
 
@@ -114,17 +149,34 @@ EOF
 
     log "INFO" "Finalization complete. Next step: ${next_step}"
 
-    # Return success with next step suggestion
+    # Determine status based on line count
+    local status="success"
+    if [[ "$line_count" -lt 10 ]]; then
+        status="partial"
+    fi
+
+    # Return success with handoff
     local output
     output=$(cat << EOF
 {
     "continue": true,
     "hookSpecificOutput": {
         "action": "research-finalize",
-        "status": "success",
+        "status": "${status}",
         "researchPath": "${latest_research}",
         "researchSlug": "${research_slug}",
         "lineCount": ${line_count},
+        "handoff": {
+            "skill": "research",
+            "workload_slug": "${research_slug}",
+            "status": "${status}",
+            "next_action": {
+                "skill": "/planning",
+                "arguments": "--research-slug ${research_slug}",
+                "required": true,
+                "reason": "Research complete, ready for planning"
+            }
+        },
         "nextStep": "${next_step}",
         "message": "Research complete. Run: ${next_step}"
     }

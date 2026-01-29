@@ -11,14 +11,24 @@ description: |
 
 user-invocable: true
 disable-model-invocation: false
-context: standard
+context: fork
 model: opus
 version: "3.0.0"
 argument-hint: "[--strict | --lenient | --dry-run]"
+allowed-tools:
+  - Read
+  - Write
+  - Grep
+  - Glob
+  - Task
+  - mcp__sequential-thinking__sequentialthinking
 
-# EFL Configuration (Enhanced Feedback Loop)
+# =============================================================================
+# P1: Skill as Sub-Orchestrator
+# =============================================================================
 agent_delegation:
   enabled: true
+  default_mode: true  # V1.1.0: Auto-delegation by default
   mode: "sub_orchestrator"
   description: "Synthesis delegates to specialized agents for semantic analysis"
   agents:
@@ -28,11 +38,37 @@ agent_delegation:
     - type: "explore"
       role: "Phase 3-B: Quality validation (consistency, completeness, coherence)"
       output_format: "L3 quality analysis with issue categorization"
+  output_paths:
+    l1: ".agent/prompts/{slug}/synthesis/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/synthesis/l2_index.md"
+    l3: ".agent/prompts/{slug}/synthesis/l3_details/"
   return_format:
-    l1: "Synthesis decision (COMPLETE/ITERATE) with coverage"
-    l2_path: ".agent/prompts/{workload}/synthesis/synthesis_report.md"
+    l1: "Synthesis decision (COMPLETE/ITERATE) with coverage (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/synthesis/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/synthesis/l3_details/"
     requires_l2_read: false
+    next_action_hint: "/commit-push-pr or /rsil-plan"
 
+# =============================================================================
+# P2: Parallel Agent Configuration
+# =============================================================================
+parallel_agent_config:
+  enabled: true
+  complexity_detection: "auto"
+  agent_count_by_complexity:
+    simple: 1      # Few requirements (1-5)
+    moderate: 2    # Medium requirements (6-15)
+    complex: 3     # Many requirements (16+)
+  synchronization_strategy: "barrier"
+  aggregation_strategy: "merge"
+  synthesis_areas:
+    - requirement_traceability
+    - quality_validation
+    - gap_analysis
+
+# =============================================================================
+# P6: Agent Internal Feedback Loop
+# =============================================================================
 agent_internal_feedback_loop:
   enabled: true
   max_iterations: 3
@@ -81,16 +117,53 @@ iteration_tracking:
 
 hooks:
   Setup:
-    - shared/validation-feedback-loop.sh  # P4/P5/P6 integration
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
+      timeout: 5000
 ---
 
-# /synthesis - Traceability & Quality Validation
+### Auto-Delegation Trigger (CRITICAL)
 
-> **Version:** 3.0.0
-> **Role:** Sub-Orchestrator for semantic traceability analysis & completion decision (EFL Pattern)
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+# /synthesis - Traceability & Quality Validation (EFL V4.0.0)
+
+> **Version:** 4.0.0 (EFL Pattern)
+> **Role:** Sub-Orchestrator for semantic traceability analysis & completion decision
 > **Architecture:** Agent Delegation + Semantic Matching + Convergence Detection + Review Gate
+> **EFL Features:** P1 Sub-Orchestrator, P3 Semantic Synthesis, P5 Review Gate, P6 Convergence Detection
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 1. Purpose
 
@@ -124,6 +197,23 @@ hooks:
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 2. Invocation
 
 ### User Syntax
@@ -147,6 +237,23 @@ hooks:
 - `$0`: Mode flag (`--strict`, `--lenient`, `--dry-run`)
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 3. Execution Protocol (EFL Pattern)
 
@@ -187,7 +294,49 @@ hooks:
         └─▶ ITERATE → /rsil-plan or escalate
 ```
 
-### 3.0 Phase 0: Setup & Context Loading
+### 3.0 Workload Slug 결정 (표준)
+
+```bash
+# Source centralized slug generator
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/slug-generator.sh"
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-files.sh"
+
+# Slug 결정 (우선순위)
+# 1. --workload 인자 (명시적 지정)
+# 2. 활성 workload (get_active_workload)
+# 3. 최근 workload 디렉토리
+# 4. 새 workload 생성 (기본 동작)
+
+if [[ -n "$WORKLOAD_ARG" ]]; then
+    SLUG="$WORKLOAD_ARG"
+    echo "🔍 Using specified workload: $SLUG"
+
+elif ACTIVE_WORKLOAD=$(get_active_workload) && [[ -n "$ACTIVE_WORKLOAD" ]]; then
+    WORKLOAD_ID="$ACTIVE_WORKLOAD"
+    SLUG=$(get_active_workload_slug)
+    echo "🔍 Using active workload: $SLUG"
+
+elif RECENT_SLUG=$(ls -t .agent/prompts/ 2>/dev/null | grep -E "^[a-z]" | head -1); [[ -n "$RECENT_SLUG" ]]; then
+    SLUG="$RECENT_SLUG"
+    echo "🔍 Using recent workload: $SLUG"
+
+else
+    # 기본 동작: 새 workload 생성
+    TOPIC="synthesis-$(date +%H%M%S)"
+    WORKLOAD_ID=$(generate_workload_id "$TOPIC")
+    SLUG=$(generate_slug_from_workload "$WORKLOAD_ID")
+    init_workload_directory "$WORKLOAD_ID"
+    set_active_workload "$WORKLOAD_ID"
+    echo "🔍 Created new workload: $SLUG"
+fi
+
+# 출력 경로 설정
+WORKLOAD_DIR=".agent/prompts/${SLUG}"
+OUTPUT_DIR="${WORKLOAD_DIR}/synthesis"
+mkdir -p "${OUTPUT_DIR}"
+```
+
+### 3.1 Phase 0: Setup & Context Loading
 
 ```javascript
 async function loadSynthesisContext(workloadSlug) {
@@ -1015,6 +1164,23 @@ function generateSynthesisReport(requirementsResult, collectionResult, matrixRes
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## Summary
 
 | Metric | Value |
@@ -1028,6 +1194,23 @@ function generateSynthesisReport(requirementsResult, collectionResult, matrixRes
 | **Coverage** | **${matrixResult.stats.overallCoverage}** |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Traceability Matrix
 
@@ -1047,6 +1230,23 @@ ${matrixResult.matrix.map(m => {
 - ❌ Missing: ${matrixResult.stats.missing}
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Quality Validation
 
@@ -1074,11 +1274,45 @@ ${validationResult.coherence.issues.length > 0 ?
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## Decision
 
 ${getDecisionBlock(decisionResult)}
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Synthesis Metadata
 
@@ -1288,6 +1522,23 @@ function extractCategory(text) {
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 4. Main Execution Flow (EFL Pattern)
 
@@ -1520,6 +1771,23 @@ function getThreshold(mode) {
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 5. Error Handling
 
 | Error | Detection | Recovery |
@@ -1531,6 +1799,23 @@ function getThreshold(mode) {
 | **Report write failure** | Permission error | Output to stdout instead |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 6. Example Usage
 
@@ -1669,6 +1954,23 @@ Threshold: 95%  # Strict mode requires 95%
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 7. Integration Points
 
 ### 7.1 Pipeline Position
@@ -1709,6 +2011,23 @@ Threshold: 95%  # Strict mode requires 95%
 | /clarify | Gaps list | Manual iteration (escalation only) |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 8. Testing Checklist
 
@@ -1773,6 +2092,23 @@ Threshold: 95%  # Strict mode requires 95%
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 9. Performance Targets
 
 | Operation | Target | Actual |
@@ -1786,6 +2122,23 @@ Threshold: 95%  # Strict mode requires 95%
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 10. Future Enhancements
 
 1. **AI-powered matching:** Use embeddings for requirement-deliverable matching
@@ -1795,6 +2148,23 @@ Threshold: 95%  # Strict mode requires 95%
 5. **Historical tracking:** Track coverage trend over iterations
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Parameter Module Compatibility (V2.1.0)
 
@@ -1821,6 +2191,23 @@ Threshold: 95%  # Strict mode requires 95%
 | `task-params.md` | ✅ | Traceability matrix + convergence tracking |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ### Version History
 
@@ -1873,6 +2260,151 @@ Threshold: 95%  # Strict mode requires 95%
 - Legacy helper functions retained
 - Graceful degradation when agent delegation unavailable
 
+| 3.1.0 | **Standalone Execution + Handoff Contract** - 독립 실행 모드, 표준화된 handoff 출력 |
+
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 11. Standalone Execution (V3.1.0)
+
+### 11.1 독립 실행 모드
+
+`/synthesis`는 upstream `/collect` 없이 독립적으로 실행 가능:
+
+```bash
+# 독립 실행 (active workload 또는 새 workload)
+/synthesis
+/synthesis --strict
+# Output: .agent/prompts/{slug}/synthesis/synthesis_report.md
+
+# 명시적 workload 지정
+/synthesis --workload user-auth-20260128-143022
+```
+
+### 11.2 Workload Context Resolution
+
+```bash
+# Source standalone module
+source /home/palantir/.claude/skills/shared/skill-standalone.sh
+
+# Initialize skill context
+CONTEXT=$(init_skill_context "synthesis" "$ARGUMENTS" "")
+
+# Resolution priority:
+# 1. --workload argument → explicit workload
+# 2. Active workload → .agent/prompts/_active_workload.yaml
+# 3. Recent workload directory → most recently modified
+# 4. Generate new workload → standalone mode
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 12. Handoff Contract (V3.1.0)
+
+### 12.1 Handoff 매핑
+
+| Decision | Next Skill | Arguments |
+|----------|------------|-----------|
+| `COMPLETE` | `/commit-push-pr` | `--workload {slug}` |
+| `COMPLETE_WITH_WARNINGS` | `/commit-push-pr` | `--workload {slug} --with-warnings` |
+| `ITERATE` | `/rsil-plan` | `--workload {slug} --iteration N` |
+
+### 12.2 Handoff YAML 출력
+
+스킬 완료 시 synthesis_report.md 끝에 다음 handoff 섹션을 추가:
+
+```yaml
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+# Handoff Metadata (auto-generated)
+handoff:
+  skill: "synthesis"
+  workload_slug: "user-auth-20260128-143022"
+  status: "completed"  # or "iterate"
+  timestamp: "2026-01-28T16:30:00Z"
+  next_action:
+    skill: "/commit-push-pr"  # or "/rsil-plan"
+    arguments: "--workload user-auth-20260128-143022"
+    required: true
+    reason: "Synthesis complete, coverage 95%"
+```
+
+### 12.3 Decision-Based Routing
+
+```bash
+# COMPLETE 결정 시
+/commit-push-pr --workload user-auth-20260128-143022
+
+# ITERATE 결정 시
+/rsil-plan --workload user-auth-20260128-143022 --iteration 2
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 **End of Skill Documentation**

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# planning-finalize.sh - Stop Hook for /planning Skill
+# planning-finalize.sh - Stop Hook for /planning Skill (V2.0.0)
 #
 # Triggers: Stop event when /planning skill completes
 # Purpose:
@@ -7,6 +7,7 @@
 #   2. Check Plan Agent review status
 #   3. Log completion timestamp
 #   4. Suggest next step (/orchestrate)
+#   5. Append handoff metadata for pipeline continuity (V2.0.0)
 #
 # Input (JSON stdin):
 #   - hook_event_name: "Stop"
@@ -15,15 +16,29 @@
 #
 # Output (JSON stdout):
 #   - continue: true (always continue)
-#   - hookSpecificOutput: finalization summary
+#   - hookSpecificOutput: finalization summary with handoff
+#
+# Path Strategy (V7.1):
+#   - Primary: .agent/prompts/{slug}/plan.yaml
+#   - Fallback: .agent/plans/{slug}.yaml (V6 compatibility)
 
 set -euo pipefail
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+# V7.1 workload-scoped path (primary)
+PROMPTS_DIR=".agent/prompts"
+# V6 legacy path (fallback)
 PLANS_DIR=".agent/plans"
 LOG_FILE=".agent/logs/planning-finalize.log"
+
+# Source standalone module for handoff
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHARED_DIR="${SCRIPT_DIR}/../skills/shared"
+if [[ -f "${SHARED_DIR}/skill-standalone.sh" ]]; then
+    source "${SHARED_DIR}/skill-standalone.sh"
+fi
 
 # ============================================================================
 # LOGGING
@@ -62,10 +77,22 @@ main() {
     fi
 
     # Find the most recent planning document
-    local latest_plan
-    latest_plan=$(find "$PLANS_DIR" -name "*.yaml" -type f 2>/dev/null | \
-        xargs -I {} stat --format="%Y %n" {} 2>/dev/null | \
-        sort -rn | head -1 | cut -d' ' -f2-)
+    # V7.1: Check workload-scoped paths first, then V6 fallback
+    local latest_plan=""
+
+    # Strategy 1: V7.1 workload-scoped paths
+    if [[ -d "$PROMPTS_DIR" ]]; then
+        latest_plan=$(find "$PROMPTS_DIR" -name "plan.yaml" -type f 2>/dev/null | \
+            xargs -I {} stat --format="%Y %n" {} 2>/dev/null | \
+            sort -rn | head -1 | cut -d' ' -f2-)
+    fi
+
+    # Strategy 2: V6 fallback
+    if [[ -z "$latest_plan" ]] && [[ -d "$PLANS_DIR" ]]; then
+        latest_plan=$(find "$PLANS_DIR" -name "*.yaml" -type f 2>/dev/null | \
+            xargs -I {} stat --format="%Y %n" {} 2>/dev/null | \
+            sort -rn | head -1 | cut -d' ' -f2-)
+    fi
 
     if [[ -z "$latest_plan" ]]; then
         log "INFO" "No planning document found in ${PLANS_DIR}"
@@ -129,7 +156,23 @@ main() {
             ;;
     esac
 
-    # Build output
+    # Extract slug for handoff
+    # V7.1: .agent/prompts/{slug}/plan.yaml -> extract {slug}
+    # V6: .agent/plans/{slug}.yaml -> use plan_id
+    local plan_slug="${plan_id}"
+    if [[ "$latest_plan" == *"/prompts/"* ]]; then
+        plan_slug=$(echo "$latest_plan" | sed -n 's|.*/prompts/\([^/]*\)/plan\.yaml|\1|p')
+    fi
+
+    # Determine handoff status
+    local handoff_status="completed"
+    local handoff_required="true"
+    if [[ "$review_status" != "approved" ]]; then
+        handoff_status="partial"
+        handoff_required="false"
+    fi
+
+    # Build output with handoff
     local output
     output=$(cat << EOF
 {
@@ -137,17 +180,29 @@ main() {
     "hookSpecificOutput": {
         "action": "planning-finalize",
         "plan_id": "${plan_id}",
+        "plan_slug": "${plan_slug}",
         "plan_path": "${latest_plan}",
         "review_status": "${review_status}",
         "phase_count": ${phase_count},
         "message": "${action_message}",
+        "handoff": {
+            "skill": "planning",
+            "workload_slug": "${plan_slug}",
+            "status": "${handoff_status}",
+            "next_action": {
+                "skill": "/orchestrate",
+                "arguments": "--plan-slug ${plan_slug}",
+                "required": ${handoff_required},
+                "reason": "${action_message}"
+            }
+        },
         "suggestion": "${next_step}"
     }
 }
 EOF
 )
 
-    log "INFO" "Finalization complete: ${action_message}"
+    log "INFO" "Finalization complete with handoff: ${action_message}"
     echo "$output"
 }
 

@@ -33,3 +33,5 @@
 2026-01-22T16:31:51+09:00 | info | system | 
 2026-01-22T16:36:14+09:00 | info | system | 
 2026-01-22T16:51:31+09:00 | info | system | 
+[2026-01-28T07:39:54Z] CLARIFY-QA-JSONL: Logged Q&A qa-a4fd8cff to .agent/logs/clarify/3adbe67e-3e58-4585-bf59-6275fa27027d-qa-audit.jsonl
+[2026-01-29T09:30:07Z] CLARIFY-QA-JSONL: Logged Q&A qa-c982f4e5 to .agent/logs/clarify/01893f0f-f017-4a1b-8588-fae359c2a477-qa-audit.jsonl

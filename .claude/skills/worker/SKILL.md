@@ -3,25 +3,135 @@ name: worker
 description: |
   Worker self-service commands (start, done, status, block).
   Supports Sub-Orchestrator mode for hierarchical task decomposition.
+
+  **V5.0.0 Changes (EFL Integration):**
+  - P1: Skill as Sub-Orchestrator (orchestrate, delegate, collect-sub commands)
+  - P2: Parallel Agent Configuration (complexity-based subtask delegation)
+  - P6: Agent Internal Feedback Loop (max 3 iterations for subtask validation)
+
 user-invocable: true
 disable-model-invocation: false
-context: standard
+context: fork
 model: opus
-version: "4.0.0"
+version: "5.2.0"
 argument-hint: "<start|done|status|block|orchestrate|delegate|collect-sub> [b|c|d|terminal-id] [taskId]"
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Task
+  - TaskCreate
+  - TaskUpdate
+  - TaskList
+  - TaskGet
+  - mcp__sequential-thinking__sequentialthinking
+hooks:
+  Setup:
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
+      timeout: 5000
+
+# =============================================================================
+# P1: Skill as Sub-Orchestrator (DEFAULT MODE)
+# =============================================================================
+agent_delegation:
+  enabled: true
+  default_mode: true  # Always operate as Sub-Orchestrator by default
+  max_sub_agents: 3
+  delegation_strategy: "complexity-based"
+  strategies:
+    orchestrate:
+      description: "Decompose main task into subtasks for parallel execution"
+      use_when: "Task complexity exceeds single-worker capacity"
+    delegate:
+      description: "Assign subtasks to sub-agents for execution"
+      use_when: "Subtasks ready for parallel delegation"
+    collect_sub:
+      description: "Aggregate sub-agent results into L1 summary"
+      use_when: "All subtasks completed"
+  slug_orchestration:
+    enabled: true
+    source: "assigned task or active workload"
+    action: "reuse upstream workload context"
+  sub_agent_permissions:
+    - Read
+    - Write
+    - Grep
+    - Glob
+    - Edit
+  output_paths:
+    l1: ".agent/prompts/{slug}/worker/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/worker/l2_index.md"
+    l3: ".agent/prompts/{slug}/worker/l3_details/"
+  return_format:
+    l1: "Worker execution summary with completion status (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/worker/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/worker/l3_details/"
+    requires_l2_read: false
+    next_action_hint: "/worker done or /collect"
+  description: |
+    Worker ALWAYS operates as Sub-Orchestrator by default (default_mode: true).
+    No --sub-orchestrator flag required. L1 returns to main context; L2/L3 saved to files.
+
+# =============================================================================
+# P2: Parallel Agent Configuration
+# =============================================================================
+parallel_agent_config:
+  enabled: true
+  complexity_detection: "auto"
+  agent_count_by_complexity:
+    simple: 1      # Single subtask
+    moderate: 2    # 2-3 subtasks
+    complex: 3     # 4+ subtasks
+  synchronization_strategy: "barrier"
+  aggregation_strategy: "merge"
+  subtask_areas:
+    - implementation
+    - testing
+    - documentation
+  description: |
+    Deploy multiple sub-agents in parallel for complex task execution.
+    Agent count scales with detected subtask complexity.
+
+# =============================================================================
+# P6: Agent Internal Feedback Loop
+# =============================================================================
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    completeness:
+      - "All subtasks identified and decomposed"
+      - "Dependencies between subtasks mapped"
+      - "Completion criteria defined for each subtask"
+    quality:
+      - "Subtask descriptions actionable"
+      - "Evidence of completion verifiable"
+      - "Output artifacts specified"
+    internal_consistency:
+      - "Parent-child task relationships maintained"
+      - "Progress tracking accurate"
+      - "L1 summary reflects actual subtask outputs"
+
 hooks:
   Setup:
     - type: command
       command: "/home/palantir/.claude/hooks/worker-preflight.sh"
       timeout: 10000
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/validation-feedback-loop.sh"
+      timeout: 5000
 ---
 
-# /worker - Worker Self-Service Commands
+# /worker - Worker Self-Service Commands (EFL V5.0.0)
 
-> **Version:** 4.0.0
-> **Role:** Self-service commands for workers (start, done, status, block)
+> **Version:** 5.0.0 (EFL Pattern)
+> **Role:** Self-service commands for workers with EFL integration
 > **Architecture:** Hybrid (Native Task System + File-Based Prompts)
-> **New:** Sub-Orchestrator mode (orchestrate, delegate, collect-sub)
+> **EFL Features:** P1 Sub-Orchestrator, P2 Parallel Agents, P6 Internal Loop
+> **Sub-Orchestrator Commands:** orchestrate, delegate, collect-sub
 
 ---
 
@@ -36,7 +146,94 @@ hooks:
 6. **NEW:** Delegate subtasks to sub-agents (`/worker delegate`)
 7. **NEW:** Collect and summarize sub-results (`/worker collect-sub`)
 
-### 1.1 Workload Context Setup
+### 1.1 Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+
+This skill has `agent_delegation.enabled: true` and `default_mode: true` in frontmatter.
+**Auto-delegation is ALWAYS active** - the skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// =============================================================================
+// AUTO-DELEGATION CHECK (Executed at skill invocation)
+// =============================================================================
+// Reference: .claude/skills/shared/auto-delegation.md
+
+function executeAutoDelegationCheck(userCommand, taskContext) {
+  // 1. Read frontmatter config
+  const delegationConfig = {
+    enabled: true,           // From frontmatter: agent_delegation.enabled
+    default_mode: true,      // From frontmatter: agent_delegation.default_mode
+    max_sub_agents: 3,       // From frontmatter: agent_delegation.max_sub_agents
+    strategy: "complexity-based"  // From frontmatter: agent_delegation.delegation_strategy
+  }
+
+  // 2. Check if auto-delegation should trigger
+  if (delegationConfig.enabled && delegationConfig.default_mode) {
+    console.log(`
+=== Auto-Delegation Active ===
+Mode: Sub-Orchestrator (default_mode: true)
+Strategy: ${delegationConfig.strategy}
+Max Sub-Agents: ${delegationConfig.max_sub_agents}
+`)
+
+    // 3. For complex tasks, analyze and delegate
+    if (isComplexTask(taskContext)) {
+      const complexity = analyzeTaskComplexity(taskContext)
+      const agentCount = getAgentCountByComplexity(complexity)
+
+      console.log(`Task Complexity: ${complexity} → Deploying ${agentCount} sub-agent(s)`)
+
+      // 4. Execute delegation workflow
+      return {
+        delegated: true,
+        complexity: complexity,
+        agentCount: agentCount,
+        workflow: "orchestrate → delegate → collect-sub"
+      }
+    }
+  }
+
+  // 5. Simple tasks execute directly (no delegation overhead)
+  return { delegated: false, executeDirectly: true }
+}
+
+function isComplexTask(taskContext) {
+  // Complex if: multiple files, multi-phase, integration required
+  const complexityIndicators = [
+    taskContext.fileCount > 3,
+    taskContext.description?.includes("integration"),
+    taskContext.description?.includes("refactor"),
+    taskContext.estimatedLines > 200
+  ]
+  return complexityIndicators.filter(Boolean).length >= 2
+}
+
+function analyzeTaskComplexity(taskContext) {
+  // Map to complexity levels from parallel_agent_config
+  if (taskContext.fileCount > 10) return "complex"
+  if (taskContext.fileCount > 5) return "moderate"
+  return "simple"
+}
+
+function getAgentCountByComplexity(complexity) {
+  // From frontmatter: parallel_agent_config.agent_count_by_complexity
+  const mapping = { simple: 1, moderate: 2, complex: 3 }
+  return mapping[complexity] || 1
+}
+```
+
+**Auto-Delegation Behavior Summary:**
+
+| Scenario | Behavior |
+|----------|----------|
+| `/worker start b` (simple task) | Execute directly, no delegation |
+| `/worker start b` (complex task) | Auto-suggest: "Use `/worker orchestrate b` to decompose" |
+| `/worker orchestrate b` | Decompose → create subtasks → ready for delegation |
+| `/worker delegate b` | Assign subtasks to sub-agents |
+| `/worker collect-sub b` | Aggregate results → L1 to main, L2/L3 to files |
+
+### 1.2 Workload Context Setup
 
 ```javascript
 // Source workload management modules (via helper functions)
@@ -976,11 +1173,19 @@ function workerOrchestrate(specificTaskId = null) {
   }
 
   // 2. Check if Sub-Orchestrator mode is enabled
-  if (!task.metadata?.subOrchestratorMode) {
+  // V5.1.0: Respect default_mode setting from skill config
+  // If default_mode is true, always enable Sub-Orchestrator
+  // Otherwise, check task metadata for explicit flag
+  const defaultModeEnabled = true  // Set by agent_delegation.default_mode in frontmatter
+
+  if (!defaultModeEnabled && !task.metadata?.subOrchestratorMode) {
     console.log(`❌ Sub-Orchestrator mode not enabled for this task`)
     console.log(`   Use: /assign ${task.id} ${workerId} --sub-orchestrator`)
     return { status: "mode_disabled" }
   }
+
+  // Sub-Orchestrator always active when default_mode: true
+  console.log(`✅ Sub-Orchestrator mode active (default_mode: ${defaultModeEnabled})`)
 
   // 3. Read task details and prompt
   let taskDetail = TaskGet({taskId: task.id})
@@ -1749,6 +1954,9 @@ hooks:
 | 3.1.0 | Gate 5 Shift-Left Validation 통합, Setup hook 추가 |
 | 3.2.0 | Context Pollution Prevention: L1 검증, sanitize, L2/L3 격리 |
 | 4.0.0 | Semantic Integrity Manifest: /worker done 시 SHA256 해시 manifest 자동 생성, Sub-Orchestrator 통합 |
+| 5.0.0 | EFL Pattern Integration: P1 Sub-Orchestrator, P2 Parallel Agents, P6 Internal Loop |
+| 5.1.0 | Default Sub-Orchestrator Mode: default_mode: true 설정으로 항상 Sub-Orchestrator 활성화 |
+| 5.2.0 | Auto-Delegation Trigger: Shared module integration (.claude/skills/shared/auto-delegation.md), explicit auto-trigger logic in skill body |
 
 ---
 

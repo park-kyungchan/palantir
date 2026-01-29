@@ -1,14 +1,28 @@
 ---
 name: planning
 description: |
-  Generate YAML planning documents from research results.
-  Includes Plan Agent review loop for quality assurance.
-  Outputs structured execution blueprints for /orchestrate.
+  Generate YAML planning documents from research results for execution readiness.
+
+  Core Capabilities:
+  - Research Integration: Parse L1/L2/L3 research outputs for informed planning
+  - Phase Decomposition: Break down implementation into dependency-aware phases
+  - EFL Pattern Execution: Full P1-P6 implementation with Phase 3-A/3-B synthesis
+  - Plan Agent Review: Quality assurance through iterative review loop (max 3 iterations)
+  - Execution Blueprint: Output structured YAML for /orchestrate consumption
+
+  Output Format:
+  - L1: YAML summary for main orchestrator (500 tokens)
+  - L2: Human-readable phase overview (2000 tokens)
+  - L3: Complete planning document (plan.yaml)
+
+  Pipeline Position:
+  - Post-/research phase (or standalone execution)
+  - Handoff to /orchestrate when Plan Agent approves
 user-invocable: true
 disable-model-invocation: false
-context: standard
+context: fork
 model: opus
-version: "2.0.0"
+version: "3.0.0"
 argument-hint: "[--research-slug <slug>] [--auto-approve]"
 allowed-tools:
   - Read
@@ -16,10 +30,14 @@ allowed-tools:
   - Task
   - Glob
   - Grep
+  - mcp__sequential-thinking__sequentialthinking
   - AskUserQuestion
+
 hooks:
   Setup:
-    - shared/parallel-agent.sh  # P2: Load parallel agent module
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/parallel-agent.sh"
+      timeout: 5000
   PreToolUse:
     - type: command
       command: "/home/palantir/.claude/hooks/planning-preflight.sh"
@@ -29,125 +47,402 @@ hooks:
     - type: command
       command: "/home/palantir/.claude/hooks/planning-finalize.sh"
       timeout: 150000
-# P1: Agent Delegation (Sub-Orchestrator Mode)
+
+# =============================================================================
+# P1: Skill as Sub-Orchestrator
+# =============================================================================
 agent_delegation:
-  enabled: true  # Can operate as sub-orchestrator
-  max_sub_agents: 4  # Maximum parallel sub-planners
-  delegation_strategy: "phase-based"  # Delegate by implementation phase
+  enabled: true
+  default_mode: true  # V1.1.0: Auto-delegation by default
+  max_sub_agents: 4
+  delegation_strategy: "auto"
+  strategies:
+    phase_based:
+      description: "Delegate by implementation phase area"
+      use_when: "Large multi-component planning"
+    complexity_based:
+      description: "Delegate by task complexity level"
+      use_when: "Mixed complexity planning"
+    scope_based:
+      description: "Delegate by analysis scope (frontend/backend/infra)"
+      use_when: "Cross-domain planning"
+  slug_orchestration:
+    enabled: true
+  default_mode: true  # V1.1.0: Auto-delegation by default
+    source: "clarify or research slug"
+    action: "reuse upstream workload context"
+  sub_agent_permissions:
+    - Read
+    - Write  # Required for L1/L2/L3 output
+    - Glob
+    - Grep
+  output_paths:
+    l1: ".agent/prompts/{slug}/planning/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/planning/l2_index.md"
+    l3: ".agent/prompts/{slug}/planning/l3_details/"
+  return_format:
+    l1: "Planning summary with phase count and approval status (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/planning/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/planning/l3_details/"
+    requires_l2_read: false
+    next_action_hint: "/orchestrate"
   description: |
-    When planning scope is large (>5 phases), break into sub-planning tasks.
-    Each sub-agent handles specific implementation area (e.g., frontend plan, backend plan, infra plan).
+    This skill operates as a Sub-Orchestrator (P1).
+    It delegates planning work to Plan Agents rather than executing directly.
+    L1 returns to main context; L2/L3 always saved to files.
+
+# =============================================================================
 # P2: Parallel Agent Configuration
+# =============================================================================
 parallel_agent_config:
-  enabled: true  # Use parallel agents for faster planning
-  complexity_detection: "auto"  # Automatically detect complexity level
+  enabled: true
+  complexity_detection: "auto"
   agent_count_by_complexity:
     simple: 1      # Basic planning (single phase)
     moderate: 2    # Standard planning (2-3 phases)
     complex: 3     # Complex planning (4-6 phases)
     very_complex: 4  # Comprehensive planning (7+ phases)
-  synchronization_strategy: "barrier"  # Wait for all agents (default)
-  aggregation_strategy: "merge"  # Merge all planning outputs
+  synchronization_strategy: "barrier"  # Wait for all agents
+  aggregation_strategy: "merge"        # Merge all planning outputs
+  plan_areas:
+    - tech_stack_analysis
+    - architecture_option_analysis
+    - risk_analysis
+    - implementation_phase_design
+    - dependency_order_design
+    - test_strategy_design
   description: |
-    Parallel agent execution for faster comprehensive planning.
-    Complexity-based scaling: 1-4 agents based on phase count.
+    Deploy multiple Plan Agents in parallel for comprehensive planning.
+    Agent count scales with detected complexity (phase count).
+    All agents run Phase 1 simultaneously, then results are aggregated.
+
+# =============================================================================
+# P6: Agent Internal Feedback Loop
+# =============================================================================
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    completeness:
+      - "All research findings incorporated into plan"
+      - "All phases have clear deliverables"
+      - "Dependencies between phases documented"
+    quality:
+      - "Phase breakdown is logical and actionable"
+      - "Risk analysis covers critical paths"
+      - "Test strategy aligns with implementation phases"
+    internal_consistency:
+      - "L1/L2/L3 hierarchy maintained"
+      - "Phase numbering sequential"
+      - "No circular dependencies"
+  refinement_triggers:
+    - "Plan Agent requests revision"
+    - "Missing dependency detected"
+    - "Incomplete phase definition"
 ---
 
-# /planning - YAML Planning Document Generator
+### Auto-Delegation Trigger (CRITICAL)
 
-> **Version:** 2.0.0
-> **Role:** Planning Document Generation with Plan Agent Review
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+# /planning - YAML Planning Document Generator (EFL V3.0.0)
+
+> **Version:** 3.0.0 (EFL Pattern)
+> **Role:** Planning Document Generation with Full EFL Implementation
 > **Pipeline Position:** After /research, Before /orchestrate
+> **EFL Template:** `.claude/skills/shared/efl-template.md`
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 1. Purpose
 
-Generate structured YAML planning documents from research outputs that:
-1. Parse research findings from `.agent/research/{slug}.md`
-2. Load requirements from `.agent/clarify/{slug}.yaml`
-3. Structure implementation phases with dependencies
-4. Validate through Plan Agent review loop
-5. Output execution-ready blueprints for `/orchestrate`
+Generate structured YAML planning documents using Enhanced Feedback Loop (EFL) pattern:
+
+1. **Phase 1**: Deploy parallel Plan Agents for different planning areas
+2. **Phase 2**: Aggregate L1 summaries from all agents
+3. **Phase 3-A**: L2 Horizontal Synthesis (cross-area consistency)
+4. **Phase 3-B**: L3 Vertical Verification (code-level accuracy)
+5. **Phase 3.5**: Main Agent Review Gate (holistic verification)
+6. **Phase 4**: Selective Feedback Loop (if issues found)
+7. **Phase 5**: User Final Approval Loop
 
 ### Pipeline Integration
 
 ```
 /clarify → /research → [/planning] → /orchestrate → Workers → /synthesis
                           │
-                          ├── Load research + clarify outputs
-                          ├── Generate planning document YAML
-                          ├── Plan Agent review loop
-                          └── Output: .agent/plans/{slug}.yaml
+                          ├── Load research L1/L2/L3 outputs
+                          ├── Phase 1: Parallel Plan Agents (P2)
+                          ├── Phase 2: L1 Aggregation
+                          ├── Phase 3-A: L2 Horizontal Synthesis (P3)
+                          ├── Phase 3-B: L3 Vertical Verification (P3)
+                          ├── Phase 3.5: Main Agent Review Gate (P1)
+                          ├── Phase 4: Selective Feedback Loop (P4)
+                          ├── Phase 5: User Approval (P5)
+                          └── Output: .agent/prompts/{slug}/plan.yaml
 ```
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 2. Invocation
 
-### User Syntax
+### Syntax
 
 ```bash
-# With research slug
+# Pipeline mode (with upstream research)
 /planning --research-slug enhanced_pipeline_skills_20260124
 
-# Auto-approve (skip user confirmation for Plan Agent approval)
+# Auto-approve (skip user confirmation)
 /planning --research-slug my-feature --auto-approve
 
-# Interactive (prompts for slug if not provided)
+# Interactive (uses active workload or prompts)
 /planning
+
+# Show help
+/planning --help
 ```
 
 ### Arguments
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--research-slug` | No | Research document slug to load |
+| `--research-slug` | No | Research document slug to load (pipeline mode) |
 | `--auto-approve` | No | Skip user confirmation after Plan Agent approval |
+| `--help`, `-h` | No | Show usage information |
+
+### Argument Parsing
+
+```bash
+# $ARGUMENTS parsing with error recovery
+RESEARCH_SLUG=""
+AUTO_APPROVE=false
+SHOW_HELP=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --help|-h)
+            SHOW_HELP=true
+            shift
+            ;;
+        --research-slug)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo "❌ Error: --research-slug requires a slug argument" >&2
+                SHOW_HELP=true
+                shift
+            else
+                RESEARCH_SLUG="$2"
+                shift 2
+            fi
+            ;;
+        --auto-approve)
+            AUTO_APPROVE=true
+            shift
+            ;;
+        --*)
+            echo "❌ Error: Unknown option: $1" >&2
+            SHOW_HELP=true
+            shift
+            ;;
+        *)
+            echo "❌ Error: Unexpected argument: $1" >&2
+            SHOW_HELP=true
+            shift
+            ;;
+    esac
+done
+
+if [[ "$SHOW_HELP" == "true" ]]; then
+    cat << 'EOF'
+Usage: /planning [OPTIONS]
+
+Options:
+  --research-slug <slug>  Link to upstream /research workload
+  --auto-approve          Skip user confirmation after Plan Agent approval
+  --help, -h              Show this help message
+
+Examples:
+  /planning --research-slug user-auth-20260129
+  /planning --research-slug my-feature --auto-approve
+  /planning  # Uses active workload or prompts for slug
+
+Pipeline Position:
+  /clarify → /research → /planning → /orchestrate
+EOF
+    exit 1
+fi
+```
 
 ---
 
-## 3. Input Processing
+### Auto-Delegation Trigger (CRITICAL)
 
-### 3.1 Source Files (V7.1 Workload-Scoped)
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
 
 ```javascript
-// V7.1: Workload-scoped paths
-const researchPath = `.agent/prompts/${slug}/research.md`
-const clarifyPath = `.agent/prompts/${slug}/clarify.yaml`
-
-// Optional: previous planning iterations
-const previousPlanPath = `.agent/prompts/${slug}/plan.yaml`
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
 ```
 
-### 3.2 Research Loading
+
+## 3. Workload Slug Resolution
+
+```bash
+# Source centralized utilities
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/slug-generator.sh"
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-files.sh"
+
+# Resolution priority:
+# 1. --research-slug argument (upstream linkage)
+# 2. Active workload (get_active_workload)
+# 3. Generate new workload (standalone mode)
+
+if [[ -n "$RESEARCH_SLUG" ]]; then
+    WORKLOAD_ID="$RESEARCH_SLUG"
+    SLUG=$(generate_slug_from_workload "$WORKLOAD_ID")
+    echo "📋 Using upstream research slug: $SLUG"
+
+elif ACTIVE_WORKLOAD=$(get_active_workload) && [[ -n "$ACTIVE_WORKLOAD" ]]; then
+    WORKLOAD_ID="$ACTIVE_WORKLOAD"
+    SLUG=$(get_active_workload_slug)
+    echo "📋 Using active workload: $SLUG"
+
+else
+    TOPIC="${QUERY:-planning-$(date +%H%M%S)}"
+    WORKLOAD_ID=$(generate_workload_id "$TOPIC")
+    SLUG=$(generate_slug_from_workload "$WORKLOAD_ID")
+    init_workload_directory "$WORKLOAD_ID"
+    set_active_workload "$WORKLOAD_ID"
+    echo "📋 Created new workload: $SLUG"
+fi
+
+WORKLOAD_DIR=".agent/prompts/${SLUG}"
+mkdir -p "${WORKLOAD_DIR}"
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
 
 ```javascript
-async function loadResearch(slug) {
-  // V7.1: Load from workload-scoped path
-  const research = await Read({ file_path: `.agent/prompts/${slug}/research.md` })
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
 
-  // Extract key sections
-  const sections = {
-    codebaseAnalysis: extractSection(research, '## Codebase Analysis'),
-    externalResearch: extractSection(research, '## External Research'),
-    riskAssessment: extractSection(research, '## Risk Assessment'),
-    recommendations: extractSection(research, '## Recommendations')
+
+## 4. Input Processing (3-Tier Reference)
+
+### 4.1 Load Research Outputs (L1/L2/L3)
+
+```javascript
+async function loadResearchOutputs(slug) {
+  const basePath = `.agent/prompts/${slug}`
+
+  // L1: Summary for quick context
+  const l1 = await Read({ file_path: `${basePath}/research.md` })
+
+  // L2: Implementation patterns for targetFiles
+  const l2Path = `${basePath}/research/l2_detailed.md`
+  const l2Exists = await fileExists(l2Path)
+  const l2 = l2Exists ? await Read({ file_path: l2Path }) : null
+
+  // L3: Risk matrix for dependency ordering
+  const l3Path = `${basePath}/research/l3_synthesis.md`
+  const l3Exists = await fileExists(l3Path)
+  const l3 = l3Exists ? await Read({ file_path: l3Path }) : null
+
+  return {
+    l1: {
+      content: l1,
+      sections: {
+        codebaseAnalysis: extractSection(l1, '## Codebase Analysis'),
+        externalResearch: extractSection(l1, '## External Research'),
+        riskAssessment: extractSection(l1, '## Risk Assessment'),
+        recommendations: extractSection(l1, '## Recommendations')
+      }
+    },
+    l2: l2 ? {
+      content: l2,
+      implementationPatterns: extractImplementationPatterns(l2),
+      targetFiles: extractTargetFiles(l2)
+    } : null,
+    l3: l3 ? {
+      content: l3,
+      riskMatrix: extractRiskMatrix(l3),
+      dependencyGraph: extractDependencyGraph(l3)
+    } : null
   }
-
-  return sections
 }
 ```
 
-### 3.3 Clarify Loading
+### 4.2 Load Clarify Output
 
 ```javascript
 async function loadClarify(slug) {
-  // V7.1: Load from workload-scoped path
   const clarify = await Read({ file_path: `.agent/prompts/${slug}/clarify.yaml` })
 
-  // Parse requirements and extract workload_id (handle nested structures)
-  // Priority: metadata.workload_id > workload_id > metadata.id > slug
   const workloadId = clarify.metadata?.workload_id
     || clarify.workload_id
     || clarify.metadata?.id
@@ -155,7 +450,7 @@ async function loadClarify(slug) {
 
   return {
     originalRequest: clarify.original_request,
-    workloadId: workloadId,  // Properly extracted workload_id
+    workloadId: workloadId,
     rounds: clarify.rounds,
     finalDecision: clarify.final_decision,
     requirements: extractRequirements(clarify.rounds)
@@ -165,413 +460,681 @@ async function loadClarify(slug) {
 
 ---
 
-## 4. Planning Document Schema
+### Auto-Delegation Trigger (CRITICAL)
 
-### 4.1 Full Schema
-
-```yaml
-# =============================================================================
-# Planning Document Schema
-# =============================================================================
-
-metadata:
-  id: "string"              # Unique planning document ID (slug-based)
-  workload_id: "string"     # Workload identifier (format: {topic}_{YYYYMMDD}_{HHMMSS})
-  version: "string"         # Semantic version (1.0.0)
-  created_at: "datetime"    # ISO 8601 timestamp
-  updated_at: "datetime"    # Last modification timestamp
-  status: "string"          # draft | reviewing | approved | superseded
-  research_source: "string" # Path to research document
-  clarify_source: "string"  # Path to clarify document
-
-project:
-  name: "string"            # Human-readable project name
-  description: "string"     # Multi-line project description
-  objectives:
-    - "string"              # List of project objectives
-
-# =============================================================================
-# PHASES - Implementation Breakdown
-# =============================================================================
-
-phases:
-  - id: "string"                    # Unique phase ID (e.g., phase1-setup)
-    name: "string"                  # Human-readable phase name
-    description: "string"           # Multi-line phase description
-    priority: "string"              # P0 (critical) | P1 (high) | P2 (medium)
-    owner: "string"                 # Suggested terminal owner
-    dependencies: ["string"]        # List of phase IDs this depends on
-    estimatedComplexity: "string"   # low | medium | high
-
-    targetFiles:                    # Files this phase will modify
-      - path: "string"              # Absolute or relative file path
-        action: "string"            # create | modify | delete
-        sections: ["string"]        # Specific sections to modify
-
-    referenceFiles:                 # Files to read for context
-      - path: "string"
-        reason: "string"
-
-    completionCriteria:             # Must all be met for phase completion
-      - "string"
-
-    verificationSteps:              # Automated verification commands
-      - command: "string"
-        expected: "string"
-
-# =============================================================================
-# DEPENDENCIES - Explicit Dependency Graph
-# =============================================================================
-
-dependencies:
-  internal:                         # Dependencies between phases
-    - from: "string"                # Phase ID that depends
-      to: "string"                  # Phase ID being depended on
-      reason: "string"              # Why this dependency exists
-
-  external:                         # External system dependencies
-    - name: "string"
-      version: "string"
-      reason: "string"
-
-# =============================================================================
-# PLAN AGENT REVIEW
-# =============================================================================
-
-planAgentReview:
-  status: "string"                  # pending | approved | rejected | iterating
-  reviewedAt: "datetime"            # When review was completed
-  reviewedBy: "string"              # Agent/reviewer identifier
-  iterationCount: "number"          # Number of review iterations
-  comments:
-    - round: "number"
-      comment: "string"
-      resolution: "string"
-
-  approvalCriteria:                 # What Plan Agent verifies
-    - "string"
-
-# =============================================================================
-# EXECUTION NOTES
-# =============================================================================
-
-executionNotes:
-  parallelization: "string"         # Which phases can run in parallel
-  estimatedDuration: "string"       # Total estimated time
-  criticalPath: "string"            # Longest dependency chain
-  riskMitigation: "string"          # Known risks and mitigations
-```
-
-### 4.2 Minimal Example
-
-```yaml
-metadata:
-  id: "add-auth-feature"
-  workload_id: "user-authentication_20260125_143022"
-  version: "1.0.0"
-  status: "draft"
-
-project:
-  name: "Add User Authentication"
-  description: |
-    Implement JWT-based authentication with refresh tokens.
-  objectives:
-    - "Secure API endpoints"
-    - "Implement login/logout flow"
-
-phases:
-  - id: "phase1-jwt-setup"
-    name: "JWT Library Setup"
-    priority: "P0"
-    dependencies: []
-    targetFiles:
-      - path: "src/auth/jwt.ts"
-        action: "create"
-    completionCriteria:
-      - "JWT signing and verification functions implemented"
-
-  - id: "phase2-middleware"
-    name: "Auth Middleware"
-    priority: "P0"
-    dependencies: ["phase1-jwt-setup"]
-    targetFiles:
-      - path: "src/middleware/auth.ts"
-        action: "create"
-    completionCriteria:
-      - "Middleware protects routes requiring authentication"
-
-planAgentReview:
-  status: "pending"
-```
-
----
-
-## 5. Plan Agent Review Process
-
-### 5.1 Review Delegation
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
 
 ```javascript
-async function requestPlanAgentReview(planningDoc) {
-  const review = await Task({
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 5. EFL Execution Flow
+
+### 5.1 Phase 1: Parallel Plan Agent Deployment (P2)
+
+```javascript
+async function phase1_parallel_plan_agents(research, clarify) {
+  // Determine complexity and agent count
+  const estimatedPhases = estimatePhaseCount(research, clarify)
+  const agentCount = getAgentCountByComplexity(estimatedPhases)
+
+  console.log(`📊 Complexity: ${estimatedPhases} phases → ${agentCount} agents`)
+
+  // Divide planning into areas
+  const planAreas = [
+    { id: "arch", name: "Architecture & Tech Stack", focus: "technology decisions" },
+    { id: "impl", name: "Implementation Phases", focus: "phase breakdown" },
+    { id: "risk", name: "Risk & Dependencies", focus: "risk mitigation" },
+    { id: "test", name: "Testing & Validation", focus: "verification strategy" }
+  ].slice(0, agentCount)
+
+  // Deploy parallel Plan Agents with P6 self-validation
+  const agents = planAreas.map(area => Task({
     subagent_type: "Plan",
+    model: "opus",
     prompt: `
-## Plan Review Request
+## Planning Area: ${area.name}
 
-Review this planning document for implementation readiness:
+### Context
+Original Request: ${clarify.originalRequest}
 
+Research Summary (L1):
+${research.l1.content.substring(0, 2000)}
+
+${research.l2 ? `Implementation Patterns (L2):
+${research.l2.implementationPatterns.substring(0, 1500)}` : ''}
+
+${research.l3 ? `Risk Matrix (L3):
+${research.l3.riskMatrix.substring(0, 1000)}` : ''}
+
+### Your Focus
+Analyze and plan for: **${area.focus}**
+
+### Internal Feedback Loop (P6 - REQUIRED)
+1. Generate planning output for your area
+2. Self-validate:
+   - Implementability: Can each item actually be implemented?
+   - Dependency correctness: Are dependencies properly identified?
+   - Completeness: Are all aspects of your area covered?
+   - Risk identification: Are risks for your area documented?
+3. If validation fails, revise and retry (max 3 iterations)
+4. Output only after validation passes
+
+### Output Format
+Return YAML:
 \`\`\`yaml
-${planningDoc}
+areaId: "${area.id}"
+areaName: "${area.name}"
+status: "success"
+
+l1Summary:
+  keyDecisions: [...]
+  phaseCount: {number}
+  criticalRisks: [...]
+
+phases:  # Phases relevant to your area
+  - id: "phase-{n}"
+    name: "{phase name}"
+    priority: "P0|P1|P2"
+    targetFiles: [...]
+    dependencies: [...]
+    completionCriteria: [...]
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationStatus: "passed"
+  issuesResolved: [...]
 \`\`\`
-
-## Validation Checklist
-
-1. **Dependency Graph**: Is it acyclic? No circular dependencies?
-2. **Completion Criteria**: Does each phase have measurable criteria?
-3. **Target Files**: Do paths exist or is creation justified?
-4. **Risk Assessment**: Are risks identified and mitigations proposed?
-5. **Parallelization**: Are parallel opportunities identified?
-
-## Output Format
-
-Return ONE of:
-- "APPROVED" - Document is ready for /orchestrate
-- "NEEDS_REVISION" with specific issues list:
-  \`\`\`
-  Issues:
-  1. [Phase X]: Missing completion criteria
-  2. [Dependencies]: Circular dependency between A and B
-  3. [Risk]: No mitigation for external API failure
-  \`\`\`
 `,
-    description: "Review planning document"
+    description: `Plan Agent: ${area.name}`
+  }))
+
+  // Wait for all agents (barrier synchronization)
+  const results = await Promise.all(agents)
+
+  return {
+    agentCount,
+    planAreas,
+    results,
+    l1s: results.map(r => r.l1Summary),
+    phases: results.flatMap(r => r.phases || []),
+    iterations: results.map(r => r.internalLoopStatus?.iterations || 1)
+  }
+}
+```
+
+### 5.2 Phase 2: L1 Aggregation
+
+```javascript
+async function phase2_l1_aggregation(phase1Results) {
+  // Validate each L1
+  for (const l1 of phase1Results.l1s) {
+    if (!l1 || !l1.keyDecisions) {
+      throw new Error("Invalid L1 format from Plan Agent")
+    }
+  }
+
+  // Merge all L1s
+  const aggregatedL1 = {
+    totalAgents: phase1Results.agentCount,
+    areas: phase1Results.planAreas.map((area, i) => ({
+      id: area.id,
+      name: area.name,
+      keyDecisions: phase1Results.l1s[i].keyDecisions,
+      phaseCount: phase1Results.l1s[i].phaseCount,
+      criticalRisks: phase1Results.l1s[i].criticalRisks
+    })),
+    totalPhases: phase1Results.phases.length,
+    overallStatus: determineOverallStatus(phase1Results.l1s)
+  }
+
+  // Merge and deduplicate phases
+  const mergedPhases = mergePhases(phase1Results.phases)
+
+  return { aggregatedL1, mergedPhases }
+}
+```
+
+### 5.3 Phase 3-A: L2 Horizontal Synthesis (P3)
+
+```javascript
+async function phase3a_l2_horizontal_synthesis(aggregatedL1, mergedPhases) {
+  // Delegate to general-purpose agent for horizontal integration
+  const synthesis = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## L2 Horizontal Synthesis for Planning
+
+### Input
+Aggregated L1 from ${aggregatedL1.totalAgents} Plan Agents:
+${JSON.stringify(aggregatedL1, null, 2)}
+
+Merged Phases (${mergedPhases.length} total):
+${mergedPhases.map(p => `- ${p.id}: ${p.name} (${p.priority})`).join('\n')}
+
+### Task
+1. **Cross-validate** all planning areas for consistency:
+   - Do architecture decisions align with implementation phases?
+   - Are dependencies correctly ordered across areas?
+   - Are risk mitigations properly integrated?
+
+2. **Identify contradictions** between areas:
+   - Technology choice conflicts
+   - Dependency cycle detection
+   - Resource allocation conflicts
+
+3. **Detect gaps** at area connection points:
+   - Missing integration phases
+   - Uncovered transition points
+   - Missing verification steps
+
+4. **Synthesize** into unified planning document structure
+
+### Validation Criteria
+- cross_area_consistency
+- dependency_acyclicity
+- risk_coverage_completeness
+
+### Internal Feedback Loop (P6)
+Self-validate synthesis, retry up to 3 times if issues found.
+
+### Output Format
+\`\`\`yaml
+phase3a_L1:
+  synthesisStatus: "success"
+  consistencyScore: {0-100}
+  contradictionsFound: {count}
+  gapsDetected: {count}
+
+phase3a_L2:
+  unifiedPhaseStructure:
+    phases: [...]  # Reordered and validated
+  crossAreaAnalysis:
+    consistencyIssues: [...]
+    resolvedContradictions: [...]
+    gapsFilled: [...]
+
+phase3a_L3Path: ".agent/prompts/{slug}/planning_phase3a_l3.md"
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationStatus: "passed"
+\`\`\`
+`,
+    description: "L2 Horizontal Synthesis for Planning"
   })
 
-  return {
-    status: review.includes("APPROVED") ? "approved" : "needs_revision",
-    comments: extractIssues(review)
-  }
+  // Write L3 detail to file
+  await Write({
+    file_path: synthesis.phase3a_L3Path,
+    content: generatePhase3aL3Detail(synthesis)
+  })
+
+  return synthesis
 }
 ```
 
-### 5.2 Review Loop
+### 5.4 Phase 3-B: L3 Vertical Verification (P3)
 
 ```javascript
-async function reviewLoop(planningDoc, maxIterations = 3) {
-  let iteration = 0
-  let currentDoc = planningDoc
+async function phase3b_l3_vertical_verification(phase3aResult, research) {
+  // Read Phase 3-A L3 for deep verification
+  const phase3aL3 = await Read({ file_path: phase3aResult.phase3a_L3Path })
 
-  while (iteration < maxIterations) {
-    iteration++
+  // Delegate to general-purpose agent for code-level verification
+  const verification = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## L3 Code-Level Verification for Planning
 
-    // Request Plan Agent review
-    const review = await requestPlanAgentReview(currentDoc)
+### Input
+Phase 3-A Synthesis L2:
+${JSON.stringify(phase3aResult.phase3a_L2, null, 2)}
 
-    // Update review status
-    currentDoc = updateReviewSection(currentDoc, {
-      status: review.status,
-      iterationCount: iteration,
-      comments: review.comments
+Phase 3-A L3 Detail:
+${phase3aL3}
+
+Research L3 (Risk Matrix):
+${research.l3?.content || "Not available"}
+
+### Task
+1. **Verify targetFiles exist** or creation is justified:
+   - Check if file paths in phases are valid
+   - Verify parent directories exist
+   - Flag non-existent paths for creation
+
+2. **Validate dependency logic**:
+   - Check if dependencies reference valid phase IDs
+   - Verify dependency order is logical
+   - Detect any circular dependencies
+
+3. **Cross-reference with research**:
+   - Do target files match research recommendations?
+   - Are identified risks addressed in phases?
+   - Are completion criteria measurable?
+
+### Validation Criteria
+- targetFile_validity
+- dependency_logic_accuracy
+- research_alignment
+- criteria_measurability
+
+### Internal Feedback Loop (P6)
+Self-validate verification, retry up to 3 times if issues found.
+
+### Output Format
+\`\`\`yaml
+synthesisL1:
+  verificationStatus: "success"
+  targetFileValidity: {percentage}
+  dependencyCorrectness: {percentage}
+  researchAlignment: {percentage}
+
+synthesisL2:
+  verifiedPhases:
+    - id: "..."
+      targetFilesValid: true/false
+      dependenciesValid: true/false
+      criteriaValid: true/false
+  verificationNotes: [...]
+
+synthesisL3Path: ".agent/prompts/{slug}/plan.yaml"
+
+unresolvedIssues: [...]  # Issues needing Main Agent review
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationStatus: "passed"
+\`\`\`
+`,
+    description: "L3 Vertical Verification for Planning"
+  })
+
+  return verification
+}
+```
+
+### 5.5 Phase 3.5: Main Agent Review Gate (P1)
+
+```javascript
+async function phase3_5_main_agent_review(synthesisResult, clarify) {
+  // Main Agent reviews from holistic perspective
+  const reviewCriteria = {
+    requirement_alignment: {
+      question: "Does planning match original request?",
+      checks: ["requirement_interpretation", "scope_appropriate"]
+    },
+    design_flow_consistency: {
+      question: "Is research→plan logical flow natural?",
+      checks: ["step_connections", "architecture_perspective"]
+    },
+    gap_detection: {
+      question: "Are important implementation areas missing?",
+      checks: ["edge_cases", "risk_factors"]
+    },
+    conclusion_clarity: {
+      question: "Is planning actionable for /orchestrate?",
+      checks: ["no_ambiguity", "sufficient_detail"]
+    }
+  }
+
+  const reviewIssues = []
+
+  // Main Agent evaluates each criterion
+  for (const [criterion, config] of Object.entries(reviewCriteria)) {
+    const passed = evaluateCriterion(synthesisResult, criterion, config)
+    if (!passed.result) {
+      reviewIssues.push({
+        type: criterion,
+        description: passed.reason,
+        severity: passed.severity,
+        needsL3Review: passed.severity !== "LOW"
+      })
+    }
+  }
+
+  if (reviewIssues.length === 0) {
+    console.log("✅ Phase 3.5: Main Agent review PASSED")
+    return { reviewPassed: true, skipToPhase5: true }
+  }
+
+  console.log(`⚠️ Phase 3.5: ${reviewIssues.length} issues found`)
+
+  // Need L3 deep review for MEDIUM+ severity issues
+  const needsL3Review = reviewIssues.some(i => i.needsL3Review)
+
+  if (needsL3Review) {
+    const l3DeepReview = await Task({
+      subagent_type: "general-purpose",
+      model: "opus",
+      prompt: `
+## L3 Deep Review for Planning Issues
+
+### Issues Found by Main Agent
+${reviewIssues.map(i => `- [${i.severity}] ${i.type}: ${i.description}`).join('\n')}
+
+### Task
+1. Read planning L3 file at ${synthesisResult.synthesisL3Path}
+2. Detailed code-level analysis per issue
+3. Identify root cause
+4. Suggest resolution approach
+
+### Output
+\`\`\`yaml
+l3Analysis:
+  - issueType: "..."
+    rootCause: "..."
+    affectedPhases: [...]
+    suggestedAction: "..."
+    targetFiles: [...]
+\`\`\`
+`,
+      description: "L3 Deep Review for Planning Issues"
     })
 
-    if (review.status === "approved") {
-      return { approved: true, document: currentDoc }
+    return {
+      reviewPassed: false,
+      reviewIssues,
+      l3DeepReview,
+      proceedToPhase4: true
     }
-
-    // Address issues
-    currentDoc = await addressIssues(currentDoc, review.comments)
   }
 
-  // Max iterations reached - escalate to user
+  return { reviewPassed: false, reviewIssues, proceedToPhase4: true }
+}
+```
+
+### 5.6 Phase 4: Selective Feedback Loop (P4)
+
+```javascript
+async function phase4_selective_feedback(reviewResult, synthesisResult) {
+  // Main Agent classifies issues
+  const classification = {
+    directFix: [],      // LOW severity - fix directly
+    agentDelegation: [] // MEDIUM+ - delegate
+  }
+
+  for (const issue of reviewResult.reviewIssues) {
+    if (issue.severity === "LOW") {
+      classification.directFix.push(issue)
+    } else {
+      classification.agentDelegation.push({
+        ...issue,
+        l3Analysis: reviewResult.l3DeepReview?.l3Analysis?.find(
+          a => a.issueType === issue.type
+        )
+      })
+    }
+  }
+
+  // Step 1: Main Agent direct fix for LOW severity
+  let updatedSynthesis = { ...synthesisResult }
+  for (const issue of classification.directFix) {
+    console.log(`🔧 Direct fix: ${issue.type}`)
+    updatedSynthesis = applyDirectFix(updatedSynthesis, issue)
+  }
+
+  // Step 2: Delegate MEDIUM+ issues
+  if (classification.agentDelegation.length > 0) {
+    const feedbackResults = await Promise.all(
+      classification.agentDelegation.map(issue => Task({
+        subagent_type: "Plan",
+        model: "opus",
+        prompt: `
+## Issue Resolution for Planning
+
+### Problem (WHAT)
+- Type: ${issue.type}
+- Severity: ${issue.severity}
+- Description: ${issue.description}
+
+### Root Cause (WHY)
+${issue.l3Analysis?.rootCause || "Analyze and determine"}
+
+### Resolution Approach (HOW)
+Suggested: ${issue.l3Analysis?.suggestedAction || "Determine best approach"}
+Affected Phases: ${issue.l3Analysis?.affectedPhases?.join(', ') || "Identify"}
+
+### Expected Output
+Return corrected planning sections in YAML format.
+
+### Self-Validation (P6)
+- Original issue resolved
+- No new issues introduced
+- Consistency maintained
+`,
+        description: `Resolve: ${issue.type}`
+      }))
+    )
+
+    // Merge feedback results
+    updatedSynthesis = mergeFeedbackResults(updatedSynthesis, feedbackResults)
+  }
+
   return {
-    approved: false,
-    document: currentDoc,
-    escalation: "Max review iterations reached. Manual review required."
+    directFixCount: classification.directFix.length,
+    delegatedCount: classification.agentDelegation.length,
+    issuesResolved: true,
+    updatedSynthesis
   }
 }
 ```
 
-### 5.3 Issue Resolution
+### 5.7 Phase 5: User Final Approval (P5)
 
 ```javascript
-async function addressIssues(planningDoc, issues) {
-  for (const issue of issues) {
-    // Categorize issue
-    if (issue.type === "missing_criteria") {
-      planningDoc = addCompletionCriteria(planningDoc, issue.phaseId)
-    } else if (issue.type === "circular_dependency") {
-      planningDoc = resolveDependency(planningDoc, issue.phases)
-    } else if (issue.type === "missing_risk") {
-      planningDoc = addRiskMitigation(planningDoc, issue.description)
-    }
+async function phase5_user_approval(finalSynthesis, autoApprove) {
+  if (autoApprove) {
+    console.log("✅ Auto-approve enabled, skipping user confirmation")
+    return { approved: true, synthesis: finalSynthesis }
   }
 
-  return planningDoc
-}
-```
+  let userApproved = false
+  let currentSynthesis = finalSynthesis
 
----
-
-## 6. Execution Protocol
-
-### 6.1 Main Flow
-
-```javascript
-async function executePlanning(args) {
-  // 1. Parse arguments
-  const { slug, autoApprove } = parseArgs(args)
-
-  // 2. Determine slug if not provided
-  const targetSlug = slug || await promptForSlug()
-
-  // 3. Load source documents
-  console.log("📚 Loading research and clarify documents...")
-  const research = await loadResearch(targetSlug)
-  const clarify = await loadClarify(targetSlug)
-
-  // 3.5 Gate 3: Pre-flight Checks (Shift-Left Validation)
-  console.log("🔍 Running Gate 3: Pre-flight checks...")
-  const preflightResult = await runPreflightChecks(targetSlug, research, clarify)
-  if (preflightResult.result === "failed") {
-    console.log("❌ Gate 3 FAILED - Fix errors before proceeding:")
-    preflightResult.errors.forEach(e => console.log(`   - ${e}`))
-    return { status: "gate3_failed", errors: preflightResult.errors }
-  }
-  if (preflightResult.warnings.length > 0) {
-    console.log("⚠️  Gate 3 warnings:")
-    preflightResult.warnings.forEach(w => console.log(`   - ${w}`))
-  }
-  console.log("✅ Gate 3 PASSED")
-
-  // 4. Generate initial planning document
-  console.log("📝 Generating planning document...")
-  const planningDoc = await generatePlanningDocument(research, clarify)
-
-  // 5. Plan Agent review loop
-  console.log("🔍 Starting Plan Agent review...")
-  const reviewResult = await reviewLoop(planningDoc)
-
-  // 6. User confirmation (unless auto-approve)
-  if (!autoApprove && reviewResult.approved) {
-    const confirmed = await AskUserQuestion({
+  while (!userApproved) {
+    const response = await AskUserQuestion({
       questions: [{
-        question: "Plan Agent has approved the planning document. Proceed?",
-        header: "Approval",
+        question: "Plan Agent has completed. Do you approve this planning document?",
+        header: "Final Approval",
         options: [
-          { label: "Yes, save and proceed", description: "Save planning document" },
-          { label: "Review manually", description: "View full document first" }
+          { label: "Approve", description: "Proceed to /orchestrate" },
+          { label: "Review L3", description: "View full planning document first" },
+          { label: "Request Changes", description: "Provide feedback for revision" }
         ],
         multiSelect: false
       }]
     })
 
-    if (!confirmed.includes("Yes")) {
-      return { action: "manual_review", document: reviewResult.document }
+    if (response.includes("Approve")) {
+      userApproved = true
+    } else if (response.includes("Review L3")) {
+      // Display L3 content
+      const l3Content = await Read({ file_path: currentSynthesis.synthesisL3Path })
+      console.log(l3Content)
+    } else {
+      // Get user feedback and rerun Phase 4
+      const feedback = await getUserFeedback()
+      currentSynthesis = await rerunWithFeedback(currentSynthesis, feedback)
     }
   }
 
-  // 7. Save planning document (Workload-scoped)
-  const workloadDir = `.agent/prompts/${targetSlug}`
-  await Bash({ command: `mkdir -p ${workloadDir}`, description: 'Ensure workload dir' })
-  const outputPath = `${workloadDir}/plan.yaml`
-  await Write({
-    file_path: outputPath,
-    content: reviewResult.document
-  })
-
-  // 8. Output summary
-  return {
-    status: reviewResult.approved ? "approved" : "escalated",
-    path: outputPath,
-    nextStep: "/orchestrate --plan-slug " + targetSlug
-  }
-}
-```
-
-### 6.2 Planning Document Generation
-
-```javascript
-async function generatePlanningDocument(research, clarify) {
-  const timestamp = new Date().toISOString()
-  const slug = generateSlug(clarify.originalRequest)
-
-  // Extract phases from research recommendations
-  const phases = extractPhases(research.recommendations)
-
-  // Build dependency graph
-  const dependencies = buildDependencyGraph(phases)
-
-  // Generate YAML
-  const document = `
-# ${clarify.originalRequest}
-# Generated: ${timestamp}
-# Status: draft (awaiting Plan Agent review)
-
-metadata:
-  id: "${slug}"
-  workload_id: "${clarify.workloadId}"
-  version: "1.0.0"
-  created_at: "${timestamp}"
-  updated_at: "${timestamp}"
-  status: "draft"
-  research_source: ".agent/prompts/${slug}/research.md"
-  clarify_source: ".agent/prompts/${slug}/clarify.yaml"
-
-project:
-  name: "${clarify.originalRequest.substring(0, 50)}"
-  description: |
-    ${clarify.finalDecision.description || clarify.originalRequest}
-  objectives:
-${clarify.requirements.map(r => `    - "${r}"`).join('\n')}
-
-phases:
-${phases.map(p => formatPhase(p)).join('\n')}
-
-dependencies:
-  internal:
-${dependencies.map(d => `    - from: "${d.from}"
-      to: "${d.to}"
-      reason: "${d.reason}"`).join('\n')}
-  external: []
-
-planAgentReview:
-  status: "pending"
-  reviewedAt: null
-  reviewedBy: null
-  iterationCount: 0
-  comments: []
-  approvalCriteria:
-    - "All phases have clear completion criteria"
-    - "Dependencies form acyclic graph"
-    - "Target files are specified for each phase"
-    - "Risk mitigation strategies identified"
-
-executionNotes:
-  parallelization: |
-    ${identifyParallelPhases(phases)}
-  criticalPath: |
-    ${calculateCriticalPath(phases, dependencies)}
-`
-
-  return document
+  return { approved: true, synthesis: currentSynthesis }
 }
 ```
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 6. Main Execution Protocol
+
+```javascript
+async function executePlanning(args) {
+  console.log("🚀 /planning V3.0.0 (EFL Pattern)")
+
+  // 1. Parse arguments
+  const { slug, autoApprove } = parseArgs(args)
+  const targetSlug = slug || await getOrPromptSlug()
+
+  // 2. Post-Compact Recovery Check
+  if (isPostCompactSession()) {
+    console.log("⚠️ Post-Compact detected, restoring context...")
+    await restoreSkillContext(targetSlug, "planning")
+  }
+
+  // 3. Load inputs
+  console.log("📚 Loading research and clarify outputs...")
+  const research = await loadResearchOutputs(targetSlug)
+  const clarify = await loadClarify(targetSlug)
+
+  // 4. Gate 3: Pre-flight Checks
+  console.log("🔍 Gate 3: Pre-flight checks...")
+  const preflight = await runPreflightChecks(targetSlug, research, clarify)
+  if (preflight.result === "failed") {
+    return { status: "gate3_failed", errors: preflight.errors }
+  }
+
+  // 5. EFL Phase 1: Parallel Plan Agent Deployment
+  console.log("📊 Phase 1: Deploying parallel Plan Agents...")
+  const phase1 = await phase1_parallel_plan_agents(research, clarify)
+
+  // 6. EFL Phase 2: L1 Aggregation
+  console.log("📋 Phase 2: Aggregating L1 summaries...")
+  const phase2 = await phase2_l1_aggregation(phase1)
+
+  // 7. EFL Phase 3-A: L2 Horizontal Synthesis
+  console.log("🔄 Phase 3-A: L2 Horizontal Synthesis...")
+  const phase3a = await phase3a_l2_horizontal_synthesis(phase2.aggregatedL1, phase2.mergedPhases)
+
+  // 8. EFL Phase 3-B: L3 Vertical Verification
+  console.log("🔍 Phase 3-B: L3 Vertical Verification...")
+  const phase3b = await phase3b_l3_vertical_verification(phase3a, research)
+
+  // 9. EFL Phase 3.5: Main Agent Review Gate
+  console.log("🚦 Phase 3.5: Main Agent Review Gate...")
+  const review = await phase3_5_main_agent_review(phase3b, clarify)
+
+  let finalSynthesis = phase3b
+  let feedbackLoops = 0
+
+  // 10. EFL Phase 4: Selective Feedback Loop (if needed)
+  if (!review.reviewPassed) {
+    console.log("🔄 Phase 4: Selective Feedback Loop...")
+    const phase4 = await phase4_selective_feedback(review, phase3b)
+    finalSynthesis = phase4.updatedSynthesis
+    feedbackLoops = 1
+  }
+
+  // 11. EFL Phase 5: User Final Approval
+  console.log("✋ Phase 5: User Approval...")
+  const approval = await phase5_user_approval(finalSynthesis, autoApprove)
+
+  // 12. Generate and save final output
+  const outputPath = `.agent/prompts/${targetSlug}/plan.yaml`
+  await Write({
+    file_path: outputPath,
+    content: generateFinalPlanYAML(approval.synthesis, {
+      eflMetrics: {
+        totalAgents: phase1.agentCount,
+        parallelPhases: phase1.planAreas.length,
+        feedbackLoops,
+        internalIterations: phase1.iterations.reduce((a, b) => a + b, 0)
+      }
+    })
+  })
+
+  // 13. Return L1 summary
+  return {
+    taskId: `planning-${Date.now()}`,
+    agentType: "planning",
+    status: "success",
+    summary: `Planning complete: ${phase2.mergedPhases.length} phases, EFL verified`,
+
+    priority: "HIGH",
+    l2Path: `.agent/prompts/${targetSlug}/planning_l2.md`,
+    l3Path: outputPath,
+    requiresL2Read: false,
+
+    phases: {
+      total: phase2.mergedPhases.length,
+      parallel_capable: identifyParallelPhases(phase2.mergedPhases).length,
+      critical_path_length: calculateCriticalPath(phase2.mergedPhases).length
+    },
+
+    eflMetrics: {
+      totalAgents: phase1.agentCount,
+      parallelPhases: phase1.planAreas.length,
+      feedbackLoops,
+      internalIterations: phase1.iterations.reduce((a, b) => a + b, 0),
+      phase3aStatus: phase3a.phase3a_L1.synthesisStatus,
+      phase3bStatus: phase3b.synthesisL1.verificationStatus,
+      mainAgentReviewPassed: review.reviewPassed
+    },
+
+    nextActionHint: `/orchestrate --plan-slug ${targetSlug}`
+  }
+}
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 7. Output Format (L1/L2/L3)
 
-### 7.1 L1 - Summary (YAML Return Format)
-
-**Purpose:** Machine-readable summary for main orchestrator (not emoji-based).
+### 7.1 L1 - Summary (YAML)
 
 ```yaml
-taskId: planning-{id}
+taskId: planning-{timestamp}
 agentType: planning
 status: success
-summary: "Planning document generated with {phase_count} phases, status: {approved|needs_revision}"
+summary: "Planning complete: {phase_count} phases, EFL verified"
 
 priority: HIGH
-l2Path: .agent/prompts/{workload-slug}/plan.yaml
+l2Path: .agent/prompts/{slug}/planning_l2.md
+l3Path: .agent/prompts/{slug}/plan.yaml
 requiresL2Read: false
 
 phases:
@@ -579,344 +1142,219 @@ phases:
   parallel_capable: {count}
   critical_path_length: {count}
 
-planAgentReview:
-  status: "{approved|needs_revision|escalated}"
-  iterations: {count}
+eflMetrics:
+  totalAgents: {count}
+  parallelPhases: {count}
+  feedbackLoops: {count}
+  internalIterations: {total}
+  phase3aStatus: "success"
+  phase3bStatus: "success"
+  mainAgentReviewPassed: true
 
-estimatedComplexity: "{low|medium|high}"
 nextActionHint: "/orchestrate --plan-slug {slug}"
-
-clarifySlug: "{clarify_slug}"
-researchSlug: "{research_slug}"
-planningSlug: "{planning_slug}"
 ```
 
-**Example:**
-
-```yaml
-taskId: planning-20260125_143022
-agentType: planning
-status: success
-summary: "Planning document generated with 6 phases, status: approved"
-
-priority: HIGH
-l2Path: .agent/prompts/user-auth-20260125/plan.yaml
-requiresL2Read: false
-
-phases:
-  total: 6
-  parallel_capable: 2
-  critical_path_length: 4
-
-planAgentReview:
-  status: "approved"
-  iterations: 2
-
-estimatedComplexity: "medium"
-nextActionHint: "/orchestrate --plan-slug user-auth-20260125"
-
-clarifySlug: "user-auth-20260125"
-researchSlug: "user-auth-20260125"
-planningSlug: "user-auth-20260125"
-```
-
-### 7.2 L2 - Phase Overview (Human-Readable)
-
-**Purpose:** Detailed phase breakdown for human review.
+### 7.2 L2 - Phase Overview (Markdown)
 
 ```markdown
 # Planning Complete: {project_name}
 
-**Document:** .agent/prompts/{workload-slug}/plan.yaml
-**Status:** {approved|needs_revision} (Plan Agent reviewed)
-**Phases:** {count} phases identified
+**Document:** .agent/prompts/{slug}/plan.yaml
+**Status:** EFL Verified
+**Phases:** {count} phases
 **Complexity:** {low|medium|high}
+
+## EFL Execution Report
+
+| Phase | Status | Details |
+|-------|--------|---------|
+| Phase 1 | ✅ | {agent_count} agents deployed |
+| Phase 2 | ✅ | {l1_count} L1s aggregated |
+| Phase 3-A | ✅ | Horizontal synthesis complete |
+| Phase 3-B | ✅ | Vertical verification complete |
+| Phase 3.5 | ✅ | Main Agent review passed |
+| Phase 4 | {✅|⏭️} | {feedback_count} loops / Skipped |
+| Phase 5 | ✅ | User approved |
 
 ## Phase Breakdown
 
-| ID | Phase Name | Priority | Owner | Dependencies |
-|----|------------|----------|-------|--------------|
-| phase1 | {name} | P0 | terminal-b | - |
-| phase2 | {name} | P0 | terminal-c | - |
-| phase3 | {name} | P1 | terminal-b | phase1 |
-
-## Parallel Execution Opportunities
-
-Phases that can run in parallel:
-- Group 1: phase1, phase2 (independent)
-- Group 2: phase3a, phase3b (both depend on Group 1)
-
-## Critical Path
-
-Longest dependency chain: phase1 → phase3 → phase5 → phase6 (4 phases)
-
-## Plan Agent Review
-
-- **Status:** Approved ✅
-- **Iterations:** 2
-- **Issues Resolved:**
-  - Round 1: Added missing completion criteria for phase3
-  - Round 2: Clarified dependency between phase4 and phase5
+| ID | Phase Name | Priority | Dependencies |
+|----|------------|----------|--------------|
+{phase_rows}
 
 ## Next Step
 
-```bash
-/orchestrate --plan-slug {planning_slug}
+\`\`\`bash
+/orchestrate --plan-slug {slug}
+\`\`\`
 ```
-```
 
-### 7.3 L3 - Full Detail
+### 7.3 L3 - Full Planning Document
 
-**Purpose:** Complete YAML planning document with all metadata.
-
-Outputs the entire planning document from `.agent/prompts/{workload-slug}/plan.yaml`.
+Output at `.agent/prompts/{slug}/plan.yaml` - complete YAML planning document.
 
 ---
 
-## 8. Integration Points
+### Auto-Delegation Trigger (CRITICAL)
 
-### 8.1 Upstream: /research
-
-```bash
-# V7.1: Workload-scoped paths
-# /research outputs to .agent/prompts/{workload-slug}/research.md
-# /planning reads this file for context
-```
-
-### 8.2 Downstream: /orchestrate
-
-```bash
-# V7.1: Workload-scoped paths
-# /planning outputs to .agent/prompts/{workload-slug}/plan.yaml
-# /orchestrate reads this to create Native Tasks
-/orchestrate --plan-slug {workload-slug}
-```
-
-### 8.3 Pipeline Diagram (V7.1 Workload-Scoped)
-
-```
-/clarify ─────────────────────────────────────────────────────────────┐
-    │                                                                 │
-    │ Outputs: .agent/prompts/{slug}/clarify.yaml                     │
-    ▼                                                                 │
-/research ───────────────────────────────────────────────────────┐    │
-    │                                                            │    │
-    │ Outputs: .agent/prompts/{slug}/research.md                 │    │
-    │ L1 Return: YAML summary                                    │    │
-    ▼                                                            │    │
-/planning ◀──────────────────────────────────────────────────────┘    │
-    │                                                                 │
-    ├── Load .agent/prompts/{slug}/research.md ◀──────────────────────┘
-    ├── Load .agent/prompts/{slug}/clarify.yaml ◀─────────────────────┘
-    ├── Generate planning document
-    ├── Plan Agent review loop
-    │       │
-    │       ├── APPROVED → Save .agent/prompts/{slug}/plan.yaml
-    │       │             → Return L1 YAML summary
-    │       │
-    │       └── REJECTED → Iterate (max 3) or Escalate
-    │
-    ▼
-/orchestrate
-    │
-    ├── Read .agent/prompts/{slug}/plan.yaml
-    ├── TaskCreate for each phase
-    ├── TaskUpdate(addBlockedBy) for dependencies
-    └── Generate worker prompts → .agent/prompts/{slug}/pending/
-```
-
----
-
-## 9. Gate 3: Pre-flight Checks Integration
-
-### 9.1 Pre-flight Check Function
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
 
 ```javascript
-async function runPreflightChecks(slug, research, clarify) {
-  // Source: .claude/skills/shared/validation-gates.sh -> pre_flight_checks()
-
-  const warnings = []
-  const errors = []
-
-  // 1. Validate target files from research recommendations
-  if (research.recommendations) {
-    const targetFiles = extractTargetFiles(research.recommendations)
-
-    for (const file of targetFiles) {
-      const fullPath = `${WORKSPACE_ROOT}/${file}`
-      const parentDir = path.dirname(fullPath)
-
-      if (!fs.existsSync(fullPath) && !fs.existsSync(parentDir)) {
-        warnings.push(`Target file parent directory missing: ${file}`)
-      }
-    }
-  }
-
-  // 2. Check for circular dependencies in proposed phases
-  const phases = extractPhases(research.recommendations)
-  const cycles = detectCircularDependencies(phases)
-
-  if (cycles.length > 0) {
-    errors.push(`Circular dependencies detected: ${cycles.join(' -> ')}`)
-  }
-
-  // 3. Validate requirement feasibility
-  if (clarify.requirements) {
-    for (const req of clarify.requirements) {
-      if (req.length < 10) {
-        warnings.push(`Requirement may be too vague: "${req}"`)
-      }
-    }
-  }
-
-  // Determine result
-  let result = "passed"
-  if (errors.length > 0) result = "failed"
-  else if (warnings.length > 0) result = "passed_with_warnings"
-
-  return { gate: "PLANNING", result, warnings, errors }
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
 }
+// Simple tasks execute directly without delegation overhead
 ```
 
-### 9.2 Circular Dependency Detection
+
+## 8. Error Handling
+
+### 8.1 All-or-Nothing Policy
+
+Any EFL phase failure blocks entire skill:
 
 ```javascript
-function detectCircularDependencies(phases) {
-  const graph = new Map()
-  const visited = new Set()
-  const recursionStack = new Set()
-  const cycles = []
-
-  // Build adjacency list
-  for (const phase of phases) {
-    graph.set(phase.id, phase.dependencies || [])
-  }
-
-  function dfs(node, path) {
-    visited.add(node)
-    recursionStack.add(node)
-
-    for (const neighbor of (graph.get(node) || [])) {
-      if (!visited.has(neighbor)) {
-        dfs(neighbor, [...path, neighbor])
-      } else if (recursionStack.has(neighbor)) {
-        cycles.push([...path, neighbor])
-      }
-    }
-
-    recursionStack.delete(node)
-  }
-
-  for (const [node] of graph) {
-    if (!visited.has(node)) {
-      dfs(node, [node])
-    }
-  }
-
-  return cycles
-}
-```
-
----
-
-## 10. Error Handling
-
-| Error | Detection | Recovery |
-|-------|-----------|----------|
-| Research not found | File doesn't exist | Prompt user to run /research first |
-| Clarify not found | File doesn't exist | Prompt user to run /clarify first |
-| Invalid YAML | Parse error | Log error, show line number |
-| Plan Agent timeout | Task timeout | Retry once, then escalate |
-| Circular dependency | Graph analysis | Show cycle, ask user to break |
-| **Gate 3 failed** | Pre-flight check errors | Fix errors before proceeding |
-
----
-
-## 10. Configuration
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PLANNING_MAX_ITERATIONS` | `3` | Max Plan Agent review iterations |
-| `PLANNING_AUTO_APPROVE` | `false` | Skip user confirmation |
-
-### Settings
-
-```json
-{
-  "planning": {
-    "defaultSlugPattern": "{date}_{topic}",
-    "maxPhases": 10,
-    "requireRiskAssessment": true
+if (phaseResult.status === "failed") {
+  return {
+    status: "efl_phase_failed",
+    failedPhase: phaseResult.phase,
+    error: phaseResult.error,
+    recovery: "Fix errors and retry /planning"
   }
 }
 ```
 
----
+### 8.2 Post-Compact Recovery
 
-## 11. Testing Checklist
+Reference: `.claude/skills/shared/post-compact-recovery.md`
 
-**Core Functionality:**
-- [ ] Load research document from `.agent/prompts/{slug}/research.md`
-- [ ] Load clarify document from `.agent/prompts/{slug}/clarify.yaml`
-- [ ] Generate valid YAML planning document
-- [ ] Plan Agent review identifies missing criteria
-- [ ] Review loop iterates until approved
-- [ ] Circular dependency detection works
-- [ ] Output saved to `.agent/prompts/{slug}/plan.yaml`
-- [ ] Stop hook finalizes correctly
-
-**Output Formats:**
-- [ ] L1 returns YAML format (not emoji-based)
-- [ ] L1 includes l2Path and requiresL2Read fields
-- [ ] L2 human-readable phase overview works
-- [ ] L3 outputs complete YAML document
-
-**P1: Agent Delegation (Sub-Orchestrator):**
-- [ ] agent_delegation config present
-- [ ] max_sub_agents set to 4
-- [ ] delegation_strategy is "phase-based"
-- [ ] Can delegate large planning tasks (>5 phases)
-
-**P2: Parallel Agents:**
-- [ ] parallel_agent_config section present
-- [ ] Complexity detection works (1-4 agents)
-- [ ] Agent count scales by phase count
-- [ ] Synchronization strategy is "barrier"
-- [ ] Aggregation strategy is "merge"
-
-**V7.1 Workload-Scoped Paths:**
-- [ ] Uses .agent/prompts/{slug}/ directory structure
-- [ ] Backward compatible with old paths (fallback)
-- [ ] workload_id properly extracted from clarify
+Required reads after compact:
+- `.agent/prompts/{slug}/clarify.yaml`
+- `.agent/prompts/{slug}/research.md`
+- `.agent/prompts/{slug}/research/l2_detailed.md`
+- `.agent/prompts/{slug}/research/l3_synthesis.md`
 
 ---
 
-## 12. Parameter Module Compatibility (V2.1.0)
+### Auto-Delegation Trigger (CRITICAL)
 
-| Module | Status | Notes |
-|--------|--------|-------|
-| `model-selection.md` | ✅ | `model: opus` for complex planning |
-| `context-mode.md` | ✅ | `context: standard` |
-| `tool-config.md` | ✅ | Task delegation to Plan Agent |
-| `hook-config.md` | ✅ | Stop hook for finalization |
-| `permission-mode.md` | N/A | No elevated permissions needed |
-| `task-params.md` | ✅ | Generates TaskCreate-ready phases |
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 9. Standalone Execution
+
+```bash
+# Standalone (new workload)
+/planning "Implement user authentication"
+
+# Pipeline linkage
+/planning --research-slug user-auth-20260129
+```
 
 ---
 
-## 13. Version History
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 10. Handoff Contract
+
+```yaml
+handoff:
+  skill: "planning"
+  workload_slug: "{slug}"
+  status: "completed"
+  efl_verified: true
+  next_action:
+    skill: "/orchestrate"
+    arguments: "--plan-slug {slug}"
+    required: true
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 11. Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0.0 | 2026-01-28 | **P1**: Added agent_delegation (sub-orchestrator mode) |
-| | | **P2**: Added parallel_agent_config (complexity-based scaling) |
-| | | **L1 Format**: Standardized to YAML (not emoji-based) |
-| | | **V7.1**: Workload-scoped paths (.agent/prompts/{slug}/) |
-| | | Added l2Path and requiresL2Read fields to L1 |
-| 1.0.0 | 2026-01-24 | Initial planning skill with Plan Agent review |
+| 3.0.0 | 2026-01-29 | **Full EFL Implementation** |
+| | | P1-P6 complete |
+| | | Phase 3-A: L2 Horizontal Synthesis |
+| | | Phase 3-B: L3 Vertical Verification |
+| | | Phase 3.5: Main Agent Review Gate |
+| | | Phase 4: Selective Feedback Loop |
+| | | Phase 5: User Approval Loop |
+| | | Agent prompts include P6 self-validation |
+| | | eflMetrics in L1 output |
+| 2.2.0 | 2026-01-29 | Consistency principles, argument parsing |
+| 2.1.0 | 2026-01-28 | Standalone + Handoff Contract |
+| 2.0.0 | 2026-01-28 | P1/P2 config, L1 YAML format |
+| 1.0.0 | 2026-01-24 | Initial implementation |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 **End of Skill Documentation**

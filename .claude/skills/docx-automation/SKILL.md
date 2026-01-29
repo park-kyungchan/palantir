@@ -5,19 +5,152 @@ description: |
   Uses python-docx library for Word document generation.
   Supports template-based reports, batch exports, and custom styling.
   Use when user asks to create Word documents, export reports, or generate DOCX files.
+
+  Core Capabilities:
+  - Pipeline Export: Generate DOCX from mathpix_pipeline results
+  - JSON Conversion: Convert structured JSON to formatted DOCX
+  - Template Reports: Generate detailed reports with custom styling
+  - Batch Export: Process multiple documents in sequence
+
+  Output Format:
+  - L1: Generation summary (file path, size, status)
+  - L2: Document structure and content overview
+  - L3: Full DOCX file
+
+  Pipeline Position:
+  - Independent Utility Skill
+  - Can be called standalone or post-pipeline
 user-invocable: true
 disable-model-invocation: false
-context: standard
+context: fork
 model: opus
 allowed-tools:
   - Read
   - Bash
   - Write
-argument-hint: "generate <source> | from-json <data.json> | report <image_id>"
-version: "2.1.0"
+  - Task
+  - mcp__sequential-thinking__sequentialthinking
+argument-hint: "generate <source> | from-json <data.json> | report <image_id> | --workload <slug>"
+version: "3.0.0"
+hooks:
+  Setup:
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
+      timeout: 5000
+
+# =============================================================================
+# P1: Skill as Sub-Orchestrator (Minimal - Utility Skill)
+# =============================================================================
+agent_delegation:
+  enabled: false
+  reason: "Utility skill - direct execution for document generation"
+  output_paths:
+    l1: ".agent/prompts/{slug}/docx-automation/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/docx-automation/l2_index.md"
+    l3: ".agent/prompts/{slug}/docx-automation/l3_details/"
+  return_format:
+    l1: "Generation summary with file path and size (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/docx-automation/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/docx-automation/l3_details/"
+    requires_l2_read: false
+    next_action_hint: "DOCX file at specified path"
+
+# =============================================================================
+# P2: Parallel Agent Configuration (Batch Mode Only)
+# =============================================================================
+parallel_agent_config:
+  enabled: false
+  reason: "Sequential document generation preferred for consistency"
+  batch_mode:
+    description: "For batch exports, process documents sequentially"
+    use_when: "Multiple documents requested"
+
+# =============================================================================
+# P6: Internal Validation (Document Generation)
+# =============================================================================
+internal_validation:
+  enabled: true
+  checks:
+    - "Source data is readable and valid"
+    - "python-docx library is installed"
+    - "Output directory is writable"
+  max_retries: 2
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 # DOCX Automation Skill
+
+## Workload Slug 생성 (표준)
+
+```bash
+# Source centralized slug generator
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/slug-generator.sh"
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-files.sh"
+
+# Slug 결정 (우선순위)
+# 1. --workload 인자 (명시적 지정)
+# 2. 활성 workload (get_active_workload)
+# 3. 새 workload 생성 (기본 동작 - 독립 스킬)
+
+if [[ -n "$WORKLOAD_ARG" ]]; then
+    SLUG="$WORKLOAD_ARG"
+    echo "📄 Using specified workload: $SLUG"
+
+elif ACTIVE_WORKLOAD=$(get_active_workload) && [[ -n "$ACTIVE_WORKLOAD" ]]; then
+    WORKLOAD_ID="$ACTIVE_WORKLOAD"
+    SLUG=$(get_active_workload_slug)
+    echo "📄 Using active workload: $SLUG"
+
+else
+    # 기본 동작: 새 workload 생성 (독립 스킬)
+    SOURCE_FILE="${1:-document}"
+    TOPIC="docx-${SOURCE_FILE##*/}"
+    WORKLOAD_ID=$(generate_workload_id "$TOPIC")
+    SLUG=$(generate_slug_from_workload "$WORKLOAD_ID")
+    init_workload_directory "$WORKLOAD_ID"
+    set_active_workload "$WORKLOAD_ID"
+    echo "📄 Created new workload: $SLUG"
+fi
+
+# 출력 경로 설정 (워크로드 연계 시)
+WORKLOAD_DIR=".agent/prompts/${SLUG}"
+# DOCX는 기본적으로 ./exports/ 사용, 워크로드 연계 시 ${WORKLOAD_DIR}/exports/
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Purpose
 
@@ -222,6 +355,23 @@ for image_id, data in pipeline_results.items():
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## Parameter Module Compatibility (V2.1.0)
 
 > `/build/parameters/` 모듈과의 호환성 체크리스트
@@ -235,9 +385,194 @@ for image_id, data in pipeline_results.items():
 | `permission-mode.md` | N/A | Skill에는 해당 없음 |
 | `task-params.md` | N/A | 내부 Task 위임 없음 |
 
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 7. Standalone Execution (V2.2.0)
+
+> /docx-automation는 독립 유틸리티로 파이프라인 외부에서 실행 가능
+
+### 7.1 독립 실행 모드
+
+```bash
+# 독립 실행 (새 workload 생성)
+/docx-automation generate synthesis-report
+
+# JSON 데이터 기반
+/docx-automation from-json ./data/results.json
+
+# 기존 workload 결과 사용
+/docx-automation report user-auth-20260128 --workload user-auth-20260128-143022
+```
+
+### 7.2 Workload Context Resolution
+
+```javascript
+// Workload 감지 우선순위:
+// 1. --workload 인자
+// 2. Active workload (_active_workload.yaml)
+// 3. 새 workload 생성 (문서 유형 기반)
+
+source /home/palantir/.claude/skills/shared/skill-standalone.sh
+const context = init_skill_context("docx-automation", ARGUMENTS, DOCUMENT_TYPE)
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 8. Handoff Contract (V2.2.0)
+
+> /docx-automation는 독립 유틸리티 (Independent Utility Skill)
+
+### 8.1 Handoff 매핑
+
+| Status | Next Skill | Arguments |
+|--------|------------|-----------|
+| `completed` | (none) | Document generation complete |
+
+### 8.2 파이프라인 위치
+
+```
+[독립 유틸리티]
+    │
+/docx-automation ──── 파이프라인 외부에서 호출 가능
+    │
+    └── Output: .agent/prompts/{slug}/docx/{filename}.docx
+```
+
+### 8.3 Handoff YAML 출력
+
+```yaml
+handoff:
+  skill: "docx-automation"
+  workload_slug: "{slug}"
+  status: "completed"
+  timestamp: "2026-01-28T14:35:00Z"
+  next_action:
+    skill: null
+    arguments: null
+    required: false
+    reason: "Document generated successfully"
+  output:
+    path: ".agent/prompts/{slug}/docx/{filename}.docx"
+    format: "docx"
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ### Version History
 
 | Version | Change |
 |---------|--------|
 | 1.1.1 | DOCX generation with python-docx |
 | 2.1.0 | V2.1.19 Spec 호환, allowed-tools 배열 형식 수정 |
+| 2.2.0 | Standalone Execution + Handoff Contract |
+| 3.0.0 | EFL Pattern Integration, disable-model-invocation: true, context: fork |
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## EFL Pattern Implementation (V3.0.0)
+
+### Utility Skill Design
+
+As an Independent Utility Skill:
+- Direct execution without agent delegation (P1 disabled)
+- Sequential processing for document consistency (P2 disabled)
+- Internal validation for generation safety (P6 adaptation)
+
+### P6: Document Generation Validation
+
+```javascript
+// Pre-generation validation
+const docxValidation = {
+  maxRetries: 2,
+  checks: [
+    "sourceData !== null && sourceData !== undefined",
+    "pythonDocxInstalled()",
+    "outputDirWritable(outputPath)"
+  ],
+  onFailure: "Return error with installation instructions"
+}
+```
+
+### Post-Compact Recovery
+
+```javascript
+if (isPostCompactSession()) {
+  const slug = await getActiveWorkload()
+  if (slug) {
+    // Check for partial generation
+    const exportDir = `.agent/prompts/${slug}/docx/`
+    const partialFiles = await Glob(`${exportDir}/*.partial`)
+    if (partialFiles.length > 0) {
+      console.log("Resuming partial document generation...")
+    }
+  }
+}
+```

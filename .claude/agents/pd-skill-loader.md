@@ -10,6 +10,7 @@ tools:
   - Glob
   - Write
   - Edit
+  - mcp__sequential-thinking__sequentialthinking
 model: sonnet
 skills:
   - pd-analyzer

@@ -1,0 +1,88 @@
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.Ua1PNrjolA (mode: full)
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:HASH] Computed hash: ef86b5e91b12213e...
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.cMDstCviBB
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.cMDstCviBB (mode: full)
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:HASH] Computed hash: 838b0a2ba808a375...
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:VERIFY] VERIFIED: /tmp/tmp.cMDstCviBB
+[2026-01-28T10:56:55Z] [INFO] [INTEGRITY:VERIFY] Verifying: /nonexistent/file.yaml
+[2026-01-28T10:56:55Z] [WARN] [INTEGRITY:VERIFY] MISSING: /nonexistent/file.yaml
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.QxSmGDR8bM (mode: full)
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computed hash: f2ca1bb6c7e907d0...
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:MANIFEST] Generating manifest for task 99, worker terminal-b
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.ozL6anC2ut (mode: full)
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computed hash: c18b498c1eba2647...
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:MANIFEST] Generated manifest: /home/palantir/.agent/outputs/terminal-b/task-99-manifest.yaml
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.dVIuTJjg1l
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.dVIuTJjg1l (mode: full)
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computed hash: b749d167d8e0f384...
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:VERIFY] VERIFIED: /tmp/tmp.dVIuTJjg1l
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.dVIuTJjg1l
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.dVIuTJjg1l (mode: full)
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:HASH] Computed hash: b749d167d8e0f384...
+[2026-01-28T10:57:10Z] [WARN] [INTEGRITY:VERIFY] TAMPERED: /tmp/tmp.dVIuTJjg1l (expected: wronghash123..., got: b749d167d8e0f384...)
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:VERIFY] Verifying: /no/such/file
+[2026-01-28T10:57:10Z] [WARN] [INTEGRITY:VERIFY] MISSING: /no/such/file
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:CHAIN] Verifying chain for workload: test-workload, up to: orchestrate
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:CHAIN] Chain validation complete: valid=false
+[2026-01-28T10:57:10Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /tmp/tmp.J2k9VtzaG5.yaml
+[2026-01-28T10:57:10Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /tmp/tmp.J2k9VtzaG5.yaml
+[2026-01-28T10:57:18Z] [INFO] [INTEGRITY:MANIFEST] Generating manifest for task 99, worker terminal-b
+[2026-01-28T10:57:18Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.KzVE7R9i2o (mode: full)
+[2026-01-28T10:57:18Z] [INFO] [INTEGRITY:HASH] Computed hash: c18b498c1eba2647...
+[2026-01-28T10:57:18Z] [INFO] [INTEGRITY:MANIFEST] Generated manifest: /home/palantir/.agent/outputs/terminal-b/task-99-manifest.yaml
+[2026-01-28T10:57:25Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /tmp/tmp.Zx3b4lKvro.yaml
+[2026-01-28T10:57:25Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /tmp/tmp.Zx3b4lKvro.yaml
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.PnlbMx0LxO (mode: full)
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computed hash: f2ca1bb6c7e907d0...
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:MANIFEST] Generating manifest for task 100, worker terminal-test
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.0htIS2Snhj (mode: full)
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computed hash: c18b498c1eba2647...
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:MANIFEST] Generated manifest: /home/palantir/.agent/outputs/terminal-test/task-100-manifest.yaml
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.o52IejlF8o
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.o52IejlF8o (mode: full)
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computed hash: b749d167d8e0f384...
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:VERIFY] VERIFIED: /tmp/tmp.o52IejlF8o
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.o52IejlF8o
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.o52IejlF8o (mode: full)
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:HASH] Computed hash: b749d167d8e0f384...
+[2026-01-28T10:58:37Z] [WARN] [INTEGRITY:VERIFY] TAMPERED: /tmp/tmp.o52IejlF8o (expected: wronghash..., got: b749d167d8e0f384...)
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:VERIFY] Verifying: /no/file
+[2026-01-28T10:58:37Z] [WARN] [INTEGRITY:VERIFY] MISSING: /no/file
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:CHAIN] Verifying chain for workload: test-workload, up to: orchestrate
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:CHAIN] Chain validation complete: valid=false
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /tmp/tmp.lpNcYkm7rP.yaml
+[2026-01-28T10:58:37Z] [INFO] [INTEGRITY:UPSTREAM] Found hash: abc123def456...
+[2026-01-28T11:21:11Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.5aMBoeTN4w (mode: full)
+[2026-01-28T11:21:11Z] [INFO] [INTEGRITY:HASH] Computed hash: 6ccb7a3b1a493b8f...
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.jS6lbFB3sm
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.jS6lbFB3sm (mode: full)
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:HASH] Computed hash: e0347fee7509fb27...
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:VERIFY] VERIFIED: /tmp/tmp.jS6lbFB3sm
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:VERIFY] Verifying: /tmp/tmp.B4o7cuIt0E
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:HASH] Computing hash for: /tmp/tmp.B4o7cuIt0E (mode: full)
+[2026-01-28T11:21:12Z] [INFO] [INTEGRITY:HASH] Computed hash: 25718360e05d3c2d...
+[2026-01-28T11:21:12Z] [WARN] [INTEGRITY:VERIFY] TAMPERED: /tmp/tmp.B4o7cuIt0E (expected: 0000000000000000..., got: 25718360e05d3c2d...)
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:CHAIN] Verifying chain for workload: semantic-integrity-validation-20260128, up to: orchestrate
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:HASH] Computing hash for: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/plan.yaml (mode: content_only)
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:HASH] Computed hash: 8e9326f386eb67d8...
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/plan.yaml
+[2026-01-28T11:21:20Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/plan.yaml
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:HASH] Computing hash for: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml (mode: content_only)
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:HASH] Computed hash: 0c3e49b628bd57b7...
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:21:20Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:21:20Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:21:20Z] [INFO] [INTEGRITY:CHAIN] Chain validation complete: valid=false
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:CHAIN] Verifying chain for workload: semantic-integrity-validation-20260128, up to: orchestrate
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:HASH] Computing hash for: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/plan.yaml (mode: content_only)
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:HASH] Computed hash: 8e9326f386eb67d8...
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/plan.yaml
+[2026-01-28T11:22:36Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/plan.yaml
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:HASH] Computing hash for: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml (mode: content_only)
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:HASH] Computed hash: 0c3e49b628bd57b7...
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:22:36Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:UPSTREAM] Getting hash from: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:22:36Z] [WARN] [INTEGRITY:UPSTREAM] No hash found in: /home/palantir/.agent/prompts/semantic-integrity-validation-20260128/_context.yaml
+[2026-01-28T11:22:36Z] [INFO] [INTEGRITY:CHAIN] Chain validation complete: valid=false

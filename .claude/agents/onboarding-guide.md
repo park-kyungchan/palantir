@@ -6,7 +6,9 @@ description: |
   Use when user is new or asks basic questions about how to use the system.
 
 # Tool Access
-tools: Read
+tools:
+  - Read
+  - mcp__sequential-thinking__sequentialthinking
 
 # Skill Access
 skills:

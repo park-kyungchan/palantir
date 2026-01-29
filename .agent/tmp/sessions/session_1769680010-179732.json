@@ -1,0 +1,11 @@
+{
+  "session_id": "1769680010-179732",
+  "start_time": "2026-01-29T09:46:50Z",
+  "previous_session": "1769679895-177426",
+  "evidence_file": "/home/palantir/.agent/tmp/evidence_1769680010-179732.jsonl",
+  "audit_log": "/home/palantir/.agent/tmp/audit_session_1769680010-179732.jsonl",
+  "protocol_stage": "IDLE",
+  "todos": [],
+  "files_viewed": [],
+  "status": "active"
+}

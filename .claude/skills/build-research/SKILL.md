@@ -5,8 +5,23 @@ description: |
   Parses user concept input and delegates to claude-code-guide for capability inventory.
   Saves results to .agent/builds/{build_id}/ for resume support.
   Returns L1 summary with complexity level options (0/50/100).
+
+  Core Capabilities:
+  - Concept Parsing: Extract and normalize user concept input
+  - Research Delegation: Delegate to claude-code-guide subagent
+  - Capability Inventory: Generate structured capability inventory
+  - Resume Support: Save state for build session continuity
+
+  Output Format:
+  - L1: Build session summary with complexity options (YAML)
+  - L2: Full capability inventory (research.json)
+  - L3: Detailed capability schemas
+
+  Pipeline Position:
+  - Called by /build skill in Concept Mode
+  - Phase 1 of build workflow
 user-invocable: false
-disable-model-invocation: true
+disable-model-invocation: false
 context: fork
 model: opus
 allowed-tools:
@@ -15,15 +30,104 @@ allowed-tools:
   - Glob
   - Task
   - Write
-version: "2.1.0"
+  - mcp__sequential-thinking__sequentialthinking
+version: "3.0.0"
+hooks:
+  Setup:
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
+      timeout: 5000
+
+# =============================================================================
+# P1: Skill as Sub-Orchestrator
+# =============================================================================
+agent_delegation:
+  enabled: true
+  default_mode: true  # V1.1.0: Auto-delegation by default
+  max_sub_agents: 1
+  delegation_strategy: "single-agent"
+  strategies:
+    single_agent:
+      description: "Single delegation to claude-code-guide"
+      use_when: "Concept research phase"
+  sub_agent_permissions:
+    - Read
+    - Glob
+    - WebSearch
+  output_paths:
+    l1: ".agent/prompts/{slug}/build-research/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/build-research/l2_index.md"
+    l3: ".agent/prompts/{slug}/build-research/l3_details/"
+  return_format:
+    l1: "Research summary with capability count and level options (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/build-research/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/build-research/l3_details/"
+    requires_l2_read: false
+    next_action_hint: "/build (Phase 2)"
+
+# =============================================================================
+# P2: Parallel Agent Configuration (Disabled - Single Agent Skill)
+# =============================================================================
+parallel_agent_config:
+  enabled: false
+  reason: "Single-agent research delegation"
+
+# =============================================================================
+# P6: Agent Internal Feedback Loop
+# =============================================================================
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    - "JSON response is valid and parseable"
+    - "All capability fields are present"
+    - "Level 0/50/100 definitions are complete"
+  refinement_triggers:
+    - "Invalid JSON structure"
+    - "Missing required fields"
+    - "Empty capability list"
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 # Build Research Skill - Phase 1 Research Dispatcher
 
-> **Version:** 1.0.0 | **Context:** fork | **Model:** haiku
+> **Version:** 3.0.0 | **Context:** fork | **Model:** opus
 > **Parent:** /build command | **Phase:** 1 of 3
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Purpose
 
@@ -36,6 +140,23 @@ Execute Phase 1 (RESEARCH) of the enhanced /build workflow:
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 1. Input Parsing
 
 ### Supported Input Patterns
@@ -47,14 +168,58 @@ Pattern 3: /build --research "concept-name"    → concept = "concept-name"
 Pattern 4: $ARGUMENTS directly                 → concept = $ARGUMENTS.strip()
 ```
 
-### Build ID Generation
+### Build ID Generation (표준 Workload 시스템)
 
+```bash
+# Source centralized slug generator
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/slug-generator.sh"
+source "${WORKSPACE_ROOT:-.}/.claude/skills/shared/workload-files.sh"
+
+# 기본 동작: 항상 새 workload 생성 (독립 스킬)
+CONCEPT="$1"
+TOPIC="build-${CONCEPT:-research}"
+
+# Workload ID 생성
+WORKLOAD_ID=$(generate_workload_id "$TOPIC")
+SLUG=$(generate_slug_from_workload "$WORKLOAD_ID")
+
+# Short ID for display (레거시 호환)
+BUILD_ID="${CONCEPT:0:3}-$(echo "$WORKLOAD_ID" | md5sum | cut -c1-4)"
+
+# 디렉토리 구조 초기화
+BUILD_DIR=".agent/builds/${SLUG}"
+mkdir -p "${BUILD_DIR}"
+
+# Workload 활성화
+set_active_workload "$WORKLOAD_ID"
+
+echo "🔬 Build research initialized: $SLUG (ID: $BUILD_ID)"
+```
+
+**레거시 호환:**
 ```
 Format: {concept_slug[:3]}-{hash[:4]}
 Example: "pro-a1b2" for "Progressive-Disclosure"
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 2. Research Delegation
 
@@ -126,6 +291,23 @@ Research ALL relevant Claude Code native capabilities that could implement "{con
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 3. Directory Structure
 
 ```
@@ -140,6 +322,23 @@ Research ALL relevant Claude Code native capabilities that could implement "{con
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 4. L1 Output Format (MAX 500 tokens)
 
@@ -195,6 +394,23 @@ complexityOptions:
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 5. Execution Flow
 
 ```
@@ -238,6 +454,23 @@ complexityOptions:
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 6. Resume Support
 
 ### Check Existing Build
@@ -255,6 +488,23 @@ complexityOptions:
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 7. Error Handling
 
 | Error | Cause | Recovery |
@@ -266,6 +516,23 @@ complexityOptions:
 | Parse failed | Invalid JSON from subagent | Retry with explicit format |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 8. Integration Points
 
@@ -290,6 +557,23 @@ Phase 1 (This Skill)          Phase 2 (build.md)           Phase 3 (build.md)
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 9. Master Reference Files
 
 ### capability_index.json
@@ -305,6 +589,23 @@ Location: `.agent/builds/master/complexity_levels.json`
 Defines Level 0/50/100 with capability counts and examples.
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## Instructions
 
@@ -328,6 +629,23 @@ When invoked with $ARGUMENTS containing a concept name:
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## Parameter Module Compatibility (V2.1.0)
 
 > `/build/parameters/` 모듈과의 호환성 체크리스트
@@ -347,7 +665,75 @@ When invoked with $ARGUMENTS containing a concept name:
 |---------|--------|
 | 1.0.0 | Build research dispatcher |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
+| 3.0.0 | EFL Pattern Integration (P1/P6), hooks type: command format |
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## EFL Pattern Implementation (V3.0.0)
+
+### P1: Skill as Sub-Orchestrator
+
+Single-agent delegation to claude-code-guide:
+
+```
+/build-research (Main)
+    │
+    └─► claude-code-guide (Research Agent)
+        └─► Capability inventory generation
+```
+
+### P6: Agent Internal Feedback Loop
+
+Research agent includes self-validation:
+
+```javascript
+const researchPrompt = `
+## Internal Feedback Loop (P6 - REQUIRED)
+1. Generate capability inventory
+2. Self-validate JSON structure:
+   - All required fields present
+   - Level 0/50/100 properly defined
+   - Dependencies are valid references
+3. If validation fails, retry (max 3 times)
+4. Output valid JSON after validation passes
+`
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 *Created by Plan Agent (a576fce) | 2026-01-23*
+*Updated for EFL V3.0.0 | 2026-01-29*

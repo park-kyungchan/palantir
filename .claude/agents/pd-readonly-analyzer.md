@@ -9,6 +9,7 @@ tools:
   - Grep
   - Glob
   - Task
+  - mcp__sequential-thinking__sequentialthinking
 disallowedTools:
   - Write
   - Edit
