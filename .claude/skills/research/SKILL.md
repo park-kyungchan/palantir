@@ -20,9 +20,9 @@ description: |
   - Handoff to /planning when research is complete
 user-invocable: true
 disable-model-invocation: false
-context: fork
+context: inline
 model: opus
-version: "3.0.0"
+version: "4.0.0"
 argument-hint: "[--scope <path>] [--external] [--clarify-slug <slug>]"
 allowed-tools:
   - Read
@@ -219,21 +219,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 0. EFL Execution Overview
@@ -264,40 +249,10 @@ This skill implements the Enhanced Feedback Loop (EFL) pattern:
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 1. Purpose
@@ -311,21 +266,6 @@ The `/research` skill performs comprehensive analysis to inform implementation p
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 2. Execution Protocol
@@ -519,256 +459,795 @@ if CLARIFY_SLUG:
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 3. Research Phases (3-Tier Progressive-Deep-Dive)
 
-> **Architecture:** Custom subagents (NOT system Explore Agent) for code-level analysis
-> → general-purpose agent for output review → L1/L2/L3 generation
+> **Architecture:** Custom subagents via Task tool for code-level analysis
+> **Version:** 4.0.0 (EFL Pattern - Real Task Tool Implementation)
+> **EFL Patterns:** P1 (Sub-Orchestrator), P2 (Parallel Agents), P3 (L2/L3 Synthesis), P6 (Internal Loop)
 
-### Tier 1: Code-Level Deep Dive (Custom Subagents)
+### 3.1 Tier 1: Code-Level Deep Dive (Parallel Agents - P2)
 
-**Important:** These are CUSTOM subagents spawned via Task tool, NOT the built-in Explore Agent.
-Custom subagents have Write permission for intermediate outputs.
-
-```python
-# 3.1 Spawn Custom Research Subagents
-def tier1_deep_dive(query, scope, complexity):
-    """
-    Tier 1: Code-level exploration using custom subagents.
-
-    NOT using built-in Explore Agent because:
-    - Custom subagents have Write permission (required for L1/L2/L3)
-    - Can be configured with specific tool sets
-    - Support permissionMode: acceptEdits
-    """
-    agent_count = get_agent_count_by_complexity(complexity)
-    research_scopes = decompose_research_scope(scope, agent_count)
-
-    tier1_outputs = []
-
-    for i, sub_scope in enumerate(research_scopes):
-        # Spawn CUSTOM subagent (not Explore Agent)
-        agent_id = Task(
-            subagent_type="general-purpose",  # Custom subagent with Write
-            description=f"Tier1 Research: {sub_scope}",
-            prompt=f"""
-            ## Code-Level Deep Dive Research
-
-            **Query:** {query}
-            **Scope:** {sub_scope}
-            **Output Path:** .agent/prompts/{{slug}}/research/tier1_agent{i}.md
-
-            ### Instructions
-            1. Use Glob to find all relevant files in scope
-            2. Use Grep to search for patterns, implementations, keywords
-            3. Use Read to examine code structure and logic
-            4. Write findings to output path (intermediate L2)
-
-            ### Required Analysis
-            - File structure and organization
-            - Naming conventions and patterns
-            - Import/export relationships
-            - Error handling patterns
-            - Integration points
-
-            ### Output Format
-            Write a detailed markdown report with code snippets.
-            """,
-            model="sonnet",
-            run_in_background=True
-        )
-        tier1_outputs.append(agent_id)
-
-    # Wait for all Tier 1 agents (barrier synchronization)
-    return wait_for_agents(tier1_outputs)
-
-# 3.1.1 External Resource Gathering (if --external)
-def tier1_external_research(query, framework_detected):
-    """External research runs in parallel with codebase analysis."""
-    if not EXTERNAL:
-        return None
-
-    return Task(
-        subagent_type="general-purpose",
-        description="Tier1 External Research",
-        prompt=f"""
-        ## External Resource Research
-
-        **Query:** {query}
-        **Framework:** {framework_detected or "auto-detect"}
-        **Output Path:** .agent/prompts/{{slug}}/research/tier1_external.md
-
-        ### Instructions
-        1. WebSearch for documentation and best practices (2026)
-        2. WebSearch for similar implementations on GitHub
-        3. WebFetch top 3 results for detailed analysis
-        4. Write comprehensive findings to output path
-
-        ### Search Queries
-        - "{query} documentation best practices 2026"
-        - "{query} implementation guide"
-        - "{query} example github"
-        """,
-        model="sonnet",
-        run_in_background=True
-    )
-```
-
-### Tier 2: Output Review & Risk Assessment (general-purpose Agent)
-
-```python
-# 3.2 Review and Synthesize Tier 1 Outputs
-def tier2_review_and_assess(tier1_outputs, query, scope):
-    """
-    Tier 2: general-purpose agent reviews all Tier 1 outputs.
-
-    Responsibilities:
-    - Validate completeness of Tier 1 research
-    - Identify gaps requiring additional investigation
-    - Perform risk assessment
-    - Prepare structured data for L1/L2/L3 generation
-    """
-    return Task(
-        subagent_type="general-purpose",
-        description="Tier2 Review & Risk Assessment",
-        prompt=f"""
-        ## Tier 2: Output Review & Risk Assessment
-
-        **Query:** {query}
-        **Tier 1 Outputs:** .agent/prompts/{{slug}}/research/tier1_*.md
-        **Output Path:** .agent/prompts/{{slug}}/research/tier2_review.md
-
-        ### Phase 2-A: Review Tier 1 Outputs
-        1. Read all tier1_*.md files
-        2. Verify coverage completeness
-        3. Identify contradictions or gaps
-        4. Flag areas needing clarification
-
-        ### Phase 2-B: Risk Assessment
-        Analyze for:
-        - Breaking changes in existing code
-        - Dependency conflicts
-        - Security concerns (OWASP Top 10)
-        - Complexity level (SIMPLE/MODERATE/COMPLEX/CRITICAL)
-
-        ### Phase 2-C: Prepare Synthesis Data
-        Structure findings for L1/L2/L3:
-        ```yaml
-        patterns_found: [list]
-        integration_points: [list]
-        risks:
-          breaking_changes: [list]
-          security_concerns: [list]
-          complexity: "LEVEL"
-        recommendations: [list]
-        gaps_identified: [list]
-        ```
-
-        Write structured review to output path.
-        """,
-        model="opus"  # Use opus for comprehensive review
-    )
-```
-
-### Tier 3: L1/L2/L3 Generation (Final Output)
-
-```python
-# 3.3 Generate Progressive Disclosure Outputs
-def tier3_generate_outputs(tier2_review, query, slug):
-    """
-    Tier 3: Generate L1/L2/L3 outputs from Tier 2 review.
-
-    Output Structure:
-    - L1: Executive summary (< 500 tokens) in research.md
-    - L2: Detailed analysis in research/l2_detailed.md
-    - L3: Full synthesis with code evidence in research/l3_synthesis.md
-    """
-
-    # Read Tier 2 review
-    tier2_data = Read(f".agent/prompts/{slug}/research/tier2_review.md")
-
-    # Generate L1 Summary (inline in research.md)
-    l1_summary = generate_l1_summary(tier2_data)
-
-    # Write L2 Detailed Report
-    Write(
-        path=f".agent/prompts/{slug}/research/l2_detailed.md",
-        content=generate_l2_detailed(tier2_data)
-    )
-
-    # Write L3 Full Synthesis
-    Write(
-        path=f".agent/prompts/{slug}/research/l3_synthesis.md",
-        content=generate_l3_synthesis(tier2_data)
-    )
-
-    # Write main research.md with L1 and references
-    Write(
-        path=f".agent/prompts/{slug}/research.md",
-        content=f"""
-# Research Report: {query}
-
-> Generated: {timestamp}
-> Workload: {slug}
-> Tier: 3-Tier Progressive-Deep-Dive Complete
-
----
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+**Important:** These are CUSTOM subagents spawned via Task tool with real JavaScript calls.
 
 ```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+// =============================================================================
+// 3.1 tier1DeepDive() - Parallel Research Agent Deployment
+// =============================================================================
+// EFL Patterns: P1 (Sub-Orchestrator), P2 (Parallel Agents), P6 (Internal Loop)
+// =============================================================================
+
+async function tier1DeepDive(query, scope, complexity, slug) {
+  const agentCount = getAgentCountByComplexity(complexity)
+  const researchScopes = decomposeResearchScope(scope, agentCount)
+
+  console.log(`\n=== Tier 1: Code-Level Deep Dive ===`)
+  console.log(`Query: ${query}`)
+  console.log(`Complexity: ${complexity} → ${agentCount} agents`)
+  console.log(`Scopes: ${researchScopes.join(', ')}`)
+
+  // Ensure output directory exists
+  Bash({ command: `mkdir -p .agent/prompts/${slug}/research` })
+
+  // Deploy parallel research agents (P2)
+  const agents = researchScopes.map((subScope, i) => Task({
+    subagent_type: "general-purpose",
+    model: "sonnet",
+    prompt: `
+## Code-Level Deep Dive Research (Tier 1 Agent ${i + 1})
+
+### Context
+- **Query:** ${query}
+- **Scope:** ${subScope}
+- **Agent:** ${i + 1} of ${agentCount}
+- **Output Path:** .agent/prompts/${slug}/research/tier1_agent${i + 1}.md
+
+### Instructions
+1. Use Glob to find all relevant files in scope: ${subScope}
+2. Use Grep to search for patterns, implementations, keywords related to: ${query}
+3. Use Read to examine code structure and logic
+4. Write findings to output path
+
+### Required Analysis
+- File structure and organization
+- Naming conventions and patterns
+- Import/export relationships
+- Error handling patterns
+- Integration points with other modules
+
+### P6 Internal Feedback Loop (REQUIRED)
+Before completing, self-validate:
+1. [ ] All findings have specific file:line references
+2. [ ] Code snippets are included for key patterns
+3. [ ] No vague descriptions - be specific
+4. [ ] Integration points clearly identified
+
+If validation fails, revise (max 3 iterations).
+
+### Output Format
+Write your findings to the output path. Return YAML summary:
+
+\`\`\`yaml
+agentId: ${i + 1}
+scope: "${subScope}"
+status: "completed"
+l1Summary:
+  filesAnalyzed: {count}
+  patternsFound: {count}
+  integrationPoints: {count}
+l2Path: ".agent/prompts/${slug}/research/tier1_agent${i + 1}.md"
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: `Tier1 Research Agent ${i + 1}: ${subScope}`
+  }))
+
+  // Barrier synchronization - wait for all agents
+  console.log(`\n>>> Waiting for ${agentCount} Tier 1 agents...`)
+  const startTime = Date.now()
+
+  const results = await Promise.all(agents)
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+  console.log(`>>> All Tier 1 agents completed in ${duration}s`)
+
+  return {
+    tier: 1,
+    agentCount,
+    results,
+    duration: `${duration}s`
+  }
 }
-// Simple tasks execute directly without delegation overhead
 ```
 
+### 3.1.1 External Resource Gathering (if --external)
+
+```javascript
+// =============================================================================
+// 3.1.1 tier1ExternalResearch() - External Documentation Agent
+// =============================================================================
+
+async function tier1ExternalResearch(query, frameworkDetected, slug, runExternal) {
+  if (!runExternal) {
+    console.log(`>>> External research skipped (no --external flag)`)
+    return null
+  }
+
+  console.log(`\n=== Tier 1: External Research ===`)
+  console.log(`Query: ${query}`)
+  console.log(`Framework: ${frameworkDetected || 'auto-detect'}`)
+
+  const externalAgent = await Task({
+    subagent_type: "general-purpose",
+    model: "sonnet",
+    prompt: `
+## External Resource Research (Tier 1 External Agent)
+
+### Context
+- **Query:** ${query}
+- **Framework:** ${frameworkDetected || "auto-detect from codebase"}
+- **Output Path:** .agent/prompts/${slug}/research/tier1_external.md
+
+### Instructions
+1. WebSearch for documentation and best practices (2026)
+   - Search: "${query} documentation best practices 2026"
+   - Search: "${query} implementation guide"
+
+2. WebSearch for similar implementations
+   - Search: "${query} example github"
+   - Search: "${query} reference implementation"
+
+3. WebFetch top 3 relevant results for detailed analysis
+
+4. Write comprehensive findings to output path
+
+### Required Output Sections
+- Official Documentation Links
+- Best Practices Summary
+- Common Implementation Patterns
+- Potential Pitfalls/Warnings
+- Recommended Libraries/Tools
+
+### P6 Internal Feedback Loop (REQUIRED)
+Before completing, self-validate:
+1. [ ] At least 3 authoritative sources cited
+2. [ ] Best practices are specific, not generic
+3. [ ] URLs are provided for all sources
+4. [ ] Recommendations are actionable
+
+If validation fails, revise (max 3 iterations).
+
+### Output Format
+Write findings to output path. Return YAML:
+
+\`\`\`yaml
+agentId: "external"
+status: "completed"
+l1Summary:
+  sourcesFound: {count}
+  bestPractices: {count}
+  warnings: {count}
+l2Path: ".agent/prompts/${slug}/research/tier1_external.md"
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: `Tier1 External Research: ${query}`
+  })
+
+  return externalAgent
+}
+```
+
+### 3.2 Tier 2: Review & Risk Assessment (P3 Synthesis)
+
+```javascript
+// =============================================================================
+// 3.2 tier2ReviewAndAssess() - Output Review & Risk Assessment Agent
+// =============================================================================
+// EFL Patterns: P3 (Synthesis), P6 (Internal Loop)
+// =============================================================================
+
+async function tier2ReviewAndAssess(tier1Results, query, scope, slug) {
+  console.log(`\n=== Tier 2: Review & Risk Assessment ===`)
+  console.log(`Reviewing ${tier1Results.agentCount} Tier 1 outputs`)
+
+  const reviewAgent = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",  // Use opus for comprehensive review
+    prompt: `
+## Tier 2: Output Review & Risk Assessment
+
+### Context
+- **Query:** ${query}
+- **Scope:** ${scope}
+- **Tier 1 Agents:** ${tier1Results.agentCount}
+- **Tier 1 Output Path:** .agent/prompts/${slug}/research/tier1_*.md
+- **Output Path:** .agent/prompts/${slug}/research/tier2_review.md
+
+### Phase 2-A: Review Tier 1 Outputs
+1. Read ALL tier1_*.md files in .agent/prompts/${slug}/research/
+2. Verify coverage completeness - did agents cover all aspects?
+3. Identify contradictions or gaps between agent reports
+4. Flag areas needing clarification or deeper analysis
+
+### Phase 2-B: Risk Assessment
+Analyze findings for:
+- **Breaking Changes:** Will this affect existing functionality?
+- **Dependency Conflicts:** Are there version incompatibilities?
+- **Security Concerns:** OWASP Top 10, injection risks, auth issues
+- **Complexity Level:** SIMPLE / MODERATE / COMPLEX / CRITICAL
+
+### Phase 2-C: Prepare Synthesis Data
+Structure findings for L1/L2/L3 generation:
+
+\`\`\`yaml
+synthesis_data:
+  patterns_found:
+    - pattern: "{name}"
+      files: ["{file1}", "{file2}"]
+      description: "{description}"
+
+  integration_points:
+    - point: "{name}"
+      type: "API|event|import|config"
+      files: ["{file1}"]
+      description: "{description}"
+
+  risks:
+    breaking_changes:
+      - description: "{risk}"
+        severity: "HIGH|MEDIUM|LOW"
+        affected_files: ["{file}"]
+    security_concerns:
+      - description: "{concern}"
+        owasp_category: "{category}"
+        severity: "CRITICAL|HIGH|MEDIUM|LOW"
+    complexity: "SIMPLE|MODERATE|COMPLEX|CRITICAL"
+
+  recommendations:
+    - priority: "P0|P1|P2"
+      description: "{recommendation}"
+      rationale: "{why}"
+
+  gaps_identified:
+    - area: "{area}"
+      description: "{what's missing}"
+      suggested_action: "{how to address}"
+\`\`\`
+
+### P6 Internal Feedback Loop (REQUIRED)
+Before completing, self-validate:
+1. [ ] All Tier 1 outputs have been read and synthesized
+2. [ ] Risk assessment is comprehensive (all categories checked)
+3. [ ] Recommendations are prioritized and actionable
+4. [ ] No contradictions left unresolved
+
+If validation fails, revise (max 3 iterations).
+
+### Output Format
+Write structured review to output path. Return YAML:
+
+\`\`\`yaml
+status: "completed"
+l1Summary:
+  patternsFound: {count}
+  integrationPoints: {count}
+  risksIdentified: {count}
+  recommendations: {count}
+  overallComplexity: "SIMPLE|MODERATE|COMPLEX|CRITICAL"
+l2Path: ".agent/prompts/${slug}/research/tier2_review.md"
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: `Tier2 Review & Risk Assessment`
+  })
+
+  return reviewAgent
+}
+```
+
+### 3.3 Tier 3: L1/L2/L3 Generation (Phase 3-A/3-B)
+
+```javascript
+// =============================================================================
+// 3.3 tier3GenerateOutputs() - L1/L2/L3 Generation with Phase 3-A/3-B
+// =============================================================================
+// EFL Patterns: P3 (Phase 3-A L2 Horizontal, Phase 3-B L3 Vertical), P5 (Review Gate)
+// =============================================================================
+
+async function tier3GenerateOutputs(tier2Result, query, slug) {
+  console.log(`\n=== Tier 3: L1/L2/L3 Generation ===`)
+
+  // -------------------------------------------------------------------------
+  // Phase 3-A: L2 Horizontal Synthesis
+  // -------------------------------------------------------------------------
+  console.log(`\n>>> Phase 3-A: L2 Horizontal Synthesis...`)
+
+  const phase3aAgent = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## Phase 3-A: L2 Horizontal Synthesis
+
+### Context
+- **Query:** ${query}
+- **Tier 2 Review:** .agent/prompts/${slug}/research/tier2_review.md
+- **Output Path:** .agent/prompts/${slug}/research/l2_detailed.md
+
+### Task
+Create developer-level detailed analysis (L2) by horizontally synthesizing:
+1. Read the Tier 2 review file
+2. Cross-validate findings across different research areas
+3. Ensure consistency in terminology and recommendations
+4. Resolve any contradictions between findings
+5. Structure for developer consumption
+
+### L2 Document Structure
+\`\`\`markdown
+# Research L2: Detailed Analysis
+
+## Executive Overview
+{2-3 paragraph summary}
+
+## Codebase Analysis
+
+### File Structure
+{directory tree with annotations}
+
+### Key Patterns Identified
+{table: pattern | files | description}
+
+### Integration Points
+{table: point | type | files | notes}
+
+## Risk Assessment
+
+### Breaking Changes
+{severity-sorted list}
+
+### Security Considerations
+{OWASP-categorized findings}
+
+### Complexity Analysis
+{complexity level with justification}
+
+## Recommendations
+{prioritized P0/P1/P2 list with rationale}
+
+## Gaps & Next Steps
+{areas needing further research}
+\`\`\`
+
+### P6 Internal Feedback Loop (REQUIRED)
+Self-validate before completing:
+1. [ ] All Tier 2 findings incorporated
+2. [ ] No inconsistencies in cross-referenced data
+3. [ ] Developer-actionable format
+4. [ ] Code references are specific (file:line)
+
+### Output Format
+Write L2 document to output path. Return YAML:
+
+\`\`\`yaml
+phase: "3-A"
+status: "completed"
+l2Path: ".agent/prompts/${slug}/research/l2_detailed.md"
+synthesis:
+  sectionsGenerated: {count}
+  patternsDocumented: {count}
+  risksDocumented: {count}
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: `Phase 3-A: L2 Horizontal Synthesis`
+  })
+
+  // -------------------------------------------------------------------------
+  // Phase 3-B: L3 Vertical Verification
+  // -------------------------------------------------------------------------
+  console.log(`>>> Phase 3-B: L3 Vertical Verification...`)
+
+  const phase3bAgent = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## Phase 3-B: L3 Vertical Verification
+
+### Context
+- **Query:** ${query}
+- **L2 Detailed:** .agent/prompts/${slug}/research/l2_detailed.md
+- **Tier 1 Raw:** .agent/prompts/${slug}/research/tier1_*.md
+- **Output Path:** .agent/prompts/${slug}/research/l3_synthesis.md
+
+### Task
+Create architect-level synthesis (L3) by vertically verifying:
+1. Read the L2 detailed analysis
+2. Verify each finding against original Tier 1 code evidence
+3. Add architectural perspective and system-level implications
+4. Include decision rationale and trade-off analysis
+5. Structure for technical leadership consumption
+
+### L3 Document Structure
+\`\`\`markdown
+# Research L3: Architectural Synthesis
+
+## Strategic Overview
+{high-level implications for the project}
+
+## Verification Matrix
+
+| Finding | L2 Reference | Code Evidence | Verified |
+|---------|--------------|---------------|----------|
+| {name}  | {section}    | {file:line}   | ✅/❌    |
+
+## Architectural Implications
+
+### System Impact
+{how findings affect overall architecture}
+
+### Design Decisions Required
+{decisions that need to be made}
+
+### Trade-off Analysis
+{options with pros/cons}
+
+## Risk Mitigation Strategy
+{prioritized mitigation plan}
+
+## Implementation Roadmap
+{suggested phased approach}
+
+## Appendix: Code Evidence
+{key code snippets with annotations}
+\`\`\`
+
+### P6 Internal Feedback Loop (REQUIRED)
+Self-validate before completing:
+1. [ ] All L2 findings verified against code
+2. [ ] Architectural implications are system-level
+3. [ ] Trade-offs are balanced and fair
+4. [ ] Roadmap is realistic
+
+### Output Format
+Write L3 document to output path. Return YAML:
+
+\`\`\`yaml
+phase: "3-B"
+status: "completed"
+l3Path: ".agent/prompts/${slug}/research/l3_synthesis.md"
+verification:
+  findingsVerified: {count}
+  findingsUnverified: {count}
+  codeEvidenceCount: {count}
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: `Phase 3-B: L3 Vertical Verification`
+  })
+
+  // -------------------------------------------------------------------------
+  // Phase 3.5: Review Gate
+  // -------------------------------------------------------------------------
+  console.log(`>>> Phase 3.5: Review Gate...`)
+
+  const phase3aResult = phase3aAgent
+  const phase3bResult = phase3bAgent
+
+  // Check if both phases completed successfully
+  const reviewGatePassed =
+    phase3aResult?.status === "completed" &&
+    phase3bResult?.status === "completed"
+
+  if (!reviewGatePassed) {
+    console.log(`⚠️ Review Gate: Issues detected, may need manual review`)
+  } else {
+    console.log(`✅ Review Gate: All phases completed successfully`)
+  }
+
+  // -------------------------------------------------------------------------
+  // Generate L1 Summary and Main research.md
+  // -------------------------------------------------------------------------
+  console.log(`>>> Generating L1 Summary...`)
+
+  const l1Summary = generateL1Summary(query, slug, phase3aResult, phase3bResult)
+
+  return {
+    status: reviewGatePassed ? "completed" : "review_required",
+    l1Summary,
+    l1Path: `.agent/prompts/${slug}/research.md`,
+    l2Path: `.agent/prompts/${slug}/research/l2_detailed.md`,
+    l3Path: `.agent/prompts/${slug}/research/l3_synthesis.md`,
+    phase3a: phase3aResult,
+    phase3b: phase3bResult,
+    reviewGatePassed
+  }
+}
+```
+
+### 3.4 Main Execution Flow
+
+```javascript
+// =============================================================================
+// 3.4 executeResearch() - Main Research Orchestration
+// =============================================================================
+// EFL Patterns: P1 (Sub-Orchestrator), P2-P6 integration
+// =============================================================================
+
+async function executeResearch(query, scope, clarifySlug, runExternal) {
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(`/research - 3-Tier Progressive Deep Dive (EFL V4.0.0)`)
+  console.log(`${'='.repeat(60)}`)
+
+  // -------------------------------------------------------------------------
+  // Phase 0: Setup
+  // -------------------------------------------------------------------------
+  const slug = clarifySlug || generateWorkloadSlug(query)
+  const workloadDir = `.agent/prompts/${slug}`
+
+  Bash({ command: `mkdir -p ${workloadDir}/research` })
+
+  // Detect complexity
+  const complexity = detectResearchComplexity(scope)
+  console.log(`\nComplexity detected: ${complexity}`)
+
+  // -------------------------------------------------------------------------
+  // Tier 1: Parallel Deep Dive (P2)
+  // -------------------------------------------------------------------------
+  const tier1Results = await tier1DeepDive(query, scope, complexity, slug)
+
+  // External research runs in parallel if flag set
+  const externalResult = await tier1ExternalResearch(query, null, slug, runExternal)
+
+  // -------------------------------------------------------------------------
+  // Tier 2: Review & Risk Assessment (P3)
+  // -------------------------------------------------------------------------
+  const tier2Result = await tier2ReviewAndAssess(tier1Results, query, scope, slug)
+
+  // -------------------------------------------------------------------------
+  // Tier 3: L1/L2/L3 Generation (P3 Phase 3-A/3-B)
+  // -------------------------------------------------------------------------
+  const tier3Result = await tier3GenerateOutputs(tier2Result, query, slug)
+
+  // -------------------------------------------------------------------------
+  // Return L1 Summary Only (Context Pollution Prevention)
+  // -------------------------------------------------------------------------
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(`Research Complete`)
+  console.log(`${'='.repeat(60)}`)
+  console.log(`L1: ${tier3Result.l1Path}`)
+  console.log(`L2: ${tier3Result.l2Path}`)
+  console.log(`L3: ${tier3Result.l3Path}`)
+  console.log(`\nNext: /planning --research-slug ${slug}`)
+
+  return {
+    status: tier3Result.status,
+    slug,
+    l1Path: tier3Result.l1Path,
+    l2Path: tier3Result.l2Path,
+    l3Path: tier3Result.l3Path,
+    nextAction: `/planning --research-slug ${slug}`
+  }
+}
+```
+
+### 3.5 Tier Execution Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ TIER 1: Code-Level Deep Dive (P2 Parallel Custom Subagents)      │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │ Agent 1      │  │ Agent 2      │  │ Agent N      │           │
+│  │ (sonnet)     │  │ (sonnet)     │  │ (sonnet)     │  ...      │
+│  │ scope-A      │  │ scope-B      │  │ scope-N      │           │
+│  │ + P6 Loop    │  │ + P6 Loop    │  │ + P6 Loop    │           │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │
+│         │                 │                 │                    │
+│         ▼                 ▼                 ▼                    │
+│    tier1_agent1.md   tier1_agent2.md   tier1_agentN.md          │
+│                                                                  │
+│  ┌──────────────┐  (if --external)                              │
+│  │ External     │                                                │
+│  │ Agent        │                                                │
+│  │ (sonnet)     │                                                │
+│  │ + P6 Loop    │                                                │
+│  └──────┬───────┘                                                │
+│         ▼                                                        │
+│    tier1_external.md                                             │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ Promise.all (barrier sync)
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ TIER 2: Review & Risk Assessment (P3 Synthesis)                  │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ Review Agent (opus)                                       │   │
+│  │ - Read ALL tier1_*.md files                              │   │
+│  │ - Cross-validate findings                                │   │
+│  │ - Risk assessment (breaking changes, security, deps)     │   │
+│  │ - Prepare synthesis data structure                       │   │
+│  │ - P6 Internal Loop                                       │   │
+│  └──────────────────────────┬───────────────────────────────┘   │
+│                              │                                   │
+│                              ▼                                   │
+│                        tier2_review.md                           │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ TIER 3: L1/L2/L3 Generation (P3 Phase 3-A/3-B)                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Phase 3-A: L2 Horizontal Synthesis                             │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ L2 Agent (opus)                                          │   │
+│  │ - Cross-validate findings across areas                   │   │
+│  │ - Developer-level detail                                 │   │
+│  │ - P6 Internal Loop                                       │   │
+│  └──────────────────────────┬───────────────────────────────┘   │
+│                              ▼                                   │
+│                        l2_detailed.md                            │
+│                                                                  │
+│  Phase 3-B: L3 Vertical Verification                            │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ L3 Agent (opus)                                          │   │
+│  │ - Verify against code evidence                           │   │
+│  │ - Architect-level synthesis                              │   │
+│  │ - P6 Internal Loop                                       │   │
+│  └──────────────────────────┬───────────────────────────────┘   │
+│                              ▼                                   │
+│                        l3_synthesis.md                           │
+│                                                                  │
+│  Phase 3.5: Review Gate (P5)                                    │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ ✅ 3-A completed && 3-B completed → PASS                 │   │
+│  │ ⚠️ Otherwise → REVIEW_REQUIRED                           │   │
+│  └──────────────────────────┬───────────────────────────────┘   │
+│                              ▼                                   │
+│                         research.md (L1)                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3.6 Helper Functions
+
+```javascript
+// =============================================================================
+// 3.6 Helper Functions for Research EFL
+// =============================================================================
+
+/**
+ * Detect research complexity based on file count in scope
+ * @param {string} scope - Directory path to analyze
+ * @returns {"simple" | "moderate" | "complex" | "very_complex"}
+ */
+function detectResearchComplexity(scope) {
+  const targetPath = scope || "."
+
+  // Count files in scope
+  const fileCountResult = Bash({
+    command: `find "${targetPath}" -type f \\( -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.java" -o -name "*.go" \\) 2>/dev/null | wc -l`,
+    description: "Count source files in scope"
+  })
+
+  const fileCount = parseInt(fileCountResult.trim()) || 0
+
+  if (fileCount <= 20) return "simple"
+  if (fileCount <= 50) return "moderate"
+  if (fileCount <= 100) return "complex"
+  return "very_complex"
+}
+
+/**
+ * Map complexity level to number of parallel agents
+ * Aligned with parallel_agent_config.agent_count_by_complexity in frontmatter
+ * @param {"simple" | "moderate" | "complex" | "very_complex"} complexity
+ * @returns {number} Agent count (2-5)
+ */
+function getAgentCountByComplexity(complexity) {
+  const mapping = {
+    simple: 2,
+    moderate: 3,
+    complex: 4,
+    very_complex: 5
+  }
+  return mapping[complexity] || 2
+}
+
+/**
+ * Decompose research scope into sub-scopes for parallel agents
+ * @param {string} scope - Base directory path
+ * @param {number} agentCount - Number of agents to deploy
+ * @returns {string[]} Array of sub-scope paths
+ */
+function decomposeResearchScope(scope, agentCount) {
+  const targetPath = scope || "."
+
+  // Get subdirectories
+  const subdirsResult = Bash({
+    command: `find "${targetPath}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -${agentCount}`,
+    description: "Find subdirectories for scope decomposition"
+  })
+
+  const subdirs = subdirsResult.trim().split('\n').filter(Boolean)
+
+  // If not enough subdirs, use topic-based decomposition
+  if (subdirs.length < agentCount) {
+    const topics = [
+      `${targetPath} (patterns and conventions)`,
+      `${targetPath} (integration points)`,
+      `${targetPath} (error handling)`,
+      `${targetPath} (configuration)`,
+      `${targetPath} (testing)`
+    ]
+    return topics.slice(0, agentCount)
+  }
+
+  return subdirs
+}
+
+/**
+ * Generate workload slug from query
+ * @param {string} query - Research query
+ * @returns {string} Slug for workload directory
+ */
+function generateWorkloadSlug(query) {
+  const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const topic = query.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, 30)
+    .replace(/-+$/, '')
+  return `${topic}-${timestamp}`
+}
+
+/**
+ * Generate L1 summary (≤500 tokens for context pollution prevention)
+ * @param {string} query
+ * @param {string} slug
+ * @param {object} phase3aResult
+ * @param {object} phase3bResult
+ * @returns {string} L1 summary markdown
+ */
+function generateL1Summary(query, slug, phase3aResult, phase3bResult) {
+  const timestamp = new Date().toISOString()
+  const status = phase3aResult?.status === "completed" && phase3bResult?.status === "completed"
+    ? "✅ Complete" : "⚠️ Review Required"
+
+  return `# Research Report: ${query}
+
+> Generated: ${timestamp}
+> Workload: ${slug}
+> Status: ${status}
+> EFL Version: 4.0.0 (3-Tier Progressive Deep Dive)
+
+---
 
 ## L1 Summary
 
-{l1_summary}
+**Complexity:** Detected from scope analysis
+**Agents Deployed:** Tier 1 (parallel) + Tier 2 (review) + Tier 3 (synthesis)
+
+### Key Findings
+- Patterns: See L2 for detailed pattern analysis
+- Risks: See L2 for risk assessment
+- Recommendations: See L2 for prioritized recommendations
+
+### EFL Verification
+- Phase 3-A (L2 Horizontal): ${phase3aResult?.status || 'pending'}
+- Phase 3-B (L3 Vertical): ${phase3bResult?.status || 'pending'}
+- Review Gate: ${status}
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## References
 
@@ -779,147 +1258,34 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 ## Next Step
 
-`/planning --research-slug {slug}`
-"""
-    )
-
-    return {
-        "status": "completed",
-        "l1_path": f".agent/prompts/{slug}/research.md",
-        "l2_path": f".agent/prompts/{slug}/research/l2_detailed.md",
-        "l3_path": f".agent/prompts/{slug}/research/l3_synthesis.md"
-    }
+\`/planning --research-slug ${slug}\`
+`
+}
 ```
 
-### Tier Execution Flow
+### 3.7 P1/P2/P6 Quick Reference
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ TIER 1: Code-Level Deep Dive (Parallel Custom Subagents)    │
-├─────────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │ Agent 1  │  │ Agent 2  │  │ Agent 3  │  │ External │    │
-│  │ scope-A  │  │ scope-B  │  │ scope-C  │  │ (if flag)│    │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘    │
-│       │             │             │             │           │
-│       ▼             ▼             ▼             ▼           │
-│  tier1_agent1.md  tier1_agent2.md tier1_agent3.md tier1_ext │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ barrier sync
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│ TIER 2: Review & Risk Assessment (general-purpose Agent)    │
-├─────────────────────────────────────────────────────────────┤
-│  Read all Tier 1 outputs → Validate → Assess Risks          │
-│  → Prepare structured synthesis data                        │
-│                          │                                  │
-│                          ▼                                  │
-│                   tier2_review.md                           │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│ TIER 3: L1/L2/L3 Generation (Main Agent)                    │
-├─────────────────────────────────────────────────────────────┤
-│  Generate progressive disclosure outputs:                    │
-│  - research.md (L1 Summary + References)                    │
-│  - research/l2_detailed.md (Developer-level)                │
-│  - research/l3_synthesis.md (Architect-level)               │
-└─────────────────────────────────────────────────────────────┘
-```
+| EFL Pattern | Implementation |
+|-------------|----------------|
+| **P1: Sub-Orchestrator** | Main skill delegates to Tier 1/2/3 agents |
+| **P2: Parallel Agents** | `Promise.all(agents)` in Tier 1 |
+| **P3: L2/L3 Synthesis** | Phase 3-A (horizontal) + Phase 3-B (vertical) |
+| **P5: Review Gate** | Phase 3.5 verification check |
+| **P6: Internal Loop** | Each agent prompt includes self-validation |
+
+### 3.8 Complexity → Agent Count Mapping
+
+| Complexity | File Count | Agents |
+|------------|------------|--------|
+| simple | ≤20 | 2 |
+| moderate | 21-50 | 3 |
+| complex | 51-100 | 4 |
+| very_complex | >100 | 5 |
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
-## 3.5 P1/P2 Integration Reference
-
-> **Note:** P1/P2 agent delegation is now integrated into the 3-Tier Progressive-Deep-Dive system.
-> See Section 3.1-3.3 for implementation details.
-
-### 3.5.1 Quick Reference
-
-| P1/P2 Concept | 3-Tier Implementation |
-|---------------|----------------------|
-| Complexity Detection | `get_agent_count_by_complexity()` in Tier 1 |
-| Parallel Agent Spawn | Tier 1 custom subagents (general-purpose with Write) |
-| Scope Decomposition | `decompose_research_scope()` in Tier 1 |
-| Barrier Synchronization | `wait_for_agents()` between Tier 1 and Tier 2 |
-| Result Merging | Tier 2 review agent aggregates all Tier 1 outputs |
-
-### 3.5.2 Complexity → Agent Count Mapping
-
-```python
-def get_agent_count_by_complexity(complexity):
-    """Map complexity level to number of parallel agents."""
-    mapping = {
-        "simple": 2,      # ≤20 files
-        "moderate": 3,    # 21-50 files or --external
-        "complex": 4,     # 51-100 files
-        "very_complex": 5 # >100 files
-    }
-    return mapping.get(complexity, 2)
-```
-
-### 3.5.3 Scope Decomposition Strategies
-
-| Strategy | When Used | Description |
-|----------|-----------|-------------|
-| scope-based | `--scope` provided | Split by subdirectories |
-| topic-based | Global scope | Split by research aspect |
-| complexity-based | Auto-detect | Agent count based on file count |
-
----
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 4. Output Format (L1/L2/L3) - 3-Tier Integration
@@ -954,21 +1320,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## L1 Summary
@@ -991,21 +1342,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## References
@@ -1019,21 +1355,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## Next Step
@@ -1051,21 +1372,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 1. Codebase Pattern Analysis
@@ -1121,21 +1427,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 1. Executive Architecture Summary
@@ -1240,21 +1531,6 @@ workloadSlug: "{slug}"
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 5. Integration Points (3-Tier Aware)
@@ -1370,21 +1646,6 @@ def order_tasks_by_risk(tasks, research_slug):
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 6. Error Handling (3-Tier + All-or-Nothing)
@@ -1477,21 +1738,6 @@ if is_post_compact_session():
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 7. Shift-Left Validation (Gate 2-A + Gate 2-B)
@@ -1588,21 +1834,6 @@ hooks:
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 8. Exit Conditions (3-Tier Aware)
@@ -1647,21 +1878,6 @@ user_action: "Fix issue and retry /research"
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 9. Usage Examples
@@ -1692,21 +1908,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 10. Testing Checklist
@@ -1724,16 +1925,48 @@ if (delegationDecision.shouldDelegate) {
 - [ ] Stop hook trigger verification
 - [ ] Pipeline integration with `/planning`
 
+### EFL V4.0.0: Real Task Tool Calls (NEW)
+
+**Tier 1: Code-Level Deep Dive**
+- [ ] `tier1DeepDive()` spawns parallel Task agents
+- [ ] `Task({ subagent_type: "general-purpose" })` calls execute
+- [ ] `Promise.all(agents)` barrier synchronization works
+- [ ] tier1_agent{N}.md files are created
+- [ ] P6 Internal Loop validation in agent prompts
+
+**Tier 1 External: External Research**
+- [ ] `tier1ExternalResearch()` runs when --external flag
+- [ ] WebSearch/WebFetch used by external agent
+- [ ] tier1_external.md file is created
+- [ ] Runs in parallel with codebase analysis
+
+**Tier 2: Review & Risk Assessment**
+- [ ] `tier2ReviewAndAssess()` Task call executes
+- [ ] Agent reads ALL tier1_*.md files
+- [ ] Risk assessment YAML structure generated
+- [ ] tier2_review.md file is created
+
+**Tier 3: Phase 3-A/3-B L1/L2/L3 Generation**
+- [ ] Phase 3-A L2 Horizontal Synthesis Task executes
+- [ ] Phase 3-B L3 Vertical Verification Task executes
+- [ ] Phase 3.5 Review Gate check passes
+- [ ] l2_detailed.md file is created
+- [ ] l3_synthesis.md file is created
+- [ ] research.md (L1) file is created with correct structure
+
+**Helper Functions**
+- [ ] `detectResearchComplexity()` counts files correctly
+- [ ] `getAgentCountByComplexity()` returns 2-5
+- [ ] `decomposeResearchScope()` splits scope properly
+- [ ] `generateL1Summary()` stays under 500 tokens
+
 ### P1: Agent Delegation (Sub-Orchestrator)
-- [ ] Complexity detection: simple (≤10 files)
-- [ ] Complexity detection: moderate (11-30 files)
-- [ ] Complexity detection: complex (31-100 files)
+- [ ] Complexity detection: simple (≤20 files)
+- [ ] Complexity detection: moderate (21-50 files)
+- [ ] Complexity detection: complex (51-100 files)
 - [ ] Complexity detection: very_complex (>100 files)
-- [ ] Complexity detection: external flag forces very_complex
 - [ ] Scope decomposition: directory-based strategy
-- [ ] Scope decomposition: module-based strategy
-- [ ] Scope decomposition: topic-based strategy
-- [ ] Sub-agent spawn and state management
+- [ ] Scope decomposition: topic-based fallback strategy
 - [ ] Max 5 sub-agents limit enforcement
 
 ### P2: Parallel Agent Execution
@@ -1741,30 +1974,18 @@ if (delegationDecision.shouldDelegate) {
 - [ ] Agent count mapping: moderate → 3 agents
 - [ ] Agent count mapping: complex → 4 agents
 - [ ] Agent count mapping: very_complex → 5 agents
-- [ ] Parallel agent spawn via `parallel_agent_spawn()`
-- [ ] Barrier synchronization strategy
-- [ ] Merge aggregation strategy
-- [ ] Result deduplication across agents
-- [ ] Conflict resolution via voting
-- [ ] Agent timeout handling (10 minutes)
+- [ ] `Promise.all()` barrier synchronization
+- [ ] Result aggregation in Tier 2
+
+### P6: Internal Feedback Loop
+- [ ] Tier 1 agent prompts include P6 validation checklist
+- [ ] Tier 2 agent prompt includes P6 validation checklist
+- [ ] Phase 3-A agent prompt includes P6 validation checklist
+- [ ] Phase 3-B agent prompt includes P6 validation checklist
+- [ ] Max 3 iterations instruction present
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 11. Parameter Module Compatibility (V2.1.0)
@@ -1784,6 +2005,16 @@ if (delegationDecision.shouldDelegate) {
 
 | Version | Date | Change |
 |---------|------|--------|
+| 4.0.0 | 2026-01-30 | **Real Task Tool Implementation** |
+| | | Replaced Python pseudo-code with executable JavaScript |
+| | | `tier1DeepDive()` - real `Task({` calls with `Promise.all` |
+| | | `tier1ExternalResearch()` - real `Task({` calls |
+| | | `tier2ReviewAndAssess()` - real `Task({` calls |
+| | | `tier3GenerateOutputs()` - Phase 3-A/3-B real agents |
+| | | Helper functions: `detectResearchComplexity`, `getAgentCountByComplexity`, `decomposeResearchScope`, `generateL1Summary` |
+| | | `executeResearch()` main orchestration flow |
+| | | P6 Internal Loop instructions in all agent prompts |
+| | | Testing checklist updated for real Task calls |
 | 3.0.0 | 2026-01-29 | **Full EFL Implementation** |
 | | | P1-P6 complete with frontmatter configuration |
 | | | Phase 3-A: L2 Horizontal Synthesis |
@@ -1802,21 +2033,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 10. Standalone Execution (V2.2.0)
@@ -1921,21 +2137,6 @@ def resolve_workload_context(clarify_slug, query):
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 ## 11. Handoff Contract (V2.2.0)
@@ -1960,21 +2161,6 @@ Generated by `research-finalize.sh` hook on successful exit:
 # Appended to research.md footer
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 handoff:
   skill: "research"
@@ -2062,21 +2248,6 @@ def verify_research_handoff(research_slug):
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 
 *Created by Terminal-B Worker | 2026-01-24*

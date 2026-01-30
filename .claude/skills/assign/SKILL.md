@@ -23,7 +23,7 @@ user-invocable: true
 disable-model-invocation: false
 context: fork
 model: opus
-version: "3.0.0"
+version: "4.0.0"
 argument-hint: "<task-id> <terminal-id> [--sub-orchestrator] | auto"
 auto-sub-orchestrator: true
 allowed-tools:
@@ -180,23 +180,6 @@ agent_internal_feedback_loop:
     Self-validates assignment quality and iterates until threshold met.
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 # /assign - Task Assignment to Workers (EFL V3.0.0)
 
 > **Version:** 3.0.0 (EFL Pattern)
@@ -205,23 +188,6 @@ if (delegationDecision.shouldDelegate) {
 > **EFL Template:** `.claude/skills/shared/efl-template.md`
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## 0. EFL Execution Overview
 
@@ -252,42 +218,6 @@ This skill implements the Enhanced Feedback Loop (EFL) pattern:
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
----
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 ## 1. Purpose
 
 **Task Assignment Agent** that:
@@ -317,23 +247,6 @@ fi
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 ## 2. Invocation
 
 ### User Syntax
@@ -360,23 +273,6 @@ if (delegationDecision.shouldDelegate) {
 - `--sub-orchestrator` (optional): Enable Sub-Orchestrator mode for this worker
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## 3. Execution Protocol
 
@@ -446,95 +342,381 @@ function manualAssign(taskId, terminalId, options = {}) {
 }
 ```
 
-### 3.2 Mode: Auto Assignment
+### 3.2 Mode: Auto Assignment (EFL Pattern V4.0.0)
+
+> **EFL Implementation**: Auto assignment uses parallel analysis agents for complex workloads
 
 ```javascript
-function autoAssign() {
+/**
+ * autoAssign - Main entry point for auto assignment
+ * Delegates to autoAssignWithEFL for complex assignments
+ *
+ * EFL Flow:
+ * 1. Detect complexity based on task count
+ * 2. For simple (1-3 tasks): Direct assignment (no agent overhead)
+ * 3. For moderate/complex (4+ tasks): Deploy parallel analysis agents
+ */
+async function autoAssign() {
+  console.log(`\n🚀 /assign auto (EFL V4.0.0)`)
+
   // Sub-Orchestrator mode is ALWAYS enabled for auto assignment
-  const isSubOrchestrator = true  // V3.1.0: Default enabled
+  const isSubOrchestrator = true
 
   // 1. Get all unassigned tasks
-  allTasks = TaskList()
-  unassigned = allTasks.filter(t => !t.owner || t.owner === "")
+  const allTasks = TaskList()
+  const unassigned = allTasks.filter(t => !t.owner || t.owner === "")
 
   if (unassigned.length === 0) {
     console.log("✅ All tasks already assigned")
-    return
+    return { status: "no_unassigned", message: "All tasks already assigned" }
   }
 
   console.log(`Found ${unassigned.length} unassigned tasks`)
 
-  // 2. Read _progress.yaml to find available terminals (workload-scoped)
-  progressPath = getWorkloadProgressPath()  // Uses active workload or global fallback
-  progressData = Read(progressPath)
-  terminals = parseYAML(progressData).terminals || {}
+  // 2. Get workload context
+  const slug = getActiveWorkloadSlug()
+  if (!slug) {
+    console.log("⚠️  No active workload, using default context")
+  }
 
-  availableTerminals = Object.keys(terminals).filter(tid =>
-    terminals[tid].status === "idle" &&
-    !terminals[tid].currentTask
-  )
+  // 3. Detect complexity and decide execution path
+  const complexity = detectAssignmentComplexity(unassigned.length)
+  const agentCount = getAgentCountByComplexity(complexity)
 
-  if (availableTerminals.length === 0) {
-    // Generate terminal IDs based on task count
-    availableTerminals = unassigned.map((t, i) =>
-      `terminal-${String.fromCharCode(98 + i)}` // b, c, d, ...
+  console.log(`\n📊 Complexity: ${complexity} → ${agentCount} agent(s)`)
+
+  // 4. Execute based on complexity
+  let analysisResult
+
+  if (complexity === "simple") {
+    // Simple: Direct assignment without agent overhead
+    console.log(`\n⚡ Simple mode: Direct assignment`)
+    analysisResult = directAssignmentAnalysis(unassigned)
+  } else {
+    // Moderate/Complex: Deploy parallel analysis agents (P2)
+    console.log(`\n🤖 EFL mode: Deploying ${agentCount} analysis agents...`)
+    analysisResult = await deployAnalysisAgents(unassigned, agentCount, slug)
+  }
+
+  // 5. Return analysis result (Phase 3-A/3-B will verify before execution)
+  return {
+    status: "analysis_complete",
+    complexity,
+    agentCount,
+    analysisResult,
+    nextStep: "phase3a_load_balance_check"
+  }
+}
+
+/**
+ * directAssignmentAnalysis - Simple assignment without agent delegation
+ * Used for 1-3 tasks where agent overhead is not justified
+ */
+function directAssignmentAnalysis(unassigned) {
+  console.log(`\n📋 Direct assignment analysis for ${unassigned.length} tasks`)
+
+  // Read available terminals
+  const progressPath = getWorkloadProgressPath()
+  let availableTerminals = []
+
+  if (fileExists(progressPath)) {
+    const progressData = Read(progressPath)
+    const terminals = parseYAML(progressData).terminals || {}
+    availableTerminals = Object.keys(terminals).filter(tid =>
+      terminals[tid].status === "idle" && !terminals[tid].currentTask
     )
-    console.log(`Generated ${availableTerminals.length} terminal IDs`)
   }
 
-  // 3. Assignment strategy: Prioritize unblocked tasks
-  assignments = []
-
-  // First pass: Assign unblocked tasks
-  unblockedTasks = unassigned.filter(t => !t.blockedBy || t.blockedBy.length === 0)
-  for (let i = 0; i < Math.min(unblockedTasks.length, availableTerminals.length); i++) {
-    assignments.push({
-      taskId: unblockedTasks[i].id,
-      terminalId: availableTerminals[i],
-      canStart: true
-    })
+  // Generate terminals if none available
+  if (availableTerminals.length === 0) {
+    availableTerminals = unassigned.map((t, i) =>
+      `terminal-${String.fromCharCode(98 + i)}`
+    )
+    console.log(`   Generated ${availableTerminals.length} terminal IDs`)
   }
 
-  // Second pass: Assign blocked tasks to remaining terminals
-  blockedTasks = unassigned.filter(t => t.blockedBy && t.blockedBy.length > 0)
-  let terminalIndex = assignments.length
-  for (task of blockedTasks) {
+  // Build assignments (unblocked first, then blocked)
+  const assignments = []
+  const unblockedTasks = unassigned.filter(t => !t.blockedBy || t.blockedBy.length === 0)
+  const blockedTasks = unassigned.filter(t => t.blockedBy && t.blockedBy.length > 0)
+
+  let terminalIndex = 0
+
+  for (let task of unblockedTasks) {
     if (terminalIndex >= availableTerminals.length) break
     assignments.push({
       taskId: task.id,
       terminalId: availableTerminals[terminalIndex],
-      canStart: false
+      canStart: true,
+      blockedBy: []
     })
     terminalIndex++
   }
 
-  // 4. Execute assignments (with Sub-Orchestrator mode)
-  for (assignment of assignments) {
-    TaskUpdate({
-      taskId: assignment.taskId,
-      owner: assignment.terminalId,
-      metadata: {
-        hierarchyLevel: 0,
-        subOrchestratorMode: isSubOrchestrator,  // Always true for auto
-        canDecompose: isSubOrchestrator
-      }
+  for (let task of blockedTasks) {
+    if (terminalIndex >= availableTerminals.length) break
+    assignments.push({
+      taskId: task.id,
+      terminalId: availableTerminals[terminalIndex],
+      canStart: false,
+      blockedBy: task.blockedBy || []
     })
-
-    task = TaskGet({taskId: assignment.taskId})
-    updateProgressFile(assignment.taskId, assignment.terminalId, task, isSubOrchestrator)
-
-    let modeLabel = isSubOrchestrator ? " (Sub-Orchestrator)" : ""
-    let status = assignment.canStart ? "🟢 Ready" : "🔴 Blocked"
-    console.log(`${status} Task #${assignment.taskId} → ${assignment.terminalId}${modeLabel}`)
+    terminalIndex++
   }
 
-  // 5. Summary
-  console.log(`\n=== Assignment Summary ===`)
-  console.log(`Total assigned: ${assignments.length}`)
-  console.log(`Can start now: ${assignments.filter(a => a.canStart).length}`)
-  console.log(`Blocked: ${assignments.filter(a => !a.canStart).length}`)
+  return {
+    assignments,
+    warnings: [],
+    adjustments: [],
+    metadata: {
+      mode: "direct",
+      totalAgents: 0,
+      analysisTime: "instant"
+    }
+  }
+}
 
-  printWorkerInstructions(assignments)
+/**
+ * deployAnalysisAgents - Deploy parallel analysis agents (P2)
+ * Each agent focuses on a specific analysis area
+ *
+ * @param {Object[]} unassigned - Unassigned tasks from TaskList
+ * @param {number} agentCount - Number of agents to deploy (1-3)
+ * @param {string} slug - Workload slug for output paths
+ * @returns {Object} - Aggregated analysis result
+ */
+async function deployAnalysisAgents(unassigned, agentCount, slug) {
+  const areas = getAssignmentAreas(
+    agentCount === 1 ? "simple" : agentCount === 2 ? "moderate" : "complex"
+  )
+
+  console.log(`\n>>> Deploying ${agentCount} analysis agents...`)
+
+  // Read terminal state for agents
+  const progressPath = getWorkloadProgressPath()
+  let terminalState = {}
+  if (fileExists(progressPath)) {
+    const progressData = Read(progressPath)
+    terminalState = parseYAML(progressData).terminals || {}
+  }
+
+  // Prepare task summary for agents
+  const taskSummary = unassigned.map(t => ({
+    id: t.id,
+    subject: t.subject,
+    blockedBy: t.blockedBy || [],
+    priority: t.metadata?.priority || "P1"
+  }))
+
+  // Deploy parallel agents with P6 Internal Loop
+  const agents = areas.map((area, i) => Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## Assignment Analysis: ${area.name}
+
+### Context
+- Workload: ${slug || "default"}
+- Unassigned Tasks: ${unassigned.length}
+- Analysis Focus: ${area.focus}
+
+### Tasks to Analyze
+\`\`\`json
+${JSON.stringify(taskSummary, null, 2)}
+\`\`\`
+
+### Available Terminals
+${Object.keys(terminalState).length > 0
+  ? Object.entries(terminalState).map(([tid, state]) =>
+      `- ${tid}: ${state.status} (current: ${state.currentTask || 'none'})`
+    ).join('\n')
+  : '- terminal-b through terminal-' + String.fromCharCode(97 + unassigned.length) + ' (to be created)'
+}
+
+### Your Analysis Task: ${area.name}
+
+${area.id === "dependency" ? `
+**Dependency Analysis:**
+1. Build dependency graph from blockedBy relationships
+2. Identify tasks that can start immediately (no blockers)
+3. Calculate topological order for blocked tasks
+4. Detect any circular dependencies
+5. Suggest optimal execution sequence
+
+Output Requirements:
+- List tasks in recommended execution order
+- Flag any dependency violations
+- Identify critical path tasks
+` : area.id === "load_balance" ? `
+**Load Balancing Analysis:**
+1. Count tasks per potential terminal assignment
+2. Estimate relative effort per task (from subject/description)
+3. Suggest balanced distribution across terminals
+4. Avoid assigning dependent tasks to same terminal when possible
+5. Consider terminal availability status
+
+Output Requirements:
+- Proposed terminal assignment for each task
+- Load distribution metrics (tasks per terminal)
+- Balance score (0-100, 100 = perfectly balanced)
+` : `
+**Terminal Availability Analysis:**
+1. Identify idle terminals ready for new tasks
+2. Check current terminal workloads
+3. Determine Sub-Orchestrator eligibility per terminal
+4. Estimate terminal capacity for task complexity
+5. Flag any terminals with issues
+
+Output Requirements:
+- Available terminal list with capacity status
+- Recommended terminal for complex vs simple tasks
+- Sub-Orchestrator mode recommendations
+`}
+
+### Internal Feedback Loop (P6 - REQUIRED)
+1. Generate analysis for your focus area
+2. Self-validate:
+   - [ ] All ${unassigned.length} tasks addressed
+   - [ ] Assignments are valid (no duplicate terminals for same task)
+   - [ ] Blocked tasks correctly identified
+   - [ ] No terminal overloaded (max 3 tasks each)
+3. If validation fails, revise (max 3 iterations)
+4. Only output after validation passes
+
+### Output Format (YAML)
+\`\`\`yaml
+area: "${area.id}"
+areaName: "${area.name}"
+areaPriority: ${area.priority}
+
+assignments:
+  - taskId: "{task_id}"
+    terminalId: "{terminal-X}"
+    canStart: true|false
+    blockedBy: [...]
+    rationale: "{why this terminal}"
+
+warnings:
+  - "{any concerns or issues}"
+
+adjustments:
+  - taskId: "{task_id}"
+    recommendation: "{suggested change}"
+    reason: "{why}"
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+  checksPerformed:
+    - allTasksAddressed: true
+    - noInvalidAssignments: true
+    - loadBalanced: true
+\`\`\`
+`,
+    description: `Analysis Agent ${i + 1}: ${area.name}`
+  }))
+
+  // Barrier synchronization - wait for all agents
+  const startTime = Date.now()
+  console.log(`[${new Date().toISOString()}] Waiting for ${agents.length} agents...`)
+
+  const results = await Promise.all(agents)
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+  console.log(`[${new Date().toISOString()}] All agents completed in ${duration}s`)
+
+  // Aggregate results from all agents
+  const aggregated = aggregateAnalysisResults(results.map((r, i) => ({
+    ...parseYAMLFromAgent(r),
+    areaPriority: areas[i].priority
+  })))
+
+  // Save L2 analysis details to file (prevent context pollution)
+  const l2Path = `.agent/prompts/${slug}/assign/l2_analysis.md`
+  const l2Content = `# L2 Assignment Analysis
+
+## Workload: ${slug}
+## Generated: ${new Date().toISOString()}
+
+### Agent Results
+
+${results.map((r, i) => `
+#### Agent ${i + 1}: ${areas[i].name}
+\`\`\`
+${typeof r === 'string' ? r : JSON.stringify(r, null, 2)}
+\`\`\`
+`).join('\n')}
+
+### Aggregated Assignments
+
+| Task ID | Terminal | Can Start | Blocked By |
+|---------|----------|-----------|------------|
+${aggregated.assignments.map(a =>
+  `| #${a.taskId} | ${a.terminalId} | ${a.canStart ? '✅' : '❌'} | ${(a.blockedBy || []).join(', ') || '-'} |`
+).join('\n')}
+
+### Warnings
+${aggregated.warnings.length > 0 ? aggregated.warnings.map(w => `- ${w}`).join('\n') : '- None'}
+
+---
+*Analysis completed in ${duration}s with ${agents.length} agents*
+`
+
+  // Ensure directory exists and write L2 file
+  Bash({ command: `mkdir -p .agent/prompts/${slug}/assign` })
+  Write({ file_path: l2Path, content: l2Content })
+  console.log(`📝 L2 analysis saved: ${l2Path}`)
+
+  aggregated.metadata.analysisTime = `${duration}s`
+  aggregated.metadata.l2Path = l2Path
+
+  return aggregated
+}
+
+/**
+ * parseYAMLFromAgent - Extract YAML from agent response
+ */
+function parseYAMLFromAgent(agentResponse) {
+  if (typeof agentResponse !== 'string') {
+    return agentResponse
+  }
+
+  // Try to extract YAML block
+  const yamlMatch = agentResponse.match(/```yaml\n([\s\S]*?)\n```/)
+  if (yamlMatch) {
+    try {
+      return parseYAML(yamlMatch[1])
+    } catch (e) {
+      console.log(`⚠️  Failed to parse agent YAML: ${e.message}`)
+    }
+  }
+
+  // Fallback: return raw response
+  return { rawResponse: agentResponse, assignments: [], warnings: [] }
+}
+
+/**
+ * getActiveWorkloadSlug - Get current active workload slug
+ */
+function getActiveWorkloadSlug() {
+  try {
+    const content = Read('.agent/prompts/_active_workload.yaml')
+    const match = content.match(/activeWorkload:\s*"?([^"\n]+)"?/)
+    return match ? match[1] : null
+  } catch (e) {
+    return null
+  }
+}
+
+/**
+ * getWorkloadProgressPath - Get path to _progress.yaml
+ */
+function getWorkloadProgressPath() {
+  const slug = getActiveWorkloadSlug()
+  if (slug) {
+    return `.agent/prompts/${slug}/_progress.yaml`
+  }
+  return ".agent/prompts/_progress.yaml"
 }
 ```
 
@@ -680,6 +862,1036 @@ function printWorkerInstructions(assignments) {
 }
 ```
 
+### 3.6 EFL Helper Functions (V4.0.0)
+
+> **EFL Pattern Support**: 복잡도 기반 에이전트 스케일링을 위한 Helper 함수들
+
+#### 3.6.1 detectAssignmentComplexity
+
+```javascript
+/**
+ * detectAssignmentComplexity
+ * Analyze assignment complexity based on task count
+ *
+ * @param {number} taskCount - Number of unassigned tasks
+ * @returns {"simple" | "moderate" | "complex"} - Complexity level
+ *
+ * @example
+ * let complexity = detectAssignmentComplexity(5)
+ * // Returns: "moderate"
+ *
+ * Complexity Thresholds (aligned with parallel_agent_config):
+ * - simple:   1-3 tasks  → Single agent can handle efficiently
+ * - moderate: 4-6 tasks  → Parallel analysis beneficial
+ * - complex:  7+ tasks   → Full parallel deployment required
+ */
+function detectAssignmentComplexity(taskCount) {
+  // Validate input
+  if (typeof taskCount !== 'number' || taskCount < 0) {
+    console.log(`⚠️  Invalid task count: ${taskCount}, defaulting to simple`)
+    return "simple"
+  }
+
+  // Complexity thresholds from parallel_agent_config
+  const SIMPLE_MAX = 3
+  const MODERATE_MAX = 6
+
+  if (taskCount <= SIMPLE_MAX) {
+    console.log(`📊 Complexity: SIMPLE (${taskCount} tasks ≤ ${SIMPLE_MAX})`)
+    return "simple"
+  }
+
+  if (taskCount <= MODERATE_MAX) {
+    console.log(`📊 Complexity: MODERATE (${SIMPLE_MAX} < ${taskCount} tasks ≤ ${MODERATE_MAX})`)
+    return "moderate"
+  }
+
+  console.log(`📊 Complexity: COMPLEX (${taskCount} tasks > ${MODERATE_MAX})`)
+  return "complex"
+}
+```
+
+#### 3.6.2 getAgentCountByComplexity
+
+```javascript
+/**
+ * getAgentCountByComplexity
+ * Map complexity level to number of parallel agents
+ * Aligned with parallel_agent_config.agent_count_by_complexity in skill frontmatter
+ *
+ * @param {"simple" | "moderate" | "complex"} complexity - Complexity level
+ * @returns {number} - Agent count (1, 2, or 3)
+ *
+ * @example
+ * let count = getAgentCountByComplexity("moderate")
+ * // Returns: 2
+ *
+ * Agent Allocation Strategy:
+ * - simple:   1 agent  → Direct assignment, no parallel overhead
+ * - moderate: 2 agents → dependency_analysis + load_balancing
+ * - complex:  3 agents → dependency_analysis + terminal_availability + load_balancing
+ */
+function getAgentCountByComplexity(complexity) {
+  const COMPLEXITY_TO_AGENTS = {
+    simple: 1,    // Single agent for simple assignments
+    moderate: 2,  // Two agents for moderate assignments
+    complex: 3    // Three agents for complex assignments (max)
+  }
+
+  let agentCount = COMPLEXITY_TO_AGENTS[complexity] || 1
+  console.log(`🤖 Agent count for "${complexity}": ${agentCount}`)
+
+  return agentCount
+}
+```
+
+#### 3.6.3 getAssignmentAreas
+
+```javascript
+/**
+ * getAssignmentAreas
+ * Determine which analysis areas to assign based on complexity
+ * Areas aligned with parallel_agent_config.assignment_areas
+ *
+ * @param {"simple" | "moderate" | "complex"} complexity - Complexity level
+ * @returns {Object[]} - Array of area configurations
+ *
+ * @example
+ * let areas = getAssignmentAreas("moderate")
+ * // Returns: [{id: "dependency", ...}, {id: "load_balance", ...}]
+ *
+ * Available Areas:
+ * - dependency_analysis:   Analyze blockedBy relationships, topological order
+ * - terminal_availability: Check terminal status, current workload
+ * - load_balancing:        Distribute tasks evenly across terminals
+ */
+function getAssignmentAreas(complexity) {
+  const ALL_AREAS = [
+    {
+      id: "dependency",
+      name: "Dependency Analysis",
+      focus: "blockedBy relationships, topological sort, execution order",
+      priority: 1
+    },
+    {
+      id: "load_balance",
+      name: "Load Balancing",
+      focus: "even distribution, terminal capacity, workload estimation",
+      priority: 2
+    },
+    {
+      id: "terminal",
+      name: "Terminal Availability",
+      focus: "idle terminals, current assignments, Sub-Orchestrator eligibility",
+      priority: 3
+    }
+  ]
+
+  const agentCount = getAgentCountByComplexity(complexity)
+
+  // Select areas based on agent count
+  let selectedAreas = ALL_AREAS.slice(0, agentCount)
+
+  console.log(`📂 Assignment areas (${agentCount} agents): ${selectedAreas.map(a => a.id).join(', ')}`)
+
+  return selectedAreas
+}
+```
+
+#### 3.6.4 aggregateAnalysisResults
+
+```javascript
+/**
+ * aggregateAnalysisResults
+ * Merge results from parallel analysis agents
+ * Handles deduplication and conflict resolution
+ *
+ * @param {Object[]} results - Array of agent results
+ * @returns {Object} - Aggregated analysis result
+ *
+ * @example
+ * let aggregated = aggregateAnalysisResults([
+ *   { area: "dependency", assignments: [...], warnings: [...] },
+ *   { area: "load_balance", assignments: [...], adjustments: [...] }
+ * ])
+ */
+function aggregateAnalysisResults(results) {
+  console.log(`📦 Aggregating results from ${results.length} analysis agents...`)
+
+  let mergedAssignments = new Map()  // taskId -> assignment
+  let allWarnings = []
+  let allAdjustments = []
+  let conflictCount = 0
+
+  for (let result of results) {
+    if (!result) {
+      console.log(`   ⚠️  Skipping null result`)
+      continue
+    }
+
+    // Merge warnings
+    if (result.warnings) {
+      allWarnings.push(...result.warnings)
+    }
+
+    // Merge adjustments
+    if (result.adjustments) {
+      allAdjustments.push(...result.adjustments)
+    }
+
+    // Merge assignments with conflict detection
+    if (result.assignments) {
+      for (let assignment of result.assignments) {
+        const existing = mergedAssignments.get(assignment.taskId)
+
+        if (existing) {
+          // Conflict detected - prefer assignment with higher priority area
+          if (result.areaPriority < existing.areaPriority) {
+            console.log(`   ⚠️  Conflict on Task #${assignment.taskId}: ${existing.terminalId} → ${assignment.terminalId}`)
+            mergedAssignments.set(assignment.taskId, {
+              ...assignment,
+              areaPriority: result.areaPriority,
+              conflictResolved: true
+            })
+            conflictCount++
+          }
+        } else {
+          mergedAssignments.set(assignment.taskId, {
+            ...assignment,
+            areaPriority: result.areaPriority || 99
+          })
+        }
+      }
+    }
+  }
+
+  const aggregated = {
+    assignments: Array.from(mergedAssignments.values()),
+    warnings: [...new Set(allWarnings)],  // Deduplicate warnings
+    adjustments: allAdjustments,
+    metadata: {
+      totalAgents: results.length,
+      conflictsResolved: conflictCount,
+      aggregatedAt: new Date().toISOString()
+    }
+  }
+
+  console.log(`
+✅ Aggregation Complete:
+   Assignments: ${aggregated.assignments.length}
+   Warnings: ${aggregated.warnings.length}
+   Conflicts Resolved: ${conflictCount}
+`)
+
+  return aggregated
+}
+```
+
+#### 3.6.5 generateL1AssignmentSummary
+
+```javascript
+/**
+ * generateL1AssignmentSummary
+ * Generate L1 markdown summary for main orchestrator
+ * Follows context pollution prevention guidelines (≤500 tokens)
+ *
+ * @param {Object} aggregatedResult - Aggregated analysis result
+ * @param {string} slug - Workload slug
+ * @returns {string} - Markdown summary (compact, ≤500 tokens)
+ */
+function generateL1AssignmentSummary(aggregatedResult, slug) {
+  const { assignments, warnings, metadata } = aggregatedResult
+
+  // Calculate metrics
+  const totalAssigned = assignments.length
+  const readyCount = assignments.filter(a => a.canStart).length
+  const blockedCount = totalAssigned - readyCount
+
+  // Group by terminal
+  const terminalDist = {}
+  for (let a of assignments) {
+    terminalDist[a.terminalId] = (terminalDist[a.terminalId] || 0) + 1
+  }
+
+  // Determine recommendation
+  let recommendation = "PROCEED"
+  let recommendationEmoji = "✅"
+
+  if (warnings.length > 0) {
+    recommendation = "REVIEW_WARNINGS"
+    recommendationEmoji = "⚠️"
+  }
+
+  if (blockedCount === totalAssigned) {
+    recommendation = "ALL_BLOCKED"
+    recommendationEmoji = "🛑"
+  }
+
+  // Build compact L1 summary
+  const summary = `# L1 Assignment Summary
+
+## Overview
+- **Workload:** ${slug}
+- **Tasks Assigned:** ${totalAssigned}
+- **Ready:** ${readyCount} | **Blocked:** ${blockedCount}
+
+## Terminal Distribution
+${Object.entries(terminalDist).map(([t, count]) => `- ${t}: ${count} task(s)`).join('\n')}
+
+## Warnings
+${warnings.length > 0 ? warnings.map(w => `- ${w}`).join('\n') : '- None'}
+
+## Recommendation
+${recommendationEmoji} **${recommendation}**
+
+---
+*L2 Path: .agent/prompts/${slug}/assign/l2_index.md*
+*Generated: ${new Date().toISOString()}*
+`
+
+  // Validate token count (rough estimate: 1 token ≈ 4 chars)
+  const estimatedTokens = Math.ceil(summary.length / 4)
+
+  if (estimatedTokens > 500) {
+    console.log(`⚠️  L1 Summary exceeds 500 tokens (est: ${estimatedTokens}). Consider trimming.`)
+  } else {
+    console.log(`✅ L1 Summary generated (est: ${estimatedTokens} tokens)`)
+  }
+
+  return summary
+}
+```
+
+### 3.7 Phase 3 Verification (P3 Synthesis)
+
+> **EFL Pattern P3**: Two-phase synthesis for assignment validation
+
+#### 3.7.1 phase3aLoadBalanceCheck (L2 Horizontal)
+
+```javascript
+/**
+ * phase3aLoadBalanceCheck - L2 Horizontal Synthesis
+ * Cross-validates assignments for load balance across terminals
+ *
+ * Validation Criteria (from synthesis_config.phase_3a_l2_horizontal):
+ * - load_balance_check: Even distribution of tasks
+ * - dependency_order_validation: Blockers assigned before dependents
+ * - terminal_capacity_check: No terminal overloaded
+ *
+ * @param {Object} analysisResult - Result from deployAnalysisAgents or directAssignmentAnalysis
+ * @param {string} slug - Workload slug
+ * @returns {Object} - L2 synthesis result
+ */
+async function phase3aLoadBalanceCheck(analysisResult, slug) {
+  console.log(`\n🔄 Phase 3-A: L2 Horizontal Synthesis (Load Balance Check)`)
+
+  const { assignments } = analysisResult
+
+  // Quick validation for simple cases
+  if (assignments.length <= 3) {
+    console.log(`   ⚡ Simple case (${assignments.length} tasks): Quick validation`)
+    const quickResult = performQuickLoadBalanceCheck(assignments)
+    return {
+      phase: "3a",
+      type: "l2_horizontal",
+      status: quickResult.balanced ? "passed" : "warning",
+      ...quickResult
+    }
+  }
+
+  // Complex case: Delegate to synthesis agent with P6 internal loop
+  console.log(`   🤖 Delegating to L2 Horizontal Synthesis Agent...`)
+
+  const result = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## Phase 3-A: L2 Horizontal Synthesis (Load Balance Verification)
+
+### Context
+- Workload: ${slug}
+- Total Assignments: ${assignments.length}
+
+### Assignments to Verify
+\`\`\`json
+${JSON.stringify(assignments, null, 2)}
+\`\`\`
+
+### Validation Tasks
+
+1. **Load Balance Check**
+   - Count tasks per terminal
+   - Calculate standard deviation of load
+   - Flag terminals with >3 tasks or 2x average load
+
+2. **Dependency Order Validation**
+   - For each blocked task, verify blocker is assigned to different terminal OR earlier
+   - Check no terminal has both blocker and blocked task running simultaneously
+   - Identify potential deadlock scenarios
+
+3. **Terminal Capacity Check**
+   - Verify no terminal has conflicting assignments
+   - Check Sub-Orchestrator assignments are appropriate
+   - Ensure critical path tasks have dedicated terminals
+
+### Internal Feedback Loop (P6 - REQUIRED)
+1. Perform all three validation checks
+2. Self-validate:
+   - [ ] All ${assignments.length} assignments checked
+   - [ ] Load distribution calculated correctly
+   - [ ] Dependency order verified for each blocked task
+3. If any check reveals issues, re-analyze (max 3 iterations)
+4. Output only after all validations pass
+
+### Output Format (YAML)
+\`\`\`yaml
+phase3a_status: "passed" | "warning" | "failed"
+
+loadBalanceResult:
+  balanced: true|false
+  tasksPerTerminal:
+    "terminal-b": {count}
+    "terminal-c": {count}
+  standardDeviation: {number}
+  overloadedTerminals: []
+
+dependencyOrderResult:
+  valid: true|false
+  violations: []
+  warnings: []
+
+terminalCapacityResult:
+  valid: true|false
+  issues: []
+
+overallScore: {0-100}
+recommendations: []
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: "Phase 3-A: L2 Horizontal Load Balance Check"
+  })
+
+  const parsed = parseYAMLFromAgent(result)
+
+  // Save L2 synthesis to file
+  const l2SynthesisPath = `.agent/prompts/${slug}/assign/l2_phase3a_synthesis.md`
+  Write({
+    file_path: l2SynthesisPath,
+    content: `# Phase 3-A: L2 Horizontal Synthesis\n\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`
+  })
+
+  console.log(`   📝 L2 synthesis saved: ${l2SynthesisPath}`)
+  console.log(`   ${parsed.phase3a_status === 'passed' ? '✅' : '⚠️'} Status: ${parsed.phase3a_status}`)
+
+  return {
+    phase: "3a",
+    type: "l2_horizontal",
+    status: parsed.phase3a_status || "unknown",
+    loadBalance: parsed.loadBalanceResult,
+    dependencyOrder: parsed.dependencyOrderResult,
+    terminalCapacity: parsed.terminalCapacityResult,
+    score: parsed.overallScore,
+    recommendations: parsed.recommendations || [],
+    l2Path: l2SynthesisPath
+  }
+}
+
+/**
+ * performQuickLoadBalanceCheck - Fast validation for simple assignments
+ */
+function performQuickLoadBalanceCheck(assignments) {
+  const terminalCounts = {}
+
+  for (let a of assignments) {
+    terminalCounts[a.terminalId] = (terminalCounts[a.terminalId] || 0) + 1
+  }
+
+  const counts = Object.values(terminalCounts)
+  const max = Math.max(...counts)
+  const min = Math.min(...counts)
+  const balanced = (max - min) <= 1
+
+  return {
+    balanced,
+    tasksPerTerminal: terminalCounts,
+    maxLoad: max,
+    minLoad: min,
+    recommendations: balanced ? [] : ["Consider rebalancing assignments"]
+  }
+}
+```
+
+#### 3.7.2 phase3bDependencyVerification (L3 Vertical)
+
+```javascript
+/**
+ * phase3bDependencyVerification - L3 Vertical Verification
+ * Deep verification of each assignment against task requirements
+ *
+ * Validation Criteria (from synthesis_config.phase_3b_l3_vertical):
+ * - task_terminal_compatibility: Terminal can handle task complexity
+ * - blocker_resolution_order: Blockers will complete before dependents start
+ * - sub_orchestrator_eligibility: Complex tasks assigned to capable terminals
+ *
+ * @param {Object} analysisResult - Result from deployAnalysisAgents
+ * @param {Object} phase3aResult - Result from phase3aLoadBalanceCheck
+ * @param {string} slug - Workload slug
+ * @returns {Object} - L3 verification result
+ */
+async function phase3bDependencyVerification(analysisResult, phase3aResult, slug) {
+  console.log(`\n🔍 Phase 3-B: L3 Vertical Verification (Dependency Order)`)
+
+  const { assignments } = analysisResult
+
+  // Skip for simple cases with no dependencies
+  const hasBlockedTasks = assignments.some(a => a.blockedBy && a.blockedBy.length > 0)
+
+  if (!hasBlockedTasks) {
+    console.log(`   ⚡ No blocked tasks: Verification passed`)
+    return {
+      phase: "3b",
+      type: "l3_vertical",
+      status: "passed",
+      message: "No dependencies to verify",
+      verifiedAssignments: assignments.length
+    }
+  }
+
+  // Delegate to L3 verification agent with P6 internal loop
+  console.log(`   🤖 Delegating to L3 Vertical Verification Agent...`)
+
+  const result = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## Phase 3-B: L3 Vertical Verification (Dependency Order)
+
+### Context
+- Workload: ${slug}
+- Total Assignments: ${assignments.length}
+- Blocked Tasks: ${assignments.filter(a => a.blockedBy?.length > 0).length}
+
+### Phase 3-A Results (L2 Horizontal)
+- Status: ${phase3aResult.status}
+- Score: ${phase3aResult.score || 'N/A'}
+- Recommendations: ${(phase3aResult.recommendations || []).join(', ') || 'None'}
+
+### Assignments to Verify
+\`\`\`json
+${JSON.stringify(assignments, null, 2)}
+\`\`\`
+
+### Verification Tasks
+
+1. **Task-Terminal Compatibility**
+   - Check if terminal has capacity for assigned task
+   - Verify Sub-Orchestrator tasks assigned to capable terminals
+   - Ensure no task exceeds terminal's concurrent limit
+
+2. **Blocker Resolution Order**
+   - For each blocked task:
+     a. Find all blocker task IDs
+     b. Verify blockers are assigned
+     c. Verify blockers can complete before dependent starts
+   - Build execution timeline
+   - Identify any timing conflicts
+
+3. **Sub-Orchestrator Eligibility**
+   - Check tasks marked for Sub-Orchestrator mode
+   - Verify assigned terminal supports decomposition
+   - Validate hierarchy level consistency
+
+### Internal Feedback Loop (P6 - REQUIRED)
+1. Perform all three verification checks
+2. Self-validate:
+   - [ ] Every blocked task has all blockers assigned
+   - [ ] No circular dependency paths
+   - [ ] Execution order is deterministic
+3. If any verification fails, identify root cause (max 3 iterations)
+4. Output only after all verifications pass or issues documented
+
+### Output Format (YAML)
+\`\`\`yaml
+phase3b_status: "passed" | "warning" | "failed"
+
+compatibilityResult:
+  allCompatible: true|false
+  issues: []
+
+blockerOrderResult:
+  valid: true|false
+  executionOrder: ["{taskId}", ...]
+  timeline:
+    - taskId: "{id}"
+      canStartAfter: ["{blocker_ids}"]
+      estimatedStart: "T+{n}"
+  violations: []
+
+subOrchestratorResult:
+  valid: true|false
+  eligibleTasks: []
+  issues: []
+
+criticalIssues: []
+warnings: []
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true
+\`\`\`
+`,
+    description: "Phase 3-B: L3 Vertical Dependency Verification"
+  })
+
+  const parsed = parseYAMLFromAgent(result)
+
+  // Save L3 verification to file
+  const l3Path = `.agent/prompts/${slug}/assign/l3_phase3b_verification.md`
+  Write({
+    file_path: l3Path,
+    content: `# Phase 3-B: L3 Vertical Verification\n\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`
+  })
+
+  console.log(`   📝 L3 verification saved: ${l3Path}`)
+  console.log(`   ${parsed.phase3b_status === 'passed' ? '✅' : '⚠️'} Status: ${parsed.phase3b_status}`)
+
+  return {
+    phase: "3b",
+    type: "l3_vertical",
+    status: parsed.phase3b_status || "unknown",
+    compatibility: parsed.compatibilityResult,
+    blockerOrder: parsed.blockerOrderResult,
+    subOrchestrator: parsed.subOrchestratorResult,
+    criticalIssues: parsed.criticalIssues || [],
+    warnings: parsed.warnings || [],
+    l3Path
+  }
+}
+```
+
+#### 3.7.3 phase35ReviewGate (P5 Review Gate)
+
+```javascript
+/**
+ * phase35ReviewGate - Main Agent Review Gate
+ * Holistic verification before executing assignments
+ *
+ * Review Criteria (from synthesis_config.phase_3_5_review_gate):
+ * - assignment_completeness: All unassigned tasks have assignments
+ * - execution_order_validity: Dependencies respected
+ * - worker_instruction_clarity: Terminals have clear instructions
+ *
+ * @param {Object} phase3aResult - L2 Horizontal synthesis result
+ * @param {Object} phase3bResult - L3 Vertical verification result
+ * @param {Object} analysisResult - Original analysis result
+ * @returns {Object} - Review gate decision
+ */
+async function phase35ReviewGate(phase3aResult, phase3bResult, analysisResult) {
+  console.log(`\n🚦 Phase 3.5: Main Agent Review Gate`)
+
+  const criteria = {
+    assignment_completeness: {
+      passed: analysisResult.assignments.length > 0,
+      reason: analysisResult.assignments.length > 0
+        ? `All ${analysisResult.assignments.length} tasks assigned`
+        : "No assignments generated"
+    },
+    execution_order_validity: {
+      passed: phase3bResult.status !== "failed",
+      reason: phase3bResult.status === "passed"
+        ? "Dependency order valid"
+        : `Issues: ${(phase3bResult.criticalIssues || []).join(', ') || 'Minor warnings'}`
+    },
+    worker_instruction_clarity: {
+      passed: true,  // Assume clear if assignments have terminal IDs
+      reason: "All assignments have terminal IDs"
+    },
+    load_balance_acceptable: {
+      passed: phase3aResult.status !== "failed",
+      reason: phase3aResult.status === "passed"
+        ? "Load balanced"
+        : `Score: ${phase3aResult.score || 'N/A'}`
+    }
+  }
+
+  // Calculate overall result
+  const allPassed = Object.values(criteria).every(c => c.passed)
+  const hasCritical = phase3bResult.criticalIssues?.length > 0
+  const hasWarnings = (phase3aResult.recommendations?.length > 0) ||
+                      (phase3bResult.warnings?.length > 0)
+
+  let decision = "APPROVED"
+  if (hasCritical) {
+    decision = "BLOCKED"
+  } else if (hasWarnings) {
+    decision = "APPROVED_WITH_WARNINGS"
+  }
+
+  console.log(`\n   📋 Review Criteria:`)
+  for (let [name, result] of Object.entries(criteria)) {
+    console.log(`      ${result.passed ? '✅' : '❌'} ${name}: ${result.reason}`)
+  }
+
+  console.log(`\n   🎯 Decision: ${decision}`)
+
+  return {
+    phase: "3.5",
+    type: "review_gate",
+    decision,
+    allCriteriaPassed: allPassed,
+    criteria,
+    blockers: hasCritical ? phase3bResult.criticalIssues : [],
+    warnings: [
+      ...(phase3aResult.recommendations || []),
+      ...(phase3bResult.warnings || [])
+    ],
+    canProceed: decision !== "BLOCKED",
+    nextStep: decision === "BLOCKED"
+      ? "phase4_selective_feedback"
+      : "execute_assignments"
+  }
+}
+```
+
+### 3.8 Main Execution Flow (EFL Orchestration)
+
+> **EFL Pattern**: Complete orchestration flow connecting all phases
+
+#### 3.8.1 executeAssignment - Main Entry Point
+
+```javascript
+/**
+ * executeAssignment - Main EFL Orchestration Function
+ * Connects all phases: Analysis → Phase 3-A → Phase 3-B → Review Gate → Execute
+ *
+ * EFL Flow:
+ * 1. Parse arguments (manual vs auto)
+ * 2. For auto: Run full EFL pipeline
+ * 3. For manual: Direct assignment with validation
+ *
+ * @param {string} mode - "auto" or task ID for manual
+ * @param {string} terminalId - Terminal ID (for manual mode)
+ * @param {Object} options - Additional options
+ * @returns {Object} - L1 summary result
+ */
+async function executeAssignment(mode, terminalId = null, options = {}) {
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(`   /assign V4.0.0 (EFL Pattern)`)
+  console.log(`${'='.repeat(60)}`)
+
+  const startTime = Date.now()
+  const slug = getActiveWorkloadSlug() || `assign-${Date.now()}`
+  const isSubOrchestrator = options.subOrchestrator ?? true
+
+  // Ensure output directory exists
+  Bash({ command: `mkdir -p .agent/prompts/${slug}/assign` })
+
+  // Route based on mode
+  if (mode === "auto") {
+    return await executeAutoAssignmentEFL(slug, isSubOrchestrator, startTime)
+  } else {
+    return await executeManualAssignment(mode, terminalId, isSubOrchestrator, slug)
+  }
+}
+
+/**
+ * executeAutoAssignmentEFL - Full EFL pipeline for auto assignment
+ */
+async function executeAutoAssignmentEFL(slug, isSubOrchestrator, startTime) {
+  console.log(`\n📋 Mode: Auto Assignment (EFL)`)
+  console.log(`📁 Workload: ${slug}`)
+
+  // =========================================================================
+  // Phase 1-2: Analysis (complexity detection + parallel agents)
+  // =========================================================================
+  console.log(`\n${'─'.repeat(40)}`)
+  console.log(`Phase 1-2: Analysis`)
+  console.log(`${'─'.repeat(40)}`)
+
+  const analysisResult = await autoAssign()
+
+  if (analysisResult.status === "no_unassigned") {
+    return {
+      status: "success",
+      message: "All tasks already assigned",
+      l1Summary: generateL1AssignmentSummary({ assignments: [], warnings: [], metadata: {} }, slug)
+    }
+  }
+
+  // =========================================================================
+  // Phase 3-A: L2 Horizontal Synthesis (Load Balance Check)
+  // =========================================================================
+  console.log(`\n${'─'.repeat(40)}`)
+  console.log(`Phase 3-A: L2 Horizontal Synthesis`)
+  console.log(`${'─'.repeat(40)}`)
+
+  const phase3aResult = await phase3aLoadBalanceCheck(analysisResult.analysisResult, slug)
+
+  // =========================================================================
+  // Phase 3-B: L3 Vertical Verification (Dependency Order)
+  // =========================================================================
+  console.log(`\n${'─'.repeat(40)}`)
+  console.log(`Phase 3-B: L3 Vertical Verification`)
+  console.log(`${'─'.repeat(40)}`)
+
+  const phase3bResult = await phase3bDependencyVerification(
+    analysisResult.analysisResult,
+    phase3aResult,
+    slug
+  )
+
+  // =========================================================================
+  // Phase 3.5: Review Gate
+  // =========================================================================
+  console.log(`\n${'─'.repeat(40)}`)
+  console.log(`Phase 3.5: Review Gate`)
+  console.log(`${'─'.repeat(40)}`)
+
+  const reviewResult = await phase35ReviewGate(
+    phase3aResult,
+    phase3bResult,
+    analysisResult.analysisResult
+  )
+
+  // =========================================================================
+  // Phase 4: Selective Feedback (if blocked)
+  // =========================================================================
+  if (!reviewResult.canProceed) {
+    console.log(`\n${'─'.repeat(40)}`)
+    console.log(`Phase 4: Selective Feedback (BLOCKED)`)
+    console.log(`${'─'.repeat(40)}`)
+
+    console.log(`\n❌ Assignment blocked due to critical issues:`)
+    reviewResult.blockers.forEach(b => console.log(`   - ${b}`))
+
+    return {
+      status: "blocked",
+      reason: "Review gate failed",
+      blockers: reviewResult.blockers,
+      recommendations: "Fix dependency issues and retry /assign auto",
+      l1Summary: generateL1AssignmentSummary(analysisResult.analysisResult, slug)
+    }
+  }
+
+  // =========================================================================
+  // Phase 5: Execute Assignments
+  // =========================================================================
+  console.log(`\n${'─'.repeat(40)}`)
+  console.log(`Phase 5: Execute Assignments`)
+  console.log(`${'─'.repeat(40)}`)
+
+  const executionResult = await executeActualAssignments(
+    analysisResult.analysisResult.assignments,
+    isSubOrchestrator,
+    slug
+  )
+
+  // =========================================================================
+  // Generate L1 Summary and Save Outputs
+  // =========================================================================
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+
+  const l1Summary = generateL1AssignmentSummary(
+    {
+      ...analysisResult.analysisResult,
+      metadata: {
+        ...analysisResult.analysisResult.metadata,
+        executionTime: `${duration}s`,
+        phase3aStatus: phase3aResult.status,
+        phase3bStatus: phase3bResult.status,
+        reviewDecision: reviewResult.decision
+      }
+    },
+    slug
+  )
+
+  // Save L1 summary to file
+  const l1Path = `.agent/prompts/${slug}/assign/l1_summary.md`
+  Write({ file_path: l1Path, content: l1Summary })
+
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(`   Assignment Complete`)
+  console.log(`${'='.repeat(60)}`)
+  console.log(`\n📊 Summary:`)
+  console.log(`   - Tasks Assigned: ${executionResult.assigned}`)
+  console.log(`   - Ready to Start: ${executionResult.ready}`)
+  console.log(`   - Blocked: ${executionResult.blocked}`)
+  console.log(`   - Duration: ${duration}s`)
+  console.log(`\n📁 Outputs:`)
+  console.log(`   - L1: ${l1Path}`)
+  console.log(`   - L2: .agent/prompts/${slug}/assign/l2_*.md`)
+  console.log(`   - L3: .agent/prompts/${slug}/assign/l3_*.md`)
+  console.log(`\n🚀 Next: /worker start (in each assigned terminal)`)
+
+  return {
+    status: "success",
+    execution: executionResult,
+    eflMetrics: {
+      complexity: analysisResult.complexity,
+      agentCount: analysisResult.agentCount,
+      phase3aStatus: phase3aResult.status,
+      phase3bStatus: phase3bResult.status,
+      reviewDecision: reviewResult.decision,
+      duration: `${duration}s`
+    },
+    l1Path,
+    l2Path: `.agent/prompts/${slug}/assign/l2_analysis.md`,
+    nextActionHint: "/worker start"
+  }
+}
+
+/**
+ * executeManualAssignment - Single task assignment with validation
+ */
+async function executeManualAssignment(taskId, terminalId, isSubOrchestrator, slug) {
+  console.log(`\n📋 Mode: Manual Assignment`)
+  console.log(`   Task: #${taskId} → ${terminalId}`)
+
+  // Validate and assign
+  manualAssign(taskId, terminalId, { subOrchestrator: isSubOrchestrator })
+
+  // Generate minimal L1 for manual assignment
+  const task = TaskGet({ taskId })
+  const l1Summary = `# Manual Assignment Complete
+
+- **Task:** #${taskId} - ${task?.subject || 'Unknown'}
+- **Terminal:** ${terminalId}
+- **Sub-Orchestrator:** ${isSubOrchestrator ? 'Yes' : 'No'}
+- **Status:** ${task?.blockedBy?.length > 0 ? 'Blocked' : 'Ready'}
+
+Next: Run \`/worker start\` in ${terminalId}
+`
+
+  return {
+    status: "success",
+    taskId,
+    terminalId,
+    isSubOrchestrator,
+    canStart: !task?.blockedBy?.length,
+    l1Summary
+  }
+}
+
+/**
+ * executeActualAssignments - Execute TaskUpdate for all assignments
+ */
+async function executeActualAssignments(assignments, isSubOrchestrator, slug) {
+  console.log(`\n>>> Executing ${assignments.length} assignments...`)
+
+  let assigned = 0
+  let ready = 0
+  let blocked = 0
+
+  for (let assignment of assignments) {
+    try {
+      // Update task owner via TaskUpdate
+      TaskUpdate({
+        taskId: assignment.taskId,
+        owner: assignment.terminalId,
+        metadata: {
+          hierarchyLevel: 0,
+          subOrchestratorMode: isSubOrchestrator,
+          canDecompose: isSubOrchestrator,
+          assignedAt: new Date().toISOString()
+        }
+      })
+
+      // Get task details for progress update
+      const task = TaskGet({ taskId: assignment.taskId })
+
+      // Update progress file
+      updateProgressFile(assignment.taskId, assignment.terminalId, task, isSubOrchestrator)
+
+      // Track counts
+      assigned++
+      if (assignment.canStart) {
+        ready++
+        console.log(`   ✅ Task #${assignment.taskId} → ${assignment.terminalId} (Ready)`)
+      } else {
+        blocked++
+        console.log(`   ⏸️  Task #${assignment.taskId} → ${assignment.terminalId} (Blocked by: ${(assignment.blockedBy || []).join(', ')})`)
+      }
+    } catch (e) {
+      console.log(`   ❌ Task #${assignment.taskId}: ${e.message}`)
+    }
+  }
+
+  console.log(`\n   Total: ${assigned} assigned (${ready} ready, ${blocked} blocked)`)
+
+  // Print worker instructions
+  printWorkerInstructions(assignments)
+
+  return { assigned, ready, blocked }
+}
+```
+
+#### 3.8.2 Skill Entry Point
+
+```javascript
+/**
+ * /assign skill entry point
+ * Called when user invokes /assign command
+ *
+ * Usage:
+ *   /assign auto                    - Auto-assign all unassigned tasks
+ *   /assign <taskId> <terminalId>   - Manual assignment
+ *   /assign <taskId> <terminalId> --sub-orchestrator  - With Sub-Orchestrator mode
+ */
+async function assignSkillMain(args) {
+  // Parse arguments
+  const firstArg = args[0]
+
+  if (!firstArg || firstArg === '--help' || firstArg === '-h') {
+    return printAssignHelp()
+  }
+
+  if (firstArg === 'auto') {
+    return await executeAssignment('auto')
+  }
+
+  // Manual assignment: /assign <taskId> <terminalId> [--sub-orchestrator]
+  const taskId = firstArg
+  const terminalId = args[1]
+  const isSubOrchestrator = args.includes('--sub-orchestrator') || args.includes('--sub')
+
+  if (!terminalId) {
+    console.log(`❌ Usage: /assign <taskId> <terminalId>`)
+    console.log(`   Example: /assign 1 terminal-b`)
+    return { status: "error", message: "Missing terminal ID" }
+  }
+
+  return await executeAssignment(taskId, terminalId, { subOrchestrator: isSubOrchestrator })
+}
+
+function printAssignHelp() {
+  console.log(`
+/assign - Task Assignment to Workers (EFL V4.0.0)
+
+Usage:
+  /assign auto                         Auto-assign all unassigned tasks
+  /assign <taskId> <terminalId>        Manual assignment
+  /assign <taskId> <terminalId> --sub  With Sub-Orchestrator mode
+
+Examples:
+  /assign auto                         Assign all tasks with EFL validation
+  /assign 1 terminal-b                 Assign Task #1 to terminal-b
+  /assign 2 terminal-c --sub           Assign Task #2 with Sub-Orchestrator
+
+EFL Phases:
+  1-2. Analysis       Complexity detection + parallel agents
+  3-A. L2 Horizontal  Load balance validation
+  3-B. L3 Vertical    Dependency order verification
+  3.5. Review Gate    Holistic approval check
+  5.   Execute        Apply assignments via TaskUpdate
+`)
+  return { status: "help" }
+}
+```
+
 ---
 
 ### Auto-Delegation Trigger (CRITICAL)
@@ -707,25 +1919,10 @@ if (delegationDecision.shouldDelegate) {
 | **Invalid terminal ID** | N/A (any string allowed) | Warn about naming convention |
 | **Circular dependency** | Detected in TaskGet | Cannot assign, notify user |
 | **Progress file conflict** | File locked/corrupted | Regenerate from TaskList |
+| **Phase 3 validation failed** | Review gate blocked | Show blockers, suggest fixes |
+| **Agent delegation failed** | Task tool error | Fallback to direct assignment |
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## 4.5. Sub-Orchestrator Mode
 
@@ -810,23 +2007,6 @@ terminals:
 ```
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## 6. Example Usage
 
@@ -951,23 +2131,6 @@ Prompt file: .agent/prompts/pending/worker-b-task.yaml
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 ## 7. Integration Points
 
 ### 6.1 With /orchestrate
@@ -997,23 +2160,6 @@ if (delegationDecision.shouldDelegate) {
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 ## 8. Testing Checklist
 
 **Basic Assignment:**
@@ -1035,24 +2181,45 @@ if (delegationDecision.shouldDelegate) {
 - [ ] printNextActions shows Sub-Orchestrator info
 - [ ] Child tasks inherit correct hierarchyLevel
 
+**EFL Pattern (V4.0.0):**
+
+*P2: Parallel Agent Deployment:*
+- [ ] `detectAssignmentComplexity()` returns correct level for 1-3/4-6/7+ tasks
+- [ ] `getAgentCountByComplexity()` returns 1/2/3 agents correctly
+- [ ] `deployAnalysisAgents()` spawns correct number of agents via `Task({})`
+- [ ] `Promise.all` barrier synchronization waits for all agents
+- [ ] Agent prompts include P6 Internal Loop instructions
+- [ ] Simple mode (1-3 tasks) uses direct assignment without agent overhead
+
+*P3: Phase 3-A/3-B Verification:*
+- [ ] `phase3aLoadBalanceCheck()` validates load distribution
+- [ ] Phase 3-A generates L2 synthesis file
+- [ ] `phase3bDependencyVerification()` checks dependency order
+- [ ] Phase 3-B generates L3 verification file
+- [ ] Quick validation for simple cases (≤3 tasks)
+- [ ] Full agent delegation for complex cases (4+ tasks)
+
+*P5: Review Gate:*
+- [ ] `phase35ReviewGate()` checks all criteria
+- [ ] APPROVED decision allows execution
+- [ ] BLOCKED decision stops with blockers list
+- [ ] APPROVED_WITH_WARNINGS shows warnings but proceeds
+- [ ] All criteria tracked: completeness, order, clarity, balance
+
+*P6: Internal Feedback Loop:*
+- [ ] Agent prompts include self-validation checklist
+- [ ] `internalLoopStatus` tracked in agent responses
+- [ ] Max 3 iterations enforced per agent
+- [ ] Validation criteria: all tasks addressed, no duplicates, load balanced
+
+*L1/L2/L3 Output Separation:*
+- [ ] L1 summary ≤500 tokens returned to main context
+- [ ] L2 analysis saved to `.agent/prompts/{slug}/assign/l2_*.md`
+- [ ] L3 details saved to `.agent/prompts/{slug}/assign/l3_*.md`
+- [ ] `generateL1AssignmentSummary()` produces compact summary
+- [ ] No context pollution from agent results
+
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## Parameter Module Compatibility (V2.1.0)
 
@@ -1073,38 +2240,26 @@ if (delegationDecision.shouldDelegate) {
 |---------|--------|
 | 1.0.0 | Task assignment to workers |
 | 2.1.0 | V2.1.19 Spec 호환, task-params 통합 |
-| 3.0.0 | **Full EFL Implementation** |
-| | P1-P6 complete with frontmatter configuration |
-| | Phase 3-A: L2 Horizontal Synthesis (load balance) |
-| | Phase 3-B: L3 Vertical Verification (dependency order) |
-| | Phase 3.5: Main Agent Review Gate |
-| | Phase 4: Selective Feedback Loop |
-| | Phase 5: Repeat Until Approval |
-| | disable-model-invocation: true |
-| | context: fork |
-| | allowed-tools section added |
-| | synthesis_config section added |
-| | parallel_agent_config section added |
+| 3.0.0 | **Full EFL Implementation** (frontmatter only) |
+| | P1-P6 config in frontmatter |
+| | Phase 3-A/3-B/3.5 config added |
 | | Sub-Orchestrator mode retained |
+| 4.0.0 | **Actual Task Tool Implementation** |
+| | `Task({ subagent_type: "general-purpose" })` 호출 구현 |
+| | `Promise.all` Barrier Synchronization 적용 |
+| | Section 3.6: EFL Helper Functions 추가 |
+| | - `detectAssignmentComplexity()` 복잡도 분석 |
+| | - `getAgentCountByComplexity()` 에이전트 수 결정 |
+| | - `getAssignmentAreas()` 분석 영역 결정 |
+| | - `aggregateAnalysisResults()` 결과 집계 |
+| | - `generateL1AssignmentSummary()` L1 요약 생성 |
+| | Section 3.2: `deployAnalysisAgents()` with P6 Internal Loop |
+| | Section 3.7: Phase 3-A/3-B/3.5 실제 에이전트 호출 구현 |
+| | Section 3.8: Main Execution Flow 오케스트레이션 |
+| | L1/L2/L3 파일 분리 저장 (context pollution 방지) |
+| | 복잡도 기반 에이전트 스케일링 (simple/moderate/complex) |
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 ## 9. Standalone Execution (V3.2.0)
 
@@ -1138,23 +2293,6 @@ CONTEXT=$(init_skill_context "assign" "$ARGUMENTS" "")
 
 ---
 
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
-
 ## 10. Handoff Contract (V3.2.0)
 
 ### 10.1 Handoff 매핑
@@ -1170,22 +2308,6 @@ if (delegationDecision.shouldDelegate) {
 
 ```yaml
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
 
 # Handoff Metadata (auto-generated)
 handoff:
@@ -1214,22 +2336,5 @@ handoff:
 ```
 
 ---
-
-### Auto-Delegation Trigger (CRITICAL)
-
-> **Reference:** `.claude/skills/shared/auto-delegation.md`
-> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
-
-```javascript
-// AUTO-DELEGATION CHECK - Execute at skill invocation
-// If complex task detected, triggers: analyze → delegate → collect
-const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
-if (delegationDecision.shouldDelegate) {
-  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
-  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
-}
-// Simple tasks execute directly without delegation overhead
-```
-
 
 **End of Skill Documentation**

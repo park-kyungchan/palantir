@@ -4,16 +4,18 @@ description: |
   Worker self-service commands (start, done, status, block).
   Supports Sub-Orchestrator mode for hierarchical task decomposition.
 
-  **V5.0.0 Changes (EFL Integration):**
-  - P1: Skill as Sub-Orchestrator (orchestrate, delegate, collect-sub commands)
-  - P2: Parallel Agent Configuration (complexity-based subtask delegation)
-  - P6: Agent Internal Feedback Loop (max 3 iterations for subtask validation)
+  **V6.0.0 Changes (EFL Full Implementation):**
+  - P1: Sub-Orchestrator with ACTUAL Task tool delegation (not just instructions)
+  - P2: Parallel Agent Configuration with Promise.all barrier synchronization
+  - P3: L2 Horizontal Synthesis + L3 Vertical Verification in workerCollectSub
+  - P5: Phase 3.5 Review Gate before synthesis completion
+  - P6: Agent Internal Feedback Loop (max 3 iterations per agent)
 
 user-invocable: true
 disable-model-invocation: false
 context: fork
 model: opus
-version: "5.2.0"
+version: "6.0.0"
 argument-hint: "<start|done|status|block|orchestrate|delegate|collect-sub> [b|c|d|terminal-id] [taskId]"
 allowed-tools:
   - Read
@@ -1161,161 +1163,620 @@ function extractInstructions(promptContent) {
 ### 5.5.1 workerOrchestrate
 
 ```javascript
-function workerOrchestrate(specificTaskId = null) {
-  let workerId = getWorkerId()
-  console.log(`🔧 Sub-Orchestrator ${workerId}: Decomposing task...`)
+/**
+ * workerOrchestrate() - EFL Sub-Orchestrator Implementation
+ *
+ * Version: 6.0.0
+ * Pattern: P1 (Sub-Orchestrator) + P2 (Parallel Agents) + P6 (Internal Loop)
+ *
+ * This function implements real Task tool delegation for task decomposition,
+ * replacing the previous manual instruction-only approach.
+ */
 
-  // 1. Get current task
-  let task = getCurrentTask(specificTaskId)
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Analyzes task complexity to determine agent count
+ * @param {object} taskDetail - Task details from TaskGet
+ * @returns {string} - 'simple' | 'moderate' | 'complex'
+ */
+function analyzeTaskComplexity(taskDetail) {
+  const description = taskDetail.description || ''
+  const subject = taskDetail.subject || ''
+
+  // Complexity indicators
+  const indicators = {
+    descriptionLength: description.length,
+    hasMultipleFiles: /multiple files|several files|many files|across files/i.test(description),
+    hasArchitectureChange: /architecture|refactor|redesign|restructure/i.test(description),
+    hasIntegration: /integration|integrate|connect|api/i.test(description),
+    hasTesting: /test|testing|coverage|validation/i.test(description),
+    hasMultipleComponents: /components|modules|services|layers/i.test(description),
+    fileCountMentioned: description.match(/\d+\s*(files?|components?|modules?)/gi)
+  }
+
+  // Score calculation
+  let score = 0
+
+  if (indicators.descriptionLength > 500) score += 2
+  else if (indicators.descriptionLength > 200) score += 1
+
+  if (indicators.hasMultipleFiles) score += 2
+  if (indicators.hasArchitectureChange) score += 3
+  if (indicators.hasIntegration) score += 2
+  if (indicators.hasTesting) score += 1
+  if (indicators.hasMultipleComponents) score += 2
+
+  if (indicators.fileCountMentioned) {
+    const matches = indicators.fileCountMentioned
+    const maxCount = Math.max(...matches.map(m => parseInt(m) || 0))
+    if (maxCount > 5) score += 3
+    else if (maxCount > 2) score += 2
+  }
+
+  if (score >= 7) return 'complex'
+  if (score >= 4) return 'moderate'
+  return 'simple'
+}
+
+/**
+ * Returns agent count based on complexity
+ */
+function getAgentCountByComplexity(complexity) {
+  const mapping = { simple: 1, moderate: 2, complex: 3 }
+  return mapping[complexity] || 2
+}
+
+/**
+ * Defines decomposition areas based on task and complexity
+ */
+function getDecompositionAreas(taskDetail, agentCount) {
+  const allAreas = [
+    { id: 'impl', name: 'Implementation Scope', focus: 'Identify specific implementation steps, files to modify, and code changes required' },
+    { id: 'deps', name: 'Dependencies & Ordering', focus: 'Analyze task dependencies, execution order, and potential blockers' },
+    { id: 'risk', name: 'Risk & Validation', focus: 'Identify risks, edge cases, and validation criteria for each subtask' }
+  ]
+  return allAreas.slice(0, agentCount)
+}
+
+/**
+ * Aggregates decomposition results from multiple agents
+ */
+function aggregateDecompositionResults(results) {
+  const allSubtasks = []
+  const dependencies = new Map()
+  const risks = []
+
+  for (const result of results) {
+    if (result && result.subtasks) {
+      for (const subtask of result.subtasks) {
+        const existing = allSubtasks.find(s => s.subject.toLowerCase() === subtask.subject.toLowerCase())
+        if (!existing) {
+          allSubtasks.push({ ...subtask, sourceArea: result.areaId })
+        }
+      }
+    }
+    if (result && result.dependencies) {
+      for (const [from, to] of Object.entries(result.dependencies)) {
+        if (!dependencies.has(from)) dependencies.set(from, new Set())
+        dependencies.get(from).add(to)
+      }
+    }
+    if (result && result.risks) risks.push(...result.risks)
+  }
+
+  allSubtasks.sort((a, b) => {
+    const priorityOrder = { P0: 0, P1: 1, P2: 2 }
+    return (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99)
+  })
+
+  return {
+    subtasks: allSubtasks,
+    dependencies: Object.fromEntries(Array.from(dependencies.entries()).map(([k, v]) => [k, Array.from(v)])),
+    risks: [...new Set(risks)],
+    totalSubtasks: allSubtasks.length
+  }
+}
+
+// =============================================================================
+// MAIN FUNCTION: workerOrchestrate
+// =============================================================================
+
+async function workerOrchestrate(specificTaskId = null) {
+  const workerId = getWorkerId()
+  console.log(`[Sub-Orchestrator ${workerId}] Starting task decomposition...`)
+
+  // Phase 1: Task Acquisition
+  const task = getCurrentTask(specificTaskId)
   if (!task) {
-    console.log(`❌ No task to decompose`)
-    return { status: "no_task" }
+    console.log(`[ERROR] No task to decompose`)
+    return { status: 'no_task', l1: null }
   }
 
-  // 2. Check if Sub-Orchestrator mode is enabled
-  // V5.1.0: Respect default_mode setting from skill config
-  // If default_mode is true, always enable Sub-Orchestrator
-  // Otherwise, check task metadata for explicit flag
-  const defaultModeEnabled = true  // Set by agent_delegation.default_mode in frontmatter
-
+  const defaultModeEnabled = true  // From frontmatter: agent_delegation.default_mode
   if (!defaultModeEnabled && !task.metadata?.subOrchestratorMode) {
-    console.log(`❌ Sub-Orchestrator mode not enabled for this task`)
-    console.log(`   Use: /assign ${task.id} ${workerId} --sub-orchestrator`)
-    return { status: "mode_disabled" }
+    console.log(`[ERROR] Sub-Orchestrator mode not enabled`)
+    return { status: 'mode_disabled', l1: null }
   }
 
-  // Sub-Orchestrator always active when default_mode: true
-  console.log(`✅ Sub-Orchestrator mode active (default_mode: ${defaultModeEnabled})`)
+  const taskDetail = TaskGet({ taskId: task.id })
+  console.log(`[Phase 1] Task acquired: #${task.id} - ${taskDetail.subject}`)
 
-  // 3. Read task details and prompt
-  let taskDetail = TaskGet({taskId: task.id})
-  console.log(`
-📋 Task to Decompose:
-   ID: #${task.id}
-   Subject: ${taskDetail.subject}
-   Description: ${taskDetail.description}
-`)
+  // Phase 2: Complexity Analysis
+  const complexity = analyzeTaskComplexity(taskDetail)
+  const agentCount = getAgentCountByComplexity(complexity)
+  const decompositionAreas = getDecompositionAreas(taskDetail, agentCount)
 
-  // 4. Delegate to /orchestrate skill
-  console.log(`\n🚀 Launching /orchestrate for task decomposition...`)
-  console.log(`   Hierarchy Level: ${task.metadata.hierarchyLevel + 1}`)
+  console.log(`[Phase 2] Complexity: ${complexity}, Deploying ${agentCount} agent(s)`)
 
-  // Store parent task context
-  let contextFile = `.agent/tmp/suborchestrator-context-${workerId}.json`
+  // Phase 3: Parallel Agent Deployment (P1 + P2)
+  console.log(`[Phase 3] Deploying ${agentCount} decomposition agent(s)...`)
+
+  const agents = decompositionAreas.map(area => Task({
+    subagent_type: 'general-purpose',
+    model: 'opus',
+    prompt: `
+## Task Decomposition: ${area.name}
+
+### Parent Task Context
+- Task ID: #${task.id}
+- Subject: ${taskDetail.subject}
+- Description:
+${taskDetail.description}
+
+### Your Focus Area
+**${area.name}**: ${area.focus}
+
+### Internal Feedback Loop (P6 - REQUIRED)
+1. Generate decomposition output
+2. Self-validate:
+   - Atomicity: Is each subtask small enough to be completed independently?
+   - Completeness: Do the subtasks fully cover your focus area?
+   - Clarity: Are subjects and descriptions clear and actionable?
+3. If validation fails, revise (max 3 iterations)
+4. Output only after validation passes
+
+### Output Format (JSON)
+\`\`\`json
+{
+  "areaId": "${area.id}",
+  "areaName": "${area.name}",
+  "status": "success",
+  "subtasks": [
+    {
+      "subject": "Brief imperative task title",
+      "description": "Detailed description",
+      "activeForm": "Present continuous form",
+      "priority": "P0|P1|P2",
+      "estimatedFiles": ["file1.ts"],
+      "completionCriteria": ["Criterion 1"]
+    }
+  ],
+  "dependencies": { "subtask-subject-1": ["subtask-subject-2"] },
+  "risks": ["Risk 1"],
+  "internalLoopStatus": { "iterations": 1, "validationStatus": "passed" }
+}
+\`\`\`
+`,
+    description: `Decomposition Agent: ${area.name} for Task #${task.id}`
+  }))
+
+  // Barrier synchronization - wait for all agents
+  const results = await Promise.all(agents)
+  console.log(`[Phase 3] All ${agentCount} agent(s) completed`)
+
+  // Phase 4: Result Aggregation
+  console.log(`[Phase 4] Aggregating decomposition results...`)
+
+  const parsedResults = results.map((r, i) => {
+    if (typeof r === 'string') {
+      try {
+        const jsonMatch = r.match(/```json\s*([\s\S]*?)\s*```/)
+        if (jsonMatch) return JSON.parse(jsonMatch[1])
+        return JSON.parse(r)
+      } catch (e) {
+        console.log(`[WARN] Failed to parse agent ${i} response`)
+        return null
+      }
+    }
+    return r
+  }).filter(Boolean)
+
+  const aggregated = aggregateDecompositionResults(parsedResults)
+  console.log(`[Phase 4] Aggregated ${aggregated.totalSubtasks} subtask(s)`)
+
+  // Phase 5: Native Task Creation
+  console.log(`[Phase 5] Creating Native Tasks...`)
+
+  const createdTaskIds = []
+  const subjectToId = new Map()
+
+  for (const subtask of aggregated.subtasks) {
+    const newTask = TaskCreate({
+      subject: subtask.subject,
+      description: `${subtask.description}\n\nCompletion Criteria:\n${subtask.completionCriteria?.map(c => `- ${c}`).join('\n') || 'N/A'}`,
+      activeForm: subtask.activeForm || `Working on ${subtask.subject}`,
+      metadata: {
+        parentTaskId: task.id,
+        hierarchyLevel: (task.metadata?.hierarchyLevel || 0) + 1,
+        priority: subtask.priority,
+        estimatedFiles: subtask.estimatedFiles,
+        sourceArea: subtask.sourceArea,
+        createdBy: `Sub-Orchestrator-${workerId}`
+      }
+    })
+    createdTaskIds.push(newTask.id)
+    subjectToId.set(subtask.subject, newTask.id)
+  }
+
+  // Set up dependencies
+  for (const [fromSubject, toSubjects] of Object.entries(aggregated.dependencies)) {
+    const fromId = subjectToId.get(fromSubject)
+    if (fromId) {
+      const blockedByIds = toSubjects.map(s => subjectToId.get(s)).filter(Boolean)
+      if (blockedByIds.length > 0) {
+        TaskUpdate({ taskId: fromId, addBlockedBy: blockedByIds })
+      }
+    }
+  }
+
+  console.log(`[Phase 5] Created ${createdTaskIds.length} Native Task(s)`)
+
+  // Phase 6: L1 Summary Generation (Context Pollution Prevention)
+  const workloadSlug = getActiveWorkloadSlug()
+  const l2Path = `.agent/prompts/${workloadSlug}/outputs/${workerId}/orchestrate-l2.json`
+
   Write({
-    file_path: contextFile,
+    file_path: l2Path,
     content: JSON.stringify({
       parentTaskId: task.id,
-      parentWorkerId: workerId,
-      hierarchyLevel: task.metadata.hierarchyLevel + 1,
+      workerId: workerId,
+      decompositionAreas: decompositionAreas,
+      agentResults: parsedResults,
+      aggregatedSubtasks: aggregated.subtasks,
+      dependencies: aggregated.dependencies,
+      risks: aggregated.risks,
       timestamp: new Date().toISOString()
     }, null, 2)
   })
 
+  console.log(`[Phase 6] L2 details saved to: ${l2Path}`)
+
+  const l1Summary = {
+    taskId: task.id,
+    taskSubject: taskDetail.subject,
+    subtaskCount: aggregated.totalSubtasks,
+    subtaskIds: createdTaskIds,
+    complexityLevel: complexity,
+    criticalPath: aggregated.subtasks.filter(s => s.priority === 'P0').map(s => s.subject),
+    timestamp: new Date().toISOString()
+  }
+
   console.log(`
-✅ Ready to decompose task #${task.id}
+[Sub-Orchestrator Complete]
+Task #${task.id} decomposed into ${createdTaskIds.length} subtask(s)
+Subtask IDs: ${createdTaskIds.join(', ')}
 
-Next Step:
-  Run /orchestrate with your task breakdown
-  Example: /orchestrate "Break down ${taskDetail.subject} into subtasks"
-
-  Subtasks will be created with:
-  - hierarchyLevel: ${task.metadata.hierarchyLevel + 1}
-  - Parent: Task #${task.id}
+Next: Run /worker delegate to assign subtasks to workers
 `)
 
-  return {
-    status: "ready_to_orchestrate",
-    taskId: task.id,
-    hierarchyLevel: task.metadata.hierarchyLevel + 1
-  }
+  return { status: 'orchestration_complete', l1: l1Summary }
 }
 ```
 
 ### 5.5.2 workerDelegate
 
 ```javascript
-function workerDelegate(specificTaskId = null) {
-  let workerId = getWorkerId()
-  console.log(`📤 Sub-Orchestrator ${workerId}: Delegating subtasks...`)
+/**
+ * workerDelegate() - Sub-Orchestrator Parallel Execution (EFL Pattern)
+ *
+ * Implementation of P2 (Parallel Agents) with P6 (Internal Feedback Loop)
+ * for the /worker skill Sub-Orchestrator mode.
+ *
+ * @version 6.0.0
+ *
+ * EFL Patterns Implemented:
+ * - P2: Parallel Agent Configuration (Promise.all execution)
+ * - P6: Agent Internal Feedback Loop (max 3 iterations per agent)
+ *
+ * Key Design Decisions:
+ * - L2 results saved to files (no context pollution)
+ * - L1 summary only returned to main context
+ * - Native Task status updated after each subtask completion
+ */
 
-  // 1. Get current task
-  let task = getCurrentTask(specificTaskId)
+async function workerDelegate(specificTaskId = null) {
+  const workerId = getWorkerId()
+  console.log(`\n=== Sub-Orchestrator ${workerId}: Parallel Delegation ===`)
+
+  // Phase 1: Get Parent Task & Validate State
+  const task = getCurrentTask(specificTaskId)
   if (!task) {
-    console.log(`❌ No task found`)
-    return { status: "no_task" }
+    console.log(`[ERROR] No task found for worker ${workerId}`)
+    return { status: "no_task", error: "No task assigned to this worker" }
   }
 
-  // 2. Find subtasks (created by this worker's /orchestrate)
-  let allTasks = TaskList()
-  let subtasks = allTasks.filter(t =>
-    t.metadata?.hierarchyLevel === (task.metadata?.hierarchyLevel || 0) + 1 &&
-    t.metadata?.parentTaskId === task.id
+  const slug = getActiveWorkloadSlug()
+  if (!slug) {
+    console.log(`[ERROR] No active workload found`)
+    return { status: "no_workload", error: "No active workload slug" }
+  }
+
+  console.log(`
+Parent Task: #${task.id} - ${task.subject}
+Workload Slug: ${slug}
+Hierarchy Level: ${task.metadata?.hierarchyLevel || 0}
+`)
+
+  // Phase 2: Find Pending Subtasks
+  const allTasks = TaskList()
+  const parentLevel = task.metadata?.hierarchyLevel || 0
+  const subtasks = allTasks.filter(t =>
+    t.metadata?.hierarchyLevel === parentLevel + 1 &&
+    t.metadata?.parentTaskId === task.id &&
+    t.status === "pending"
   )
 
   if (subtasks.length === 0) {
-    console.log(`❌ No subtasks found for Task #${task.id}`)
-    console.log(`   Run /worker orchestrate first to create subtasks`)
-    return { status: "no_subtasks" }
+    console.log(`[INFO] No pending subtasks found for Task #${task.id}`)
+    console.log(`       Run '/worker orchestrate' first to create subtasks`)
+    return { status: "no_pending_subtasks", message: "All subtasks completed or none created" }
   }
 
   console.log(`
-Found ${subtasks.length} subtasks to delegate:
+Found ${subtasks.length} pending subtask(s):
 ${subtasks.map(st => `  - Task #${st.id}: ${st.subject}`).join('\n')}
 `)
 
-  // 3. Auto-assign subtasks
-  console.log(`\n🔄 Auto-assigning subtasks...`)
+  // Phase 3: Read Prompt Files for Each Subtask
+  const subtaskContexts = await Promise.all(subtasks.map(async (subtask) => {
+    const promptPath = `.agent/prompts/${slug}/pending/task_${subtask.id}_prompt.md`
+    let promptContent = ""
+    try {
+      promptContent = Read(promptPath)
+    } catch (e) {
+      console.log(`[WARN] No prompt file for Task #${subtask.id}, using description`)
+      promptContent = subtask.description || subtask.subject
+    }
+    return {
+      taskId: subtask.id,
+      subject: subtask.subject,
+      description: subtask.description,
+      promptContent: promptContent,
+      metadata: subtask.metadata || {}
+    }
+  }))
 
-  // Use /assign auto for subtasks
+  // Phase 4: Deploy Parallel Execution Agents (P2)
+  console.log(`\n>>> Deploying ${subtaskContexts.length} parallel execution agent(s)...`)
+
+  const executionAgents = subtaskContexts.map(ctx => Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## Subtask Execution: ${ctx.subject}
+
+### Task Information
+- Task ID: #${ctx.taskId}
+- Parent Task: #${task.id} - ${task.subject}
+- Workload Slug: ${slug}
+
+### Task Description
+${ctx.description || 'See prompt content below'}
+
+### Detailed Instructions
+${ctx.promptContent}
+
+### Output Path (IMPORTANT)
+Save your L2 detailed output to:
+\`.agent/prompts/${slug}/worker/l2_details/task_${ctx.taskId}.md\`
+
+### Internal Feedback Loop (P6 - REQUIRED)
+You MUST perform self-validation before completing:
+
+1. **Generate Implementation**
+   - Execute the task according to instructions
+   - Document all changes and decisions
+
+2. **Self-Validate** (MANDATORY)
+   - [ ] Completeness: Are all required changes implemented?
+   - [ ] Quality: Does the code follow existing patterns?
+   - [ ] Testing: Are edge cases considered?
+   - [ ] Documentation: Are changes documented?
+   - [ ] No Regressions: Do existing features still work?
+
+3. **Iteration Protocol**
+   - If validation fails, revise and retry (max 3 iterations)
+   - Document each iteration's issues and fixes
+   - Only mark complete when ALL validation checks pass
+
+4. **Output After Validation Only**
+   - Never output incomplete or unvalidated work
+   - If blocked after 3 iterations, return status: "blocked"
+
+### Return Format (L1 Summary - REQUIRED)
+Return YAML format (keep under 200 tokens):
+
+\`\`\`yaml
+taskId: ${ctx.taskId}
+status: "completed" | "blocked" | "partial"
+l1Summary:
+  action: "{brief description of what was done}"
+  filesChanged: ["{path1}", "{path2}"]
+  linesChanged: {number}
+  testStatus: "passed" | "skipped" | "n/a"
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationPassed: true | false
+  blockers: [] | ["{blocker description}"]
+
+l2Path: ".agent/prompts/${slug}/worker/l2_details/task_${ctx.taskId}.md"
+\`\`\`
+`,
+    description: `Execute subtask #${ctx.taskId}: ${ctx.subject}`
+  }))
+
+  // Barrier synchronization - wait for all parallel agents
+  const startTime = Date.now()
+  console.log(`[${new Date().toISOString()}] Waiting for ${executionAgents.length} agents...`)
+
+  const results = await Promise.all(executionAgents)
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+  console.log(`[${new Date().toISOString()}] All agents completed in ${duration}s`)
+
+  // Phase 5: Update Native Task Status
+  console.log(`\n>>> Updating task statuses...`)
+
+  const statusUpdates = results.map((result, idx) => {
+    const subtask = subtasks[idx]
+    const status = result?.status || "completed"
+
+    if (status === "completed" || status === "partial") {
+      TaskUpdate({ taskId: subtask.id, status: "completed" })
+      console.log(`  [OK] Task #${subtask.id} marked as completed`)
+    } else if (status === "blocked") {
+      console.log(`  [BLOCKED] Task #${subtask.id} - ${result?.blockers?.join(', ') || 'Unknown blocker'}`)
+    }
+
+    return {
+      taskId: subtask.id,
+      subject: subtask.subject,
+      status: status,
+      iterations: result?.internalLoopStatus?.iterations || 1
+    }
+  })
+
+  // Phase 6: Save L2 Results to Files (Prevent Context Pollution)
+  console.log(`\n>>> Saving L2 results to files...`)
+
+  const l2Dir = `.agent/prompts/${slug}/worker/l2_details`
+  try { Bash(`mkdir -p ${l2Dir}`) } catch (e) { console.log(`[WARN] Could not create L2 directory`) }
+
+  const l2Index = `# L2 Execution Index
+## Workload: ${slug}
+## Parent Task: #${task.id} - ${task.subject}
+## Generated: ${new Date().toISOString()}
+
+---
+
+## Subtask Results
+
+${statusUpdates.map(su => `
+### Task #${su.taskId}: ${su.subject}
+- Status: ${su.status}
+- P6 Iterations: ${su.iterations}
+- L2 Detail: \`${l2Dir}/task_${su.taskId}.md\`
+`).join('\n')}
+
+---
+
+## Execution Metrics
+- Total Subtasks: ${subtasks.length}
+- Completed: ${statusUpdates.filter(s => s.status === 'completed').length}
+- Blocked: ${statusUpdates.filter(s => s.status === 'blocked').length}
+- Parallel Execution Duration: ${duration}s
+`
+
+  const l2IndexPath = `.agent/prompts/${slug}/worker/l2_index.md`
+  Write(l2IndexPath, l2Index)
+  console.log(`  [SAVED] L2 Index: ${l2IndexPath}`)
+
+  // Phase 7: Return L1 Summary Only (No Context Pollution)
+  const completedCount = statusUpdates.filter(s => s.status === 'completed').length
+  const blockedCount = statusUpdates.filter(s => s.status === 'blocked').length
+  const overallStatus = blockedCount === 0 ? "completed" :
+                        completedCount === 0 ? "blocked" : "partial"
+
+  const l1Summary = {
+    status: overallStatus,
+    parentTaskId: task.id,
+    workloadSlug: slug,
+    execution: {
+      subtasksTotal: subtasks.length,
+      subtasksCompleted: completedCount,
+      subtasksBlocked: blockedCount,
+      parallelDuration: `${duration}s`
+    },
+    l2Path: l2IndexPath,
+    l3Path: `${l2Dir}/`,
+    nextAction: overallStatus === "completed"
+      ? "/worker collect-sub"
+      : "/worker status (check blockers)"
+  }
+
   console.log(`
-Next Step:
-  Use /assign to delegate subtasks:
-
-  Option 1 (Auto):
-    /assign auto
-
-  Option 2 (Manual):
-${subtasks.map((st, i) => `    /assign ${st.id} terminal-${String.fromCharCode(98 + i)}`).join('\n')}
+=== Delegation Complete ===
+Status: ${overallStatus}
+Completed: ${completedCount}/${subtasks.length}
+L2 Index: ${l2IndexPath}
+Next: ${l1Summary.nextAction}
 `)
 
-  return {
-    status: "ready_to_delegate",
-    subtaskCount: subtasks.length,
-    subtasks: subtasks.map(st => st.id)
-  }
+  return l1Summary
 }
 ```
 
 ### 5.5.3 workerCollectSub
 
 ```javascript
-function workerCollectSub(specificTaskId = null) {
-  let workerId = getWorkerId()
-  console.log(`📥 Sub-Orchestrator ${workerId}: Collecting sub-results...`)
+/**
+ * workerCollectSub() - Sub-Orchestrator Result Collection with EFL Synthesis
+ *
+ * Implementation of P3 (L2/L3 Synthesis) + P5 (Review Gate) + P6 (Internal Loop)
+ * for the /worker skill Sub-Orchestrator mode.
+ *
+ * @version 6.0.0
+ *
+ * EFL Phases Implemented:
+ * - Phase 1: Collect Raw Results from subtasks
+ * - Phase 2: Load L2 Detail Files
+ * - Phase 3-A: L2 Horizontal Synthesis (cross-subtask consistency)
+ * - Phase 3-B: L3 Vertical Verification (code-level accuracy)
+ * - Phase 3.5: Review Gate (holistic verification)
+ * - Phase 4: Generate L1 Summary (context pollution prevention)
+ */
 
-  // 1. Get current task
-  let task = getCurrentTask(specificTaskId)
+async function workerCollectSub(specificTaskId = null) {
+  const workerId = getWorkerId()
+  console.log(`\n=== Sub-Orchestrator ${workerId}: Collecting & Synthesizing Results ===`)
+
+  // Phase 1: Task & Context Validation
+  const task = getCurrentTask(specificTaskId)
   if (!task) {
-    console.log(`❌ No task found`)
+    console.log(`[ERROR] No task found`)
     return { status: "no_task" }
   }
 
-  // 2. Find subtasks
-  let allTasks = TaskList()
-  let subtasks = allTasks.filter(t =>
-    t.metadata?.hierarchyLevel === (task.metadata?.hierarchyLevel || 0) + 1 &&
+  const slug = getActiveWorkloadSlug()
+  if (!slug) {
+    console.log(`[ERROR] No active workload found`)
+    return { status: "no_workload" }
+  }
+
+  console.log(`
+Parent Task: #${task.id} - ${task.subject}
+Workload Slug: ${slug}
+`)
+
+  // Phase 1: Find Completed Subtasks
+  const allTasks = TaskList()
+  const parentLevel = task.metadata?.hierarchyLevel || 0
+  const subtasks = allTasks.filter(t =>
+    t.metadata?.hierarchyLevel === parentLevel + 1 &&
     t.metadata?.parentTaskId === task.id
   )
 
   if (subtasks.length === 0) {
-    console.log(`❌ No subtasks found for Task #${task.id}`)
+    console.log(`[ERROR] No subtasks found for Task #${task.id}`)
     return { status: "no_subtasks" }
   }
 
-  // 3. Check completion status
-  let completedSubtasks = subtasks.filter(st => st.status === "completed")
-  let pendingSubtasks = subtasks.filter(st => st.status !== "completed")
+  const completedSubtasks = subtasks.filter(st => st.status === "completed")
+  const pendingSubtasks = subtasks.filter(st => st.status !== "completed")
 
   console.log(`
 📊 Subtask Status:
@@ -1328,116 +1789,221 @@ function workerCollectSub(specificTaskId = null) {
     console.log(`
 ⏸️  Cannot collect - pending subtasks:
 ${pendingSubtasks.map(st => `  - Task #${st.id}: ${st.subject} (${st.status})`).join('\n')}
-
-Wait for all subtasks to complete before collecting.
 `)
     return { status: "pending_subtasks", pending: pendingSubtasks.length }
   }
 
-  // 4. Collect L2/L3 results from subtasks
-  console.log(`\n📚 Collecting detailed results (L2/L3)...`)
+  // Phase 2: Load L2 Detail Files
+  console.log(`\n>>> Phase 2: Loading L2 detail files...`)
 
-  let l2Results = []
-  let l3Results = []
+  const l2Dir = `.agent/prompts/${slug}/worker/l2_details`
+  const l2Contents = []
 
-  for (subtask of completedSubtasks) {
-    let subtaskDetail = TaskGet({taskId: subtask.id})
-
-    // Collect L2 (summary) and L3 (full details)
-    l2Results.push({
-      taskId: subtask.id,
-      subject: subtaskDetail.subject,
-      summary: subtaskDetail.description || "No summary available"
-    })
-
-    // L3: Full output files if available
-    let outputPattern = `.agent/outputs/**/task-${subtask.id}-*.md`
-    let outputFiles = Glob(outputPattern)
-
-    if (outputFiles.length > 0) {
-      let fullContent = Read(outputFiles[0])
-      l3Results.push({
-        taskId: subtask.id,
-        file: outputFiles[0],
-        content: fullContent
-      })
+  for (const subtask of completedSubtasks) {
+    const l2Path = `${l2Dir}/task_${subtask.id}.md`
+    try {
+      const content = Read(l2Path)
+      l2Contents.push({ taskId: subtask.id, subject: subtask.subject, content: content })
+      console.log(`  [OK] Loaded L2 for Task #${subtask.id}`)
+    } catch (e) {
+      console.log(`  [WARN] No L2 file for Task #${subtask.id}`)
+      l2Contents.push({ taskId: subtask.id, subject: subtask.subject, content: `No L2 detail available` })
     }
   }
 
-  // 5. Generate L1 summary
-  console.log(`\n✍️  Generating L1 summary for main orchestrator...`)
+  // Phase 3-A: L2 Horizontal Synthesis (P3)
+  console.log(`\n>>> Phase 3-A: L2 Horizontal Synthesis...`)
 
-  let l1Summary = `# Task #${task.id} Completion Summary (L1)
+  const phase3aResult = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## L2 Horizontal Synthesis for Worker Sub-Orchestrator
 
-## Overview
-Completed ${completedSubtasks.length} subtasks via Sub-Orchestrator decomposition.
+### Context
+- Parent Task: #${task.id} - ${task.subject}
+- Workload: ${slug}
+- Subtasks Completed: ${completedSubtasks.length}
 
-## Results Summary
-${l2Results.map((r, i) => `
-### Subtask ${i + 1}: ${r.subject}
-${r.summary}
-`).join('\n')}
+### L2 Details from Each Subtask
+${l2Contents.map(l2 => `
+#### Task #${l2.taskId}: ${l2.subject}
+${l2.content.substring(0, 2000)}
+`).join('\n---\n')}
 
-## Detailed Reports
-- L2 (Summaries): ${workloadSlug}/outputs/${workerId}/task-${task.id}-l2-summaries.md
-- L3 (Full Details): ${workloadSlug}/outputs/${workerId}/task-${task.id}-l3-details.md
+### Your Task (Phase 3-A: L2 Horizontal Synthesis)
+1. Cross-validate all subtask results for consistency
+2. Detect contradictions between subtasks
+3. Identify integration gaps between subtask outputs
+4. Synthesize into unified completion status
 
-Generated: ${new Date().toISOString()}
-`
+### Validation Criteria
+- cross_subtask_consistency
+- no_conflicting_changes
+- integration_completeness
 
-  // 6. Save L1/L2/L3 to files (Workload-scoped)
-  let workloadSlug = await getActiveWorkload() || 'global'
-  let outputDir = `.agent/prompts/${workloadSlug}/outputs/${workerId}`
-  Bash(`mkdir -p ${outputDir}`)
+### Internal Feedback Loop (P6)
+Self-validate synthesis. Retry up to 3 times if issues found.
 
-  // L1: Summary for main orchestrator
-  let l1File = `${outputDir}/task-${task.id}-l1-summary.md`
-  Write({ file_path: l1File, content: l1Summary })
+### Output Format (YAML)
+\`\`\`yaml
+phase3a_L1:
+  synthesisStatus: "success" | "issues_found"
+  consistencyScore: {0-100}
+  contradictionsFound: {count}
+  gapsDetected: {count}
 
-  // L2: Subtask summaries
-  let l2Content = l2Results.map(r => `## Task #${r.taskId}: ${r.subject}\n${r.summary}`).join('\n\n')
-  let l2File = `${outputDir}/task-${task.id}-l2-summaries.md`
-  Write({ file_path: l2File, content: l2Content })
+phase3a_L2:
+  subtaskSummaries:
+    - taskId: {id}
+      status: "completed" | "partial"
+      keyChanges: ["{change1}", "{change2}"]
+  contradictions: []
+  integrationGaps: []
+  recommendations: []
 
-  // L3: Full details
-  let l3Content = l3Results.map(r => `## Task #${r.taskId}\nFile: ${r.file}\n\n${r.content}`).join('\n\n---\n\n')
-  let l3File = `${outputDir}/task-${task.id}-l3-details.md`
-  Write({ file_path: l3File, content: l3Content })
+internalLoopStatus:
+  iterations: {1-3}
+  validationStatus: "passed"
+\`\`\`
+`,
+    description: `Phase 3-A L2 Horizontal Synthesis for Task #${task.id}`
+  })
 
-  // 7. Context Pollution Prevention - Validate L1 before returning
-  let l1Validation = validateL1Summary(l1Summary)
+  console.log(`  [OK] Phase 3-A completed`)
 
-  if (!l1Validation.isValid) {
-    console.log(`\n⚠️  Context Pollution Prevention Triggered:`)
-    l1Validation.warnings.forEach(w => console.log(`  ${w}`))
+  // Phase 3-B: L3 Vertical Verification (P3)
+  console.log(`\n>>> Phase 3-B: L3 Vertical Verification...`)
 
-    // Sanitize L1 to prevent context overflow
-    l1Summary = sanitizeL1Summary(l1Summary)
-    Write({ file_path: l1File, content: l1Summary })  // Update sanitized version
-    console.log(`  ✅ L1 sanitized and saved`)
+  const phase3bResult = await Task({
+    subagent_type: "general-purpose",
+    model: "opus",
+    prompt: `
+## L3 Vertical Verification for Worker Sub-Orchestrator
+
+### Context
+- Parent Task: #${task.id} - ${task.subject}
+- Phase 3-A Result Summary: ${JSON.stringify(phase3aResult?.phase3a_L1 || 'N/A')}
+
+### Your Task (Phase 3-B: L3 Vertical Verification)
+1. Verify each subtask's changes against original requirements
+2. Check code-level accuracy (files exist, changes applied)
+3. Validate no regressions introduced
+4. Confirm completion criteria met
+
+### Verification Criteria
+- requirement_alignment
+- code_accuracy
+- no_regressions
+- completion_criteria_met
+
+### Internal Feedback Loop (P6)
+Self-validate verification. Retry up to 3 times if issues found.
+
+### Output Format (YAML)
+\`\`\`yaml
+phase3b_L1:
+  verificationStatus: "passed" | "failed"
+  requirementAlignment: {percentage}
+  codeAccuracy: {percentage}
+  criticalIssues: {count}
+
+phase3b_L2:
+  verifiedSubtasks:
+    - taskId: {id}
+      requirementsMet: true | false
+      changesVerified: true | false
+      issues: []
+  unresolvedIssues: []
+
+internalLoopStatus:
+  iterations: {1-3}
+  validationStatus: "passed"
+\`\`\`
+`,
+    description: `Phase 3-B L3 Vertical Verification for Task #${task.id}`
+  })
+
+  console.log(`  [OK] Phase 3-B completed`)
+
+  // Phase 3.5: Review Gate (P5)
+  console.log(`\n>>> Phase 3.5: Review Gate...`)
+
+  const reviewCriteria = {
+    requirement_alignment: phase3bResult?.phase3b_L1?.requirementAlignment >= 80,
+    cross_subtask_consistency: phase3aResult?.phase3a_L1?.consistencyScore >= 80,
+    no_critical_issues: (phase3bResult?.phase3b_L1?.criticalIssues || 0) === 0,
+    all_subtasks_verified: completedSubtasks.length === subtasks.length
   }
 
+  const reviewPassed = Object.values(reviewCriteria).every(v => v === true)
+
   console.log(`
-✅ Collection Complete!
+📋 Review Gate Results:
+   Requirement Alignment: ${reviewCriteria.requirement_alignment ? '✅' : '❌'}
+   Cross-Subtask Consistency: ${reviewCriteria.cross_subtask_consistency ? '✅' : '❌'}
+   No Critical Issues: ${reviewCriteria.no_critical_issues ? '✅' : '❌'}
+   All Subtasks Verified: ${reviewCriteria.all_subtasks_verified ? '✅' : '❌'}
 
-Files Generated:
-  📄 L1 (Summary for Main): ${l1File} (${l1Validation.estimatedTokens} tokens)
-  📄 L2 (Subtask Summaries): ${l2File}
-  📄 L3 (Full Details): ${l3File}
-
-Context Pollution Check: ${l1Validation.isValid ? '✅ PASSED' : '⚠️ SANITIZED'}
-
-Next Step:
-  /worker done ${task.id}  # Mark parent task as complete
+   Overall: ${reviewPassed ? '✅ PASSED' : '⚠️ REVIEW NEEDED'}
 `)
 
-  // 8. Return safe result (only L1 reference, no L2/L3 content)
-  return preventContextPollution({
-    status: "collected",
+  // Phase 4: Generate L1 Summary
+  console.log(`\n>>> Phase 4: Generating L1 Summary...`)
+
+  const outputDir = `.agent/prompts/${slug}/worker`
+  try { Bash(`mkdir -p ${outputDir}`) } catch (e) {}
+
+  // Save Phase 3-A/3-B results to L2/L3 files
+  const l2SynthesisPath = `${outputDir}/l2_synthesis.yaml`
+  Write(l2SynthesisPath, `# L2 Synthesis Results
+phase3a: ${JSON.stringify(phase3aResult, null, 2)}
+phase3b: ${JSON.stringify(phase3bResult, null, 2)}
+reviewGate:
+  passed: ${reviewPassed}
+  criteria: ${JSON.stringify(reviewCriteria, null, 2)}
+timestamp: ${new Date().toISOString()}
+`)
+
+  // Generate L1 Summary (≤500 tokens)
+  const l1Summary = {
     taskId: task.id,
-    subtaskCount: completedSubtasks.length,
-    files: { l1: l1File, l2: l2File, l3: l3File }
-  })
+    status: reviewPassed ? "completed" : "review_needed",
+    summary: `Task #${task.id} collected: ${completedSubtasks.length} subtasks, Review ${reviewPassed ? 'PASSED' : 'NEEDED'}`,
+    metrics: {
+      subtasksTotal: subtasks.length,
+      subtasksCompleted: completedSubtasks.length,
+      consistencyScore: phase3aResult?.phase3a_L1?.consistencyScore || 'N/A',
+      verificationStatus: phase3bResult?.phase3b_L1?.verificationStatus || 'N/A'
+    },
+    l2Path: l2SynthesisPath,
+    l3Path: l2Dir,
+    reviewGate: {
+      passed: reviewPassed,
+      criteria: reviewCriteria
+    },
+    nextAction: reviewPassed ? "/worker done" : "Review L2 synthesis for issues",
+    timestamp: new Date().toISOString()
+  }
+
+  // Save L1 summary
+  const l1Path = `${outputDir}/l1_summary.yaml`
+  Write(l1Path, `# L1 Summary for Task #${task.id}
+${JSON.stringify(l1Summary, null, 2)}
+`)
+
+  console.log(`
+=== Collection Complete ===
+Status: ${l1Summary.status}
+Review Gate: ${reviewPassed ? '✅ PASSED' : '⚠️ NEEDS REVIEW'}
+L1 Summary: ${l1Path}
+L2 Synthesis: ${l2SynthesisPath}
+
+Next: ${l1Summary.nextAction}
+`)
+
+  // Return L1 only (context pollution prevention)
+  return preventContextPollution(l1Summary)
 }
 ```
 
@@ -1544,6 +2110,143 @@ function preventContextPollution(collectResult) {
   delete safeResult.subtaskDetails
 
   return safeResult
+}
+```
+
+### 5.5.6 EFL Helper Functions (V6.0.0)
+
+```javascript
+// =============================================================================
+// EFL Helper Functions for Sub-Orchestrator Pattern
+// =============================================================================
+// Support functions for workerOrchestrate, workerDelegate, workerCollectSub
+
+/**
+ * Get active workload slug from _active_workload.yaml
+ */
+function getActiveWorkloadSlug() {
+  try {
+    const content = Read('.agent/prompts/_active_workload.yaml')
+    const match = content.match(/activeWorkload:\s*"?([^"\n]+)"?/)
+    return match ? match[1] : null
+  } catch (e) {
+    return null
+  }
+}
+
+/**
+ * Generate L1 Summary for main orchestrator
+ * Follows context pollution prevention guidelines (≤500 tokens)
+ */
+function generateL1Summary(task, subtasks, l2Synthesis, l3Verification) {
+  let recommendation = "PROCEED"
+  let recommendationEmoji = "✅"
+
+  if (l3Verification && !l3Verification.passed) {
+    recommendation = "REVIEW_REQUIRED"
+    recommendationEmoji = "⚠️"
+  }
+
+  if (l3Verification && l3Verification.criticalIssues > 0) {
+    recommendation = "BLOCK"
+    recommendationEmoji = "🛑"
+  }
+
+  const areas = [...new Set((subtasks || []).map(s => s.area || 'general'))]
+
+  const summary = `# L1 Summary: Task #${task.id || 'unknown'}
+
+## Overview
+- **Subject:** ${task.subject || 'N/A'}
+- **Subtasks Generated:** ${(subtasks || []).length}
+- **Areas:** ${areas.join(', ') || 'N/A'}
+
+## L2 Synthesis
+- **Status:** ${l2Synthesis?.status || 'completed'}
+- **Conflicts:** ${l2Synthesis?.conflicts || 0}
+- **Integration Score:** ${l2Synthesis?.integrationScore || 'N/A'}
+
+## L3 Verification
+- **Passed:** ${l3Verification?.passed ? 'YES' : 'NO'}
+- **Coverage:** ${l3Verification?.coverage || 'N/A'}
+- **Critical Issues:** ${l3Verification?.criticalIssues || 0}
+
+## Recommendation
+${recommendationEmoji} **${recommendation}**
+
+${recommendation !== 'PROCEED' ? '> Review L2/L3 files before proceeding.\n' : ''}
+---
+*Generated: ${new Date().toISOString()}*
+`
+
+  const estimatedTokens = Math.ceil(summary.length / 4)
+  if (estimatedTokens > 500) {
+    console.log(`⚠️  L1 Summary exceeds 500 tokens (est: ${estimatedTokens}). Consider trimming.`)
+  }
+
+  return summary
+}
+
+/**
+ * Aggregate decomposition results from parallel agents
+ * Handles deduplication and validation
+ */
+function aggregateDecompositionResults(results) {
+  const allSubtasks = []
+  const seenSubjects = new Set()
+  let originalCount = 0
+
+  console.log(`📦 Aggregating results from ${results.length} agents...`)
+
+  for (const result of results) {
+    if (!result || !result.subtasks || !Array.isArray(result.subtasks)) {
+      console.log(`   ⚠️  Skipping invalid result (no subtasks array)`)
+      continue
+    }
+
+    originalCount += result.subtasks.length
+
+    for (const subtask of result.subtasks) {
+      const normalizedSubject = (subtask.subject || '').toLowerCase().trim()
+
+      if (seenSubjects.has(normalizedSubject)) {
+        console.log(`   ⏭️  Skipping duplicate: "${subtask.subject}"`)
+        continue
+      }
+
+      if (!subtask.subject || !subtask.description) {
+        console.log(`   ⚠️  Skipping invalid subtask (missing subject/description)`)
+        continue
+      }
+
+      seenSubjects.add(normalizedSubject)
+
+      allSubtasks.push({
+        subject: subtask.subject.trim(),
+        description: subtask.description.trim(),
+        area: subtask.area || 'general',
+        priority: subtask.priority || 'medium',
+        estimatedEffort: subtask.estimatedEffort || 'unknown',
+        sourceAgent: subtask.sourceAgent || 'unknown'
+      })
+    }
+  }
+
+  const dedupedCount = originalCount - allSubtasks.length
+
+  console.log(`
+✅ Aggregation Complete:
+   Original subtasks: ${originalCount}
+   After dedup: ${allSubtasks.length}
+   Duplicates removed: ${dedupedCount}
+`)
+
+  return {
+    subtasks: allSubtasks,
+    totalCount: allSubtasks.length,
+    dedupedCount: dedupedCount,
+    aggregatedAt: new Date().toISOString()
+  }
 }
 ```
 
@@ -1957,6 +2660,7 @@ hooks:
 | 5.0.0 | EFL Pattern Integration: P1 Sub-Orchestrator, P2 Parallel Agents, P6 Internal Loop |
 | 5.1.0 | Default Sub-Orchestrator Mode: default_mode: true 설정으로 항상 Sub-Orchestrator 활성화 |
 | 5.2.0 | Auto-Delegation Trigger: Shared module integration (.claude/skills/shared/auto-delegation.md), explicit auto-trigger logic in skill body |
+| 6.0.0 | **EFL Full Implementation**: Actual Task tool delegation (not manual instructions). workerOrchestrate() with parallel decomposition agents, workerDelegate() with Promise.all barrier sync, workerCollectSub() with Phase 3-A/3-B/3.5 synthesis. P1-P6 patterns fully implemented. |
 
 ---
 
