@@ -1,16 +1,18 @@
 """
-Exporters package for Stage H (Export).
+Exporters package for Stage E (Export).
 
 Contains format-specific exporters:
-- JSONExporter: JSON format export
+- JSONExporter: JSON format export (Structured Outputs)
+- DOCXExporter: Microsoft Word format export (python-docx)
+
+Deprecated exporters (soft deprecation - files retained):
 - PDFExporter: PDF generation
 - LaTeXExporter: LaTeX package export
 - SVGExporter: SVG bundle export
-- DOCXExporter: Microsoft Word format export
 
 All exporters inherit from BaseExporter.
 
-Schema Version: 2.0.0
+Schema Version: 3.0.0
 """
 
 from .base import BaseExporter, ExporterConfig

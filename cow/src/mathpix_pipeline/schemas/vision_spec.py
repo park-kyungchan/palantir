@@ -1,12 +1,19 @@
 """
 VisionSpec Schema for Stage C (Vision Parse) Output.
 
-Stage C implements YOLO + Claude Hybrid Architecture:
+Stage C implements YOLO + Claude Hybrid Architecture (v2.0.0) OR
+Gemini 3 Pro Single Model Architecture (v3.0.0):
+
+v2.0.0 (Legacy):
 - Detection Layer: YOLO26 for bbox detection
 - Interpretation Layer: Claude Opus 4.5 for semantic understanding
 - Merged Output: Combined results with provenance tracking
 
-Schema Version: 2.0.0
+v3.0.0 (New):
+- Gemini Layer: Gemini 3 Pro unified detection + interpretation
+- Compatibility Layer: Auto-generates merged_output for Stage D
+
+Schema Version: 3.0.0
 """
 
 from datetime import datetime
@@ -26,6 +33,12 @@ from .common import (
     ReviewMetadata,
     utc_now,
 )
+
+# Forward reference for AlignmentLayer (circular import prevention)
+# Actual import happens at runtime via TYPE_CHECKING
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .alignment_layer import AlignmentLayer
 
 
 # =============================================================================
@@ -73,6 +86,19 @@ class RelationType(str, Enum):
     PASSES_THROUGH = "passes_through"
     BOUNDED_BY = "bounded_by"
     CONTAINS = "contains"
+
+
+class ThinkingLevel(str, Enum):
+    """Gemini 3 Pro Thinking Mode levels (C4)."""
+    MINIMAL = "minimal"
+    LOW = "low"
+    HIGH = "high"
+
+
+class MediaResolution(str, Enum):
+    """Gemini 3 Pro Media Resolution settings (C3)."""
+    HIGH = "media_resolution_high"           # 1120 tokens, Global
+    ULTRA_HIGH = "media_resolution_ultra_high"  # Per-part only
 
 
 # =============================================================================
@@ -185,6 +211,122 @@ class InterpretationLayer(MathpixBaseModel):
 
 
 # =============================================================================
+# Gemini Vision Layer (v3.0.0)
+# =============================================================================
+
+class GeminiElement(MathpixBaseModel):
+    """Single element detected by Gemini 3 Pro.
+
+    Unified detection + interpretation in single model call.
+    box_2d format: [ymin, xmin, ymax, xmax] in 0-1000 range.
+    """
+    id: str = Field(..., description="Unique element identifier")
+
+    # Gemini native format
+    box_2d: List[int] = Field(
+        ...,
+        description="Bounding box [ymin, xmin, ymax, xmax] in 0-1000 range"
+    )
+    label: str = Field(..., description="Raw label from Gemini")
+
+    # Normalized for Stage D compatibility
+    element_class: ElementClass = Field(..., description="Normalized ElementClass")
+    semantic_label: str = Field(..., description="Normalized semantic label")
+
+    # Confidence (raw and calibrated)
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Raw Gemini confidence")
+    calibrated_confidence: float = Field(
+        ..., ge=0.0, le=1.0,
+        description="Calibrated confidence for Stage D thresholds"
+    )
+
+    # Optional C2: Pointing coordinates
+    pointing_coords: Optional[List[int]] = Field(
+        default=None,
+        description="Precise point coordinates [x, y] in 0-1000 range"
+    )
+
+    # Additional metadata
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class GeminiRelation(MathpixBaseModel):
+    """Relationship between elements identified by Gemini 3 Pro."""
+    id: str = Field(..., description="Unique relation identifier")
+    source_id: str = Field(..., description="Source element ID")
+    target_id: str = Field(..., description="Target element ID")
+    relation_type: RelationType
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    description: Optional[str] = Field(default=None)
+
+
+class DiagramAnalysis(MathpixBaseModel):
+    """Diagram-level analysis from Gemini 3 Pro."""
+    diagram_type: DiagramType = Field(default=DiagramType.UNKNOWN)
+    coordinate_system: Optional[str] = Field(
+        default=None,
+        description="e.g., 'cartesian', 'polar'"
+    )
+    description: Optional[str] = Field(default=None)
+    key_elements: List[str] = Field(
+        default_factory=list,
+        description="IDs of key elements in the diagram"
+    )
+
+
+class ThinkingContext(MathpixBaseModel):
+    """C4 Thinking Mode output for Stage D reasoning context.
+
+    Captures Gemini's reasoning process for downstream alignment.
+    """
+    thinking_level: ThinkingLevel = Field(default=ThinkingLevel.HIGH)
+    reasoning_summary: Optional[str] = Field(
+        default=None,
+        description="Summary of reasoning process"
+    )
+    thought_signature: Optional[str] = Field(
+        default=None,
+        description="Hash for multi-turn consistency"
+    )
+    key_insights: List[str] = Field(
+        default_factory=list,
+        description="Key insights from reasoning"
+    )
+
+
+class GeminiVisionLayer(MathpixBaseModel):
+    """Gemini 3 Pro unified vision layer (v3.0.0).
+
+    Replaces separate detection + interpretation layers with single model.
+    """
+    model: str = Field(default="gemini-3-pro", description="Gemini model identifier")
+    model_version: str = Field(default="3.0.0")
+
+    # Core outputs
+    elements: List[GeminiElement] = Field(default_factory=list)
+    relations: List[GeminiRelation] = Field(default_factory=list)
+
+    # Diagram analysis
+    diagram_analysis: DiagramAnalysis = Field(default_factory=DiagramAnalysis)
+
+    # C4: Thinking context
+    thinking_context: Optional[ThinkingContext] = Field(default=None)
+
+    # C3: Media resolution used
+    media_resolution: MediaResolution = Field(default=MediaResolution.HIGH)
+
+    # Processing metadata
+    inference_time_ms: Optional[float] = Field(default=None)
+    prompt_tokens: Optional[int] = Field(default=None)
+    completion_tokens: Optional[int] = Field(default=None)
+
+    @property
+    def element_count(self) -> int:
+        """Count of detected elements."""
+        return len(self.elements)
+
+
+# =============================================================================
 # Merged Output
 # =============================================================================
 
@@ -243,15 +385,16 @@ class MergedOutput(MathpixBaseModel):
 class VisionSpec(MathpixBaseModel):
     """Stage C output: Vision Parse specification.
 
-    Implements YOLO + Claude Hybrid Architecture:
-    - detection_layer: YOLO26 bbox detection
-    - interpretation_layer: Claude semantic understanding
-    - merged_output: Combined with source tracking
+    Supports two architectures:
+    - v2.x: YOLO + Claude Hybrid (detection_layer + interpretation_layer)
+    - v3.x: Gemini 3 Pro Single Model (gemini_layer)
 
-    Schema Version: 2.0.0
+    Both produce merged_output for Stage D compatibility.
+
+    Schema Version: 3.0.0
     """
     # Metadata
-    schema_version: str = Field(default="2.0.0")
+    schema_version: str = Field(default="3.0.0")
     image_id: str = Field(..., description="Source image identifier")
     text_spec_id: Optional[str] = Field(default=None, description="Reference to Stage B output")
     provenance: Provenance = Field(default_factory=lambda: Provenance(
@@ -259,9 +402,23 @@ class VisionSpec(MathpixBaseModel):
         model="hybrid-yolo26-claude"
     ))
 
-    # Hybrid layers (v2.0.0)
-    detection_layer: DetectionLayer = Field(default_factory=DetectionLayer)
-    interpretation_layer: InterpretationLayer = Field(default_factory=InterpretationLayer)
+    # v3.0.0: Gemini unified layer (primary)
+    gemini_layer: Optional[GeminiVisionLayer] = Field(
+        default=None,
+        description="Gemini 3 Pro unified vision output (v3.0.0)"
+    )
+
+    # v2.0.0: Hybrid layers (deprecated but maintained for compatibility)
+    detection_layer: Optional[DetectionLayer] = Field(
+        default_factory=DetectionLayer,
+        description="YOLO detection layer (v2.0.0, deprecated in v3.0.0)"
+    )
+    interpretation_layer: Optional[InterpretationLayer] = Field(
+        default_factory=InterpretationLayer,
+        description="Claude interpretation layer (v2.0.0, deprecated in v3.0.0)"
+    )
+
+    # Stage D interface (always populated)
     merged_output: MergedOutput = Field(default_factory=MergedOutput)
 
     # Fallback tracking
@@ -272,9 +429,34 @@ class VisionSpec(MathpixBaseModel):
     # Review
     review: ReviewMetadata = Field(default_factory=ReviewMetadata)
 
+    # Stage D: AlignmentLayer (LaTeX ↔ Visual 정렬)
+    alignment_layer: Optional["AlignmentLayer"] = Field(
+        default=None,
+        description="Stage D AlignmentLayer for LaTeX-Visual alignment (populated after Stage D processing)"
+    )
+
     # Timestamps
     created_at: datetime = Field(default_factory=utc_now)
     total_processing_time_ms: Optional[float] = Field(default=None)
+
+    @property
+    def elements(self) -> List[MergedElement]:
+        """Backward compatibility alias for merged_output.elements.
+
+        Stage D and legacy code may access vision_spec.elements directly.
+        This property ensures they get merged_output.elements.
+        """
+        return self.merged_output.elements
+
+    @property
+    def relations(self) -> List[InterpretedRelation]:
+        """Backward compatibility alias for merged_output.relations."""
+        return self.merged_output.relations
+
+    @property
+    def uses_gemini(self) -> bool:
+        """Check if Gemini 3 Pro layer is used."""
+        return self.gemini_layer is not None and len(self.gemini_layer.elements) > 0
 
     @computed_field
     @property
@@ -336,13 +518,21 @@ __all__ = [
     "DiagramType",
     "ElementClass",
     "RelationType",
-    # Detection Layer
+    "ThinkingLevel",
+    "MediaResolution",
+    # Detection Layer (v2.0.0)
     "DetectionElement",
     "DetectionLayer",
-    # Interpretation Layer
+    # Interpretation Layer (v2.0.0)
     "InterpretedElement",
     "InterpretedRelation",
     "InterpretationLayer",
+    # Gemini Vision Layer (v3.0.0)
+    "GeminiElement",
+    "GeminiRelation",
+    "DiagramAnalysis",
+    "ThinkingContext",
+    "GeminiVisionLayer",
     # Merged Output
     "MergedElement",
     "MergedOutput",

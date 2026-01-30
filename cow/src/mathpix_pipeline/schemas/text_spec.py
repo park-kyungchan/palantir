@@ -7,7 +7,7 @@ Stage B processes Mathpix API responses and extracts:
 - Vision parse triggers
 - Line segments with bbox and confidence
 
-Schema Version: 2.0.0
+Schema Version: 2.1.0
 """
 
 from datetime import datetime
@@ -70,6 +70,7 @@ class ContentFlags(MathpixBaseModel):
     contains_geometry: bool = Field(default=False)
     contains_table: bool = Field(default=False)
     contains_handwriting: bool = Field(default=False)
+    contains_chemistry: bool = Field(default=False)  # Phase 2: Chemistry content flag
 
     def should_trigger_vision_parse(self) -> bool:
         """Determine if Stage C should be triggered."""
@@ -118,6 +119,7 @@ class EquationElement(MathpixBaseModel):
     confidence: Confidence
     asciimath: Optional[str] = Field(default=None, description="AsciiMath conversion")
     mathml: Optional[str] = Field(default=None, description="MathML conversion")
+    smiles: Optional[str] = Field(default=None, description="SMILES chemical notation")
 
     # Review
     review: ReviewMetadata = Field(default_factory=ReviewMetadata)
@@ -138,9 +140,12 @@ class TextSpec(MathpixBaseModel):
     - vision_parse_triggers: Explicit Stage C triggers
     - line_segments: Full line data with hierarchy
     - detection_map: Raw Mathpix detection regions
+
+    v2.1.0 Additions:
+    - smiles: SMILES chemical notation field (global and per-equation)
     """
     # Metadata
-    schema_version: str = Field(default="2.0.0")
+    schema_version: str = Field(default="2.1.0")
     image_id: str = Field(..., description="Source image identifier")
     provenance: Provenance = Field(default_factory=lambda: Provenance(
         stage="B",
@@ -162,6 +167,7 @@ class TextSpec(MathpixBaseModel):
     # Mathpix raw outputs
     text: str = Field(default="", description="Full extracted text")
     latex: Optional[str] = Field(default=None, description="Full LaTeX content")
+    smiles: Optional[str] = Field(default=None, description="Full SMILES chemical notation content")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Overall confidence")
 
     # Structured elements (v2.0.0)
@@ -186,6 +192,20 @@ class TextSpec(MathpixBaseModel):
 
     # Review
     review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+
+    # Quality & Hints (Phase 2)
+    confidence_breakdown: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Per-element confidence distribution"
+    )
+    quality_indicators: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Quality metrics for Phase 3"
+    )
+    next_stage_hints: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Optimization hints for Stage C/D"
+    )
 
     # Timestamps
     created_at: datetime = Field(default_factory=utc_now)
@@ -258,6 +278,7 @@ def create_text_spec_from_mathpix(
         vision_parse_triggers=triggers,
         text=mathpix_response.get("text", ""),
         latex=mathpix_response.get("latex", None),
+        smiles=mathpix_response.get("smiles", None),
         confidence=mathpix_response.get("confidence", 0.0),
         raw_response=mathpix_response,
         processing_time_ms=processing_time_ms,

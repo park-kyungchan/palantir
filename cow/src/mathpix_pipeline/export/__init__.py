@@ -1,11 +1,11 @@
 """
-Export Module for Stage H (Export).
+Export Module for Stage E (Export).
 
 Provides multi-format export capabilities for pipeline results:
-- JSON structured export
-- PDF document generation
-- LaTeX source export
-- SVG graphics export
+- JSON structured export (Structured Outputs compatible)
+- DOCX document generation (python-docx)
+
+Primary input: AlignmentLayer (Stage D output)
 
 Components:
 - ExportEngine: Main orchestrator for exports
@@ -13,8 +13,11 @@ Components:
 - StorageManager: Storage backend abstraction
 - API Routes: FastAPI endpoints for export operations
 
-Schema Version: 2.0.0
-Module Version: 1.0.0
+Note: PDF, LaTeX, SVG exporters are deprecated (soft deprecation).
+      Import preserved for backward compatibility.
+
+Schema Version: 3.0.0
+Module Version: 2.0.0
 """
 
 # Engine
@@ -33,6 +36,9 @@ from .exporters import (
     ExporterConfig,
     JSONExporter,
     JSONExporterConfig,
+    DOCXExporter,
+    DOCXExporterConfig,
+    # Deprecated (soft deprecation) - kept for backward compatibility
     PDFExporter,
     PDFExporterConfig,
     LaTeXExporter,
@@ -88,11 +94,14 @@ __all__ = [
     "create_export_engine",
     "register_exporter",
     "get_exporter_class",
-    # Exporters
+    # Exporters (Stage E: JSON + DOCX primary)
     "BaseExporter",
     "ExporterConfig",
     "JSONExporter",
     "JSONExporterConfig",
+    "DOCXExporter",
+    "DOCXExporterConfig",
+    # Deprecated exporters (soft deprecation)
     "PDFExporter",
     "PDFExporterConfig",
     "LaTeXExporter",

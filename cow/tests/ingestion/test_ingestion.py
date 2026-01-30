@@ -16,7 +16,7 @@ import hashlib
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import Generator
 import io
 
 import pytest
@@ -140,7 +140,7 @@ def corrupted_image_path(tmp_path) -> Path:
 
 
 @pytest.fixture
-async def storage_manager(tmp_path) -> AsyncGenerator[StorageManager, None]:
+def storage_manager(tmp_path) -> Generator[StorageManager, None, None]:
     """Create a storage manager with cleanup."""
     cache_dir = tmp_path / "cache"
     temp_dir = tmp_path / "temp"

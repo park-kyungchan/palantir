@@ -12,7 +12,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from ..schemas.common import PipelineStage
-from ..schemas.ingestion import IngestionSpec
+from ..schemas.ingestion import (
+    IngestionSpec,
+    ImageMetadata,
+    ValidationResult as SchemaValidationResult,
+)
 from ..ingestion import (
     ImageLoader,
     ImageValidator,
@@ -178,7 +182,7 @@ class IngestionStage(BaseStage[ImageInput, IngestionSpec]):
                 raise IngestionError(f"Unsupported image type: {type(input_data)}")
 
             # Validate loaded image
-            validation = self._image_validator.validate(loaded)
+            validation_result = self._image_validator.validate(loaded)
 
             # Preprocess if enabled
             if self.config.enable_preprocessing:
@@ -186,17 +190,37 @@ class IngestionStage(BaseStage[ImageInput, IngestionSpec]):
             else:
                 processed = loaded
 
+            # Create ImageMetadata from LoadedImage
+            image_metadata = ImageMetadata(
+                format=loaded.format,
+                width=loaded.width or 0,
+                height=loaded.height or 0,
+                dpi=loaded.dpi,
+                color_mode=loaded.color_mode or "RGB",
+                file_size_bytes=loaded.size_bytes,
+                content_hash=loaded.content_hash,
+            )
+
+            # Create schema ValidationResult from ingestion ValidationResult
+            schema_validation = SchemaValidationResult(
+                is_valid=validation_result.is_valid,
+                checks_passed=validation_result.checks_passed,
+                checks_failed=validation_result.checks_failed,
+                warnings=validation_result.warnings,
+            )
+
             # Create spec
             spec = IngestionSpec(
                 image_id=image_id,
                 source_path=str(input_data) if isinstance(input_data, (str, Path)) else None,
-                metadata=loaded.metadata,
-                validation=validation,
+                metadata=image_metadata,
+                validation=schema_validation,
                 preprocessing_applied=(
                     self.config.preprocessing_operations
                     if self.config.enable_preprocessing
                     else []
                 ),
+                math_content_confidence=validation_result.math_content_confidence,
             )
 
             return spec

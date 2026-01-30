@@ -1,10 +1,13 @@
 """
-Stage H: Export Stage.
+Stage E: Export Stage.
 
-Wraps ExportEngine to convert RegenerationSpec into multiple export formats.
+Wraps ExportEngine to convert AlignmentLayer into multiple export formats.
 Supports parallel and sequential export modes with comprehensive validation.
 
-Module Version: 1.0.0
+Primary input: AlignmentLayer (Stage D output)
+Output formats: JSON (Structured Outputs), DOCX (python-docx)
+
+Module Version: 2.0.0
 """
 
 from dataclasses import dataclass, field
@@ -12,7 +15,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from ..schemas.common import PipelineStage
-from ..schemas.regeneration import RegenerationSpec
+from ..schemas.alignment_layer import AlignmentLayer, VerificationStatus
 from ..schemas.export import (
     ExportFormat,
     ExportOptions,
@@ -37,10 +40,10 @@ from .base import (
 
 @dataclass
 class ExportStageConfig:
-    """Configuration for Stage H export.
+    """Configuration for Stage E export.
 
     Attributes:
-        export_formats: List of formats to export (default: PDF, JSON)
+        export_formats: List of formats to export (default: JSON, DOCX)
         output_dir: Output directory for exported files
         parallel_exports: Enable parallel export execution
         max_concurrent: Maximum concurrent exports
@@ -48,7 +51,7 @@ class ExportStageConfig:
         compress: Compress output files
     """
     export_formats: List[ExportFormat] = field(default_factory=lambda: [
-        ExportFormat.PDF, ExportFormat.JSON
+        ExportFormat.JSON, ExportFormat.DOCX
     ])
     output_dir: Optional[Path] = None
     parallel_exports: bool = True
@@ -70,29 +73,27 @@ class ExportStageConfig:
 # Stage Implementation
 # =============================================================================
 
-class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
-    """Stage H: Multi-format Export.
+class ExportStage(BaseStage[AlignmentLayer, List[ExportSpec]]):
+    """Stage E: Multi-format Export.
 
-    Converts RegenerationSpec into multiple export formats through:
-    1. Format validation and selection
+    Converts AlignmentLayer into multiple export formats through:
+    1. Alignment validation and quality check
     2. Parallel or sequential export execution
     3. File storage and checksum generation
     4. Export specification generation
 
-    Supports v2.0.0 multi-format output:
-    - ExportFormat.PDF: PDF document export
-    - ExportFormat.JSON: JSON data export
-    - ExportFormat.LATEX: LaTeX source export
-    - ExportFormat.SVG: SVG vector graphics export
-    - ExportFormat.DOCX: Word document export
-    - ExportFormat.PNG: PNG image export
+    Supports Stage E formats:
+    - ExportFormat.JSON: Structured Output JSON export
+    - ExportFormat.DOCX: Word document export (python-docx)
+
+    Note: PDF, LaTeX, SVG, PNG formats are deprecated (soft deprecation).
 
     Example:
         stage = ExportStage(config=ExportStageConfig(
-            export_formats=[ExportFormat.PDF, ExportFormat.JSON],
+            export_formats=[ExportFormat.JSON, ExportFormat.DOCX],
             parallel_exports=True,
         ))
-        result = await stage.run_async(regeneration_spec)
+        result = await stage.run_async(alignment_layer)
         if result.is_valid:
             specs = result.output
             for spec in specs:
@@ -121,7 +122,7 @@ class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
 
     @property
     def stage_name(self) -> PipelineStage:
-        """Return Stage H identifier."""
+        """Return Stage E identifier."""
         return PipelineStage.EXPORT
 
     @property
@@ -134,11 +135,11 @@ class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
         """Return the underlying export engine."""
         return self._engine
 
-    def validate(self, input_data: RegenerationSpec) -> ValidationResult:
-        """Validate regeneration spec input.
+    def validate(self, input_data: AlignmentLayer) -> ValidationResult:
+        """Validate AlignmentLayer input.
 
         Args:
-            input_data: RegenerationSpec to validate
+            input_data: AlignmentLayer to validate
 
         Returns:
             ValidationResult with any issues found
@@ -146,35 +147,45 @@ class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
         result = ValidationResult()
 
         if input_data is None:
-            result.add_error("RegenerationSpec is required")
+            result.add_error("AlignmentLayer is required")
             return result
 
-        # Check for image_id
-        if not input_data.image_id:
-            result.add_error("RegenerationSpec must have an image_id")
+        # Check for layer ID
+        if not input_data.id:
+            result.add_error("AlignmentLayer must have an id")
             return result
 
-        # Check for outputs to export
-        if not input_data.outputs:
-            result.add_error("RegenerationSpec must have at least one output to export")
+        # Check for vision_spec_id (required reference)
+        if not input_data.vision_spec_id:
+            result.add_error("AlignmentLayer must have a vision_spec_id")
             return result
 
-        # Check for minimum overall confidence
-        if input_data.overall_confidence < 0.3:
+        # Check for alignments to export
+        if not input_data.alignments:
+            result.add_warning("AlignmentLayer has no alignments to export")
+
+        # Check for low overall quality
+        if input_data.overall_quality < 0.5:
             result.add_warning(
-                f"Low regeneration confidence: {input_data.overall_confidence:.2f}"
+                f"Low alignment quality: {input_data.overall_quality:.2f}"
             )
 
-        # Check for failed elements
-        if input_data.total_elements_failed > 0:
+        # Check for mismatches
+        if input_data.mismatch_count > 0:
             result.add_warning(
-                f"{input_data.total_elements_failed} elements failed regeneration"
+                f"{input_data.mismatch_count} alignments have mismatches"
+            )
+
+        # Check for HITL required
+        if input_data.needs_hitl():
+            result.add_warning(
+                f"AlignmentLayer requires HITL review: {input_data.hitl_required_count} items"
             )
 
         # Check for review required
         if input_data.review.review_required:
             result.add_warning(
-                f"Regeneration flagged for review: {input_data.review.review_reason}"
+                f"AlignmentLayer flagged for review: {input_data.review.review_reason}"
             )
 
         # Validate export formats
@@ -189,14 +200,14 @@ class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
 
     async def _execute_async(
         self,
-        input_data: RegenerationSpec,
+        input_data: AlignmentLayer,
         export_options: Optional[ExportOptions] = None,
         **kwargs: Any,
     ) -> List[ExportSpec]:
-        """Execute export from regeneration spec.
+        """Execute export from AlignmentLayer.
 
         Args:
-            input_data: RegenerationSpec from Stage F
+            input_data: AlignmentLayer from Stage D
             export_options: Optional export configuration
             **kwargs: Additional parameters
 
@@ -281,12 +292,14 @@ class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
                 "total_file_size_bytes": total_size,
                 "average_confidence": avg_confidence,
                 "parallel_mode": self.config.parallel_exports,
+                "stage_version": "E",  # Stage E identifier
             }
 
             # Add per-format metrics
             for spec in output:
                 metrics.custom_metrics[f"{spec.format.value}_size_bytes"] = spec.file_size
                 metrics.custom_metrics[f"{spec.format.value}_confidence"] = spec.confidence
+                metrics.custom_metrics[f"{spec.format.value}_element_count"] = spec.element_count
 
             # Check for compressed exports
             compressed_count = sum(1 for spec in output if spec.compressed)

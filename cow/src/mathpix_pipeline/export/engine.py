@@ -1,12 +1,16 @@
 """
-Export Engine for Stage H (Export).
+Export Engine for Stage E (Export).
 
 Orchestrates export operations across multiple formats:
-- Coordinates format-specific exporters
+- Coordinates format-specific exporters (JSON, DOCX)
 - Manages batch exports
 - Handles storage and delivery
+- AlignmentLayer as primary input type
 
-Module Version: 1.0.0
+Module Version: 2.0.0
+
+Note: PDF, LaTeX, SVG formats are deprecated (soft deprecation).
+      Files remain for backward compatibility but are not in registry.
 """
 
 import asyncio
@@ -25,13 +29,12 @@ from ..schemas.export import (
     ExportStatus,
     StorageConfig,
 )
+from ..schemas.alignment_layer import AlignmentLayer
 from .exceptions import ExporterError, ExportPipelineError
 from .exporters import (
     BaseExporter,
+    DOCXExporter,
     JSONExporter,
-    LaTeXExporter,
-    PDFExporter,
-    SVGExporter,
 )
 from .storage import StorageManager, create_storage_manager
 
@@ -59,6 +62,7 @@ class ExportEngineConfig:
     max_concurrent: int = 4
     default_formats: List[ExportFormat] = field(default_factory=lambda: [
         ExportFormat.JSON,
+        ExportFormat.DOCX,
     ])
 
 
@@ -88,11 +92,11 @@ class BatchExportResult:
 # Exporter Registry
 # =============================================================================
 
+# Stage E: Only JSON and DOCX formats are supported.
+# PDF, LaTeX, SVG exporters are deprecated (soft deprecation).
 _EXPORTER_REGISTRY: Dict[ExportFormat, Type[BaseExporter]] = {
     ExportFormat.JSON: JSONExporter,
-    ExportFormat.PDF: PDFExporter,
-    ExportFormat.LATEX: LaTeXExporter,
-    ExportFormat.SVG: SVGExporter,
+    ExportFormat.DOCX: DOCXExporter,
 }
 
 
@@ -206,11 +210,15 @@ class ExportEngine:
         """Extract image ID from data object.
 
         Args:
-            data: Pipeline result data
+            data: Pipeline result data (AlignmentLayer or legacy types)
 
         Returns:
             Image identifier
         """
+        # AlignmentLayer: Use layer ID as primary identifier
+        if isinstance(data, AlignmentLayer):
+            return data.id
+
         # Try common attribute names
         for attr in ("image_id", "id", "source_id", "identifier"):
             if hasattr(data, attr):

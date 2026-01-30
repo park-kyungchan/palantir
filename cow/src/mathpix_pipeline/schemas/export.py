@@ -1,13 +1,14 @@
 """
-Export Schema for Stage H (Export) Output.
+Export Schema for Stage E (Export) Output.
 
-Stage H handles final export of pipeline results:
-- Multiple export formats (JSON, PDF, LaTeX, SVG)
+Stage E handles final export of pipeline results:
+- Export formats: JSON and DOCX
+- AlignmentLayer input processing
 - Batch export operations
 - Storage management
 - API response structures
 
-Schema Version: 2.0.0
+Schema Version: 3.0.0
 """
 
 from datetime import datetime
@@ -30,14 +31,13 @@ from .common import (
 # =============================================================================
 
 class ExportFormat(str, Enum):
-    """Supported export formats."""
+    """Supported export formats for Stage E.
+
+    Stage E supports only JSON and DOCX formats.
+    PDF, LaTeX, SVG, PNG, ZIP formats are deprecated (soft deprecation).
+    """
     JSON = "json"
-    PDF = "pdf"
-    LATEX = "latex"
-    SVG = "svg"
-    PNG = "png"
     DOCX = "docx"
-    ZIP = "zip"  # Bundle format
 
 
 class ExportStatus(str, Enum):
@@ -106,27 +106,27 @@ class ExportOptions(MathpixBaseModel):
         description="Include human review annotations"
     )
 
-    # Format-specific options
-    pdf_options: Dict[str, Any] = Field(
+    # Format-specific options (Stage E: JSON and DOCX only)
+    docx_options: Dict[str, Any] = Field(
         default_factory=lambda: {
             "page_size": "letter",
             "margins": {"top": 1, "bottom": 1, "left": 1, "right": 1},
+            "font_name": "Times New Roman",
+            "font_size_pt": 11,
+            "heading_font_name": "Arial",
             "include_toc": False,
-        }
+            "include_header": True,
+            "include_footer": True,
+        },
+        description="DOCX format options for python-docx"
     )
-    latex_options: Dict[str, Any] = Field(
+    json_options: Dict[str, Any] = Field(
         default_factory=lambda: {
-            "document_class": "article",
-            "packages": ["amsmath", "amssymb", "tikz"],
-            "standalone": False,
-        }
-    )
-    svg_options: Dict[str, Any] = Field(
-        default_factory=lambda: {
-            "width": 800,
-            "height": 600,
-            "embed_fonts": True,
-        }
+            "indent": 2,
+            "ensure_ascii": False,
+            "include_schema_version": True,
+        },
+        description="JSON format options for Structured Output"
     )
 
     # Naming options

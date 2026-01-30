@@ -121,6 +121,34 @@ from .alignment import (
     AlignmentReport,
 )
 
+# Stage D: AlignmentLayer (LaTeX ↔ Visual 정렬)
+from .alignment_layer import (
+    # Enums
+    LaTeXMatchType,
+    VerificationStatus,
+    HITLDecisionType,
+    ReconstructionPhase,
+    # LaTeX Elements
+    LaTeXElement,
+    VisualElementRef,
+    # Alignment
+    LaTeXAlignment,
+    MatchedPairV2,
+    # HITL
+    FlaggedItem,
+    HITLCorrection,
+    HITLFeedback,
+    CalibrationHistory,
+    # Reconstruction
+    ReconstructionEntry,
+    ReconstructionLog,
+    # Calibration
+    CalibrationConfig,
+    CalibrationState,
+    # Main
+    AlignmentLayer,
+)
+
 # Stage E: Semantic Graph
 from .semantic_graph import (
     # Enums
@@ -156,6 +184,10 @@ from .pipeline import (
     StageTiming,
     PipelineResult,
 )
+
+# Resolve forward references for VisionSpec ↔ AlignmentLayer
+# This must be done after both classes are imported
+VisionSpec.model_rebuild()
 
 # Version
 __version__ = "2.0.0"
@@ -237,6 +269,25 @@ __all__ = [
     "UnmatchedElement",
     "AlignmentStatistics",
     "AlignmentReport",
+
+    # === Stage D: AlignmentLayer (LaTeX ↔ Visual) ===
+    "LaTeXMatchType",
+    "VerificationStatus",
+    "HITLDecisionType",
+    "ReconstructionPhase",
+    "LaTeXElement",
+    "VisualElementRef",
+    "LaTeXAlignment",
+    "MatchedPairV2",
+    "FlaggedItem",
+    "HITLCorrection",
+    "HITLFeedback",
+    "CalibrationHistory",
+    "ReconstructionEntry",
+    "ReconstructionLog",
+    "CalibrationConfig",
+    "CalibrationState",
+    "AlignmentLayer",
 
     # === Stage E: SemanticGraph ===
     "NodeType",
