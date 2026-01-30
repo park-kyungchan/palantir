@@ -1,42 +1,42 @@
 {
-  "numStartups": 79,
+  "numStartups": 84,
   "installMethod": "native",
   "autoUpdates": false,
   "theme": "dark-daltonized",
   "tipsHistory": {
     "new-user-warmup": 8,
     "plan-mode-for-complex-tasks": 17,
-    "terminal-setup": 71,
+    "terminal-setup": 81,
     "memory-command": 76,
-    "theme-command": 61,
+    "theme-command": 81,
     "colorterm-truecolor": 61,
-    "shift-enter-setup": 74,
+    "shift-enter-setup": 84,
     "status-line": 2,
     "stickers-command": 23,
     "prompt-queue": 3,
-    "enter-to-steer-in-relatime": 63,
-    "todo-list": 63,
+    "enter-to-steer-in-relatime": 84,
+    "todo-list": 84,
     "install-github-app": 76,
     "install-slack-app": 76,
     "drag-and-drop-images": 77,
     "double-esc-code-restore": 77,
     "continue": 77,
     "shift-tab": 77,
-    "image-paste": 64,
+    "image-paste": 84,
     "ultrathink-keyword": 14,
-    "desktop-app": 65,
-    "web-app": 65,
-    "mobile-app": 67,
-    "guest-passes": 77,
-    "custom-agents": 67,
+    "desktop-app": 81,
+    "web-app": 81,
+    "mobile-app": 84,
+    "guest-passes": 84,
+    "custom-agents": 84,
     "default-permission-mode-config": 78,
-    "permissions": 71,
+    "permissions": 81,
     "rename-conversation": 71,
     "custom-commands": 71,
     "agent-flag": 74,
-    "git-worktrees": 71
+    "git-worktrees": 81
   },
-  "promptQueueUseCount": 398,
+  "promptQueueUseCount": 420,
   "showExpandedTodos": true,
   "cachedStatsigGates": {
     "tengu_prompt_suggestion": true,
@@ -83,7 +83,7 @@
     "tengu_compact_streaming_retry": false,
     "tengu_prompt_suggestion": true,
     "tengu_keybinding_customization": false,
-    "tengu_claudeai_mcp_connectors": true,
+    "tengu_claudeai_mcp_connectors": false,
     "tengu_attribution_header": true,
     "tengu_plan_mode_interview_phase": false,
     "tengu_brass_pebble": false,
@@ -107,7 +107,7 @@
   "sonnet45MigrationComplete": true,
   "opus45MigrationComplete": true,
   "thinkingMigrationComplete": true,
-  "changelogLastFetched": 1769685709185,
+  "changelogLastFetched": 1769750934254,
   "oauthAccount": {
     "accountUuid": "aee35519-1347-4893-a6d6-342921c4fbf1",
     "emailAddress": "packr0723@gmail.com",
@@ -128,7 +128,7 @@
     }
   },
   "bypassPermissionsModeAccepted": true,
-  "lastReleaseNotesSeen": "2.1.23",
+  "lastReleaseNotesSeen": "2.1.25",
   "projects": {
     "/mnt/c/Users/packr": {
       "allowedTools": [],
@@ -204,41 +204,49 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 3.95575,
-      "lastAPIDuration": 361224,
-      "lastAPIDurationWithoutRetries": 361140,
-      "lastToolDuration": 7327,
-      "lastDuration": 3134647,
-      "lastLinesAdded": 334,
-      "lastLinesRemoved": 283,
-      "lastTotalInputTokens": 8721,
-      "lastTotalOutputTokens": 18322,
-      "lastTotalCacheCreationInputTokens": 248386,
-      "lastTotalCacheReadInputTokens": 4178469,
-      "lastTotalWebSearchRequests": 0,
+      "lastCost": 99.74682685000006,
+      "lastAPIDuration": 13701088,
+      "lastAPIDurationWithoutRetries": 13699801,
+      "lastToolDuration": 5006836,
+      "lastDuration": 24488556,
+      "lastLinesAdded": 24826,
+      "lastLinesRemoved": 2586,
+      "lastTotalInputTokens": 234471,
+      "lastTotalOutputTokens": 853583,
+      "lastTotalCacheCreationInputTokens": 6588727,
+      "lastTotalCacheReadInputTokens": 96649510,
+      "lastTotalWebSearchRequests": 13,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 8693,
-          "outputTokens": 662,
-          "cacheReadInputTokens": 0,
-          "cacheCreationInputTokens": 27908,
+          "inputTokens": 171725,
+          "outputTokens": 88693,
+          "cacheReadInputTokens": 8830700,
+          "cacheCreationInputTokens": 906296,
           "webSearchRequests": 0,
-          "costUSD": 0.046888
+          "costUSD": 2.63113
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 28,
-          "outputTokens": 17660,
-          "cacheReadInputTokens": 4178469,
-          "cacheCreationInputTokens": 220478,
+          "inputTokens": 62558,
+          "outputTokens": 738197,
+          "cacheReadInputTokens": 82799143,
+          "cacheCreationInputTokens": 5440974,
+          "webSearchRequests": 13,
+          "costUSD": 94.30337400000003
+        },
+        "claude-sonnet-4-5-20250929": {
+          "inputTokens": 188,
+          "outputTokens": 26693,
+          "cacheReadInputTokens": 5019667,
+          "cacheCreationInputTokens": 241457,
           "webSearchRequests": 0,
-          "costUSD": 3.9088620000000005
+          "costUSD": 2.81232285
         }
       },
-      "lastSessionId": "da125984-4258-476e-98c4-12711543a743",
+      "lastSessionId": "53c79af9-07ce-4487-a1c6-8e0a897e3d48",
       "hasCompletedProjectOnboarding": true,
       "exampleFilesGeneratedAt": 1769581356050,
-      "lastFpsAverage": 2.99,
-      "lastFpsLow1Pct": 59.2
+      "lastFpsAverage": 11.44,
+      "lastFpsLow1Pct": 91.89
     },
     "/home/palantir/park-kyungchan/palantir": {
       "allowedTools": [],
@@ -267,7 +275,7 @@
     "89016125-9720-4767-bbab-74580d4b602c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1769685708500
+      "timestamp": 1769763102013
     }
   },
   "officialMarketplaceAutoInstallAttempted": true,
@@ -315,12 +323,15 @@
     "89016125-9720-4767-bbab-74580d4b602c": {
       "eligible": true,
       "referral_code_details": {
-        "code": "x65A7fa1Gg",
-        "campaign": "claude_code_guest_pass",
-        "referral_link": "https://claude.ai/referral/x65A7fa1Gg"
+        "code": "-xnbTYOStA",
+        "campaign": "claude_code_guest_pass_a47c",
+        "referral_link": "https://claude.ai/referral/-xnbTYOStA"
       },
-      "referrer_reward": null,
-      "timestamp": 1769687217799
+      "referrer_reward": {
+        "amount_minor_units": 1000,
+        "currency": "USD"
+      },
+      "timestamp": 1769776341191
     }
   },
   "skillUsage": {
@@ -357,8 +368,8 @@
       "lastUsedAt": 1769172092151
     },
     "commit-push-pr": {
-      "usageCount": 8,
-      "lastUsedAt": 1769690898322
+      "usageCount": 9,
+      "lastUsedAt": 1769776266766
     },
     "build": {
       "usageCount": 12,
@@ -381,16 +392,16 @@
       "lastUsedAt": 1769214428648
     },
     "worker": {
-      "usageCount": 25,
-      "lastUsedAt": 1769689391027
+      "usageCount": 34,
+      "lastUsedAt": 1769765998923
     },
     "orchestrate": {
-      "usageCount": 8,
-      "lastUsedAt": 1769688684736
+      "usageCount": 9,
+      "lastUsedAt": 1769762972273
     },
     "planning": {
-      "usageCount": 7,
-      "lastUsedAt": 1769596512082
+      "usageCount": 12,
+      "lastUsedAt": 1769770414109
     },
     "research": {
       "usageCount": 9,
@@ -413,8 +424,12 @@
       "lastUsedAt": 1769688954921
     },
     "re-architecture": {
-      "usageCount": 4,
-      "lastUsedAt": 1769686033329
+      "usageCount": 11,
+      "lastUsedAt": 1769768035571
+    },
+    "math-parse": {
+      "usageCount": 1,
+      "lastUsedAt": 1769774038565
     }
   },
   "lastPlanModeUse": 1769322839169,
@@ -424,5 +439,7 @@
   "feedbackSurveyState": {
     "lastShownTime": 1769674483298
   },
-  "autoUpdatesProtectedForNative": true
+  "autoUpdatesProtectedForNative": true,
+  "hasVisitedPasses": false,
+  "passesLastSeenCampaign": "claude_code_guest_pass_a47c"
 }
