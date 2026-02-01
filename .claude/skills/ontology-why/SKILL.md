@@ -1,12 +1,127 @@
+---
+name: ontology-why
+description: |
+  Ontology Integrity Design Rationale Helper.
+  Explains "why" decisions with 5 Integrity perspectives (Immutability, Determinism,
+  Referential Integrity, Semantic Consistency, Lifecycle Management).
+  Helper skill called by other ontology-* skills for design rationale.
+
+  Core Capabilities:
+  - 5 Integrity Perspectives: Complete analysis for all design questions
+  - Reference System: Palantir official docs + Context7 MCP integration
+  - Cross-Skill Integration: Called by ontology-objecttype, ontology-linktype, etc.
+
+  Output Format:
+  - Structured box format with 5 perspectives (핵심-근거-위반 시)
+  - Palantir official URLs required
+  - Practical recommendations (3+ items)
+
+  Pipeline Position:
+  - Helper Skill (called by other ontology-* skills)
+  - Direct invocation also supported
+user-invocable: true
+disable-model-invocation: false
+context: fork
+model: opus
+version: "3.0.0"
+argument-hint: "<question about ontology design>"
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - WebSearch
+  - WebFetch
+  - mcp__sequential-thinking__sequentialthinking
+hooks:
+  Setup:
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
+      timeout: 5000
+
+# =============================================================================
+# P1: Skill as Sub-Orchestrator (Disabled - Helper Skill)
+# =============================================================================
+agent_delegation:
+  enabled: false
+  reason: "Helper skill - single question/answer without delegation"
+  output_paths:
+    l1: ".agent/prompts/{slug}/ontology-why/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/ontology-why/l2_index.md"
+    l3: ".agent/prompts/{slug}/ontology-why/l3_details/"
+  return_format:
+    l1: "Design rationale summary with 5 Integrity perspectives (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/ontology-why/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/ontology-why/l3_details/"
+    requires_l2_read: false
+    next_action_hint: "Return to calling skill"
+
+# =============================================================================
+# P2: Parallel Agent Configuration (Disabled - Sequential Q&A)
+# =============================================================================
+parallel_agent_config:
+  enabled: false
+  reason: "Sequential question handling - parallel not applicable"
+
+# =============================================================================
+# P6: Agent Internal Feedback Loop (Response Validation)
+# =============================================================================
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    - "All 5 Integrity perspectives included"
+    - "Each perspective has 핵심-근거-위반 시 structure"
+    - "At least 1 Palantir official URL attached"
+    - "3+ practical recommendations provided"
+  refinement_triggers:
+    - "Missing Integrity perspective"
+    - "No official URL reference"
+    - "Speculative explanation without evidence"
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 # /ontology-why - Ontology Integrity 설계 근거 헬퍼
 
-> **Version:** 1.1.0
+> **Version:** 3.0.0
 > **Model:** opus
 > **User-Invocable:** true
 > **Type:** Helper Skill (다른 ontology-* 스킬에서 호출)
 > **Updated:** 2026-01-26 (Task #2: 5가지 Integrity 관점 상세화)
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 1. Purpose
 
@@ -23,6 +138,23 @@
 | **범용성** | 모든 /ontology-* 스킬에서 호출 가능 |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 2. 호출 방식
 
@@ -50,6 +182,23 @@ async def handle_why_question(question, context):
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 3. 지원 범위
 
@@ -120,6 +269,23 @@ async def handle_why_question(question, context):
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 4. 참조 체계 (CRITICAL)
 
 ### 4.1 1차 참조: ontology-definition 패키지
@@ -150,6 +316,23 @@ async def handle_why_question(question, context):
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 5. 출력 형식 (5가지 Integrity 관점 필수 포함)
 
@@ -292,6 +475,23 @@ async def handle_why_question(question, context):
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 6. Integration Protocol
 
 ### 6.1 다른 스킬에서 호출 시
@@ -325,6 +525,23 @@ async def handle_user_question(question):
 | (향후 추가) | Interface, ValueType, Automation 등 |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 7. Tools Allowed & MCP Integration
 
@@ -482,6 +699,23 @@ return format5IntegrityAnalysis({
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 8. Error Handling & Validation
 
 ### 8.1 오류 상황별 처리
@@ -520,7 +754,7 @@ function validateIntegrityAnalysis(response) {
   if (missing.length > 0) {
     console.warn(`⚠️ 누락된 관점: ${missing.join(', ')}`)
     // 자동 보완 시도
-    return补completeMissingPerspectives(response, missing)
+    return completeMissingPerspectives(response, missing)
   }
 
   return response
@@ -561,6 +795,23 @@ function validateIntegrityAnalysis(response) {
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 9. Version History & Future Enhancement
 
 ### 9.1 버전 이력
@@ -573,6 +824,10 @@ function validateIntegrityAnalysis(response) {
 |  |  | • 출력 형식에 5가지 관점 필수 포함 |
 |  |  | • WebSearch/Context7 MCP 통합 |
 |  |  | • 응답 품질 검증 체크리스트 추가 |
+| 3.0.0 | 2026-01-29 | **EFL Pattern Integration** |
+|  |  | • YAML frontmatter 추가 (disable-model-invocation: true, context: fork) |
+|  |  | • P6: Agent Internal Feedback Loop (5가지 관점 검증) |
+|  |  | • hooks format: type: command |
 
 ### 9.2 향후 개선 계획
 
@@ -629,5 +884,102 @@ function validateIntegrityAnalysis(response) {
 | **사용자 만족도** | >4.5/5 | - |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 10. EFL Pattern Implementation (V3.0.0)
+
+### Helper Skill Design
+
+As a Helper Skill called by other ontology-* skills:
+- P1 (Sub-Orchestrator): Disabled - single question/answer pattern
+- P2 (Parallel Agents): Disabled - sequential question handling
+- P6 (Feedback Loop): Enabled - 5 Integrity perspectives validation
+
+### P6: Response Validation Loop
+
+```javascript
+// Self-validation for all responses
+const responseValidation = {
+  maxIterations: 3,
+  requiredPerspectives: [
+    "Immutability",
+    "Determinism",
+    "Referential Integrity",
+    "Semantic Consistency",
+    "Lifecycle Management"
+  ],
+  checks: [
+    "all5PerspectivesIncluded()",
+    "each('핵심-근거-위반 시').structureValid()",
+    "palantirOfficialURLs.length >= 1",
+    "practicalRecommendations.length >= 3"
+  ],
+  onFailure: "completeMissingPerspectives(response, missing)"
+}
+```
+
+### Cross-Skill Integration
+
+```
+/ontology-objecttype (L3)
+    │
+    ├─ User asks "?" question
+    │
+    ▼
+/ontology-why (auto-invoked)
+    │
+    ├─ 5 Integrity perspective analysis
+    ├─ Context7 code examples
+    └─ Palantir official references
+    │
+    ▼
+Return to /ontology-objecttype
+    └─ Add "설계 근거" section to L3 output
+```
+
+### Post-Compact Recovery
+
+```javascript
+if (isPostCompactSession()) {
+  // Helper skill - stateless, no recovery needed
+  // Each invocation is independent
+  console.log("Helper skill: stateless operation, ready for new questions")
+}
+```
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 **End of Skill Definition**

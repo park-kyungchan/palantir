@@ -1,42 +1,42 @@
 {
-  "numStartups": 65,
+  "numStartups": 84,
   "installMethod": "native",
   "autoUpdates": false,
   "theme": "dark-daltonized",
   "tipsHistory": {
     "new-user-warmup": 8,
     "plan-mode-for-complex-tasks": 17,
-    "terminal-setup": 61,
-    "memory-command": 61,
-    "theme-command": 61,
+    "terminal-setup": 81,
+    "memory-command": 76,
+    "theme-command": 81,
     "colorterm-truecolor": 61,
-    "shift-enter-setup": 64,
+    "shift-enter-setup": 84,
     "status-line": 2,
     "stickers-command": 23,
     "prompt-queue": 3,
-    "enter-to-steer-in-relatime": 63,
-    "todo-list": 63,
-    "install-github-app": 54,
-    "install-slack-app": 54,
-    "drag-and-drop-images": 54,
-    "double-esc-code-restore": 55,
-    "continue": 55,
-    "shift-tab": 56,
-    "image-paste": 64,
+    "enter-to-steer-in-relatime": 84,
+    "todo-list": 84,
+    "install-github-app": 76,
+    "install-slack-app": 76,
+    "drag-and-drop-images": 77,
+    "double-esc-code-restore": 77,
+    "continue": 77,
+    "shift-tab": 77,
+    "image-paste": 84,
     "ultrathink-keyword": 14,
-    "desktop-app": 65,
-    "web-app": 65,
-    "mobile-app": 51,
-    "guest-passes": 61,
-    "custom-agents": 51,
-    "default-permission-mode-config": 58,
-    "permissions": 61,
-    "rename-conversation": 56,
-    "custom-commands": 56,
-    "agent-flag": 58,
-    "git-worktrees": 61
+    "desktop-app": 81,
+    "web-app": 81,
+    "mobile-app": 84,
+    "guest-passes": 84,
+    "custom-agents": 84,
+    "default-permission-mode-config": 78,
+    "permissions": 81,
+    "rename-conversation": 71,
+    "custom-commands": 71,
+    "agent-flag": 74,
+    "git-worktrees": 81
   },
-  "promptQueueUseCount": 384,
+  "promptQueueUseCount": 420,
   "showExpandedTodos": true,
   "cachedStatsigGates": {
     "tengu_prompt_suggestion": true,
@@ -68,10 +68,10 @@
       "haiku"
     ],
     "tengu_ant_attribution_header_new": true,
-    "tengu_scratch": false,
+    "tengu_scratch": true,
     "tengu_log_segment_events": false,
     "tengu_log_datadog_events": true,
-    "tengu_streaming_tool_execution2": false,
+    "tengu_streaming_tool_execution2": true,
     "tengu_post_compact_survey": false,
     "tengu_accept_with_feedback": false,
     "enhanced_telemetry_beta": false,
@@ -83,19 +83,31 @@
     "tengu_compact_streaming_retry": false,
     "tengu_prompt_suggestion": true,
     "tengu_keybinding_customization": false,
-    "tengu_claudeai_mcp_connectors": true,
+    "tengu_claudeai_mcp_connectors": false,
     "tengu_attribution_header": true,
     "tengu_plan_mode_interview_phase": false,
     "tengu_brass_pebble": false,
-    "tengu_cache_plum_violet": false,
-    "tengu_file_write_optimization": false
+    "tengu_cache_plum_violet": true,
+    "tengu_file_write_optimization": false,
+    "tengu_scarf_coffee": false,
+    "tengu_keybinding_customization_release": true,
+    "tengu_pr_status_cli": true,
+    "tengu_marble_kite": true,
+    "tengu_kv7_prompt_sort": false,
+    "tengu_marble_anvil": true,
+    "tengu_tst_kx7": false,
+    "tengu_coral_fern": false,
+    "tengu_plum_vx3": false,
+    "tengu_compact_cache_prefix": true,
+    "tengu_system_prompt_global_cache": false,
+    "tengu_workout": false
   },
   "userID": "686ed4acad815732f5f0dc4ccf1b5f4a50ce529b6d26605dade4ff54ef55ebc4",
   "firstStartTime": "2026-01-09T06:49:15.799Z",
   "sonnet45MigrationComplete": true,
   "opus45MigrationComplete": true,
   "thinkingMigrationComplete": true,
-  "changelogLastFetched": 1769258231021,
+  "changelogLastFetched": 1769750934254,
   "oauthAccount": {
     "accountUuid": "aee35519-1347-4893-a6d6-342921c4fbf1",
     "emailAddress": "packr0723@gmail.com",
@@ -112,11 +124,11 @@
   "groveConfigCache": {
     "aee35519-1347-4893-a6d6-342921c4fbf1": {
       "grove_enabled": true,
-      "timestamp": 1769318696627
+      "timestamp": 1769678359905
     }
   },
   "bypassPermissionsModeAccepted": true,
-  "lastReleaseNotesSeen": "2.1.19",
+  "lastReleaseNotesSeen": "2.1.25",
   "projects": {
     "/mnt/c/Users/packr": {
       "allowedTools": [],
@@ -179,11 +191,11 @@
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
       "exampleFiles": [
-        "settings.json",
+        "pipeline.py",
         "CLAUDE.md",
-        "action-executor.md",
-        "audit-logger.md",
-        "schema-validator.md"
+        "settings.json",
+        ".claude.json",
+        "known_marketplaces.json"
       ],
       "reactVulnerabilityCache": {
         "detected": false,
@@ -192,47 +204,49 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 12.937038900000008,
-      "lastAPIDuration": 1818829,
-      "lastAPIDurationWithoutRetries": 1818676,
-      "lastToolDuration": 264734,
-      "lastDuration": 4459514,
-      "lastLinesAdded": 3092,
-      "lastLinesRemoved": 238,
-      "lastTotalInputTokens": 145452,
-      "lastTotalOutputTokens": 102578,
-      "lastTotalCacheCreationInputTokens": 742630,
-      "lastTotalCacheReadInputTokens": 14186023,
-      "lastTotalWebSearchRequests": 1,
+      "lastCost": 99.74682685000006,
+      "lastAPIDuration": 13701088,
+      "lastAPIDurationWithoutRetries": 13699801,
+      "lastToolDuration": 5006836,
+      "lastDuration": 24488556,
+      "lastLinesAdded": 24826,
+      "lastLinesRemoved": 2586,
+      "lastTotalInputTokens": 234471,
+      "lastTotalOutputTokens": 853583,
+      "lastTotalCacheCreationInputTokens": 6588727,
+      "lastTotalCacheReadInputTokens": 96649510,
+      "lastTotalWebSearchRequests": 13,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 141766,
-          "outputTokens": 3771,
-          "cacheReadInputTokens": 0,
-          "cacheCreationInputTokens": 0,
+          "inputTokens": 171725,
+          "outputTokens": 88693,
+          "cacheReadInputTokens": 8830700,
+          "cacheCreationInputTokens": 906296,
           "webSearchRequests": 0,
-          "costUSD": 0.160621
-        },
-        "claude-sonnet-4-5-20250929": {
-          "inputTokens": 14,
-          "outputTokens": 34687,
-          "cacheReadInputTokens": 4185553,
-          "cacheCreationInputTokens": 109051,
-          "webSearchRequests": 0,
-          "costUSD": 2.1849541500000003
+          "costUSD": 2.63113
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 3672,
-          "outputTokens": 64120,
-          "cacheReadInputTokens": 10000470,
-          "cacheCreationInputTokens": 633579,
-          "webSearchRequests": 1,
-          "costUSD": 10.591463750000003
+          "inputTokens": 62558,
+          "outputTokens": 738197,
+          "cacheReadInputTokens": 82799143,
+          "cacheCreationInputTokens": 5440974,
+          "webSearchRequests": 13,
+          "costUSD": 94.30337400000003
+        },
+        "claude-sonnet-4-5-20250929": {
+          "inputTokens": 188,
+          "outputTokens": 26693,
+          "cacheReadInputTokens": 5019667,
+          "cacheCreationInputTokens": 241457,
+          "webSearchRequests": 0,
+          "costUSD": 2.81232285
         }
       },
-      "lastSessionId": "53d606e4-9d83-45a0-a9ec-649fde6c69e2",
+      "lastSessionId": "53c79af9-07ce-4487-a1c6-8e0a897e3d48",
       "hasCompletedProjectOnboarding": true,
-      "exampleFilesGeneratedAt": 1768825067197
+      "exampleFilesGeneratedAt": 1769581356050,
+      "lastFpsAverage": 11.44,
+      "lastFpsLow1Pct": 91.89
     },
     "/home/palantir/park-kyungchan/palantir": {
       "allowedTools": [],
@@ -261,7 +275,7 @@
     "89016125-9720-4767-bbab-74580d4b602c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1769326590048
+      "timestamp": 1769763102013
     }
   },
   "officialMarketplaceAutoInstallAttempted": true,
@@ -309,12 +323,15 @@
     "89016125-9720-4767-bbab-74580d4b602c": {
       "eligible": true,
       "referral_code_details": {
-        "code": "x65A7fa1Gg",
-        "campaign": "claude_code_guest_pass",
-        "referral_link": "https://claude.ai/referral/x65A7fa1Gg"
+        "code": "-xnbTYOStA",
+        "campaign": "claude_code_guest_pass_a47c",
+        "referral_link": "https://claude.ai/referral/-xnbTYOStA"
       },
-      "referrer_reward": null,
-      "timestamp": 1769326346920
+      "referrer_reward": {
+        "amount_minor_units": 1000,
+        "currency": "USD"
+      },
+      "timestamp": 1769776341191
     }
   },
   "skillUsage": {
@@ -351,8 +368,8 @@
       "lastUsedAt": 1769172092151
     },
     "commit-push-pr": {
-      "usageCount": 5,
-      "lastUsedAt": 1769326488181
+      "usageCount": 9,
+      "lastUsedAt": 1769776266766
     },
     "build": {
       "usageCount": 12,
@@ -367,32 +384,52 @@
       "lastUsedAt": 1769186090255
     },
     "clarify": {
-      "usageCount": 19,
-      "lastUsedAt": 1769256033798
+      "usageCount": 24,
+      "lastUsedAt": 1769668199276
     },
     "explore-l1l2l3": {
       "usageCount": 2,
       "lastUsedAt": 1769214428648
     },
     "worker": {
-      "usageCount": 7,
-      "lastUsedAt": 1769319637407
+      "usageCount": 34,
+      "lastUsedAt": 1769765998923
     },
     "orchestrate": {
-      "usageCount": 5,
-      "lastUsedAt": 1769326582396
+      "usageCount": 9,
+      "lastUsedAt": 1769762972273
     },
     "planning": {
-      "usageCount": 4,
-      "lastUsedAt": 1769326321906
+      "usageCount": 12,
+      "lastUsedAt": 1769770414109
     },
     "research": {
-      "usageCount": 2,
-      "lastUsedAt": 1769325718272
+      "usageCount": 9,
+      "lastUsedAt": 1769686777188
     },
     "rsil-plan": {
       "usageCount": 1,
       "lastUsedAt": 1769321977394
+    },
+    "collect": {
+      "usageCount": 3,
+      "lastUsedAt": 1769599338737
+    },
+    "synthesis": {
+      "usageCount": 3,
+      "lastUsedAt": 1769690656340
+    },
+    "assign": {
+      "usageCount": 2,
+      "lastUsedAt": 1769688954921
+    },
+    "re-architecture": {
+      "usageCount": 11,
+      "lastUsedAt": 1769768035571
+    },
+    "math-parse": {
+      "usageCount": 1,
+      "lastUsedAt": 1769774038565
     }
   },
   "lastPlanModeUse": 1769322839169,
@@ -400,7 +437,9 @@
   "opusProMigrationComplete": true,
   "cachedChromeExtensionInstalled": false,
   "feedbackSurveyState": {
-    "lastShownTime": 1769236561711
+    "lastShownTime": 1769674483298
   },
-  "autoUpdatesProtectedForNative": true
+  "autoUpdatesProtectedForNative": true,
+  "hasVisitedPasses": false,
+  "passesLastSeenCampaign": "claude_code_guest_pass_a47c"
 }

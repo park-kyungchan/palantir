@@ -265,11 +265,29 @@ class BaseStage(ABC, Generic[InputT, OutputT]):
 
         Returns:
             Stage output
+
+        Raises:
+            RuntimeError: If called from within an async context
         """
         import asyncio
-        return asyncio.get_event_loop().run_until_complete(
-            self._execute_async(input_data, **kwargs)
-        )
+        try:
+            asyncio.get_running_loop()
+            # Already in async context - cannot use run_until_complete
+            raise RuntimeError(
+                "Cannot call _execute() from within async context. "
+                "Use _execute_async() instead."
+            )
+        except RuntimeError as e:
+            if "no running event loop" not in str(e).lower():
+                raise
+            # No loop running - create isolated loop with cleanup
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(
+                    self._execute_async(input_data, **kwargs)
+                )
+            finally:
+                loop.close()
 
     def get_metrics(self, output: OutputT) -> StageMetrics:
         """Collect metrics from stage execution.
@@ -336,11 +354,12 @@ class BaseStage(ABC, Generic[InputT, OutputT]):
             output = await self._execute_async(input_data, **kwargs)
             result.output = output
 
-            # Collect metrics
+            # Complete timing BEFORE metrics collection (P1 fix)
+            timing.complete(success=True)
+
+            # Collect metrics with accurate duration
             result.metrics = self.get_metrics(output)
             result.metrics.duration_ms = timing.duration_ms
-
-            timing.complete(success=True)
 
         except StageError as e:
             timing.complete(success=False, error=str(e))
@@ -369,8 +388,27 @@ class BaseStage(ABC, Generic[InputT, OutputT]):
 
         Returns:
             StageResult wrapping output, timing, and metrics
+
+        Raises:
+            RuntimeError: If called from within an async context
         """
         import asyncio
-        return asyncio.get_event_loop().run_until_complete(
-            self.run_async(input_data, skip_validation=skip_validation, **kwargs)
+        try:
+            asyncio.get_running_loop()
+            # Already in async context - cannot use run_until_complete
+            raise RuntimeError(
+                "Cannot call run() from within async context. "
+                "Use run_async() instead."
+            )
+        except RuntimeError as e:
+            if "no running event loop" not in str(e).lower():
+                raise
+            # No loop running - create isolated loop with cleanup
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(
+                    self.run_async(input_data, skip_validation=skip_validation, **kwargs)
+                )
+            finally:
+                loop.close()
         )

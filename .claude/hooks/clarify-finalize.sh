@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# clarify-finalize.sh - Stop Hook for /clarify Skill
+# clarify-finalize.sh - Stop Hook for /clarify Skill (V2.0.0)
 #
 # Triggers: Stop event when /clarify skill completes
 # Purpose:
 #   1. Finalize YAML log with status update
 #   2. Record downstream_skills if routing occurred
 #   3. Compute context_hash for integrity verification
+#   4. Append handoff metadata for pipeline continuity (V2.0.0)
 #
 # Input (JSON stdin):
 #   - hook_event_name: "Stop"
@@ -14,15 +15,29 @@
 #
 # Output (JSON stdout):
 #   - continue: true (always continue)
-#   - hookSpecificOutput: finalization summary
+#   - hookSpecificOutput: finalization summary with handoff
+#
+# Path Strategy (V7.1):
+#   - Primary: .agent/prompts/{slug}/clarify.yaml
+#   - Fallback: .agent/clarify/{slug}.yaml (V6 compatibility)
 
 set -euo pipefail
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+# V7.1 workload-scoped path (primary)
+PROMPTS_DIR=".agent/prompts"
+# V6 legacy path (fallback)
 CLARIFY_LOG_DIR=".agent/clarify"
 LOG_FILE=".agent/logs/clarify-finalize.log"
+
+# Source standalone module for handoff
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHARED_DIR="${SCRIPT_DIR}/../skills/shared"
+if [[ -f "${SHARED_DIR}/skill-standalone.sh" ]]; then
+    source "${SHARED_DIR}/skill-standalone.sh"
+fi
 
 # ============================================================================
 # LOGGING
@@ -60,10 +75,22 @@ main() {
     fi
 
     # Find the most recent in-progress clarify log
-    local latest_log
-    latest_log=$(find "$CLARIFY_LOG_DIR" -name "*.yaml" -type f 2>/dev/null | \
-        xargs -I {} sh -c 'grep -l "status: \"in_progress\"" "{}" 2>/dev/null || true' | \
-        head -1)
+    # V7.1: Check workload-scoped paths first, then V6 fallback
+    local latest_log=""
+
+    # Strategy 1: V7.1 workload-scoped paths
+    if [[ -d "$PROMPTS_DIR" ]]; then
+        latest_log=$(find "$PROMPTS_DIR" -name "clarify.yaml" -type f 2>/dev/null | \
+            xargs -I {} sh -c 'grep -l "status: \"in_progress\"" "{}" 2>/dev/null || true' | \
+            head -1)
+    fi
+
+    # Strategy 2: V6 fallback
+    if [[ -z "$latest_log" ]] && [[ -d "$CLARIFY_LOG_DIR" ]]; then
+        latest_log=$(find "$CLARIFY_LOG_DIR" -name "*.yaml" -type f 2>/dev/null | \
+            xargs -I {} sh -c 'grep -l "status: \"in_progress\"" "{}" 2>/dev/null || true' | \
+            head -1)
+    fi
 
     if [[ -z "$latest_log" ]]; then
         log "INFO" "No in-progress clarify log found"
@@ -115,7 +142,21 @@ main() {
         fi
     fi
 
-    # Return success
+    # Extract slug for handoff
+    local slug=""
+    slug=$(yq '.metadata.id // ""' "$latest_log" 2>/dev/null | tr -d '"')
+
+    # Generate handoff suggestion
+    local next_step=""
+    local final_status
+    final_status=$(yq '.metadata.status' "$latest_log" 2>/dev/null | tr -d '"')
+
+    if [[ "$final_status" == "completed" ]]; then
+        next_step="/research --clarify-slug ${slug}"
+        log "INFO" "Handoff ready: ${next_step}"
+    fi
+
+    # Return success with handoff
     local output
     output=$(cat << EOF
 {
@@ -123,13 +164,26 @@ main() {
     "hookSpecificOutput": {
         "action": "clarify-finalize",
         "log_path": "${latest_log}",
-        "status": "$(yq '.metadata.status' "$latest_log" | tr -d '"')"
+        "status": "${final_status}",
+        "slug": "${slug}",
+        "handoff": {
+            "skill": "clarify",
+            "workload_slug": "${slug}",
+            "status": "${final_status}",
+            "next_action": {
+                "skill": "/research",
+                "arguments": "--clarify-slug ${slug}",
+                "required": true,
+                "reason": "Clarify complete, ready for research"
+            }
+        },
+        "nextStep": "${next_step}"
     }
 }
 EOF
 )
 
-    log "INFO" "Finalization complete"
+    log "INFO" "Finalization complete with handoff"
     echo "$output"
 }
 

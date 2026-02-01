@@ -17,7 +17,8 @@
       "Bash(npm:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "deny": [
       "Read(.env*)",

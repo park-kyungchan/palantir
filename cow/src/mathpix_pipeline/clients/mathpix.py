@@ -26,6 +26,7 @@ import httpx
 
 from ..schemas import (
     BBox,
+    ChemicalFormula,
     Confidence,
     ContentFlags,
     ContentType,
@@ -36,11 +37,19 @@ from ..schemas import (
     PipelineStage,
     ReviewMetadata,
     ReviewSeverity,
+    TableCell,
+    TableElement,
     TextSpec,
     VisionParseTrigger,
+    WordElement,
     WritingStyle,
 )
 from ..utils.geometry import contour_to_bbox, position_to_bbox
+from ..utils.circuit_breaker import (
+    CircuitOpenError,
+    get_breaker,
+    MATHPIX_API_CONFIG,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -97,17 +106,45 @@ class RetryConfig:
 
 @dataclass
 class MathpixConfig:
-    """Configuration for Mathpix API client."""
+    """Configuration for Mathpix API client.
+
+    Premium API features include extended output formats, chemistry detection,
+    table data extraction, and auto-rotation support.
+    """
+    # Required credentials
     app_id: str
     app_key: str
+
+    # API settings
     base_url: str = "https://api.mathpix.com/v3"
     timeout_seconds: float = 30.0
     retry: RetryConfig = field(default_factory=RetryConfig)
 
-    # Default request options
-    formats: List[str] = field(default_factory=lambda: ["latex_styled", "text"])
+    # Output Formats - Extended for Premium API
+    # Supported: latex_styled, text, mathml, asciimath, data
+    formats: List[str] = field(default_factory=lambda: [
+        "latex_styled", "text", "mathml", "asciimath", "data"
+    ])
+
+    # Data Options - Basic
     include_line_data: bool = True
     include_diagram_text: bool = True
+
+    # Data Options - Premium Features
+    include_mathml: bool = True       # Include MathML output for equations
+    include_asciimath: bool = True    # Include ASCIImath output for equations
+    include_smiles: bool = True       # Enable SMILES output for chemistry detection
+    include_table_data: bool = True   # Extract structured table data
+    include_word_data: bool = False   # Extract word-level data (increases response size)
+    include_geo_data: bool = True     # Extract geometry-specific data
+
+    # Advanced Options - Premium Features
+    auto_rotate_confidence: bool = True  # Enable auto-rotation with confidence
+    pdf_enabled: bool = True             # Enable PDF document processing
+
+    # Chemistry Approval Gate
+    # If false, chemistry content requires explicit user approval before processing
+    chemistry_auto_approve: bool = False
 
     # Confidence thresholds
     low_confidence_threshold: float = 0.5
@@ -411,6 +448,9 @@ class MathpixClient:
         self.config = config
         self._client: Optional[httpx.AsyncClient] = None
 
+        # Circuit breaker for API resilience (Task #69)
+        self._breaker = get_breaker("mathpix_api", MATHPIX_API_CONFIG)
+
     async def __aenter__(self) -> "MathpixClient":
         """Async context manager entry."""
         self._client = httpx.AsyncClient(
@@ -479,7 +519,13 @@ class MathpixClient:
             TimeoutError: On 408/504 after all retries
             InvalidImageError: On 400 (no retry)
             ServerError: On 500-503 after all retries
+            CircuitOpenError: When circuit breaker is open
         """
+        # Check circuit breaker state before attempting call
+        if self._breaker.is_open:
+            retry_after = self._breaker._get_retry_after()
+            raise CircuitOpenError(self._breaker.name, retry_after)
+
         if not self._client:
             raise RuntimeError("Client not initialized. Use async context manager.")
 
@@ -492,6 +538,8 @@ class MathpixClient:
 
                 # Success
                 if response.status_code == 200:
+                    # Record success with circuit breaker
+                    self._breaker._record_success()
                     return response.json()
 
                 # Handle specific error codes
@@ -555,10 +603,14 @@ class MathpixClient:
                     )
                 continue
 
-        # All retries exhausted
+        # All retries exhausted - record failure with circuit breaker
         if last_error:
+            self._breaker._record_failure(last_error)
             raise last_error
-        raise MathpixError("All retry attempts failed")
+
+        final_error = MathpixError("All retry attempts failed")
+        self._breaker._record_failure(final_error)
+        raise final_error
 
     async def process_image(
         self,
@@ -605,6 +657,185 @@ class MathpixClient:
             processing_time_ms=processing_time_ms,
         )
 
+    async def process_pdf(
+        self,
+        pdf_data: bytes,
+        pdf_id: Optional[str] = None,
+    ) -> TextSpec:
+        """Process PDF document through Mathpix API.
+
+        Args:
+            pdf_data: PDF file bytes
+            pdf_id: Optional identifier (generated if not provided)
+
+        Returns:
+            TextSpec with extracted content
+
+        Raises:
+            MathpixError: On API errors after retries
+        """
+        start_time = time.time()
+        pdf_id = pdf_id or str(uuid4())
+
+        # Prepare request for PDF endpoint
+        payload = {
+            "src": f"data:application/pdf;base64,{base64.b64encode(pdf_data).decode('utf-8')}",
+            "formats": self.config.formats,
+            "data_options": {
+                "include_line_data": self.config.include_line_data,
+                "include_smiles": self.config.include_smiles,
+                "include_table_data": self.config.include_table_data,
+            },
+        }
+
+        response = await self._request_with_retry("/pdf", payload)
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        return self._response_to_text_spec(
+            response=response,
+            image_id=pdf_id,
+            processing_time_ms=processing_time_ms,
+        )
+
+    def _parse_table_data(
+        self,
+        response: Dict[str, Any],
+        image_id: str,
+    ) -> List[TableElement]:
+        """Parse table data from Mathpix response.
+
+        Args:
+            response: Mathpix API response
+            image_id: Source image identifier
+
+        Returns:
+            List of TableElement models
+        """
+        tables: List[TableElement] = []
+        table_data = response.get("table_data", [])
+
+        for idx, table in enumerate(table_data):
+            cells_data = table.get("cells", [])
+            rows: List[List[TableCell]] = []
+
+            # Group cells by row
+            current_row: List[TableCell] = []
+            current_row_idx = 0
+
+            for cell in cells_data:
+                row_idx = cell.get("row", 0)
+                if row_idx > current_row_idx:
+                    if current_row:
+                        rows.append(current_row)
+                    current_row = []
+                    current_row_idx = row_idx
+
+                current_row.append(TableCell(
+                    content=cell.get("text", ""),
+                    row_span=cell.get("rowspan", 1),
+                    col_span=cell.get("colspan", 1),
+                    is_header=cell.get("is_header", False),
+                ))
+
+            # Append last row
+            if current_row:
+                rows.append(current_row)
+
+            # Extract bbox if position available
+            bbox = None
+            if "position" in table:
+                bbox = position_to_bbox(table["position"])
+
+            tables.append(TableElement(
+                id=f"{image_id}-table-{idx:03d}",
+                rows=rows,
+                caption=table.get("caption"),
+                bbox=bbox,
+                confidence=Confidence(
+                    value=table.get("confidence", 0.0),
+                    source="mathpix-api-v3",
+                    element_type="table",
+                ),
+            ))
+
+        return tables
+
+    def _parse_chemistry_data(
+        self,
+        response: Dict[str, Any],
+        image_id: str,
+    ) -> Tuple[List[ChemicalFormula], bool]:
+        """Parse chemistry/SMILES data from Mathpix response.
+
+        Args:
+            response: Mathpix API response
+            image_id: Source image identifier
+
+        Returns:
+            Tuple of (chemistry list, chemistry_detected flag)
+        """
+        chemistry: List[ChemicalFormula] = []
+        smiles_data = response.get("smiles_data", [])
+        chemistry_detected = len(smiles_data) > 0
+
+        for idx, chem in enumerate(smiles_data):
+            # Extract bbox if position available
+            bbox = None
+            if "position" in chem:
+                bbox = position_to_bbox(chem["position"])
+
+            chemistry.append(ChemicalFormula(
+                id=f"{image_id}-chem-{idx:03d}",
+                smiles=chem.get("smiles", ""),
+                inchi=chem.get("inchi"),
+                formula_text=chem.get("formula"),
+                bbox=bbox,
+                confidence=Confidence(
+                    value=chem.get("confidence", 0.0),
+                    source="mathpix-api-v3",
+                    element_type="chemistry",
+                ),
+                approval_status="pending",
+            ))
+
+        return chemistry, chemistry_detected
+
+    def _parse_word_data(
+        self,
+        response: Dict[str, Any],
+        image_id: str,
+    ) -> List[WordElement]:
+        """Parse word-level OCR data from Mathpix response.
+
+        Args:
+            response: Mathpix API response
+            image_id: Source image identifier
+
+        Returns:
+            List of WordElement models
+        """
+        words: List[WordElement] = []
+        word_data = response.get("word_data", [])
+
+        for idx, word in enumerate(word_data):
+            # Extract bbox from position
+            bbox = BBox(x=0, y=0, width=1, height=1)
+            if "position" in word:
+                bbox = position_to_bbox(word["position"])
+
+            words.append(WordElement(
+                text=word.get("text", ""),
+                bbox=bbox,
+                confidence=Confidence(
+                    value=word.get("confidence", 0.0),
+                    source="mathpix-api-v3",
+                    element_type="word",
+                ),
+                line_index=word.get("line_index", 0),
+            ))
+
+        return words
+
     def _response_to_text_spec(
         self,
         response: Dict[str, Any],
@@ -650,6 +881,32 @@ class MathpixClient:
         # Detect writing style
         writing_style = detect_writing_style(response, line_data)
 
+        # Parse premium API outputs
+        mathml = response.get("mathml")
+        asciimath = response.get("asciimath")
+
+        # Parse structured data (Premium API)
+        tables: List[TableElement] = []
+        if self.config.include_table_data:
+            tables = self._parse_table_data(response, image_id)
+
+        chemistry: List[ChemicalFormula] = []
+        chemistry_detected = False
+        if self.config.include_smiles:
+            chemistry, chemistry_detected = self._parse_chemistry_data(response, image_id)
+
+        words: List[WordElement] = []
+        if self.config.include_word_data:
+            words = self._parse_word_data(response, image_id)
+
+        # Determine chemistry approval requirement
+        chemistry_approval_required = chemistry_detected and not self.config.chemistry_auto_approve
+
+        # Add chemistry trigger if detected
+        if chemistry_detected:
+            triggers.append(VisionParseTrigger.CHEMISTRY_DETECTED)
+            content_flags.contains_chemistry = True
+
         # Build review metadata
         review = ReviewMetadata()
         if confidence < self.config.very_low_confidence_threshold:
@@ -660,6 +917,10 @@ class MathpixClient:
             review.review_required = True
             review.review_severity = ReviewSeverity.MEDIUM
             review.review_reason = f"Low confidence: {confidence:.2f}"
+        elif chemistry_approval_required:
+            review.review_required = True
+            review.review_severity = ReviewSeverity.MEDIUM
+            review.review_reason = "Chemistry content requires approval"
 
         # Build provenance
         provenance = Provenance(
@@ -677,9 +938,16 @@ class MathpixClient:
             text=response.get("text", ""),
             latex=response.get("latex_styled") or response.get("latex"),
             confidence=confidence,
+            mathml=mathml,
+            asciimath=asciimath,
             line_segments=line_segments,
             equations=equations,
             detection_map=detection_entries,
+            tables=tables,
+            chemistry=chemistry,
+            words=words,
+            chemistry_detected=chemistry_detected,
+            chemistry_approval_required=chemistry_approval_required,
             raw_response=response,
             review=review,
             processing_time_ms=processing_time_ms,
@@ -697,6 +965,7 @@ __all__ = [
     "TimeoutError",
     "InvalidImageError",
     "ServerError",
+    "CircuitOpenError",
     # Config
     "MathpixConfig",
     "RetryConfig",

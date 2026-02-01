@@ -1,12 +1,14 @@
 #!/bin/bash
 # ============================================================================
-# Research Validation Hook - Gate 2: Scope Access Validation
-# Version: 1.0.0
+# Research Validation Hook - Gate 2: Argument + Scope Validation
+# Version: 2.0.0
 # ============================================================================
 #
 # Triggered by: /research skill Setup hook (before execution)
-# Purpose: Validate scope access before starting research
-# Exit Codes: 0 = passed, 1 = failed, 2 = warning
+# Purpose:
+#   1. Validate required arguments (query)
+#   2. Validate scope access
+# Exit Codes: 0 = passed, 1 = failed (blocks skill execution)
 #
 # ============================================================================
 
@@ -16,21 +18,72 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="${WORKSPACE_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 
-source "${WORKSPACE_ROOT}/.claude/skills/shared/validation-gates.sh"
+# Safely source validation gates if exists
+if [[ -f "${WORKSPACE_ROOT}/.claude/skills/shared/validation-gates.sh" ]]; then
+    source "${WORKSPACE_ROOT}/.claude/skills/shared/validation-gates.sh"
+fi
 
 # ============================================================================
-# MAIN
+# ARGUMENT VALIDATION (Gate 2-A)
+# ============================================================================
+
+show_usage() {
+    cat << 'EOF'
+Usage: /research [OPTIONS] <query>
+
+Arguments:
+  <query>                Research topic or question (REQUIRED)
+
+Options:
+  --scope <path>         Limit research to specific directory
+  --external             Include external resource gathering (WebSearch)
+  --clarify-slug <slug>  Link to upstream /clarify workload
+  --help, -h             Show this help message
+
+Examples:
+  /research "authentication patterns"
+  /research --scope src/auth/ "OAuth2 implementation"
+  /research --external --clarify-slug user-auth-20260129 "JWT refresh"
+
+Pipeline Position:
+  /clarify → /research → /planning
+EOF
+}
+
+# Get skill arguments
+ARGS="${SKILL_ARGUMENTS:-$*}"
+
+# Check for help flag
+if echo "$ARGS" | grep -qE '(--help|-h)'; then
+    show_usage
+    exit 1  # Block execution, show help
+fi
+
+# Extract query (non-option argument)
+QUERY=$(echo "$ARGS" | sed -E 's/--scope\s+[^\s]+//g; s/--clarify-slug\s+[^\s]+//g; s/--external//g' | xargs)
+
+# Validate: Query is required
+if [[ -z "$QUERY" ]]; then
+    echo "❌ Gate 2-A FAILED: Research query is required"
+    echo ""
+    show_usage
+    echo ""
+    echo "Skill execution blocked. Please provide a research query."
+    exit 1
+fi
+
+echo "✅ Gate 2-A PASSED: Query provided"
+echo "   Query: $QUERY"
+echo ""
+
+# ============================================================================
+# SCOPE VALIDATION (Gate 2-B)
 # ============================================================================
 
 # Extract scope from arguments
-SCOPE="${1:-}"
-
-if [[ -z "$SCOPE" ]]; then
-    # Try to extract from skill arguments
-    if [[ -n "${SKILL_ARGUMENTS:-}" ]]; then
-        # Parse --scope argument
-        SCOPE=$(echo "$SKILL_ARGUMENTS" | grep -oP '(?<=--scope\s)[^\s]+' || echo "")
-    fi
+SCOPE=""
+if echo "$ARGS" | grep -qE '--scope\s+'; then
+    SCOPE=$(echo "$ARGS" | grep -oP '(?<=--scope\s)[^\s]+' || echo "")
 fi
 
 # If no scope provided, default to current directory (broad scope warning)

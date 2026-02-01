@@ -1,0 +1,6 @@
+export ORCHESTRATOR_SESSION_ID="1769586814-88892"
+export WORKSPACE_ROOT="/home/palantir"
+export L1L2L3_OUTPUT_DIR=".agent/outputs"
+export ORCHESTRATOR_SESSION_ID="1769588278-118069"
+export WORKSPACE_ROOT="/home/palantir"
+export L1L2L3_OUTPUT_DIR=".agent/outputs"

@@ -1,10 +1,139 @@
+---
+name: ontology-core
+description: |
+  Core Ontology Schema Validator for Ontology-Driven-Architecture (ODA) codebases.
+  Validates ObjectType, LinkType, ActionType, and PropertyDefinition schemas.
+  Generates scaffold templates and checks cross-type consistency.
+
+  Core Capabilities:
+  - Schema Validation: Validate ontology type definitions against rules
+  - Scaffold Generation: Generate typed templates for new entities
+  - Cross-Link Validation: Verify LinkType source/target references
+  - Batch Processing: Validate entire directories of ontology files
+
+  Output Format:
+  - L1: Validation summary (pass/fail counts)
+  - L2: Per-file validation results with warnings
+  - L3: Detailed error analysis with fix suggestions
+
+  Pipeline Position:
+  - Domain-specific utility skill
+  - Can be called standalone for ontology development
+user-invocable: true
+disable-model-invocation: false
+context: fork
+model: opus
+version: "3.0.0"
+argument-hint: "validate <file> | validate-all <dir> | scaffold <type> <name> | check-links <dir>"
+allowed-tools:
+  - Read
+  - Write
+  - Glob
+  - Grep
+  - Task
+  - mcp__sequential-thinking__sequentialthinking
+hooks:
+  Setup:
+    - type: command
+      command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
+      timeout: 5000
+
+# =============================================================================
+# P1: Skill as Sub-Orchestrator (Validation-focused)
+# =============================================================================
+agent_delegation:
+  enabled: true
+  default_mode: true  # V1.1.0: Auto-delegation by default
+  max_sub_agents: 2
+  delegation_strategy: "validation-based"
+  strategies:
+    validation_based:
+      description: "Delegate validation by type category"
+      use_when: "validate-all with large directory"
+  sub_agent_permissions:
+    - Read
+    - Glob
+    - Grep
+  output_paths:
+    l1: ".agent/prompts/{slug}/ontology-core/l1_summary.yaml"
+    l2: ".agent/prompts/{slug}/ontology-core/l2_index.md"
+    l3: ".agent/prompts/{slug}/ontology-core/l3_details/"
+  return_format:
+    l1: "Validation summary with pass/fail counts (≤500 tokens)"
+    l2_path: ".agent/prompts/{slug}/ontology-core/l2_index.md"
+    l3_path: ".agent/prompts/{slug}/ontology-core/l3_details/"
+    requires_l2_read: false
+    next_action_hint: "Fix errors or proceed"
+
+# =============================================================================
+# P2: Parallel Agent Configuration
+# =============================================================================
+parallel_agent_config:
+  enabled: true
+  complexity_detection: "auto"
+  agent_count_by_complexity:
+    simple: 1      # Single file validation
+    moderate: 2    # Directory with <10 files
+    complex: 2     # Directory with 10+ files
+  synchronization_strategy: "barrier"
+  aggregation_strategy: "merge"
+
+# =============================================================================
+# P6: Internal Validation Loop
+# =============================================================================
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    - "All referenced types exist"
+    - "All property references are valid"
+    - "No circular dependencies"
+  refinement_triggers:
+    - "Missing type reference detected"
+    - "Invalid property reference"
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 # /ontology-core - Core Ontology Schema Validator
 
-> **Version:** 1.0.0
+> **Version:** 3.0.0
 > **Model:** opus
 > **User-Invocable:** true
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 1. Purpose
 
@@ -18,6 +147,23 @@ Validates and assists with **Core Ontology Types** in Ontology-Driven-Architectu
 | **PropertyDefinition** | Property within ObjectType | Data type, constraints, visibility |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 2. Invocation
 
@@ -36,6 +182,23 @@ Validates and assists with **Core Ontology Types** in Ontology-Driven-Architectu
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 3. Command Parsing
 
@@ -70,6 +233,23 @@ elif command == "check-links":
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 4. Validation Rules
 
@@ -120,6 +300,23 @@ elif command == "check-links":
 | PD-005 | Primary Key Constraints | ERROR | PK must be required=True, unique=True |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 5. Execution Protocol
 
@@ -196,6 +393,23 @@ async def execute_check_links(directory):
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 6. Output Format
 
 ### L1 - Summary (Default)
@@ -240,6 +454,23 @@ Summary: 26 passed, 1 warning, 2 errors
 ```
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 ## 7. Scaffold Templates
 
@@ -303,6 +534,23 @@ from ontology_definition.core.enums import Cardinality, LinkImplementationType, 
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 8. Integration
 
 ### Package Reference
@@ -325,6 +573,23 @@ from ontology_definition.core.enums import (
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 9. Tools Allowed
 
 | Tool | Purpose |
@@ -336,6 +601,23 @@ from ontology_definition.core.enums import (
 
 ---
 
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
 ## 10. Future Skills (Roadmap)
 
 | Skill | Scope | Status |
@@ -345,5 +627,94 @@ from ontology_definition.core.enums import (
 | `/ontology-migration` | Code analysis → ODA migration planning | Planned |
 
 ---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
+
+## 11. EFL Pattern Implementation (V3.0.0)
+
+### P1: Validation-based Delegation
+
+For large-scale validation, delegate by type category:
+
+```
+/ontology-core validate-all (Main Orchestrator)
+    │
+    ├─► ObjectType Validator Agent
+    │   └─► Rules OT-001 to OT-007
+    │
+    └─► LinkType/ActionType Validator Agent
+        └─► Rules LT-001 to AT-007
+```
+
+### P6: Cross-Reference Validation Loop
+
+```javascript
+// Internal validation for cross-type references
+const validationLoop = {
+  maxIterations: 3,
+  checks: [
+    "verifyObjectTypeReferences(linkTypes)",
+    "verifyPropertyReferences(actionTypes)",
+    "detectCircularDependencies(allTypes)"
+  ],
+  onIssueFound: "Log warning and suggest fix"
+}
+```
+
+### Post-Compact Recovery
+
+```javascript
+if (isPostCompactSession()) {
+  const slug = await getActiveWorkload()
+  if (slug) {
+    // Check for partial validation results
+    const partialResults = `.agent/prompts/${slug}/ontology-validation.partial.json`
+    if (await fileExists(partialResults)) {
+      console.log("Resuming validation from checkpoint...")
+    }
+  }
+}
+```
+
+### Version History
+
+| Version | Change |
+|---------|--------|
+| 1.0.0 | Core ontology schema validator |
+| 3.0.0 | EFL Pattern Integration, YAML frontmatter, P1/P2/P6 config |
+
+---
+
+### Auto-Delegation Trigger (CRITICAL)
+
+> **Reference:** `.claude/skills/shared/auto-delegation.md`
+> **Behavior:** When `agent_delegation.enabled: true` AND `default_mode: true`, skill automatically operates as Sub-Orchestrator.
+
+```javascript
+// AUTO-DELEGATION CHECK - Execute at skill invocation
+// If complex task detected, triggers: analyze → delegate → collect
+const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
+if (delegationDecision.shouldDelegate) {
+  const complexity = analyzeTaskComplexity(taskDescription, SKILL_CONFIG)
+  return executeDelegation(taskDescription, complexity, SKILL_CONFIG)
+}
+// Simple tasks execute directly without delegation overhead
+```
+
 
 **End of Skill Definition**

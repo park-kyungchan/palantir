@@ -4,10 +4,10 @@
     "hookify@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/home/palantir/.claude/plugins/cache/claude-plugins-official/hookify/e30768372b41",
-        "version": "e30768372b41",
+        "installPath": "/home/palantir/.claude/plugins/cache/claude-plugins-official/hookify/27d2b86d72da",
+        "version": "27d2b86d72da",
         "installedAt": "2026-01-18T06:59:44.297Z",
-        "lastUpdated": "2026-01-21T09:05:25.039Z",
+        "lastUpdated": "2026-01-30T05:29:19.094Z",
         "gitCommitSha": "96276205880a60fd66bbae981f5ab568e70c4cbf"
       }
     ]

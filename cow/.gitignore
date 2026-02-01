@@ -114,3 +114,9 @@ models/*.weights
 # Data files (test/sample data)
 data/raw/
 data/processed/
+
+# =============================================================================
+# Antigravity Server (VS Code Remote Server - Large Binaries)
+# =============================================================================
+.antigravity-server/
+.antigravity-server.bak*/
