@@ -129,12 +129,19 @@ class JSONExporter(BaseExporter[JSONExporterConfig]):
         Returns:
             JSON-compatible dictionary
         """
+        # Extract schema_version from original data before serialization
+        # RegenerationSpec and other models may have this attribute
+        schema_version = getattr(data, 'schema_version', '2.0.0')
+
         if isinstance(data, BaseModel):
             result = data.model_dump(mode="json")
         elif hasattr(data, "to_dict"):
             result = data.to_dict()
         elif isinstance(data, dict):
             result = data
+            # For dicts, check if schema_version is already present
+            if 'schema_version' in result:
+                schema_version = result['schema_version']
         else:
             result = {"data": data}
 
@@ -142,7 +149,7 @@ class JSONExporter(BaseExporter[JSONExporterConfig]):
         if self.config.include_schema_version:
             if isinstance(result, dict):
                 result["_export_metadata"] = {
-                    "schema_version": "2.0.0",
+                    "schema_version": schema_version,
                     "exported_at": datetime.now(timezone.utc).isoformat(),
                     "format": "json",
                 }

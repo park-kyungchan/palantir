@@ -165,6 +165,12 @@ class ExportStage(BaseStage[RegenerationSpec, List[ExportSpec]]):
                 f"Low regeneration confidence: {input_data.overall_confidence:.2f}"
             )
 
+        # Check for suspiciously high confidence (potential overfitting)
+        if input_data.overall_confidence > 0.99:
+            result.add_warning(
+                f"Unusually high confidence ({input_data.overall_confidence:.2f}) - verify quality manually"
+            )
+
         # Check for failed elements
         if input_data.total_elements_failed > 0:
             result.add_warning(

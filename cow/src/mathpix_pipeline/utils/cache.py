@@ -20,6 +20,7 @@ import json
 import logging
 import os
 import pickle
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -134,10 +135,19 @@ class ResultCache:
 
         Args:
             config: Cache configuration. Uses defaults if not provided.
+
+        Thread Safety:
+            This cache uses both threading.RLock (for thread safety) and
+            asyncio.Lock (for coroutine safety). Safe to use in multi-threaded
+            async environments like gunicorn with multiple workers.
         """
         self.config = config or CacheConfig()
         self._memory_cache: Dict[str, CacheEntry[Any]] = {}
         self._access_order: list[str] = []  # For LRU eviction
+        # Thread-safe locks (P1 fix: asyncio.Lock alone doesn't protect threads)
+        self._thread_lock = threading.RLock()
+        self._disk_thread_lock = threading.RLock()
+        # Async locks for coroutine synchronization
         self._lock = asyncio.Lock()
         self._disk_lock = asyncio.Lock()
         self._total_disk_size_bytes: int = 0
@@ -251,21 +261,23 @@ class ResultCache:
 
         # Try memory cache first
         if self.config.enable_memory_cache:
-            async with self._lock:
-                if full_key in self._memory_cache:
-                    entry = self._memory_cache[full_key]
-                    if entry.is_expired():
-                        del self._memory_cache[full_key]
-                        if full_key in self._access_order:
-                            self._access_order.remove(full_key)
-                        logger.debug(f"Cache expired (memory): {full_key}")
-                    else:
-                        # Update access order for LRU
-                        if full_key in self._access_order:
-                            self._access_order.remove(full_key)
-                        self._access_order.append(full_key)
-                        logger.debug(f"Cache hit (memory): {full_key}")
-                        return entry.value
+            # Thread lock for multi-threaded safety (P1 fix)
+            with self._thread_lock:
+                async with self._lock:
+                    if full_key in self._memory_cache:
+                        entry = self._memory_cache[full_key]
+                        if entry.is_expired():
+                            del self._memory_cache[full_key]
+                            if full_key in self._access_order:
+                                self._access_order.remove(full_key)
+                            logger.debug(f"Cache expired (memory): {full_key}")
+                        else:
+                            # Update access order for LRU
+                            if full_key in self._access_order:
+                                self._access_order.remove(full_key)
+                            self._access_order.append(full_key)
+                            logger.debug(f"Cache hit (memory): {full_key}")
+                            return entry.value
 
         # Try disk cache
         if self.config.enable_disk_cache:
@@ -340,21 +352,23 @@ class ResultCache:
 
     async def _set_memory(self, full_key: str, entry: CacheEntry[Any]) -> None:
         """Store an entry in memory cache with LRU eviction."""
-        async with self._lock:
-            # Evict if at capacity
-            while len(self._memory_cache) >= self.config.memory_max_items:
-                if self._access_order:
-                    oldest_key = self._access_order.pop(0)
-                    if oldest_key in self._memory_cache:
-                        del self._memory_cache[oldest_key]
-                        logger.debug(f"Evicted from memory cache (LRU): {oldest_key}")
-                else:
-                    break
+        # Thread lock for multi-threaded safety (P1 fix)
+        with self._thread_lock:
+            async with self._lock:
+                # Evict if at capacity
+                while len(self._memory_cache) >= self.config.memory_max_items:
+                    if self._access_order:
+                        oldest_key = self._access_order.pop(0)
+                        if oldest_key in self._memory_cache:
+                            del self._memory_cache[oldest_key]
+                            logger.debug(f"Evicted from memory cache (LRU): {oldest_key}")
+                    else:
+                        break
 
-            self._memory_cache[full_key] = entry
-            if full_key in self._access_order:
-                self._access_order.remove(full_key)
-            self._access_order.append(full_key)
+                self._memory_cache[full_key] = entry
+                if full_key in self._access_order:
+                    self._access_order.remove(full_key)
+                self._access_order.append(full_key)
 
     async def _set_disk(self, full_key: str, entry: CacheEntry[Any]) -> None:
         """Store an entry in disk cache with size-based eviction."""

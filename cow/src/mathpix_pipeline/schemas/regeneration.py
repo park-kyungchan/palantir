@@ -7,7 +7,7 @@ Stage F regenerates mathematical content from semantic graphs:
 - Delta comparison with original
 - Quality scoring
 
-Schema Version: 2.0.0
+Schema Version: 2.1.0
 """
 
 from datetime import datetime
@@ -226,6 +226,65 @@ class DeltaReport(MathpixBaseModel):
 
 
 # =============================================================================
+# Threshold Summary
+# =============================================================================
+
+class ThresholdSummary(MathpixBaseModel):
+    """Summary of threshold decisions applied during regeneration.
+
+    Captures the dynamic threshold configuration that influenced
+    quality decisions and review triggers.
+
+    v2.1.0 Addition for cross-stage threshold tracking.
+    """
+    # Base threshold values
+    base_confidence_threshold: float = Field(
+        default=0.70,
+        ge=0.0,
+        le=1.0,
+        description="Base confidence threshold for quality acceptance"
+    )
+
+    # Context adjustments
+    context_adjustment: float = Field(
+        default=0.0,
+        ge=-0.3,
+        le=0.3,
+        description="Context-based threshold adjustment"
+    )
+
+    # Effective threshold (base + adjustment)
+    effective_threshold: float = Field(
+        default=0.70,
+        ge=0.0,
+        le=1.0,
+        description="Final effective threshold after adjustments"
+    )
+
+    # Threshold categories applied
+    categories_applied: List[str] = Field(
+        default_factory=list,
+        description="List of threshold categories that influenced decision"
+    )
+
+    # Decision outcome
+    threshold_passed: bool = Field(
+        default=True,
+        description="Whether the content passed threshold validation"
+    )
+
+    # Feedback loop data
+    feedback_applied: bool = Field(
+        default=False,
+        description="Whether dynamic feedback was applied"
+    )
+    feedback_source: Optional[str] = Field(
+        default=None,
+        description="Source of feedback if applied (e.g., 'human_review', 'automated')"
+    )
+
+
+# =============================================================================
 # Regeneration Result
 # =============================================================================
 
@@ -267,9 +326,12 @@ class RegenerationSpec(MathpixBaseModel):
     - Delta comparison integration
     - Template-based generation tracking
     - Quality confidence scoring
+
+    v2.1.0 Additions:
+    - threshold_summary field for cross-stage threshold tracking
     """
     # Metadata
-    schema_version: str = Field(default="2.0.0")
+    schema_version: str = Field(default="2.1.0")
     image_id: str = Field(..., description="Source image identifier")
     semantic_graph_id: str = Field(..., description="Reference to Stage E output")
     provenance: Provenance = Field(default_factory=lambda: Provenance(
@@ -308,6 +370,12 @@ class RegenerationSpec(MathpixBaseModel):
 
     # Review
     review: ReviewMetadata = Field(default_factory=ReviewMetadata)
+
+    # Threshold tracking (v2.1.0 addition)
+    threshold_summary: Optional[ThresholdSummary] = Field(
+        default=None,
+        description="Summary of threshold decisions applied during regeneration"
+    )
 
     # Timestamps
     created_at: datetime = Field(default_factory=utc_now)
@@ -378,6 +446,8 @@ __all__ = [
     # Delta types
     "DeltaElement",
     "DeltaReport",
+    # Threshold types
+    "ThresholdSummary",
     # Result types
     "RegenerationResult",
     # Main Schema

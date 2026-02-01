@@ -330,7 +330,7 @@ class AlignmentStage(BaseStage[AlignmentInput, AlignmentReport]):
                 "pairs_below_threshold": output.pairs_below_threshold,
                 "overall_alignment_score": output.overall_alignment_score,
                 "overall_confidence": output.overall_confidence,
-                "needs_review": output.needs_human_review(),
+                "review_required": output.needs_human_review(),
                 "has_blockers": output.has_blockers(),
                 "image_id": output.image_id,
             }
