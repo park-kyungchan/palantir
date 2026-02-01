@@ -1,14 +1,27 @@
 #!/bin/bash
-# =============================================================================
-# Claude Code Session End Hook
-# =============================================================================
-# Finalizes session and saves incomplete todos for next session restoration.
+#=============================================================================
+# session-end.sh - Claude Code Session End Hook
+# Version: 2.0.0
+#
+# Trigger: Session end lifecycle event
+# Purpose: Finalize session and save incomplete todos for next session
 #
 # Exit Codes:
 #   0 - Session finalized successfully
-# =============================================================================
+#
+# Log Paths:
+#   - Archive: .agent/tmp/archive/audit_{ID}_{TIMESTAMP}.jsonl
+#   - Compact: .agent/compact-state/compact_summary_{TIMESTAMP}.md
+#
+# Timestamp Format: ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)
+#
+# Changes in 2.0.0:
+#   - Standardized header documentation
+#   - Consistent timestamp format (ISO 8601)
+#   - Improved compact state management
+#=============================================================================
 
-# Don't exit on error - gracefully handle failures
+# Don't exit on error - gracefully handle failures for session hooks
 set +e
 
 #=============================================================================

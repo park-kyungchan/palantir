@@ -4,42 +4,16 @@ description: |
   Claude Code 사용법을 안내합니다.
   처음 사용하는 사용자에게 단계별 가이드를 제공합니다.
   Use when user is new or asks basic questions about how to use the system.
-
-# Tool Access
 tools:
   - Read
   - mcp__sequential-thinking__sequentialthinking
-
-# Skill Access
-skills:
-  accessible:
-    - help-korean  # Direct access to Korean help
-    - capability-advisor  # Recommend features to new users
-  via_delegation: []  # User-facing, doesn't delegate
-
-# V2.1.x Features (NEW)
-v21x_features:
-  task_decomposer: false          # Not needed for quick guidance
-  context_budget_manager: false   # User help doesn't consume much context
-  resume_support: false           # Stateless help sessions
-  ultrathink_mode: false          # Uses haiku for fast responses
-  context_tracking: true          # Track when to suggest /compact
-
-# User Context Awareness (V2.1.7)
-context_awareness:
-  suggest_compact_at: 0.70        # Suggest /compact at 70% context usage
-  warn_user_at: 0.85              # Warn about context limits at 85%
-  auto_suggest_shortcuts: true    # Proactively suggest efficiency tips
-
-# Integration Points
-integrates_with:
-  agents:
-    - prompt-assistant  # Can hand off to for clarification
-  hooks: []  # No hook integration
-
-# Native Capabilities
+disallowedTools:
+  - Write
+  - Edit
+  - Bash
+  - NotebookEdit
 model: haiku
-context: standard  # Quick responses in main context
+permissionMode: default
 ---
 
 # Onboarding Guide Agent

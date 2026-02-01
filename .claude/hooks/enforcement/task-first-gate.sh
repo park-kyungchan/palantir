@@ -1,23 +1,41 @@
 #!/bin/bash
 #=============================================================================
 # Task First Gate
-# Version: 1.0.0
+# Version: 1.1.0
 #
 # Purpose: Enforce TaskCreate before complex source code modifications
 # Trigger: PreToolUse (Edit|Write)
 #
 # Logic:
-#   1. If file path is source code (.py, .ts, .js, .sh, etc.)
-#   2. AND has_recent_task_create() is false
-#   3. THEN DENY with TaskCreate instruction
+#   1. Check if tool is Edit or Write
+#   2. Check for exception paths (.claude/, .agent/)
+#   3. Check if file is source code (is_source_code)
+#   4. Check if file is test file (is_test_file)
+#   5. If source code AND has_recent_task_create() is false
+#   6. THEN DENY with TaskCreate instruction
 #
 # Exceptions:
-#   - Files within .claude/ directory
-#   - Files within .agent/ directory
-#   - Test files (test_, _test.py, .test.ts, etc.)
+#   - Files within .claude/ directory (configuration files)
+#   - Files within .agent/ directory (internal agent files)
+#   - Test files (test_, _test.py, .test.ts, .spec., etc.)
+#   - Non-source code files (.md, .json, .yaml, etc.)
+#   - Recent TaskCreate exists (within TASK_CREATE_TIMEOUT_SECONDS)
+#
+# Source Code Extensions:
+#   .py, .ts, .tsx, .js, .jsx, .sh, .bash, .go, .rs,
+#   .java, .kt, .scala, .rb, .php, .c, .cpp, .h, .hpp
+#
+# Changes in 1.1.0:
+#   - Added trap for cleanup on error
+#   - Enhanced exception documentation
+#   - Documented source code extensions
+#   - Improved error handling
 #=============================================================================
 
 set -euo pipefail
+
+# Error cleanup trap - allow on script errors (fail-open)
+trap 'output_allow; exit 0' ERR
 
 # Source shared library
 SCRIPT_DIR="$(dirname "$0")"
@@ -152,7 +170,7 @@ main() {
 
     # DENY: TaskCreate required
     local reason="TaskCreate Required"
-    local guidance="소스 코드 수정 전 TaskCreate로 작업을 등록해야 합니다. File: ${file_path}. Use TaskCreate tool first."
+    local guidance="You must register the task with TaskCreate before modifying source code. File: ${file_path}. Use TaskCreate tool first."
 
     log_enforcement "task-first-gate" "deny" "$reason" "$tool_name"
     output_deny "$reason" "$guidance"

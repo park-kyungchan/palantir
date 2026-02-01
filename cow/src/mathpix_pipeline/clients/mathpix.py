@@ -174,6 +174,7 @@ def detection_map_to_content_flags(detection_map: Dict[str, Any]) -> ContentFlag
         contains_geometry=bool(detection_map.get("contains_geometry", 0)),
         contains_table=bool(detection_map.get("contains_table", 0)),
         contains_handwriting=bool(detection_map.get("is_handwritten", 0)),
+        contains_chemistry=bool(detection_map.get("contains_chemistry", 0)),
     )
 
 
@@ -634,12 +635,16 @@ class MathpixClient:
         start_time = time.time()
         image_id = image_id or str(uuid4())
 
-        # Prepare request
+        # Prepare request with all Premium API options
         payload = {
             "src": self._encode_image(image),
             "formats": self.config.formats,
             "data_options": {
                 "include_line_data": self.config.include_line_data,
+                "include_smiles": self.config.include_smiles,
+                "include_table_data": self.config.include_table_data,
+                "include_word_data": self.config.include_word_data,
+                "include_geo_data": self.config.include_geo_data,
             },
             "include_detected_alphabets": True,
             "include_diagram_text": self.config.include_diagram_text,

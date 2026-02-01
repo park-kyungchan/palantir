@@ -1,7 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ============================================================================
-# Parallel Agent Coordination Module
-# Version: 1.0.0
+# Parallel Agent Coordination Module (V1.0.1)
+# ============================================================================
+# Purpose: Shared module for parallel agent deployment, tracking, and result aggregation
+# Architecture: Part of Enhanced Feedback Loop Pattern (P2: parallel_agent_deployment)
+# Usage: source /home/palantir/.claude/skills/shared/parallel-agent.sh
+# ============================================================================
+#
+# CHANGELOG (V1.0.1):
+# - Updated shebang to #!/usr/bin/env bash for portability
+# - Added VERSION constant for consistency with other modules
+#
+# CHANGELOG (V1.0.0):
+# - Initial implementation for parallel agent coordination
+# - Complexity assessment, agent count calculation
+# - Agent registration, completion tracking, L1 aggregation
 # ============================================================================
 #
 # Shared module for parallel agent deployment, tracking, and result aggregation.
@@ -10,6 +23,11 @@
 # Part of: Enhanced Feedback Loop Pattern (P2: parallel_agent_deployment)
 #
 # ============================================================================
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+PARALLEL_AGENT_VERSION="1.0.1"
 
 # ============================================================================
 # CONFIGURATION

@@ -1,22 +1,33 @@
 #!/bin/bash
 #=============================================================================
 # Context Recovery Gate
-# Version: 1.0.0
+# Version: 1.1.0
 #
 # Purpose: Enforce reading _active_workload.yaml after Compact recovery
-# Trigger: PreToolUse (Edit|Write|Task)
+# Trigger: PreToolUse (Edit|Write|Task|TaskCreate|TaskUpdate)
 #
 # Logic:
-#   1. If _active_workload.yaml exists
-#   2. AND recent_reads.log doesn't contain _active_workload.yaml
-#   3. THEN DENY with context recovery instruction
+#   1. Check if tool is Edit, Write, Task, TaskCreate, or TaskUpdate
+#   2. If _active_workload.yaml exists (active workload in progress)
+#   3. AND recent_reads.log doesn't contain _active_workload.yaml
+#   4. THEN DENY with context recovery instruction
 #
 # Exceptions:
-#   - Files within .claude/ directory
-#   - Files within .agent/ directory
+#   - Files within .claude/ directory (configuration files)
+#   - Files within .agent/ directory (internal agent files)
+#   - Tools other than Edit|Write|Task|TaskCreate|TaskUpdate
+#
+# Changes in 1.1.0:
+#   - Added trap for cleanup on error
+#   - Standardized JSON field names (tool_name, tool_input)
+#   - Improved error handling
+#   - Enhanced documentation
 #=============================================================================
 
 set -euo pipefail
+
+# Error cleanup trap
+trap 'output_allow; exit 0' ERR
 
 # Source shared library
 SCRIPT_DIR="$(dirname "$0")"
@@ -70,7 +81,7 @@ main() {
 
     # DENY: Context recovery required
     local reason="Context Recovery Required"
-    local guidance="Post-Compact Recovery: _active_workload.yaml를 먼저 읽어야 합니다. Run: Read .agent/prompts/_active_workload.yaml"
+    local guidance="Post-Compact Recovery: You must read _active_workload.yaml first. Run: Read .agent/prompts/_active_workload.yaml"
 
     log_enforcement "context-recovery-gate" "deny" "$reason" "$tool_name"
     output_deny "$reason" "$guidance"

@@ -244,9 +244,9 @@ class LabelConsistency:
         norm_text = self.normalize_label(text_label)
         norm_visual = self.normalize_label(visual_label)
 
-        # Exact match
+        # Exact match (capped at 1.0 to satisfy Pydantic constraint)
         if norm_text == norm_visual:
-            return 1.0 + self.config.label_exact_bonus
+            return min(1.0, 1.0 + self.config.label_exact_bonus)
 
         # Substring match
         if norm_text in norm_visual or norm_visual in norm_text:

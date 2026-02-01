@@ -1,7 +1,8 @@
 # Skill Access Control Matrix
 
-> **Version:** 1.0.0 | **Date:** 2026-01-24
-> **Purpose:** 18개 스킬의 접근 제어 패턴 정의
+> **Version:** 1.1.0 | **Date:** 2026-02-01
+> **Purpose:** 17개 스킬의 접근 제어 패턴 정의
+> **Note:** P1-P4 patterns here are Access Control patterns, distinct from EFL patterns (P1-P6) in [Task API Guideline](task-api-guideline.md)
 
 ---
 
@@ -178,5 +179,5 @@ context: fork
 
 ---
 
-*Last Updated: 2026-01-24 09:15 KST*
+*Last Updated: 2026-02-01*
 *Version: 1.1.0*

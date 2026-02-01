@@ -18,7 +18,11 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet"
     ],
     "deny": [
       "Read(.env*)",
@@ -63,11 +67,16 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Edit|Write",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/governance-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/security-gate.sh",
+            "timeout": 5000
           }
         ]
       },
@@ -76,7 +85,56 @@
         "hooks": [
           {
             "type": "command",
+            "command": "/home/palantir/.claude/hooks/governance-check.sh"
+          },
+          {
+            "type": "command",
             "command": "/home/palantir/.claude/hooks/auto-backup.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/l2l3-access-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/task-first-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/read-before-edit-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/sensitive-files-gate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/workload-path-gate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/sensitive-files-gate.sh",
+            "timeout": 5000
           }
         ]
       },
@@ -86,15 +144,80 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-interceptor.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-context-injector.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
+            "timeout": 5000
           }
         ]
       },
       {
-        "matcher": "Edit|Write|Task",
+        "matcher": "TaskCreate",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-context-injector.sh"
+            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/sequential-thinking-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/orchestrating-l2l3-synthesis-gate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/blocked-task-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/output-preservation-gate.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/task-lifecycle-gate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "EnterPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/plan-mode-gate.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/enforcement/pipeline-order-gate.sh",
+            "timeout": 5000
           }
         ]
       }
@@ -115,6 +238,26 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/clarify-qa-logger.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/tracking/read-tracker.sh",
+            "timeout": 3000
+          }
+        ]
+      },
+      {
+        "matcher": "TaskCreate|TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/tracking/task-tracker.sh",
+            "timeout": 3000
           }
         ]
       },

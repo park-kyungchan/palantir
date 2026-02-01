@@ -1,96 +1,133 @@
 # Task API Integration Guideline
 
 > **Version:** 2.0.0 | **Last Updated:** 2026-02-01
-> **Purpose:** Comprehensive TodoWrite 시스템, 동적 Schedule 관리, Hook 기반 행동 강제
+> **Purpose:** Comprehensive TodoWrite System, Dynamic Schedule Management, Hook-based Behavioral Enforcement
 
 ---
 
-## [PERMANENT] 작업 전 필수 수행 항목
+## [PERMANENT] Pre-Task Mandatory Checklist
 
-> **CRITICAL:** 모든 작업 시작 전 아래 항목을 반드시 수행할 것
+> **CRITICAL:** The following items MUST be performed before starting any task.
 
-### 1. Context Recovery (컨텍스트 복구)
+### Why is [PERMANENT] Context Check Mandatory?
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  🎯 Core Principle: Main Agent performs ONLY Orchestrator-Role          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Main Agent Responsibilities:                                            │
+│    ✅ Achieve holistic context awareness → Synthesize L2/L3 outputs     │
+│    ✅ Orchestrate sub-tasks → Create/assign Tasks with dependencies     │
+│    ✅ Configure dependency chains → Set up blockedBy relationships      │
+│    ❌ Direct implementation (Worker responsibility)                      │
+│                                                                          │
+│  Without [PERMANENT] Context Check:                                      │
+│    ❌ "Missing the forest for the trees" → Inter-task inconsistency     │
+│    ❌ Missing details → Incorrect dependency configuration               │
+│    ❌ Unknown impact scope → Quality degradation and rework              │
+│                                                                          │
+│  Correct Workflow:                                                       │
+│    1. Read ALL L2 outputs → Horizontal Analysis (cross-agent synthesis) │
+│    2. Read ALL L3 outputs → Vertical Analysis (deep insights)           │
+│    3. Achieve holistic context → Proceed with next Orchestrating        │
+│    4. Loop: Receive results → L2/L3 synthesis → Next Orchestrating →... │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Context Recovery
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ⚠️  작업 전체 맥락을 잃지 않고 작업하는 것의 중요성        │
+│  ⚠️  Importance of Maintaining Holistic Context Awareness   │
 ├─────────────────────────────────────────────────────────────┤
-│  Auto-Compact 후 요약 정보만으로 작업 진행 → 절대 금지      │
-│  파일 경로/내용 추측 → 절대 금지                            │
-│  "기억"한 내용으로 진행 → 절대 금지                         │
+│  After Auto-Compact, proceed with summary only → FORBIDDEN  │
+│  Guessing file paths/contents → FORBIDDEN                   │
+│  Proceeding with "remembered" information → FORBIDDEN       │
+│  Orchestrating based on L1 summary only → FORBIDDEN         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**필수 확인 파일:**
-1. `.agent/prompts/_active_workload.yaml` → Active workload slug 확인
-2. TaskList → 현재 진행 중인 Task 상태 확인
-3. 관련 L1/L2/L3 출력 파일 → 상세 컨텍스트 복구
+**Mandatory Files to Check:**
+1. `.agent/prompts/_active_workload.yaml` → Verify active workload slug
+2. TaskList → Check current Task status
+3. Related L1/L2/L3 output files → Restore detailed context
+
+**Why Read Up to L3?**
+| Level | Content | Context Awareness Level |
+|-------|---------|------------------------|
+| L1 | Summary (500 tokens) | ❌ Insufficient - Overview only |
+| L2 | Detailed Analysis | ⚠️ Moderate - Implementation level |
+| L3 | Deep Insights | ✅ Sufficient - Holistic context |
+
+> **Rule:** Only by reading up to L3 can you accurately understand "What am I doing in the overall workflow?"
 
 ### 1.1 L2→L3 Progressive-Deep-Dive (Meta-Level Pattern)
 
-> **CRITICAL:** 개선/고도화/정교화 작업 시 L1 요약만으로 진행 **절대 금지**
+> **CRITICAL:** For improvement/enhancement/refinement tasks, proceeding with L1 summary only is **FORBIDDEN**
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  L2→L3 Progressive-Deep-Dive Pattern (Meta-Level)                │
 ├──────────────────────────────────────────────────────────────────┤
-│  1. L1 요약 확인 → 전체 구조 파악 (개요 수준)                    │
-│  2. L2 상세 파일 종합 → 실제 구현 내용 파악 (구현 수준)          │
-│  3. L3 심층 분석 → 개선점 도출 (인사이트 수준)                   │
-│  4. 실제 작업 진행 → L2+L3 기반으로만 수행                       │
+│  1. Review L1 summary → Understand overall structure (overview)  │
+│  2. Synthesize L2 detail files → Understand implementation       │
+│  3. Deep-dive L3 analysis → Derive improvements (insights)       │
+│  4. Proceed with actual work → Based on L2+L3 only               │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-#### Progressive-Deep-Dive 단계별 규칙
+#### Progressive-Deep-Dive Phase Rules
 
-| 단계 | 읽는 파일 | 목적 | 작업 가능 여부 |
-|------|----------|------|--------------|
-| **L1 Phase** | `*_summary.yaml` | 구조 파악 | ❌ 작업 불가 |
-| **L2 Phase** | `l2_detailed.md`, `*_analysis.md` | 구현 파악 | ⚠️ 간단한 작업만 |
-| **L3 Phase** | `l3_synthesis.md`, `*_deep.md` | 인사이트 도출 | ✅ 모든 작업 가능 |
+| Phase | Files to Read | Purpose | Work Permitted |
+|-------|---------------|---------|----------------|
+| **L1 Phase** | `*_summary.yaml` | Structure overview | ❌ No work allowed |
+| **L2 Phase** | `l2_detailed.md`, `*_analysis.md` | Implementation understanding | ⚠️ Simple tasks only |
+| **L3 Phase** | `l3_synthesis.md`, `*_deep.md` | Insight derivation | ✅ All work allowed |
 
-#### 워크플로우 예시
+#### Workflow Example
 
 ```javascript
-// ❌ WRONG: L1만 읽고 작업 시작
-Read("research.md")  // L1 요약만
-Edit("target.py")    // 불완전한 컨텍스트로 수정 → 오류 발생
+// ❌ WRONG: Starting work after reading L1 only
+Read("research.md")  // L1 summary only
+Edit("target.py")    // Editing with incomplete context → errors occur
 
 // ✅ CORRECT: L2→L3 Progressive-Deep-Dive
-Read("research.md")              // L1: 구조 파악
-Read("research/l2_detailed.md")  // L2: 구현 내용 파악
-Read("research/l3_synthesis.md") // L3: 인사이트 확보
-// 이제 완전한 컨텍스트로 작업 진행
-Edit("target.py")                // 정확한 수정 가능
+Read("research.md")              // L1: Structure overview
+Read("research/l2_detailed.md")  // L2: Implementation understanding
+Read("research/l3_synthesis.md") // L3: Insight acquisition
+// Now proceed with complete context
+Edit("target.py")                // Accurate modification possible
 ```
 
-#### 병렬 Agent 위임 시 L2→L3 적용
+#### Applying L2→L3 for Parallel Agent Delegation
 
 ```javascript
-// 병렬 Agent 결과 수집 후 Progressive-Deep-Dive
+// Progressive-Deep-Dive after collecting parallel Agent results
 const agentResults = await Promise.all([
-  Task({ subagent_type: "Explore", prompt: "agents/ 분석" }),
-  Task({ subagent_type: "Explore", prompt: "skills/ 분석" }),
-  Task({ subagent_type: "Explore", prompt: "hooks/ 분석" })
+  Task({ subagent_type: "Explore", prompt: "analyze agents/" }),
+  Task({ subagent_type: "Explore", prompt: "analyze skills/" }),
+  Task({ subagent_type: "Explore", prompt: "analyze hooks/" })
 ])
 
-// Step 1: L1 종합 (개요 파악)
+// Step 1: L1 Synthesis (overview understanding)
 agentResults.forEach(r => summarizeL1(r.output))
 
-// Step 2: L2 상세 종합 (구현 파악)
+// Step 2: L2 Detail Synthesis (implementation understanding)
 Read(".agent/outputs/Explore/agents_l2.md")
 Read(".agent/outputs/Explore/skills_l2.md")
 Read(".agent/outputs/Explore/hooks_l2.md")
 
-// Step 3: L3 심층 종합 (인사이트 도출)
-// → 교차 분석, 패턴 발견, 개선점 도출
+// Step 3: L3 Deep Synthesis (insight derivation)
+// → Cross-analysis, pattern discovery, improvement derivation
 
-// Step 4: 실제 개선 작업 진행
+// Step 4: Proceed with actual improvement work
 ```
 
-### 2. Comprehensive TodoWrite 작성
+### 2. Comprehensive TodoWrite Creation
 
-모든 비단순 작업(3+ steps) 시작 전:
+Before starting any non-trivial task (3+ steps):
 
 ```javascript
 // Step 1: [PERMANENT] Task 생성 (항상 최상단)
@@ -115,6 +152,41 @@ TaskCreate({
     phase: "phase-1"
   }
 })
+```
+
+### 2.1 [PERMANENT] Task Lifecycle 규칙
+
+> **CRITICAL:** `[PERMANENT]` 태스크는 **상시 참조**용이며, 전체 작업 완료 시까지 completed로 변경 금지
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  [PERMANENT] Task Lifecycle                                      │
+├─────────────────────────────────────────────────────────────────┤
+│  1. 작업 시작 시 → status: "in_progress" (최초 설정)            │
+│  2. 작업 진행 중 → status: "in_progress" 유지 (상시 참조)       │
+│  3. 전체 작업 완료 → status: "completed" (최종 단계에서만)      │
+├─────────────────────────────────────────────────────────────────┤
+│  ⚠️ 중간에 completed로 변경 시 → 컨텍스트 참조 불가 위험       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### [PERMANENT] Task 완료 조건
+
+| 조건 | 확인 |
+|------|------|
+| 모든 Phase Task가 completed | ✅ |
+| 검증 Task (Phase 6 등)가 completed | ✅ |
+| 최종 커밋/PR 생성 완료 | ✅ |
+
+```javascript
+// ❌ WRONG: 중간에 [PERMANENT] 완료 처리
+TaskUpdate({ taskId: permanentTask.id, status: "completed" })  // 다른 작업 진행 중
+// → 상시 참조 불가, 컨텍스트 손실 위험
+
+// ✅ CORRECT: 최종 작업 완료 후에만 completed
+if (allPhasesCompleted && verificationDone && commitCreated) {
+  TaskUpdate({ taskId: permanentTask.id, status: "completed" })
+}
 ```
 
 ### 3. 의존성 체인 설정

@@ -1,8 +1,9 @@
 # Workload Management
 
-> **Version:** 1.0.0
-> **Date:** 2026-01-25
+> **Version:** 1.1.0
+> **Date:** 2026-02-01
 > **Status:** Active
+> **Related:** [Task API Guideline](task-api-guideline.md)
 
 ---
 
@@ -112,11 +113,11 @@ workload_id: "user-authentication-feature_20260125_143022"
 created_at: "2026-01-25T14:30:22Z"
 updated_at: "2026-01-25T14:30:22Z"
 
-# Upstream references
+# Upstream references (V7.1 paths)
 upstream:
-  clarify_source: ".agent/clarify/user-auth-20260125.yaml"
-  research_source: ".agent/research/user-auth-20260125.md"
-  planning_source: ".agent/plans/user-auth-20260125.yaml"
+  clarify_source: ".agent/prompts/user-auth-20260125/clarify.yaml"
+  research_source: ".agent/prompts/user-auth-20260125/research.md"
+  planning_source: ".agent/prompts/user-auth-20260125/plan.yaml"
 
 # Global context that applies to all workers
 global_context:
@@ -337,15 +338,15 @@ function get_workload_context_path(workload_id) {
 # Step 1: Clarify requirements
 /clarify "Implement user authentication with OAuth"
 # → Workload ID: user-authentication_20260125_143022
-# → Output: .agent/clarify/user-authentication-20260125.yaml
+# → Output: .agent/prompts/user-authentication-20260125/clarify.yaml
 
 # Step 2: Research (reuse workload)
 /research --clarify-slug user-authentication-20260125 "OAuth2 best practices"
-# → Output: .agent/research/user-authentication-20260125.md
+# → Output: .agent/prompts/user-authentication-20260125/research.md
 
 # Step 3: Planning (inherit workload)
 /planning --research-slug user-authentication-20260125
-# → Output: .agent/plans/user-authentication-20260125.yaml
+# → Output: .agent/prompts/user-authentication-20260125/plan.yaml
 
 # Step 4: Orchestrate (initialize workload directory)
 /orchestrate --plan-slug user-authentication-20260125

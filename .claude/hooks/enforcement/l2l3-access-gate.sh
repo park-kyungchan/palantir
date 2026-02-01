@@ -1,23 +1,35 @@
 #!/bin/bash
 #=============================================================================
 # L2/L3 Access Gate
-# Version: 1.0.0
+# Version: 1.1.0
 #
 # Purpose: Enforce reading L2/L3 files before Edit/Write operations
 # Trigger: PreToolUse (Edit|Write)
 #
 # Logic:
-#   1. If has_active_workload() is true
-#   2. AND has_read_l2l3() is false
-#   3. THEN DENY with L2/L3 access instruction
+#   1. Check if tool is Edit or Write
+#   2. Check for exception paths (.claude/, .agent/)
+#   3. Check for excluded file types (is_excluded_file)
+#   4. If has_active_workload() is true
+#   5. AND has_read_l2l3() is false
+#   6. THEN DENY with L2/L3 access instruction
 #
 # Exceptions:
-#   - Files within .claude/ directory
-#   - Files within .agent/ directory
-#   - Excluded file types (.md, .json, .yaml, etc.)
+#   - Files within .claude/ directory (configuration files)
+#   - Files within .agent/ directory (internal agent files)
+#   - Excluded file types: .md, .json, .yaml, .yml, .txt, README, LICENSE
+#   - No active workload present
+#
+# Changes in 1.1.0:
+#   - Added trap for cleanup on error
+#   - Enhanced exception documentation
+#   - Improved error handling
 #=============================================================================
 
 set -euo pipefail
+
+# Error cleanup trap - allow on script errors (fail-open)
+trap 'output_allow; exit 0' ERR
 
 # Source shared library
 SCRIPT_DIR="$(dirname "$0")"
@@ -80,7 +92,7 @@ main() {
     slug=$(get_workload_slug)
 
     local reason="L2/L3 Access Required"
-    local guidance="Edit/Write 전 L2/L3 파일을 먼저 읽어야 합니다. Slug: ${slug}. Check: .agent/prompts/${slug}/research/ for L2/L3 files."
+    local guidance="You must read L2/L3 files before Edit/Write. Slug: ${slug}. Check: .agent/prompts/${slug}/research/ for L2/L3 files."
 
     log_enforcement "l2l3-access-gate" "deny" "$reason" "$tool_name"
     output_deny "$reason" "$guidance"

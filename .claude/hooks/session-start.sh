@@ -1,8 +1,26 @@
 #!/bin/bash
-# Claude Code Session Start Hook
-# Initializes evidence tracker and loads previous session state
+#=============================================================================
+# session-start.sh - Claude Code Session Start Hook
+# Version: 2.0.0
+#
+# Trigger: Session start lifecycle event
+# Purpose: Initialize evidence tracker and load previous session state
+#
+# Log Paths:
+#   - Session state: .agent/tmp/sessions/session_{ID}.json
+#   - Evidence: .agent/tmp/evidence_{ID}.jsonl
+#   - Audit: .agent/tmp/audit_session_{ID}.jsonl
+#   - Current: .agent/tmp/current_session.json
+#
+# Timestamp Format: ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)
+#
+# Changes in 2.0.0:
+#   - Standardized header documentation
+#   - Consistent timestamp format (ISO 8601)
+#   - Improved JSON helper functions
+#=============================================================================
 
-# Don't exit on error - gracefully handle failures
+# Don't exit on error - gracefully handle failures for session hooks
 set +e
 
 #=============================================================================

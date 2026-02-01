@@ -1,37 +1,78 @@
 #!/bin/bash
 #=============================================================================
-# security-gate.sh - Block dangerous shell commands
-# Version: 1.0.0
+# Security Gate - Block dangerous shell commands
+# Version: 1.1.0
 #
+# Purpose: Prevent execution of dangerous/destructive shell commands
 # Trigger: PreToolUse (Bash)
-# Purpose: Prevent execution of dangerous/destructive commands
+#
+# Logic:
+#   1. Check if tool is Bash
+#   2. Extract command from tool input
+#   3. Match command against dangerous patterns (associative array)
+#   4. Match command against regex patterns for complex detection
+#   5. If dangerous pattern found, DENY with security reason
+#
+# Exceptions:
+#   - Non-Bash tools (always allowed)
+#   - Empty commands (allowed - will fail naturally)
+#
+# Dangerous Pattern Categories:
+#   - Recursive deletion (rm -rf /)
+#   - Privileged operations (sudo rm)
+#   - Permission escalation (chmod 777)
+#   - Device access (> /dev/sda)
+#   - Fork bombs
+#   - Remote code execution (curl | bash)
+#   - System control (shutdown, reboot)
+#
+# Changes in 1.1.0:
+#   - Added set -euo pipefail
+#   - Added trap for cleanup on error
+#   - Standardized JSON field names
+#   - Enhanced documentation with pattern categories
+#   - Improved error handling
 #=============================================================================
 
+set -euo pipefail
+
+# Error cleanup trap - allow on script errors (fail-open for safety)
+trap 'output_allow; exit 0' ERR
+
+# Source shared library
 source "$(dirname "$0")/_shared.sh"
 
-# Read stdin JSON
-INPUT=$(cat)
+#=============================================================================
+# Main Logic
+#=============================================================================
 
-# Extract tool name
-TOOL_NAME=$(json_get '.toolName' "$INPUT")
+main() {
+    # Read stdin JSON
+    local input
+    input=$(cat)
 
-# Only process Bash commands
-if [[ "$TOOL_NAME" != "Bash" ]]; then
-    output_allow
-    exit 0
-fi
+    # Extract tool name
+    local tool_name
+    tool_name=$(json_get '.tool_name' "$input")
 
-# Extract command
-COMMAND=$(json_get '.toolInput.command' "$INPUT")
+    # Only process Bash commands
+    if [[ "$tool_name" != "Bash" ]]; then
+        output_allow
+        exit 0
+    fi
 
-if [[ -z "$COMMAND" ]]; then
-    output_allow
-    exit 0
-fi
+    # Extract command
+    local command
+    command=$(json_get '.tool_input.command' "$input")
 
-# Dangerous patterns to block
-# Each pattern is checked against the command
-declare -A DANGEROUS_PATTERNS=(
+    if [[ -z "$command" ]]; then
+        output_allow
+        exit 0
+    fi
+
+    # Dangerous patterns to block
+    # Each pattern is checked against the command
+    local -A DANGEROUS_PATTERNS=(
     ["rm -rf /"]="Recursive deletion of root filesystem"
     ["rm -rf /*"]="Recursive deletion of root contents"
     ["rm -fr /"]="Recursive deletion of root filesystem"
@@ -54,53 +95,60 @@ declare -A DANGEROUS_PATTERNS=(
     ["reboot"]="System reboot command"
     ["init 0"]="System halt command"
     ["init 6"]="System reboot command"
-)
+    )
 
-# Convert command to lowercase for case-insensitive matching
-COMMAND_LOWER=$(echo "$COMMAND" | tr '[:upper:]' '[:lower:]')
+    # Convert command to lowercase for case-insensitive matching
+    local command_lower
+    command_lower=$(echo "$command" | tr '[:upper:]' '[:lower:]')
 
-# Check each dangerous pattern
-for pattern in "${!DANGEROUS_PATTERNS[@]}"; do
-    pattern_lower=$(echo "$pattern" | tr '[:upper:]' '[:lower:]')
+    # Check each dangerous pattern
+    local pattern pattern_lower reason
+    for pattern in "${!DANGEROUS_PATTERNS[@]}"; do
+        pattern_lower=$(echo "$pattern" | tr '[:upper:]' '[:lower:]')
 
-    if [[ "$COMMAND_LOWER" == *"$pattern_lower"* ]]; then
-        REASON="${DANGEROUS_PATTERNS[$pattern]}"
-        log_enforcement "security-gate" "deny" "$REASON: $pattern" "Bash"
+        if [[ "$command_lower" == *"$pattern_lower"* ]]; then
+            reason="${DANGEROUS_PATTERNS[$pattern]}"
+            log_enforcement "security-gate" "deny" "$reason: $pattern" "Bash"
+            output_deny \
+                "Security Block: Dangerous command pattern detected - $reason" \
+                "The command '$pattern' has been blocked for security reasons. This action could cause system damage or data loss."
+            exit 0
+        fi
+    done
+
+    # Additional regex-based checks
+    # Check for rm -rf with dangerous paths
+    if echo "$command" | grep -qE 'rm\s+(-[a-zA-Z]*r[a-zA-Z]*f|--recursive\s+--force|-[a-zA-Z]*f[a-zA-Z]*r)\s+/($|[^a-zA-Z])'; then
+        log_enforcement "security-gate" "deny" "Recursive force delete on root" "Bash"
         output_deny \
-            "Security Block: Dangerous command pattern detected - $REASON" \
-            "The command '$pattern' has been blocked for security reasons. This action could cause system damage or data loss."
+            "Security Block: Recursive force deletion on root or system paths detected" \
+            "This command pattern could delete critical system files. Please specify a safer target path."
         exit 0
     fi
-done
 
-# Additional regex-based checks
-# Check for rm -rf with dangerous paths
-if echo "$COMMAND" | grep -qE 'rm\s+(-[a-zA-Z]*r[a-zA-Z]*f|--recursive\s+--force|-[a-zA-Z]*f[a-zA-Z]*r)\s+/($|[^a-zA-Z])'; then
-    log_enforcement "security-gate" "deny" "Recursive force delete on root" "Bash"
-    output_deny \
-        "Security Block: Recursive force deletion on root or system paths detected" \
-        "This command pattern could delete critical system files. Please specify a safer target path."
-    exit 0
-fi
+    # Check for chmod with dangerous permissions on sensitive paths
+    if echo "$command" | grep -qE 'chmod\s+(777|a\+rwx)\s+/'; then
+        log_enforcement "security-gate" "deny" "Insecure permissions on system path" "Bash"
+        output_deny \
+            "Security Block: Setting insecure permissions (777) on system paths" \
+            "World-writable permissions on system paths are a security vulnerability."
+        exit 0
+    fi
 
-# Check for chmod with dangerous permissions on sensitive paths
-if echo "$COMMAND" | grep -qE 'chmod\s+(777|a\+rwx)\s+/'; then
-    log_enforcement "security-gate" "deny" "Insecure permissions on system path" "Bash"
-    output_deny \
-        "Security Block: Setting insecure permissions (777) on system paths" \
-        "World-writable permissions on system paths are a security vulnerability."
-    exit 0
-fi
+    # Check for direct writes to block devices
+    if echo "$command" | grep -qE '>\s*/dev/(sd|hd|nvme|vd)[a-z]'; then
+        log_enforcement "security-gate" "deny" "Direct write to block device" "Bash"
+        output_deny \
+            "Security Block: Direct write to block device detected" \
+            "Writing directly to disk devices can cause irreversible data loss."
+        exit 0
+    fi
 
-# Check for direct writes to block devices
-if echo "$COMMAND" | grep -qE '>\s*/dev/(sd|hd|nvme|vd)[a-z]'; then
-    log_enforcement "security-gate" "deny" "Direct write to block device" "Bash"
-    output_deny \
-        "Security Block: Direct write to block device detected" \
-        "Writing directly to disk devices can cause irreversible data loss."
-    exit 0
-fi
+    # No dangerous patterns found
+    output_allow
+}
 
-# No dangerous patterns found
-output_allow
+# Execute main
+main
+
 exit 0

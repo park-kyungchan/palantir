@@ -233,13 +233,20 @@ def compute_effective_threshold(
     context_modifier = quality_mod * complexity_mod * density_mod
 
     # Layer 3: Feedback loop
+    # Adjusts threshold based on recent review outcomes:
+    # - High FN rate (missed errors) → LOWER threshold (fn_adjustment < 0)
+    #   → More elements flagged for review to catch missed errors
+    # - High FP rate (unnecessary reviews) → RAISE threshold (fp_adjustment > 0)
+    #   → Fewer elements flagged to reduce review burden
     fn_rate = feedback_stats.false_negative_rate
     fp_rate = feedback_stats.false_positive_rate
 
     if fn_rate > config.feedback_loop.fn_rate_trigger:
+        # fn_adjustment is negative (-0.08), so feedback_mod < 1.0 → lowers threshold
         feedback_mod = 1.0 + ((fn_rate - config.feedback_loop.fn_rate_trigger) *
                               config.feedback_loop.fn_adjustment)
     elif fp_rate > config.feedback_loop.fp_rate_trigger:
+        # fp_adjustment is positive (0.04), so feedback_mod > 1.0 → raises threshold
         feedback_mod = 1.0 + ((fp_rate - config.feedback_loop.fp_rate_trigger) *
                               config.feedback_loop.fp_adjustment)
     else:
