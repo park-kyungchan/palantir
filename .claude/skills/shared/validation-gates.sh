@@ -1,15 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ============================================================================
-# Shift-Left Validation Gates
-# Version: 1.0.0
+# Shift-Left Validation Gates (V1.0.1)
+# ============================================================================
+# Purpose: Shared validation functions for early error detection across pipeline phases
+# Architecture: Shift-Left philosophy - catch errors at /clarify, not /synthesis
+# Usage: source /home/palantir/.claude/skills/shared/validation-gates.sh
 # ============================================================================
 #
-# Shared validation functions for early error detection across pipeline phases.
-# Source this file: source .claude/skills/shared/validation-gates.sh
+# CHANGELOG (V1.0.1):
+# - Updated shebang to #!/usr/bin/env bash for portability
+# - Added VERSION constant for consistency with other modules
+# - Standardized header format
 #
-# Philosophy: Catch errors at /clarify, not /synthesis
-#
+# CHANGELOG (V1.0.0):
+# - Initial implementation with 5 validation gates
+# - Gate 1-5: Clarify, Research, Planning, Orchestrate, Worker
 # ============================================================================
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+VALIDATION_GATES_VERSION="1.0.1"
 
 # ============================================================================
 # CONFIGURATION
