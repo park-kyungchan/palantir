@@ -1,568 +1,521 @@
-#!/usr/bin/env bash
-# =============================================================================
-# Parallel Agent Module (V1.0.0)
-# =============================================================================
-# Purpose: Parallel agent spawning and synchronization for P2 implementation
-# Architecture: Multi-agent orchestration with complexity-based scaling
-# Usage: source /home/palantir/.claude/skills/shared/parallel-agent.sh
-# =============================================================================
+#!/bin/bash
+# ============================================================================
+# Parallel Agent Coordination Module
+# Version: 1.0.0
+# ============================================================================
 #
-# PATTERN IMPLEMENTED:
-# - P2: Parallel Agent Execution - Spawn multiple agents based on complexity
+# Shared module for parallel agent deployment, tracking, and result aggregation.
+# Source this file: source .claude/skills/shared/parallel-agent.sh
 #
-# FEATURES:
-# - Agent spawning with Task tool integration
-# - Multiple synchronization strategies (parallel, sequential, barrier)
-# - Result aggregation (merge, vote, consensus)
-# - Complexity-based agent count calculation
-# =============================================================================
-
-set -euo pipefail
+# Part of: Enhanced Feedback Loop Pattern (P2: parallel_agent_deployment)
+#
+# ============================================================================
 
 # ============================================================================
-# CONSTANTS
+# CONFIGURATION
 # ============================================================================
-MODULE_VERSION="1.0.0"
+
 WORKSPACE_ROOT="${WORKSPACE_ROOT:-$(pwd)}"
-AGENT_STATE_DIR=".agent/tmp/agent-state"
-AGENT_LOG="${WORKSPACE_ROOT}/.agent/logs/parallel_agent.log"
+PARALLEL_AGENT_LOG="${WORKSPACE_ROOT}/.agent/logs/parallel_agents.log"
+PARALLEL_AGENT_STATE="${WORKSPACE_ROOT}/.agent/tmp/parallel_agent_state.json"
 
-# Complexity thresholds for agent count
-declare -A COMPLEXITY_AGENT_COUNT=(
-    ["simple"]=2
-    ["moderate"]=3
-    ["complex"]=4
-    ["very_complex"]=5
-)
+# Agent limits
+MIN_AGENTS=2
+MAX_AGENTS=5
+DEFAULT_AGENTS=3
+
+# Token budgets (L1/L2/L3 Progressive Disclosure)
+L1_TOKEN_LIMIT=500
+L2_TOKEN_LIMIT=2000
+TOTAL_TOKEN_BUDGET=10000
 
 # Ensure directories exist
-mkdir -p "$AGENT_STATE_DIR" 2>/dev/null
-mkdir -p "$(dirname "$AGENT_LOG")" 2>/dev/null
+mkdir -p "$(dirname "$PARALLEL_AGENT_LOG")" 2>/dev/null
+mkdir -p "$(dirname "$PARALLEL_AGENT_STATE")" 2>/dev/null
 
 # ============================================================================
 # LOGGING
 # ============================================================================
 
-log_agent() {
+log_parallel() {
     local level="$1"
-    local component="$2"
+    local action="$2"
     local message="$3"
     local timestamp
     timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-    echo "[${timestamp}] [${level}] [${component}] ${message}" >> "$AGENT_LOG"
+    echo "[${timestamp}] [${level}] [PARALLEL-AGENT] [${action}] ${message}" >> "$PARALLEL_AGENT_LOG"
 }
 
 # ============================================================================
-# P2: PARALLEL AGENT SPAWN
+# COMPLEXITY ASSESSMENT
 # ============================================================================
 
-# Spawn parallel agent with Task tool
-# Args:
-#   $1 - agent_config_json: JSON string with agent configuration
-#        Required fields: agent_type, prompt, description
-#        Optional fields: model, run_in_background
-# Output:
-#   agent_id: Unique identifier for spawned agent
-parallel_agent_spawn() {
-    local agent_config_json="$1"
+assess_complexity() {
+    local scope="$1"
+    local file_count=0
+    local dir_depth=0
+    local complexity_score=0
 
-    log_agent "INFO" "P2-SPAWN" "Spawning parallel agent"
+    log_parallel "INFO" "ASSESS" "Assessing complexity for scope: ${scope}"
 
-    # Extract configuration
-    local agent_type prompt description model run_in_background
-    agent_type=$(echo "$agent_config_json" | jq -r '.agent_type // "general-purpose"')
-    prompt=$(echo "$agent_config_json" | jq -r '.prompt // ""')
-    description=$(echo "$agent_config_json" | jq -r '.description // "Parallel agent task"')
-    model=$(echo "$agent_config_json" | jq -r '.model // "sonnet"')
-    run_in_background=$(echo "$agent_config_json" | jq -r '.run_in_background // "false"')
-
-    # Validate required fields
-    if [[ -z "$prompt" ]]; then
-        log_agent "ERROR" "P2-SPAWN" "Missing required field: prompt"
-        echo "ERROR: Missing required field: prompt" >&2
-        return 1
+    # Count files in scope
+    if [[ -d "${WORKSPACE_ROOT}/${scope}" ]]; then
+        file_count=$(find "${WORKSPACE_ROOT}/${scope}" -type f -name "*.md" -o -name "*.sh" -o -name "*.yaml" 2>/dev/null | wc -l)
+    elif [[ -f "${WORKSPACE_ROOT}/${scope}" ]]; then
+        file_count=1
     fi
 
-    # Generate unique agent ID
-    local agent_id
-    agent_id="agent-$(date +%s)-$$-$RANDOM"
+    # Calculate directory depth
+    dir_depth=$(echo "$scope" | tr '/' '\n' | wc -l)
 
-    # Create agent state file
-    local agent_state_file="${AGENT_STATE_DIR}/${agent_id}.json"
-    cat > "$agent_state_file" <<EOF
+    # Scoring
+    # File count: <10 = LOW, 10-50 = MEDIUM, >50 = HIGH
+    if [[ $file_count -lt 10 ]]; then
+        complexity_score=$((complexity_score + 1))
+    elif [[ $file_count -lt 50 ]]; then
+        complexity_score=$((complexity_score + 2))
+    else
+        complexity_score=$((complexity_score + 3))
+    fi
+
+    # Directory depth: <3 = LOW, 3-5 = MEDIUM, >5 = HIGH
+    if [[ $dir_depth -lt 3 ]]; then
+        complexity_score=$((complexity_score + 1))
+    elif [[ $dir_depth -lt 6 ]]; then
+        complexity_score=$((complexity_score + 2))
+    else
+        complexity_score=$((complexity_score + 3))
+    fi
+
+    local complexity_level="LOW"
+    if [[ $complexity_score -ge 5 ]]; then
+        complexity_level="HIGH"
+    elif [[ $complexity_score -ge 3 ]]; then
+        complexity_level="MEDIUM"
+    fi
+
+    log_parallel "INFO" "ASSESS" "Complexity: ${complexity_level} (score: ${complexity_score}, files: ${file_count})"
+
+    cat <<EOF
 {
-  "agent_id": "${agent_id}",
-  "agent_type": "${agent_type}",
-  "description": "${description}",
-  "model": "${model}",
-  "run_in_background": ${run_in_background},
-  "status": "spawned",
-  "spawned_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "task_id": null,
-  "output_file": null
+  "scope": "${scope}",
+  "fileCount": ${file_count},
+  "directoryDepth": ${dir_depth},
+  "complexityScore": ${complexity_score},
+  "complexityLevel": "${complexity_level}"
 }
 EOF
-
-    log_agent "INFO" "P2-SPAWN" "Agent spawned: ${agent_id} (type: ${agent_type}, model: ${model})"
-
-    # Note: Actual Task tool invocation happens in caller context
-    # This function prepares state and returns agent ID for tracking
-    echo "$agent_id"
-}
-
-# Update agent state with task ID
-update_agent_state() {
-    local agent_id="$1"
-    local task_id="$2"
-    local output_file="${3:-}"
-
-    local agent_state_file="${AGENT_STATE_DIR}/${agent_id}.json"
-
-    if [[ ! -f "$agent_state_file" ]]; then
-        log_agent "ERROR" "P2-STATE" "Agent state not found: ${agent_id}"
-        return 1
-    fi
-
-    # Update state
-    jq \
-        --arg task_id "$task_id" \
-        --arg output_file "$output_file" \
-        --arg status "running" \
-        '.task_id = $task_id | .output_file = $output_file | .status = $status | .started_at = now | .started_at |= (. | todate)' \
-        "$agent_state_file" > "${agent_state_file}.tmp"
-    mv "${agent_state_file}.tmp" "$agent_state_file"
-
-    log_agent "INFO" "P2-STATE" "Updated agent ${agent_id}: task_id=${task_id}"
-}
-
-# Get agent state
-get_agent_state() {
-    local agent_id="$1"
-    local agent_state_file="${AGENT_STATE_DIR}/${agent_id}.json"
-
-    if [[ -f "$agent_state_file" ]]; then
-        cat "$agent_state_file"
-    else
-        echo '{"status": "not_found"}'
-    fi
 }
 
 # ============================================================================
-# AGENT SYNCHRONIZATION
+# AGENT COUNT CALCULATION
 # ============================================================================
 
-# Synchronize multiple agents using specified strategy
-# Args:
-#   $1 - agent_ids: JSON array of agent IDs
-#   $2 - wait_strategy: Strategy for synchronization
-#        - parallel: All agents run independently, return immediately
-#        - sequential: Wait for each agent to complete before next
-#        - barrier: Wait for all agents to complete (default)
-# Output:
-#   JSON: {"status": "completed", "agent_results": [...]}
-agent_synchronization() {
-    local agent_ids_json="$1"
-    local wait_strategy="${2:-barrier}"
-
-    log_agent "INFO" "P2-SYNC" "Synchronizing agents with strategy: ${wait_strategy}"
-
-    # Parse agent IDs
-    local agent_ids
-    agent_ids=$(echo "$agent_ids_json" | jq -r '.[]' 2>/dev/null || echo "$agent_ids_json")
-
-    local agent_results=()
-    local all_completed=true
-
-    case "$wait_strategy" in
-        parallel)
-            # Return immediately - agents run in background
-            log_agent "INFO" "P2-SYNC" "Parallel mode: returning immediately"
-
-            for agent_id in $agent_ids; do
-                local state
-                state=$(get_agent_state "$agent_id")
-                agent_results+=("$state")
-            done
-            ;;
-
-        sequential)
-            # Wait for each agent sequentially
-            log_agent "INFO" "P2-SYNC" "Sequential mode: waiting for agents one by one"
-
-            for agent_id in $agent_ids; do
-                log_agent "INFO" "P2-SYNC" "Waiting for agent: ${agent_id}"
-
-                # Poll agent state until completed
-                local max_wait=600  # 10 minutes
-                local wait_interval=2
-                local elapsed=0
-
-                while [[ $elapsed -lt $max_wait ]]; do
-                    local state
-                    state=$(get_agent_state "$agent_id")
-                    local status
-                    status=$(echo "$state" | jq -r '.status // "unknown"')
-
-                    if [[ "$status" == "completed" ]]; then
-                        log_agent "INFO" "P2-SYNC" "Agent completed: ${agent_id}"
-                        agent_results+=("$state")
-                        break
-                    elif [[ "$status" == "failed" ]]; then
-                        log_agent "ERROR" "P2-SYNC" "Agent failed: ${agent_id}"
-                        agent_results+=("$state")
-                        all_completed=false
-                        break
-                    fi
-
-                    sleep $wait_interval
-                    elapsed=$((elapsed + wait_interval))
-                done
-
-                if [[ $elapsed -ge $max_wait ]]; then
-                    log_agent "WARN" "P2-SYNC" "Agent timeout: ${agent_id}"
-                    all_completed=false
-                fi
-            done
-            ;;
-
-        barrier)
-            # Wait for all agents to complete (barrier synchronization)
-            log_agent "INFO" "P2-SYNC" "Barrier mode: waiting for all agents"
-
-            local max_wait=600  # 10 minutes
-            local wait_interval=2
-            local elapsed=0
-
-            while [[ $elapsed -lt $max_wait ]]; do
-                local all_done=true
-
-                for agent_id in $agent_ids; do
-                    local state
-                    state=$(get_agent_state "$agent_id")
-                    local status
-                    status=$(echo "$state" | jq -r '.status // "unknown"')
-
-                    if [[ "$status" != "completed" && "$status" != "failed" ]]; then
-                        all_done=false
-                        break
-                    fi
-                done
-
-                if [[ "$all_done" == "true" ]]; then
-                    log_agent "INFO" "P2-SYNC" "All agents completed"
-
-                    # Collect results
-                    for agent_id in $agent_ids; do
-                        local state
-                        state=$(get_agent_state "$agent_id")
-                        local status
-                        status=$(echo "$state" | jq -r '.status // "unknown"')
-
-                        agent_results+=("$state")
-
-                        if [[ "$status" == "failed" ]]; then
-                            all_completed=false
-                        fi
-                    done
-                    break
-                fi
-
-                sleep $wait_interval
-                elapsed=$((elapsed + wait_interval))
-            done
-
-            if [[ $elapsed -ge $max_wait ]]; then
-                log_agent "WARN" "P2-SYNC" "Barrier timeout reached"
-                all_completed=false
-            fi
-            ;;
-
-        *)
-            log_agent "ERROR" "P2-SYNC" "Invalid wait strategy: ${wait_strategy}"
-            echo "ERROR: Invalid wait strategy: ${wait_strategy}" >&2
-            return 1
-            ;;
-    esac
-
-    # Build result JSON
-    local results_json
-    results_json=$(printf '%s\n' "${agent_results[@]}" | jq -s '.')
-
-    jq -n \
-        --arg status "$(if [[ "$all_completed" == "true" ]]; then echo "completed"; else echo "partial"; fi)" \
-        --arg strategy "$wait_strategy" \
-        --argjson results "$results_json" \
-        '{
-            status: $status,
-            strategy: $strategy,
-            agent_results: $results
-        }'
-}
-
-# ============================================================================
-# RESULT AGGREGATION
-# ============================================================================
-
-# Aggregate results from multiple agents
-# Args:
-#   $1 - results_array: JSON array of agent results
-#   $2 - strategy: Aggregation strategy
-#        - merge: Concatenate all results
-#        - vote: Majority voting (requires consistent result format)
-#        - consensus: Require all agents to agree
-# Output:
-#   JSON: {"status": "success", "aggregated_result": "..."}
-result_aggregation() {
-    local results_array_json="$1"
-    local strategy="${2:-merge}"
-
-    log_agent "INFO" "P2-AGGREGATE" "Aggregating results with strategy: ${strategy}"
-
-    # Parse results
-    local result_count
-    result_count=$(echo "$results_array_json" | jq 'length')
-
-    if [[ "$result_count" -eq 0 ]]; then
-        log_agent "WARN" "P2-AGGREGATE" "No results to aggregate"
-        echo '{"status": "no_results", "aggregated_result": null}'
-        return 0
-    fi
-
-    local aggregated_result=""
-    local aggregation_status="success"
-
-    case "$strategy" in
-        merge)
-            # Concatenate all results
-            log_agent "INFO" "P2-AGGREGATE" "Merge strategy: concatenating ${result_count} results"
-
-            local merged=""
-            for i in $(seq 0 $((result_count - 1))); do
-                local result
-                result=$(echo "$results_array_json" | jq -r ".[$i].output // \"\"")
-
-                if [[ -n "$result" ]]; then
-                    if [[ -n "$merged" ]]; then
-                        merged="${merged}\n\n---\n\n${result}"
-                    else
-                        merged="$result"
-                    fi
-                fi
-            done
-
-            aggregated_result="$merged"
-            ;;
-
-        vote)
-            # Majority voting on results
-            log_agent "INFO" "P2-AGGREGATE" "Vote strategy: majority voting on ${result_count} results"
-
-            # Count occurrences of each unique result
-            declare -A result_votes
-
-            for i in $(seq 0 $((result_count - 1))); do
-                local result
-                result=$(echo "$results_array_json" | jq -r ".[$i].output // \"unknown\"")
-
-                result_votes["$result"]=$((${result_votes["$result"]:-0} + 1))
-            done
-
-            # Find result with most votes
-            local max_votes=0
-            local winning_result=""
-
-            for result in "${!result_votes[@]}"; do
-                if [[ ${result_votes[$result]} -gt $max_votes ]]; then
-                    max_votes=${result_votes[$result]}
-                    winning_result="$result"
-                fi
-            done
-
-            aggregated_result="$winning_result (${max_votes}/${result_count} votes)"
-
-            # Check if majority reached (>50%)
-            if [[ $max_votes -le $((result_count / 2)) ]]; then
-                aggregation_status="no_majority"
-                log_agent "WARN" "P2-AGGREGATE" "No majority: ${max_votes}/${result_count}"
-            fi
-            ;;
-
-        consensus)
-            # Require all agents to agree
-            log_agent "INFO" "P2-AGGREGATE" "Consensus strategy: checking agreement on ${result_count} results"
-
-            local first_result
-            first_result=$(echo "$results_array_json" | jq -r '.[0].output // ""')
-
-            local all_agree=true
-            for i in $(seq 1 $((result_count - 1))); do
-                local current_result
-                current_result=$(echo "$results_array_json" | jq -r ".[$i].output // \"\"")
-
-                if [[ "$current_result" != "$first_result" ]]; then
-                    all_agree=false
-                    break
-                fi
-            done
-
-            if [[ "$all_agree" == "true" ]]; then
-                aggregated_result="$first_result"
-                log_agent "INFO" "P2-AGGREGATE" "Consensus reached"
-            else
-                aggregation_status="no_consensus"
-                aggregated_result="No consensus: agents provided different results"
-                log_agent "WARN" "P2-AGGREGATE" "No consensus reached"
-            fi
-            ;;
-
-        *)
-            log_agent "ERROR" "P2-AGGREGATE" "Invalid aggregation strategy: ${strategy}"
-            echo "ERROR: Invalid aggregation strategy: ${strategy}" >&2
-            return 1
-            ;;
-    esac
-
-    # Return aggregated result
-    jq -n \
-        --arg status "$aggregation_status" \
-        --arg strategy "$strategy" \
-        --arg result "$aggregated_result" \
-        --argjson count "$result_count" \
-        '{
-            status: $status,
-            strategy: $strategy,
-            result_count: $count,
-            aggregated_result: $result
-        }'
-}
-
-# ============================================================================
-# COMPLEXITY-BASED AGENT COUNT
-# ============================================================================
-
-# Get recommended agent count based on complexity level
-# Args:
-#   $1 - complexity_level: Complexity level (simple, moderate, complex, very_complex)
-# Output:
-#   Integer: Number of agents (2-5)
-get_agent_count_by_complexity() {
+calculate_agent_count() {
     local complexity_level="$1"
+    local token_budget="${2:-$TOTAL_TOKEN_BUDGET}"
+    local agent_count=$DEFAULT_AGENTS
 
-    log_agent "INFO" "P2-COMPLEXITY" "Getting agent count for complexity: ${complexity_level}"
+    case "$complexity_level" in
+        "LOW")
+            agent_count=2
+            ;;
+        "MEDIUM")
+            agent_count=3
+            ;;
+        "HIGH")
+            agent_count=4
+            ;;
+        "CRITICAL")
+            agent_count=5
+            ;;
+    esac
 
-    # Normalize input (lowercase, remove spaces)
-    complexity_level=$(echo "$complexity_level" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+    # Adjust based on token budget
+    local max_by_budget=$((token_budget / (L1_TOKEN_LIMIT * 2)))
+    if [[ $max_by_budget -lt $agent_count ]]; then
+        agent_count=$max_by_budget
+    fi
 
-    # Map complexity to agent count
-    local agent_count="${COMPLEXITY_AGENT_COUNT[$complexity_level]:-3}"
+    # Enforce limits
+    if [[ $agent_count -lt $MIN_AGENTS ]]; then
+        agent_count=$MIN_AGENTS
+    fi
+    if [[ $agent_count -gt $MAX_AGENTS ]]; then
+        agent_count=$MAX_AGENTS
+    fi
 
-    log_agent "INFO" "P2-COMPLEXITY" "Agent count: ${agent_count} for ${complexity_level}"
+    log_parallel "INFO" "CALC" "Agent count: ${agent_count} (complexity: ${complexity_level}, budget: ${token_budget})"
 
     echo "$agent_count"
 }
 
 # ============================================================================
-# HELPER FUNCTIONS
+# AGENT REGISTRATION
 # ============================================================================
 
-# Clean up agent state (for testing/reset)
-cleanup_agent_state() {
-    local agent_id="${1:-}"
+init_parallel_session() {
+    local session_id="$1"
+    local expected_agents="$2"
 
-    if [[ -n "$agent_id" ]]; then
-        # Clean specific agent
-        local agent_state_file="${AGENT_STATE_DIR}/${agent_id}.json"
-        if [[ -f "$agent_state_file" ]]; then
-            rm -f "$agent_state_file"
-            log_agent "INFO" "P2-CLEANUP" "Cleaned agent state: ${agent_id}"
+    log_parallel "INFO" "INIT" "Initializing parallel session: ${session_id} (expecting ${expected_agents} agents)"
+
+    cat > "$PARALLEL_AGENT_STATE" <<EOF
+{
+  "sessionId": "${session_id}",
+  "expectedAgents": ${expected_agents},
+  "registeredAgents": [],
+  "completedAgents": [],
+  "results": {},
+  "startTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "status": "RUNNING"
+}
+EOF
+
+    echo "$session_id"
+}
+
+register_agent() {
+    local session_id="$1"
+    local agent_id="$2"
+    local agent_type="$3"
+    local partition="$4"
+
+    log_parallel "INFO" "REGISTER" "Registering agent: ${agent_id} (type: ${agent_type}, partition: ${partition})"
+
+    if [[ -f "$PARALLEL_AGENT_STATE" ]]; then
+        local temp_file="${PARALLEL_AGENT_STATE}.tmp"
+        jq --arg aid "$agent_id" --arg atype "$agent_type" --arg part "$partition" \
+           '.registeredAgents += [{"agentId": $aid, "agentType": $atype, "partition": $part, "status": "RUNNING", "registeredAt": now | todate}]' \
+           "$PARALLEL_AGENT_STATE" > "$temp_file" && mv "$temp_file" "$PARALLEL_AGENT_STATE"
+    fi
+
+    cat <<EOF
+{
+  "agentId": "${agent_id}",
+  "agentType": "${agent_type}",
+  "partition": "${partition}",
+  "status": "REGISTERED"
+}
+EOF
+}
+
+# ============================================================================
+# AGENT COMPLETION TRACKING
+# ============================================================================
+
+mark_agent_complete() {
+    local agent_id="$1"
+    local l1_summary="$2"
+    local l2_path="$3"
+    local token_count="${4:-0}"
+
+    log_parallel "INFO" "COMPLETE" "Agent completed: ${agent_id} (tokens: ${token_count})"
+
+    if [[ -f "$PARALLEL_AGENT_STATE" ]]; then
+        local temp_file="${PARALLEL_AGENT_STATE}.tmp"
+        jq --arg aid "$agent_id" --arg l1 "$l1_summary" --arg l2 "$l2_path" --argjson tokens "$token_count" \
+           '.completedAgents += [$aid] |
+            .results[$aid] = {"l1Summary": $l1, "l2Path": $l2, "tokenCount": $tokens, "completedAt": now | todate} |
+            (.registeredAgents[] | select(.agentId == $aid) | .status) = "COMPLETED"' \
+           "$PARALLEL_AGENT_STATE" > "$temp_file" && mv "$temp_file" "$PARALLEL_AGENT_STATE"
+    fi
+
+    cat <<EOF
+{
+  "agentId": "${agent_id}",
+  "status": "COMPLETED",
+  "l2Path": "${l2_path}",
+  "tokenCount": ${token_count}
+}
+EOF
+}
+
+check_all_complete() {
+    if [[ ! -f "$PARALLEL_AGENT_STATE" ]]; then
+        echo "false"
+        return
+    fi
+
+    local expected
+    local completed
+    expected=$(jq -r '.expectedAgents' "$PARALLEL_AGENT_STATE")
+    completed=$(jq -r '.completedAgents | length' "$PARALLEL_AGENT_STATE")
+
+    if [[ "$completed" -ge "$expected" ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+wait_for_agents() {
+    local timeout="${1:-300}"  # Default 5 minutes
+    local poll_interval="${2:-5}"
+    local elapsed=0
+
+    log_parallel "INFO" "WAIT" "Waiting for all agents (timeout: ${timeout}s)"
+
+    while [[ $elapsed -lt $timeout ]]; do
+        if [[ "$(check_all_complete)" == "true" ]]; then
+            log_parallel "INFO" "WAIT" "All agents completed"
+            return 0
+        fi
+        sleep "$poll_interval"
+        elapsed=$((elapsed + poll_interval))
+    done
+
+    log_parallel "WARN" "WAIT" "Timeout waiting for agents"
+    return 1
+}
+
+# ============================================================================
+# L1 AGGREGATION
+# ============================================================================
+
+aggregate_l1_results() {
+    local output_file="$1"
+    local dedup="${2:-true}"
+
+    log_parallel "INFO" "AGGREGATE" "Aggregating L1 results (dedup: ${dedup})"
+
+    if [[ ! -f "$PARALLEL_AGENT_STATE" ]]; then
+        echo '{"error": "No parallel session state found"}'
+        return 1
+    fi
+
+    local results
+    results=$(jq -r '.results' "$PARALLEL_AGENT_STATE")
+
+    local total_tokens=0
+    local agent_count
+    agent_count=$(jq -r '.completedAgents | length' "$PARALLEL_AGENT_STATE")
+
+    # Calculate total tokens
+    total_tokens=$(jq -r '[.results[].tokenCount] | add // 0' "$PARALLEL_AGENT_STATE")
+
+    # Extract all L1 summaries
+    local l1_summaries
+    l1_summaries=$(jq -r '[.results[].l1Summary] | join("\n\n---\n\n")' "$PARALLEL_AGENT_STATE")
+
+    # Deduplication (simple line-based)
+    if [[ "$dedup" == "true" ]]; then
+        l1_summaries=$(echo "$l1_summaries" | sort -u)
+    fi
+
+    log_parallel "INFO" "AGGREGATE" "Aggregated ${agent_count} agents, total tokens: ${total_tokens}"
+
+    # Write aggregated result
+    if [[ -n "$output_file" ]]; then
+        cat > "$output_file" <<EOF
+# Aggregated L1 Results
+
+**Session:** $(jq -r '.sessionId' "$PARALLEL_AGENT_STATE")
+**Agents:** ${agent_count}
+**Total Tokens:** ${total_tokens}
+**Aggregated At:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+---
+
+${l1_summaries}
+EOF
+        log_parallel "INFO" "AGGREGATE" "Written to: ${output_file}"
+    fi
+
+    cat <<EOF
+{
+  "sessionId": "$(jq -r '.sessionId' "$PARALLEL_AGENT_STATE")",
+  "agentCount": ${agent_count},
+  "totalTokens": ${total_tokens},
+  "outputFile": "${output_file}",
+  "status": "AGGREGATED"
+}
+EOF
+}
+
+# ============================================================================
+# TOKEN BUDGET MANAGEMENT
+# ============================================================================
+
+get_token_usage_summary() {
+    if [[ ! -f "$PARALLEL_AGENT_STATE" ]]; then
+        echo '{"error": "No parallel session state found"}'
+        return 1
+    fi
+
+    local total_used
+    local budget_remaining
+    total_used=$(jq -r '[.results[].tokenCount] | add // 0' "$PARALLEL_AGENT_STATE")
+    budget_remaining=$((TOTAL_TOKEN_BUDGET - total_used))
+
+    local status="OK"
+    if [[ $budget_remaining -lt $((TOTAL_TOKEN_BUDGET / 4)) ]]; then
+        status="WARNING"
+    fi
+    if [[ $budget_remaining -lt 0 ]]; then
+        status="EXCEEDED"
+    fi
+
+    cat <<EOF
+{
+  "totalBudget": ${TOTAL_TOKEN_BUDGET},
+  "totalUsed": ${total_used},
+  "budgetRemaining": ${budget_remaining},
+  "l1Limit": ${L1_TOKEN_LIMIT},
+  "l2Limit": ${L2_TOKEN_LIMIT},
+  "status": "${status}"
+}
+EOF
+}
+
+validate_token_budget() {
+    local requested_tokens="$1"
+    local total_used
+    total_used=$(jq -r '[.results[].tokenCount] | add // 0' "$PARALLEL_AGENT_STATE" 2>/dev/null || echo "0")
+
+    local projected=$((total_used + requested_tokens))
+
+    if [[ $projected -gt $TOTAL_TOKEN_BUDGET ]]; then
+        log_parallel "WARN" "BUDGET" "Token budget would be exceeded: ${projected} > ${TOTAL_TOKEN_BUDGET}"
+        echo "EXCEEDED"
+        return 1
+    fi
+
+    echo "OK"
+    return 0
+}
+
+# ============================================================================
+# PARTITION HELPERS
+# ============================================================================
+
+partition_search_space() {
+    local scope="$1"
+    local agent_count="$2"
+    local partitions=()
+
+    log_parallel "INFO" "PARTITION" "Partitioning scope: ${scope} into ${agent_count} partitions"
+
+    # For directory scope, partition by subdirectories or file patterns
+    if [[ -d "${WORKSPACE_ROOT}/${scope}" ]]; then
+        local subdirs
+        subdirs=$(find "${WORKSPACE_ROOT}/${scope}" -maxdepth 1 -type d | tail -n +2 | head -n "$agent_count")
+
+        local i=0
+        while IFS= read -r subdir; do
+            [[ -z "$subdir" ]] && continue
+            partitions+=("$(basename "$subdir")")
+            i=$((i + 1))
+        done <<< "$subdirs"
+
+        # If not enough subdirs, use file patterns
+        if [[ ${#partitions[@]} -lt $agent_count ]]; then
+            partitions=()
+            for ((i=0; i<agent_count; i++)); do
+                partitions+=("partition_$((i + 1))")
+            done
         fi
     else
-        # Clean all agents
-        rm -rf "${AGENT_STATE_DIR:?}"/*
-        log_agent "INFO" "P2-CLEANUP" "Cleaned all agent state"
+        # Single file or abstract scope
+        for ((i=0; i<agent_count; i++)); do
+            partitions+=("partition_$((i + 1))")
+        done
     fi
+
+    # Output as JSON array
+    printf '%s\n' "${partitions[@]}" | jq -R . | jq -s '.'
 }
 
-# List active agents
-list_active_agents() {
-    if [[ ! -d "$AGENT_STATE_DIR" ]] || [[ -z "$(ls -A "$AGENT_STATE_DIR" 2>/dev/null)" ]]; then
-        echo '{"active_agents": []}'
-        return 0
-    fi
+# ============================================================================
+# CLEANUP
+# ============================================================================
 
-    local agents=()
-    for state_file in "$AGENT_STATE_DIR"/*.json; do
-        if [[ -f "$state_file" ]]; then
-            agents+=("$(cat "$state_file")")
+cleanup_parallel_session() {
+    local session_id="$1"
+
+    log_parallel "INFO" "CLEANUP" "Cleaning up session: ${session_id}"
+
+    if [[ -f "$PARALLEL_AGENT_STATE" ]]; then
+        local current_session
+        current_session=$(jq -r '.sessionId' "$PARALLEL_AGENT_STATE")
+        if [[ "$current_session" == "$session_id" ]]; then
+            # Update status to COMPLETED
+            local temp_file="${PARALLEL_AGENT_STATE}.tmp"
+            jq '.status = "COMPLETED" | .endTime = (now | todate)' \
+               "$PARALLEL_AGENT_STATE" > "$temp_file" && mv "$temp_file" "$PARALLEL_AGENT_STATE"
         fi
-    done
+    fi
 
-    printf '%s\n' "${agents[@]}" | jq -s '{active_agents: .}'
+    echo '{"status": "CLEANED"}'
 }
 
 # ============================================================================
-# EXPORTS
+# MAIN (if run directly)
 # ============================================================================
-export -f parallel_agent_spawn
-export -f agent_synchronization
-export -f result_aggregation
-export -f get_agent_count_by_complexity
-export -f update_agent_state
-export -f get_agent_state
-export -f cleanup_agent_state
-export -f list_active_agents
-export -f log_agent
 
-# ============================================================================
-# SELF-TEST (Optional - for development)
-# ============================================================================
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    echo "=== Parallel Agent Self-Test ==="
+    case "${1:-help}" in
+        assess)
+            assess_complexity "$2"
+            ;;
+        calc-agents)
+            calculate_agent_count "$2" "$3"
+            ;;
+        init)
+            init_parallel_session "$2" "$3"
+            ;;
+        register)
+            register_agent "$2" "$3" "$4" "$5"
+            ;;
+        complete)
+            mark_agent_complete "$2" "$3" "$4" "$5"
+            ;;
+        check)
+            check_all_complete
+            ;;
+        wait)
+            wait_for_agents "$2" "$3"
+            ;;
+        aggregate)
+            aggregate_l1_results "$2" "$3"
+            ;;
+        tokens)
+            get_token_usage_summary
+            ;;
+        validate-budget)
+            validate_token_budget "$2"
+            ;;
+        partition)
+            partition_search_space "$2" "$3"
+            ;;
+        cleanup)
+            cleanup_parallel_session "$2"
+            ;;
+        *)
+            cat <<EOF
+Usage: parallel-agent.sh <command> [args]
 
-    # Test 1: Spawn agent
-    echo "Test 1: parallel_agent_spawn"
-    agent_config='{"agent_type":"research","prompt":"Test task","description":"Test agent"}'
-    agent_id=$(parallel_agent_spawn "$agent_config")
-    echo "  Agent ID: $agent_id"
-    [[ -n "$agent_id" ]] && echo "  ✅ PASS" || echo "  ❌ FAIL"
+Commands:
+  assess <scope>                    - Assess complexity of scope
+  calc-agents <level> [budget]      - Calculate optimal agent count
+  init <session_id> <agent_count>   - Initialize parallel session
+  register <sid> <aid> <type> <part> - Register an agent
+  complete <aid> <l1> <l2> [tokens] - Mark agent as complete
+  check                             - Check if all agents complete
+  wait [timeout] [interval]         - Wait for all agents
+  aggregate <output_file> [dedup]   - Aggregate L1 results
+  tokens                            - Get token usage summary
+  validate-budget <requested>       - Validate token budget
+  partition <scope> <count>         - Partition search space
+  cleanup <session_id>              - Cleanup session
 
-    # Test 2: Get agent state
-    echo "Test 2: get_agent_state"
-    state=$(get_agent_state "$agent_id")
-    echo "  State: $state"
-    status=$(echo "$state" | jq -r '.status')
-    [[ "$status" == "spawned" ]] && echo "  ✅ PASS" || echo "  ❌ FAIL"
-
-    # Test 3: Agent count by complexity
-    echo "Test 3: get_agent_count_by_complexity"
-    for level in simple moderate complex very_complex; do
-        count=$(get_agent_count_by_complexity "$level")
-        expected="${COMPLEXITY_AGENT_COUNT[$level]}"
-        echo "  $level: $count (expected: $expected)"
-        [[ "$count" -eq "$expected" ]] && echo "  ✅ PASS" || echo "  ❌ FAIL"
-    done
-
-    # Test 4: Result aggregation (merge)
-    echo "Test 4: result_aggregation (merge)"
-    results='[{"output":"Result A"},{"output":"Result B"}]'
-    aggregated=$(result_aggregation "$results" "merge")
-    echo "  Aggregated: $aggregated"
-    status=$(echo "$aggregated" | jq -r '.status')
-    [[ "$status" == "success" ]] && echo "  ✅ PASS" || echo "  ❌ FAIL"
-
-    # Test 5: List active agents
-    echo "Test 5: list_active_agents"
-    active=$(list_active_agents)
-    count=$(echo "$active" | jq '.active_agents | length')
-    echo "  Active agents: $count"
-    [[ "$count" -gt 0 ]] && echo "  ✅ PASS" || echo "  ❌ FAIL"
-
-    # Cleanup
-    echo "Test 6: cleanup_agent_state"
-    cleanup_agent_state "$agent_id"
-    state=$(get_agent_state "$agent_id")
-    status=$(echo "$state" | jq -r '.status')
-    [[ "$status" == "not_found" ]] && echo "  ✅ PASS" || echo "  ❌ FAIL"
-
-    echo "=== All self-tests completed ==="
+Configuration:
+  MIN_AGENTS=${MIN_AGENTS}
+  MAX_AGENTS=${MAX_AGENTS}
+  L1_TOKEN_LIMIT=${L1_TOKEN_LIMIT}
+  L2_TOKEN_LIMIT=${L2_TOKEN_LIMIT}
+  TOTAL_TOKEN_BUDGET=${TOTAL_TOKEN_BUDGET}
+EOF
+            ;;
+    esac
 fi

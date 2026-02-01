@@ -1,0 +1,151 @@
+# V7.1 Workload-Scoped Architecture Migration Notice
+# Date: 2026-01-26
+# Status: MANDATORY - All terminals must comply
+
+---
+version: "7.1"
+effective_date: "2026-01-26"
+status: active
+
+summary: |
+  Global 경로가 완전히 제거되었습니다.
+  모든 스킬은 이제 workloadSlug를 필수로 요구합니다.
+  fallback 없이 누락 시 에러가 발생합니다.
+
+# ============================================
+# BREAKING CHANGES
+# ============================================
+
+breaking_changes:
+  - id: BC-001
+    description: "workloadSlug 필수화"
+    affected_skills:
+      - collect
+      - research
+      - planning
+      - worker
+      - assign
+      - synthesis
+    behavior_change: |
+      BEFORE: workloadSlug 없으면 global 경로로 fallback
+      AFTER:  workloadSlug 없으면 에러 발생 및 실행 중단
+
+  - id: BC-002
+    description: "Global 경로 완전 제거"
+    deprecated_paths:
+      - ".agent/clarify/"
+      - ".agent/research/"
+      - ".agent/plans/"
+      - ".agent/outputs/"
+      - ".agent/prompts/_progress.yaml"  # global progress
+      - ".agent/outputs/blockers/"
+    replacement: ".agent/prompts/{workload-slug}/"
+
+# ============================================
+# NEW PATH STRUCTURE
+# ============================================
+
+workload_scoped_paths:
+  base: ".agent/prompts/{workload-slug}/"
+
+  skill_outputs:
+    clarify: "clarify.yaml"
+    research: "research.md"
+    planning: "plan.yaml"
+    orchestrate: "_context.yaml"
+    worker: "outputs/{terminal-id}/"
+    collect: "collection_report.md"
+    synthesis: "synthesis/synthesis_report.md"
+
+  state_files:
+    progress: "_progress.yaml"
+    context: "_context.yaml"
+    blockers: "blockers/"
+
+  task_prompts:
+    pending: "pending/"
+    completed: "completed/"
+
+# ============================================
+# WORKER INSTRUCTIONS
+# ============================================
+
+worker_instructions:
+  before_starting:
+    - "활성 workload 확인: .agent/prompts/_active_workload.yaml 읽기"
+    - "workloadSlug 없으면 /clarify 또는 /orchestrate 먼저 실행"
+    - "모든 파일 경로에 {workload-slug} 포함 확인"
+
+  path_resolution:
+    example: |
+      # 올바른 경로 해석
+      workload_slug="auth-feature-20260126"
+
+      # Progress 파일
+      progress_path=".agent/prompts/${workload_slug}/_progress.yaml"
+
+      # 출력 디렉토리
+      output_dir=".agent/prompts/${workload_slug}/outputs/${TERMINAL_ID}/"
+
+      # Blocker 파일
+      blocker_path=".agent/prompts/${workload_slug}/blockers/"
+
+  error_handling:
+    no_workload_slug: |
+      에러 메시지: "No active workload. Run /clarify or /orchestrate first."
+      조치: Main Agent에게 workload 생성 요청
+
+# ============================================
+# VALIDATION CHECKLIST
+# ============================================
+
+validation_checklist:
+  - check: "경로에 '.agent/outputs/' 사용하지 않음"
+    reason: "DEPRECATED - workload-scoped 경로 사용 필수"
+
+  - check: "경로에 '.agent/plans/' 사용하지 않음"
+    reason: "DEPRECATED - .agent/prompts/{slug}/plan.yaml 사용"
+
+  - check: "경로에 '.agent/research/' 사용하지 않음"
+    reason: "DEPRECATED - .agent/prompts/{slug}/research.md 사용"
+
+  - check: "경로에 '.agent/clarify/' 사용하지 않음"
+    reason: "DEPRECATED - .agent/prompts/{slug}/clarify.yaml 사용"
+
+  - check: "global _progress.yaml 참조하지 않음"
+    reason: "workload별 _progress.yaml만 사용"
+
+# ============================================
+# MIGRATION EXAMPLES
+# ============================================
+
+migration_examples:
+  collect_output:
+    before: ".agent/outputs/collection_report.md"
+    after: ".agent/prompts/{workload-slug}/collection_report.md"
+
+  research_output:
+    before: ".agent/research/{slug}.md"
+    after: ".agent/prompts/{slug}/research.md"
+
+  planning_output:
+    before: ".agent/plans/{slug}.yaml"
+    after: ".agent/prompts/{slug}/plan.yaml"
+
+  worker_output:
+    before: ".agent/outputs/terminal-b/"
+    after: ".agent/prompts/{workload-slug}/outputs/terminal-b/"
+
+  progress_tracking:
+    before: ".agent/prompts/_progress.yaml"
+    after: ".agent/prompts/{workload-slug}/_progress.yaml"
+
+# ============================================
+# CONTACT
+# ============================================
+
+contact:
+  questions: "Main Agent (Terminal-A)"
+  reference_docs:
+    - ".claude/CLAUDE.md"
+    - ".claude/references/workload-management.md"
