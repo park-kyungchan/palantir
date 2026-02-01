@@ -1,8 +1,9 @@
 # Hierarchical Orchestration Guide
 
-> **Version:** 1.0.0
-> **Date:** 2026-01-25
+> **Version:** 1.1.0
+> **Date:** 2026-02-01
 > **Architecture:** Task-Centric Hybrid with Sub-Orchestrator Support
+> **Related:** [Task API Guideline](task-api-guideline.md) for detailed Task patterns
 
 ---
 
@@ -198,9 +199,9 @@ metadata:
 #
 # ✅ Collection Complete!
 # Files Generated:
-#   📄 L1 (Summary for Main): .agent/outputs/terminal-b/task-1-l1-summary.md (450 tokens)
-#   📄 L2 (Subtask Summaries): .agent/outputs/terminal-b/task-1-l2-summaries.md
-#   📄 L3 (Full Details): .agent/outputs/terminal-b/task-1-l3-details.md
+#   📄 L1 (Summary for Main): .agent/prompts/{slug}/outputs/terminal-b/task-1-l1-summary.md (450 tokens)
+#   📄 L2 (Subtask Summaries): .agent/prompts/{slug}/outputs/terminal-b/task-1-l2-summaries.md
+#   📄 L3 (Full Details): .agent/prompts/{slug}/outputs/terminal-b/task-1-l3-details.md
 #
 # Context Pollution Check: ✅ PASSED
 ```
@@ -334,7 +335,7 @@ l2Index:
     priority: HIGH
     description: "Summary of each subtask result"
 
-l2Path: .agent/outputs/terminal-b/task-1-l2-summaries.md
+l2Path: .agent/prompts/{slug}/outputs/terminal-b/task-1-l2-summaries.md
 requiresL2Read: false
 nextActionHint: "Review L2 for implementation details"
 ```
@@ -584,14 +585,14 @@ summary: |
 ### 5. File Organization
 
 ```
-.agent/outputs/
-├── terminal-b/           # Sub-Orchestrator outputs
+.agent/prompts/{slug}/outputs/    # V7.1 workload-scoped paths
+├── terminal-b/                   # Sub-Orchestrator outputs
 │   ├── task-1-l1-summary.md
 │   ├── task-1-l2-summaries.md
 │   └── task-1-l3-details.md
-├── terminal-c/           # Sub-worker outputs
+├── terminal-c/                   # Sub-worker outputs
 │   └── task-5-output.md
-└── terminal-d/           # Sub-worker outputs
+└── terminal-d/                   # Sub-worker outputs
     └── task-6-output.md
 ```
 
