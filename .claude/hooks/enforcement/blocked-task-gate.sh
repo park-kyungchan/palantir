@@ -1,7 +1,7 @@
 #!/bin/bash
 #=============================================================================
 # Blocked Task Gate - Block starting tasks with unresolved dependencies
-# Version: 1.1.0
+# Version: 1.2.0
 #
 # Purpose: Prevent starting a task that has blockedBy dependencies
 # Trigger: PreToolUse (TaskUpdate)
@@ -18,6 +18,11 @@
 #   - Status changes other than "in_progress"
 #   - Tasks without blockedBy field
 #   - Tasks with empty blockedBy array
+#
+# Changes in 1.2.0:
+#   - CRITICAL FIX: Check if blocking tasks are completed before denying
+#   - Iterate through blockedBy array and verify each task's actual status
+#   - Only deny if there are unresolved (non-completed) blockers
 #
 # Changes in 1.1.0:
 #   - Added set -euo pipefail
@@ -99,11 +104,58 @@ main() {
 
         # Check if blockedBy is non-empty array
         if [[ -n "$blocked_by" ]] && [[ "$blocked_by" != "[]" ]] && [[ "$blocked_by" != "null" ]]; then
-            log_enforcement "blocked-task-gate" "deny" "Task $task_id has unresolved blockedBy: $blocked_by" "TaskUpdate"
-            output_deny \
-                "Blocked Task: Task #$task_id cannot be started because it is blocked by other tasks." \
-                "The blockedBy list contains: $blocked_by. Please complete those tasks first before starting this one."
-            exit 0
+            # V1.2.0: Check if all blocking tasks are completed
+            local all_blockers_completed=true
+            local unresolved_blockers=()
+
+            # Parse blockedBy array and check each task's status
+            while IFS= read -r blocker_id; do
+                [[ -z "$blocker_id" ]] && continue
+                blocker_id=$(echo "$blocker_id" | tr -d '"' | tr -d ' ')
+
+                # Find blocker task file and check its status
+                local blocker_status="unknown"
+                for bdir in "${WORKSPACE_ROOT}/.claude/tasks/"* "${WORKSPACE_ROOT}/.claude/todos/"*; do
+                    if [[ -d "$bdir" ]]; then
+                        for bfile in "$bdir"/*.json; do
+                            if [[ -f "$bfile" ]]; then
+                                local bfile_id
+                                bfile_id=$(json_get '.id' "$(cat "$bfile")")
+                                if [[ "$bfile_id" == "$blocker_id" ]]; then
+                                    blocker_status=$(json_get '.status' "$(cat "$bfile")")
+                                    break 2
+                                fi
+                            fi
+                        done
+                    elif [[ -f "$bdir" ]]; then
+                        local bfile_id
+                        bfile_id=$(json_get '.id' "$(cat "$bdir")")
+                        if [[ "$bfile_id" == "$blocker_id" ]]; then
+                            blocker_status=$(json_get '.status' "$(cat "$bdir")")
+                            break
+                        fi
+                    fi
+                done
+
+                # If blocker is not completed, add to unresolved list
+                if [[ "$blocker_status" != "completed" ]]; then
+                    all_blockers_completed=false
+                    unresolved_blockers+=("$blocker_id")
+                fi
+            done < <(echo "$blocked_by" | jq -r '.[]' 2>/dev/null || echo "$blocked_by" | tr -d '[]' | tr ',' '\n')
+
+            # Only deny if there are unresolved blockers
+            if [[ "$all_blockers_completed" == "false" ]]; then
+                local unresolved_list
+                unresolved_list=$(printf '%s\n' "${unresolved_blockers[@]}" | jq -R . | jq -s '.')
+                log_enforcement "blocked-task-gate" "deny" "Task $task_id has unresolved blockedBy: $unresolved_list" "TaskUpdate"
+                output_deny \
+                    "Blocked Task: Task #$task_id cannot be started because it is blocked by other tasks." \
+                    "The blockedBy list contains: $unresolved_list. Please complete those tasks first before starting this one."
+                exit 0
+            fi
+
+            log_enforcement "blocked-task-gate" "allow" "All blockers completed for task $task_id" "TaskUpdate"
         fi
     fi
 

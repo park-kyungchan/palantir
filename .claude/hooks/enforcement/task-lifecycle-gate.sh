@@ -1,7 +1,7 @@
 #!/bin/bash
 #=============================================================================
 # Task Lifecycle Gate
-# Version: 1.0.0
+# Version: 1.1.0
 #
 # Purpose: Enforce proper Task status lifecycle and context awareness
 # Trigger: PreToolUse (TaskUpdate)
@@ -19,6 +19,11 @@
 #   - pending → completed: DENIED (must go through in_progress)
 #   - completed → in_progress: DENIED (use new task)
 #   - completed → pending: DENIED (use new task)
+#
+# Changes in 1.1.0:
+#   - CRITICAL FIX: get_task_status() now checks .claude/todos/ and .claude/tasks/ first
+#   - Synchronizes with Native Task API by reading actual task JSON files
+#   - Fallback to local tracking file if task file not found
 #
 # Context Awareness:
 #   Ensures Main Agent and Subagents always understand "What am I doing in the overall workflow?"
@@ -39,9 +44,43 @@ readonly TASK_STATE_FILE="${AGENT_TMP_DIR}/task_states.json"
 # Helper Functions
 #=============================================================================
 
-# Get current task status from tracking
+# Get current task status from tracking (V1.1.0: Check .claude/todos/ first)
 get_task_status() {
     local task_id="$1"
+
+    # V1.1.0: First check actual task files in .claude/todos/ or .claude/tasks/
+    local task_file="" dir file file_task_id
+    for dir in "${WORKSPACE_ROOT}/.claude/tasks/"* "${WORKSPACE_ROOT}/.claude/todos/"*; do
+        if [[ -d "$dir" ]]; then
+            for file in "$dir"/*.json; do
+                if [[ -f "$file" ]]; then
+                    file_task_id=$(json_get '.id' "$(cat "$file" 2>/dev/null)" 2>/dev/null)
+                    if [[ "$file_task_id" == "$task_id" ]]; then
+                        task_file="$file"
+                        break 2
+                    fi
+                fi
+            done
+        elif [[ -f "$dir" ]]; then
+            file_task_id=$(json_get '.id' "$(cat "$dir" 2>/dev/null)" 2>/dev/null)
+            if [[ "$file_task_id" == "$task_id" ]]; then
+                task_file="$dir"
+                break
+            fi
+        fi
+    done
+
+    # If task file found, use its status
+    if [[ -n "$task_file" ]] && [[ -f "$task_file" ]]; then
+        local file_status
+        file_status=$(json_get '.status' "$(cat "$task_file" 2>/dev/null)" 2>/dev/null)
+        if [[ -n "$file_status" ]] && [[ "$file_status" != "null" ]]; then
+            echo "$file_status"
+            return 0
+        fi
+    fi
+
+    # Fallback to local tracking file
     [[ -f "$TASK_STATE_FILE" ]] || { echo "pending"; return 0; }
 
     local status
