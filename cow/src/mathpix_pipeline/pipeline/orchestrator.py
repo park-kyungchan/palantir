@@ -492,18 +492,28 @@ class MathpixPipeline(StageRunnerMixin):
         tasks = [process_with_semaphore(img) for img in images]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Convert exceptions to failed results
+        # Convert exceptions to failed results with proper logging
         final_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
+                # Log exception details for debugging
+                logger.error(
+                    f"Batch processing failed for image {i}: "
+                    f"{type(result).__name__}: {result}"
+                )
                 failed_result = PipelineResult(
                     image_id=f"batch_{i}",
                     success=False,
-                    errors=[str(result)],
+                    errors=[f"{type(result).__name__}: {result}"],
                 )
                 final_results.append(failed_result)
             else:
                 final_results.append(result)
+
+        logger.info(
+            f"Batch processing completed: {len(final_results)} total, "
+            f"{sum(1 for r in final_results if r.success)} successful"
+        )
 
         return final_results
 

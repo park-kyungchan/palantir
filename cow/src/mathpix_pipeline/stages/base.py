@@ -13,7 +13,6 @@ Module Version: 1.0.0
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from ..schemas.common import PipelineStage
@@ -411,4 +410,3 @@ class BaseStage(ABC, Generic[InputT, OutputT]):
                 )
             finally:
                 loop.close()
-        )

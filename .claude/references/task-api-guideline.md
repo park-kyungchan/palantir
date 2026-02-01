@@ -130,10 +130,10 @@ Read(".agent/outputs/Explore/hooks_l2.md")
 Before starting any non-trivial task (3+ steps):
 
 ```javascript
-// Step 1: [PERMANENT] Task 생성 (항상 최상단)
+// Step 1: Create [PERMANENT] Task (always at the top)
 TaskCreate({
   subject: "[PERMANENT] Context & Recovery Check",
-  description: "작업 시작 전 컨텍스트 복구 및 상태 확인",
+  description: "Context recovery and status verification before starting work",
   activeForm: "Checking context and recovery status",
   metadata: {
     priority: "CRITICAL",
@@ -142,10 +142,10 @@ TaskCreate({
   }
 })
 
-// Step 2: 실제 작업 Task들 생성
+// Step 2: Create actual work Tasks
 TaskCreate({
-  subject: "실제 작업 1",
-  description: "상세 설명",
+  subject: "Actual Task 1",
+  description: "Detailed description",
   activeForm: "Working on task 1",
   metadata: {
     priority: "HIGH",
@@ -154,58 +154,58 @@ TaskCreate({
 })
 ```
 
-### 2.1 [PERMANENT] Task Lifecycle 규칙
+### 2.1 [PERMANENT] Task Lifecycle Rules
 
-> **CRITICAL:** `[PERMANENT]` 태스크는 **상시 참조**용이며, 전체 작업 완료 시까지 completed로 변경 금지
+> **CRITICAL:** `[PERMANENT]` tasks are for **continuous reference** and MUST NOT be marked completed until all work is done
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  [PERMANENT] Task Lifecycle                                      │
 ├─────────────────────────────────────────────────────────────────┤
-│  1. 작업 시작 시 → status: "in_progress" (최초 설정)            │
-│  2. 작업 진행 중 → status: "in_progress" 유지 (상시 참조)       │
-│  3. 전체 작업 완료 → status: "completed" (최종 단계에서만)      │
+│  1. Work start → status: "in_progress" (initial setting)        │
+│  2. Work in progress → status: "in_progress" maintained         │
+│  3. All work complete → status: "completed" (final stage only)  │
 ├─────────────────────────────────────────────────────────────────┤
-│  ⚠️ 중간에 completed로 변경 시 → 컨텍스트 참조 불가 위험       │
+│  ⚠️ Marking completed mid-work → Risk of context loss           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### [PERMANENT] Task 완료 조건
+#### [PERMANENT] Task Completion Conditions
 
-| 조건 | 확인 |
-|------|------|
-| 모든 Phase Task가 completed | ✅ |
-| 검증 Task (Phase 6 등)가 completed | ✅ |
-| 최종 커밋/PR 생성 완료 | ✅ |
+| Condition | Check |
+|-----------|-------|
+| All Phase Tasks are completed | ✅ |
+| Verification Task (Phase 6 etc.) is completed | ✅ |
+| Final commit/PR creation completed | ✅ |
 
 ```javascript
-// ❌ WRONG: 중간에 [PERMANENT] 완료 처리
-TaskUpdate({ taskId: permanentTask.id, status: "completed" })  // 다른 작업 진행 중
-// → 상시 참조 불가, 컨텍스트 손실 위험
+// ❌ WRONG: Marking [PERMANENT] completed mid-work
+TaskUpdate({ taskId: permanentTask.id, status: "completed" })  // Other work still in progress
+// → Cannot reference continuously, risk of context loss
 
-// ✅ CORRECT: 최종 작업 완료 후에만 completed
+// ✅ CORRECT: Mark completed only after all work is done
 if (allPhasesCompleted && verificationDone && commitCreated) {
   TaskUpdate({ taskId: permanentTask.id, status: "completed" })
 }
 ```
 
-### 3. 의존성 체인 설정
+### 3. Dependency Chain Configuration
 
 ```
 [PERMANENT] Context Check
         ↓
-    Phase 1 Tasks (병렬 가능)
+    Phase 1 Tasks (can run in parallel)
         ↓
-    Phase 2 Tasks (Phase 1 완료 후)
+    Phase 2 Tasks (after Phase 1 completion)
         ↓
     Verification & Summary
 ```
 
 ---
 
-## Task API 활용 패턴
+## Task API Usage Patterns
 
-### Pattern 1: Linear Chain (순차 실행)
+### Pattern 1: Linear Chain (Sequential Execution)
 
 ```javascript
 task1 = TaskCreate({ subject: "Step 1", ... })
@@ -216,7 +216,7 @@ TaskUpdate({ taskId: task2.id, addBlockedBy: [task1.id] })
 TaskUpdate({ taskId: task3.id, addBlockedBy: [task2.id] })
 ```
 
-### Pattern 2: Diamond (병렬 → 수렴)
+### Pattern 2: Diamond (Parallel → Convergence)
 
 ```javascript
 setup = TaskCreate({ subject: "Setup", ... })
@@ -229,7 +229,7 @@ TaskUpdate({ taskId: taskB.id, addBlockedBy: [setup.id] })
 TaskUpdate({ taskId: merge.id, addBlockedBy: [taskA.id, taskB.id] })
 ```
 
-### Pattern 3: Phase-based (단계별)
+### Pattern 3: Phase-based (Step-by-Step)
 
 ```javascript
 // Phase markers in metadata
@@ -253,45 +253,45 @@ const researchTasks = TaskList().filter(t =>
 
 ## Priority Levels
 
-| Priority | 사용 시점 | 예시 |
-|----------|----------|------|
-| `CRITICAL` | 즉시 처리 필수, 블로커 | [PERMANENT] 항목, 보안 이슈 |
-| `HIGH` | 핵심 기능, 메인 작업 | 주요 구현 Task |
-| `MEDIUM` | 일반 작업 | 리팩토링, 개선 |
-| `LOW` | 나중에 해도 됨 | 문서화, 정리 |
+| Priority | When to Use | Examples |
+|----------|-------------|----------|
+| `CRITICAL` | Immediate action required, blocker | [PERMANENT] items, security issues |
+| `HIGH` | Core functionality, main work | Major implementation Tasks |
+| `MEDIUM` | General work | Refactoring, improvements |
+| `LOW` | Can be done later | Documentation, cleanup |
 
 ---
 
-## Metadata 활용 규칙
+## Metadata Usage Rules
 
-### 필수 Metadata
+### Required Metadata
 
 ```javascript
 metadata: {
-  priority: "CRITICAL|HIGH|MEDIUM|LOW",  // 우선순위
-  phase: "phase-name",                    // 단계명
-  tags: ["tag1", "tag2"]                  // 분류 태그
+  priority: "CRITICAL|HIGH|MEDIUM|LOW",  // Priority level
+  phase: "phase-name",                    // Phase name
+  tags: ["tag1", "tag2"]                  // Classification tags
 }
 ```
 
-### 선택 Metadata
+### Optional Metadata
 
 ```javascript
 metadata: {
-  owner: "terminal-b",           // 담당자
-  parentTaskId: "task-123",      // 부모 Task (계층 구조)
-  source: "skill:orchestrate",   // 생성 출처
-  promptFile: "path/to/prompt",  // Worker prompt 파일
-  estimatedTime: "30m",          // 예상 소요 시간
-  actualTime: "25m"              // 실제 소요 시간
+  owner: "terminal-b",           // Assignee
+  parentTaskId: "task-123",      // Parent Task (hierarchy)
+  source: "skill:orchestrate",   // Creation source
+  promptFile: "path/to/prompt",  // Worker prompt file
+  estimatedTime: "30m",          // Estimated duration
+  actualTime: "25m"              // Actual duration
 }
 ```
 
 ---
 
-## 동적 Schedule 관리
+## Dynamic Schedule Management
 
-### 진행도 추적
+### Progress Tracking
 
 ```javascript
 const tasks = TaskList()
@@ -309,51 +309,51 @@ Progress: ${(completed/total*100).toFixed(1)}%
 `)
 ```
 
-### Blocker 해소 시 자동 Unblock
+### Automatic Unblock When Blocker Completes
 
-Task가 완료되면 해당 Task를 `blockedBy`로 가진 다른 Task들이 자동으로 unblock됩니다.
+When a Task is completed, other Tasks that have it in their `blockedBy` list are automatically unblocked.
 
 ```javascript
-// task1 완료 시
+// When task1 completes
 TaskUpdate({ taskId: task1.id, status: "completed" })
-// → task1을 blockedBy로 가진 task2, task3 등이 자동 unblock
+// → task2, task3 etc. that have task1 in blockedBy are automatically unblocked
 ```
 
 ---
 
-## 워크플로우 템플릿
+## Workflow Templates
 
-### 신규 작업 시작 시
+### Starting New Work
 
 ```javascript
 // 1. [PERMANENT] Context Check
 TaskCreate({
   subject: "[PERMANENT] Context & Recovery Check",
   description: `
-    1. _active_workload.yaml 확인
-    2. TaskList로 현재 상태 파악
-    3. 관련 L1/L2/L3 파일 읽기
-    4. 이전 작업 컨텍스트 복구
+    1. Verify _active_workload.yaml
+    2. Check current status via TaskList
+    3. Read related L1/L2/L3 files
+    4. Restore previous work context
   `,
   activeForm: "Checking context",
   metadata: { priority: "CRITICAL", phase: "permanent" }
 })
 
-// 2. 작업 분해
+// 2. Work Breakdown
 TaskCreate({
-  subject: "작업 분해 및 계획 수립",
-  description: "전체 작업을 단계별로 분해",
+  subject: "Work breakdown and planning",
+  description: "Decompose entire work into phases",
   activeForm: "Planning work breakdown",
   metadata: { priority: "HIGH", phase: "planning" }
 })
 
-// 3. 실제 작업 Tasks
-// ... (작업별로 추가)
+// 3. Actual Work Tasks
+// ... (add per task)
 
-// 4. 검증 및 정리
+// 4. Verification and Summary
 TaskCreate({
-  subject: "검증 및 결과 정리",
-  description: "모든 작업 완료 확인 및 결과 문서화",
+  subject: "Verification and result summary",
+  description: "Confirm all work completion and document results",
   activeForm: "Verifying and summarizing",
   metadata: { priority: "HIGH", phase: "verification" }
 })
@@ -361,101 +361,101 @@ TaskCreate({
 
 ---
 
-## Anti-Patterns (피해야 할 패턴)
+## Anti-Patterns (Patterns to Avoid)
 
-| Anti-Pattern | 문제점 | 올바른 방법 |
-|--------------|--------|-------------|
-| Task 없이 작업 시작 | 추적 불가, 맥락 손실 | TaskCreate 먼저 |
-| [PERMANENT] 생략 | 컨텍스트 복구 누락 | 항상 최상단에 포함 |
-| 의존성 없는 순차 작업 | 병렬화 기회 손실 | addBlockedBy 활용 |
-| metadata 미사용 | 분류/필터링 불가 | priority, phase 필수 |
-| status 미업데이트 | 진행도 파악 불가 | in_progress → completed |
+| Anti-Pattern | Problem | Correct Approach |
+|--------------|---------|------------------|
+| Starting work without Task | Cannot track, context loss | TaskCreate first |
+| Omitting [PERMANENT] | Missing context recovery | Always include at top |
+| Sequential work without dependencies | Lost parallelization opportunity | Use addBlockedBy |
+| Not using metadata | Cannot classify/filter | priority, phase required |
+| Not updating status | Cannot track progress | in_progress → completed |
 
 ---
 
 ## Checklist
 
-작업 시작 전:
-- [ ] [PERMANENT] Context Check Task 생성
-- [ ] _active_workload.yaml 확인
-- [ ] TaskList로 현재 상태 파악
-- [ ] 관련 파일 읽기 (L1/L2/L3)
+Before starting work:
+- [ ] Create [PERMANENT] Context Check Task
+- [ ] Verify _active_workload.yaml
+- [ ] Check current status via TaskList
+- [ ] Read related files (L1/L2/L3)
 
-작업 중:
-- [ ] Task status를 in_progress로 업데이트
-- [ ] 의존성 체인 준수
-- [ ] metadata에 진행 상황 기록
+During work:
+- [ ] Update Task status to in_progress
+- [ ] Follow dependency chain
+- [ ] Record progress in metadata
 
-작업 완료 후:
-- [ ] Task status를 completed로 업데이트
-- [ ] 결과 문서화
-- [ ] 다음 Task unblock 확인
-
----
-
-> **Remember:** 작업 전체 맥락을 잃지 않고 작업하는 것이 품질의 핵심입니다.
-> [PERMANENT] 항목은 이를 보장하는 안전장치입니다.
+After work completion:
+- [ ] Update Task status to completed
+- [ ] Document results
+- [ ] Verify next Task is unblocked
 
 ---
 
-## Agents 연계 패턴
+> **Remember:** Maintaining holistic context awareness throughout work is the key to quality.
+> The [PERMANENT] pattern is a safeguard to ensure this.
 
-### Agent 목록 및 Task API 연계
+---
 
-| Agent | 역할 | Task API | 모델 |
-|-------|------|----------|------|
-| `onboarding-guide` | 신규 사용자 안내 | ✗ | haiku |
-| `pd-readonly-analyzer` | 읽기 전용 분석 | ✓ (위임 가능) | haiku |
-| `pd-skill-loader` | 스킬 사전 로드 | ✗ | sonnet |
-| `ontology-roadmap` | ODA 로드맵 문서 | ✗ | - |
+## Agent Integration Patterns
 
-### Agent 위임 패턴
+### Agent List and Task API Integration
+
+| Agent | Role | Task API | Model |
+|-------|------|----------|-------|
+| `onboarding-guide` | New user guidance | ✗ | haiku |
+| `pd-readonly-analyzer` | Read-only analysis | ✓ (delegatable) | haiku |
+| `pd-skill-loader` | Skill pre-loading | ✗ | sonnet |
+| `ontology-roadmap` | ODA roadmap document | ✗ | - |
+
+### Agent Delegation Pattern
 
 ```javascript
-// pd-readonly-analyzer를 통한 안전한 코드 분석
+// Safe code analysis via pd-readonly-analyzer
 Task({
   subagent_type: "pd-readonly-analyzer",
-  prompt: "분석 요청...",
+  prompt: "Analysis request...",
   run_in_background: true
 })
-// 결과: L1/L2/L3 형식으로 .agent/outputs/에 저장
+// Result: Saved in L1/L2/L3 format to .agent/outputs/
 ```
 
-### Agent 패턴
+### Agent Patterns
 
-| 패턴 | Agent | 설명 |
-|------|-------|------|
-| **A1: Tool Restrictions** | pd-readonly-analyzer | `disallowedTools`로 수정 방지 |
-| **A2: Skill Injection** | pd-skill-loader | 런타임 발견 없이 스킬 사전 로드 |
+| Pattern | Agent | Description |
+|---------|-------|-------------|
+| **A1: Tool Restrictions** | pd-readonly-analyzer | Prevent modifications via `disallowedTools` |
+| **A2: Skill Injection** | pd-skill-loader | Pre-load skills without runtime discovery |
 
 ---
 
-## Skills 연계 패턴
+## Skill Integration Patterns
 
-### E2E Pipeline과 Task API
+### E2E Pipeline and Task API
 
 ```
-/clarify ────────────────────────► (Task API 미사용)
+/clarify ────────────────────────► (Task API not used)
     │
     ▼
-/research ───────────────────────► Task(Explore) × N (병렬)
+/research ───────────────────────► Task(Explore) × N (parallel)
     │
     ▼
-/planning ───────────────────────► Task(Plan) × N (병렬)
+/planning ───────────────────────► Task(Plan) × N (parallel)
     │
     ▼
-/orchestrate ────────────────────► TaskCreate() × N  ⭐ 유일한 Task 생성점
+/orchestrate ────────────────────► TaskCreate() × N  ⭐ Only Task creation point
                                    TaskUpdate(addBlockedBy)
     │
     ▼
-/assign ─────────────────────────► TaskUpdate(owner)  ⭐ 소유권 할당
+/assign ─────────────────────────► TaskUpdate(owner)  ⭐ Ownership assignment
     │
     ▼
-/worker (병렬) ──────────────────► TaskUpdate(status)
-                                   TaskCreate() (Sub-Orchestrator 모드 시)
+/worker (parallel) ──────────────► TaskUpdate(status)
+                                   TaskCreate() (in Sub-Orchestrator mode)
     │
     ▼
-/collect ────────────────────────► TaskList() (완료 확인)
+/collect ────────────────────────► TaskList() (completion check)
     │
     ▼
 /synthesis ──────────────────────► Decision: COMPLETE | ITERATE
@@ -464,11 +464,11 @@ Task({
     └── ITERATE ───────────────► /rsil-plan → /orchestrate
 ```
 
-### Skill별 Task API 사용 패턴
+### Task API Usage Pattern by Skill
 
 | Skill | TaskCreate | TaskUpdate | TaskList | TaskGet |
 |-------|------------|------------|----------|---------|
-| `/orchestrate` | ✓ (유일) | ✓ (의존성) | - | - |
+| `/orchestrate` | ✓ (only) | ✓ (dependencies) | - | - |
 | `/assign` | - | ✓ (owner) | ✓ (auto) | ✓ |
 | `/worker` | ✓ (Sub-Orch) | ✓ (status) | - | ✓ |
 | `/collect` | - | - | ✓ | - |
@@ -476,16 +476,16 @@ Task({
 
 ---
 
-## Orchestrator / Sub-Orchestrator 패턴
+## Orchestrator / Sub-Orchestrator Pattern
 
-### 계층 구조
+### Hierarchy Structure
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Main Orchestrator (Terminal A)                             │
-│  - TaskCreate로 전체 작업 분해                               │
-│  - TaskUpdate(addBlockedBy)로 의존성 설정                    │
-│  - /assign으로 Terminal B,C,D에 할당                         │
+│  - Decompose entire work with TaskCreate                    │
+│  - Set dependencies with TaskUpdate(addBlockedBy)           │
+│  - Assign to Terminal B,C,D via /assign                     │
 └─────────────────────┬───────────────────────────────────────┘
                       │
      ┌────────────────┼────────────────┐
@@ -504,10 +504,10 @@ Task({
             └───────────────┘
 ```
 
-### Sub-Orchestrator 활성화
+### Activating Sub-Orchestrator
 
 ```javascript
-// /assign에서 Sub-Orchestrator 모드 설정
+// Set Sub-Orchestrator mode in /assign
 TaskUpdate({
   taskId: taskId,
   owner: "terminal-c",
@@ -518,7 +518,7 @@ TaskUpdate({
   }
 })
 
-// /worker에서 서브태스크 생성
+// Create subtasks in /worker
 TaskCreate({
   subject: "Subtask 1.1",
   metadata: {
@@ -530,13 +530,13 @@ TaskCreate({
 
 ---
 
-## Auto-Delegation 패턴 (EFL)
+## Auto-Delegation Pattern (EFL)
 
-### 트리거 조건
+### Trigger Conditions
 
 ```javascript
 // Skills with agent_delegation.enabled: true && default_mode: true
-// 자동으로 Sub-Orchestrator로 동작
+// Automatically operates as Sub-Orchestrator
 
 const delegationDecision = checkAutoDelegation(SKILL_CONFIG, userRequest)
 if (delegationDecision.shouldDelegate) {
@@ -545,19 +545,19 @@ if (delegationDecision.shouldDelegate) {
 }
 ```
 
-### Complexity 기반 Agent 수
+### Complexity-based Agent Count
 
-| Complexity | Agent Count | 트리거 조건 |
-|------------|-------------|-------------|
+| Complexity | Agent Count | Trigger Condition |
+|------------|-------------|-------------------|
 | simple | 1 | 1-5 requirements |
 | moderate | 2 | 6-15 requirements |
 | complex | 3 | 16+ requirements |
 
 ---
 
-## 통합 워크플로우 템플릿
+## Integrated Workflow Template
 
-### 새 프로젝트 시작
+### Starting New Project
 
 ```javascript
 // 1. [PERMANENT] Context Check
@@ -567,121 +567,121 @@ TaskCreate({
 })
 
 // 2. E2E Pipeline Tasks
-TaskCreate({ subject: "/clarify 실행", metadata: { phase: "clarify" } })
-TaskCreate({ subject: "/research 실행", metadata: { phase: "research" } })
-TaskCreate({ subject: "/planning 실행", metadata: { phase: "planning" } })
-TaskCreate({ subject: "/orchestrate 실행", metadata: { phase: "orchestrate" } })
-TaskCreate({ subject: "/collect 실행", metadata: { phase: "collect" } })
-TaskCreate({ subject: "/synthesis 실행", metadata: { phase: "synthesis" } })
+TaskCreate({ subject: "Execute /clarify", metadata: { phase: "clarify" } })
+TaskCreate({ subject: "Execute /research", metadata: { phase: "research" } })
+TaskCreate({ subject: "Execute /planning", metadata: { phase: "planning" } })
+TaskCreate({ subject: "Execute /orchestrate", metadata: { phase: "orchestrate" } })
+TaskCreate({ subject: "Execute /collect", metadata: { phase: "collect" } })
+TaskCreate({ subject: "Execute /synthesis", metadata: { phase: "synthesis" } })
 
-// 3. 의존성 체인 설정
+// 3. Set dependency chain
 // clarify → research → planning → orchestrate → collect → synthesis
 ```
 
 ---
 
-## 핵심 규칙 요약
+## Core Rules Summary
 
-1. **TaskCreate는 /orchestrate만** - 다른 스킬은 기존 Task 조작만
-2. **owner로 할당** - /assign이 TaskUpdate(owner)로 터미널 할당
-3. **blockedBy로 의존성** - DAG 형성, Gate 4에서 순환 검증
-4. **Sub-Orchestrator 지원** - Worker가 subtask 생성 가능
-5. **[PERMANENT] 필수** - 모든 작업 시작 전 컨텍스트 확인
-6. **L1/L2/L3 출력** - 모든 Agent/Skill 출력은 Progressive Disclosure
-
----
+1. **TaskCreate only in /orchestrate** - Other skills only manipulate existing Tasks
+2. **Assignment via owner** - /assign assigns terminals via TaskUpdate(owner)
+3. **Dependencies via blockedBy** - Form DAG, cycle validation at Gate 4
+4. **Sub-Orchestrator support** - Worker can create subtasks
+5. **[PERMANENT] required** - Context check before all work starts
+6. **L1/L2/L3 outputs** - All Agent/Skill outputs use Progressive Disclosure
 
 ---
 
-## Hooks 연계 패턴 (코드레벨 분석)
+---
 
-### Hook 분류 (26개)
+## Hook Integration Patterns (Code-Level Analysis)
 
-| 분류 | Hooks | 역할 |
-|------|-------|------|
-| **Session** | session-start.sh, session-end.sh, session-health.sh | 세션 초기화/종료/상태 |
-| **Pipeline Setup** | clarify-setup.sh, planning-setup.sh, orchestrate-setup.sh | 스킬 전 선행 조건 (Gate 1-4) |
-| **Pipeline Finalize** | clarify-finalize.sh, planning-finalize.sh, research-finalize.sh | 완료 후 handoff |
-| **Validation** | clarify-validate.sh, research-validate.sh, orchestrate-validate.sh | Shift-Left 검증 |
-| **Task Pipeline** | pd-task-interceptor.sh, pd-task-processor.sh | **L1/L2/L3 자동화** |
-| **Security** | permission-guard.sh, governance-check.sh | 동적 리스크 감지 |
+### Hook Classification (26 total)
 
-### Task API 핵심 연계 Hooks
+| Category | Hooks | Role |
+|----------|-------|------|
+| **Session** | session-start.sh, session-end.sh, session-health.sh | Session initialization/termination/status |
+| **Pipeline Setup** | clarify-setup.sh, planning-setup.sh, orchestrate-setup.sh | Pre-skill conditions (Gate 1-4) |
+| **Pipeline Finalize** | clarify-finalize.sh, planning-finalize.sh, research-finalize.sh | Post-completion handoff |
+| **Validation** | clarify-validate.sh, research-validate.sh, orchestrate-validate.sh | Shift-Left validation |
+| **Task Pipeline** | pd-task-interceptor.sh, pd-task-processor.sh | **L1/L2/L3 automation** |
+| **Security** | permission-guard.sh, governance-check.sh | Dynamic risk detection |
+
+### Core Task API Integration Hooks
 
 #### 1. pd-task-interceptor.sh (PreToolUse:Task)
 
 ```yaml
-트리거: Tool == "Task" && subagent_type not in SKIP_AGENTS
-기능:
-  1. L1/L2/L3 프롬프트 자동 주입
-  2. 캐시 확인 (hit 시 작업 블록)
-  3. Worker prompt 파일 생성 (.agent/prompts/pending/)
-  4. run_in_background=true, model="opus" 자동 추가
+Trigger: Tool == "Task" && subagent_type not in SKIP_AGENTS
+Functions:
+  1. Auto-inject L1/L2/L3 prompt
+  2. Check cache (block if hit)
+  3. Create Worker prompt file (.agent/prompts/pending/)
+  4. Auto-add run_in_background=true, model="opus"
 ```
 
 #### 2. pd-task-processor.sh (PostToolUse:Task)
 
 ```yaml
-트리거: Task 완료 후
-기능:
-  1. L1 필드 파싱 (taskId, priority, status, l2Path...)
-  2. 캐시 저장 (~/.claude/cache/l1l2/{hash}.json)
-  3. Prompt 파일 이동 (pending → completed)
-  4. Priority 기반 가이던스 생성
+Trigger: After Task completion
+Functions:
+  1. Parse L1 fields (taskId, priority, status, l2Path...)
+  2. Save to cache (~/.claude/cache/l1l2/{hash}.json)
+  3. Move prompt file (pending → completed)
+  4. Generate priority-based guidance
 ```
 
 #### 3. session-start.sh (SessionStart)
 
 ```yaml
-기능:
-  1. Post-Compact Recovery 감지
-     - _active_workload.yaml 존재 여부 확인
-     - slug, current_skill, current_phase 추출
-  2. Task List 연속성
-     - CLAUDE_CODE_TASK_LIST_ID 기반 pending tasks 로드
-  3. 출력 JSON에 recovery 블록 포함
+Functions:
+  1. Post-Compact Recovery detection
+     - Check _active_workload.yaml existence
+     - Extract slug, current_skill, current_phase
+  2. Task List continuity
+     - Load pending tasks based on CLAUDE_CODE_TASK_LIST_ID
+  3. Include recovery block in output JSON
 ```
 
-### Hook 트리거 플로우
+### Hook Trigger Flow
 
 ```
 Session Start
      │
      └── session-start.sh
-            ├── Post-Compact Recovery 감지
-            └── Task List 로드
+            ├── Post-Compact Recovery detection
+            └── Task List loading
 
 Skill Invocation (/clarify, /planning, ...)
      │
      ├── {skill}-setup.sh (PreToolUse)
-     │      └── Gate 검증 (의존성, 입력)
+     │      └── Gate validation (dependencies, inputs)
      │
      └── {skill}-finalize.sh (Stop)
-            └── Handoff 생성 (다음 스킬 제안)
+            └── Generate handoff (suggest next skill)
 
 Task Tool Call
      │
      ├── pd-task-interceptor.sh (PreToolUse)
-     │      ├── L1/L2/L3 프롬프트 주입
-     │      └── 캐시 확인
+     │      ├── L1/L2/L3 prompt injection
+     │      └── Cache check
      │
      └── pd-task-processor.sh (PostToolUse)
-            ├── L1 파싱 및 캐싱
-            └── Priority 가이던스 생성
+            ├── L1 parsing and caching
+            └── Priority guidance generation
 
 Subagent Lifecycle (V2.1.29)
      │
      ├── SubagentStart hook
-     │      └── subagent_lifecycle.log 기록
+     │      └── Log to subagent_lifecycle.log
      │
      └── SubagentStop hook
-            └── subagent_lifecycle.log 완료 기록
+            └── Log completion to subagent_lifecycle.log
 ```
 
 ### V2.1.29 Subagent Lifecycle Hooks
 
 ```yaml
-# settings.json에 등록된 V2.1.29 hooks
+# V2.1.29 hooks registered in settings.json
 SubagentStart:
   matcher: ".*"
   action: Log to .agent/logs/subagent_lifecycle.log
@@ -692,37 +692,37 @@ SubagentStop:
   action: Log completion to .agent/logs/subagent_lifecycle.log
   fields: [timestamp, CLAUDE_SUBAGENT_TYPE]
 
-# 로그 형식
+# Log format
 [2026-02-01T20:55:00] SubagentStart: Explore
 [2026-02-01T20:55:30] SubagentStop: Explore
 ```
 
-### Validation Gates (Shift-Left 5단계)
+### Validation Gates (5-Stage Shift-Left)
 
-| Gate | Hook | 검증 시점 | 실패 시 |
-|------|------|----------|---------|
-| G1 | clarify-validate.sh | /clarify 전 | 불명확 항목 재질문 |
-| G2 | research-validate.sh | /research 전 | 리서치 범위 확인 |
-| G3 | planning-preflight.sh | /planning 전 | 계획 가능성 검증 |
-| G4 | orchestrate-validate.sh | /orchestrate 전 | 의존성 확인 |
-| G5 | worker-preflight.sh | /worker 전 | 리소스 가용성 |
+| Gate | Hook | Validation Point | On Failure |
+|------|------|------------------|------------|
+| G1 | clarify-validate.sh | Before /clarify | Re-ask unclear items |
+| G2 | research-validate.sh | Before /research | Confirm research scope |
+| G3 | planning-preflight.sh | Before /planning | Verify plan feasibility |
+| G4 | orchestrate-validate.sh | Before /orchestrate | Check dependencies |
+| G5 | worker-preflight.sh | Before /worker | Resource availability |
 
-### 코드레벨 발견 이슈
+### Code-Level Discovered Issues
 
-| Severity | 위치 | 이슈 | 권장 조치 |
-|----------|------|------|----------|
-| MEDIUM | session-start.sh:85 | stat 플랫폼 호환성 | Python 기반 통합 |
-| MEDIUM | validation-metrics.sh:99 | bc 의존성 | fallback 추가 |
-| LOW | 전체 | 에러 처리 (`2>/dev/null`) | 명시적 logging |
+| Severity | Location | Issue | Recommended Action |
+|----------|----------|-------|-------------------|
+| MEDIUM | session-start.sh:85 | stat platform compatibility | Python-based integration |
+| MEDIUM | validation-metrics.sh:99 | bc dependency | Add fallback |
+| LOW | All | Error handling (`2>/dev/null`) | Explicit logging |
 
 ---
 
 ## Section 10: Agent Integration (Code-Level Analysis V1.4.0)
 
-### Agent Inventory (3개)
+### Agent Inventory (3 total)
 
-| Agent | Model | Task API | 용도 |
-|-------|-------|----------|------|
+| Agent | Model | Task API | Purpose |
+|-------|-------|----------|---------|
 | `onboarding-guide` | haiku | ❌ | User-facing help |
 | `pd-readonly-analyzer` | haiku | ✅ | Safe read-only analysis |
 | `pd-skill-loader` | sonnet | ❌ | Skill injection pattern |
@@ -743,27 +743,27 @@ tools: [Read, mcp__sequential-thinking__sequentialthinking]
 → Result: Minimal tool access for help sessions
 ```
 
-### Agent → Task Mapping Rules (신규 제안)
+### Agent → Task Mapping Rules (Proposed)
 
 ```yaml
-# Agent frontmatter → Task parameter 자동 변환
+# Agent frontmatter → Task parameter auto-conversion
 
 Rule 1: Tool Restriction Inheritance
   Agent.tools ∩ !Agent.disallowedTools → Task.allowed_tools
 
 Rule 2: Background Execution Alignment
-  Agent.runInBackground → Task.run_in_background (기본값)
+  Agent.runInBackground → Task.run_in_background (default)
 
 Rule 3: Permission Mode Mapping
   Agent.permissionMode = "acceptEdits"
-    → Task allowed_tools에 [Write, Edit] 포함 가능
+    → Task allowed_tools can include [Write, Edit]
 ```
 
 ---
 
 ## Section 11: Skill Integration (Code-Level Analysis V1.4.0)
 
-### Skill Task API Usage Matrix (17개 스킬)
+### Skill Task API Usage Matrix (17 Skills)
 
 | Skill | TaskCreate | TaskUpdate | TaskList | TaskGet | Sequential Thinking |
 |-------|:-:|:-:|:-:|:-:|:-:|
@@ -778,7 +778,7 @@ Rule 3: Permission Mode Mapping
 
 ### EFL Pattern Implementation (P1-P6)
 
-모든 core skill에 구현됨:
+Implemented in all core skills:
 
 ```yaml
 P1: Skill as Sub-Orchestrator
@@ -800,7 +800,7 @@ P6: Agent Internal Feedback Loop
   → max_iterations: 3, validation_criteria per skill
 ```
 
-### Task Metadata Schema Extension (신규 제안)
+### Task Metadata Schema Extension (Proposed)
 
 ```yaml
 metadata:
@@ -833,45 +833,45 @@ metadata:
 
 ## Section 12: Hook Integration (Code-Level Analysis V1.4.0)
 
-### Hook 분류 (27개)
+### Hook Classification (27 total)
 
-| 분류 | 파일 수 | Task API 연계 |
-|------|--------|---------------|
-| Session Management | 3 | ✅ 핵심 (Task List 로드, Recovery) |
-| Task Pipeline | 3 | ✅ 핵심 (L1/L2/L3 자동 주입) |
+| Category | File Count | Task API Integration |
+|----------|------------|----------------------|
+| Session Management | 3 | ✅ Core (Task List loading, Recovery) |
+| Task Pipeline | 3 | ✅ Core (L1/L2/L3 auto-injection) |
 | Shift-Left Gates | 6 | ✅ Validation |
 | Security & Governance | 2 | ❌ |
 | Pipeline Setup/Finalize | 9 | ⚠️ Partial |
 | Utility | 4 | ❌ |
 
-### L1/L2/L3 자동 주입 흐름
+### L1/L2/L3 Auto-Injection Flow
 
 ```
 Task Tool Call
      │
      ├── pd-task-interceptor.sh (PreToolUse)
-     │      ├── L1/L2/L3 프롬프트 템플릿 주입
-     │      ├── Cache hash 확인 (hit 시 skip)
-     │      ├── Worker prompt 파일 생성 (pending/*.yaml)
-     │      └── run_in_background=true, model="opus" 자동 추가
+     │      ├── Inject L1/L2/L3 prompt template
+     │      ├── Check cache hash (skip if hit)
+     │      ├── Create Worker prompt file (pending/*.yaml)
+     │      └── Auto-add run_in_background=true, model="opus"
      │
      └── pd-task-processor.sh (PostToolUse)
-            ├── L1 YAML 블록 파싱
-            ├── Cache 저장 (input_hash → metadata)
-            ├── Prompt 파일 이동 (pending → completed)
-            └── Priority 기반 가이던스 생성
+            ├── Parse L1 YAML block
+            ├── Save to cache (input_hash → metadata)
+            ├── Move prompt file (pending → completed)
+            └── Generate priority-based guidance
 ```
 
-### 플랫폼 호환성 이슈 (권장 조치)
+### Platform Compatibility Issues (Recommended Actions)
 
-| 이슈 | 위치 | Linux | macOS | 권장 |
-|------|------|-------|-------|------|
-| `grep -oP` | pd-task-processor.sh | ✅ | ❌ | pcregrep 또는 Python |
+| Issue | Location | Linux | macOS | Recommendation |
+|-------|----------|-------|-------|----------------|
+| `grep -oP` | pd-task-processor.sh | ✅ | ❌ | pcregrep or Python |
 | `stat -c` | session-start.sh | ✅ | ❌ (`-f`) | Python os.stat() |
-| `yq` | planning-finalize.sh | ✅ | ✅ | jq 기반 통일 |
-| `bc` | validation-metrics.sh | ✅ | ✅ | integer 산술로 변경 |
+| `yq` | planning-finalize.sh | ✅ | ✅ | Unify with jq |
+| `bc` | validation-metrics.sh | ✅ | ✅ | Use integer arithmetic |
 
-### V7.1 경로 통일 (필수)
+### V7.1 Path Unification (REQUIRED)
 
 ```yaml
 # Legacy (DEPRECATED)
@@ -880,7 +880,7 @@ Task Tool Call
 # V7.1 Standard (REQUIRED)
 .agent/prompts/{slug}/outputs/{taskId}.md
 
-# L1 l3Section 필드도 변경 필요:
+# L1 l3Section field also needs change:
 l3Section: ".agent/prompts/{slug}/outputs/{taskId}.md"  # V7.1
 ```
 
@@ -888,12 +888,12 @@ l3Section: ".agent/prompts/{slug}/outputs/{taskId}.md"  # V7.1
 
 ## Section 13: Cross-Integration Summary (L3 Synthesis)
 
-### Component 간 Task API 흐름
+### Cross-Component Task API Flow
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  CLAUDE.md (Task System Definition)                          │
-│  → TaskCreate, TaskUpdate, TaskList, TaskGet 정의            │
+│  → Defines TaskCreate, TaskUpdate, TaskList, TaskGet         │
 └──────────────────────┬───────────────────────────────────────┘
                        │
      ┌─────────────────┼─────────────────┐
@@ -918,15 +918,15 @@ l3Section: ".agent/prompts/{slug}/outputs/{taskId}.md"  # V7.1
            └──────────────────────┘
 ```
 
-### 핵심 개선 우선순위
+### Core Improvement Priorities
 
-| 우선순위 | 항목 | 담당 Component |
-|---------|------|----------------|
-| **HIGH** | Task metadata에 L1/L2/L3 출력 경로 링크 | Skills + Hooks |
-| **HIGH** | Tool Restriction Inheritance 규칙 문서화 | Agents |
-| **HIGH** | V7.1 경로 통일 | Hooks |
-| **MEDIUM** | blockedBy 의존성 예시 추가 | Agents |
-| **MEDIUM** | 플랫폼 호환성 수정 (grep -oP, stat -c) | Hooks |
+| Priority | Item | Responsible Component |
+|----------|------|----------------------|
+| **HIGH** | Link L1/L2/L3 output paths in Task metadata | Skills + Hooks |
+| **HIGH** | Document Tool Restriction Inheritance rules | Agents |
+| **HIGH** | V7.1 path unification | Hooks |
+| **MEDIUM** | Add blockedBy dependency examples | Agents |
+| **MEDIUM** | Fix platform compatibility (grep -oP, stat -c) | Hooks |
 | **LOW** | Context budget tracking system | Skills |
 
 ---
@@ -937,46 +937,46 @@ l3Section: ".agent/prompts/{slug}/outputs/{taskId}.md"  # V7.1
 
 ### Short-term (1-2 Sprint)
 
-| 항목 | 출처 | Component | 상태 |
-|------|------|-----------|------|
-| `once: true` hook 패턴 검토 | FINAL_REPORT | Hooks | ⏳ |
-| Hooks timeout 설정 표준화 | FINAL_REPORT | Hooks | ⏳ |
-| V7.1 경로 통일 (`.agent/prompts/{slug}/`) | Guideline | Hooks | ⏳ |
-| Tool Restriction Inheritance 문서화 | Guideline | Agents | ⏳ |
+| Item | Source | Component | Status |
+|------|--------|-----------|--------|
+| Review `once: true` hook pattern | FINAL_REPORT | Hooks | ⏳ |
+| Standardize Hooks timeout settings | FINAL_REPORT | Hooks | ⏳ |
+| V7.1 path unification (`.agent/prompts/{slug}/`) | Guideline | Hooks | ⏳ |
+| Document Tool Restriction Inheritance | Guideline | Agents | ⏳ |
 
 ### Medium-term (2-3 Sprint)
 
-| 항목 | 출처 | Component | 상태 |
-|------|------|-----------|------|
-| Task metadata L1/L2/L3 경로 링크 | Guideline | Skills + Hooks | ⏳ |
-| 플랫폼 호환성 (grep -oP, stat -c) | Guideline | Hooks | ⏳ |
-| blockedBy 의존성 예시 추가 | Guideline | Agents | ⏳ |
-| Skill-specific hooks → frontmatter 이전 | FINAL_REPORT | Skills | ⏳ |
+| Item | Source | Component | Status |
+|------|--------|-----------|--------|
+| Task metadata L1/L2/L3 path linking | Guideline | Skills + Hooks | ⏳ |
+| Platform compatibility (grep -oP, stat -c) | Guideline | Hooks | ⏳ |
+| Add blockedBy dependency examples | Guideline | Agents | ⏳ |
+| Move Skill-specific hooks → frontmatter | FINAL_REPORT | Skills | ⏳ |
 
 ### Long-term (3+ Sprint)
 
-| 항목 | 출처 | Component | 상태 |
-|------|------|-----------|------|
-| Agent registry 자동화 | FINAL_REPORT | Agents | ⏳ |
-| Lifecycle logging 대시보드 | FINAL_REPORT | Hooks | ⏳ |
+| Item | Source | Component | Status |
+|------|--------|-----------|--------|
+| Agent registry automation | FINAL_REPORT | Agents | ⏳ |
+| Lifecycle logging dashboard | FINAL_REPORT | Hooks | ⏳ |
 | Context budget tracking system | Guideline | Skills | ⏳ |
 
 ---
 
-## Section 15: INFRA 통합 검증 결과 (V1.5.0)
+## Section 15: INFRA Integration Verification Results (V1.5.0)
 
-### 검증 매트릭스
+### Verification Matrix
 
-| 검증 항목 | FINAL_REPORT | Guideline V1.5.0 | 정합성 |
-|----------|--------------|------------------|--------|
-| Skills 수 | 17 | 17 | ✅ 일치 |
-| Hooks 수 | 23 | 26 | ⚠️ +3 추가됨 |
-| Agents 수 | 4 | 3 | ⚠️ 1개 docs/로 이동 |
-| EFL P1-P6 | P1,P2,P3,P5,P6 | P1-P6 | ✅ 완전 |
-| V2.1.29 hooks | SubagentStart/Stop | ✅ 추가됨 | ✅ 완전 |
-| Semantic Integrity | 100% | 100% | ✅ 유지 |
+| Verification Item | FINAL_REPORT | Guideline V1.5.0 | Consistency |
+|-------------------|--------------|------------------|-------------|
+| Skills count | 17 | 17 | ✅ Match |
+| Hooks count | 23 | 26 | ⚠️ +3 added |
+| Agents count | 4 | 3 | ⚠️ 1 moved to docs/ |
+| EFL P1-P6 | P1,P2,P3,P5,P6 | P1-P6 | ✅ Complete |
+| V2.1.29 hooks | SubagentStart/Stop | ✅ Added | ✅ Complete |
+| Semantic Integrity | 100% | 100% | ✅ Maintained |
 
-### 최종 결론
+### Final Conclusion
 
 ```yaml
 integration_status: OPTIMIZED
@@ -987,13 +987,13 @@ version_alignment:
   FINAL_REPORT: V2.1.29 Compliant
 
 components:
-  agents: 3 (Task API 1/3 사용)
-  skills: 17 (EFL P1-P6 완전)
-  hooks: 26 (L1/L2/L3 자동 주입)
+  agents: 3 (Task API 1/3 used)
+  skills: 17 (EFL P1-P6 complete)
+  hooks: 26 (L1/L2/L3 auto-injection)
 
 key_features:
-  - "[PERMANENT] Context Check 패턴 적용"
-  - "L2→L3 Progressive-Deep-Dive Meta-Level 패턴"
+  - "[PERMANENT] Context Check pattern applied"
+  - "L2→L3 Progressive-Deep-Dive Meta-Level pattern"
   - "Parallel Agents Delegation Architecture"
   - "V2.1.29 SubagentStart/SubagentStop hooks"
   - "Tool Restriction Patterns (A1/A2/A3)"
@@ -1003,73 +1003,73 @@ key_features:
 
 ## Section 16: Enforcement Architecture (V2.0.0)
 
-> **핵심 원칙:** 프롬프트 수준 지시가 아닌, Hook을 통한 **행동력 강제**
+> **Core Principle:** Behavioral enforcement via Hooks, not prompt-level guidance
 
-### 아키텍처 개요
+### Architecture Overview
 
 ```
 .claude/hooks/
-├── enforcement/                    # Gate 스크립트 (HARD BLOCK)
-│   ├── _shared.sh                  # 공통 라이브러리
-│   ├── context-recovery-gate.sh    # Compact 후 컨텍스트 복구 강제
-│   ├── l2l3-access-gate.sh         # Edit/Write 전 L2/L3 읽기 강제
-│   ├── task-first-gate.sh          # 소스 코드 수정 전 TaskCreate 강제
-│   ├── blocked-task-gate.sh        # blockedBy 있는 Task 시작 방지
-│   ├── output-preservation-gate.sh # Task 완료 전 결과 저장 확인
-│   └── security-gate.sh            # 위험 명령 차단
+├── enforcement/                    # Gate scripts (HARD BLOCK)
+│   ├── _shared.sh                  # Common library
+│   ├── context-recovery-gate.sh    # Enforce context recovery after Compact
+│   ├── l2l3-access-gate.sh         # Enforce L2/L3 read before Edit/Write
+│   ├── task-first-gate.sh          # Enforce TaskCreate before source code modification
+│   ├── blocked-task-gate.sh        # Prevent starting Tasks with blockedBy
+│   ├── output-preservation-gate.sh # Verify result saved before Task completion
+│   └── security-gate.sh            # Block dangerous commands
 │
-└── tracking/                       # Tracker 스크립트 (로깅)
-    ├── read-tracker.sh             # Read 호출 로깅
-    └── task-tracker.sh             # TaskCreate/Update 로깅
+└── tracking/                       # Tracker scripts (logging)
+    ├── read-tracker.sh             # Log Read calls
+    └── task-tracker.sh             # Log TaskCreate/Update
 ```
 
-### Gate 스크립트 (PreToolUse - HARD BLOCK)
+### Gate Scripts (PreToolUse - HARD BLOCK)
 
-| Gate | Trigger | 차단 조건 | JSON 응답 |
-|------|---------|----------|----------|
-| `context-recovery-gate.sh` | Edit\|Write\|Task | `_active_workload.yaml` 존재 but 미읽음 | `permissionDecision: "deny"` |
-| `l2l3-access-gate.sh` | Edit\|Write | Active workload 있지만 L2/L3 미읽음 | `permissionDecision: "deny"` |
-| `task-first-gate.sh` | Edit\|Write | 소스 코드 수정 but 최근 TaskCreate 없음 | `permissionDecision: "deny"` |
-| `blocked-task-gate.sh` | TaskUpdate | status→in_progress but blockedBy 존재 | `permissionDecision: "deny"` |
-| `output-preservation-gate.sh` | TaskUpdate | status→completed but outputs/ 없음 | `permissionDecision: "ask"` |
-| `security-gate.sh` | Bash | 위험 명령 패턴 감지 | `permissionDecision: "deny"` |
+| Gate | Trigger | Block Condition | JSON Response |
+|------|---------|-----------------|---------------|
+| `context-recovery-gate.sh` | Edit\|Write\|Task | `_active_workload.yaml` exists but not read | `permissionDecision: "deny"` |
+| `l2l3-access-gate.sh` | Edit\|Write | Active workload but L2/L3 not read | `permissionDecision: "deny"` |
+| `task-first-gate.sh` | Edit\|Write | Source code modification but no recent TaskCreate | `permissionDecision: "deny"` |
+| `blocked-task-gate.sh` | TaskUpdate | status→in_progress but blockedBy exists | `permissionDecision: "deny"` |
+| `output-preservation-gate.sh` | TaskUpdate | status→completed but no outputs/ | `permissionDecision: "ask"` |
+| `security-gate.sh` | Bash | Dangerous command pattern detected | `permissionDecision: "deny"` |
 
-### Tracker 스크립트 (PostToolUse - 로깅)
+### Tracker Scripts (PostToolUse - Logging)
 
-| Tracker | Trigger | 기능 | 로그 위치 |
-|---------|---------|------|----------|
-| `read-tracker.sh` | Read | 파일 읽기 기록 | `.agent/tmp/recent_reads.log` |
-| `task-tracker.sh` | TaskCreate\|TaskUpdate | Task 작업 기록 | `.agent/tmp/recent_tasks.log` |
+| Tracker | Trigger | Function | Log Location |
+|---------|---------|----------|--------------|
+| `read-tracker.sh` | Read | Record file reads | `.agent/tmp/recent_reads.log` |
+| `task-tracker.sh` | TaskCreate\|TaskUpdate | Record Task operations | `.agent/tmp/recent_tasks.log` |
 
-### 공통 라이브러리 (_shared.sh)
+### Common Library (_shared.sh)
 
 ```bash
-# 핵심 함수
-output_allow()           # 허용 (permissionDecision: "allow")
+# Core functions
+output_allow()           # Allow (permissionDecision: "allow")
 output_deny "reason"     # HARD BLOCK (permissionDecision: "deny")
-output_ask "reason"      # 사용자 확인 요청 (permissionDecision: "ask")
-output_passthrough()     # PostToolUse 패스스루 (빈 JSON)
+output_ask "reason"      # Request user confirmation (permissionDecision: "ask")
+output_passthrough()     # PostToolUse passthrough (empty JSON)
 
-# 상태 확인 함수
-has_active_workload()    # _active_workload.yaml 존재 확인
-has_read_l2l3()          # L2/L3 파일 읽기 확인
-has_recent_task_create() # 최근 5분 내 TaskCreate 확인
-is_excluded_file()       # 제외 파일 확인 (.claude/, .agent/, .md, .json 등)
+# State check functions
+has_active_workload()    # Check _active_workload.yaml existence
+has_read_l2l3()          # Check L2/L3 file reads
+has_recent_task_create() # Check TaskCreate within last 5 minutes
+is_excluded_file()       # Check excluded files (.claude/, .agent/, .md, .json etc.)
 
-# 로깅 함수
-log_enforcement()        # enforcement.log에 결정 기록
-log_tracking()           # tracking 로그 기록
+# Logging functions
+log_enforcement()        # Record decisions to enforcement.log
+log_tracking()           # Record to tracking log
 ```
 
-### Hook Exit Code 규칙
+### Hook Exit Code Rules
 
-| Exit Code | JSON 필요 | 결과 |
-|-----------|----------|------|
-| `exit 0` | ✅ 필수 | JSON의 `permissionDecision`에 따라 처리 |
-| `exit 2` | ❌ 무시 | 즉시 긴급 차단 (stderr 표시) |
-| `exit 1` | ❌ 무시 | Hook 오류, 작업은 허용됨 |
+| Exit Code | JSON Required | Result |
+|-----------|---------------|--------|
+| `exit 0` | ✅ Required | Process according to `permissionDecision` in JSON |
+| `exit 2` | ❌ Ignored | Immediate emergency block (stderr displayed) |
+| `exit 1` | ❌ Ignored | Hook error, operation is allowed |
 
-### settings.json Hook 등록
+### settings.json Hook Registration
 
 ```json
 {
@@ -1110,15 +1110,15 @@ log_tracking()           # tracking 로그 기록
 }
 ```
 
-### 프롬프트 vs Hook 강제 비교
+### Prompt vs Hook Enforcement Comparison
 
-| 규칙 | V1.x (프롬프트) | V2.0 (Hook 강제) |
-|------|----------------|-----------------|
-| Context Recovery | CLAUDE.md 지시 | `context-recovery-gate.sh` BLOCK |
-| L2→L3 읽기 | Task API Guideline 지시 | `l2l3-access-gate.sh` BLOCK |
-| TaskCreate 필수 | [PERMANENT] 패턴 지시 | `task-first-gate.sh` BLOCK |
-| blockedBy 준수 | 의존성 규칙 지시 | `blocked-task-gate.sh` BLOCK |
-| 보안 명령 차단 | settings.json deny | `security-gate.sh` BLOCK |
+| Rule | V1.x (Prompt) | V2.0 (Hook Enforcement) |
+|------|---------------|-------------------------|
+| Context Recovery | CLAUDE.md instruction | `context-recovery-gate.sh` BLOCK |
+| L2→L3 reading | Task API Guideline instruction | `l2l3-access-gate.sh` BLOCK |
+| TaskCreate required | [PERMANENT] pattern instruction | `task-first-gate.sh` BLOCK |
+| blockedBy compliance | Dependency rule instruction | `blocked-task-gate.sh` BLOCK |
+| Security command blocking | settings.json deny | `security-gate.sh` BLOCK |
 
 ---
 
@@ -1130,7 +1130,7 @@ log_tracking()           # tracking 로그 기록
 > - V2.0.0: Gate scripts with `permissionDecision: deny` for HARD BLOCK
 > - V2.0.0: Tracker scripts for read/task logging
 > - V2.0.0: Common library (_shared.sh) with helper functions
-> - V1.5.0: Added Section 14-15 (Integrated Roadmap, INFRA 통합 검증 결과)
+> - V1.5.0: Added Section 14-15 (Integrated Roadmap, INFRA Integration Verification Results)
 > - V1.5.0: Added V2.1.29 SubagentStart/SubagentStop hooks documentation
 > - V1.4.0: Added Section 10-12 (Agent/Skill/Hook Integration from Code-Level Analysis)
 > - V1.3.0: Added Section 1.1: L2→L3 Progressive-Deep-Dive (Meta-Level Pattern)
