@@ -1,6 +1,6 @@
 # Claude Code Agent
 
-> **Version:** 7.0 | **Role:** Main Agent Orchestrator
+> **Version:** 7.3 | **Role:** Main Agent Orchestrator
 > **Architecture:** Task-Centric Hybrid (Native Task + File-Based Prompts)
 
 ---
@@ -32,6 +32,7 @@ AUDIT-TRAIL    → Track files_viewed for all operations
 ```yaml
 workspace_root: /home/palantir
 workload_management: .claude/references/workload-management.md
+task_api_guideline: .claude/references/task-api-guideline.md
 ```
 
 ### Workload Management
@@ -143,25 +144,38 @@ B       C       D
 
 ## 4. Skill Inventory
 
+### Pipeline Skills (E2E Workflow)
+
 | Skill | Purpose | Model |
 |-------|---------|-------|
 | `/clarify` | Requirements elicitation with PE techniques | opus |
-| `/re-architecture` | Pipeline component analysis + traceability feedback | opus |
 | `/research` | Post-clarify codebase + external analysis | opus |
 | `/planning` | YAML planning with Plan Agent review | opus |
+| `/plan-draft` | Quick planning drafts for smaller tasks | opus |
 | `/orchestrate` | Task decomposition + dependency setup | opus |
 | `/assign` | Worker assignment to terminals | opus |
 | `/worker` | Worker self-service (start, done, status) | opus |
 | `/collect` | Aggregate worker results | opus |
 | `/synthesis` | Traceability matrix + quality validation | opus |
 | `/rsil-plan` | Gap analysis + remediation planning | opus |
+
+### Utility Skills
+
+| Skill | Purpose | Model |
+|-------|---------|-------|
 | `/build` | Generate skills, hooks, agents | opus |
 | `/build-research` | Research for build operations | opus |
 | `/commit-push-pr` | Git commit and PR creation | opus |
 | `/docx-automation` | DOCX document generation | opus |
-| `/ontology-core` | Core Ontology Schema Validator for ODA | opus |
-| `/ontology-objecttype` | ObjectType Definition Assistant for ODA migration | opus |
-| `/ontology-why` | Ontology Integrity Design Rationale Helper | opus |
+| `/re-architecture` | Pipeline component analysis + traceability feedback | opus |
+
+### Ontology Skills (ODA)
+
+| Skill | Purpose | Model |
+|-------|---------|-------|
+| `/ontology-core` | Core Ontology Schema Validator | opus |
+| `/ontology-objecttype` | ObjectType Definition Assistant | opus |
+| `/ontology-why` | Ontology Integrity Design Rationale | opus |
 
 ---
 
@@ -229,44 +243,84 @@ Glob/Grep/Read → Use DIRECTLY for file search and code exploration
 
 ```
 .claude/
-├── CLAUDE.md              # This file
+├── CLAUDE.md              # This file (main configuration)
 ├── settings.json          # Claude Code settings
-├── skills/                # Skill definitions
+├── rules/                 # Modular rule files
+│   ├── coding-style.md
+│   ├── git-workflow.md
+│   ├── ontology.md
+│   └── security.md
+├── skills/                # Skill definitions (18 skills)
 │   ├── shared/            # Shared modules
-│   │   ├── slug-generator.sh
-│   │   ├── workload-tracker.sh
-│   │   └── workload-files.sh
-│   ├── clarify/
-│   ├── research/
-│   ├── planning/
-│   ├── orchestrate/
-│   ├── assign/
-│   ├── worker/
-│   ├── collect/
-│   ├── synthesis/
-│   ├── rsil-plan/
-│   ├── build/
-│   ├── build-research/
-│   ├── commit-push-pr/
-│   ├── docx-automation/
-│   ├── re-architecture/
-│   ├── ontology-core/
-│   ├── ontology-objecttype/
-│   └── ontology-why/
-├── hooks/                 # Lifecycle hooks
+│   │   ├── post-compact-recovery.md
+│   │   ├── l1-l2-l3-standard.md
+│   │   ├── auto-delegation.md
+│   │   └── efl-template.md
+│   ├── clarify/           # Requirements elicitation
+│   ├── research/          # Codebase analysis
+│   ├── planning/          # YAML planning
+│   ├── plan-draft/        # Quick planning drafts
+│   ├── orchestrate/       # Task decomposition
+│   ├── assign/            # Worker assignment
+│   ├── worker/            # Worker self-service
+│   ├── collect/           # Result aggregation
+│   ├── synthesis/         # Quality validation
+│   ├── rsil-plan/         # Gap remediation
+│   ├── build/             # Skill/hook/agent generation
+│   ├── build-research/    # Build research
+│   ├── commit-push-pr/    # Git operations
+│   ├── docx-automation/   # Document generation
+│   ├── re-architecture/   # Pipeline analysis
+│   ├── ontology-core/     # ODA core validation
+│   ├── ontology-objecttype/ # ODA object types
+│   └── ontology-why/      # ODA design rationale
+├── hooks/                 # Lifecycle hooks (48 files)
+│   ├── enforcement/       # Gate hooks (15 files)
+│   │   ├── _shared.sh
+│   │   ├── blocked-task-gate.sh
+│   │   ├── context-recovery-gate.sh
+│   │   ├── l2l3-access-gate.sh
+│   │   ├── orchestrating-l2l3-synthesis-gate.sh
+│   │   ├── output-preservation-gate.sh
+│   │   ├── pipeline-order-gate.sh
+│   │   ├── plan-mode-gate.sh
+│   │   ├── read-before-edit-gate.sh
+│   │   ├── security-gate.sh
+│   │   ├── sensitive-files-gate.sh
+│   │   ├── sequential-thinking-gate.sh
+│   │   ├── task-first-gate.sh
+│   │   ├── task-lifecycle-gate.sh
+│   │   └── workload-path-gate.sh
+│   ├── tracking/          # Tracking hooks
+│   │   ├── read-tracker.sh
+│   │   └── task-tracker.sh
+│   ├── task-pipeline/     # Task processing
+│   │   ├── pd-context-injector.sh
+│   │   ├── pd-task-interceptor.sh
+│   │   └── pd-task-processor.sh
 │   ├── session-start.sh
 │   ├── session-end.sh
-│   ├── clarify-finalize.sh
-│   ├── research-finalize.sh
-│   └── planning-finalize.sh
-├── agents/                # Custom agents
+│   ├── clarify-*.sh       # Clarify lifecycle
+│   ├── research-*.sh      # Research lifecycle
+│   ├── planning-*.sh      # Planning lifecycle
+│   ├── orchestrate-*.sh   # Orchestrate lifecycle
+│   ├── synthesis-finalize.sh
+│   ├── collect-finalize.sh
+│   └── mcp-sequential-*.sh # MCP integration
+├── agents/                # Custom agents (6 agents)
 │   ├── onboarding-guide.md
 │   ├── pd-readonly-analyzer.md
-│   └── pd-skill-loader.md
-└── references/            # Documentation
+│   ├── pd-skill-loader.md
+│   ├── plan.md
+│   ├── explore.md
+│   └── claude-code-guide.md
+└── references/            # Documentation (6 docs)
     ├── pd-patterns.md
     ├── skill-access-matrix.md
-    └── workload-management.md
+    ├── workload-management.md
+    ├── task-api-guideline.md
+    ├── hierarchical-orchestration-guide.md
+    └── ontology-roadmap.md
 
 .agent/
 ├── prompts/                          # Workload-based outputs (V7.1)
@@ -366,6 +420,17 @@ allowed-tools:
 
 ---
 
+> **v7.3 (2026-02-01):** Infrastructure Improvement
+> - Updated Directory Structure to reflect actual files (48 hooks, 18 skills, 6 agents)
+> - Added `.claude/rules/` modular rule files documentation
+> - Reorganized Skill Inventory into categories (Pipeline, Utility, Ontology)
+> - Added `/plan-draft` skill to inventory
+> - Updated agents list: added plan.md, explore.md, claude-code-guide.md
+> - Updated references list: added task-api-guideline.md, hierarchical-orchestration-guide.md, ontology-roadmap.md
+> - Added hooks/enforcement/ detailed structure (15 gate hooks)
+> - Added hooks/tracking/ and hooks/task-pipeline/ subdirectories
+> - Added task_api_guideline reference to Workspace section
+>
 > **v7.2 (2026-01-29):** Sequential Thinking Integration
 > - Added Section 9: MCP Tool Requirements
 > - All skills/agents must include sequential-thinking in allowed-tools
