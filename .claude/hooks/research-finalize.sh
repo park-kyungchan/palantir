@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# research-finalize.sh - Stop Hook for /research Skill (V2.0.0)
+#=============================================================================
+# research-finalize.sh - Stop Hook for /research Skill
+# Version: 2.1.0
 #
-# Triggers: Stop event when /research skill completes
+# Trigger: Stop event when /research skill completes
 # Purpose:
 #   1. Validate research output exists
 #   2. Log completion timestamp
 #   3. Suggest /planning as next step with research-slug
-#   4. Append handoff metadata for pipeline continuity (V2.0.0)
+#   4. Append handoff metadata for pipeline continuity
 #
 # Input (JSON stdin):
 #   - hook_event_name: "Stop"
@@ -20,6 +22,16 @@
 # Path Strategy (V7.1):
 #   - Primary: .agent/prompts/{slug}/research.md
 #   - Fallback: .agent/research/{slug}.md (V6 compatibility)
+#
+# Log Path: .agent/logs/research-finalize.log
+# Timestamp Format: ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)
+#
+# Dependencies: jq, yq (optional), stat
+#
+# Changes in 2.1.0:
+#   - Standardized header with version and log path
+#   - Added dependency documentation
+#=============================================================================
 
 set -euo pipefail
 

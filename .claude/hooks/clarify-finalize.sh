@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# clarify-finalize.sh - Stop Hook for /clarify Skill (V2.0.0)
+#=============================================================================
+# clarify-finalize.sh - Stop Hook for /clarify Skill
+# Version: 2.1.0
 #
-# Triggers: Stop event when /clarify skill completes
+# Trigger: Stop event when /clarify skill completes
 # Purpose:
 #   1. Finalize YAML log with status update
 #   2. Record downstream_skills if routing occurred
 #   3. Compute context_hash for integrity verification
-#   4. Append handoff metadata for pipeline continuity (V2.0.0)
+#   4. Append handoff metadata for pipeline continuity
 #
 # Input (JSON stdin):
 #   - hook_event_name: "Stop"
@@ -20,6 +22,16 @@
 # Path Strategy (V7.1):
 #   - Primary: .agent/prompts/{slug}/clarify.yaml
 #   - Fallback: .agent/clarify/{slug}.yaml (V6 compatibility)
+#
+# Log Path: .agent/logs/clarify-finalize.log
+# Timestamp Format: ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)
+#
+# Dependencies: jq, yq (optional)
+#
+# Changes in 2.1.0:
+#   - Standardized header with version and log path
+#   - Added dependency documentation
+#=============================================================================
 
 set -euo pipefail
 

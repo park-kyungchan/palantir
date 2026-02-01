@@ -1,17 +1,28 @@
 #!/bin/bash
 #=============================================================================
 # task-tracker.sh - Track TaskCreate and TaskUpdate invocations
-# Version: 1.0.0
+# Version: 2.0.0
 #
 # Trigger: PostToolUse (TaskCreate|TaskUpdate)
 # Purpose: Log task operations for workflow tracking and verification
+#
+# Log Path: .agent/tmp/recent_tasks.log (via _shared.sh)
+# Format: ISO8601_TIMESTAMP|TOOL_NAME|taskId:ID|status:STATUS|subject:SUBJECT
+#
+# Changes in 2.0.0:
+#   - Added comprehensive header documentation
+#   - Improved error handling with set -euo pipefail
+#   - Standardized log format documentation
 #=============================================================================
 
-# Source shared library (from parent enforcement directory)
-source "$(dirname "$0")/../enforcement/_shared.sh"
+set -euo pipefail
 
-# Read stdin JSON
-INPUT=$(cat)
+# Source shared library (from parent enforcement directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../enforcement/_shared.sh"
+
+# Read stdin JSON (handle empty input gracefully)
+INPUT=$(cat 2>/dev/null || echo '{}')
 
 # Extract tool name
 TOOL_NAME=$(json_get '.toolName' "$INPUT")

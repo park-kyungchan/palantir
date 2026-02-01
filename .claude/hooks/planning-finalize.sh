@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# planning-finalize.sh - Stop Hook for /planning Skill (V2.0.0)
+#=============================================================================
+# planning-finalize.sh - Stop Hook for /planning Skill
+# Version: 2.1.0
 #
-# Triggers: Stop event when /planning skill completes
+# Trigger: Stop event when /planning skill completes
 # Purpose:
 #   1. Validate planning document exists
 #   2. Check Plan Agent review status
 #   3. Log completion timestamp
 #   4. Suggest next step (/orchestrate)
-#   5. Append handoff metadata for pipeline continuity (V2.0.0)
+#   5. Append handoff metadata for pipeline continuity
 #
 # Input (JSON stdin):
 #   - hook_event_name: "Stop"
@@ -21,6 +23,16 @@
 # Path Strategy (V7.1):
 #   - Primary: .agent/prompts/{slug}/plan.yaml
 #   - Fallback: .agent/plans/{slug}.yaml (V6 compatibility)
+#
+# Log Path: .agent/logs/planning-finalize.log
+# Timestamp Format: ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)
+#
+# Dependencies: jq, yq (required for full functionality), stat
+#
+# Changes in 2.1.0:
+#   - Standardized header with version and log path
+#   - Added dependency documentation
+#=============================================================================
 
 set -euo pipefail
 
