@@ -41,6 +41,7 @@ class VisionParseTrigger(str, Enum):
     FUNCTION_GRAPH = "FUNCTION_GRAPH"
     TABLE_STRUCTURE = "TABLE_STRUCTURE"
     LOW_CONFIDENCE_REGION = "LOW_CONFIDENCE_REGION"
+    CHEMISTRY_DETECTED = "CHEMISTRY_DETECTED"
 
 
 class ContentType(str, Enum):
@@ -70,13 +71,15 @@ class ContentFlags(MathpixBaseModel):
     contains_geometry: bool = Field(default=False)
     contains_table: bool = Field(default=False)
     contains_handwriting: bool = Field(default=False)
+    contains_chemistry: bool = Field(default=False)
 
     def should_trigger_vision_parse(self) -> bool:
         """Determine if Stage C should be triggered."""
         return (
             self.contains_diagram or
             self.contains_graph or
-            self.contains_geometry
+            self.contains_geometry or
+            self.contains_chemistry
         )
 
 
@@ -123,6 +126,48 @@ class EquationElement(MathpixBaseModel):
     review: ReviewMetadata = Field(default_factory=ReviewMetadata)
 
 
+class TableCell(MathpixBaseModel):
+    """A cell within a table structure."""
+    content: str = Field(default="", description="Cell text content")
+    row_span: int = Field(default=1, ge=1, description="Number of rows spanned")
+    col_span: int = Field(default=1, ge=1, description="Number of columns spanned")
+    is_header: bool = Field(default=False, description="Whether this is a header cell")
+
+
+class TableElement(MathpixBaseModel):
+    """A detected table structure (Premium API)."""
+    id: str = Field(..., description="Unique identifier")
+    rows: List[List[TableCell]] = Field(default_factory=list, description="Table rows")
+    caption: Optional[str] = Field(default=None, description="Table caption if available")
+    bbox: Optional[BBox] = Field(default=None, description="Bounding box")
+    confidence: Confidence = Field(default_factory=lambda: Confidence(
+        value=0.0, source="mathpix-api-v3", element_type="table"
+    ))
+
+
+class ChemicalFormula(MathpixBaseModel):
+    """A detected chemical formula/structure (Premium API - SMILES)."""
+    id: str = Field(..., description="Unique identifier")
+    smiles: str = Field(default="", description="SMILES notation")
+    inchi: Optional[str] = Field(default=None, description="InChI notation")
+    formula_text: Optional[str] = Field(default=None, description="Text formula")
+    bbox: Optional[BBox] = Field(default=None, description="Bounding box")
+    confidence: Confidence = Field(default_factory=lambda: Confidence(
+        value=0.0, source="mathpix-api-v3", element_type="chemistry"
+    ))
+    approval_status: str = Field(default="pending", description="Review approval status")
+
+
+class WordElement(MathpixBaseModel):
+    """Word-level OCR data (Premium API)."""
+    text: str = Field(..., description="Word text")
+    bbox: BBox = Field(..., description="Bounding box")
+    confidence: Confidence = Field(default_factory=lambda: Confidence(
+        value=0.0, source="mathpix-api-v3", element_type="word"
+    ))
+    line_index: int = Field(default=0, ge=0, description="Index of parent line")
+
+
 # =============================================================================
 # Main Schema
 # =============================================================================
@@ -140,7 +185,7 @@ class TextSpec(MathpixBaseModel):
     - detection_map: Raw Mathpix detection regions
     """
     # Metadata
-    schema_version: str = Field(default="2.0.0")
+    schema_version: str = Field(default="2.1.0")
     image_id: str = Field(..., description="Source image identifier")
     provenance: Provenance = Field(default_factory=lambda: Provenance(
         stage="B",
@@ -177,6 +222,15 @@ class TextSpec(MathpixBaseModel):
         default_factory=list,
         description="Mathpix detection regions"
     )
+
+    # Additional Mathpix outputs (v2.1.0)
+    mathml: Optional[str] = Field(default=None, description="MathML representation")
+    asciimath: Optional[str] = Field(default=None, description="AsciiMath representation")
+    tables: Optional[List[Dict[str, Any]]] = Field(default=None, description="Detected tables")
+    chemistry: Optional[Dict[str, Any]] = Field(default=None, description="Chemistry data (SMILES, etc.)")
+    words: Optional[List[Dict[str, Any]]] = Field(default=None, description="Word-level data")
+    chemistry_detected: bool = Field(default=False, description="Whether chemistry was detected")
+    chemistry_approval_required: bool = Field(default=False, description="Needs chemistry review")
 
     # Raw Mathpix response (for debugging)
     raw_response: Optional[Dict[str, Any]] = Field(
@@ -277,6 +331,10 @@ __all__ = [
     "DetectionMapEntry",
     "LineSegment",
     "EquationElement",
+    "TableCell",
+    "TableElement",
+    "ChemicalFormula",
+    "WordElement",
     "TextSpec",
     # Functions
     "create_text_spec_from_mathpix",

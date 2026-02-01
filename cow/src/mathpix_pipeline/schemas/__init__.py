@@ -79,6 +79,10 @@ from .text_spec import (
     DetectionMapEntry,
     LineSegment,
     EquationElement,
+    TableCell,
+    TableElement,
+    ChemicalFormula,
+    WordElement,
     TextSpec,
     # Functions
     create_text_spec_from_mathpix,
@@ -210,6 +214,10 @@ __all__ = [
     "DetectionMapEntry",
     "LineSegment",
     "EquationElement",
+    "TableCell",
+    "TableElement",
+    "ChemicalFormula",
+    "WordElement",
     "TextSpec",
     "create_text_spec_from_mathpix",
 

@@ -41,6 +41,7 @@ class FeedbackLoopConfig:
     # Analysis settings
     pattern_analysis_window_days: int = 30
     top_patterns_count: int = 20
+    low_confidence_threshold: float = 0.40  # Threshold for low-confidence pattern detection
 
     # Data retention
     max_corrections_stored: int = 100000
@@ -477,12 +478,11 @@ class FeedbackLoopManager:
                 patterns.append(pattern)
 
         # Pattern 2: By pipeline stage and low confidence
-        LOW_CONF_THRESHOLD = 0.40
         for stage in PipelineStage:
             low_conf_records = [
                 r for r in corrections
                 if r.pipeline_stage == stage
-                and r.original_confidence < LOW_CONF_THRESHOLD
+                and r.original_confidence < self.config.low_confidence_threshold
             ]
             if len(low_conf_records) >= self.config.min_corrections_for_pattern:
                 confidences = [r.original_confidence for r in low_conf_records]
