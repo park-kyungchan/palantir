@@ -39,6 +39,29 @@ from .exporters import (
     LaTeXExporterConfig,
     SVGExporter,
     SVGExporterConfig,
+    YAMLExporter,
+    YAMLExporterConfig,
+)
+
+# YAML Parser
+from .yaml_parser import (
+    YAMLParser,
+    YAMLParseError,
+)
+
+# YAML Diff Parser
+from .yaml_diff_parser import (
+    ParsedPath,
+    YAMLDiffParser,
+    map_field_to_correction_type,
+    parse_diff_path,
+)
+
+# Versioning
+from .versioning import (
+    DiffResult,
+    VersionManager,
+    VersionMetadata,
 )
 
 # Storage
@@ -99,6 +122,20 @@ __all__ = [
     "LaTeXExporterConfig",
     "SVGExporter",
     "SVGExporterConfig",
+    "YAMLExporter",
+    "YAMLExporterConfig",
+    # YAML Parser
+    "YAMLParser",
+    "YAMLParseError",
+    # YAML Diff Parser
+    "ParsedPath",
+    "YAMLDiffParser",
+    "map_field_to_correction_type",
+    "parse_diff_path",
+    # Versioning
+    "DiffResult",
+    "VersionManager",
+    "VersionMetadata",
     # Storage
     "StorageManager",
     "LocalStorageBackend",

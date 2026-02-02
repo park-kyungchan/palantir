@@ -19,6 +19,7 @@ from .pdf_exporter import PDFExporter, PDFExporterConfig
 from .latex_exporter import LaTeXExporter, LaTeXExporterConfig
 from .svg_exporter import SVGExporter, SVGExporterConfig
 from .docx_exporter import DOCXExporter, DOCXExporterConfig
+from .yaml_exporter import YAMLExporter, YAMLExporterConfig
 
 
 __all__ = [
@@ -40,4 +41,7 @@ __all__ = [
     # DOCX
     "DOCXExporter",
     "DOCXExporterConfig",
+    # YAML
+    "YAMLExporter",
+    "YAMLExporterConfig",
 ]

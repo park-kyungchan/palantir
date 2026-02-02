@@ -161,6 +161,20 @@ from .pipeline import (
     PipelineResult,
 )
 
+# Editable YAML (Export Enhancement)
+from .editable_yaml import (
+    # Enums
+    CoordinateUnit,
+    # Models
+    Position,
+    StyleSpec,
+    EditableElement,
+    VersionInfo,
+    PageLayout,
+    # Main Schema
+    EditableYAMLSpec,
+)
+
 # Version
 __version__ = "2.0.0"
 
@@ -271,4 +285,13 @@ __all__ = [
     "PipelineOptions",
     "StageTiming",
     "PipelineResult",
+
+    # === Editable YAML (Export Enhancement) ===
+    "CoordinateUnit",
+    "Position",
+    "StyleSpec",
+    "EditableElement",
+    "VersionInfo",
+    "PageLayout",
+    "EditableYAMLSpec",
 ]

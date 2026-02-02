@@ -38,6 +38,7 @@ class ExportFormat(str, Enum):
     PNG = "png"
     DOCX = "docx"
     ZIP = "zip"  # Bundle format
+    YAML = "yaml"  # Editable intermediate format
 
 
 class ExportStatus(str, Enum):
@@ -127,6 +128,20 @@ class ExportOptions(MathpixBaseModel):
             "height": 600,
             "embed_fonts": True,
         }
+    )
+    yaml_options: Dict[str, Any] = Field(
+        default_factory=lambda: {
+            "include_positions": True,
+            "include_styling": True,
+            "editable_fields": ["latex", "text", "position", "font_style"],
+            "version_tracking": True,
+            "coordinate_unit": "mm",
+        },
+        description="YAML export configuration"
+    )
+    versioning_enabled: bool = Field(
+        default=False,
+        description="Enable git-style versioning for YAML exports"
     )
 
     # Naming options
