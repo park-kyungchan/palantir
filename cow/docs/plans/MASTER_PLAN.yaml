@@ -1,0 +1,1446 @@
+# =============================================================================
+# COW Pipeline Enhancement - MASTER PLAN
+# =============================================================================
+# Version: 1.0.0
+# Date: 2026-02-04
+# Purpose: Comprehensive implementation roadmap
+# Dependencies: Task 9, 10, 11, 12
+# =============================================================================
+
+metadata:
+  version: "1.0.0"
+  created_at: "2026-02-04"
+  dependencies:
+    - task9_agent_sdk_analysis.yaml
+    - task10_cli_wrapper_design.yaml
+    - task11_layout_content_module.yaml
+    - task12_hitl_workflow.yaml
+  overall_complexity: "HIGH"
+  estimated_timeline: "12-16 weeks"
+  integration_type: "Hybrid SDK + MCP + CLI"
+
+# =============================================================================
+# EXECUTIVE SUMMARY
+# =============================================================================
+executive_summary:
+  vision: |
+    Transform the COW Pipeline from a basic Mathpix-to-DOCX converter into a
+    production-ready, intelligent document processing system with:
+    - Zero Claude API costs (using Claude MAX subscription)
+    - Comprehensive CLI interface for all operations
+    - Intelligent Layout/Content separation for targeted processing
+    - Human-in-the-Loop workflow for quality assurance
+    - Claude Agent SDK orchestration for autonomous decision-making
+
+  key_value_propositions:
+    cost_efficiency:
+      current: "$50-200/month in Claude API fees"
+      future: "$0 (covered by Claude MAX $200/month subscription)"
+      savings: "100% Claude costs eliminated"
+      mathpix_only: "$9-10/month (unavoidable)"
+
+    quality_improvement:
+      current: "Blind processing, no validation"
+      future: "Confidence-based routing, HITL review for low-confidence items"
+      impact: "Estimated 30% reduction in output errors"
+
+    operational_efficiency:
+      current: "Manual intervention via Python scripts"
+      future: "Single unified CLI with automated workflows"
+      time_savings: "50-70% reduction in processing time"
+
+    scalability:
+      current: "Single-threaded, no parallelization"
+      future: "Multi-stage subagent parallelization"
+      throughput_improvement: "3-5x faster processing"
+
+  strategic_alignment:
+    immediate_benefits:
+      - "Cost reduction (Claude API → MAX subscription)"
+      - "Improved usability (CLI instead of scripts)"
+      - "Better quality (Layout/Content separation + HITL)"
+
+    mid_term_benefits:
+      - "Automated error recovery (Agent SDK hooks)"
+      - "Parallel processing (Stage B + C concurrency)"
+      - "Advanced caching (50-80% Mathpix savings)"
+
+    long_term_benefits:
+      - "Agent-driven optimization (self-tuning thresholds)"
+      - "Integration with external systems (MCP extensibility)"
+      - "Production-grade monitoring and reporting"
+
+# =============================================================================
+# INTEGRATED ARCHITECTURE
+# =============================================================================
+integrated_architecture:
+  architecture_layers:
+    layer_1_cli_interface:
+      component: "cow-cli (Typer-based)"
+      responsibility: "User-facing command-line interface"
+      features:
+        - "Process commands (image, batch, pdf)"
+        - "Review commands (list, show, approve, reject, modify)"
+        - "Export commands (docx, latex, markdown, json)"
+        - "Config management (init, show, set, validate)"
+      entry_point: "cow-cli <subcommand> [options]"
+
+    layer_2_orchestration:
+      component: "Claude Agent SDK main orchestrator"
+      responsibility: "Pipeline stage sequencing and error handling"
+      pattern: "Multi-agent orchestration"
+      tools:
+        - "Task (delegate to stage agents)"
+        - "Read/Write (file operations)"
+        - "Bash (external commands)"
+      decision_making:
+        - "Stage sequencing (A → B → C → D → ... → H)"
+        - "Error recovery (retry, fallback, escalation)"
+        - "HITL routing (confidence-based)"
+
+    layer_3_stage_agents:
+      component: "Specialized subagents per pipeline stage"
+      pattern: "AgentDefinition with isolated contexts"
+      agents:
+        ingestion_agent:
+          stage: "A - Ingestion & Validation"
+          model: "haiku"
+          tools: ["mcp__cow__validate_pdf", "mcp__cow__preprocess_image"]
+
+        text_parse_agent:
+          stage: "B - Text Parse (Mathpix)"
+          model: "sonnet"
+          tools: ["mcp__cow__mathpix_request", "mcp__cow__mathpix_poll"]
+
+        separator_agent:
+          stage: "B1 - Layout/Content Separation"
+          model: "haiku"
+          tools: ["mcp__cow__separate_layout_content"]
+
+        vision_parse_agent:
+          stage: "C - Vision Parse (Gemini)"
+          model: "sonnet"
+          tools: ["mcp__cow__gemini_detect", "mcp__cow__gemini_interpret"]
+
+        alignment_agent:
+          stage: "D - Alignment"
+          model: "sonnet"
+          tools: ["mcp__cow__align_regions", "mcp__cow__detect_inconsistencies"]
+
+        semantic_graph_agent:
+          stage: "E - Semantic Graph"
+          model: "opus"
+          tools: ["mcp__cow__extract_nodes", "mcp__cow__infer_edges", "mcp__cow__validate_graph"]
+
+        regeneration_agent:
+          stage: "F - Regeneration"
+          model: "sonnet"
+          tools: ["mcp__cow__generate_latex", "mcp__cow__generate_svg"]
+
+        human_review_agent:
+          stage: "G - Human Review"
+          model: "haiku"
+          tools: ["mcp__cow__queue_task", "mcp__cow__fetch_annotations", "mcp__cow__apply_feedback"]
+
+        export_agent:
+          stage: "H - Export"
+          model: "haiku"
+          tools: ["mcp__cow__export_docx", "mcp__cow__export_json", "mcp__cow__export_latex"]
+
+    layer_4_mcp_tools:
+      component: "SDK MCP servers (in-process)"
+      pattern: "createSdkMcpServer with @tool decorators"
+      servers:
+        cow_mathpix_server:
+          tools:
+            mathpix_request: "Submit PDF to Mathpix API"
+            mathpix_poll: "Poll for processing completion"
+            mathpix_parse: "Parse Mathpix JSON response"
+
+        cow_vision_server:
+          tools:
+            gemini_detect: "YOLO-based element detection"
+            gemini_interpret: "Gemini vision interpretation"
+            hybrid_merge: "Merge YOLO + Gemini results"
+
+        cow_separator_server:
+          tools:
+            separate_layout_content: "Split Stage B output into Layout/Content"
+            validate_separation: "Verify element count consistency"
+
+        cow_validation_server:
+          tools:
+            validate_pdf: "Check PDF structure"
+            validate_schema: "Validate against Pydantic schemas"
+            validate_graph: "Semantic graph consistency checks"
+
+        cow_hitl_server:
+          tools:
+            queue_for_review: "Add item to review queue"
+            get_review_status: "Check review completion"
+            wait_for_review: "Blocking wait until reviewed"
+
+    layer_5_storage:
+      component: "File-based + SQLite hybrid"
+      pattern: "Workload-scoped outputs + review queue DB"
+      structure:
+        outputs: "outputs/{image_id}/"
+        layout: "outputs/{image_id}/layout/stage_b_layout.json"
+        content: "outputs/{image_id}/content/stage_b_content.json"
+        vision: "outputs/{image_id}/vision/vision_analysis.json"
+        mapping: "outputs/{image_id}/mapping/bbox_mapping.json"
+        final: "outputs/{image_id}/merged_v3.json"
+        hitl_db: "cow/data/hitl/review_queue.db"
+        cache: "~/.cow/cache/"
+
+  data_flow_diagram: |
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │                         User Invocation                               │
+    │              cow-cli process pdf document.pdf                         │
+    └────────────────────────────┬─────────────────────────────────────────┘
+                                 │
+                                 ▼
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │                   Layer 1: CLI Interface (Typer)                     │
+    │  - Parse arguments                                                   │
+    │  - Load config from ~/.cow/config.yaml                               │
+    │  - Initialize SDK orchestrator                                       │
+    └────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │           Layer 2: Orchestrator (Claude Agent SDK)                   │
+    │  Main Agent Prompt:                                                  │
+    │    "Process document.pdf through COW pipeline stages A-H."           │
+    │                                                                       │
+    │  Decision Flow:                                                      │
+    │    1. Use ingestion-agent → validate PDF                             │
+    │    2. Use text-parser-agent → Mathpix extraction                     │
+    │    3. Use separator-agent → split Layout/Content                     │
+    │    4. Use vision-parser-agent → Gemini detection                     │
+    │    5. Use alignment-agent → merge Stage B+C                          │
+    │    6. Check confidence → route to HITL if needed                     │
+    │    7. Use semantic-graph-agent → build knowledge graph               │
+    │    8. Use regeneration-agent → LaTeX/SVG generation                  │
+    │    9. Use export-agent → DOCX/JSON output                            │
+    └────────┬──────────┬──────────┬──────────┬──────────┬────────────────┘
+             │          │          │          │          │
+             ▼          ▼          ▼          ▼          ▼
+    ┌─────────┐ ┌───────────┐ ┌────────┐ ┌──────────┐ ┌─────────┐
+    │Ingestion│ │Text Parser│ │Separator│ │Alignment│ │...More  │
+    │ Agent   │ │   Agent   │ │  Agent │ │  Agent  │ │ Agents  │
+    └────┬────┘ └─────┬─────┘ └────┬───┘ └────┬─────┘ └─────────┘
+         │            │            │          │
+         │            │            │          │ (All agents use MCP tools)
+         ▼            ▼            ▼          ▼
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │           Layer 4: MCP Tool Servers (In-Process)                     │
+    │                                                                       │
+    │  cow-mathpix:                                                        │
+    │    - mathpix_request(pdf_path) → request_id                          │
+    │    - mathpix_poll(request_id) → status                               │
+    │                                                                       │
+    │  cow-separator:                                                      │
+    │    - separate_layout_content(stage_b_output)                         │
+    │      → (LayoutData, ContentData)                                     │
+    │                                                                       │
+    │  cow-hitl:                                                           │
+    │    - queue_for_review(element, confidence)                           │
+    │    - wait_for_review(review_id) → decision                           │
+    │                                                                       │
+    │  cow-validation:                                                     │
+    │    - validate_graph(semantic_graph) → validation_result              │
+    └────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │              Layer 5: Storage (Files + SQLite)                       │
+    │                                                                       │
+    │  outputs/{image_id}/                                                 │
+    │    ├── stage_b/stage_b.json (Mathpix raw)                            │
+    │    ├── layout/stage_b_layout.json (Spatial data)                     │
+    │    ├── content/stage_b_content.json (Semantic data)                  │
+    │    ├── vision/vision_analysis.json (Claude Vision)                   │
+    │    ├── mapping/bbox_mapping.json (Stage D)                           │
+    │    └── merged_v3.json (Final output)                                 │
+    │                                                                       │
+    │  cow/data/hitl/review_queue.db (SQLite)                              │
+    │    - review_items table                                              │
+    │    - audit_logs table                                                │
+    │    - reviewer_stats table                                            │
+    └─────────────────────────────────────────────────────────────────────┘
+
+  component_interactions:
+    cli_to_orchestrator:
+      protocol: "Python function call"
+      data: "Parsed CLI arguments → query() prompt"
+
+    orchestrator_to_agents:
+      protocol: "Task tool delegation"
+      data: "Prompt with specific instructions"
+      isolation: "Separate context windows per agent"
+
+    agents_to_mcp_tools:
+      protocol: "MCP tool use (in-process)"
+      data: "Tool input dict → tool output dict"
+      overhead: "Minimal (no subprocess IPC)"
+
+    mcp_tools_to_storage:
+      protocol: "File I/O + SQLite transactions"
+      data: "JSON serialization + SQL queries"
+
+    hitl_integration:
+      entry_point: "orchestrator_to_agents (conditional)"
+      trigger: "confidence < type_specific_threshold"
+      blocking: "Optional (configurable per stage)"
+
+# =============================================================================
+# IMPLEMENTATION ROADMAP
+# =============================================================================
+implementation_roadmap:
+  phase_0_prerequisites:
+    name: "Environment Setup & Dependencies"
+    duration: "1 week"
+    owner: "DevOps"
+    tasks:
+      - task: "Install Claude Code CLI"
+        command: "curl -fsSL https://claude.ai/install.sh | bash"
+        validation: "claude --version"
+
+      - task: "Subscribe to Claude MAX"
+        tier: "$200/month (recommended for production)"
+        features:
+          - "20x Pro usage limits"
+          - "Full Opus 4.5 access"
+          - "Covers Claude Code SDK usage"
+
+      - task: "Setup Python environment"
+        command: "python3 -m venv cow-env && source cow-env/bin/activate"
+        dependencies:
+          - "Python >= 3.11"
+          - "pip >= 23.0"
+
+      - task: "Install core dependencies"
+        command: "pip install typer[all] rich pydantic httpx keyring sqlalchemy pytest"
+
+      - task: "Create project directories"
+        structure: |
+          cow-cli/
+          ├── cow_cli/
+          │   ├── mathpix/
+          │   ├── claude/
+          │   ├── semantic/
+          │   ├── review/
+          │   ├── export/
+          │   ├── preprocessing/
+          │   └── commands/
+          ├── tests/
+          ├── docs/
+          └── pyproject.toml
+
+      - task: "Configure Mathpix API credentials"
+        method: "keyring library (OS-level secure storage)"
+        command: "cow-cli config init"
+
+    deliverables:
+      - "Working Python environment"
+      - "Claude MAX subscription active"
+      - "Mathpix API keys stored securely"
+      - "Project structure created"
+
+  phase_1_core_cli:
+    name: "Core CLI Structure & Config Management"
+    duration: "1 week"
+    owner: "Backend Team"
+    dependencies: ["phase_0"]
+
+    tasks:
+      - task: "Implement Typer CLI framework"
+        file: "cow_cli/cli.py"
+        deliverables:
+          - "Base Typer app with subcommands"
+          - "Global options (--verbose, --config, --no-cache)"
+          - "Version and help commands"
+
+      - task: "Build config management"
+        file: "cow_cli/config.py"
+        deliverables:
+          - "YAML config file loader (~/.cow/config.yaml)"
+          - "Environment variable override"
+          - "Keyring integration for API keys"
+          - "Config validation"
+
+      - task: "Setup logging system"
+        file: "cow_cli/logging.py"
+        deliverables:
+          - "Rich console output"
+          - "File logging (DEBUG to logs/)"
+          - "Structured error messages"
+
+      - task: "Implement config commands"
+        files:
+          - "cow_cli/commands/config_init.py"
+          - "cow_cli/commands/config_show.py"
+          - "cow_cli/commands/config_set.py"
+          - "cow_cli/commands/config_validate.py"
+        deliverables:
+          - "cow-cli config init (interactive setup)"
+          - "cow-cli config show (display current config)"
+          - "cow-cli config set KEY VALUE"
+          - "cow-cli config validate (test API credentials)"
+
+    acceptance_criteria:
+      - "cow-cli --version displays version"
+      - "cow-cli config init creates ~/.cow/config.yaml"
+      - "cow-cli config validate checks Mathpix API successfully"
+      - "Logging outputs to console and file"
+
+  phase_2_mathpix_integration:
+    name: "Mathpix API Client & Caching"
+    duration: "1 week"
+    owner: "Backend Team"
+    dependencies: ["phase_1"]
+
+    tasks:
+      - task: "Build Mathpix API client"
+        file: "cow_cli/mathpix/client.py"
+        deliverables:
+          - "Async HTTP client (httpx)"
+          - "/v3/text endpoint support"
+          - "/v3/pdf endpoint support"
+          - "/v3/batch endpoint support"
+          - "Retry logic with exponential backoff"
+
+      - task: "Implement response caching"
+        file: "cow_cli/cache.py"
+        deliverables:
+          - "SHA256-based cache keys"
+          - "LRU eviction policy"
+          - "TTL management (default 30 days)"
+          - "Cache directory: ~/.cow/cache/"
+
+      - task: "Add image preprocessing"
+        file: "cow_cli/preprocessing/validator.py"
+        deliverables:
+          - "Format validation (PNG, JPG, PDF)"
+          - "Size/resolution checks"
+          - "Corrupt image detection"
+
+      - task: "Implement deduplication"
+        file: "cow_cli/preprocessing/deduplicator.py"
+        deliverables:
+          - "Perceptual hash (imagehash library)"
+          - "Duplicate detection before API call"
+
+    acceptance_criteria:
+      - "Single image OCR completes successfully"
+      - "Cache hit rate >= 50% on repeated requests"
+      - "Invalid images rejected before API call"
+      - "Mathpix API quota checked before request"
+
+  phase_3_layout_content_separation:
+    name: "Layout/Content Separation Module"
+    duration: "5 days"
+    owner: "Backend Team"
+    dependencies: ["phase_2"]
+
+    tasks:
+      - task: "Create LayoutContentSeparator class"
+        file: "cow_cli/semantic/layout_content_separator.py"
+        deliverables:
+          - "LayoutData, ContentData data classes"
+          - "separate() method"
+          - "save_layout(), save_content() methods"
+          - "validate_separation() method"
+          - "Region.from_cnt() utility"
+
+      - task: "Integrate into Stage C0 parser"
+        file: "cow/pipeline/stage_c0/word_data_parser.py"
+        modifications:
+          - "Import LayoutContentSeparator"
+          - "Call separator.separate() after loading Stage B output"
+          - "Save to outputs/{id}/layout/ and outputs/{id}/content/"
+          - "Add separated_data section to stage_c0.json"
+
+      - task: "Write unit tests"
+        file: "tests/semantic/test_layout_content_separator.py"
+        coverage: "95%"
+        test_cases:
+          - "cnt_to_region conversion"
+          - "Single text element separation"
+          - "Math element with LaTeX"
+          - "Diagram with chart_info labels"
+          - "Quality summary calculation"
+          - "Validation (count mismatch, ID mismatch)"
+
+      - task: "Integration test with real data"
+        file: "tests/integration/test_stage_c0_separation.py"
+        fixtures: "Korean geometry problem (15 elements)"
+
+    acceptance_criteria:
+      - "All unit tests pass (10/10)"
+      - "Integration test with Korean math problem passes"
+      - "Layout file contains only spatial fields"
+      - "Content file contains only semantic fields"
+      - "Element IDs match between Layout and Content"
+      - "Quality summary calculated correctly"
+
+  phase_4_claude_agent_sdk:
+    name: "Claude Agent SDK Integration"
+    duration: "2 weeks"
+    owner: "AI Team"
+    dependencies: ["phase_3"]
+
+    tasks:
+      - task: "Create SDK MCP servers"
+        file: "cow_cli/claude/mcp_servers.py"
+        deliverables:
+          - "cow-mathpix server (mathpix_request, mathpix_poll)"
+          - "cow-separator server (separate_layout_content)"
+          - "cow-validation server (validate_pdf, validate_schema)"
+          - "cow-hitl server (queue_for_review, get_review_status)"
+
+      - task: "Define stage agents"
+        file: "cow_cli/claude/stage_agents.py"
+        deliverables:
+          - "AgentDefinition for each pipeline stage"
+          - "Model selection (haiku for validation, sonnet for alignment, opus for graph)"
+          - "Tool allowlists per agent"
+
+      - task: "Build main orchestrator"
+        file: "cow_cli/claude/orchestrator.py"
+        deliverables:
+          - "ClaudeAgentOptions with agents and mcpServers"
+          - "Main query() loop with stage sequencing"
+          - "Error handling and retry logic"
+          - "Cost tracking per stage"
+
+      - task: "Add hooks for validation"
+        file: "cow_cli/claude/hooks.py"
+        deliverables:
+          - "PreToolUse: validate Mathpix quota"
+          - "PostToolUse: verify file writes"
+          - "PostToolUseFailure: log errors"
+
+      - task: "Replace API calls with SDK"
+        locations:
+          - "Semantic graph construction"
+          - "HITL review suggestions"
+          - "Alignment verification"
+        impact: "Zero Claude API costs"
+
+    acceptance_criteria:
+      - "Single image processes through full SDK pipeline"
+      - "No Claude API charges (verify billing statement)"
+      - "Stage agents execute in correct order"
+      - "Error recovery works (retry on transient failures)"
+      - "Cost tracking shows $0.00 for Claude, only Mathpix costs"
+
+  phase_5_hitl_workflow:
+    name: "Human-in-the-Loop Review System"
+    duration: "1 week"
+    owner: "Frontend + Backend Team"
+    dependencies: ["phase_4"]
+
+    tasks:
+      - task: "Create SQLite database"
+        file: "cow_cli/review/database.py"
+        deliverables:
+          - "review_items table"
+          - "audit_logs table"
+          - "reviewer_stats table"
+          - "Indexes for fast queries"
+
+      - task: "Implement routing logic"
+        file: "cow_cli/review/router.py"
+        deliverables:
+          - "Confidence threshold check"
+          - "Type-specific thresholds (equation: 0.95, text: 0.90)"
+          - "Priority scoring algorithm"
+          - "Queue insertion"
+
+      - task: "Build review commands"
+        files:
+          - "cow_cli/commands/review_list.py"
+          - "cow_cli/commands/review_show.py"
+          - "cow_cli/commands/review_approve.py"
+          - "cow_cli/commands/review_reject.py"
+          - "cow_cli/commands/review_modify.py"
+        deliverables:
+          - "cow-cli review list [--status pending]"
+          - "cow-cli review show <ITEM_ID>"
+          - "cow-cli review approve <ITEM_ID>"
+          - "cow-cli review reject <ITEM_ID> --reason"
+          - "cow-cli review modify <ITEM_ID> --field --value --comment"
+
+      - task: "Implement TUI (optional)"
+        file: "cow_cli/commands/review_interactive.py"
+        library: "rich"
+        features:
+          - "Side-by-side image + content"
+          - "Keyboard shortcuts (A=approve, R=reject)"
+          - "Session statistics"
+
+      - task: "Add pipeline integration points"
+        locations:
+          - "Stage C0 post-processing"
+          - "Stage C pre-alignment"
+          - "Stage D pre-merge"
+        blocking_config: "Stage C and D are blocking, C0 is non-blocking"
+
+    acceptance_criteria:
+      - "Low confidence items (<0.75) route to review queue"
+      - "cow-cli review list shows pending items sorted by priority"
+      - "cow-cli review approve updates status and continues pipeline"
+      - "cow-cli review modify applies corrections and proceeds"
+      - "Audit log tracks all actions with timestamps"
+
+  phase_6_export_commands:
+    name: "Export Format Handlers"
+    duration: "1 week"
+    owner: "Backend Team"
+    dependencies: ["phase_5"]
+
+    tasks:
+      - task: "Implement DOCX exporter"
+        file: "cow_cli/export/docx.py"
+        library: "python-docx"
+        deliverables:
+          - "Text paragraph insertion"
+          - "Math equation rendering (OMath XML)"
+          - "Image insertion for diagrams"
+          - "Font/style configuration"
+
+      - task: "Implement LaTeX exporter"
+        file: "cow_cli/export/latex.py"
+        deliverables:
+          - "Document class selection"
+          - "Math environment handling"
+          - "Figure/table floats"
+          - "With-images option (create .tex.zip)"
+
+      - task: "Implement Markdown exporter"
+        file: "cow_cli/export/markdown.py"
+        deliverables:
+          - "Mathpix Markdown flavor"
+          - "GitHub Flavored Markdown (GFM)"
+          - "Standard Markdown"
+
+      - task: "Implement JSON exporter"
+        file: "cow_cli/export/json.py"
+        deliverables:
+          - "Full pipeline data export"
+          - "Selective field inclusion (--include)"
+          - "Pretty-print option"
+
+      - task: "Add export commands"
+        files:
+          - "cow_cli/commands/export_docx.py"
+          - "cow_cli/commands/export_latex.py"
+          - "cow_cli/commands/export_markdown.py"
+          - "cow_cli/commands/export_json.py"
+
+    acceptance_criteria:
+      - "cow-cli export docx produces valid Word document"
+      - "cow-cli export latex compiles without errors"
+      - "cow-cli export markdown renders correctly on GitHub"
+      - "cow-cli export json includes all pipeline stages"
+
+  phase_7_process_commands:
+    name: "Main Processing Commands"
+    duration: "1 week"
+    owner: "Backend Team"
+    dependencies: ["phase_6"]
+
+    tasks:
+      - task: "Implement process image command"
+        file: "cow_cli/commands/process_image.py"
+        deliverables:
+          - "Single image processing"
+          - "Progress bars (rich library)"
+          - "Output format selection (-f docx -f latex)"
+          - "Confidence threshold override (--confidence)"
+
+      - task: "Implement process batch command"
+        file: "cow_cli/commands/process_batch.py"
+        deliverables:
+          - "Parallel processing (asyncio + multiprocessing)"
+          - "Batch size configuration"
+          - "Resume capability (skip already processed)"
+
+      - task: "Implement process pdf command"
+        file: "cow_cli/commands/process_pdf.py"
+        deliverables:
+          - "Page range parsing (--pages '1-5,10')"
+          - "Per-page streaming"
+          - "Multi-format export"
+
+    acceptance_criteria:
+      - "cow-cli process image equation.png -f docx completes in <5s"
+      - "cow-cli process batch processes 100 images in <2min"
+      - "cow-cli process pdf handles 50-page document successfully"
+
+  phase_8_testing_optimization:
+    name: "Comprehensive Testing & Performance Optimization"
+    duration: "1 week"
+    owner: "QA + Backend Team"
+    dependencies: ["phase_7"]
+
+    tasks:
+      - task: "Write E2E tests"
+        file: "tests/e2e/test_full_pipeline.py"
+        scenarios:
+          - "Single Korean math image → DOCX"
+          - "Batch of 10 images with mixed types"
+          - "PDF with 20 pages → LaTeX"
+          - "Low confidence → HITL → approval → export"
+
+      - task: "Performance profiling"
+        tool: "cProfile + py-spy"
+        targets:
+          - "Mathpix API call overhead"
+          - "Layout/Content separation time"
+          - "SDK orchestrator latency"
+          - "Export format generation time"
+
+      - task: "Optimization pass"
+        focus_areas:
+          - "Reduce file I/O (use streaming)"
+          - "Optimize database queries (indexes)"
+          - "Implement prompt caching for SDK"
+          - "Batch MCP tool calls where possible"
+
+      - task: "Load testing"
+        tool: "locust"
+        scenarios:
+          - "100 concurrent image requests"
+          - "1000 review items in queue"
+
+    acceptance_criteria:
+      - "All E2E tests pass"
+      - "Processing time <5s per image (95th percentile)"
+      - "Memory usage <500MB for batch of 100 images"
+      - "Database queries <50ms (99th percentile)"
+
+  phase_9_documentation:
+    name: "User Documentation & Developer Guide"
+    duration: "3 days"
+    owner: "Tech Writer + Backend Team"
+    dependencies: ["phase_8"]
+
+    deliverables:
+      - file: "docs/installation.md"
+        content:
+          - "Prerequisites"
+          - "Installation steps"
+          - "Configuration"
+          - "Troubleshooting"
+
+      - file: "docs/usage.md"
+        content:
+          - "Quick start guide"
+          - "Process commands"
+          - "Review workflow"
+          - "Export formats"
+          - "Configuration options"
+
+      - file: "docs/architecture.md"
+        content:
+          - "System overview"
+          - "Pipeline stages"
+          - "Agent SDK integration"
+          - "MCP tool architecture"
+          - "HITL workflow"
+
+      - file: "docs/api_reference.md"
+        content:
+          - "CLI command reference"
+          - "Configuration schema"
+          - "MCP tool specifications"
+          - "Database schema"
+
+      - file: "docs/troubleshooting.md"
+        content:
+          - "Common errors"
+          - "Performance tuning"
+          - "Debugging tips"
+
+      - file: "README.md"
+        content:
+          - "Project overview"
+          - "Quick start"
+          - "Features"
+          - "License"
+
+  phase_10_production_deployment:
+    name: "Production Readiness & Deployment"
+    duration: "3 days"
+    owner: "DevOps"
+    dependencies: ["phase_9"]
+
+    tasks:
+      - task: "Containerization"
+        file: "Dockerfile"
+        deliverables:
+          - "Multi-stage build"
+          - "Claude Code installation"
+          - "Python dependencies"
+          - "Entry point: cow-cli"
+
+      - task: "Environment configuration"
+        file: ".env.example"
+        deliverables:
+          - "COW_MATHPIX_APP_ID"
+          - "COW_MATHPIX_APP_KEY"
+          - "COW_CONFIG_PATH"
+          - "COW_LOG_LEVEL"
+
+      - task: "CI/CD pipeline"
+        platform: "GitHub Actions"
+        deliverables:
+          - "Automated testing on PR"
+          - "Docker image build"
+          - "Release tagging"
+
+      - task: "Monitoring setup"
+        tools:
+          - "Prometheus metrics"
+          - "Grafana dashboards"
+          - "Alert rules (queue depth, error rate)"
+
+    acceptance_criteria:
+      - "Docker container runs successfully"
+      - "CI/CD pipeline passes all checks"
+      - "Monitoring dashboards show real-time metrics"
+
+# =============================================================================
+# MILESTONES
+# =============================================================================
+milestones:
+  m1_cli_prototype:
+    date: "Week 2 completion"
+    deliverables:
+      - "cow-cli commands functional"
+      - "Config management working"
+      - "Mathpix API integration complete"
+    validation:
+      - "cow-cli process image equation.png succeeds"
+      - "Cache hit rate >= 50%"
+
+  m2_layout_content_separation:
+    date: "Week 3 completion"
+    deliverables:
+      - "LayoutContentSeparator module complete"
+      - "Integration with Stage C0"
+      - "Unit tests pass (95% coverage)"
+    validation:
+      - "Layout and Content files generated correctly"
+      - "Element count matches between Layout/Content"
+      - "Quality summary accurate"
+
+  m3_sdk_integration:
+    date: "Week 5 completion"
+    deliverables:
+      - "Claude Agent SDK orchestrator functional"
+      - "All MCP servers implemented"
+      - "Stage agents defined"
+      - "Zero Claude API costs confirmed"
+    validation:
+      - "Full pipeline runs via SDK"
+      - "Billing statement shows $0 Claude API charges"
+      - "Error recovery works"
+
+  m4_hitl_workflow:
+    date: "Week 6 completion"
+    deliverables:
+      - "Review queue database operational"
+      - "Routing logic complete"
+      - "Review commands functional"
+      - "Audit logging working"
+    validation:
+      - "Low confidence items route to review"
+      - "cow-cli review commands work end-to-end"
+      - "Audit trail complete"
+
+  m5_production_ready:
+    date: "Week 12 completion"
+    deliverables:
+      - "All export formats working"
+      - "E2E tests pass"
+      - "Documentation complete"
+      - "Docker deployment ready"
+    validation:
+      - "100 image batch processes successfully"
+      - "All E2E tests green"
+      - "Production deployment succeeds"
+
+# =============================================================================
+# COST ANALYSIS
+# =============================================================================
+cost_analysis:
+  current_state:
+    claude_api: "$50-200/month"
+    mathpix: "$9-10/month"
+    total: "$59-210/month"
+
+  future_state_option_1:
+    name: "Claude MAX $100"
+    claude_max: "$100/month"
+    mathpix: "$9-10/month"
+    total: "$109-110/month"
+    suitable_for: "Testing, moderate usage"
+    limits: "5x Pro usage"
+
+  future_state_option_2:
+    name: "Claude MAX $200 (RECOMMENDED)"
+    claude_max: "$200/month"
+    mathpix: "$9-10/month"
+    total: "$209-210/month"
+    suitable_for: "Production workloads"
+    limits: "20x Pro usage, unlimited Opus"
+
+  cost_savings:
+    api_elimination: "$50-200/month saved"
+    caching_impact: "50-80% reduction in Mathpix duplicate calls"
+    net_monthly_savings: "$40-180/month (depending on current API usage)"
+
+  roi_analysis:
+    development_cost: "$120-160k (12-16 weeks × $10k/week)"
+    monthly_savings: "$100/month (conservative estimate)"
+    payback_period: "120 months (10 years)"
+    note: "Primary value is quality improvement and operational efficiency, not cost reduction"
+
+  cost_optimization_strategies:
+    mathpix_caching:
+      description: "Cache Mathpix responses locally"
+      savings: "50-80% reduction in API calls"
+      implementation: "Phase 2"
+
+    model_selection:
+      haiku_usage: "Validation, simple parsing"
+      sonnet_usage: "Alignment, standard processing"
+      opus_usage: "Complex graph building only"
+      savings: "60-70% lower token costs vs. all-Opus"
+
+    batch_processing:
+      description: "Group similar operations"
+      savings: "Reduced HTTP overhead"
+      implementation: "Phase 7"
+
+    prompt_caching:
+      description: "Cache system prompts (SDK automatic)"
+      savings: "90% on cached reads"
+      implementation: "Phase 4 (automatic with SDK)"
+
+# =============================================================================
+# RISK MANAGEMENT
+# =============================================================================
+risk_management:
+  risk_1:
+    risk: "Claude MAX usage limits exhausted"
+    likelihood: "MEDIUM"
+    impact: "HIGH"
+    mitigation:
+      - "Track usage per 5-hour window"
+      - "Implement rate limiting in CLI"
+      - "Queue requests when approaching limit"
+      - "Fallback to API with explicit cost warning"
+    monitoring: "Real-time usage dashboard (cow-cli review stats)"
+
+  risk_2:
+    risk: "Mathpix API changes or pricing increase"
+    likelihood: "LOW"
+    impact: "HIGH"
+    mitigation:
+      - "Pin API version in requests"
+      - "Monitor Mathpix changelog"
+      - "Abstract API client for easy provider swap"
+      - "Consider alternative OCR providers (Tesseract, Google Vision)"
+
+  risk_3:
+    risk: "Layout/Content separation breaks existing workflows"
+    likelihood: "LOW"
+    impact: "MEDIUM"
+    mitigation:
+      - "Non-breaking design (add separated_data, keep merged output)"
+      - "Backward compatibility tests"
+      - "Fallback to merged data if separated files missing"
+      - "Migration guide in documentation"
+
+  risk_4:
+    risk: "HITL review queue becomes bottleneck"
+    likelihood: "MEDIUM"
+    impact: "MEDIUM"
+    mitigation:
+      - "Auto-approve after 72 hours (configurable)"
+      - "Priority scoring to surface critical items"
+      - "Batch review TUI for efficiency"
+      - "Adjust thresholds based on historical approval rates"
+
+  risk_5:
+    risk: "Agent SDK session management issues (compact, resume)"
+    likelihood: "MEDIUM"
+    impact: "MEDIUM"
+    mitigation:
+      - "Implement session persistence"
+      - "Auto-compact detection and context reload"
+      - "Checkpoint pipeline state after each stage"
+      - "Resume from last successful stage on failure"
+
+  risk_6:
+    risk: "Performance degradation with large PDFs (100+ pages)"
+    likelihood: "MEDIUM"
+    impact: "MEDIUM"
+    mitigation:
+      - "Streaming page-by-page processing"
+      - "Parallel processing of independent pages"
+      - "Database query optimization (indexes)"
+      - "Load testing in Phase 8"
+
+  risk_7:
+    risk: "Security vulnerability (credential leakage)"
+    likelihood: "LOW"
+    impact: "CRITICAL"
+    mitigation:
+      - "Keyring library for secure storage"
+      - "Mask keys in logs and config output"
+      - ".env and config.yaml in .gitignore"
+      - "Security audit before production"
+
+# =============================================================================
+# TECHNOLOGY STACK
+# =============================================================================
+technology_stack:
+  programming_languages:
+    python:
+      version: "3.11+"
+      justification: "Mature ecosystem, async support, type hints"
+
+  frameworks:
+    cli:
+      name: "Typer"
+      version: ">=0.9.0"
+      justification: "Auto-generated help, shell completion, type-safe"
+
+    agent_sdk:
+      name: "Claude Agent SDK (Python)"
+      version: "latest"
+      justification: "Official SDK, built-in retry, session management"
+
+    ui:
+      name: "rich"
+      version: ">=13.0.0"
+      justification: "Beautiful terminal UI, progress bars, tables"
+
+  core_libraries:
+    http_client:
+      name: "httpx"
+      version: ">=0.24.0"
+      justification: "Async support, HTTP/2, retry middleware"
+
+    data_validation:
+      name: "pydantic"
+      version: ">=2.0.0"
+      justification: "Type validation, JSON schema generation"
+
+    database:
+      name: "sqlalchemy"
+      version: ">=2.0.0"
+      justification: "ORM, migrations, async support"
+
+    credentials:
+      name: "keyring"
+      version: ">=23.0.0"
+      justification: "OS-level secure storage (Keychain, Credential Vault)"
+
+    caching:
+      name: "diskcache"
+      version: ">=5.6.0"
+      justification: "Fast, persistent cache with LRU eviction"
+
+    image_processing:
+      name: "Pillow"
+      version: ">=10.0.0"
+      justification: "Image validation, format conversion"
+
+      name: "imagehash"
+      version: ">=4.3.0"
+      justification: "Perceptual hashing for deduplication"
+
+  export_libraries:
+    docx:
+      name: "python-docx"
+      version: ">=0.8.11"
+      justification: "Word document generation"
+
+    latex:
+      name: "pylatex"
+      version: ">=1.4.0"
+      justification: "LaTeX document generation"
+
+  testing:
+    unit_tests:
+      name: "pytest"
+      version: ">=7.0.0"
+      plugins:
+        - "pytest-asyncio (async tests)"
+        - "pytest-cov (coverage)"
+        - "pytest-mock (mocking)"
+
+    http_mocking:
+      name: "respx"
+      version: ">=0.20.0"
+      justification: "HTTP request mocking for Mathpix tests"
+
+    performance:
+      name: "locust"
+      version: ">=2.0.0"
+      justification: "Load testing"
+
+  external_services:
+    mathpix:
+      api_version: "v3"
+      endpoints:
+        - "/v3/text"
+        - "/v3/pdf"
+        - "/v3/batch"
+      pricing: "Per-image/page"
+
+    claude_max:
+      subscription: "$200/month"
+      models:
+        - "claude-haiku-4-5"
+        - "claude-sonnet-4-5"
+        - "claude-opus-4-5"
+
+# =============================================================================
+# DIRECTORY STRUCTURE (FINAL)
+# =============================================================================
+directory_structure:
+  project_root: "cow-cli/"
+
+  structure: |
+    cow-cli/
+    ├── cow_cli/
+    │   ├── __init__.py
+    │   ├── __main__.py              # Entry point
+    │   ├── cli.py                   # Typer app
+    │   ├── config.py                # Config management
+    │   ├── cache.py                 # Caching layer
+    │   ├── logging.py               # Logging setup
+    │   │
+    │   ├── mathpix/
+    │   │   ├── __init__.py
+    │   │   ├── client.py            # API client
+    │   │   ├── schemas.py           # Request/response models
+    │   │   └── exceptions.py
+    │   │
+    │   ├── claude/
+    │   │   ├── __init__.py
+    │   │   ├── orchestrator.py     # Main agent orchestrator
+    │   │   ├── stage_agents.py     # AgentDefinition configs
+    │   │   ├── mcp_servers.py      # SDK MCP server creation
+    │   │   ├── hooks.py            # Pre/Post tool use hooks
+    │   │   └── prompts.py          # Prompt templates
+    │   │
+    │   ├── semantic/
+    │   │   ├── __init__.py
+    │   │   ├── layout_content_separator.py  # Separation logic
+    │   │   ├── node_extractor.py
+    │   │   └── edge_inferrer.py
+    │   │
+    │   ├── review/
+    │   │   ├── __init__.py
+    │   │   ├── database.py          # SQLite operations
+    │   │   ├── router.py            # Routing logic
+    │   │   ├── priority_scorer.py   # Priority calculation
+    │   │   └── models.py            # ReviewItem, AuditLog models
+    │   │
+    │   ├── export/
+    │   │   ├── __init__.py
+    │   │   ├── docx.py
+    │   │   ├── latex.py
+    │   │   ├── markdown.py
+    │   │   └── json.py
+    │   │
+    │   ├── preprocessing/
+    │   │   ├── __init__.py
+    │   │   ├── validator.py
+    │   │   └── deduplicator.py
+    │   │
+    │   └── commands/
+    │       ├── __init__.py
+    │       ├── process_image.py
+    │       ├── process_batch.py
+    │       ├── process_pdf.py
+    │       ├── review_list.py
+    │       ├── review_show.py
+    │       ├── review_approve.py
+    │       ├── review_reject.py
+    │       ├── review_modify.py
+    │       ├── export_docx.py
+    │       ├── export_latex.py
+    │       ├── export_markdown.py
+    │       ├── export_json.py
+    │       ├── config_init.py
+    │       ├── config_show.py
+    │       ├── config_set.py
+    │       └── config_validate.py
+    │
+    ├── tests/
+    │   ├── unit/
+    │   │   ├── test_config.py
+    │   │   ├── test_cache.py
+    │   │   ├── test_mathpix_client.py
+    │   │   ├── test_layout_content_separator.py
+    │   │   ├── test_router.py
+    │   │   └── test_priority_scorer.py
+    │   ├── integration/
+    │   │   ├── test_stage_c0_separation.py
+    │   │   ├── test_hitl_workflow.py
+    │   │   └── test_export_formats.py
+    │   ├── e2e/
+    │   │   ├── test_full_pipeline.py
+    │   │   └── test_batch_processing.py
+    │   └── fixtures/
+    │       ├── images/
+    │       └── mathpix_responses/
+    │
+    ├── docs/
+    │   ├── installation.md
+    │   ├── usage.md
+    │   ├── architecture.md
+    │   ├── api_reference.md
+    │   └── troubleshooting.md
+    │
+    ├── cow/                          # Original pipeline (legacy)
+    │   ├── pipeline/
+    │   │   ├── stage_b/
+    │   │   ├── stage_c0/
+    │   │   ├── stage_c/
+    │   │   └── stage_d/
+    │   └── data/
+    │       └── hitl/
+    │           ├── review_queue.db
+    │           ├── pending/
+    │           ├── in_review/
+    │           ├── approved/
+    │           ├── rejected/
+    │           └── modified/
+    │
+    ├── outputs/                      # Pipeline outputs
+    │   └── {image_id}/
+    │       ├── stage_b/stage_b.json
+    │       ├── layout/stage_b_layout.json
+    │       ├── content/stage_b_content.json
+    │       ├── vision/vision_analysis.json
+    │       ├── mapping/bbox_mapping.json
+    │       └── merged_v3.json
+    │
+    ├── pyproject.toml
+    ├── setup.py
+    ├── README.md
+    ├── LICENSE
+    ├── Dockerfile
+    ├── docker-compose.yml
+    └── .gitignore
+
+  user_directories:
+    config: "~/.cow/config.yaml"
+    cache: "~/.cow/cache/"
+    logs: "~/.cow/logs/"
+
+# =============================================================================
+# SUCCESS CRITERIA
+# =============================================================================
+success_criteria:
+  functional:
+    - criterion: "All CLI commands execute successfully"
+      validation: "Manual testing of each command"
+
+    - criterion: "Layout/Content separation works correctly"
+      validation: "Unit tests pass, element counts match"
+
+    - criterion: "Agent SDK pipeline processes images end-to-end"
+      validation: "E2E test with Korean math problem"
+
+    - criterion: "HITL workflow routes and approves items correctly"
+      validation: "Integration test with low confidence item"
+
+    - criterion: "All export formats generate valid outputs"
+      validation: "DOCX opens in Word, LaTeX compiles, Markdown renders"
+
+  performance:
+    - criterion: "Single image processing <5s (95th percentile)"
+      validation: "Performance profiling"
+
+    - criterion: "Batch of 100 images <2 minutes"
+      validation: "Batch processing test"
+
+    - criterion: "Review queue queries <50ms (99th percentile)"
+      validation: "Database load test"
+
+    - criterion: "Cache hit rate >=50%"
+      validation: "Cache statistics after 100 duplicate requests"
+
+  cost:
+    - criterion: "Zero Claude API charges"
+      validation: "Check billing statement for 1 month"
+
+    - criterion: "Mathpix costs within budget ($10/month)"
+      validation: "Monitor Mathpix usage dashboard"
+
+  quality:
+    - criterion: "Code coverage >=80%"
+      validation: "pytest-cov report"
+
+    - criterion: "No linting errors"
+      validation: "flake8, mypy, black"
+
+    - criterion: "All type hints present"
+      validation: "mypy --strict passes"
+
+  usability:
+    - criterion: "User can process first image without reading docs"
+      validation: "Usability test with new user"
+
+    - criterion: "Help text and autocomplete sufficient for basic usage"
+      validation: "cow-cli --help, shell completion"
+
+    - criterion: "Error messages include actionable suggestions"
+      validation: "Review error message quality"
+
+# =============================================================================
+# APPENDIX: COMMAND REFERENCE
+# =============================================================================
+appendix:
+  command_reference:
+    process:
+      - command: "cow-cli process image <IMAGE_PATH> [OPTIONS]"
+        description: "Process single image"
+        example: "cow-cli process image equation.png -f docx -f latex"
+
+      - command: "cow-cli process batch <DIRECTORY> [OPTIONS]"
+        description: "Process multiple images"
+        example: "cow-cli process batch ./images/ -j 8 --batch-size 20"
+
+      - command: "cow-cli process pdf <PDF_PATH> [OPTIONS]"
+        description: "Process PDF document"
+        example: "cow-cli process pdf textbook.pdf --pages '1-10' -f docx"
+
+    review:
+      - command: "cow-cli review list [OPTIONS]"
+        description: "List review items"
+        example: "cow-cli review list --status pending --confidence-below 0.7"
+
+      - command: "cow-cli review show <ITEM_ID>"
+        description: "Show item details"
+        example: "cow-cli review show a1b2c3d4"
+
+      - command: "cow-cli review approve <ITEM_ID> [--comment]"
+        description: "Approve item"
+        example: "cow-cli review approve a1b2c3d4 --comment 'Verified correct'"
+
+      - command: "cow-cli review reject <ITEM_ID> --reason <REASON>"
+        description: "Reject item"
+        example: "cow-cli review reject a1b2c3d4 --reason 'Illegible'"
+
+      - command: "cow-cli review modify <ITEM_ID> --field <FIELD> --value <VALUE> --comment <COMMENT>"
+        description: "Modify and approve"
+        example: "cow-cli review modify a1b2c3d4 --field latex_content --value '\\frac{x}{2}' --comment 'Corrected variable'"
+
+      - command: "cow-cli review stats [OPTIONS]"
+        description: "Review statistics"
+        example: "cow-cli review stats --reviewer alice@example.com --since 2026-02-01"
+
+    export:
+      - command: "cow-cli export docx <INPUT> [OPTIONS]"
+        description: "Export to Word"
+        example: "cow-cli export docx input.json -o output.docx"
+
+      - command: "cow-cli export latex <INPUT> [OPTIONS]"
+        description: "Export to LaTeX"
+        example: "cow-cli export latex input.json -o paper.tex --with-images"
+
+      - command: "cow-cli export markdown <INPUT> [OPTIONS]"
+        description: "Export to Markdown"
+        example: "cow-cli export markdown input.json -o notes.md --flavor gfm"
+
+      - command: "cow-cli export json <INPUT> [OPTIONS]"
+        description: "Export raw data"
+        example: "cow-cli export json input.json -o data.json --include semantic_graph"
+
+    config:
+      - command: "cow-cli config init"
+        description: "Interactive setup"
+        example: "cow-cli config init"
+
+      - command: "cow-cli config show [OPTIONS]"
+        description: "Display config"
+        example: "cow-cli config show -f json"
+
+      - command: "cow-cli config set <KEY> <VALUE>"
+        description: "Set value"
+        example: "cow-cli config set mathpix.app_id abc123"
+
+      - command: "cow-cli config validate"
+        description: "Validate credentials"
+        example: "cow-cli config validate"
+
+  configuration_example: |
+    # ~/.cow/config.yaml
+    mathpix:
+      app_id: "abc123_xyz789"
+      app_key: "keyring:service=cow-cli,username=mathpix"
+      endpoint: "https://api.mathpix.com"
+
+    cache:
+      enabled: true
+      directory: "~/.cow/cache"
+      ttl_days: 30
+      max_size_mb: 1024
+      eviction_policy: "lru"
+
+    output:
+      directory: "./outputs"
+      formats:
+        - docx
+        - latex
+        - markdown
+        - json
+      naming_convention: "{timestamp}_{hash}"
+
+    review:
+      auto_approve_confidence: 0.95
+      queue_size: 100
+      priority_threshold: 0.80
+
+    processing:
+      batch_size: 10
+      parallel_workers: 4
+      timeout_seconds: 30
+      retry_attempts: 3
+      retry_backoff: "exponential"
+
+  deployment_example: |
+    # Dockerfile
+    FROM python:3.11
+
+    # Install Claude Code
+    RUN curl -fsSL https://claude.ai/install.sh | bash
+
+    # Install cow-cli
+    COPY requirements.txt .
+    RUN pip install -r requirements.txt
+
+    COPY cow_cli/ /app/cow_cli/
+    COPY cow/ /app/cow/
+
+    WORKDIR /app
+
+    # Entry point
+    CMD ["cow-cli"]
+
+# =============================================================================
+# END OF MASTER PLAN
+# =============================================================================

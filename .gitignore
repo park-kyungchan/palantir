@@ -85,3 +85,6 @@ kc-palantir-*.json:Zone.Identifier
 .claude/tasks/
 .claude/statsig/
 .claude/stats-cache.json
+
+# Git worktrees
+.worktrees/

@@ -1,0 +1,1096 @@
+● ---                                                                                                                                       
+  PRE-TOOL-USE & POST-TOOL-USE HOOKS 상세 시각화                                                                                            
+                                                                                                                                            
+  1. Hook 시스템 전체 흐름                                                                                                                  
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │                            HOOK EXECUTION FLOW                                       │                                                  
+  │                        (Claude Code Native Hook System)                              │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   User/Agent Request                                                                 │                                                  
+  │       │                                                                              │                                                  
+  │       │  "Read file X" or "Execute bash Y" or "Create Task Z"                        │                                                  
+  │       ▼                                                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │                         CLAUDE CODE ENGINE                                   │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │   tool_call = {                                                              │   │                                                  
+  │   │     tool_name: "Bash" | "Read" | "Edit" | "Task" | ...,                      │   │                                                  
+  │   │     tool_input: { command: "...", file_path: "...", ... }                    │   │                                                  
+  │   │   }                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └───────────────────────────────────┬─────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ╔═════════════════════════════════════════════════════════════════════════════╗   │                                                   
+  │   ║                        PRE-TOOL-USE HOOKS                                    ║   │                                                  
+  │   ║                     (도구 실행 전 검증/차단/주입)                              ║   │                                                
+  │   ╠═════════════════════════════════════════════════════════════════════════════╣   │                                                   
+  │   ║                                                                              ║   │                                                  
+  │   ║   Input (stdin):                                                             ║   │                                                  
+  │   ║   {                                                                          ║   │                                                  
+  │   ║     "tool_name": "Bash",                                                     ║   │                                                  
+  │   ║     "tool_input": {                                                          ║   │                                                  
+  │   ║       "command": "rm -rf /tmp/test"                                          ║   │                                                  
+  │   ║     }                                                                        ║   │                                                  
+  │   ║   }                                                                          ║   │                                                  
+  │   ║                                                                              ║   │                                                  
+  │   ║   Output (stdout):                                                           ║   │                                                  
+  │   ║   {                                                                          ║   │                                                  
+  │   ║     "decision": "allow" | "deny",                                            ║   │                                                  
+  │   ║     "reason": "...",                       ◀── deny 시 사유                  ║   │                                                  
+  │   ║     "hookSpecificOutput": {                                                  ║   │                                                  
+  │   ║       "additionalContext": "..."           ◀── Claude에게 추가 컨텍스트      ║   │                                                  
+  │   ║     }                                                                        ║   │                                                  
+  │   ║   }                                                                          ║   │                                                  
+  │   ║                                                                              ║   │                                                  
+  │   ╚═════════════════════════════════════════════════════════════════════════════╝   │                                                   
+  │                                       │                                              │                                                  
+  │                           ┌───────────┴───────────┐                                  │                                                  
+  │                           │                       │                                  │                                                  
+  │                   decision == "deny"      decision == "allow"                        │                                                  
+  │                           │                       │                                  │                                                  
+  │                           ▼                       ▼                                  │                                                  
+  │                   ┌───────────────┐       ┌───────────────┐                          │                                                  
+  │                   │ TOOL BLOCKED  │       │ TOOL EXECUTED │                          │                                                  
+  │                   │               │       │               │                          │                                                  
+  │                   │ Show reason   │       │ Run actual    │                          │                                                  
+  │                   │ to Claude     │       │ tool logic    │                          │                                                  
+  │                   └───────────────┘       └───────┬───────┘                          │                                                  
+  │                                                   │                                  │                                                  
+  │                                                   │ tool_result                      │                                                  
+  │                                                   ▼                                  │                                                  
+  │   ╔═════════════════════════════════════════════════════════════════════════════╗   │                                                   
+  │   ║                        POST-TOOL-USE HOOKS                                   ║   │                                                  
+  │   ║                     (도구 실행 후 검증/로깅/피드백)                            ║   │                                                
+  │   ╠═════════════════════════════════════════════════════════════════════════════╣   │                                                   
+  │   ║                                                                              ║   │                                                  
+  │   ║   Input (stdin):                                                             ║   │                                                  
+  │   ║   {                                                                          ║   │                                                  
+  │   ║     "tool_name": "Task",                                                     ║   │                                                  
+  │   ║     "tool_input": { "prompt": "...", "subagent_type": "explore" },           ║   │                                                  
+  │   ║     "tool_result": {                                                         ║   │                                                  
+  │   ║       "output": "```yaml\ntaskId: ...\n```",                                 ║   │                                                  
+  │   ║       "agent_id": "abc123"                 ◀── Subagent ID (resume용)        ║   │                                                  
+  │   ║     }                                                                        ║   │                                                  
+  │   ║   }                                                                          ║   │                                                  
+  │   ║                                                                              ║   │                                                  
+  │   ║   Output (stdout):                                                           ║   │                                                  
+  │   ║   {                                                                          ║   │                                                  
+  │   ║     "hookSpecificOutput": {                                                  ║   │                                                  
+  │   ║       "guidance": "...",                   ◀── Claude에게 가이던스           ║   │                                                  
+  │   ║       "l1Valid": true,                     ◀── 검증 결과                     ║   │                                                  
+  │   ║       "agentId": "abc123"                  ◀── 추적 정보                     ║   │                                                  
+  │   ║     }                                                                        ║   │                                                  
+  │   ║   }                                                                          ║   │                                                  
+  │   ║                                                                              ║   │                                                  
+  │   ║   ⚠️ LIMITATION: tool_result 수정 불가 (읽기 전용)                           ║   │                                                  
+  │   ║                                                                              ║   │                                                  
+  │   ╚═════════════════════════════════════════════════════════════════════════════╝   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │                           Result returned to Claude                                  │                                                  
+  │                           + hookSpecificOutput context                               │                                                  
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  ---                                                                                                                                       
+  2. PRE-TOOL-USE HOOKS 상세                                                                                                                
+                                                                                                                                            
+  2.1 Bash Matcher                                                                                                                          
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ PRE-TOOL-USE: Bash                                                                   │                                                  
+  │ Matcher: "Bash"                                                                      │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 1: governance-check.sh                                                  │   │                                                  
+  │   │ 목적: 일반 거버넌스 규칙 검증                                                  │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Bash 명령어가 프로젝트 거버넌스 규칙을 위반하는지 확인합니다.                   │   │                                               
+  │   │ 예: 특정 디렉토리 외부 접근 제한, 승인되지 않은 도구 사용 등                    │   │                                               
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def governance_check(tool_input):                                            │   │                                                  
+  │   │     command = tool_input.get('command', '')                                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check workspace boundaries                                             │   │                                                  
+  │   │     if accesses_outside_workspace(command):                                  │   │                                                  
+  │   │         return DENY("Workspace boundary violation")                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check tool approval                                                    │   │                                                  
+  │   │     if uses_unapproved_tool(command):                                        │   │                                                  
+  │   │         return DENY("Unapproved tool usage")                                 │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • tool_name == "Bash" 일 때 항상 실행                                        │   │                                                  
+  │   │ • 거버넌스 규칙 위반 시 DENY                                                 │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 2: security-gate.sh                                                     │   │                                                  
+  │   │ 목적: 위험한 쉘 명령어 차단 (보안 게이트)                                      │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ 시스템을 파괴하거나 보안을 위협하는 위험한 명령어를 차단합니다.                  │   │                                              
+  │   │ rm -rf /, sudo rm, chmod 777, fork bomb, curl | bash 등을 탐지합니다.        │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ DANGEROUS_PATTERNS = {                                                       │   │                                                  
+  │   │     "rm -rf /": "Recursive deletion of root",                                │   │                                                  
+  │   │     "rm -rf /*": "Recursive deletion of root contents",                      │   │                                                  
+  │   │     "sudo rm": "Privileged deletion",                                        │   │                                                  
+  │   │     "chmod 777": "Insecure permission (world-writable)",                     │   │                                                  
+  │   │     "> /dev/sda": "Direct device write",                                     │   │                                                  
+  │   │     ":(){ :|:& };:": "Fork bomb",                                            │   │                                                  
+  │   │     "curl | bash": "Remote code execution",                                  │   │                                                  
+  │   │     "wget | sh": "Remote code execution",                                    │   │                                                  
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def security_gate(tool_input):                                               │   │                                                  
+  │   │     command = tool_input.get('command', '')                                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     for pattern, reason in DANGEROUS_PATTERNS.items():                       │   │                                                  
+  │   │         if pattern in command:                                               │   │                                                  
+  │   │             log_security_violation(command, reason)                          │   │                                                  
+  │   │             return DENY(f"Security violation: {reason}")                     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Regex patterns for complex detection                                   │   │                                                  
+  │   │     if re.match(r'curl.*\|.*bash', command):                                 │   │                                                  
+  │   │         return DENY("Remote code execution detected")                        │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • tool_name == "Bash" 일 때                                                  │   │                                                  
+  │   │ • command가 DANGEROUS_PATTERNS 중 하나와 일치하면 → DENY                     │   │                                                  
+  │   │ • 일치하지 않으면 → ALLOW                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [예시]                                                                       │   │                                                  
+  │   │ Input:  {"tool_name": "Bash", "tool_input": {"command": "rm -rf /"}}         │   │                                                  
+  │   │ Output: {"decision": "deny", "reason": "Security: Recursive deletion..."}   │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  2.2 Edit | Write Matcher                                                                                                                  
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ PRE-TOOL-USE: Edit | Write                                                           │                                                  
+  │ Matcher: "Edit|Write"                                                                │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 1: governance-check.sh (동일)                                           │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 2: auto-backup.sh                                                       │   │                                                  
+  │   │ 목적: 수정 전 파일 자동 백업                                                   │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Edit 또는 Write 전에 원본 파일을 백업합니다.                                   │   │                                                
+  │   │ 실수로 파일을 망가뜨려도 복구할 수 있습니다.                                    │   │                                               
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def auto_backup(tool_input):                                                 │   │                                                  
+  │   │     file_path = tool_input.get('file_path', '')                              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if os.path.exists(file_path):                                            │   │                                                  
+  │   │         backup_dir = f"{WORKSPACE}/.claude/backups/{today}"                  │   │                                                  
+  │   │         os.makedirs(backup_dir, exist_ok=True)                               │   │                                                  
+  │   │         shutil.copy2(file_path, backup_dir)                                  │   │                                                  
+  │   │         log_backup(file_path, backup_dir)                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()  # 항상 허용 (백업만 수행)                                 │   │                                                 
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • tool_name == "Edit" 또는 "Write" 일 때                                     │   │                                                  
+  │   │ • 파일이 존재하면 백업 수행                                                   │   │                                                 
+  │   │ • 항상 ALLOW (차단하지 않음)                                                 │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 3: context-recovery-gate.sh                                             │   │                                                  
+  │   │ 목적: Post-Compact 상태에서 컨텍스트 복구 강제                                 │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Auto-Compact 후 요약된 컨텍스트만으로 코드를 수정하려 하면 경고합니다.          │   │                                               
+  │   │ 먼저 L1/L2/L3 파일을 읽어서 전체 컨텍스트를 복구해야 합니다.                    │   │                                               
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def context_recovery_gate(tool_input):                                       │   │                                                  
+  │   │     if not is_post_compact():                                                │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     workload = get_active_workload()                                         │   │                                                  
+  │   │     if not workload:                                                         │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if not has_recovered_context(workload):                                  │   │                                                  
+  │   │         return DENY(                                                         │   │                                                  
+  │   │             "Post-compact recovery required. "                               │   │                                                  
+  │   │             "Read L1/L2/L3 files before editing."                            │   │                                                  
+  │   │         )                                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • Post-Compact 상태 AND Active Workload 존재 AND 컨텍스트 미복구             │   │                                                  
+  │   │ • → DENY (먼저 파일 읽기 필요)                                               │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 4: l2l3-access-gate.sh ⭐ (핵심)                                        │   │                                                  
+  │   │ 목적: L2/L3 파일 읽지 않고 코드 수정 차단                                      │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Active Workload가 있을 때, L2/L3 파일을 먼저 읽지 않으면                       │   │                                                
+  │   │ 코드 수정을 차단합니다. "Research before Modify" 원칙을 강제합니다.            │   │                                                
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ EXCLUDED_PATHS = [".claude/", ".agent/"]                                     │   │                                                  
+  │   │ EXCLUDED_EXTENSIONS = [".md", ".json", ".yaml", ".txt"]                      │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def l2l3_access_gate(tool_input):                                            │   │                                                  
+  │   │     file_path = tool_input.get('file_path', '')                              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Exception: Config/agent files are always allowed                       │   │                                                  
+  │   │     if any(exc in file_path for exc in EXCLUDED_PATHS):                      │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Exception: Documentation files are allowed                             │   │                                                  
+  │   │     if any(file_path.endswith(ext) for ext in EXCLUDED_EXTENSIONS):          │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check active workload                                                  │   │                                                  
+  │   │     if not has_active_workload():                                            │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check if L2/L3 files have been read                                    │   │                                                  
+  │   │     if not has_read_l2l3():                                                  │   │                                                  
+  │   │         slug = get_workload_slug()                                           │   │                                                  
+  │   │         return DENY(                                                         │   │                                                  
+  │   │             f"L2/L3 Access Required. "                                       │   │                                                  
+  │   │             f"Read .agent/prompts/{slug}/research/ first."                   │   │                                                  
+  │   │         )                                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ ┌─────────────────────────────────────────────────────────────────────────┐ │   │                                                   
+  │   │ │ IF tool_name in ["Edit", "Write"]                                       │ │   │                                                   
+  │   │ │ AND file_path NOT in EXCLUDED_PATHS                                     │ │   │                                                   
+  │   │ │ AND file_path NOT ends with EXCLUDED_EXTENSIONS                         │ │   │                                                   
+  │   │ │ AND has_active_workload() == true                                       │ │   │                                                   
+  │   │ │ AND has_read_l2l3() == false                                            │ │   │                                                   
+  │   │ │ THEN → DENY                                                             │ │   │                                                   
+  │   │ │ ELSE → ALLOW                                                            │ │   │                                                   
+  │   │ └─────────────────────────────────────────────────────────────────────────┘ │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [예시]                                                                       │   │                                                  
+  │   │ Input:  {"tool_name": "Edit", "tool_input": {"file_path": "/src/main.py"}}  │   │                                                   
+  │   │ (L2/L3 읽지 않은 상태)                                                       │   │                                                  
+  │   │ Output: {"decision": "deny", "reason": "L2/L3 Access Required..."}          │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 5: sensitive-files-gate.sh                                              │   │                                                  
+  │   │ 목적: 민감한 파일 접근 차단                                                    │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ .env, credentials, SSH 키, 인증서 등 민감한 파일에 대한                        │   │                                                
+  │   │ 읽기/쓰기를 차단합니다.                                                       │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ SENSITIVE_PATTERNS = [                                                       │   │                                                  
+  │   │     ".env", ".env.*",                                                        │   │                                                  
+  │   │     "*credentials*", "*secret*",                                             │   │                                                  
+  │   │     ".ssh/id_*", "*.pem", "*.key",                                           │   │                                                  
+  │   │     "**/secrets/**"                                                          │   │                                                  
+  │   │ ]                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def sensitive_files_gate(tool_input):                                        │   │                                                  
+  │   │     file_path = tool_input.get('file_path', '')                              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     for pattern in SENSITIVE_PATTERNS:                                       │   │                                                  
+  │   │         if fnmatch(file_path, pattern):                                      │   │                                                  
+  │   │             log_sensitive_access(file_path)                                  │   │                                                  
+  │   │             return DENY(f"Sensitive file access blocked: {pattern}")         │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • file_path가 SENSITIVE_PATTERNS 중 하나와 매치 → DENY                       │   │                                                  
+  │   │ • 매치하지 않으면 → ALLOW                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  2.3 Task Matcher                                                                                                                          
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ PRE-TOOL-USE: Task                                                                   │                                                  
+  │ Matcher: "Task"                                                                      │                                                  
+  │ 목적: Subagent 위임 전 L1/L2/L3 형식 요구사항 주입                                    │                                                 
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 1: pd-task-interceptor.sh ⭐ (핵심)                                     │   │                                                  
+  │   │ 목적: L1/L2/L3 Progressive Disclosure 형식 강제 주입                          │   │                                                 
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Subagent에게 작업을 위임하기 전에 L1/L2/L3 출력 형식을 주입합니다.              │   │                                               
+  │   │ - L1: ≤500 tokens YAML 요약만 Main Agent로 반환                              │   │                                                  
+  │   │ - L2/L3: 상세 내용은 파일로 저장                                              │   │                                                 
+  │   │ 또한 이전에 동일한 쿼리가 있었다면 캐시된 결과를 재사용합니다.                   │   │                                              
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ SKIP_AGENTS = ["onboarding-guide", "statusline-setup", "prompt-assistant"]   │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ L1L2L3_PROMPT = """                                                          │   │                                                  
+  │   │ ## MANDATORY OUTPUT FORMAT: L1 YAML ONLY                                     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ ### CRITICAL REQUIREMENT                                                     │   │                                                  
+  │   │ - MUST save detailed analysis to L2/L3 files FIRST                           │   │                                                  
+  │   │ - MUST return ONLY L1 YAML summary (≤500 tokens)                             │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ ### L1 REQUIRED FIELDS                                                       │   │                                                  
+  │   │ taskId, agentType, summary, status, priority, l2Path, requiresL2Read         │   │                                                  
+  │   │ """                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def pd_task_interceptor(tool_input):                                         │   │                                                  
+  │   │     subagent_type = tool_input.get('subagent_type', '')                      │   │                                                  
+  │   │     prompt = tool_input.get('prompt', '')                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Skip conversational agents                                             │   │                                                  
+  │   │     if subagent_type in SKIP_AGENTS:                                         │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check cache for identical query                                        │   │                                                  
+  │   │     cache_key = compute_hash(prompt + subagent_type)                         │   │                                                  
+  │   │     cached = check_cache(cache_key)                                          │   │                                                  
+  │   │     if cached:                                                               │   │                                                  
+  │   │         return ALLOW(additionalContext=f"CACHE_HIT: {cached.l1_summary}")    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Inject L1/L2/L3 format requirements                                    │   │                                                  
+  │   │     return ALLOW(                                                            │   │                                                  
+  │   │         additionalContext=L1L2L3_PROMPT,                                     │   │                                                  
+  │   │         _cacheInputHash=cache_key                                            │   │                                                  
+  │   │     )                                                                        │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ ┌─────────────────────────────────────────────────────────────────────────┐ │   │                                                   
+  │   │ │ IF tool_name == "Task"                                                  │ │   │                                                   
+  │   │ │   IF subagent_type in SKIP_AGENTS:                                      │ │   │                                                   
+  │   │ │     → ALLOW (L1 형식 주입 없음)                                         │ │   │                                                   
+  │   │ │   ELIF cache_hit:                                                       │ │   │                                                   
+  │   │ │     → ALLOW + additionalContext with cached L1                          │ │   │                                                   
+  │   │ │   ELSE:                                                                 │ │   │                                                   
+  │   │ │     → ALLOW + additionalContext with L1L2L3_PROMPT                      │ │   │                                                   
+  │   │ └─────────────────────────────────────────────────────────────────────────┘ │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [예시 출력]                                                                  │   │                                                  
+  │   │ {                                                                            │   │                                                  
+  │   │   "hookSpecificOutput": {                                                    │   │                                                  
+  │   │     "additionalContext": "## MANDATORY OUTPUT FORMAT...",                    │   │                                                  
+  │   │     "_cacheInputHash": "a1b2c3d4"                                            │   │                                                  
+  │   │   }                                                                          │   │                                                  
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 2: context-recovery-gate.sh                                             │   │                                                  
+  │   │ (Edit|Write와 동일 - Post-Compact 상태 체크)                                  │   │                                                 
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  2.4 TaskCreate Matcher                                                                                                                    
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ PRE-TOOL-USE: TaskCreate                                                             │                                                  
+  │ Matcher: "TaskCreate"                                                                │                                                  
+  │ 목적: Native Task 생성 전 검증 (의존성 체인, L2/L3 합성 필수)                          │                                                
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 1: context-recovery-gate.sh                                             │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 2: sequential-thinking-gate.sh                                          │   │                                                  
+  │   │ 목적: 복잡한 Task 분해 시 Sequential Thinking 사용 권장                        │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ 5개 이상의 Task를 생성하려 할 때 Sequential Thinking MCP 도구를                │   │                                                
+  │   │ 먼저 사용했는지 확인합니다. 복잡한 분해는 체계적 사고가 필요합니다.              │   │                                              
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def sequential_thinking_gate(tool_input, session_state):                     │   │                                                  
+  │   │     # Check if this is complex decomposition                                 │   │                                                  
+  │   │     recent_task_creates = get_recent_task_creates(minutes=5)                 │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if len(recent_task_creates) >= 4:  # 5th+ task                           │   │                                                  
+  │   │         if not has_used_sequential_thinking(session_state):                  │   │                                                  
+  │   │             return WARN(                                                     │   │                                                  
+  │   │                 "Complex task decomposition detected. "                      │   │                                                  
+  │   │                 "Consider using mcp__sequential-thinking first."             │   │                                                  
+  │   │             )                                                                │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • 5분 내 4개 이상의 TaskCreate가 이미 실행됨                                  │   │                                                 
+  │   │ • AND Sequential Thinking 사용 기록 없음                                     │   │                                                  
+  │   │ • → WARN (차단하지는 않음, 경고만)                                           │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 3: orchestrating-l2l3-synthesis-gate.sh ⭐ (핵심)                       │   │                                                  
+  │   │ 목적: L2/L3 합성 없이 Orchestration 차단                                      │   │                                                 
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Main Agent가 Orchestrator 역할을 수행할 때, 반드시 먼저 모든                   │   │                                                
+  │   │ L2/L3 파일을 읽어서 전체적인 컨텍스트를 파악해야 합니다.                        │   │                                               
+  │   │ L1 요약만으로는 정확한 Task 분해와 의존성 설정이 불가능합니다.                   │   │                                              
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def orchestrating_l2l3_synthesis_gate(tool_input):                           │   │                                                  
+  │   │     subject = tool_input.get('subject', '')                                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Exception: [PERMANENT] tasks are always allowed                        │   │                                                  
+  │   │     if '[PERMANENT]' in subject or 'Context Check' in subject:               │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check active workload                                                  │   │                                                  
+  │   │     if not has_active_workload():                                            │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     slug = get_workload_slug()                                               │   │                                                  
+  │   │     workload_dir = f".agent/prompts/{slug}"                                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Find L2/L3 files that haven't been read                                │   │                                                  
+  │   │     l2l3_files = find_l2l3_files(workload_dir)                               │   │                                                  
+  │   │     unread_files = [f for f in l2l3_files if not has_been_read(f)]           │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if unread_files:                                                         │   │                                                  
+  │   │         return DENY(                                                         │   │                                                  
+  │   │             "L2/L3 Synthesis Required Before Orchestrating\n"                │   │                                                  
+  │   │             f"[WHY] Correct orchestration requires holistic context.\n"      │   │                                                  
+  │   │             f"[UNREAD FILES] {', '.join(unread_files[:5])}"                  │   │                                                  
+  │   │         )                                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ ┌─────────────────────────────────────────────────────────────────────────┐ │   │                                                   
+  │   │ │ IF tool_name == "TaskCreate"                                            │ │   │                                                   
+  │   │ │ AND subject NOT contains "[PERMANENT]"                                  │ │   │                                                   
+  │   │ │ AND has_active_workload() == true                                       │ │   │                                                   
+  │   │ │ AND unread_l2l3_files exist                                             │ │   │                                                   
+  │   │ │ THEN → DENY                                                             │ │   │                                                   
+  │   │ │ ELSE → ALLOW                                                            │ │   │                                                   
+  │   │ └─────────────────────────────────────────────────────────────────────────┘ │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [예시]                                                                       │   │                                                  
+  │   │ Input:  {"tool_name": "TaskCreate", "tool_input": {"subject": "Impl X"}}    │   │                                                   
+  │   │ (L2/L3 읽지 않은 상태)                                                       │   │                                                  
+  │   │ Output: {                                                                    │   │                                                  
+  │   │   "decision": "deny",                                                        │   │                                                  
+  │   │   "reason": "L2/L3 Synthesis Required Before Orchestrating..."              │   │                                                   
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  2.5 EnterPlanMode & Skill Matchers                                                                                                        
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ PRE-TOOL-USE: EnterPlanMode                                                          │                                                  
+  │ Matcher: "EnterPlanMode"                                                             │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK: plan-mode-gate.sh                                                      │   │                                                  
+  │   │ 목적: 자동 Plan Mode 진입 차단 (명시적 요청만 허용)                             │   │                                               
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Claude Code가 자동으로 Plan Mode에 진입하는 것을 차단합니다.                    │   │                                               
+  │   │ 사용자가 "plan mode" 또는 "계획 모드"를 명시적으로 요청한 경우에만 허용합니다.   │   │                                              
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def plan_mode_gate(tool_input, conversation_context):                        │   │                                                  
+  │   │     # Check if user explicitly requested plan mode                           │   │                                                  
+  │   │     last_user_message = get_last_user_message(conversation_context)          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     explicit_keywords = ["plan mode", "계획 모드", "planning mode"]           │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   │     if any(kw in last_user_message.lower() for kw in explicit_keywords):     │   │                                                  
+  │   │         return ALLOW()                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return DENY(                                                             │   │                                                  
+  │   │         "Auto Plan Mode disabled. "                                          │   │                                                  
+  │   │         "Use /planning skill instead, or explicitly request 'plan mode'."    │   │                                                  
+  │   │     )                                                                        │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • 사용자 메시지에 "plan mode" 등 키워드 없이 EnterPlanMode 호출               │   │                                                 
+  │   │ • → DENY (자동 진입 차단)                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │ PRE-TOOL-USE: Skill                                                                  │                                                  
+  │ Matcher: "Skill"                                                                     │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK: pipeline-order-gate.sh                                                 │   │                                                  
+  │   │ 목적: E2E Pipeline 순서 검증                                                  │   │                                                 
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ E2E Pipeline의 순서를 검증합니다.                                             │   │                                                 
+  │   │ 예: /planning 전에 /research가 실행되어야 함                                  │   │                                                 
+  │   │ 순서 위반 시 경고합니다 (차단하지는 않음).                                     │   │                                                
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ PIPELINE_ORDER = {                                                           │   │                                                  
+  │   │     "clarify": [],                          # No prerequisites               │   │                                                  
+  │   │     "research": ["clarify"],                # Optional clarify first         │   │                                                  
+  │   │     "planning": ["research"],               # Requires research              │   │                                                  
+  │   │     "orchestrate": ["planning"],            # Requires planning              │   │                                                  
+  │   │     "assign": ["orchestrate"],              # Requires orchestrate           │   │                                                  
+  │   │     "collect": ["assign"],                  # Requires assign                │   │                                                  
+  │   │     "synthesis": ["collect"],               # Requires collect               │   │                                                  
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def pipeline_order_gate(tool_input, session_state):                          │   │                                                  
+  │   │     skill_name = tool_input.get('skill', '')                                 │   │                                                  
+  │   │     executed_skills = get_executed_skills(session_state)                     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     prerequisites = PIPELINE_ORDER.get(skill_name, [])                       │   │                                                  
+  │   │     missing = [p for p in prerequisites if p not in executed_skills]         │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if missing:                                                              │   │                                                  
+  │   │         return WARN(                                                         │   │                                                  
+  │   │             f"Pipeline order warning: {skill_name} typically "               │   │                                                  
+  │   │             f"follows {', '.join(missing)}"                                  │   │                                                  
+  │   │         )                                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return ALLOW()                                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • Skill 호출 시 선행 Skill이 실행되지 않았으면 → WARN                         │   │                                                 
+  │   │ • (차단하지는 않음, 경고만 표시)                                              │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  ---                                                                                                                                       
+  3. POST-TOOL-USE HOOKS 상세                                                                                                               
+                                                                                                                                            
+  3.1 Task Matcher                                                                                                                          
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ POST-TOOL-USE: Task                                                                  │                                                  
+  │ Matcher: "Task"                                                                      │                                                  
+  │ 목적: Subagent 결과 검증, L1 추출, 캐싱, 피드백                                       │                                                 
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   Input (stdin):                                                                     │                                                  
+  │   {                                                                                  │                                                  
+  │     "tool_name": "Task",                                                             │                                                  
+  │     "tool_input": {                                                                  │                                                  
+  │       "prompt": "Analyze the codebase...",                                           │                                                  
+  │       "subagent_type": "explore",                                                    │                                                  
+  │       "_cacheInputHash": "a1b2c3d4"    ◀── PreToolUse에서 주입                       │                                                  
+  │     },                                                                               │                                                  
+  │     "tool_result": {                                                                 │                                                  
+  │       "output": "```yaml\ntaskId: exp-001\nagentType: explore\n...\n```",            │                                                  
+  │       "agent_id": "abc123def"          ◀── Resume용 Agent ID                         │                                                  
+  │     }                                                                                │                                                  
+  │   }                                                                                  │                                                  
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 1: pd-task-processor.sh                                                 │   │                                                  
+  │   │ 목적: L1 필드 추출, 로깅, 캐시 저장, Priority 기반 가이던스                     │   │                                               
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Subagent 결과에서 L1 YAML 블록을 추출하고, 필드를 파싱하여 로그에 기록합니다.    │   │                                              
+  │   │ 동일 쿼리에 대한 캐시를 저장하고, Priority에 따라 Main Agent에게 가이던스를       │   │                                             
+  │   │ 제공합니다. (CRITICAL → 반드시 L2 읽기, LOW → L1만으로 충분)                    │   │                                               
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ SKIP_AGENTS = ["onboarding-guide", "statusline-setup", "prompt-assistant"]   │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def pd_task_processor(tool_input, tool_result):                              │   │                                                  
+  │   │     subagent_type = tool_input.get('subagent_type', 'unknown')               │   │                                                  
+  │   │     output = tool_result.get('output', '')                                   │   │                                                  
+  │   │     agent_id = tool_result.get('agent_id', '')                               │   │                                                  
+  │   │     cache_key = tool_input.get('_cacheInputHash', '')                        │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Skip conversational agents                                             │   │                                                  
+  │   │     if subagent_type in SKIP_AGENTS:                                         │   │                                                  
+  │   │         log_task(agent_id, subagent_type, l1_compatible=False)               │   │                                                  
+  │   │         return {"agentId": agent_id, "l1Compatible": False}                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Extract L1 YAML block                                                  │   │                                                  
+  │   │     yaml_match = re.search(r'```yaml\s*\n(.*?)\n```', output, re.DOTALL)     │   │                                                  
+  │   │     if not yaml_match:                                                       │   │                                                  
+  │   │         l1_detected = False                                                  │   │                                                  
+  │   │         yaml_content = ""                                                    │   │                                                  
+  │   │     else:                                                                    │   │                                                  
+  │   │         l1_detected = True                                                   │   │                                                  
+  │   │         yaml_content = yaml_match.group(1)                                   │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Parse L1 fields                                                        │   │                                                  
+  │   │     task_id = extract_field('taskId', yaml_content)                          │   │                                                  
+  │   │     priority = extract_field('priority', yaml_content)                       │   │                                                  
+  │   │     status = extract_field('status', yaml_content)                           │   │                                                  
+  │   │     l2_path = extract_field('l2Path', yaml_content)                          │   │                                                  
+  │   │     requires_l2 = extract_field('requiresL2Read', yaml_content)              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Log to task_execution.log                                              │   │                                                  
+  │   │     log_task_execution(                                                      │   │                                                  
+  │   │         agent_id=agent_id,                                                   │   │                                                  
+  │   │         task_id=task_id,                                                     │   │                                                  
+  │   │         subagent_type=subagent_type,                                         │   │                                                  
+  │   │         l1_detected=l1_detected,                                             │   │                                                  
+  │   │         priority=priority,                                                   │   │                                                  
+  │   │         status=status,                                                       │   │                                                  
+  │   │         l2_path=l2_path                                                      │   │                                                  
+  │   │     )                                                                        │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Save to cache                                                          │   │                                                  
+  │   │     if l1_detected and cache_key:                                            │   │                                                  
+  │   │         save_to_cache(cache_key, yaml_content, agent_id, priority)           │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Generate guidance based on priority                                    │   │                                                  
+  │   │     guidance = {                                                             │   │                                                  
+  │   │         "CRITICAL": "MUST read recommendedRead sections in L3 immediately",  │   │                                                  
+  │   │         "HIGH": "SHOULD read recommendedRead sections in L3",                │   │                                                  
+  │   │         "MEDIUM": "MAY read L3 sections on demand",                          │   │                                                  
+  │   │         "LOW": "L1 summary is sufficient, skip L3"                           │   │                                                  
+  │   │     }.get(priority, "Review L1 and decide if L3 needed")                     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return {                                                                 │   │                                                  
+  │   │         "guidance": guidance,                                                │   │                                                  
+  │   │         "l2Path": l2_path,                                                   │   │                                                  
+  │   │         "agentId": agent_id,                                                 │   │                                                  
+  │   │         "priority": priority,                                                │   │                                                  
+  │   │         "cacheSaved": bool(cache_key and l1_detected)                        │   │                                                  
+  │   │     }                                                                        │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • Task tool 결과 수신 시 항상 실행                                            │   │                                                 
+  │   │ • L1 YAML 블록 추출 → 필드 파싱 → 로깅 → 캐싱 → 가이던스 생성                 │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   │ [예시 출력]                                                                  │   │                                                  
+  │   │ {                                                                            │   │                                                  
+  │   │   "hookSpecificOutput": {                                                    │   │                                                  
+  │   │     "guidance": "SHOULD read recommendedRead sections in L3",                │   │                                                  
+  │   │     "l2Path": ".agent/outputs/explore/analysis-l2.md",                       │   │                                                  
+  │   │     "agentId": "abc123",                                                     │   │                                                  
+  │   │     "priority": "HIGH",                                                      │   │                                                  
+  │   │     "cacheSaved": true                                                       │   │                                                  
+  │   │   }                                                                          │   │                                                  
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 2: l1-format-validator.sh ⭐ (NEW)                                      │   │                                                  
+  │   │ 목적: L1 스키마 검증 + 토큰 제한 확인                                          │   │                                                
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Subagent 결과가 L1 스키마를 준수하는지 검증합니다.                              │   │                                               
+  │   │ - Required fields: taskId, agentType, summary, status, priority, l2Path      │   │                                                  
+  │   │ - Token limit: ≤500 tokens                                                   │   │                                                  
+  │   │ 검증 실패 시 Main Agent에게 재시도 권장을 알립니다.                             │   │                                               
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ REQUIRED_FIELDS = ['taskId', 'agentType', 'summary', 'status',               │   │                                                  
+  │   │                    'priority', 'l2Path', 'requiresL2Read']                   │   │                                                  
+  │   │ TOKEN_LIMIT = 500                                                            │   │                                                  
+  │   │ TOKEN_WARNING = 400                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ def l1_format_validator(tool_input, tool_result):                            │   │                                                  
+  │   │     subagent_type = tool_input.get('subagent_type', '')                      │   │                                                  
+  │   │     output = tool_result.get('output', '')                                   │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Skip conversational agents                                             │   │                                                  
+  │   │     if subagent_type in SKIP_AGENTS:                                         │   │                                                  
+  │   │         return {"l1Validation": "skipped", "reason": "conversational"}       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Extract YAML block                                                     │   │                                                  
+  │   │     yaml_block = extract_yaml_block(output)                                  │   │                                                  
+  │   │     if not yaml_block:                                                       │   │                                                  
+  │   │         return {                                                             │   │                                                  
+  │   │             "l1Valid": False,                                                │   │                                                  
+  │   │             "errors": ["No L1 YAML block found"],                            │   │                                                  
+  │   │             "retryRecommended": True                                         │   │                                                  
+  │   │         }                                                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check required fields                                                  │   │                                                  
+  │   │     errors = []                                                              │   │                                                  
+  │   │     warnings = []                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     for field in REQUIRED_FIELDS:                                            │   │                                                  
+  │   │         if field not in yaml_block:                                          │   │                                                  
+  │   │             errors.append(f"Missing required field: {field}")                │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Validate enum values                                                   │   │                                                  
+  │   │     if yaml_block.get('status') not in ['success', 'partial', 'failed']:     │   │                                                  
+  │   │         errors.append(f"Invalid status: {yaml_block.get('status')}")         │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if yaml_block.get('priority') not in ['CRITICAL','HIGH','MEDIUM','LOW']: │   │                                                  
+  │   │         errors.append(f"Invalid priority: {yaml_block.get('priority')}")     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check token count                                                      │   │                                                  
+  │   │     token_count = len(yaml_block) // 4  # rough estimate                     │   │                                                  
+  │   │     if token_count > TOKEN_LIMIT:                                            │   │                                                  
+  │   │         errors.append(f"Token limit exceeded: ~{token_count} > {TOKEN_LIMIT}")│  │                                                  
+  │   │     elif token_count > TOKEN_WARNING:                                        │   │                                                  
+  │   │         warnings.append(f"Token count near limit: ~{token_count}")           │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return {                                                                 │   │                                                  
+  │   │         "l1Valid": len(errors) == 0,                                         │   │                                                  
+  │   │         "errors": errors,                                                    │   │                                                  
+  │   │         "warnings": warnings,                                                │   │                                                  
+  │   │         "tokenCount": token_count,                                           │   │                                                  
+  │   │         "retryRecommended": len(errors) > 0                                  │   │                                                  
+  │   │     }                                                                        │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ ┌─────────────────────────────────────────────────────────────────────────┐ │   │                                                   
+  │   │ │ IF subagent_type NOT in SKIP_AGENTS:                                    │ │   │                                                   
+  │   │ │   Extract YAML block from output                                        │ │   │                                                   
+  │   │ │   Validate required fields                                              │ │   │                                                   
+  │   │ │   Validate enum values (status, priority)                               │ │   │                                                   
+  │   │ │   Check token count                                                     │ │   │                                                   
+  │   │ │   Return validation result                                              │ │   │                                                   
+  │   │ │                                                                         │ │   │                                                   
+  │   │ │ IF errors exist:                                                        │ │   │                                                   
+  │   │ │   l1Valid = false, retryRecommended = true                              │ │   │                                                   
+  │   │ │ ELSE:                                                                   │ │   │                                                   
+  │   │ │   l1Valid = true                                                        │ │   │                                                   
+  │   │ └─────────────────────────────────────────────────────────────────────────┘ │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [예시 출력 - 검증 실패]                                                      │   │                                                  
+  │   │ {                                                                            │   │                                                  
+  │   │   "hookSpecificOutput": {                                                    │   │                                                  
+  │   │     "l1Valid": false,                                                        │   │                                                  
+  │   │     "errors": ["Missing required field: l2Path", "Token limit exceeded"],    │   │                                                  
+  │   │     "retryRecommended": true,                                                │   │                                                  
+  │   │     "retryGuidance": "Re-run Task with explicit L1 format."                  │   │                                                  
+  │   │   }                                                                          │   │                                                  
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ HOOK 3: l2l3-output-validator.sh ⭐ (NEW)                                    │   │                                                  
+  │   │ 목적: L2/L3 파일 존재 검증                                                    │   │                                                 
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Subagent가 L1에 명시한 l2Path, l3Path가 실제로 존재하는지 확인합니다.           │   │                                               
+  │   │ 파일이 없으면 경고를 반환합니다.                                               │   │                                                
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def l2l3_output_validator(tool_input, tool_result):                          │   │                                                  
+  │   │     subagent_type = tool_input.get('subagent_type', '')                      │   │                                                  
+  │   │     output = tool_result.get('output', '')                                   │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Skip conversational agents                                             │   │                                                  
+  │   │     if subagent_type in SKIP_AGENTS:                                         │   │                                                  
+  │   │         return {"validation": "skipped"}                                     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Extract paths from L1 YAML                                             │   │                                                  
+  │   │     l2_path = extract_field('l2Path', output)                                │   │                                                  
+  │   │     l3_path = extract_field('l3Path', output)                                │   │                                                  
+  │   │     requires_l2 = extract_field('requiresL2Read', output)                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     missing_paths = []                                                       │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Skip check if l2Path is "N/A" or empty                                 │   │                                                  
+  │   │     if l2_path and l2_path != "N/A":                                         │   │                                                  
+  │   │         if not os.path.exists(l2_path):                                      │   │                                                  
+  │   │             missing_paths.append(l2_path)                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if l3_path and l3_path != "N/A":                                         │   │                                                  
+  │   │         if not os.path.exists(l3_path) and not os.path.isdir(l3_path):       │   │                                                  
+  │   │             missing_paths.append(l3_path)                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return {                                                                 │   │                                                  
+  │   │         "l2Exists": l2_path not in missing_paths if l2_path else True,       │   │                                                  
+  │   │         "l3Exists": l3_path not in missing_paths if l3_path else True,       │   │                                                  
+  │   │         "missingPaths": missing_paths,                                       │   │                                                  
+  │   │         "warning": f"Files not found: {missing_paths}" if missing_paths else ""│ │                                                  
+  │   │     }                                                                        │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • L1에 l2Path/l3Path가 명시되어 있고, 해당 파일이 존재하지 않으면               │   │                                               
+  │   │ • → missingPaths에 추가하여 경고 반환                                         │   │                                                 
+  │   │ • (차단하지는 않음 - Agent가 쓰기 권한이 없을 수 있음)                          │   │                                               
+  │   │                                                                              │   │                                                  
+  │   │ [예시 출력]                                                                  │   │                                                  
+  │   │ {                                                                            │   │                                                  
+  │   │   "hookSpecificOutput": {                                                    │   │                                                  
+  │   │     "l2Exists": false,                                                       │   │                                                  
+  │   │     "l3Exists": true,                                                        │   │                                                  
+  │   │     "missingPaths": [".agent/outputs/explore/missing.md"],                   │   │                                                  
+  │   │     "warning": "L2 file not found at specified path"                         │   │                                                  
+  │   │   }                                                                          │   │                                                  
+  │   │ }                                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  3.2 Other Post-Tool-Use Hooks                                                                                                             
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │ POST-TOOL-USE: Other Matchers                                                        │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ Matcher: AskUserQuestion                                                     │   │                                                  
+  │   │ Hook: clarify-qa-logger.sh                                                   │   │                                                  
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ /clarify 스킬에서 사용자에게 질문하고 답변을 받을 때,                          │   │                                                
+  │   │ Q&A 내용을 clarify.yaml에 자동으로 기록합니다.                                │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def clarify_qa_logger(tool_input, tool_result):                              │   │                                                  
+  │   │     questions = tool_input.get('questions', [])                              │   │                                                  
+  │   │     answers = tool_result.get('answers', {})                                 │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Get active workload                                                    │   │                                                  
+  │   │     slug = get_workload_slug()                                               │   │                                                  
+  │   │     if not slug:                                                             │   │                                                  
+  │   │         return {}                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Append to clarify.yaml                                                 │   │                                                  
+  │   │     clarify_file = f".agent/prompts/{slug}/clarify.yaml"                     │   │                                                  
+  │   │     append_qa_entry(                                                         │   │                                                  
+  │   │         clarify_file,                                                        │   │                                                  
+  │   │         questions=questions,                                                 │   │                                                  
+  │   │         answers=answers,                                                     │   │                                                  
+  │   │         timestamp=datetime.now()                                             │   │                                                  
+  │   │     )                                                                        │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return {"logged": True, "file": clarify_file}                            │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • AskUserQuestion 도구 결과 수신 시                                          │   │                                                  
+  │   │ • Active Workload가 있으면 clarify.yaml에 Q&A 기록                           │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ Matcher: Read                                                                │   │                                                  
+  │   │ Hook: read-tracker.sh                                                        │   │                                                  
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ Read 도구로 파일을 읽을 때마다 기록합니다.                                     │   │                                                
+  │   │ 이 기록은 l2l3-access-gate.sh에서 "L2/L3 읽었는지" 확인에 사용됩니다.          │   │                                                
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def read_tracker(tool_input, tool_result):                                   │   │                                                  
+  │   │     file_path = tool_input.get('file_path', '')                              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     if not file_path:                                                        │   │                                                  
+  │   │         return {}                                                            │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Append to recent_reads.log                                             │   │                                                  
+  │   │     with open(READ_TRACKING_FILE, 'a') as f:                                 │   │                                                  
+  │   │         f.write(f"{datetime.now().isoformat()}\t{file_path}\n")              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Trim to max entries                                                    │   │                                                  
+  │   │     trim_log_file(READ_TRACKING_FILE, MAX_TRACKING_ENTRIES)                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return {"tracked": file_path}                                            │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • Read 도구 실행 후 항상 실행                                                │   │                                                  
+  │   │ • 파일 경로를 recent_reads.log에 기록                                        │   │                                                  
+  │   │ • 최대 100개 엔트리 유지 (오래된 것 삭제)                                     │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ Matcher: * (모든 도구)                                                       │   │                                                  
+  │   │ Hook: session-health.sh                                                      │   │                                                  
+  │   ├─────────────────────────────────────────────────────────────────────────────┤   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │ [자연어 설명]                                                                │   │                                                  
+  │   │ 모든 도구 실행 후 세션 상태를 모니터링합니다.                                   │   │                                               
+  │   │ 토큰 사용량, 에러 빈도, 시간 등을 추적하여 세션 건강 상태를 유지합니다.          │   │                                              
+  │   │                                                                              │   │                                                  
+  │   │ [프로그래밍 로직]                                                            │   │                                                  
+  │   │ ```python                                                                    │   │                                                  
+  │   │ def session_health(tool_input, tool_result):                                 │   │                                                  
+  │   │     # Update session statistics                                              │   │                                                  
+  │   │     session_state = load_session_state()                                     │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     session_state['tool_calls'] += 1                                         │   │                                                  
+  │   │     session_state['last_activity'] = datetime.now().isoformat()              │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     # Check for errors in result                                             │   │                                                  
+  │   │     if 'error' in tool_result:                                               │   │                                                  
+  │   │         session_state['error_count'] += 1                                    │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     save_session_state(session_state)                                        │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │     return {}  # Silent monitoring                                           │   │                                                  
+  │   │ ```                                                                          │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │ [작동 조건]                                                                  │   │                                                  
+  │   │ • 모든 도구 실행 후 실행 (wildcard matcher)                                  │   │                                                  
+  │   │ • 세션 통계 업데이트 (silent - 출력 없음)                                     │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  ---                                                                                                                                       
+  4. Hook 실행 순서 요약                                                                                                                    
+                                                                                                                                            
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐                                                   
+  │                          HOOK EXECUTION ORDER SUMMARY                                │                                                  
+  ├─────────────────────────────────────────────────────────────────────────────────────┤                                                   
+  │                                                                                      │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ PRE-TOOL-USE (도구 실행 전)                                                  │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │   settings.json에 정의된 순서대로 실행                                        │   │                                                 
+  │   │   하나라도 DENY 반환 시 → 도구 실행 중단                                      │   │                                                 
+  │   │                                                                              │   │                                                  
+  │   │   Bash:                                                                      │   │                                                  
+  │   │   ① governance-check.sh                                                     │   │                                                   
+  │   │   ② security-gate.sh          → DENY 가능                                   │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │   Edit|Write:                                                                │   │                                                  
+  │   │   ① governance-check.sh                                                     │   │                                                   
+  │   │   ② auto-backup.sh                                                          │   │                                                   
+  │   │   ③ context-recovery-gate.sh  → DENY 가능                                   │   │                                                   
+  │   │   ④ l2l3-access-gate.sh       → DENY 가능                                   │   │                                                   
+  │   │   ⑤ sensitive-files-gate.sh   → DENY 가능                                   │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │   Task:                                                                      │   │                                                  
+  │   │   ① pd-task-interceptor.sh    → additionalContext 주입                      │   │                                                   
+  │   │   ② context-recovery-gate.sh  → DENY 가능                                   │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │   TaskCreate:                                                                │   │                                                  
+  │   │   ① context-recovery-gate.sh  → DENY 가능                                   │   │                                                   
+  │   │   ② sequential-thinking-gate.sh → WARN 가능                                 │   │                                                   
+  │   │   ③ orchestrating-l2l3-synthesis-gate.sh → DENY 가능                        │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │                              [도구 실행]                                             │                                                  
+  │                                       │                                              │                                                  
+  │                                       ▼                                              │                                                  
+  │   ┌─────────────────────────────────────────────────────────────────────────────┐   │                                                   
+  │   │ POST-TOOL-USE (도구 실행 후)                                                 │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │   settings.json에 정의된 순서대로 실행                                        │   │                                                 
+  │   │   tool_result 수정 불가 (읽기 전용)                                          │   │                                                  
+  │   │   hookSpecificOutput으로 피드백 제공                                         │   │                                                  
+  │   │                                                                              │   │                                                  
+  │   │   Task:                                                                      │   │                                                  
+  │   │   ① pd-task-processor.sh      → L1 추출, 로깅, 캐싱                         │   │                                                   
+  │   │   ② l1-format-validator.sh    → L1 스키마 검증                              │   │                                                   
+  │   │   ③ l2l3-output-validator.sh  → 파일 존재 검증                              │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │   AskUserQuestion:                                                           │   │                                                  
+  │   │   ① clarify-qa-logger.sh      → Q&A 기록                                    │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │   Read:                                                                      │   │                                                  
+  │   │   ① read-tracker.sh           → 파일 읽기 기록                              │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   │   * (모든 도구):                                                             │   │                                                  
+  │   │   ① session-health.sh         → 세션 상태 모니터링                          │   │                                                   
+  │   │                                                                              │   │                                                  
+  │   └─────────────────────────────────────────────────────────────────────────────┘   │                                                   
+  │                                                                                      │                                                  
+  └─────────────────────────────────────────────────────────────────────────────────────┘                                                   
+                                                                                                                                            
+  ---                                                                                                                                       
+  이 상세 시각화를 기반으로 추가 피드백이나 수정 사항이 있으시면 알려주세요.

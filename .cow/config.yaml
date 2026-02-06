@@ -1,0 +1,22 @@
+cache:
+  directory: /home/palantir/.cow/cache
+  enabled: true
+  max_size_mb: 500
+  ttl_days: 30
+logging:
+  file: null
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+mathpix:
+  app_id: ''
+  app_key: ''
+  endpoint: https://api.mathpix.com
+  timeout: 30
+output:
+  default_directory: output
+  default_format: docx
+  preserve_layout: true
+review:
+  auto_approve_threshold: 0.95
+  database_path: /home/palantir/.cow/review.db
+  require_review_threshold: 0.75

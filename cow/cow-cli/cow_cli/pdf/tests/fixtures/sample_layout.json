@@ -1,0 +1,80 @@
+{
+  "elements": [
+    {
+      "id": "elem-001",
+      "type": "title",
+      "subtype": null,
+      "region": {
+        "top_left_x": 100,
+        "top_left_y": 50,
+        "width": 400,
+        "height": 40
+      },
+      "line": 0,
+      "column": 0,
+      "parent_id": null,
+      "children_ids": [],
+      "conversion_output": true
+    },
+    {
+      "id": "elem-002",
+      "type": "text",
+      "subtype": null,
+      "region": {
+        "top_left_x": 100,
+        "top_left_y": 100,
+        "width": 400,
+        "height": 60
+      },
+      "line": 1,
+      "column": 0,
+      "parent_id": null,
+      "children_ids": [],
+      "conversion_output": true
+    },
+    {
+      "id": "elem-003",
+      "type": "math",
+      "subtype": null,
+      "region": {
+        "top_left_x": 100,
+        "top_left_y": 180,
+        "width": 300,
+        "height": 50
+      },
+      "line": 2,
+      "column": 0,
+      "parent_id": null,
+      "children_ids": [],
+      "conversion_output": true
+    },
+    {
+      "id": "elem-004",
+      "type": "text",
+      "subtype": null,
+      "region": {
+        "top_left_x": 100,
+        "top_left_y": 250,
+        "width": 400,
+        "height": 80
+      },
+      "line": 3,
+      "column": 0,
+      "parent_id": null,
+      "children_ids": [],
+      "conversion_output": true
+    }
+  ],
+  "page": {
+    "width": 612,
+    "height": 792,
+    "page_number": 1,
+    "total_pages": 1
+  },
+  "metadata": {
+    "source": "mathpix",
+    "version": "1.0.0",
+    "element_count": 4,
+    "hierarchy_depth": 1
+  }
+}

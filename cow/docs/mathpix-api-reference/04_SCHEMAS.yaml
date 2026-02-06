@@ -1,0 +1,522 @@
+# =============================================================================
+# Mathpix API Reference for Claude - Data Schemas
+# =============================================================================
+# Version: 1.0.0
+# Date: 2026-02-04
+# Purpose: Complete data object schemas
+# =============================================================================
+
+---
+metadata:
+  file_index: "04/05"
+  description: "LineData, WordData, and other data object schemas"
+
+# =============================================================================
+# LINE DATA OBJECT
+# =============================================================================
+LineData:
+  description: "Line-level data from processing (include_line_data=true)"
+
+  fields:
+    id:
+      type: "string"
+      required: true
+      description: "Unique line identifier"
+
+    parent_id:
+      type: "string"
+      optional: true
+      description: "Unique line identifier of the parent"
+
+    children_ids:
+      type: "array[string]"
+      optional: true
+      description: "List of children unique identifiers"
+
+    type:
+      type: "string"
+      required: true
+      description: "Category of line content"
+      see: "line_types"
+
+    subtype:
+      type: "string"
+      optional: true
+      description: "Specific variant within type"
+      see: "line_subtypes"
+
+    text:
+      type: "string"
+      optional: true
+      description: "Text (Mathpix Markdown) for line"
+
+    text_display:
+      type: "string"
+      optional: true
+      description: "Markdown rendering"
+
+    cnt:
+      type: "array[[x, y]]"
+      description: "Contour as list of (x,y) pixel coordinate pairs"
+
+    region:
+      type: "object"
+      optional: true
+      description: "Bounding box"
+      fields:
+        top_left_x: "integer"
+        top_left_y: "integer"
+        width: "integer"
+        height: "integer"
+
+    conversion_output:
+      type: "boolean"
+      description: "Whether included in top-level OCR result"
+
+    is_printed:
+      type: "boolean"
+      description: "True if line has printed text"
+
+    is_handwritten:
+      type: "boolean"
+      description: "True if line has handwritten text"
+      note: "Both is_printed and is_handwritten can be true"
+
+    confidence:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Estimated probability 100% correct"
+
+    confidence_rate:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Estimated confidence of output quality"
+
+    font_size:
+      type: "integer"
+      optional: true
+      description: "Font size in pixels"
+
+    line:
+      type: "integer"
+      optional: true
+      description: "Line number"
+
+    column:
+      type: "integer"
+      optional: true
+      description: "Column index (0-based for multi-column)"
+
+    after_hyphen:
+      type: "boolean"
+      optional: true
+      description: "Current line after hyphenated line"
+
+    html:
+      type: "string"
+      optional: true
+      description: "Annotated HTML output for the line"
+
+    data:
+      type: "array[DataObject]"
+      optional: true
+      description: "List of Data objects"
+
+    error_id:
+      type: "string"
+      optional: true
+      description: "Reason for exclusion if conversion_output=false"
+      values:
+        - "image_not_supported"
+        - "image_max_size"
+        - "math_confidence"
+        - "image_no_content"
+
+    selected_labels:
+      type: "array[string]"
+      optional: true
+      description: "Associated figure/table label line IDs"
+      added: "2025-08-04"
+
+# =============================================================================
+# LINE TYPES AND SUBTYPES - COMPLETE LIST
+# =============================================================================
+line_types:
+  text:
+    description: "Regular text content"
+    subtypes:
+      - "vertical"
+      - "big_capital_letter"
+
+  math:
+    description: "Mathematical expression"
+    subtypes: []
+
+  table:
+    description: "Table element"
+    subtypes: []
+
+  diagram:
+    description: "Diagram/figure"
+    subtypes:
+      - "algorithm"
+      - "pseudocode"
+      - "chemistry"
+      - "chemistry_reaction"
+      - "triangle"
+
+  chart:
+    description: "Chart/graph"
+    subtypes:
+      - "column"
+      - "bar"
+      - "line"
+      - "analytical"
+      - "pie"
+      - "scatter"
+      - "area"
+
+  chart_info:
+    description: "Chart annotation/label"
+    subtypes: []
+
+  x_axis_tick_label:
+    description: "X-axis tick label"
+    subtypes: []
+
+  y_axis_tick_label:
+    description: "Y-axis tick label"
+    subtypes: []
+
+  x_axis_label:
+    description: "X-axis main label"
+    subtypes: []
+
+  y_axis_label:
+    description: "Y-axis main label"
+    subtypes: []
+
+  legend_label:
+    description: "Chart legend label"
+    subtypes: []
+
+  model_label:
+    description: "Model label"
+    subtypes: []
+
+  diagram_info:
+    description: "Diagram annotation"
+    subtypes: []
+
+  column:
+    description: "Column container"
+    subtypes: []
+
+  code:
+    description: "Source code block"
+    subtypes: []
+
+  pseudocode:
+    description: "Pseudocode block"
+    subtypes: []
+
+  figure_label:
+    description: "Figure/table caption"
+    subtypes: []
+    added: "2025-08-04"
+
+  form_field:
+    description: "Form input field"
+    subtypes:
+      - "parentheses"
+      - "dotted"
+      - "dashed"
+      - "box"
+      - "checkbox"
+      - "circle"
+
+  qed_symbol:
+    description: "Q.E.D. symbol (□)"
+    subtypes: []
+
+  multiple_choice_block:
+    description: "Multiple choice question block"
+    subtypes: []
+
+  multiple_choice_option:
+    description: "Multiple choice option"
+    subtypes: []
+
+  footnote:
+    description: "Footnote text"
+    subtypes: []
+
+  page_info:
+    description: "Page header/footer/number"
+    subtypes: []
+
+  equation_number:
+    description: "Equation numbering"
+    subtypes: []
+
+  table_of_contents_container:
+    description: "TOC container"
+    subtypes: []
+
+  table_of_contents_row:
+    description: "TOC row"
+    subtypes: []
+
+  table_of_contents_item:
+    description: "TOC item"
+    subtypes: []
+
+  table_of_contents_number:
+    description: "TOC page number"
+    subtypes: []
+
+  title:
+    description: "Document title"
+    subtypes: []
+
+  quote:
+    description: "Block quote"
+    subtypes: []
+
+  section_header:
+    description: "Section heading"
+    subtypes: []
+
+  authors:
+    description: "Author information"
+    subtypes: []
+
+  abstract:
+    description: "Document abstract"
+    subtypes: []
+
+  rotated_container:
+    description: "Rotated content container"
+    subtypes: []
+
+  table_cell:
+    description: "Table cell"
+    subtypes:
+      - "split"
+      - "spanning"
+
+# =============================================================================
+# WORD DATA OBJECT
+# =============================================================================
+WordData:
+  description: "Word-level data from processing (include_word_data=true)"
+
+  fields:
+    type:
+      type: "string"
+      required: true
+      description: "Word type"
+      values:
+        - "text"
+        - "math"
+        - "table"
+        - "diagram"
+        - "equation_number"
+
+    subtype:
+      type: "string"
+      optional: true
+      description: "Word subtype"
+      values:
+        - "chemistry"
+        - "triangle"
+      note: "More diagram subtypes coming soon"
+
+    text:
+      type: "string"
+      optional: true
+      description: "Text in Mathpix Markdown format"
+
+    latex:
+      type: "string"
+      optional: true
+      description: "Math mode LaTeX in Mathpix Markdown format"
+
+    cnt:
+      type: "array[[x, y]]"
+      description: "Contour as list of (x,y) pixel coordinate pairs"
+
+    confidence:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Estimated probability of complete accuracy"
+
+    confidence_rate:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Estimated confidence of output quality"
+
+# =============================================================================
+# DATA OBJECT (for formats=["data"])
+# =============================================================================
+DataObject:
+  description: "Structured data element from data_options"
+
+  fields:
+    type:
+      type: "string"
+      description: "Data type"
+      values:
+        - "latex"
+        - "asciimath"
+        - "mathml"
+        - "svg"
+        - "table_html"
+        - "tsv"
+
+    value:
+      type: "string"
+      description: "The extracted data content"
+
+# =============================================================================
+# DETECTED ALPHABETS OBJECT
+# =============================================================================
+DetectedAlphabets:
+  description: "Writing system detection flags"
+
+  fields:
+    en:
+      type: "boolean"
+      description: "English/Latin detected"
+    ko:
+      type: "boolean"
+      description: "Korean detected"
+    zh:
+      type: "boolean"
+      description: "Chinese detected"
+    ja:
+      type: "boolean"
+      description: "Japanese detected"
+    ru:
+      type: "boolean"
+      description: "Russian/Cyrillic detected"
+    hi:
+      type: "boolean"
+      description: "Hindi detected"
+    th:
+      type: "boolean"
+      description: "Thai detected"
+
+# =============================================================================
+# ALPHABETS ALLOWED OBJECT
+# =============================================================================
+AlphabetsAllowed:
+  description: "Restrict output to specific alphabets"
+
+  fields:
+    en:
+      type: "boolean"
+      default: true
+    ko:
+      type: "boolean"
+      default: true
+    zh:
+      type: "boolean"
+      default: true
+    ja:
+      type: "boolean"
+      default: true
+    ru:
+      type: "boolean"
+      default: true
+    hi:
+      type: "boolean"
+      default: true
+    th:
+      type: "boolean"
+      default: true
+    ta:
+      type: "boolean"
+      default: true
+    te:
+      type: "boolean"
+      default: true
+    gu:
+      type: "boolean"
+      default: true
+    bn:
+      type: "boolean"
+      default: true
+    vi:
+      type: "boolean"
+      default: true
+
+# =============================================================================
+# REGION OBJECT
+# =============================================================================
+Region:
+  description: "Bounding box coordinates"
+
+  fields:
+    top_left_x:
+      type: "integer"
+      description: "X coordinate of top-left corner"
+
+    top_left_y:
+      type: "integer"
+      description: "Y coordinate of top-left corner"
+
+    width:
+      type: "integer"
+      description: "Width in pixels"
+
+    height:
+      type: "integer"
+      description: "Height in pixels"
+
+# =============================================================================
+# ERROR INFO OBJECT
+# =============================================================================
+ErrorInfo:
+  description: "Structured error details"
+
+  fields:
+    id:
+      type: "string"
+      description: "Error identifier"
+
+    error:
+      type: "string"
+      description: "Human readable error message"
+
+  error_ids:
+    - id: "image_not_supported"
+      description: "OCR engine cannot process this line type"
+
+    - id: "image_max_size"
+      description: "Line exceeds maximum size supported"
+
+    - id: "math_confidence"
+      description: "Failed to recognize with sufficient confidence"
+
+    - id: "image_no_content"
+      description: "Invalid spatial dimensions (e.g., zero height)"
+
+# =============================================================================
+# CALLBACK OBJECT
+# =============================================================================
+CallbackObject:
+  description: "Configuration for async processing callbacks"
+
+  fields:
+    post:
+      type: "string"
+      description: "URL to POST results when complete"
+
+    reply:
+      type: "object"
+      description: "Additional data to include in callback"

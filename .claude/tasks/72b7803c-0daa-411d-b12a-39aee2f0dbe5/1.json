@@ -1,9 +1,0 @@
-{
-  "id": "1",
-  "subject": "Audit codebase structure and development environment",
-  "description": "Comprehensive code-level audit covering: project structure, dependencies, configuration files, code quality, security issues, development environment setup, and architectural patterns.",
-  "activeForm": "Auditing codebase structure and development environment",
-  "status": "in_progress",
-  "blocks": [],
-  "blockedBy": []
-}

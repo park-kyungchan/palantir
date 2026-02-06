@@ -1,0 +1,517 @@
+# =============================================================================
+# Mathpix API Reference for Claude - v3/text Endpoint
+# =============================================================================
+# Version: 1.0.0
+# Date: 2026-02-04
+# Purpose: Complete v3/text endpoint specification
+# =============================================================================
+
+---
+metadata:
+  file_index: "02/05"
+  endpoint: "/v3/text"
+
+# =============================================================================
+# ENDPOINT INFO
+# =============================================================================
+endpoint:
+  url: "https://api.mathpix.com/v3/text"
+  method: "POST"
+  content_types:
+    - "application/json"
+    - "multipart/form-data"
+  description: "Process images with OCR - PRIMARY endpoint"
+
+# =============================================================================
+# REQUEST PARAMETERS - COMPLETE LIST
+# =============================================================================
+request_parameters:
+  # ---------------------------------------------------------------------------
+  # INPUT PARAMETERS
+  # ---------------------------------------------------------------------------
+  src:
+    type: "string"
+    required: false  # Required unless using file upload
+    description: "Image URL or base64-encoded image data"
+    formats:
+      - "https://example.com/image.jpg"
+      - "data:image/png;base64,{base64_string}"
+
+  file:
+    type: "binary"
+    required: false  # For multipart/form-data uploads
+    description: "Image file in multipart form"
+
+  region:
+    type: "object"
+    required: false
+    description: "Pixel coordinates for image area processing"
+    fields:
+      top_left_x: "integer"
+      top_left_y: "integer"
+      width: "integer"
+      height: "integer"
+
+  # ---------------------------------------------------------------------------
+  # OUTPUT FORMAT PARAMETERS
+  # ---------------------------------------------------------------------------
+  formats:
+    type: "array[string]"
+    required: false
+    description: "Output format types"
+    values:
+      - value: "text"
+        description: "Mathpix Markdown with math delimiters"
+      - value: "data"
+        description: "Structured elements per data_options"
+      - value: "html"
+        description: "HTML rendered from text"
+      - value: "latex_styled"
+        description: "Styled LaTeX (single-equation images only)"
+    default: '["text"]'
+
+  data_options:
+    type: "object"
+    required: false
+    location: "NESTED"
+    description: "Specifies structured data extraction"
+    fields:
+      include_latex:
+        type: "boolean"
+        default: false
+        description: "Math-mode LaTeX in data and html outputs"
+      include_asciimath:
+        type: "boolean"
+        default: false
+        description: "AsciiMath notation in outputs"
+      include_mathml:
+        type: "boolean"
+        default: false
+        description: "MathML format in outputs"
+      include_svg:
+        type: "boolean"
+        default: false
+        description: "Math SVG in html and data outputs"
+      include_table_html:
+        type: "boolean"
+        default: false
+        description: "Table HTML for html and data"
+      include_tsv:
+        type: "boolean"
+        default: false
+        description: "Tab-separated values for tables"
+
+  # ---------------------------------------------------------------------------
+  # SEGMENTATION PARAMETERS (TOP-LEVEL - CRITICAL)
+  # ---------------------------------------------------------------------------
+  include_line_data:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Segments results by line with metadata"
+    mutual_exclusion: "include_word_data"
+    warning: "MUTUALLY EXCLUSIVE with include_word_data"
+
+  include_word_data:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Segments results by word with metadata"
+    mutual_exclusion: "include_line_data"
+    warning: "MUTUALLY EXCLUSIVE with include_line_data"
+
+  include_diagram_text:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Text extraction from diagrams"
+
+  include_geometry_data:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Geometry diagram extraction (triangles)"
+
+  include_detected_alphabets:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Returns detected writing systems"
+
+  include_page_info:
+    type: "boolean"
+    required: false
+    default: true
+    location: "TOP-LEVEL"
+    description: "Page metadata inclusion"
+
+  # ---------------------------------------------------------------------------
+  # CHEMISTRY PARAMETERS
+  # ---------------------------------------------------------------------------
+  include_smiles:
+    type: "boolean"
+    required: false
+    default: true
+    description: "Chemistry diagram OCR via SMILES notation"
+
+  include_inchi:
+    type: "boolean"
+    required: false
+    default: false
+    description: "Adds InChI data to SMILES elements"
+
+  include_chemistry_as_image:
+    type: "boolean"
+    required: false
+    description: "Chemistry returned as image crop with SMILES in alt-text"
+
+  # ---------------------------------------------------------------------------
+  # MATH EQUATION PARAMETERS
+  # ---------------------------------------------------------------------------
+  include_equation_tags:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Adds \\tag{} to numbered equations"
+
+  math_inline_delimiters:
+    type: "array[string, string]"
+    required: false
+    default: '["\\(", "\\)"]'
+    description: "Inline math markers"
+
+  math_display_delimiters:
+    type: "array[string, string]"
+    required: false
+    default: '["\\[", "\\]"]'
+    description: "Display math markers"
+
+  numbers_default_to_math:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Formats numbers as math mode"
+
+  math_fonts_default_to_math:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Math fonts in math mode"
+
+  # ---------------------------------------------------------------------------
+  # LATEX STYLE PARAMETERS
+  # ---------------------------------------------------------------------------
+  rm_spaces:
+    type: "boolean"
+    required: false
+    default: true
+    location: "TOP-LEVEL"
+    description: "Removes excess whitespace"
+
+  rm_fonts:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Removes font commands (mathbb, mathbf, etc.)"
+
+  idiomatic_eqn_arrays:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Uses aligned/gathered/cases environments"
+
+  idiomatic_braces:
+    type: "boolean"
+    required: false
+    default: false
+    location: "TOP-LEVEL"
+    description: "Omits unnecessary braces"
+
+  # ---------------------------------------------------------------------------
+  # LANGUAGE PARAMETERS
+  # ---------------------------------------------------------------------------
+  alphabets_allowed:
+    type: "object"
+    required: false
+    description: "Restricts output to specific alphabets"
+    fields:
+      en: "boolean"
+      ko: "boolean"
+      zh: "boolean"
+      ja: "boolean"
+      ru: "boolean"
+      hi: "boolean"
+      th: "boolean"
+      ta: "boolean"
+      te: "boolean"
+      gu: "boolean"
+      bn: "boolean"
+      vi: "boolean"
+
+  fullwidth_punctuation:
+    type: "boolean"
+    required: false
+    default: null  # auto-detect
+    description: "East Asian vs Latin punctuation styling"
+    warning: "null means auto-detect, not false"
+
+  # ---------------------------------------------------------------------------
+  # CONFIDENCE PARAMETERS
+  # ---------------------------------------------------------------------------
+  confidence_threshold:
+    type: "number"
+    range: "[0, 1]"
+    required: false
+    description: "Confidence error trigger threshold"
+
+  confidence_rate_threshold:
+    type: "number"
+    range: "[0, 1]"
+    required: false
+    default: 0.75
+    description: "Symbol-level threshold"
+
+  # ---------------------------------------------------------------------------
+  # AUTO-ROTATION PARAMETERS
+  # ---------------------------------------------------------------------------
+  auto_rotate_confidence_threshold:
+    type: "number"
+    range: "[0, 1]"
+    required: false
+    default: 0.99
+    description: "Auto-rotation confidence threshold"
+    note: "Set to 1 to disable rotation"
+
+  # ---------------------------------------------------------------------------
+  # TABLE PARAMETERS
+  # ---------------------------------------------------------------------------
+  enable_tables_fallback:
+    type: "boolean"
+    required: false
+    default: false
+    description: "Advanced table processing for complex tables"
+
+  # ---------------------------------------------------------------------------
+  # FILTER PARAMETERS
+  # ---------------------------------------------------------------------------
+  enable_blue_hsv_filter:
+    type: "boolean"
+    required: false
+    default: false
+    description: "Blue text-only OCR mode"
+
+  # ---------------------------------------------------------------------------
+  # ASYNC/CALLBACK PARAMETERS
+  # ---------------------------------------------------------------------------
+  async:
+    type: "boolean"
+    required: false
+    description: "Flag for non-interactive requests"
+
+  callback:
+    type: "object"
+    required: false
+    description: "Callback object for async processing"
+
+  # ---------------------------------------------------------------------------
+  # METADATA PARAMETERS
+  # ---------------------------------------------------------------------------
+  metadata:
+    type: "object"
+    required: false
+    description: "Key-value pairs for custom tracking"
+
+  tags:
+    type: "array[string]"
+    required: false
+    description: "String arrays for identifying results in queries"
+
+  # ---------------------------------------------------------------------------
+  # DEPRECATED PARAMETERS
+  # ---------------------------------------------------------------------------
+  enable_spell_check:
+    type: "boolean"
+    status: "DEPRECATED"
+    description: "No effect on output"
+
+# =============================================================================
+# RESPONSE BODY
+# =============================================================================
+response:
+  fields:
+    request_id:
+      type: "string"
+      description: "Unique request identifier for debugging"
+
+    text:
+      type: "string"
+      optional: true
+      description: "Mathpix Markdown with embedded math"
+
+    latex_styled:
+      type: "string"
+      optional: true
+      description: "Styled LaTeX for single-equation images"
+
+    confidence:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Probability of 100% correctness"
+
+    confidence_rate:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Output quality confidence estimate"
+
+    line_data:
+      type: "array[LineData]"
+      optional: true
+      description: "Line-segmented results with geometry"
+
+    word_data:
+      type: "array[WordData]"
+      optional: true
+      description: "Word-segmented results with geometry"
+
+    data:
+      type: "array[DataObject]"
+      optional: true
+      description: "Structured format outputs per data_options"
+
+    html:
+      type: "string"
+      optional: true
+      description: "Annotated HTML rendering"
+
+    detected_alphabets:
+      type: "object"
+      optional: true
+      description: "Writing system detection flags"
+
+    is_printed:
+      type: "boolean"
+      optional: true
+      description: "Printed content detected"
+
+    is_handwritten:
+      type: "boolean"
+      optional: true
+      description: "Handwritten content detected"
+
+    auto_rotate_confidence:
+      type: "number"
+      range: "[0, 1]"
+      optional: true
+      description: "Rotation necessity probability"
+
+    auto_rotate_degrees:
+      type: "number"
+      values: [0, 90, -90, 180]
+      optional: true
+      description: "Rotation angle in degrees"
+
+    geometry_data:
+      type: "array[object]"
+      optional: true
+      description: "Extracted geometry information"
+
+    image_height:
+      type: "integer"
+      description: "Image pixel height"
+
+    image_width:
+      type: "integer"
+      description: "Image pixel width"
+
+    version:
+      type: "string"
+      description: "Opaque version identifier for results"
+
+    error:
+      type: "string"
+      optional: true
+      description: "US locale error message"
+
+    error_info:
+      type: "object"
+      optional: true
+      description: "Structured error details"
+
+# =============================================================================
+# CODE EXAMPLES
+# =============================================================================
+examples:
+  curl_url:
+    description: "Process image from URL"
+    code: |
+      curl -X POST https://api.mathpix.com/v3/text \
+        -H 'app_id: APP_ID' \
+        -H 'app_key: APP_KEY' \
+        -H 'Content-Type: application/json' \
+        --data '{
+          "src": "https://example.com/image.jpg",
+          "math_inline_delimiters": ["$", "$"],
+          "rm_spaces": true
+        }'
+
+  curl_file:
+    description: "Process image file upload"
+    code: |
+      curl -X POST https://api.mathpix.com/v3/text \
+        -H 'app_id: APP_ID' \
+        -H 'app_key: APP_KEY' \
+        --form 'file=@"image.jpg"' \
+        --form 'options_json="{\"math_inline_delimiters\": [\"$\", \"$\"]}"'
+
+  python_url:
+    description: "Python - Image URL"
+    code: |
+      import requests
+      import json
+
+      r = requests.post("https://api.mathpix.com/v3/text",
+          json={
+              "src": "https://example.com/image.jpg",
+              "math_inline_delimiters": ["$", "$"],
+              "rm_spaces": True
+          },
+          headers={
+              "app_id": "APP_ID",
+              "app_key": "APP_KEY",
+              "Content-type": "application/json"
+          }
+      )
+      print(json.dumps(r.json(), indent=4))
+
+  python_file:
+    description: "Python - Image file upload"
+    code: |
+      import requests
+      import json
+
+      r = requests.post("https://api.mathpix.com/v3/text",
+          files={"file": open("image.jpg", "rb")},
+          data={
+              "options_json": json.dumps({
+                  "math_inline_delimiters": ["$", "$"],
+                  "rm_spaces": True
+              })
+          },
+          headers={
+              "app_id": "APP_ID",
+              "app_key": "APP_KEY"
+          }
+      )
+      print(json.dumps(r.json(), indent=4))

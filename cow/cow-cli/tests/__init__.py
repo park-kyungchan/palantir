@@ -1,0 +1,1 @@
+"""COW CLI Tests."""
