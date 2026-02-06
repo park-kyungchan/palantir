@@ -1,0 +1,395 @@
+# =============================================================================
+# Mathpix API Reference for Claude - Other Endpoints
+# =============================================================================
+# Version: 1.0.0
+# Date: 2026-02-04
+# Purpose: Converter, Strokes, and auxiliary endpoints
+# =============================================================================
+
+---
+metadata:
+  file_index: "05/05"
+  description: "v3/converter, v3/strokes, and auxiliary endpoints"
+
+# =============================================================================
+# V3/CONVERTER ENDPOINT
+# =============================================================================
+v3_converter:
+  url: "https://api.mathpix.com/v3/converter"
+  method: "POST"
+  async_only: true
+  description: "Convert Mathpix Markdown to other formats"
+
+  workflow:
+    1_submit:
+      action: "POST /v3/converter"
+      returns: "conversion_id"
+      description: "Submit MMD content for conversion"
+
+    2_poll_status:
+      action: "GET /v3/converter/{conversion_id}"
+      returns: "status, conversion_status"
+      description: "Poll until completed"
+
+    3_get_results:
+      action: "GET /v3/converter/{conversion_id}.{format}"
+      formats:
+        - ".docx"
+        - ".pdf"
+        - ".latex.pdf"
+        - ".tex.zip"
+        - ".html"
+        - ".pptx"
+        - ".xlsx"
+
+  request_parameters:
+    mmd:
+      type: "string"
+      required: true
+      description: "Mathpix Markdown content to convert"
+
+    formats:
+      type: "object"
+      required: true
+      description: "Desired output formats"
+      example:
+        docx: true
+        pdf: true
+
+    title:
+      type: "string"
+      optional: true
+      description: "Document title for output"
+
+  response:
+    conversion_id:
+      type: "string"
+      description: "Tracking identifier"
+
+  example:
+    description: "Convert MMD to DOCX"
+    code: |
+      curl -X POST https://api.mathpix.com/v3/converter \
+        -H 'app_id: APP_ID' \
+        -H 'app_key: APP_KEY' \
+        -H 'Content-Type: application/json' \
+        --data '{
+          "mmd": "# Title\n\nThe equation $x^2 + y^2 = z^2$",
+          "formats": {"docx": true}
+        }'
+
+# =============================================================================
+# V3/STROKES ENDPOINT
+# =============================================================================
+v3_strokes:
+  url: "https://api.mathpix.com/v3/strokes"
+  method: "POST"
+  sync: true
+  description: "Process handwritten stroke coordinates"
+  note: "Smaller payloads, faster response than image-based"
+
+  request_parameters:
+    strokes:
+      type: "object"
+      required: true
+      description: "Stroke coordinate data"
+      structure:
+        x:
+          type: "array[array[number]]"
+          description: "X coordinates per stroke"
+          example: "[[1, 2, 3], [5, 6, 7]]"
+        y:
+          type: "array[array[number]]"
+          description: "Y coordinates per stroke"
+          example: "[[10, 11, 12], [20, 21, 22]]"
+
+    formats:
+      type: "array[string]"
+      values: ["text", "data", "html", "latex_styled"]
+      default: '["text"]'
+
+    data_options:
+      type: "object"
+      description: "Same as v3/text data_options"
+
+    # Math delimiters (same as v3/text)
+    math_inline_delimiters:
+      type: "array[string, string]"
+      default: '["\\(", "\\)"]'
+
+    math_display_delimiters:
+      type: "array[string, string]"
+      default: '["\\[", "\\]"]'
+
+    # LaTeX style options (same as v3/text)
+    rm_spaces:
+      type: "boolean"
+      default: true
+
+    rm_fonts:
+      type: "boolean"
+      default: false
+
+    idiomatic_eqn_arrays:
+      type: "boolean"
+      default: false
+
+  response:
+    # Same structure as v3/text response
+    text:
+      type: "string"
+      description: "Mathpix Markdown output"
+
+    confidence:
+      type: "number"
+      range: "[0, 1]"
+
+    confidence_rate:
+      type: "number"
+      range: "[0, 1]"
+
+  example:
+    description: "Process stroke data"
+    code: |
+      curl -X POST https://api.mathpix.com/v3/strokes \
+        -H 'app_id: APP_ID' \
+        -H 'app_key: APP_KEY' \
+        -H 'Content-Type: application/json' \
+        --data '{
+          "strokes": {
+            "x": [[1, 2, 3, 4], [10, 11, 12]],
+            "y": [[5, 6, 7, 8], [20, 21, 22]]
+          }
+        }'
+
+# =============================================================================
+# V3/LATEX ENDPOINT (DEPRECATED)
+# =============================================================================
+v3_latex:
+  url: "https://api.mathpix.com/v3/latex"
+  method: "POST"
+  status: "DEPRECATED"
+  description: "Legacy equation image processing"
+  warning: "Use v3/text instead for improved power and robustness"
+
+  migration_guide:
+    from: "/v3/latex with default options"
+    to: |
+      /v3/text with:
+        formats: ["text"]
+        math_inline_delimiters: ["$", "$"]
+
+# =============================================================================
+# V3/APP-TOKENS ENDPOINT
+# =============================================================================
+v3_app_tokens:
+  url: "https://api.mathpix.com/v3/app-tokens"
+  method: "POST"
+  description: "Generate temporary client-side tokens"
+
+  request_header:
+    app_key:
+      type: "string"
+      required: true
+      description: "Server-side API key"
+
+  request_parameters:
+    expires:
+      type: "number"
+      unit: "seconds"
+      range: "30-43200"
+      default: 300
+      description: "Token lifetime in seconds"
+
+    include_strokes_session_id:
+      type: "boolean"
+      default: false
+      description: "Include session ID for live stroke updates"
+
+  response:
+    app_token:
+      type: "string"
+      description: "Temporary authentication token"
+
+    app_token_expires_at:
+      type: "number"
+      description: "Unix timestamp for expiration"
+
+    strokes_session_id:
+      type: "string"
+      optional: true
+      description: "Session ID for live updates (if requested)"
+
+  limitations:
+    - "Cannot access PDF functionality"
+    - "Cannot access historical data"
+    - "Cannot access account administration"
+    - "Cannot make batch/async requests"
+    - "Individual image and stroke requests ONLY"
+
+  example:
+    description: "Generate client token"
+    code: |
+      curl -X POST https://api.mathpix.com/v3/app-tokens \
+        -H 'app_key: APP_KEY' \
+        -H 'Content-Type: application/json' \
+        --data '{"expires": 600}'
+
+# =============================================================================
+# V3/OCR-RESULTS ENDPOINT
+# =============================================================================
+v3_ocr_results:
+  url: "https://api.mathpix.com/v3/ocr-results"
+  method: "GET"
+  description: "Query previous OCR results"
+
+  query_parameters:
+    to_date:
+      type: "string"
+      format: "YYYY-MM-DD"
+      description: "End date filter"
+
+    from_date:
+      type: "string"
+      format: "YYYY-MM-DD"
+      description: "Start date filter"
+
+    page:
+      type: "integer"
+      default: 1
+      description: "Pagination page number"
+
+    per_page:
+      type: "integer"
+      default: 10
+      max: 100
+      description: "Results per page"
+
+    tags:
+      type: "array[string]"
+      description: "Filter by tags"
+
+    metadata:
+      type: "object"
+      description: "Filter by metadata key-value pairs"
+
+  response:
+    results:
+      type: "array[OCRResult]"
+      description: "List of OCR results"
+
+    total_count:
+      type: "integer"
+      description: "Total results matching filter"
+
+  example:
+    description: "Query recent results"
+    code: |
+      curl -H 'app_id: APP_ID' \
+        -H 'app_key: APP_KEY' \
+        'https://api.mathpix.com/v3/ocr-results?from_date=2026-01-01&per_page=50'
+
+# =============================================================================
+# V3/OCR-USAGE ENDPOINT
+# =============================================================================
+v3_ocr_usage:
+  url: "https://api.mathpix.com/v3/ocr-usage"
+  method: "GET"
+  description: "Track API consumption"
+
+  query_parameters:
+    to_date:
+      type: "string"
+      format: "YYYY-MM-DD"
+      description: "End date filter"
+
+    from_date:
+      type: "string"
+      format: "YYYY-MM-DD"
+      description: "Start date filter"
+
+  response:
+    usage:
+      type: "array[UsageRecord]"
+      description: "Usage records per day"
+
+  UsageRecord:
+    date:
+      type: "string"
+      format: "YYYY-MM-DD"
+    requests:
+      type: "integer"
+      description: "Number of API requests"
+    images:
+      type: "integer"
+      description: "Images processed"
+    pages:
+      type: "integer"
+      description: "PDF pages processed"
+
+  example:
+    description: "Get usage statistics"
+    code: |
+      curl -H 'app_id: APP_ID' \
+        -H 'app_key: APP_KEY' \
+        'https://api.mathpix.com/v3/ocr-usage?from_date=2026-01-01'
+
+# =============================================================================
+# EU REGION ENDPOINT
+# =============================================================================
+eu_region:
+  base_url: "https://eu-central-1.api.mathpix.com"
+  description: "GDPR-compliant EU data processing"
+  note: "All endpoints available with EU base URL"
+
+  usage:
+    description: "Replace api.mathpix.com with eu-central-1.api.mathpix.com"
+    example: "https://eu-central-1.api.mathpix.com/v3/text"
+
+# =============================================================================
+# RATE LIMITING & ERRORS
+# =============================================================================
+rate_limiting:
+  description: "API rate limits and error handling"
+
+  http_status_codes:
+    200:
+      description: "Success"
+    400:
+      description: "Bad request - invalid parameters"
+    401:
+      description: "Unauthorized - invalid credentials"
+    402:
+      description: "Payment required - quota exceeded"
+    403:
+      description: "Forbidden - access denied"
+    404:
+      description: "Not found - resource doesn't exist"
+    429:
+      description: "Too many requests - rate limited"
+    500:
+      description: "Internal server error"
+
+  error_response_format:
+    error:
+      type: "string"
+      description: "Human-readable error message"
+    error_info:
+      type: "object"
+      optional: true
+      fields:
+        id:
+          type: "string"
+          description: "Error identifier"
+        error:
+          type: "string"
+          description: "Detailed error message"
+
+  retry_strategy:
+    429:
+      action: "Exponential backoff"
+      initial_delay: "1 second"
+      max_delay: "60 seconds"
+    5xx:
+      action: "Retry with exponential backoff"
+      max_retries: 3

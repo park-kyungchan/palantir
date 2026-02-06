@@ -1,0 +1,154 @@
+{
+  "mappings": [
+    {
+      "vision_id": "problem_statement",
+      "vision_type": "text_block",
+      "ocr_text": "\\frac{a+b+c}{3} \\geq \\sqrt[3]{a b c}",
+      "iou_score": 0.1479,
+      "vision_bbox": [
+        11,
+        9,
+        770,
+        145
+      ],
+      "ocr_bbox": [
+        87,
+        55,
+        299,
+        127
+      ]
+    },
+    {
+      "vision_id": "given_inequality",
+      "vision_type": "equation",
+      "ocr_text": "\\frac{a+b+c}{3} \\geq \\sqrt[3]{a b c}",
+      "iou_score": 0.9953,
+      "vision_bbox": [
+        88,
+        55,
+        299,
+        127
+      ],
+      "ocr_bbox": [
+        87,
+        55,
+        299,
+        127
+      ]
+    },
+    {
+      "vision_id": "target_inequality",
+      "vision_type": "equation",
+      "ocr_text": "\\frac{a+b}{2} \\geq \\sqrt{a b}",
+      "iou_score": 0.3081,
+      "vision_bbox": [
+        190,
+        130,
+        490,
+        180
+      ],
+      "ocr_bbox": [
+        178,
+        140,
+        336,
+        202
+      ]
+    },
+    {
+      "vision_id": "proof_box",
+      "vision_type": "region",
+      "ocr_text": "\\begin{aligned}\n\\left(\\frac{a+b}{2}\\right)^{3} & =\\left(\\frac{a+b+\\sqrt{(\\text { 가 })}}{3}\\right)^{3} \\\\\n& \\geq(\\sqrt[3]{a b \\times(\\text { 가 })})^{3}=a b \\times\n\\end{aligned}",
+      "iou_score": 0.2189,
+      "vision_bbox": [
+        20,
+        200,
+        760,
+        600
+      ],
+      "ocr_bbox": [
+        105,
+        343,
+        555,
+        487
+      ]
+    },
+    {
+      "vision_id": "proof_step_1",
+      "vision_type": "equation",
+      "ocr_text": "\\frac{a+b+c}{3} \\geq \\sqrt[3]{a b c} \\text { 이므로 }",
+      "iou_score": 0.4073,
+      "vision_bbox": [
+        80,
+        260,
+        540,
+        330
+      ],
+      "ocr_bbox": [
+        297,
+        270,
+        581,
+        334
+      ]
+    },
+    {
+      "vision_id": "proof_step_2",
+      "vision_type": "equation",
+      "ocr_text": "\\begin{aligned}\n\\left(\\frac{a+b}{2}\\right)^{3} & =\\left(\\frac{a+b+\\sqrt{(\\text { 가 })}}{3}\\right)^{3} \\\\\n& \\geq(\\sqrt[3]{a b \\times(\\text { 가 })})^{3}=a b \\times\n\\end{aligned}",
+      "iou_score": 0.4007,
+      "vision_bbox": [
+        150,
+        350,
+        640,
+        420
+      ],
+      "ocr_bbox": [
+        105,
+        343,
+        555,
+        487
+      ]
+    },
+    {
+      "vision_id": "proof_step_3",
+      "vision_type": "text_block",
+      "ocr_text": "\\begin{aligned}\n\\left(\\frac{a+b}{2}\\right)^{3} & =\\left(\\frac{a+b+\\sqrt{(\\text { 가 })}}{3}\\right)^{3} \\\\\n& \\geq(\\sqrt[3]{a b \\times(\\text { 가 })})^{3}=a b \\times\n\\end{aligned}",
+      "iou_score": 0.2358,
+      "vision_bbox": [
+        50,
+        440,
+        500,
+        480
+      ],
+      "ocr_bbox": [
+        105,
+        343,
+        555,
+        487
+      ]
+    },
+    {
+      "vision_id": "proof_conclusion",
+      "vision_type": "equation",
+      "ocr_text": "\\text { (나) }",
+      "iou_score": 0.1919,
+      "vision_bbox": [
+        190,
+        580,
+        450,
+        640
+      ],
+      "ocr_bbox": [
+        235,
+        538,
+        335,
+        618
+      ]
+    }
+  ],
+  "statistics": {
+    "vision_elements": 14,
+    "elements_with_bbox": 10,
+    "matched": 8,
+    "match_rate": 0.8
+  }
+}

@@ -4,11 +4,41 @@
     "hookify@claude-plugins-official": [
       {
         "scope": "user",
-        "installPath": "/home/palantir/.claude/plugins/cache/claude-plugins-official/hookify/27d2b86d72da",
-        "version": "27d2b86d72da",
+        "installPath": "/home/palantir/.claude/plugins/cache/claude-plugins-official/hookify/236752ad9ab3",
+        "version": "236752ad9ab3",
         "installedAt": "2026-01-18T06:59:44.297Z",
-        "lastUpdated": "2026-01-30T05:29:19.094Z",
+        "lastUpdated": "2026-02-06T03:09:20.892Z",
         "gitCommitSha": "96276205880a60fd66bbae981f5ab568e70c4cbf"
+      }
+    ],
+    "superpowers@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/home/palantir/.claude/plugins/cache/claude-plugins-official/superpowers/4.2.0",
+        "version": "4.2.0",
+        "installedAt": "2026-02-05T14:24:43.476Z",
+        "lastUpdated": "2026-02-06T03:09:21.602Z",
+        "gitCommitSha": "06b92f36820f38175b2ed6ff3f8df45157d54731"
+      }
+    ],
+    "superpowers-developing-for-claude-code@superpowers-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/home/palantir/.claude/plugins/cache/superpowers-marketplace/superpowers-developing-for-claude-code/0.3.1",
+        "version": "0.3.1",
+        "installedAt": "2026-02-06T14:09:01.081Z",
+        "lastUpdated": "2026-02-06T14:09:01.081Z",
+        "gitCommitSha": "74afe935da49efe782907e837a27ce618498099a"
+      }
+    ],
+    "superpowers@superpowers-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/home/palantir/.claude/plugins/cache/superpowers-marketplace/superpowers/4.2.0",
+        "version": "4.2.0",
+        "installedAt": "2026-02-06T14:09:42.592Z",
+        "lastUpdated": "2026-02-06T14:09:42.592Z",
+        "gitCommitSha": "a98c5dfc9de0df5318f4980d91d24780a566ee60"
       }
     ]
   }

@@ -1,8 +1,0 @@
-{
-  "buildId": "pro-a69a",
-  "concept": "Progressive-Disclosure",
-  "selectedLevel": 50,
-  "selectedComponents": ["Skills", "Agents", "Hooks", "Patterns"],
-  "capabilities": ["S1", "S2", "S3", "A1", "A2", "H1", "H2", "P1", "P2", "P3", "P5", "P7", "T1", "T2"],
-  "selectionDate": "2026-01-23"
-}
