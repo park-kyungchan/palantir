@@ -1,6 +1,6 @@
 # Agent Teams — Team Constitution
 
-> **Version:** 1.0 | **Architecture:** Agent Teams (Opus 4.6 Native)
+> **Version:** 2.0 | **Architecture:** Agent Teams (Opus 4.6 Native) | **DIA Enforcement:** Enabled
 > **Model:** claude-opus-4-6 (all instances) | **Runtime:** WSL2 + tmux + Claude Code CLI
 > **Subscription:** Claude Max X20 (API-Free, CLI-Native only)
 
@@ -33,6 +33,7 @@
 **Shift-Left:** Pre-Execution (Phases 1-5) = 70-80% effort. Execution (6-8) = 20-30%.
 **Gate Rule:** Lead approves EVERY phase transition. Results: APPROVE / ITERATE / ABORT.
 **Iteration Budget:** Max 3 iterations per phase. On exceeded: ABORT or reduce scope.
+**DIA Enforcement:** Every task assignment requires Context Injection + Impact Verification before work begins.
 
 ---
 
@@ -41,15 +42,22 @@
 ### Lead (Pipeline Controller)
 - Operates in **Delegate Mode** — NEVER modifies code directly
 - Responsibilities: spawn, assign, approve gates, message, terminate
-- Maintains `orchestration-plan.md` and `global-context.md`
-- Runs DIA (Dynamic-Impact-Awareness) engine continuously
-- Reads teammate outputs at code-level for cross-impact analysis
+- Maintains `orchestration-plan.md` and `global-context.md` (versioned: GC-v{N})
+- **Context Injection:** Embeds FULL global-context.md + task-context.md in EVERY directive
+- **Impact Verification:** Reviews teammate [IMPACT-ANALYSIS], conducts [VERIFICATION-QA] if needed
+- **Re-education:** Max 3 [REJECTED] iterations per teammate, then ABORT + re-spawn
+- Runs DIA engine continuously (see §6)
+- Sole writer of Task API (TaskCreate/TaskUpdate) — teammates are read-only
 
 ### Teammates
-- **Plan-Before-Execute:** Submit plan to Lead before ANY mutation (file edit, git op)
-- Report completion via Shared Task List + Direct Message to Lead
-- Reference `task-context.md` before EVERY Task API call ([PERMANENT])
-- Sub-Orchestrator capable: decompose tasks, spawn subagents via Task tool
+- **Context Receipt:** Parse [INJECTION] in every directive (global-context.md + task-context.md)
+- **Impact Analysis:** Submit [IMPACT-ANALYSIS] to Lead BEFORE any work [MANDATORY]
+- **Plan-Before-Execute:** Submit [PLAN] to Lead before ANY mutation (implementer/integrator)
+- Task API: **READ-ONLY** (TaskList/TaskGet) — TaskCreate/TaskUpdate는 Lead 전용
+- Report completion via SendMessage to Lead
+- Reference injected global-context.md for pipeline awareness [PERMANENT]
+- Reference injected task-context.md for own assignment [PERMANENT]
+- Sub-Orchestrator capable: spawn subagents via Task tool (not Task API)
 - Write L1/L2/L3 files at ~75% context pressure, then report CONTEXT_PRESSURE
 
 ---
@@ -58,16 +66,25 @@
 
 | Type | Direction | When |
 |------|-----------|------|
-| Phase Directive | Lead → Teammate | Phase entry — task assignment |
-| Status Report | Teammate → Lead | Task completion or blocking |
-| Plan Submission | Teammate → Lead | Before any mutation |
-| Approval/Rejection | Lead → Teammate | Response to plan |
-| Phase Broadcast | Lead → All | Phase transitions ONLY (cost = 1:N) |
-| Peer Query | Teammate → Teammate | Route through Lead preferred |
+| Directive + Injection | Lead → Teammate | Spawn, assignment, correction, recovery |
+| Impact Analysis | Teammate → Lead | Before any work (mandatory) |
+| Verification Q&A | Lead ↔ Teammate | During impact review |
+| Re-education | Lead → Teammate | After failed verification (max 3) |
+| Context Update | Lead → Teammate | When global-context.md changes |
+| Update ACK | Teammate → Lead | After receiving context update |
+| Status Report | Teammate → Lead | Completion or blocking |
+| Plan Submission | Teammate → Lead | Before mutation (implementer/integrator) |
+| Approval/Rejection | Lead → Teammate | Response to impact or plan |
+| Phase Broadcast | Lead → All | Phase transitions ONLY |
 
 **Formats:**
-- `[DIRECTIVE] Phase {N}: {task} | Files: {list}`
-- `[STATUS] Phase {N} | {COMPLETE|BLOCKED|IN_PROGRESS} | {details}`
+- `[DIRECTIVE] Phase {N}: {task} | Files: {list} | [INJECTION] GC-v{ver}`
+- `[IMPACT-ANALYSIS] Phase {N} | Attempt {X}/{max}`
+- `[IMPACT_VERIFIED] Proceed.` / `[IMPACT_REJECTED] Attempt {X}/{max} FAILED.`
+- `[VERIFICATION-QA] Q: {question} | RC-{XX}`
+- `[CONTEXT-UPDATE] GC-v{ver} | Delta: {changes}`
+- `[ACK-UPDATE] GC-v{ver} received. Impact: {assessment}`
+- `[STATUS] Phase {N} | {COMPLETE|BLOCKED|IN_PROGRESS|CONTEXT_RECEIVED|CONTEXT_LOST}`
 - `[PLAN] Phase {N} | Files: {list} | Changes: {desc} | Risk: {low|med|high}`
 - `[APPROVED] Proceed.` / `[REJECTED] Reason: {details}. Revise: {guidance}.`
 
@@ -98,10 +115,19 @@
 5. L1/L2/L3 handoff files generated?
 
 ### DIA Engine (Lead)
-- **Continuous:** Read teammate outputs → compare against Phase 4 design → detect deviations
-- **Gate-time:** Full cross-impact analysis across all teammate outputs
-- **Deviation response:** COSMETIC (log) / INTERFACE_CHANGE (update task-context) / ARCHITECTURE_CHANGE (re-plan)
-- **User direct intervention:** Detect via Task List mutations → re-evaluate orchestration plan
+- **Task API:** Lead sole writer (TaskCreate/TaskUpdate). CLAUDE_CODE_TASK_LIST_ID for persistence.
+- **Context Injection:** Embed FULL global-context.md (GC-v{N}) + task-context.md in every [DIRECTIVE]
+- **Impact Verification:** Review every [IMPACT-ANALYSIS]. Conduct [VERIFICATION-QA] for gaps.
+- **Re-education:** On [REJECTED], re-inject with corrections. Max 3 → ABORT + re-spawn.
+- **Continuous:** Read teammate L1/L2/L3 → compare against Phase 4 design → detect deviations
+- **Propagation:** On deviation → bump GC-v{N} → send [CONTEXT-UPDATE] to affected teammates
+- **Gate-time:** Full cross-impact analysis. No gate while any teammate has stale context.
+- **Deviation:** COSMETIC (log) / INTERFACE_CHANGE (re-inject) / ARCHITECTURE_CHANGE (re-plan)
+
+### global-context.md Version Tracking
+- YAML front matter: `version: GC-v{N}` (단조 증가)
+- Lead가 orchestration-plan.md에 teammate별 수신 버전 추적
+- Drift 감지 시 [CONTEXT-UPDATE] 발송. Gate 평가 전 전원 최신 확인.
 
 ### L1/L2/L3 Handoff
 - L1: Index (YAML, ≤50 lines) — file list, status, decisions, unresolved items
@@ -142,19 +168,53 @@
 2. Read Shared Task List
 3. Read current phase `gate-record.yaml`
 4. Read active teammates' L1 indexes
+5. Re-inject: Send [DIRECTIVE]+[INJECTION] with latest GC-v{N} to each active teammate
 
 **Teammate recovery:**
-1. Read own `task-context.md`
+1. Receive [INJECTION] from Lead (global-context.md + task-context.md)
 2. Read own L1-index.yaml → L2-summary.md → L3-full/ as needed
-3. Resume work from last recorded state
+3. Re-submit [IMPACT-ANALYSIS] to Lead
+4. Wait for [IMPACT_VERIFIED] before resuming work
 
 **NEVER** proceed with summarized/remembered information only.
 
 ---
 
-## [PERMANENT] Semantic Integrity Guard
+## [PERMANENT] Semantic Integrity Guard — DIA Enforcement
 
-Every agent MUST read `.claude/references/task-api-guideline.md` before ANY Task API call.
-Every teammate MUST read `task-context.md` before EVERY Task API call.
-Every TaskCreate MUST include: objective, context in global pipeline, interface contracts,
-file ownership, dependency chain, acceptance criteria, and semantic integrity check.
+### WHY This Exists
+Protocol alone is not enforcement. Without physical verification, teammates may skip context reading,
+work with stale understanding, or produce code that conflicts with other teammates' outputs.
+DIA Enforcement converts "trust-based" protocol into "verify-before-proceed" enforcement.
+Prevention cost (5-14K tokens/teammate) << Rework cost (full pipeline re-execution).
+
+### Lead — Enforcement Duties
+1. **Task API Sovereignty:** Sole writer of TaskCreate/TaskUpdate. Teammates blocked by disallowedTools.
+2. **Context Injection (CIP):** Embed FULL global-context.md (GC-v{N}) + task-context.md in EVERY [DIRECTIVE].
+   - WHY: Eliminates "didn't read" failure. Physical embedding = guaranteed delivery.
+   - Injection Points: spawn, assignment, correction, recovery, phase transition (§11 in task-api-guideline.md)
+3. **Impact Verification (DIAVP):** Review every [IMPACT-ANALYSIS] against RC checklist before [IMPACT_VERIFIED].
+   - WHY: Eliminates "read but didn't understand" failure. Echo-back = understanding proof.
+   - TIER 1 (implementer/integrator): 6 sections, 10 RC items, max 3 attempts
+   - TIER 2 (architect/tester): 4 sections, 7 RC items, max 3 attempts
+   - TIER 3 (researcher): 3 sections, 5 RC items, max 2 attempts
+   - TIER 0 (devils-advocate): Exempt — critique is inherent verification
+4. **Enforcement Gate:** NEVER approve [PLAN] without prior [IMPACT_VERIFIED]. Gate A → Gate B is inviolable.
+5. **Propagation:** On ANY scope/interface change → bump GC-v{N} → [CONTEXT-UPDATE] to affected teammates.
+   Gate blocked while ANY teammate has stale context version.
+6. **Failure Escalation:** 3x [IMPACT_REJECTED] → ABORT teammate → re-spawn with enhanced context injection.
+
+### Teammates — Compliance Duties
+1. **Context Receipt:** Parse [INJECTION] in every [DIRECTIVE]. Send [STATUS] CONTEXT_RECEIVED with version.
+   - Failure to confirm = Lead will not proceed with verification.
+2. **Impact Analysis:** Submit [IMPACT-ANALYSIS] in own words (copy-paste = RC-01 FAIL) BEFORE any work.
+   - No file mutations, no code execution, no subagent spawning until [IMPACT_VERIFIED] received.
+3. **Task API:** READ-ONLY (TaskList/TaskGet). TaskCreate/TaskUpdate enforced as disallowedTools.
+4. **Context Updates:** On [CONTEXT-UPDATE] → [ACK-UPDATE] with impact assessment. Pause if affected.
+5. **Recovery:** On auto-compact → report [CONTEXT_LOST] → receive [INJECTION] → re-submit [IMPACT-ANALYSIS].
+6. **Persistence:** State via L1/L2/L3 files. Communication via SendMessage.
+
+### Cross-References
+- Protocol details: `.claude/references/task-api-guideline.md` §11 (DIA Enforcement Protocol)
+- Agent-specific tiers: `.claude/agents/{role}.md` Protocol section
+- Verification checklist: RC-01~RC-10 (see task-api-guideline.md §11)
