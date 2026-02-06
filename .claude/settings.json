@@ -19,6 +19,73 @@
       "Bash(chmod:777:*)"
     ]
   },
+  "hooks": {
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-subagent-start.sh",
+            "timeout": 10,
+            "statusMessage": "Logging teammate spawn"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-subagent-stop.sh",
+            "timeout": 10,
+            "statusMessage": "Logging teammate termination"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-task-update.sh",
+            "timeout": 10,
+            "statusMessage": "Logging task state change"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-pre-compact.sh",
+            "timeout": 30,
+            "statusMessage": "Saving orchestration state before compaction"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-session-compact.sh",
+            "timeout": 15,
+            "statusMessage": "DIA recovery after compaction"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "superpowers-developing-for-claude-code@superpowers-marketplace": true,
     "superpowers@superpowers-marketplace": true
