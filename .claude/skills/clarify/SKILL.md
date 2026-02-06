@@ -24,7 +24,7 @@ user-invocable: true
 disable-model-invocation: false
 context: fork
 model: opus
-version: "3.0.0"
+version: "3.1.0"
 argument-hint: "<request> | --resume <slug> | --list"
 allowed-tools:
   - Read
@@ -40,6 +40,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/parallel-agent.sh"
       timeout: 5000
+      once: true
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/clarify-validate.sh"
@@ -65,7 +66,6 @@ agent_delegation:
       use_when: "Cross-domain clarification"
   slug_orchestration:
     enabled: true
-  default_mode: true  # V1.1.0: Auto-delegation by default
     source: "user input or active workload"
     action: "create new workload context"
   sub_agent_permissions:
@@ -186,6 +186,22 @@ agent_internal_feedback_loop:
   description: |
     Local clarification refinement loop before presenting to user.
     Self-validates requirement clarity and iterates until quality threshold met.
+
+# =============================================================================
+# P5: Review Gate (EFL V3.0 Compliance)
+# =============================================================================
+review_gate:
+  enabled: true
+  phase: "pre_research"
+  criteria:
+    - "requirements_complete"
+    - "ambiguity_resolved"
+    - "scope_defined"
+    - "design_intent_captured"
+  auto_approve: false
+  description: |
+    Review gate before handoff to /research.
+    Ensures clarified requirements are complete and unambiguous.
 ---
 
 ### Auto-Delegation Trigger (CRITICAL)

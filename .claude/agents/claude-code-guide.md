@@ -5,6 +5,7 @@ description: |
   Use when user asks questions about Claude Code features, hooks, MCP servers,
   settings, IDE integrations, or Anthropic API usage.
   Provides accurate, up-to-date information from official sources.
+memory: user
 tools:
   - Read
   - Grep
@@ -17,8 +18,6 @@ tools:
 disallowedTools:
   - Task
   - Bash
-requiredTools:
-  - mcp__sequential-thinking__sequentialthinking
 model: opus
 permissionMode: default
 ---
@@ -82,7 +81,7 @@ Provide accurate guidance for:
 
 **Topics:**
 - Agent definition format (YAML frontmatter)
-- Tool configuration (`tools`, `disallowedTools`, `requiredTools`)
+- Tool configuration (`tools`, `disallowedTools`)
 - Model selection (`model: opus | sonnet | haiku`)
 - Permission modes
 - Custom agent creation
@@ -241,7 +240,7 @@ summary: |
 status: success | partial | needs_more_info
 
 priority: CRITICAL | HIGH | MEDIUM | LOW
-l2Path: .agent/outputs/claude-code-guide/{taskId}.md
+l2Path: .agent/prompts/{workload-slug}/outputs/claude-code-guide/{taskId}.md
 requiresL2Read: true | false
 ```
 
@@ -249,7 +248,7 @@ requiresL2Read: true | false
 
 For comprehensive documentation research, save details to:
 ```
-.agent/outputs/claude-code-guide/{taskId}.md
+.agent/prompts/{workload-slug}/outputs/claude-code-guide/{taskId}.md
 ```
 
 **When to use L2/L3:**
@@ -264,4 +263,4 @@ For comprehensive documentation research, save details to:
 
 ---
 
-*Claude Code Guide Agent | V7.1.6 Compatible*
+*Claude Code Guide Agent | V7.4 Compatible*

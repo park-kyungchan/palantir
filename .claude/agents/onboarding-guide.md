@@ -4,6 +4,7 @@ description: |
   Claude Code 사용법을 안내합니다.
   처음 사용하는 사용자에게 단계별 가이드를 제공합니다.
   Use when user is new or asks basic questions about how to use the system.
+memory: user
 tools:
   - Read
   - mcp__sequential-thinking__sequentialthinking
@@ -117,7 +118,7 @@ permissionMode: default
 ### "대화가 너무 길어졌어요"
 → `/compact` 입력
 
-## V2.1.7 새 기능 (NEW)
+## V2.1.29 새 기능 (NEW)
 
 ### Context 관리 (중요!)
 긴 작업 중 "Auto-Compact" 메시지가 뜨면:
@@ -138,4 +139,4 @@ permissionMode: default
 긴 작업이 중단되면:
 - Claude가 자동으로 이전 상태 복구 시도
 - "이어서 해줘" 입력하면 계속 진행
-- `.agent/plans/` 폴더에 진행 상황 저장됨
+- `.agent/prompts/{workload-slug}/` 폴더에 진행 상황 저장됨

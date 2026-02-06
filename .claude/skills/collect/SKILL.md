@@ -8,7 +8,7 @@ description: |
   Handoff: /synthesis for traceability validation
 user-invocable: true
 model: opus
-version: "4.0.0"
+version: "4.1.0"
 argument-hint: "[--all | --phase <phase-id> | --from-session | --from-git]"
 allowed-tools:
   - Read
@@ -24,6 +24,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
       timeout: 5000
+      once: true
 
 # =============================================================================
 # EFL Pattern Configuration (P1-P6)
@@ -69,6 +70,20 @@ agent_internal_feedback_loop:
     - "All worker outputs collected"
     - "Completion manifests verified"
     - "No missing deliverables"
+
+# P5: Review Gate (EFL V3.0 Compliance)
+review_gate:
+  enabled: true
+  phase: "pre_synthesis"
+  criteria:
+    - "all_workers_completed"
+    - "no_blockers_remaining"
+    - "outputs_validated"
+    - "integrity_verified"
+  auto_approve: false
+  description: |
+    Review gate before handoff to /synthesis.
+    Ensures all worker results are collected and verified.
 ---
 
 # /collect - Result Aggregation Agent

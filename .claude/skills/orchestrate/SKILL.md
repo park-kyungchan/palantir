@@ -8,7 +8,7 @@ description: |
   Handoff: /assign --workload {slug}
 user-invocable: true
 model: opus
-version: "4.0.0"
+version: "4.1.0"
 argument-hint: "--plan-slug <slug> | <task-description>"
 allowed-tools:
   - Read
@@ -26,6 +26,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/parallel-agent.sh"
       timeout: 5000
+      once: true
   PreToolUse:
     - type: command
       command: "/home/palantir/.claude/hooks/orchestrate-validate.sh"
@@ -78,6 +79,17 @@ agent_internal_feedback_loop:
     - "Dependencies form DAG (no cycles)"
     - "Target files are specified for each phase"
     - "Phase count is reasonable (3-10)"
+
+# P5: Review Gate
+review_gate:
+  enabled: true
+  phase: "pre_assignment"
+  criteria:
+    - "all_tasks_created"
+    - "dependencies_valid"
+    - "worker_prompts_generated"
+    - "context_yaml_written"
+  auto_approve: false
 ---
 
 # /orchestrate - Task Decomposition Engine

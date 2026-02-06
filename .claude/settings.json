@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "ORION_WORKSPACE_ROOT": "/home/palantir",
     "ORION_PROJECTS": "hwpx,lib/owpml",
@@ -29,9 +30,11 @@
       "Read(**/secrets/**)",
       "Read(**/*credentials*)",
       "Read(**/.ssh/id_*)",
-      "Bash(rm:-rf:*)",
-      "Bash(sudo:rm:*)",
-      "Bash(chmod:777:*)"
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Bash(rm -rf *)",
+      "Bash(sudo rm *)",
+      "Bash(chmod 777 *)"
     ],
     "additionalDirectories": [
       "/home/palantir",
@@ -46,7 +49,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/session-start.sh"
+            "command": "/home/palantir/.claude/hooks/session-start.sh",
+            "statusMessage": "Initializing session..."
           },
           {
             "type": "command",
@@ -55,76 +59,29 @@
         ]
       }
     ],
-    "SessionEnd": [
+    "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/session-end.sh"
+            "command": "/home/palantir/.claude/hooks/user-prompt-submit.sh",
+            "timeout": 5
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/governance-check.sh"
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/security-gate.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
         "matcher": "Edit|Write",
         "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/governance-check.sh"
-          },
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/auto-backup.sh"
           },
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/l2l3-access-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/task-first-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/read-before-edit-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
             "command": "/home/palantir/.claude/hooks/enforcement/sensitive-files-gate.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/workload-path-gate.sh",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
       },
@@ -134,104 +91,23 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/enforcement/sensitive-files-gate.sh",
-            "timeout": 5000
+            "timeout": 5
           }
         ]
-      },
+      }
+    ],
+    "PermissionRequest": [
       {
-        "matcher": "Task",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-interceptor.sh"
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-context-injector.sh"
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "TaskCreate",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/sequential-thinking-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/orchestrating-l2l3-synthesis-gate.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "TaskUpdate",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/context-recovery-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/blocked-task-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/output-preservation-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/task-lifecycle-gate.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "EnterPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/plan-mode-gate.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/enforcement/pipeline-order-gate.sh",
-            "timeout": 5000
+            "command": "/home/palantir/.claude/hooks/permission-request-handler.sh",
+            "timeout": 5
           }
         ]
       }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/task-pipeline/pd-task-processor.sh"
-          }
-        ]
-      },
       {
         "matcher": "AskUserQuestion",
         "hooks": [
@@ -247,26 +123,94 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/tracking/read-tracker.sh",
-            "timeout": 3000
+            "timeout": 3
           }
         ]
       },
       {
-        "matcher": "TaskCreate|TaskUpdate",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/tracking/task-tracker.sh",
-            "timeout": 3000
+            "command": "/home/palantir/.claude/hooks/async-test-runner.sh",
+            "async": true,
+            "timeout": 300,
+            "statusMessage": "Running tests in background..."
           }
         ]
-      },
+      }
+    ],
+    "PostToolUseFailure": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/session-health.sh"
+            "command": "/home/palantir/.claude/hooks/tool-failure-handler.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/notification-router.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/subagent-start.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/subagent-stop.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Check if there are uncompleted tasks that should be finished before stopping. Context: $ARGUMENTS. If stop_hook_active is true, approve the stop to prevent infinite loops. Otherwise check if all assigned in_progress tasks are complete. Return {\"ok\": true} to allow stop or {\"ok\": false, \"reason\": \"description of remaining work\"} to continue.",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/pre-compact-save.sh",
+            "statusMessage": "Saving context before compaction..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/session-end.sh"
           }
         ]
       }
@@ -274,7 +218,10 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
+    "command": "bash /home/palantir/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
   },
   "language": "Korean"
 }

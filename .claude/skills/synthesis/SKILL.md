@@ -7,7 +7,7 @@ description: |
 user-invocable: true
 context: fork
 model: opus
-version: "4.1.0"
+version: "4.2.0"
 argument-hint: "[--strict | --lenient | --dry-run] [--workload <slug>]"
 allowed-tools:
   - Read
@@ -21,6 +21,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
       timeout: 5000
+      once: true
 
 # EFL Pattern Configuration
 agent_delegation:
@@ -44,6 +45,21 @@ parallel_agent_config:
     simple: 1
     moderate: 2
     complex: 3
+
+# P3: Synthesis Configuration
+synthesis_config:
+  phase_3a_l2_horizontal:
+    enabled: true
+    validation_criteria:
+      - semantic_matching_consistency
+      - cross_deliverable_alignment
+      - coverage_calculation_accuracy
+  phase_3b_l3_vertical:
+    enabled: true
+    validation_criteria:
+      - traceability_matrix_valid
+      - quality_validation_3c_passed
+      - convergence_tracking_accurate
 
 agent_internal_feedback_loop:
   enabled: true

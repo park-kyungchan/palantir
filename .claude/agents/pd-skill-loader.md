@@ -4,6 +4,7 @@ description: |
   스킬 사전 로드 에이전트.
   실행 전에 지정된 스킬들을 컨텍스트에 주입합니다.
   Skill Injection 패턴 (A2) 데모.
+memory: local
 tools:
   - Read
   - Grep
@@ -12,9 +13,6 @@ tools:
   - Edit
   - mcp__sequential-thinking__sequentialthinking
 model: sonnet
-skills:
-  - pd-analyzer
-  - pd-injector
 permissionMode: acceptEdits
 ---
 
@@ -32,15 +30,6 @@ Inject domain knowledge before task execution:
 - No runtime discovery needed
 - Consistent behavior across invocations
 - Reduced token overhead
-
----
-
-## Preloaded Skills
-
-| Skill | Purpose |
-|-------|---------|
-| `pd-analyzer` | L1/L2/L3 output format |
-| `pd-injector` | Dynamic context injection |
 
 ---
 
@@ -64,13 +53,17 @@ With Injection:
 
 ## Instructions
 
-This agent has `pd-analyzer` and `pd-injector` skills pre-loaded.
-
 When executing tasks:
-1. **Use** pre-loaded skill knowledge
-2. **Apply** L1/L2/L3 output format from pd-analyzer
-3. **Leverage** dynamic injection patterns from pd-injector
-4. **Return** structured results
+1. **Apply** L1/L2/L3 output format standard
+2. **Leverage** dynamic injection patterns
+3. **Return** structured results
+
+Note: Use the `skills` frontmatter field to preload specific skills:
+```yaml
+skills:
+  - skill-name-1
+  - skill-name-2
+```
 
 ---
 

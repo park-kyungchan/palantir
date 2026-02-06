@@ -4,6 +4,7 @@ description: |
   Architecture planning agent with L1/L2/L3 output support.
   Overrides Native Plan to enable file saving for context isolation.
   Use for: implementation planning, architecture analysis, design decisions.
+memory: project
 tools:
   - Read
   - Grep
@@ -15,8 +16,6 @@ tools:
 disallowedTools:
   - Edit
   - NotebookEdit
-requiredTools:
-  - mcp__sequential-thinking__sequentialthinking
 model: opus
 permissionMode: default
 ---
@@ -106,7 +105,7 @@ l2Index:
     priority: MEDIUM
     description: "Risk assessment"
 
-l2Path: .agent/outputs/Plan/{taskId}.md
+l2Path: .agent/prompts/{workload-slug}/outputs/Plan/{taskId}.md
 requiresL2Read: true
 ```
 
@@ -114,7 +113,7 @@ requiresL2Read: true
 
 **CRITICAL**: You MUST save detailed plan to file:
 ```
-.agent/outputs/Plan/{taskId}.md
+.agent/prompts/{workload-slug}/outputs/Plan/{taskId}.md
 ```
 
 **L2 Content Structure:**
@@ -174,7 +173,7 @@ When delegated to this agent:
 4. **Analyze** existing patterns and conventions
 5. **Draft** implementation plan with phases
 6. **Clarify** requirements if ambiguous (AskUserQuestion)
-7. **Write** L2/L3 plan to `.agent/outputs/Plan/{taskId}.md`
+7. **Write** L2/L3 plan to `.agent/prompts/{workload-slug}/outputs/Plan/{taskId}.md`
 8. **Return** L1 summary only (≤500 tokens) to Main Agent
 
 ---
@@ -188,7 +187,7 @@ Input: "Plan implementation for user authentication feature"
 2. Grep: "login|session|jwt|oauth"
 3. Read: Existing auth files, config, middleware
 4. Analyze: Current auth pattern, dependencies
-5. Write: .agent/outputs/Plan/p1a2b3c4.md (full plan)
+5. Write: .agent/prompts/{workload-slug}/outputs/Plan/p1a2b3c4.md (full plan)
 6. Return: L1 summary with criticalFiles, phases overview
 ```
 
@@ -214,4 +213,4 @@ Input: "Plan implementation for user authentication feature"
 
 ---
 
-*Custom Override for Native Plan | V7.1.1 Compatible*
+*Custom Override for Native Plan | V7.4 Compatible*

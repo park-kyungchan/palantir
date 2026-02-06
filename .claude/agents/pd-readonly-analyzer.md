@@ -4,6 +4,7 @@ description: |
   읽기 전용 분석 에이전트.
   코드베이스를 분석하되 수정하지 않습니다.
   Tool Restrictions 패턴 (A1) 데모.
+memory: project
 tools:
   - Read
   - Grep
@@ -67,7 +68,7 @@ l2Index:
     priority: HIGH
     description: "Detailed analysis findings"
 
-l2Path: .agent/outputs/pd-readonly-analyzer/{taskId}.md
+l2Path: .agent/prompts/{workload-slug}/outputs/pd-readonly-analyzer/{taskId}.md
 ```
 
 ---

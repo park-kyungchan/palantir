@@ -1,7 +1,68 @@
 # Task API Integration Guideline
 
-> **Version:** 2.0.0 | **Last Updated:** 2026-02-01
-> **Purpose:** Comprehensive TodoWrite System, Dynamic Schedule Management, Hook-based Behavioral Enforcement
+> **Version:** 3.1.0 | **Last Updated:** 2026-02-06
+> **Purpose:** Comprehensive TodoWrite System, Dynamic Schedule Management, Hook-based Behavioral Enforcement, Orchestrator Decision Framework
+
+---
+
+## [CRITICAL] Task ID Collision Resolution (V2.1.0)
+
+> **Issue:** Hook의 `task-lifecycle-gate.sh`가 `.claude/tasks/` 하위 **모든 세션 디렉토리**를 검색하여 Task ID로 매칭
+
+### Problem Symptoms
+
+```
+PreToolUse:TaskUpdate hook blocking error:
+"Invalid status transition: completed → in_progress"
+
+실제 상황: 현재 세션 Task는 pending 상태이나,
+이전 세션의 동일 ID Task가 completed 상태로 먼저 발견됨
+```
+
+### Root Cause
+
+```
+.claude/tasks/
+├── palantir-dev/           # 이전 세션 (Task #10 = completed)
+│   └── 10.json
+├── palantir-dev-cow-pipeline-20260202/  # 현재 세션 (Task #10 = pending)
+│   └── 10.json
+```
+
+Hook의 `get_task_status()` 함수가 glob 패턴으로 **모든 디렉토리**를 순회하며 먼저 발견된 파일의 상태를 반환.
+
+### Resolution Steps
+
+1. **현재 세션 디렉토리 확인:**
+   ```bash
+   ls /home/palantir/.claude/tasks/
+   ```
+
+2. **Task JSON 파일 직접 수정:**
+   ```bash
+   TASK_DIR="/home/palantir/.claude/tasks/{current-session}"
+
+   cat > "$TASK_DIR/N.json" << 'EOF'
+   {
+     "id": "N",
+     "subject": "Task subject",
+     "description": "Task description",
+     "status": "completed",
+     "blocks": [],
+     "blockedBy": []
+   }
+   EOF
+   ```
+
+3. **TaskList로 상태 확인:**
+   ```
+   TaskList → 모든 Task가 completed 상태 확인
+   ```
+
+### Prevention
+
+- 새 세션 시작 시 이전 세션의 stale Task 정리
+- Task ID 네임스페이스 충돌 방지를 위한 세션별 prefix 고려
 
 ---
 
@@ -595,7 +656,10 @@ TaskCreate({ subject: "/synthesis 실행", metadata: { phase: "synthesis" } })
 
 ## Hooks 연계 패턴 (코드레벨 분석)
 
-### Hook 분류 (26개)
+> **Note:** This section documents the hook inventory from code-level analysis V1.4.0.
+> For current hook count (50 files), see CLAUDE.md Section 7. Directory Structure.
+
+### Hook 분류 (Historical - 26개 documented at V1.4.0)
 
 | 분류 | Hooks | 역할 |
 |------|-------|------|
@@ -833,7 +897,9 @@ metadata:
 
 ## Section 12: Hook Integration (Code-Level Analysis V1.4.0)
 
-### Hook 분류 (27개)
+> **Note:** This section documents hooks at the time of analysis (V1.4.0). Current hook count is 50 files.
+
+### Hook 분류 (Historical - 27개 at V1.4.0)
 
 | 분류 | 파일 수 | Task API 연계 |
 |------|--------|---------------|
@@ -1122,7 +1188,694 @@ log_tracking()           # tracking 로그 기록
 
 ---
 
-> **Version:** 2.0.0 (Enforcement Architecture - Hook-Based Behavioral Enforcement)
+## Section 17: Orchestrator Decision Framework (V3.0.0)
+
+> **핵심 원칙:** Main Agent는 Orchestrator-Role로서 명확한 의사결정 시점과 규칙을 따름
+
+### 17.1 Decision Points Catalog
+
+Main Agent가 Orchestrator로서 내려야 하는 의사결정 목록:
+
+| ID | Decision Point | 시점 | 질문 |
+|----|---------------|------|------|
+| **DP-1** | Task 분해 범위 | `/orchestrate` 시작 시 | 어디까지 분해할 것인가? |
+| **DP-2** | 의존성 설정 | TaskCreate 후 | 어떤 Task가 먼저 완료되어야 하는가? |
+| **DP-3** | Worker 완료 처리 | `/collect` 후 | 결과가 충분한가? 추가 작업 필요한가? |
+| **DP-4** | Blocked 해소 처리 | blockedBy Task 완료 시 | 다음 Task 시작 조건 충족? |
+| **DP-5** | 재조정 필요 | `/synthesis` ITERATE 시 | 어떤 Task를 추가/수정해야 하는가? |
+| **DP-6** | [PERMANENT] 완료 | 전체 작업 완료 시 | 모든 Phase가 완료되었는가? |
+
+### 17.2 Decision Rules Matrix
+
+| DP | WHEN (시점) | WHAT (선택지) | HOW (확인사항) | ACTION (행동) |
+|----|------------|---------------|---------------|---------------|
+| **DP-1** | `/orchestrate` 호출 시 | Granularity: Fine/Medium/Coarse | 요구사항 복잡도, 병렬화 가능성 | `TaskCreate` × N |
+| **DP-2** | Task 생성 직후 | 의존성 유무 | 데이터 흐름, 리소스 충돌 | `TaskUpdate(addBlockedBy)` |
+| **DP-3** | Worker 결과 수신 시 | Accept/Reject/Partial | L1/L2/L3 출력 품질, 요구사항 충족 | `TaskUpdate(completed)` 또는 재할당 |
+| **DP-4** | blockedBy 완료 시 | Start/Delay/Skip | 선행 결과 품질, 리소스 가용성 | 다음 Task 시작 허용 |
+| **DP-5** | ITERATE 결정 시 | Add/Modify/Remove Tasks | Gap 분석 결과, 우선순위 | `/rsil-plan` → 새 Task 생성 |
+| **DP-6** | 최종 단계 | Complete/Rollback | 모든 Task completed, 검증 통과 | `[PERMANENT]` completed 처리 |
+
+### 17.3 Decision → Action Mapping
+
+```javascript
+// DP-1: Task 분해 결정
+function decideTaskDecomposition(requirement) {
+  const complexity = analyzeComplexity(requirement)
+
+  if (complexity === 'simple') {
+    return { granularity: 'coarse', taskCount: 1-3 }
+  } else if (complexity === 'moderate') {
+    return { granularity: 'medium', taskCount: 4-7 }
+  } else {
+    return { granularity: 'fine', taskCount: 8+ }
+  }
+}
+
+// DP-2: 의존성 설정 결정
+function decideDependency(taskA, taskB) {
+  // Rule 1: 데이터 흐름 의존성
+  if (taskB.requiresOutputOf(taskA)) {
+    return { addBlockedBy: [taskA.id] }
+  }
+
+  // Rule 2: 리소스 충돌 (같은 파일 수정)
+  if (taskA.files.intersect(taskB.files).length > 0) {
+    return { addBlockedBy: [taskA.id] }  // 순서 정해서 직렬화
+  }
+
+  // Rule 3: 병렬 가능
+  return { addBlockedBy: [] }
+}
+
+// DP-3: Worker 완료 처리 결정
+function decideWorkerCompletion(workerResult) {
+  const quality = validateL2L3Output(workerResult)
+
+  if (quality.score >= 0.9) {
+    return { action: 'accept', status: 'completed' }
+  } else if (quality.score >= 0.7) {
+    return { action: 'partial', followUpTasks: quality.gaps }
+  } else {
+    return { action: 'reject', reassign: true }
+  }
+}
+```
+
+### 17.4 Orchestrator Decision Flowchart
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Orchestrator Decision Flow                                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+Start: /orchestrate 호출
+        │
+        ▼
+   ┌────────────┐
+   │ DP-1       │  Q: 어떻게 분해?
+   │ Decompose  │──────────────────┐
+   └────────────┘                  │
+        │                          │
+        ▼                          ▼
+   TaskCreate × N           Complexity 분석
+        │                   - simple → 1-3 tasks
+        │                   - moderate → 4-7 tasks
+        ▼                   - complex → 8+ tasks
+   ┌────────────┐
+   │ DP-2       │  Q: 의존성?
+   │ Dependency │──────────────────┐
+   └────────────┘                  │
+        │                          │
+        ▼                          ▼
+   TaskUpdate                 의존성 판단
+   (addBlockedBy)             - 데이터 흐름 → blockedBy
+        │                     - 리소스 충돌 → 직렬화
+        │                     - 독립 → 병렬 가능
+        ▼
+   /assign → /worker (병렬)
+        │
+        ▼
+   ┌────────────┐
+   │ DP-3       │  Q: 결과 충분?
+   │ Completion │──────────────────┐
+   └────────────┘                  │
+        │                          │
+        ├── Accept ───────► TaskUpdate(completed)
+        │                          │
+        ├── Partial ──────► Follow-up Tasks 생성
+        │                          │
+        └── Reject ───────► 재할당 또는 /rsil-plan
+                                   │
+                                   ▼
+   ┌────────────┐
+   │ DP-5       │  Q: 재조정?
+   │ Adjust     │──────────────────┐
+   └────────────┘                  │
+        │                          │
+        ├── ITERATE ──────► /rsil-plan → 새 Tasks
+        │                          │
+        └── COMPLETE ─────► DP-6 진입
+                                   │
+                                   ▼
+   ┌────────────┐
+   │ DP-6       │  Q: 전체 완료?
+   │ Finalize   │──────────────────┐
+   └────────────┘                  │
+        │                          │
+        ▼                          ▼
+   [PERMANENT]              검증 조건 확인
+   completed 처리           - 모든 Task completed
+                            - /synthesis COMPLETE
+                            - Commit/PR 생성
+```
+
+---
+
+## Section 18: Dependency Chain Design Principles (V3.0.0)
+
+> **핵심 원칙:** 의존성은 DAG(Directed Acyclic Graph)로 설계, 순환 금지, 최소화 원칙
+
+### 18.1 Dependency Type Classification
+
+| Type | 설명 | 예시 | 처리 방식 |
+|------|------|------|----------|
+| **Data Flow** | Task B가 Task A의 출력 필요 | 분석 → 구현 | `blockedBy: [A]` 필수 |
+| **Resource** | 같은 파일/리소스 수정 | 두 Task가 같은 파일 수정 | 순서 정해서 직렬화 |
+| **Logical** | 비즈니스 로직 상 순서 | 스키마 → 마이그레이션 | `blockedBy` 명시 |
+| **None** | 완전 독립 | 서로 다른 모듈 | 병렬 실행 가능 |
+
+### 18.2 DAG Design Rules
+
+#### Rule 1: Acyclic Guarantee (순환 금지)
+
+```
+❌ FORBIDDEN (순환 의존성):
+   Task A → Task B → Task C → Task A
+
+✅ CORRECT (DAG):
+   Task A → Task B → Task D
+         ↘ Task C ↗
+```
+
+#### Rule 2: Minimal Dependency Principle
+
+```javascript
+// ❌ WRONG: 불필요한 직렬화
+TaskUpdate({ taskId: task2.id, addBlockedBy: [task1.id] })
+TaskUpdate({ taskId: task3.id, addBlockedBy: [task2.id] })  // task3는 task1만 필요
+TaskUpdate({ taskId: task4.id, addBlockedBy: [task3.id] })
+
+// ✅ CORRECT: 실제 의존성만
+TaskUpdate({ taskId: task2.id, addBlockedBy: [task1.id] })
+TaskUpdate({ taskId: task3.id, addBlockedBy: [task1.id] })  // task1 직접 의존
+TaskUpdate({ taskId: task4.id, addBlockedBy: [task2.id, task3.id] })  // 둘 다 필요
+```
+
+#### Rule 3: Diamond Pattern 허용
+
+```
+     Task A (Setup)
+       /   \
+      ↓     ↓
+   Task B  Task C  (병렬)
+      \     /
+       ↓   ↓
+     Task D (Merge)
+```
+
+```javascript
+// Diamond Pattern 구현
+TaskUpdate({ taskId: taskB.id, addBlockedBy: [taskA.id] })
+TaskUpdate({ taskId: taskC.id, addBlockedBy: [taskA.id] })
+TaskUpdate({ taskId: taskD.id, addBlockedBy: [taskB.id, taskC.id] })
+```
+
+### 18.3 Dependency Anti-patterns
+
+| Anti-pattern | 문제점 | 해결책 |
+|--------------|--------|--------|
+| **Circular Dependency** | 무한 대기 | DAG 재설계 |
+| **Over-serialization** | 병렬화 기회 손실 | 실제 의존성만 설정 |
+| **Missing Dependency** | 순서 보장 실패 | 데이터 흐름 분석 후 추가 |
+| **[PERMANENT] blocks 사용** | 차단 불가 완료 | **blocks 배열 사용 금지** |
+
+### 18.4 [PERMANENT] Task Design Rules (CRITICAL)
+
+> **Issue:** `[PERMANENT]` Task가 `blocks: [...]`를 가지면, 해당 Task들이 영원히 시작 불가
+
+```javascript
+// ❌ FORBIDDEN: [PERMANENT]에 blocks 배열 사용
+TaskCreate({
+  subject: "[PERMANENT] Context Check",
+  blocks: ["2", "3", "4"]  // ❌ 이 Task들이 영원히 blocked 상태
+})
+
+// ✅ CORRECT: [PERMANENT]는 blocks/blockedBy 모두 비움
+TaskCreate({
+  subject: "[PERMANENT] Context Check",
+  blocks: [],      // ✅ 비움
+  blockedBy: []    // ✅ 비움
+})
+
+// 다른 Task들의 의존성은 각자 설정
+TaskUpdate({ taskId: task3.id, addBlockedBy: [task2.id] })  // 필요한 의존성만
+```
+
+#### [PERMANENT] 완료 조건
+
+```yaml
+[PERMANENT] completed 전환 조건 (ALL 충족):
+  - [ ] 모든 Phase Task가 completed
+  - [ ] /synthesis 결과가 COMPLETE
+  - [ ] Commit/PR 생성 완료 (해당 시)
+  - [ ] 검증 Task 완료 (Phase 6 등)
+
+완료 순서:
+  1. 실제 작업 Task들 먼저 완료
+  2. [PERMANENT] Task 가장 마지막에 completed
+```
+
+### 18.5 Dependency Chain Examples
+
+#### Example 1: Linear Research → Implementation
+
+```
+[PERMANENT] ─────────────────────────────────────┐
+                                                  │
+Phase 1: Research (blockedBy: [])                │
+    │                                             │ in_progress 유지
+    ▼                                             │
+Phase 2: Implementation (blockedBy: [Phase1])    │
+    │                                             │
+    ▼                                             │
+Phase 3: Verification (blockedBy: [Phase2]) ─────┘
+                                                  │
+[PERMANENT] completed ◄───────────────────────────┘
+```
+
+#### Example 2: Parallel Analysis → Synthesis
+
+```
+[PERMANENT] ─────────────────────────────────────────────┐
+                                                          │
+Phase 2-A: Hook Analysis      ┐                          │
+Phase 2-B: Skill Analysis     ├─ blockedBy: []  (병렬)   │ in_progress
+Phase 2-C: Agent Analysis     ┘                          │
+         \         |         /                           │
+          ↘        ↓        ↙                            │
+Phase 3: Synthesis (blockedBy: [2-A, 2-B, 2-C])         │
+    │                                                     │
+    ▼                                                     │
+Phase 4: Implementation (blockedBy: [Phase3]) ───────────┘
+                                                          │
+[PERMANENT] completed ◄───────────────────────────────────┘
+```
+
+---
+
+## Section 19: Runtime Orchestration Protocol (V3.0.0)
+
+> **핵심 원칙:** Worker 완료 → Main Agent 행동 시퀀스 정의, 동적 재조정 지원
+
+### 19.1 Worker Completion Handler
+
+```
+Worker 완료 시 Main Agent 행동 시퀀스:
+
+1. TaskList() 호출 → 현재 상태 확인
+2. completed Task의 L1/L2/L3 출력 읽기
+3. 품질 검증 (DP-3 적용)
+4. 다음 행동 결정:
+   - Accept → blockedBy 해소된 Task들 확인
+   - Partial → Follow-up Task 생성
+   - Reject → 재할당 또는 /rsil-plan
+```
+
+```javascript
+// Worker Completion Handler 구현
+async function handleWorkerCompletion(completedTaskId) {
+  // Step 1: 현재 상태 확인
+  const tasks = await TaskList()
+  const completedTask = await TaskGet(completedTaskId)
+
+  // Step 2: L1/L2/L3 출력 읽기
+  const l1 = await Read(completedTask.metadata.l1_output_path)
+  const l2 = await Read(completedTask.metadata.l2_output_path)
+  const l3 = await Read(completedTask.metadata.l3_output_path)
+
+  // Step 3: 품질 검증 (DP-3)
+  const quality = validateQuality(l2, l3)
+
+  // Step 4: 다음 행동
+  if (quality.acceptable) {
+    // blockedBy 해소된 Task 확인
+    const unblockedTasks = tasks.filter(t =>
+      t.blockedBy?.includes(completedTaskId) &&
+      t.blockedBy.every(id => getTaskStatus(id) === 'completed')
+    )
+    return { action: 'proceed', unblockedTasks }
+  } else {
+    return { action: 'remediate', gaps: quality.gaps }
+  }
+}
+```
+
+### 19.2 Blocked Resolution Handler
+
+```
+blockedBy Task 완료 시 처리:
+
+1. 해당 Task의 blockedBy 배열 확인
+2. 모든 blockedBy Task가 completed인지 검증
+3. 조건 충족 시 → Task 시작 가능 상태로 전환
+4. Worker에 알림 (또는 자동 시작)
+```
+
+```javascript
+// Blocked Resolution Handler 구현
+async function handleBlockedResolution(completedTaskId) {
+  const tasks = await TaskList()
+
+  // completedTaskId를 blockedBy로 가진 Task들
+  const dependentTasks = tasks.filter(t =>
+    t.blockedBy?.includes(completedTaskId)
+  )
+
+  for (const task of dependentTasks) {
+    // 모든 blocker가 완료되었는지 확인
+    const allBlockersCompleted = task.blockedBy.every(blockerId => {
+      const blocker = tasks.find(t => t.id === blockerId)
+      return blocker?.status === 'completed'
+    })
+
+    if (allBlockersCompleted) {
+      console.log(`Task ${task.id} is now unblocked and ready to start`)
+      // Worker에 알림 또는 자동 할당
+    }
+  }
+}
+```
+
+### 19.3 Dynamic Adjustment Protocol
+
+```
+/synthesis ITERATE 시 재조정 프로토콜:
+
+1. Gap 분석 결과 확인 (from /rsil-plan)
+2. 새 Task 생성 또는 기존 Task 수정
+3. 의존성 체인 재설정
+4. [PERMANENT] 상태는 in_progress 유지
+```
+
+```javascript
+// Dynamic Adjustment Protocol 구현
+async function handleIterate(gapAnalysis) {
+  // Step 1: Gap 유형 분류
+  const { missingTasks, modifyTasks, removeTasks } = gapAnalysis
+
+  // Step 2: 새 Task 생성
+  for (const missing of missingTasks) {
+    const newTask = await TaskCreate({
+      subject: missing.subject,
+      description: missing.description,
+      metadata: { phase: missing.phase, iteration: 2 }
+    })
+
+    // Step 3: 의존성 설정
+    if (missing.dependsOn) {
+      await TaskUpdate({
+        taskId: newTask.id,
+        addBlockedBy: missing.dependsOn
+      })
+    }
+  }
+
+  // Step 4: [PERMANENT]는 유지
+  // [PERMANENT] Task의 status는 변경하지 않음 (in_progress 유지)
+}
+```
+
+### 19.4 Error/Blocker Escalation Protocol
+
+```
+에러/블로커 발생 시 에스컬레이션:
+
+Level 1: Worker 내 자체 해결 시도 (max 3회)
+Level 2: Sub-Orchestrator에 보고 (Sub-Orch 모드 시)
+Level 3: Main Orchestrator에 보고
+Level 4: 사용자에게 /block 알림
+```
+
+```javascript
+// Escalation Protocol 구현
+async function handleBlocker(taskId, blocker) {
+  const task = await TaskGet(taskId)
+  let escalationLevel = 1
+
+  // Level 1: Worker 자체 해결
+  if (escalationLevel === 1) {
+    const retryResult = await retryWithFix(blocker, { maxRetries: 3 })
+    if (retryResult.success) return
+    escalationLevel = 2
+  }
+
+  // Level 2: Sub-Orchestrator (해당 시)
+  if (escalationLevel === 2 && task.metadata.subOrchestratorMode) {
+    await reportToSubOrchestrator(task.metadata.parentTaskId, blocker)
+    escalationLevel = 3
+  }
+
+  // Level 3: Main Orchestrator
+  if (escalationLevel >= 3) {
+    await reportToMainOrchestrator(blocker)
+    escalationLevel = 4
+  }
+
+  // Level 4: 사용자 알림
+  if (escalationLevel === 4) {
+    await TaskUpdate({
+      taskId,
+      status: 'blocked',
+      metadata: { blocker: blocker.description }
+    })
+    // /worker block 명령으로 상태 변경됨
+  }
+}
+```
+
+### 19.5 Complete Orchestration Sequence
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Complete Orchestration Sequence (Main Agent)                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+1. /orchestrate 실행
+   │
+   ├── [PERMANENT] Task 생성 (blocks: [], blockedBy: [])
+   ├── Phase Tasks 생성
+   └── 의존성 체인 설정 (DP-2)
+
+2. /assign 실행
+   │
+   └── TaskUpdate(owner) → Terminal 할당
+
+3. Workers 병렬 실행 (/worker start)
+   │
+   ├── Task 실행
+   ├── L1/L2/L3 출력 생성
+   └── TaskUpdate(completed)
+
+4. Worker 완료 시 (per task)
+   │
+   ├── handleWorkerCompletion() 호출
+   ├── L1/L2/L3 읽기 + 품질 검증
+   └── Blocked Resolution 확인
+
+5. /collect 실행
+   │
+   ├── TaskList() → 완료 확인
+   └── Collection Report 생성
+
+6. /synthesis 실행
+   │
+   ├── Traceability Matrix 생성
+   ├── Quality Validation
+   └── Decision: COMPLETE | ITERATE
+
+7-A. COMPLETE 경로
+   │
+   ├── /commit-push-pr 실행
+   └── [PERMANENT] completed 처리
+
+7-B. ITERATE 경로
+   │
+   ├── /rsil-plan → Gap 분석
+   ├── handleIterate() → 새 Task 생성
+   └── Step 3로 복귀
+
+8. 최종 완료
+   │
+   └── [PERMANENT] TaskUpdate(status: 'completed')
+```
+
+---
+
+## Section 20: Sub-Orchestrator Validation Loop Pattern (V3.1.0)
+
+> **핵심 원칙:** Main Agent가 Sub-Orchestrator 역할도 수행할 때, 검증→Orchestrating→검증 루프 패턴 적용
+
+### 20.1 Pattern Overview
+
+Sub-Orchestrator이면서 Main Agent인 경우의 워크플로우:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Sub-Orchestrator Validation Loop (Main Agent ∩ Sub-Orchestrator)    │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│   ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐   │
+│   │ Execute  │────▶│ Validate │────▶│ Decision │────▶│ Unblock  │   │
+│   │  Task    │     │  Output  │     │   Gate   │     │  Next    │   │
+│   └──────────┘     └──────────┘     └────┬─────┘     └────┬─────┘   │
+│                                          │                 │         │
+│            ┌────────── PASS ─────────────┘                 │         │
+│            │                                               │         │
+│            ▼                                               ▼         │
+│       ┌──────────┐                                    ┌──────────┐   │
+│       │ Mark     │                                    │ Pick     │   │
+│       │ COMPLETE │───────────────────────────────────▶│ Next     │   │
+│       └──────────┘                                    └────┬─────┘   │
+│                                                            │         │
+│            ┌────────── FAIL ───────────────────────────────┘         │
+│            │                                                         │
+│            ▼                                                         │
+│       ┌──────────┐                                                   │
+│       │ Fix &    │──────────────────▶ (Loop back to Execute)         │
+│       │ Retry    │                                                   │
+│       └──────────┘                                                   │
+│                                                                       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 20.2 ASCII Visualization for Self-Reminding
+
+> **핵심:** 복잡한 워크플로우에서 현재 위치와 전체 맥락을 잃지 않기 위한 Self-Reminding 기법
+
+```javascript
+// 작업 시작 시 ASCII ORCHESTRATION PLAN 출력
+function printOrchestrationPlan(phases) {
+  console.log(`
+┌────────────────────────────────────────────────────────────────┐
+│  ORCHESTRATION PLAN (Self-Reminding)                           │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Phase 1 (Schema) ──▶ Phase 2 (Client) ──▶ Phase 3 (Separator) │
+│         │                   │                    │              │
+│         ▼                   ▼                    ▼              │
+│  [${phases[0]?.status || 'pending'}]      [${phases[1]?.status || 'pending'}]       [${phases[2]?.status || 'pending'}]           │
+│                                                                 │
+│  ──▶ Phase 4 (Cleanup) ──▶ Phase 5 (Test/Verify)               │
+│              │                    │                             │
+│              ▼                    ▼                             │
+│       [${phases[3]?.status || 'pending'}]           [${phases[4]?.status || 'pending'}]                      │
+│                                                                 │
+│  Current: Phase ${getCurrentPhase()} | Progress: ${getProgress()}%           │
+└────────────────────────────────────────────────────────────────┘
+  `)
+}
+```
+
+### 20.3 Validation Loop Rules
+
+| Step | Action | Validation | 실패 시 |
+|------|--------|------------|--------|
+| 1 | Execute Task | - | - |
+| 2 | Validate Output | L1/L2/L3 품질 검증 | Fix & Retry |
+| 3 | Decision Gate | Pass/Fail 결정 | 재실행 또는 수동 개입 |
+| 4 | Unblock Next | blockedBy 해소 확인 | 대기 |
+| 5 | Mark COMPLETE | status 업데이트 | - |
+| 6 | Pick Next | 다음 Task 선택 | 완료 또는 Loop |
+
+### 20.4 Implementation Example (COW CLI Refactoring)
+
+```javascript
+// 실제 구현 예시 (2026-02-04 COW CLI Mathpix API Refactoring)
+async function subOrchestratorLoop() {
+  const phases = [
+    { id: "schema", tasks: ["PdfLineData", "PdfPageData", "UnifiedResponse"] },
+    { id: "client", tasks: ["process_pdf→UnifiedResponse", "process_image_unified"] },
+    { id: "separator", tasks: ["separate_unified", "hierarchy helpers"] },
+    { id: "cleanup", tasks: ["remove deprecated", "fix imports"] },
+    { id: "test", tasks: ["schema test", "integration test"] }
+  ]
+
+  for (const phase of phases) {
+    // Step 1: Execute
+    for (const task of phase.tasks) {
+      await executeTask(task)
+
+      // Step 2: Validate
+      const isValid = await validateOutput(task)
+
+      // Step 3: Decision Gate
+      if (!isValid) {
+        await fixAndRetry(task)
+      }
+
+      // Step 4-5: Unblock & Mark Complete
+      await TaskUpdate({ taskId: task.id, status: "completed" })
+    }
+
+    // Step 6: Pick Next Phase
+    printOrchestrationPlan(phases)  // Self-Reminding
+  }
+}
+```
+
+### 20.5 Key Principles
+
+1. **검증 우선 (Verify-First):** 다음 단계로 진행하기 전 항상 출력 검증
+2. **의존성 체인 인식 (Dependency-Aware):** 모든 작업에서 전체 맥락의 의존성 체인 고려
+3. **Self-Reminding:** ASCII Visualization으로 현재 위치와 진행 상황 지속 확인
+4. **Loop-back:** 실패 시 재실행, 순환 없이 DAG 유지
+
+### 20.6 Reference Implementation
+
+COW CLI Mathpix API 리팩토링에서 이 패턴의 실제 적용 사례:
+- 문서: `.claude/references/cow-cli-architecture.md`
+- 5개 Phase, 17개 Task 완료
+- UnifiedResponse 패턴으로 PDF/Image API 정규화
+
+---
+
+> **Version:** 3.1.0 (Sub-Orchestrator Validation Loop Pattern)
+> **Updated:** 2026-02-04
+> **Changes:**
+> - V3.1.0: Added Section 20 (Sub-Orchestrator Validation Loop Pattern)
+>   - 20.1 Pattern Overview with ASCII diagram
+>   - 20.2 ASCII Visualization for Self-Reminding
+>   - 20.3 Validation Loop Rules
+>   - 20.4 Implementation Example (COW CLI Refactoring)
+>   - 20.5 Key Principles
+>   - 20.6 Reference Implementation (cow-cli-architecture.md)
+> - V3.0.0: Added Section 17 (Orchestrator Decision Framework)
+>   - 17.1 Decision Points Catalog (DP-1 ~ DP-6)
+>   - 17.2 Decision Rules Matrix (WHEN/WHAT/HOW/ACTION)
+>   - 17.3 Decision → Action Mapping (JavaScript implementations)
+>   - 17.4 Orchestrator Decision Flowchart
+> - V3.0.0: Added Section 18 (Dependency Chain Design Principles)
+>   - 18.1 Dependency Type Classification (Data Flow/Resource/Logical/None)
+>   - 18.2 DAG Design Rules (Acyclic, Minimal, Diamond Pattern)
+>   - 18.3 Dependency Anti-patterns
+>   - 18.4 [PERMANENT] Task Design Rules (CRITICAL - blocks 배열 사용 금지)
+>   - 18.5 Dependency Chain Examples
+> - V3.1.0: Updated for Claude Code V2.1.33 hook integration
+>   - All 12 hook events documented (SessionStart through SessionEnd)
+>   - New hook types: prompt-based (`type: prompt`), async (`async: true`)
+>   - PermissionRequest, Notification, PostToolUseFailure event handlers
+>   - `once` field for Setup hooks in skill frontmatter
+>   - `memory` frontmatter field (user/project/local scope)
+>   - Diagnostic tools: hook-health-check.sh, hook-timing-test.sh, settings-validator.sh
+> - V3.0.0: Added Section 19 (Runtime Orchestration Protocol)
+>   - 19.1 Worker Completion Handler
+>   - 19.2 Blocked Resolution Handler
+>   - 19.3 Dynamic Adjustment Protocol
+>   - 19.4 Error/Blocker Escalation Protocol
+>   - 19.5 Complete Orchestration Sequence
+> - V2.2.0: Task ID Collision Resolution section update
+> - V2.0.0: Added Section 16 (Enforcement Architecture)
+> - V2.0.0: Hook-based behavioral enforcement (not prompt-level guidance)
+> - V2.0.0: Gate scripts with `permissionDecision: deny` for HARD BLOCK
+> - V2.0.0: Tracker scripts for read/task logging
+> - V2.0.0: Common library (_shared.sh) with helper functions
+> - V1.5.0: Added Section 14-15 (Integrated Roadmap, INFRA 통합 검증 결과)
+> - V1.5.0: Added V2.1.29 SubagentStart/SubagentStop hooks documentation
+> - V1.4.0: Added Section 10-12 (Agent/Skill/Hook Integration from Code-Level Analysis)
+> - V1.3.0: Added Section 1.1: L2→L3 Progressive-Deep-Dive (Meta-Level Pattern)
+> - Mandatory for improvement/enhancement/refinement tasks
+> - Parallel Agent result synthesis workflow
 > **Updated:** 2026-02-01
 > **Changes:**
 > - V2.0.0: Added Section 16 (Enforcement Architecture)

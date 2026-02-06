@@ -22,7 +22,7 @@ user-invocable: true
 disable-model-invocation: false
 context: fork
 model: opus
-version: "3.0.0"
+version: "3.2.0"
 argument-hint: "[--research-slug <slug>] [--auto-approve]"
 allowed-tools:
   - Read
@@ -38,6 +38,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/parallel-agent.sh"
       timeout: 5000
+      once: true
   PreToolUse:
     - type: command
       command: "/home/palantir/.claude/hooks/planning-preflight.sh"
@@ -68,7 +69,6 @@ agent_delegation:
       use_when: "Cross-domain planning"
   slug_orchestration:
     enabled: true
-  default_mode: true  # V1.1.0: Auto-delegation by default
     source: "clarify or research slug"
     action: "reuse upstream workload context"
   sub_agent_permissions:
@@ -117,6 +117,23 @@ parallel_agent_config:
     All agents run Phase 1 simultaneously, then results are aggregated.
 
 # =============================================================================
+# P3: Synthesis Configuration
+# =============================================================================
+synthesis_config:
+  phase_3a_l2_horizontal:
+    enabled: true
+    validation_criteria:
+      - cross_phase_consistency
+      - research_alignment
+      - dependency_graph_validity
+  phase_3b_l3_vertical:
+    enabled: true
+    validation_criteria:
+      - phase_deliverable_accuracy
+      - completion_criteria_measurability
+      - risk_coverage_check
+
+# =============================================================================
 # P6: Agent Internal Feedback Loop
 # =============================================================================
 agent_internal_feedback_loop:
@@ -139,6 +156,30 @@ agent_internal_feedback_loop:
     - "Plan Agent requests revision"
     - "Missing dependency detected"
     - "Incomplete phase definition"
+
+# =============================================================================
+# P4: Selective Feedback
+# =============================================================================
+selective_feedback:
+  enabled: true
+  phase: "plan_review"
+  severity_filter: "warning"
+  feedback_classification:
+    auto_fix: ["formatting", "reference_links"]
+    user_confirm: ["phase_scope", "dependency_changes", "risk_assessment"]
+
+# =============================================================================
+# P5: Review Gate
+# =============================================================================
+review_gate:
+  enabled: true
+  phase: "3.5"
+  criteria:
+    - "research_alignment_verified"
+    - "phase_structure_valid"
+    - "dependencies_acyclic"
+    - "completion_criteria_measurable"
+  auto_approve: false
 ---
 
 ### Auto-Delegation Trigger (CRITICAL)

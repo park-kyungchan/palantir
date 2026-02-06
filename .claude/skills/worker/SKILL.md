@@ -8,7 +8,7 @@ description: |
   Commands: start, done, status, block, orchestrate, delegate, collect-sub
 user-invocable: true
 model: opus
-version: "6.0.0"
+version: "6.2.0"
 argument-hint: "<start|done|status|block> [b|c|d|terminal-id] [taskId]"
 allowed-tools:
   - Read
@@ -27,6 +27,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
       timeout: 5000
+      once: true
     - type: command
       command: "/home/palantir/.claude/hooks/worker-preflight.sh"
       timeout: 10000
@@ -47,6 +48,21 @@ parallel_agent_config:
     moderate: 2
     complex: 3
 
+# P3: Synthesis Configuration
+synthesis_config:
+  phase_3a_l2_horizontal:
+    enabled: true
+    validation_criteria:
+      - task_output_consistency
+      - deliverable_completeness
+      - cross_subtask_alignment
+  phase_3b_l3_vertical:
+    enabled: true
+    validation_criteria:
+      - code_change_verification
+      - test_coverage_check
+      - manifest_integrity
+
 agent_internal_feedback_loop:
   enabled: true
   max_iterations: 3
@@ -54,6 +70,26 @@ agent_internal_feedback_loop:
     - "All subtasks identified and decomposed"
     - "Dependencies between subtasks mapped"
     - "Completion criteria defined for each subtask"
+
+# P4: Selective Feedback
+selective_feedback:
+  enabled: true
+  phase: "task_completion"
+  severity_filter: "warning"
+  feedback_classification:
+    auto_fix: ["formatting", "minor_issues"]
+    user_confirm: ["blockers", "scope_changes", "critical_issues"]
+
+# P5: Review Gate
+review_gate:
+  enabled: true
+  phase: "pre_done"
+  criteria:
+    - "task_requirements_met"
+    - "no_regressions_detected"
+    - "tests_passed_if_applicable"
+    - "output_files_generated"
+  auto_approve: false
 ---
 
 # /worker - Worker Self-Service Commands

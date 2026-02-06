@@ -6,8 +6,8 @@ description: |
   Delegates to specialized builders and shared parameter modules.
 user-invocable: true
 model: opus
-version: "3.0.0"
-argument-hint: ["concept"] | [agent|skill|hook] [--resume id]
+version: "3.2.0"
+argument-hint: '"concept" | agent|skill|hook [--resume id]'
 allowed-tools:
   - Read
   - Write
@@ -21,10 +21,80 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/workload-files.sh"
       timeout: 5000
+      once: true
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/build-finalize.sh"
       timeout: 60000
+
+# =============================================================================
+# EFL Pattern Configuration
+# =============================================================================
+
+# P1: Skill as Sub-Orchestrator
+agent_delegation:
+  enabled: true
+  mode: "sub_orchestrator"
+  default_mode: false  # Only in Concept Mode
+  optional_delegation:
+    concept_mode:
+      enabled: true
+      description: "Delegate to /build-research for capability inventory"
+      trigger: "concept argument"
+    direct_mode:
+      enabled: false
+      description: "Q&A-based, no delegation needed"
+
+# P2: Parallel Agent Configuration
+parallel_agent_config:
+  enabled: false
+  deviation_reason: |
+    Q&A workflow is inherently sequential.
+    Each question depends on previous answers.
+
+# P3: Synthesis Configuration
+synthesis_config:
+  phase_3a_l2_horizontal:
+    enabled: true
+    validation_criteria:
+      - parameter_collection_completeness
+      - cross_builder_consistency
+      - naming_convention_compliance
+  phase_3b_l3_vertical:
+    enabled: true
+    validation_criteria:
+      - generated_file_syntax_valid
+      - template_rendering_accuracy
+      - hook_registration_correct
+
+# P6: Agent Internal Feedback Loop
+agent_internal_feedback_loop:
+  enabled: true
+  max_iterations: 3
+  validation_criteria:
+    - "V1: All required parameters collected"
+    - "V2: Generated file syntax valid"
+    - "V3: Naming conventions followed"
+    - "V4: Cross-references resolved"
+
+# P4: Selective Feedback
+selective_feedback:
+  enabled: true
+  phase: "generation_complete"
+  severity_filter: "warning"
+  feedback_classification:
+    auto_fix: ["V2", "V3"]  # Syntax and naming auto-fix
+    user_confirm: ["V1", "V4"]  # Missing params, unresolved refs
+
+# P5: Review Gate
+review_gate:
+  enabled: true
+  phase: "pre_write"
+  criteria:
+    - "all_parameters_collected"
+    - "template_rendered"
+    - "validation_passed"
+  auto_approve: false
 ---
 
 # /build Skill - Interactive Component Builder

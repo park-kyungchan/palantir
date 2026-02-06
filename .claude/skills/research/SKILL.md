@@ -22,7 +22,7 @@ user-invocable: true
 disable-model-invocation: false
 context: fork
 model: opus
-version: "3.0.0"
+version: "3.1.0"
 argument-hint: "[--scope <path>] [--external] [--clarify-slug <slug>]"
 allowed-tools:
   - Read
@@ -42,6 +42,7 @@ hooks:
     - type: command
       command: "source /home/palantir/.claude/skills/shared/parallel-agent.sh"
       timeout: 5000
+      once: true
   Stop:
     - type: command
       command: "/home/palantir/.claude/hooks/research-finalize.sh"
@@ -67,7 +68,6 @@ agent_delegation:
       use_when: "Auto-detect"
   slug_orchestration:
     enabled: true
-  default_mode: true  # V1.1.0: Auto-delegation by default
     source: "clarify_slug OR active_workload"
     action: "reuse upstream workload context"
   sub_agent_permissions:
@@ -191,6 +191,22 @@ agent_internal_feedback_loop:
   description: |
     Local research refinement loop before aggregation.
     Self-validates finding quality and iterates until threshold met.
+
+# =============================================================================
+# P5: Review Gate (EFL V3.0 Compliance)
+# =============================================================================
+review_gate:
+  enabled: true
+  phase: "pre_planning"
+  criteria:
+    - "codebase_coverage_sufficient"
+    - "external_research_complete"
+    - "risk_assessment_done"
+    - "integration_points_identified"
+  auto_approve: false
+  description: |
+    Review gate before handoff to /planning.
+    Ensures research findings are complete and actionable.
 ---
 
 ### Auto-Delegation Trigger (CRITICAL)

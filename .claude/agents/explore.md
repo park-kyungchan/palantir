@@ -4,6 +4,7 @@ description: |
   Fast codebase exploration with L1/L2/L3 output support.
   Overrides Native Explore to enable file saving for context isolation.
   Use for: file discovery, code search, pattern analysis.
+memory: project
 tools:
   - Read
   - Grep
@@ -14,8 +15,6 @@ tools:
 disallowedTools:
   - Edit
   - NotebookEdit
-requiredTools:
-  - mcp__sequential-thinking__sequentialthinking
 model: opus
 permissionMode: default
 ---
@@ -81,7 +80,7 @@ l2Index:
     priority: CRITICAL | HIGH | MEDIUM | LOW
     description: "what this section contains"
 
-l2Path: .agent/outputs/Explore/{taskId}.md
+l2Path: .agent/prompts/{workload-slug}/outputs/Explore/{taskId}.md
 requiresL2Read: true | false
 ```
 
@@ -89,7 +88,7 @@ requiresL2Read: true | false
 
 **CRITICAL**: You MUST save detailed findings to file:
 ```
-.agent/outputs/Explore/{taskId}.md
+.agent/prompts/{workload-slug}/outputs/Explore/{taskId}.md
 ```
 
 **L2 Content Structure:**
@@ -127,7 +126,7 @@ When delegated to this agent:
 3. **Grep** for content patterns
 4. **Read** relevant files (limit based on thoroughness)
 5. **Analyze** structure and patterns
-6. **Write** L2/L3 details to `.agent/outputs/Explore/{taskId}.md`
+6. **Write** L2/L3 details to `.agent/prompts/{workload-slug}/outputs/Explore/{taskId}.md`
 7. **Return** L1 summary only (≤500 tokens) to Main Agent
 
 ---
@@ -140,7 +139,7 @@ Input: "Find all authentication-related files (thoroughness: medium)"
 1. Glob: **/*auth*.{py,js,ts}
 2. Grep: "login|logout|session|token"
 3. Read: Top 20 relevant files
-4. Write: .agent/outputs/Explore/a1b2c3d4.md (L2/L3)
+4. Write: .agent/prompts/{workload-slug}/outputs/Explore/a1b2c3d4.md (L2/L3)
 5. Return: L1 summary with file count, key patterns, l2Path
 ```
 
@@ -155,4 +154,4 @@ Input: "Find all authentication-related files (thoroughness: medium)"
 
 ---
 
-*Custom Override for Native Explore | V7.1.1 Compatible*
+*Custom Override for Native Explore | V7.4 Compatible*
