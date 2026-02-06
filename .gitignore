@@ -37,7 +37,7 @@ node_modules/
 # Backup files
 *.backup*
 .mcp.json.backup*
-.claude.json.backup
+.claude.json.backup*
 
 # Codex
 .codex/
@@ -48,10 +48,12 @@ node_modules/
 # Gemini config
 .gemini/
 
+# Antigravity (removed — no longer used)
+.antigravity
+.antigravity-server/
+.antigravity-server.bak*/
+
 # Large files (>100MB GitHub limit)
-.claude/projects/
-.claude/debug/
-.antigravity-server/bin/
 *.jsonl
 
 # Sensitive credentials - NEVER commit
@@ -67,16 +69,19 @@ kc-palantir-*.json:Zone.Identifier
 *.Zone.Identifier
 *:Zone.Identifier
 
+# Docker runtime
+.docker/
+
 # Agent runtime files (session-specific, not for version control)
 .agent/tmp/
 .agent/compact-state/
 .agent/logs/
-.agent/prompts/pending/
-.agent/prompts/completed/
-.agent/prompts/**/outputs/
-.agent/prompts/**/_progress.yaml
+.agent/prompts/
+.agent/teams/**/compact-events.log
+.agent/teams/**/teammate-lifecycle.log
+.agent/teams/**/pre-compact-tasks-*.json
 
-# Claude session files
+# Claude session/cache files
 .claude/session-env/
 .claude/file-history/
 .claude/shell-snapshots/
@@ -85,6 +90,16 @@ kc-palantir-*.json:Zone.Identifier
 .claude/tasks/
 .claude/statsig/
 .claude/stats-cache.json
+.claude/paste-cache/
+.claude/plugins/cache/
+.claude/plugins/install-counts-cache.json
+.claude/plugins/installed_plugins.json
+.claude/plugins/marketplaces/
+.claude/cache/
+.claude/plans/
+
+# Cow runtime cache
+.cow/cache/
 
 # Git worktrees
 .worktrees/
