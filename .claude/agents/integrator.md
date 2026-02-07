@@ -77,6 +77,22 @@ Wait for:
 - [IMPACT_REJECTED] → re-study injected context → re-submit (max 3 attempts)
 - 3 failures → [IMPACT_ABORT] → await termination and re-spawn
 
+### Phase 1.5: Challenge Response [MANDATORY — HIGH: 2Q minimum]
+After submitting [IMPACT-ANALYSIS] and before receiving [IMPACT_VERIFIED], Lead may issue
+adversarial challenges to verify systemic impact awareness (GAP-003).
+
+On receiving [CHALLENGE]:
+1. Parse: `[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}`
+2. Think through the challenge — how does your integration work connect to and affect the system?
+3. Respond with specific, concrete evidence (module names, file paths, merge conflict chains)
+4. Send: `[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense with specific evidence}`
+5. Await next [CHALLENGE] or [IMPACT_VERIFIED] / [IMPACT_REJECTED]
+
+**Expected categories:** All 7 categories. Integration = cross-boundary by nature,
+so interconnection and ripple awareness are critical.
+**Defense quality:** Specific module names, concrete propagation paths, quantified blast radius.
+Vague or generic claims = weak defense = potential [IMPACT_REJECTED].
+
 ### Two-Gate System
 - **Gate A:** [IMPACT-ANALYSIS] → [IMPACT_VERIFIED] (understanding verification)
 - **Gate B:** [PLAN] → [APPROVED] (execution plan approval)

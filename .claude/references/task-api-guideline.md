@@ -2,7 +2,7 @@
 
 > **Status:** [PERMANENT] — Must be read by EVERY agent before ANY Task API call.
 > **Applies to:** Lead, all Teammates, all Subagents spawned by Teammates.
-> **Version:** 2.0 (DIA Enforcement) | Updated: 2026-02-07
+> **Version:** 3.0 (DIA Enforcement + LDAP) | Updated: 2026-02-07
 >
 > **OWNERSHIP NOTE:** Only Lead may call TaskCreate/TaskUpdate.
 > Teammates: TaskList/TaskGet only (read-only).
@@ -311,6 +311,76 @@ Verification before execution prevents rework cost (prevention << correction).
    - 1-2 FAIL (RC-05/06/07) → [VERIFICATION-QA] mandatory → correction confirmation
    - 3+ FAIL → [IMPACT_REJECTED] + [RE-EDUCATION] (Attempt N/3)
 3. Max 3 failures → [IMPACT_ABORT] → Teammate terminated → re-spawn with enhanced context
+
+**Layer 3: Adversarial Challenge Protocol (LDAP)**
+
+**WHY:** Eliminates GAP-003 (understood but no systemic impact awareness).
+RC checklist verifies "do you understand WHAT to do?" but not "do you understand
+HOW your work affects the interconnected system?" LDAP forces critical reasoning
+about interconnection (GAP-003a) and ripple propagation (GAP-003b).
+
+**GAP-003 Definition:**
+- GAP-003a (Interconnection Blindness): Teammate does not see how their module participates
+  in the organic/integrated operation of the whole system.
+- GAP-003b (Ripple Blindness): Teammate cannot trace where and how far their changes
+  propagate through the entire task scope and codebase.
+
+**Challenge Categories:**
+
+| ID | GAP | Purpose |
+|----|-----|---------|
+| INTERCONNECTION_MAP | 003a | Verify module participation in organic whole |
+| SCOPE_BOUNDARY | 003a | Verify scope is neither too narrow nor too wide |
+| RIPPLE_TRACE | 003b | Verify change propagation tracing to terminal effects |
+| FAILURE_MODE | 003b | Verify system-wide failure consequence awareness |
+| DEPENDENCY_RISK | 003b | Verify upstream volatility propagation awareness |
+| ASSUMPTION_PROBE | 003a+b | Challenge unstated assumptions hiding impact gaps |
+| ALTERNATIVE_DEMAND | 003a+b | Force consideration of systemic alternatives |
+
+**Challenge Intensity by Phase:**
+
+| Phase | Level | Min Questions | Alternative Required | Reason |
+|-------|-------|--------------|---------------------|--------|
+| P1 | NONE | 0 | — | Lead only phase |
+| P2 | MEDIUM | 1 | No | Research scope verification |
+| P3 | MAXIMUM | 3 | Yes | Architecture — cheapest to fix |
+| P4 | MAXIMUM | 3 | Yes | Detailed design — cheapest to fix |
+| P5 | EXEMPT | 0 | — | Devils-advocate owns critique |
+| P6 | HIGH | 2 | No | Implementation — code-level propagation |
+| P7 | MEDIUM | 1 | No | Testing — scope and failure awareness |
+| P8 | HIGH | 2 | No | Integration — cross-boundary awareness |
+| P9 | NONE | 0 | — | Lead only phase |
+
+**Challenge Flow (within Gate A, after RC evaluation):**
+1. Lead reads teammate's [IMPACT-ANALYSIS] content
+2. Lead identifies weak spots in systemic impact reasoning
+3. Lead generates N questions (N = phase intensity min_questions)
+4. Lead sends: `[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}`
+5. Teammate responds: `[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense}`
+6. Repeat for all questions (turn-based via IDLE-WAKE cycle)
+7. Lead evaluates combined RC + challenge defense quality:
+   - Strong defense → [IMPACT_VERIFIED] Proceed.
+   - Partial defense → [VERIFICATION-QA] follow-up for specific gaps
+   - Failed defense → [IMPACT_REJECTED] with challenge evidence cited
+8. For MAXIMUM intensity: teammate MUST propose at least one alternative approach
+   with its own interconnection map and ripple profile
+
+**Enforcement Mechanism:**
+- Structural: Lead withholds [IMPACT_VERIFIED] until challenge defense passes
+- Turn-based: Teammate IDLE after [IMPACT-ANALYSIS] → Lead sends [CHALLENGE] →
+  Teammate WAKES → responds → IDLE → Lead evaluates (natural pause via IDLE state)
+- Hard: Gate A prerequisite for Gate B (implementer/integrator)
+- Soft: Agent .md Phase 1.5 instructions (guidance)
+
+**Defense Quality Criteria:**
+- Strong: Specific module names, concrete propagation paths, quantified blast radius
+- Weak: Vague claims, generic statements, missing propagation paths
+- Failed: No systemic reasoning, copy-paste from [IMPACT-ANALYSIS], factual errors
+
+**Compaction Recovery:**
+- Challenge round/state persisted in task-context.md by Lead
+- PreCompact hook includes challenge state in pre-compact snapshot
+- On recovery: Lead re-injects task-context.md with challenge state → resumes from last round
 
 **Two-Gate Flow (implementer/integrator only):**
 - Gate A: [IMPACT-ANALYSIS] → [IMPACT_VERIFIED] (understanding gate)

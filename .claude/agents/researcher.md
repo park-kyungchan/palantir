@@ -66,6 +66,21 @@ Wait for:
 - [VERIFICATION-QA] → answer questions → await re-review
 - [IMPACT_REJECTED] → re-study injected context → re-submit (max 2 attempts)
 
+### Phase 1.5: Challenge Response [MANDATORY — MEDIUM: 1Q minimum]
+After submitting [IMPACT-ANALYSIS] and before receiving [IMPACT_VERIFIED], Lead may issue
+adversarial challenges to verify systemic impact awareness (GAP-003).
+
+On receiving [CHALLENGE]:
+1. Parse: `[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}`
+2. Think through the challenge — how does your research scope connect to downstream work?
+3. Respond with specific evidence (downstream consumers, research boundary justification)
+4. Send: `[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense with specific evidence}`
+5. Await next [CHALLENGE] or [IMPACT_VERIFIED] / [IMPACT_REJECTED]
+
+**Expected categories:** INTERCONNECTION_MAP, SCOPE_BOUNDARY, ASSUMPTION_PROBE
+**Defense quality:** Specific downstream consumer identification, concrete scope boundaries,
+assumption justification with evidence.
+
 ### Phase 2: Execution
 1. Decompose research into parallel sub-tasks when possible
 2. Use `mcp__sequential-thinking__sequentialthinking` for complex analysis

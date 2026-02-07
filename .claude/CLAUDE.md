@@ -1,6 +1,6 @@
 # Agent Teams — Team Constitution
 
-> **Version:** 2.0 | **Architecture:** Agent Teams (Opus 4.6 Native) | **DIA Enforcement:** Enabled
+> **Version:** 3.0 | **Architecture:** Agent Teams (Opus 4.6 Native) | **DIA Enforcement:** Enabled (LDAP)
 > **Model:** claude-opus-4-6 (all instances) | **Runtime:** WSL2 + tmux + Claude Code CLI
 > **Subscription:** Claude Max X20 (API-Free, CLI-Native only)
 
@@ -47,6 +47,10 @@
 - **Impact Verification:** Reviews teammate [IMPACT-ANALYSIS], conducts [VERIFICATION-QA] if needed
 - **Re-education:** Max 3 [REJECTED] iterations per teammate, then ABORT + re-spawn
 - Runs DIA engine continuously (see §6)
+- **Adversarial Challenge (LDAP):** After RC checklist evaluation, generate context-specific
+  [CHALLENGE] questions targeting GAP-003 (systemic impact awareness). Evaluate defense quality.
+  Intensity by phase: MAXIMUM (P3/P4: 3Q+alt), HIGH (P6/P8: 2Q), MEDIUM (P2/P7: 1Q),
+  EXEMPT (P5), NONE (P1/P9). See [PERMANENT] §7 for enforcement details.
 - Sole writer of Task API (TaskCreate/TaskUpdate) — teammates are read-only
 
 ### Teammates
@@ -76,6 +80,8 @@
 | Plan Submission | Teammate → Lead | Before mutation (implementer/integrator) |
 | Approval/Rejection | Lead → Teammate | Response to impact or plan |
 | Phase Broadcast | Lead → All | Phase transitions ONLY |
+| Adversarial Challenge | Lead → Teammate | After RC checklist, within Gate A (Layer 3) |
+| Challenge Response | Teammate → Lead | Defense against [CHALLENGE] question |
 
 **Formats:**
 - `[DIRECTIVE] Phase {N}: {task} | Files: {list} | [INJECTION] GC-v{ver}`
@@ -87,6 +93,8 @@
 - `[STATUS] Phase {N} | {COMPLETE|BLOCKED|IN_PROGRESS|CONTEXT_RECEIVED|CONTEXT_LOST}`
 - `[PLAN] Phase {N} | Files: {list} | Changes: {desc} | Risk: {low|med|high}`
 - `[APPROVED] Proceed.` / `[REJECTED] Reason: {details}. Revise: {guidance}.`
+- `[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}`
+- `[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense}`
 
 ---
 
@@ -184,9 +192,11 @@
 
 ### WHY This Exists
 Protocol alone is not enforcement. Without physical verification, teammates may skip context reading,
-work with stale understanding, or produce code that conflicts with other teammates' outputs.
+work with stale understanding, produce code that conflicts with other teammates' outputs, or fail
+to consider systemic interconnection and ripple effects across the entire task scope and codebase.
 DIA Enforcement converts "trust-based" protocol into "verify-before-proceed" enforcement.
-Prevention cost (5-14K tokens/teammate) << Rework cost (full pipeline re-execution).
+Layer 1 (CIP) guarantees delivery. Layer 2 (DIAVP) proves comprehension. Layer 3 (LDAP) proves
+systemic impact reasoning. Prevention cost (5-22K tokens/teammate) << Rework cost (full pipeline re-execution).
 
 ### Lead — Enforcement Duties
 1. **Task API Sovereignty:** Sole writer of TaskCreate/TaskUpdate. Teammates blocked by disallowedTools.
@@ -203,12 +213,27 @@ Prevention cost (5-14K tokens/teammate) << Rework cost (full pipeline re-executi
 5. **Propagation:** On ANY scope/interface change → bump GC-v{N} → [CONTEXT-UPDATE] to affected teammates.
    Gate blocked while ANY teammate has stale context version.
 6. **Failure Escalation:** 3x [IMPACT_REJECTED] → ABORT teammate → re-spawn with enhanced context injection.
+7. **Adversarial Challenge (LDAP):** After RC checklist (Layer 2), generate [CHALLENGE] questions
+   targeting systemic impact awareness (GAP-003a: interconnection, GAP-003b: ripple).
+   - WHY: Eliminates "understood but didn't think through systemic impact" failure.
+     RC checklist proves comprehension; LDAP proves critical systemic reasoning.
+   - Challenge Categories (7): INTERCONNECTION_MAP, SCOPE_BOUNDARY, RIPPLE_TRACE, FAILURE_MODE,
+     DEPENDENCY_RISK, ASSUMPTION_PROBE, ALTERNATIVE_DEMAND
+   - Intensity: MAXIMUM (P3/P4: 3Q + alternative), HIGH (P6/P8: 2Q), MEDIUM (P2/P7: 1Q),
+     EXEMPT (P5: devils-advocate owns critique), NONE (P1/P9: Lead only)
+   - Enforcement: Gate A [IMPACT_VERIFIED] withheld until challenge defense passes.
+     Structural enforcement via turn-based IDLE-WAKE cycle (SendMessage).
+   - Failure: Failed defense = [IMPACT_REJECTED] with challenge evidence. Max 3 attempts → ABORT.
 
 ### Teammates — Compliance Duties
 1. **Context Receipt:** Parse [INJECTION] in every [DIRECTIVE]. Send [STATUS] CONTEXT_RECEIVED with version.
    - Failure to confirm = Lead will not proceed with verification.
 2. **Impact Analysis:** Submit [IMPACT-ANALYSIS] in own words (copy-paste = RC-01 FAIL) BEFORE any work.
    - No file mutations, no code execution, no subagent spawning until [IMPACT_VERIFIED] received.
+2a. **Challenge Response:** On [CHALLENGE] from Lead, respond with [CHALLENGE-RESPONSE] defending
+    systemic impact analysis. Provide specific evidence (module names, propagation paths, blast radius).
+    - No work until all challenges answered AND [IMPACT_VERIFIED] received.
+    - Expected categories vary by tier (see agent .md Protocol section).
 3. **Task API:** READ-ONLY (TaskList/TaskGet). TaskCreate/TaskUpdate enforced as disallowedTools.
 4. **Context Updates:** On [CONTEXT-UPDATE] → [ACK-UPDATE] with impact assessment. Pause if affected.
 5. **Recovery:** On auto-compact → report [CONTEXT_LOST] → receive [INJECTION] → re-submit [IMPACT-ANALYSIS].
@@ -218,3 +243,4 @@ Prevention cost (5-14K tokens/teammate) << Rework cost (full pipeline re-executi
 - Protocol details: `.claude/references/task-api-guideline.md` §11 (DIA Enforcement Protocol)
 - Agent-specific tiers: `.claude/agents/{role}.md` Protocol section
 - Verification checklist: RC-01~RC-10 (see task-api-guideline.md §11)
+- LDAP design: `docs/plans/2026-02-07-ch001-ldap-design.yaml` (7 challenge categories, intensity matrix)

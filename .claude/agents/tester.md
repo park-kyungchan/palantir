@@ -65,6 +65,20 @@ Wait for:
 - [VERIFICATION-QA] → answer questions → await re-review
 - [IMPACT_REJECTED] → re-study injected context → re-submit (max 3 attempts)
 
+### Phase 1.5: Challenge Response [MANDATORY — MEDIUM: 1Q minimum]
+After submitting [IMPACT-ANALYSIS] and before receiving [IMPACT_VERIFIED], Lead may issue
+adversarial challenges to verify systemic impact awareness (GAP-003).
+
+On receiving [CHALLENGE]:
+1. Parse: `[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}`
+2. Think through the challenge — how does your test scope connect to the system?
+3. Respond with specific evidence (test targets, failure paths, coverage implications)
+4. Send: `[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense with specific evidence}`
+5. Await next [CHALLENGE] or [IMPACT_VERIFIED] / [IMPACT_REJECTED]
+
+**Expected categories:** SCOPE_BOUNDARY, FAILURE_MODE, DEPENDENCY_RISK
+**Defense quality:** Specific test targets, concrete failure scenarios, coverage gap analysis.
+
 ### Phase 2: Execution
 1. Read the design specification from Phase 4 outputs
 2. Read the implementation from Phase 6 outputs
