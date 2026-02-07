@@ -2,7 +2,7 @@
 
 > **Status:** [PERMANENT] — Must be read by EVERY agent before ANY Task API call.
 > **Applies to:** Lead, all Teammates, all Subagents spawned by Teammates.
-> **Version:** 3.0 (DIA Enforcement + LDAP) | Updated: 2026-02-07
+> **Version:** 4.0 (DIA + LDAP + Team Memory + Context Delta + Hooks) | Updated: 2026-02-07
 >
 > **OWNERSHIP NOTE:** Only Lead may call TaskCreate/TaskUpdate.
 > Teammates: TaskList/TaskGet only (read-only).
@@ -225,6 +225,16 @@ On EVERY [DIRECTIVE] received:
 | No nested teams | Teammates cannot create sub-teams | Only Lead spawns teams |
 | Fixed lead (no leadership transfer) | Lead is permanent | Plan at team creation |
 
+### ISS-005: Teammate Auto-Compact Recovery [HIGH]
+- **Teammates have independent context windows** — Lead's PreCompact hook only protects Lead session
+- Teammate auto-compact permanently destroys all in-memory work not saved to L1/L2/L3
+- **Mitigation (Teammate):** Write L1/L2/L3 intermediate artifacts proactively throughout execution.
+  On ~75% context pressure → save immediately → report [STATUS] CONTEXT_PRESSURE.
+  On compact detection → report [STATUS] CONTEXT_LOST → await Lead re-injection.
+- **Mitigation (Lead):** On CONTEXT_PRESSURE → shutdown teammate → re-spawn with L1/L2 injection (IP-006).
+  On CONTEXT_LOST → re-inject GC + task-context → teammate re-submits Impact Analysis.
+- **Not yet verified in practice** — proactive L1/L2/L3 saving is the primary defense
+
 ---
 
 ## 9. Sub-Orchestrator Task Patterns
@@ -268,13 +278,45 @@ Physical embedding guarantees delivery regardless of teammate's context window s
 |----|---------|---------|--------|
 | IP-001 | Initial Spawn | GC + TC full text | Task tool prompt |
 | IP-002 | Mid-session Assignment | GC + TC full text | SendMessage |
-| IP-003 | Interface Change | GC + TC (affected teammates) | SendMessage |
-| IP-004 | Architecture Change | GC + TC (ALL teammates) | Sequential SendMessage |
+| IP-003 | Interface Change | Delta if gap==1, else Full GC + TC | SendMessage |
+| IP-004 | Architecture Change | Always Full GC + TC (ALL teammates) | Sequential SendMessage |
 | IP-005 | Auto-compact Recovery | GC + TC + L1/L2 | SendMessage |
 | IP-006 | L1/L2/L3 Handoff Replacement | GC + TC + predecessor L1/L2 | Task tool prompt |
 | IP-007 | Plan Approval/Rejection | Version assert header only | SendMessage |
 | IP-008 | Deviation Correction | Updated TC full text | SendMessage |
 | IP-009 | Phase Broadcast | GC only | Broadcast |
+| IP-010 | Team Memory Relay | Teammate findings (non-Edit agents) | Lead Edit on TEAM-MEMORY.md |
+
+### Context Delta Protocol (within CIP)
+
+Delta mode applies when `version_gap == 1` and no fallback condition is active.
+
+**Delta format:**
+```
+[CONTEXT-UPDATE] GC-v{old} → GC-v{new}
+## Delta
+- ADDED §{section}: {key}: {value}
+- CHANGED §{section}: {key}: {old_value} → {new_value}
+- REMOVED §{section}: {key}
+- REPLACED §{section}: (full section content)
+## Impact Assessment
+- Affected teammates: {role-id list}
+- Required actions: {NONE | PAUSE | re-read specific section}
+```
+
+**Full fallback conditions (exhaustive):**
+| ID | Condition | Trigger |
+|----|-----------|---------|
+| FC-1 | Version gap > 1 | Teammate at v3, current v5 |
+| FC-2 | Compact recovery | [STATUS] CONTEXT_LOST |
+| FC-3 | Initial spawn | IP-001 directive |
+| FC-4 | Major restructure | Delta > 50% of GC sections |
+| FC-5 | Explicit request | Teammate ACK with NEED_CLARIFICATION |
+
+**Enhanced ACK format:**
+```
+[ACK-UPDATE] GC-v{new} received. Items: {applied}/{total}. Impact: {desc}. Action: {CONTINUE|PAUSE|NEED_CLARIFICATION}
+```
 
 ### Impact Awareness Verification Protocol (DIAVP)
 
@@ -405,3 +447,90 @@ CLAUDE_CODE_TASK_LIST_ID=palantir-dev claude
 - Tasks persist across `/resume` and context clears
 - All team members share the same task namespace
 - Avoids ISS-003 (task orphaning on context clear)
+
+---
+
+## 13. Team Memory Protocol
+
+### TEAM-MEMORY.md
+- Location: `.agent/teams/{session-id}/TEAM-MEMORY.md`
+- Purpose: Real-time knowledge sharing within a team session
+- Created by Lead at TeamCreate time (Write tool, once)
+- Deleted with team directory at TeamDelete
+
+### Access Rules
+| Agent Type | Has Edit? | Access Method |
+|-----------|-----------|---------------|
+| implementer | Yes | Direct Edit (own section) |
+| integrator | Yes | Direct Edit (own section) |
+| researcher | No | Lead relay (SendMessage → Lead Edit) |
+| architect | No | Lead relay (SendMessage → Lead Edit) |
+| tester | No | Lead relay (SendMessage → Lead Edit) |
+| devils-advocate | No | Read-only (no write/relay) |
+| Lead | N/A | Full (Write initial, Edit curation) |
+
+### Rules
+1. Edit only — Write forbidden after initial creation
+2. `old_string` MUST include section header (`## {role-id}`) for uniqueness
+3. Edit own section only — cross-section edit is a protocol violation
+4. Tags: `[Finding]`, `[Pattern]`, `[Decision]`, `[Warning]`, `[Dependency]`, `[Conflict]`, `[Question]`
+
+### Lead Curation
+- At Gate time: prefix stale items with `[ARCHIVED]`
+- At GC version bump: update `## Meta` section GC Version
+- At teammate replacement: prefix old section with `[REPLACED]`
+- At 500-line threshold: remove `[ARCHIVED]` items
+
+### vs L1/L2/L3
+| Aspect | Team Memory | L1/L2/L3 |
+|--------|-------------|----------|
+| Purpose | Real-time sharing | Task output handoff |
+| Lifetime | Session-scoped (TeamCreate → TeamDelete) | May persist across sessions |
+| Owner | Section-per-role (shared file) | Teammate-specific directory |
+| Update timing | Continuous during work | Checkpoint (proactive + ~75%) |
+| Content | Discoveries, patterns, warnings | Structured deliverables |
+
+---
+
+## 14. Context Delta Protocol
+
+### Delta Format
+```
+[CONTEXT-UPDATE] GC-v{old} → GC-v{new}
+## Delta
+- ADDED §{section}: {key}: {value}
+- CHANGED §{section}: {key}: {old_value} → {new_value}
+- REMOVED §{section}: {key}
+- REPLACED §{section}: (full section content)
+## Impact Assessment
+- Affected teammates: {role-id list}
+- Required actions: {NONE | PAUSE | re-read specific section}
+```
+
+### Fallback Decision Tree
+```
+Is teammate in CONTEXT_LOST state? → YES → FULL (FC-2)
+Is this initial spawn (IP-001)?    → YES → FULL (FC-3)
+version_gap > 1?                   → YES → FULL (FC-1)
+delta_items > 50% of GC sections?  → YES → FULL (FC-4)
+teammate explicitly requested?     → YES → FULL (FC-5)
+ELSE                               →       DELTA
+```
+
+### Enhanced ACK
+```
+[ACK-UPDATE] GC-v{new} received. Items: {applied}/{total}. Impact: {desc}. Action: {CONTINUE|PAUSE|NEED_CLARIFICATION}
+```
+
+### Lead ACK Validation
+| ACK Content | Lead Action |
+|-------------|-------------|
+| applied == total, CONTINUE | Proceed — context aligned |
+| applied < total, NEED_CLARIFICATION | Re-send unclear items or full fallback |
+| PAUSE | Acknowledge, provide guidance |
+| No ACK within reasonable time | Ping teammate, check for compact |
+
+### Edge Cases
+- Rapid sequential updates (v5→v6→v7): Lead checks teammate's confirmed version, not sent version
+- Partial ACK: Re-send unclear items or full fallback if >50% unclear
+- Delta during gate: Gate freezes GC version. Delta only after gate conclusion

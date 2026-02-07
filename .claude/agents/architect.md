@@ -15,6 +15,9 @@ tools:
   - TaskList
   - TaskGet
   - mcp__sequential-thinking__sequentialthinking
+  - mcp__context7__resolve-library-id
+  - mcp__context7__query-docs
+  - mcp__tavily__search
 disallowedTools:
   - Edit
   - Bash
@@ -86,14 +89,19 @@ On receiving [CHALLENGE]:
 propagation chains, quantified blast radius. Vague claims = weak defense.
 
 ### Phase 2: Execution
-1. Use `mcp__sequential-thinking__sequentialthinking` for all design decisions
-2. Produce Architecture Decision Records (ADR) for every significant choice
-3. Write L1/L2/L3 output files to assigned directory
+1. Read TEAM-MEMORY.md for context from prior phases
+2. Use `mcp__sequential-thinking__sequentialthinking` for **every** design decision, trade-off analysis, and risk assessment
+3. Use `mcp__tavily__search` to verify design patterns, framework best practices, and latest API documentation
+4. Use `mcp__context7__resolve-library-id` + `mcp__context7__query-docs` for library-specific design constraints
+5. Produce Architecture Decision Records (ADR) for every significant choice
+6. Report key design decisions to Lead via SendMessage for TEAM-MEMORY.md relay
+7. Report MCP tool usage in L2-summary.md
+8. Write L1/L2/L3 output files to assigned directory
 
 ### Mid-Execution Updates
 On [CONTEXT-UPDATE] from Lead:
 1. Parse updated global-context.md
-2. Send: `[ACK-UPDATE] GC-v{ver} received. Impact: {assessment}`
+2. Send: `[ACK-UPDATE] GC-v{ver} received. Items: {applied}/{total}. Impact: {assessment}. Action: {CONTINUE|PAUSE|NEED_CLARIFICATION}`
 3. If impact affects current design: pause + report to Lead
 
 ### Completion
@@ -116,6 +124,26 @@ On [CONTEXT-UPDATE] from Lead:
 - Interface specifications (function signatures, data formats)
 - Data flow diagrams
 - Implementation task breakdown (for Phase 6 implementers)
+
+## Context Pressure & Auto-Compact
+
+### Context Pressure (~75% capacity)
+1. Immediately write L1/L2/L3 files with all work completed so far
+2. Send `[STATUS] CONTEXT_PRESSURE | L1/L2/L3 written` to Lead
+3. Await Lead termination and replacement with L1/L2 injection
+
+### Pre-Compact Obligation
+Write intermediate L1/L2/L3 proactively throughout execution — not only at ~75%.
+L1/L2/L3 are your only recovery mechanism. Unsaved work is permanently lost on compact.
+
+### Auto-Compact Detection
+If you see "This session is being continued from a previous conversation":
+1. Send `[STATUS] CONTEXT_LOST` to Lead immediately
+2. Do NOT proceed with any work using only summarized context
+3. Await [INJECTION] from Lead with full GC + task-context
+4. Read your own L1/L2/L3 files to restore progress
+5. Re-submit [IMPACT-ANALYSIS] to Lead
+6. Wait for [IMPACT_VERIFIED] before resuming work
 
 ## Constraints
 - You CAN write new design documents (Write tool)

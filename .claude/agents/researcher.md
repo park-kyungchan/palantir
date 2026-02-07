@@ -18,6 +18,7 @@ tools:
   - mcp__sequential-thinking__sequentialthinking
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs
+  - mcp__tavily__search
 disallowedTools:
   - Edit
   - Write
@@ -82,15 +83,20 @@ On receiving [CHALLENGE]:
 assumption justification with evidence.
 
 ### Phase 2: Execution
-1. Decompose research into parallel sub-tasks when possible
-2. Use `mcp__sequential-thinking__sequentialthinking` for complex analysis
-3. Verify findings with MCP tools (Context7, WebSearch) before reporting
-4. Write L1/L2/L3 output files to assigned directory
+1. Read TEAM-MEMORY.md for context from prior phases
+2. Decompose research into parallel sub-tasks when possible
+3. Use `mcp__sequential-thinking__sequentialthinking` for **every** analysis step, comparison, and judgment
+4. Use `mcp__tavily__search` for latest documentation, API changes, and best practices verification
+5. Use `mcp__context7__resolve-library-id` + `mcp__context7__query-docs` for library documentation lookup
+6. Cross-reference findings across multiple MCP tools before concluding
+7. Report key findings to Lead via SendMessage for TEAM-MEMORY.md relay
+8. Report MCP tool usage in L2-summary.md
+9. Write L1/L2/L3 output files to assigned directory
 
 ### Mid-Execution Updates
 On [CONTEXT-UPDATE] from Lead:
 1. Parse updated global-context.md
-2. Send: `[ACK-UPDATE] GC-v{ver} received. Impact: {assessment}`
+2. Send: `[ACK-UPDATE] GC-v{ver} received. Items: {applied}/{total}. Impact: {assessment}. Action: {CONTINUE|PAUSE|NEED_CLARIFICATION}`
 3. If impact affects current research: pause + report to Lead
 
 ### Completion
@@ -113,8 +119,22 @@ On [CONTEXT-UPDATE] from Lead:
 Consult your persistent memory at `~/.claude/agent-memory/researcher/MEMORY.md` at start.
 Update it with key patterns, discovery methods, and domain knowledge on completion.
 
-## Context Pressure
-At ~75% context capacity:
-1. Write L1/L2/L3 files immediately
+## Context Pressure & Auto-Compact
+
+### Context Pressure (~75% capacity)
+1. Immediately write L1/L2/L3 files with all work completed so far
 2. Send `[STATUS] CONTEXT_PRESSURE | L1/L2/L3 written` to Lead
-3. Await Lead termination and replacement
+3. Await Lead termination and replacement with L1/L2 injection
+
+### Pre-Compact Obligation
+Write intermediate L1/L2/L3 proactively throughout execution — not only at ~75%.
+L1/L2/L3 are your only recovery mechanism. Unsaved work is permanently lost on compact.
+
+### Auto-Compact Detection
+If you see "This session is being continued from a previous conversation":
+1. Send `[STATUS] CONTEXT_LOST` to Lead immediately
+2. Do NOT proceed with any work using only summarized context
+3. Await [INJECTION] from Lead with full GC + task-context
+4. Read your own L1/L2/L3 files to restore progress
+5. Re-submit [IMPACT-ANALYSIS] to Lead
+6. Wait for [IMPACT_VERIFIED] before resuming work

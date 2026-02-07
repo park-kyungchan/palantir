@@ -84,6 +84,32 @@
           }
         ]
       }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-teammate-idle.sh",
+            "timeout": 10,
+            "statusMessage": "Verifying teammate output before idle"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-task-completed.sh",
+            "timeout": 10,
+            "statusMessage": "Verifying task completion criteria"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
