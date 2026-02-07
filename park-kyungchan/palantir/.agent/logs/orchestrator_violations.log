@@ -1,0 +1,11 @@
+{"ts": "2026-01-21T17:49:22.569343", "mode": "WARN", "decision": "allow", "tool": "Write", "reasons": ["large_write"], "session": "unknown"}
+{"ts": "2026-01-21T17:49:40.241281", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["multi_pipe", "multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:49:40.986273", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["multi_pipe", "multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:49:48.661637", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:49:49.310307", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:50:20.655055", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["long_command", "multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:52:20.376687", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["long_command", "multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:53:00.390732", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["long_command", "multi_step"], "session": "unknown"}
+{"ts": "2026-01-21T17:54:37.451532", "mode": "WARN", "decision": "allow", "tool": "Edit", "reasons": ["large_edit"], "session": "unknown"}
+{"ts": "2026-01-21T17:54:48.126901", "mode": "WARN", "decision": "allow", "tool": "Edit", "reasons": ["large_edit"], "session": "unknown"}
+{"ts": "2026-01-21T17:54:54.689438", "mode": "WARN", "decision": "allow", "tool": "Bash", "reasons": ["dangerous:rm -rf", "long_command", "multi_step"], "session": "unknown"}

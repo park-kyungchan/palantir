@@ -1,0 +1,1383 @@
+# Task 12: HITL (Human-in-the-Loop) Workflow Detailed Design
+# Version: 1.0
+# Date: 2026-02-04
+# Purpose: Confidence-based routing and manual review workflow for cow pipeline
+
+metadata:
+  task_id: "task12"
+  author: "Plan Agent"
+  created_at: "2026-02-04"
+  version: "1.0"
+  status: "design_complete"
+  dependencies:
+    - "task03_confidence_system"
+    - "task09_stage_c_alignment"
+    - "task10_stage_d_semantic_graph"
+
+# ============================================================================
+# 1. ARCHITECTURE OVERVIEW
+# ============================================================================
+
+architecture:
+  approach: "hybrid_file_db"
+  rationale: |
+    Combines file-based storage (images, extractions) with SQLite for
+    queryable metadata. Balances simplicity with performance.
+
+  components:
+    queue_database:
+      type: "SQLite"
+      location: "cow/data/hitl/review_queue.db"
+      purpose: "Store review items metadata, state, audit logs"
+      advantages:
+        - "No server required"
+        - "ACID transactions"
+        - "Complex queries supported"
+        - "Lightweight and portable"
+      tables:
+        - "review_items"
+        - "audit_logs"
+        - "reviewer_stats"
+        - "review_sessions"
+
+    file_storage:
+      base_path: "cow/data/hitl/"
+      structure:
+        pending: "cow/data/hitl/pending/{item_id}/"
+        in_review: "cow/data/hitl/in_review/{item_id}/"
+        approved: "cow/data/hitl/approved/{item_id}/"
+        rejected: "cow/data/hitl/rejected/{item_id}/"
+        modified: "cow/data/hitl/modified/{item_id}/"
+
+      item_directory_contents:
+        - "original_image.png"
+        - "extracted_content.json"
+        - "context.yaml"  # Surrounding elements for reference
+        - "metadata.yaml"  # Confidence, timestamps, etc.
+
+# ============================================================================
+# 2. DATA SCHEMAS
+# ============================================================================
+
+schemas:
+  review_item:
+    description: "Single item in review queue"
+    storage: "SQLite table: review_items"
+    fields:
+      id:
+        type: "uuid"
+        description: "Unique identifier for review item"
+        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+      image_path:
+        type: "string"
+        description: "Path to source image file"
+        example: "cow/outputs/images/page_003.png"
+
+      element_id:
+        type: "string"
+        description: "Element identifier from extraction stage"
+        example: "element_003_012"
+
+      element_type:
+        type: "enum"
+        values: ["text", "equation", "diagram", "table", "graph", "mixed"]
+        description: "Type of mathematical element"
+
+      confidence:
+        type: "float"
+        range: [0.0, 1.0]
+        description: "Model confidence score"
+        example: 0.68
+
+      confidence_rate:
+        type: "float"
+        range: [0.0, 1.0]
+        description: "Confidence rate from threshold system"
+        example: 0.75
+
+      threshold:
+        type: "float"
+        description: "Required threshold for auto-approval"
+        example: 0.75
+
+      confidence_gap:
+        type: "float"
+        description: "Difference between threshold and actual confidence"
+        formula: "threshold - confidence"
+        example: 0.07
+
+      routing_reason:
+        type: "enum"
+        values:
+          - "low_confidence"
+          - "type_criticality"
+          - "inconsistency_detected"
+          - "manual_flag"
+          - "error_similarity"
+        description: "Why this item was routed to HITL"
+
+      status:
+        type: "enum"
+        values: ["pending", "in_review", "approved", "rejected", "modified", "deferred"]
+        description: "Current review status"
+        default: "pending"
+
+      priority_score:
+        type: "float"
+        description: "Computed priority for queue ordering"
+        range: [0, 1000]
+        example: 87.5
+
+      blocking:
+        type: "boolean"
+        description: "Does this block downstream processing?"
+        default: false
+
+      created_at:
+        type: "timestamp"
+        description: "When item was queued"
+
+      claimed_at:
+        type: "timestamp"
+        nullable: true
+        description: "When reviewer claimed item"
+
+      reviewed_at:
+        type: "timestamp"
+        nullable: true
+        description: "When review was completed"
+
+      reviewer:
+        type: "string"
+        nullable: true
+        description: "Reviewer identifier (username/email)"
+
+      decision:
+        type: "enum"
+        values: ["approve", "reject", "modify", "defer"]
+        nullable: true
+
+      decision_comment:
+        type: "text"
+        nullable: true
+        description: "Reviewer's explanation"
+
+      modifications:
+        type: "json"
+        nullable: true
+        description: "Changes made if decision=modify"
+        example:
+          field: "latex_content"
+          original: "\\frac{1}{2}"
+          corrected: "\\frac{x}{2}"
+
+      review_duration_seconds:
+        type: "integer"
+        nullable: true
+        description: "Time spent reviewing"
+
+      stage_context:
+        type: "enum"
+        values: ["stage_c0_post", "stage_c_pre", "stage_d_pre"]
+        description: "Which pipeline stage triggered review"
+
+    indexes:
+      - name: "idx_status_priority"
+        columns: ["status", "priority_score DESC"]
+        purpose: "Fast queue retrieval"
+
+      - name: "idx_element_type"
+        columns: ["element_type"]
+
+      - name: "idx_created_at"
+        columns: ["created_at"]
+
+      - name: "idx_reviewer"
+        columns: ["reviewer"]
+
+  audit_log:
+    description: "Immutable log of all review actions"
+    storage: "SQLite table: audit_logs"
+    fields:
+      id:
+        type: "integer"
+        auto_increment: true
+
+      review_item_id:
+        type: "uuid"
+        foreign_key: "review_items.id"
+
+      action:
+        type: "enum"
+        values:
+          - "queued"
+          - "claimed"
+          - "approved"
+          - "rejected"
+          - "modified"
+          - "deferred"
+          - "unclaimed"
+
+      actor:
+        type: "string"
+        description: "Who performed action (system or reviewer)"
+
+      timestamp:
+        type: "timestamp"
+        default: "NOW()"
+
+      details:
+        type: "json"
+        description: "Action-specific metadata"
+
+      ip_address:
+        type: "string"
+        nullable: true
+        description: "For audit trail"
+
+    indexes:
+      - name: "idx_review_item_time"
+        columns: ["review_item_id", "timestamp"]
+
+  reviewer_stats:
+    description: "Aggregated reviewer performance metrics"
+    storage: "SQLite table: reviewer_stats"
+    fields:
+      reviewer:
+        type: "string"
+        primary_key: true
+
+      total_reviewed:
+        type: "integer"
+        default: 0
+
+      total_approved:
+        type: "integer"
+        default: 0
+
+      total_rejected:
+        type: "integer"
+        default: 0
+
+      total_modified:
+        type: "integer"
+        default: 0
+
+      total_deferred:
+        type: "integer"
+        default: 0
+
+      avg_review_duration_seconds:
+        type: "float"
+
+      last_review_at:
+        type: "timestamp"
+        nullable: true
+
+      approval_rate:
+        type: "float"
+        formula: "total_approved / total_reviewed"
+
+      modification_rate:
+        type: "float"
+        formula: "total_modified / total_reviewed"
+
+# ============================================================================
+# 3. ROUTING RULES
+# ============================================================================
+
+routing_rules:
+  description: "Decision logic for automatic vs manual review"
+
+  type_specific_thresholds:
+    text:
+      auto_approve: 0.90
+      review_recommended: 0.75
+      review_required: 0.0
+      rationale: "Text elements are most common, lower risk"
+
+    equation:
+      auto_approve: 0.95
+      review_recommended: 0.80
+      review_required: 0.0
+      rationale: "Equations require high accuracy"
+
+    diagram:
+      auto_approve: 0.85
+      review_recommended: 0.70
+      review_required: 0.0
+      rationale: "Diagrams are complex, medium criticality"
+
+    table:
+      auto_approve: 0.90
+      review_recommended: 0.75
+      review_required: 0.0
+      rationale: "Tables have structure to validate"
+
+    graph:
+      auto_approve: 0.88
+      review_recommended: 0.73
+      review_required: 0.0
+      rationale: "Graphs need accurate data points"
+
+    mixed:
+      auto_approve: 0.92
+      review_recommended: 0.78
+      review_required: 0.0
+      rationale: "Mixed elements have multiple failure modes"
+
+  routing_decision_tree:
+    step_1_confidence_check:
+      condition: "confidence >= type_thresholds[element_type].auto_approve"
+      action: "auto_approve"
+      log: "Auto-approved due to high confidence"
+
+    step_2_review_recommended:
+      condition: "confidence >= type_thresholds[element_type].review_recommended"
+      action: "queue_for_review"
+      priority: "medium"
+      reason: "confidence_in_review_range"
+
+    step_3_review_required:
+      condition: "confidence < type_thresholds[element_type].review_recommended"
+      action: "queue_for_review"
+      priority: "high"
+      reason: "low_confidence"
+
+    step_4_consistency_check:
+      trigger: "alignment_stage_c"
+      condition: "inconsistency_score > 0.3"
+      action: "queue_for_review"
+      priority: "high"
+      reason: "inconsistency_detected"
+      override: "even if confidence was initially high"
+
+    step_5_error_similarity:
+      trigger: "historical_data_available"
+      condition: "similarity_to_past_errors > 0.7"
+      action: "queue_for_review"
+      priority: "high"
+      reason: "error_similarity"
+
+    step_6_manual_flag:
+      trigger: "user_flag or policy_requirement"
+      action: "queue_for_review"
+      priority: "critical"
+      reason: "manual_flag"
+
+  compound_factors:
+    description: "Additional factors influencing routing"
+
+    business_criticality:
+      exam_questions:
+        multiplier: 1.3
+        description: "Exams need higher accuracy"
+
+      lecture_notes:
+        multiplier: 1.0
+        description: "Standard accuracy"
+
+      supplementary_material:
+        multiplier: 0.8
+        description: "Lower criticality"
+
+    extraction_complexity:
+      handwritten:
+        threshold_adjustment: +0.1
+        description: "Handwritten harder, need higher confidence"
+
+      low_quality_scan:
+        threshold_adjustment: +0.08
+        description: "Poor image quality increases risk"
+
+      multiple_languages:
+        threshold_adjustment: +0.05
+        description: "Mixed languages add complexity"
+
+# ============================================================================
+# 4. APPROVAL WORKFLOW
+# ============================================================================
+
+workflow:
+  state_machine:
+    states:
+      pending:
+        description: "Initial state when queued"
+        allowed_transitions: ["in_review", "auto_approved"]
+        auto_transition:
+          condition: "blocking == false AND age_hours > 72"
+          target: "deferred"
+          reason: "stale_item"
+
+      in_review:
+        description: "Claimed by reviewer"
+        allowed_transitions: ["approved", "rejected", "modified", "deferred", "pending"]
+        timeout:
+          duration_minutes: 30
+          action: "unclaim_and_return_to_pending"
+
+      approved:
+        description: "Passed without changes"
+        terminal: true
+        next_pipeline_action: "continue_to_next_stage"
+
+      rejected:
+        description: "Excluded from pipeline"
+        terminal: true
+        next_pipeline_action: "skip_element"
+
+      modified:
+        description: "Corrected and approved"
+        terminal: true
+        next_pipeline_action: "use_modified_content"
+
+      deferred:
+        description: "Postponed for later review"
+        allowed_transitions: ["pending", "rejected"]
+        auto_expire:
+          duration_days: 7
+          action: "auto_reject"
+
+    transition_rules:
+      claim:
+        from: "pending"
+        to: "in_review"
+        action: "assign reviewer, set claimed_at"
+        validation:
+          - "reviewer is authenticated"
+          - "item not already claimed"
+
+      approve:
+        from: "in_review"
+        to: "approved"
+        action: "set decision=approve, reviewed_at, update stats"
+        optional: ["decision_comment"]
+
+      reject:
+        from: "in_review"
+        to: "rejected"
+        action: "set decision=reject, reviewed_at, update stats"
+        required: ["decision_comment"]
+
+      modify:
+        from: "in_review"
+        to: "modified"
+        action: "apply modifications, set decision=modify, reviewed_at"
+        required: ["modifications", "decision_comment"]
+        validation:
+          - "modifications is valid JSON"
+          - "modified fields exist in schema"
+
+      defer:
+        from: "in_review"
+        to: "deferred"
+        action: "unclaim, set decision=defer"
+        required: ["decision_comment"]
+
+  decision_actions:
+    approve:
+      description: "Accept extracted content as-is"
+      requirements: []
+      outcome: "Element continues to next pipeline stage"
+      audit_fields:
+        - "decision: approve"
+        - "decision_comment: (optional)"
+
+    reject:
+      description: "Exclude element from pipeline"
+      requirements:
+        - "decision_comment: reason for rejection"
+      outcome: "Element marked as excluded, not exported"
+      audit_fields:
+        - "decision: reject"
+        - "decision_comment: (required)"
+      use_cases:
+        - "Illegible content"
+        - "Out of scope"
+        - "Duplicate element"
+        - "Extraction completely wrong"
+
+    modify:
+      description: "Correct content before approval"
+      requirements:
+        - "modifications: JSON with field→value mappings"
+        - "decision_comment: what was changed and why"
+      outcome: "Modified content used in pipeline"
+      modification_schema:
+        field:
+          type: "string"
+          description: "Field name to modify"
+          examples: ["latex_content", "label", "element_type"]
+        original:
+          type: "any"
+          description: "Original value (for audit)"
+        corrected:
+          type: "any"
+          description: "New value to use"
+
+      audit_fields:
+        - "decision: modify"
+        - "modifications: {...}"
+        - "decision_comment: (required)"
+
+      use_cases:
+        - "Minor LaTeX syntax errors"
+        - "Wrong element type classification"
+        - "Missing or incorrect label"
+        - "Bounding box adjustment"
+
+    defer:
+      description: "Postpone review (need more context)"
+      requirements:
+        - "decision_comment: reason for deferral"
+      outcome: "Item returned to queue with lower priority"
+      audit_fields:
+        - "decision: defer"
+        - "decision_comment: (required)"
+      use_cases:
+        - "Need to consult subject matter expert"
+        - "Ambiguous without full document context"
+        - "Waiting for related elements to be reviewed"
+
+  audit_logging:
+    description: "Immutable record of all actions"
+    events_logged:
+      - "item_queued"
+      - "item_claimed"
+      - "item_approved"
+      - "item_rejected"
+      - "item_modified"
+      - "item_deferred"
+      - "item_unclaimed"
+      - "item_expired"
+
+    audit_entry_format:
+      timestamp: "ISO 8601 with timezone"
+      review_item_id: "uuid"
+      action: "enum value"
+      actor: "reviewer username or 'system'"
+      details:
+        before_state: "previous status"
+        after_state: "new status"
+        modifications: "if applicable"
+        comment: "reviewer comment"
+        ip_address: "for security audit"
+
+# ============================================================================
+# 5. PRIORITY SCORING
+# ============================================================================
+
+priority_scoring:
+  description: "Algorithm to order items in review queue"
+
+  formula: |
+    priority = (
+      confidence_gap_score +
+      type_criticality_score +
+      blocking_bonus +
+      age_bonus +
+      error_similarity_score
+    )
+
+  components:
+    confidence_gap_score:
+      calculation: "(threshold - confidence) * 100"
+      range: [0, 100]
+      example:
+        threshold: 0.75
+        confidence: 0.68
+        score: "7.0"
+
+    type_criticality_score:
+      weights:
+        equation: 30
+        mixed: 25
+        table: 20
+        graph: 20
+        diagram: 15
+        text: 10
+      description: "More critical types get higher priority"
+
+    blocking_bonus:
+      calculation: "50 if blocking else 0"
+      description: "Blocking items jump to front of queue"
+
+    age_bonus:
+      calculation: "min(age_in_days * 2, 20)"
+      description: "Older items gradually increase priority"
+      cap: 20
+
+    error_similarity_score:
+      calculation: "similarity_to_past_errors * 20"
+      range: [0, 20]
+      description: "Items similar to past errors get higher priority"
+
+  examples:
+    high_priority_example:
+      element_type: "equation"
+      confidence: 0.65
+      threshold: 0.80
+      blocking: true
+      age_days: 0
+      error_similarity: 0.8
+      calculation:
+        confidence_gap: "(0.80 - 0.65) * 100 = 15"
+        type_criticality: "30"
+        blocking_bonus: "50"
+        age_bonus: "0"
+        error_similarity: "0.8 * 20 = 16"
+        total: "111"
+
+    medium_priority_example:
+      element_type: "text"
+      confidence: 0.72
+      threshold: 0.75
+      blocking: false
+      age_days: 2
+      error_similarity: 0.3
+      calculation:
+        confidence_gap: "(0.75 - 0.72) * 100 = 3"
+        type_criticality: "10"
+        blocking_bonus: "0"
+        age_bonus: "2 * 2 = 4"
+        error_similarity: "0.3 * 20 = 6"
+        total: "23"
+
+# ============================================================================
+# 6. CLI INTERFACE
+# ============================================================================
+
+cli_commands:
+  base_command: "cow-cli review"
+
+  list_command:
+    syntax: "cow-cli review list [OPTIONS]"
+    description: "List review items with filters"
+    options:
+      --status:
+        type: "enum"
+        values: ["pending", "in_review", "approved", "rejected", "modified", "deferred", "all"]
+        default: "pending"
+        description: "Filter by status"
+
+      --confidence-below:
+        type: "float"
+        range: [0.0, 1.0]
+        description: "Show items with confidence < threshold"
+
+      --confidence-above:
+        type: "float"
+        range: [0.0, 1.0]
+        description: "Show items with confidence > threshold"
+
+      --element-type:
+        type: "enum"
+        values: ["text", "equation", "diagram", "table", "graph", "mixed", "all"]
+        default: "all"
+
+      --blocking-only:
+        type: "boolean"
+        description: "Show only blocking items"
+
+      --reviewer:
+        type: "string"
+        description: "Filter by reviewer (for in_review/completed items)"
+
+      --limit:
+        type: "integer"
+        default: 20
+        description: "Max items to show"
+
+      --sort:
+        type: "enum"
+        values: ["priority", "confidence", "created_at", "element_type"]
+        default: "priority"
+
+    examples:
+      - command: "cow-cli review list"
+        description: "List 20 highest priority pending items"
+
+      - command: "cow-cli review list --status all --confidence-below 0.7"
+        description: "All items with confidence < 0.7"
+
+      - command: "cow-cli review list --element-type equation --blocking-only"
+        description: "Blocking equation items only"
+
+    output_format: |
+      ID          | Type     | Confidence | Priority | Status    | Age
+      ------------|----------|------------|----------|-----------|--------
+      a1b2c3d4... | equation | 0.68       | 111.0    | pending   | 2h ago
+      e5f6g7h8... | diagram  | 0.73       | 87.5     | pending   | 5h ago
+      ...
+
+  show_command:
+    syntax: "cow-cli review show <ITEM_ID>"
+    description: "Display detailed information for one item"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+        description: "Review item ID"
+
+    examples:
+      - command: "cow-cli review show a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        description: "Show full details for item"
+
+    output_sections:
+      metadata:
+        - "ID"
+        - "Element Type"
+        - "Confidence"
+        - "Threshold"
+        - "Priority Score"
+        - "Status"
+        - "Created At"
+        - "Routing Reason"
+
+      content:
+        - "Extracted Content (JSON pretty-print)"
+        - "Image Preview (if terminal supports)"
+
+      context:
+        - "Surrounding Elements"
+        - "Page Number"
+        - "Document Name"
+
+      audit_history:
+        - "Action Timeline"
+
+  approve_command:
+    syntax: "cow-cli review approve <ITEM_ID> [OPTIONS]"
+    description: "Approve item without changes"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+
+    options:
+      --comment:
+        type: "string"
+        required: false
+        description: "Optional approval comment"
+
+    examples:
+      - command: "cow-cli review approve a1b2c3d4"
+        description: "Approve with no comment"
+
+      - command: "cow-cli review approve a1b2c3d4 --comment 'Verified correct'"
+        description: "Approve with comment"
+
+    workflow:
+      - "Validate item exists and status == in_review"
+      - "Set decision=approve, reviewed_at=NOW()"
+      - "Log audit entry"
+      - "Update reviewer stats"
+      - "Move files to approved/"
+      - "Trigger pipeline continuation"
+
+  reject_command:
+    syntax: "cow-cli review reject <ITEM_ID> --reason <REASON>"
+    description: "Reject item (exclude from pipeline)"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+
+    options:
+      --reason:
+        type: "string"
+        required: true
+        description: "Reason for rejection (required)"
+
+    examples:
+      - command: "cow-cli review reject a1b2c3d4 --reason 'Illegible handwriting'"
+
+      - command: "cow-cli review reject a1b2c3d4 --reason 'Duplicate of element_003_008'"
+
+    workflow:
+      - "Validate item exists and status == in_review"
+      - "Validate reason is provided"
+      - "Set decision=reject, decision_comment=reason"
+      - "Log audit entry"
+      - "Update reviewer stats"
+      - "Move files to rejected/"
+      - "Mark element as excluded in pipeline"
+
+  modify_command:
+    syntax: "cow-cli review modify <ITEM_ID> --field <FIELD> --value <VALUE> --comment <COMMENT>"
+    description: "Modify content before approval"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+
+    options:
+      --field:
+        type: "string"
+        required: true
+        description: "Field to modify (e.g., latex_content, label)"
+
+      --value:
+        type: "string"
+        required: true
+        description: "New value for field"
+
+      --comment:
+        type: "string"
+        required: true
+        description: "Explanation of change"
+
+      --original:
+        type: "string"
+        required: false
+        description: "Original value (for validation)"
+
+    examples:
+      - command: |
+          cow-cli review modify a1b2c3d4 \
+            --field latex_content \
+            --value "\\frac{x}{2}" \
+            --original "\\frac{1}{2}" \
+            --comment "Variable was misread as 1"
+
+      - command: |
+          cow-cli review modify a1b2c3d4 \
+            --field element_type \
+            --value equation \
+            --original diagram \
+            --comment "Misclassified, this is an equation"
+
+    workflow:
+      - "Validate item exists and status == in_review"
+      - "Validate field exists in schema"
+      - "If --original provided, verify it matches current value"
+      - "Apply modification"
+      - "Set decision=modify, modifications={...}, decision_comment"
+      - "Log audit entry with before/after"
+      - "Update reviewer stats"
+      - "Move files to modified/"
+      - "Trigger pipeline with modified content"
+
+  defer_command:
+    syntax: "cow-cli review defer <ITEM_ID> --reason <REASON>"
+    description: "Postpone review (return to queue)"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+
+    options:
+      --reason:
+        type: "string"
+        required: true
+        description: "Why deferring"
+
+    examples:
+      - command: "cow-cli review defer a1b2c3d4 --reason 'Need to consult math SME'"
+
+      - command: "cow-cli review defer a1b2c3d4 --reason 'Ambiguous without page context'"
+
+    workflow:
+      - "Unclaim item (status: in_review → deferred)"
+      - "Lower priority score"
+      - "Set auto-expire timer (7 days)"
+      - "Log audit entry"
+
+  claim_command:
+    syntax: "cow-cli review claim <ITEM_ID>"
+    description: "Claim item for review (manual claim)"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+
+    examples:
+      - command: "cow-cli review claim a1b2c3d4"
+
+    workflow:
+      - "Validate status == pending"
+      - "Set status=in_review, reviewer=current_user, claimed_at=NOW()"
+      - "Start timeout timer (30 min)"
+      - "Log audit entry"
+
+  unclaim_command:
+    syntax: "cow-cli review unclaim <ITEM_ID>"
+    description: "Release claimed item back to queue"
+    arguments:
+      item_id:
+        type: "uuid"
+        required: true
+
+    examples:
+      - command: "cow-cli review unclaim a1b2c3d4"
+
+    workflow:
+      - "Validate reviewer == current_user"
+      - "Set status=pending, reviewer=null, claimed_at=null"
+      - "Log audit entry"
+
+  interactive_command:
+    syntax: "cow-cli review interactive [OPTIONS]"
+    description: "Launch TUI for batch review"
+    options:
+      --auto-claim:
+        type: "boolean"
+        default: true
+        description: "Automatically claim next item"
+
+      --filter:
+        type: "string"
+        description: "Same filters as 'list' command"
+
+    examples:
+      - command: "cow-cli review interactive"
+        description: "Start interactive session with default filters"
+
+      - command: "cow-cli review interactive --filter 'element_type=equation'"
+        description: "Review only equations"
+
+    tui_features:
+      - "Side-by-side image + extracted content"
+      - "Keyboard shortcuts: A=approve, R=reject, M=modify, D=defer, N=next, Q=quit"
+      - "Live queue count"
+      - "Session statistics"
+      - "Undo last action"
+
+  stats_command:
+    syntax: "cow-cli review stats [OPTIONS]"
+    description: "Show review statistics"
+    options:
+      --reviewer:
+        type: "string"
+        description: "Stats for specific reviewer"
+
+      --since:
+        type: "date"
+        description: "Stats since date (YYYY-MM-DD)"
+
+      --element-type:
+        type: "enum"
+        values: ["text", "equation", "diagram", "table", "graph", "mixed", "all"]
+        default: "all"
+
+    examples:
+      - command: "cow-cli review stats"
+        description: "Overall stats"
+
+      - command: "cow-cli review stats --reviewer alice@example.com --since 2026-02-01"
+        description: "Alice's stats since Feb 1"
+
+    output_sections:
+      queue_summary:
+        - "Total Pending"
+        - "Total In Review"
+        - "Average Priority"
+        - "Oldest Item Age"
+
+      reviewer_performance:
+        - "Total Reviewed"
+        - "Approval Rate"
+        - "Rejection Rate"
+        - "Modification Rate"
+        - "Avg Review Time"
+
+      confidence_distribution:
+        - "Histogram of confidence scores"
+        - "By element type"
+
+# ============================================================================
+# 7. TUI (Terminal User Interface) DESIGN
+# ============================================================================
+
+tui_design:
+  library: "rich"
+  description: "Interactive terminal UI for efficient batch review"
+
+  layout:
+    header:
+      content:
+        - "Session info: reviewer, start time"
+        - "Queue stats: pending count, current priority"
+        - "Session stats: reviewed, approved, rejected, modified"
+
+    main_panel:
+      left_side:
+        title: "Original Image"
+        content: "Image preview (via terminal graphics protocol or ASCII art)"
+        width: "50%"
+
+      right_side:
+        title: "Extracted Content"
+        content:
+          metadata:
+            - "Element ID"
+            - "Type"
+            - "Confidence"
+            - "Priority"
+
+          extracted_data:
+            format: "JSON pretty-print with syntax highlighting"
+
+          context:
+            - "Page number"
+            - "Surrounding elements"
+
+    action_panel:
+      title: "Actions"
+      keybindings:
+        a_approve: "Approve (no changes)"
+        r_reject: "Reject (requires reason)"
+        m_modify: "Modify content"
+        d_defer: "Defer review"
+        n_next: "Skip to next"
+        p_previous: "Go back"
+        u_undo: "Undo last action"
+        q_quit: "Quit (unclaim current)"
+        question_help: "Show help"
+
+    footer:
+      content:
+        - "Current item: N of M"
+        - "Elapsed time: HH:MM:SS"
+        - "Progress bar"
+
+  interaction_flows:
+    approve_flow:
+      step_1: "Press 'A'"
+      step_2: "Optional comment prompt"
+      step_3: "Confirm (Y/n)"
+      step_4: "Auto-advance to next item"
+
+    reject_flow:
+      step_1: "Press 'R'"
+      step_2: "Reason prompt (required)"
+      step_3: "Confirm (Y/n)"
+      step_4: "Auto-advance to next item"
+
+    modify_flow:
+      step_1: "Press 'M'"
+      step_2: "Select field to modify (menu)"
+      step_3: "Enter new value (text input)"
+      step_4: "Comment prompt (required)"
+      step_5: "Show diff, confirm (Y/n)"
+      step_6: "Auto-advance to next item"
+
+    defer_flow:
+      step_1: "Press 'D'"
+      step_2: "Reason prompt (required)"
+      step_3: "Confirm (Y/n)"
+      step_4: "Auto-advance to next item"
+
+  image_preview:
+    primary_method: "iTerm2/kitty graphics protocol"
+    fallback_1: "Unicode half-blocks (pixelated preview)"
+    fallback_2: "ASCII art representation"
+    external_viewer: "Option to open in system image viewer (xdg-open)"
+
+# ============================================================================
+# 8. REPORTING AND MONITORING
+# ============================================================================
+
+reporting:
+  real_time_metrics:
+    dashboard_command: "cow-cli review dashboard"
+    update_frequency: "5 seconds"
+    metrics:
+      queue_depth:
+        description: "Total pending + in_review items"
+        alert_threshold: 100
+
+      average_confidence:
+        description: "Mean confidence of pending items"
+        alert_threshold: 0.65
+
+      oldest_item_age:
+        description: "Time since oldest pending item queued"
+        alert_threshold: "48 hours"
+
+      review_throughput:
+        description: "Items reviewed per hour (last 24h)"
+        target: "10 items/hour"
+
+      approval_rate:
+        description: "Percentage approved without modification"
+        target: "70%"
+
+  scheduled_reports:
+    daily_summary:
+      schedule: "00:00 UTC daily"
+      delivery: "email + Slack"
+      content:
+        - "Items reviewed yesterday"
+        - "Approval/rejection/modification breakdown"
+        - "Average review time"
+        - "Top reviewers"
+        - "Queue depth trend"
+
+      format: "Markdown table"
+
+    weekly_analysis:
+      schedule: "Monday 09:00 UTC"
+      delivery: "email"
+      content:
+        - "Week-over-week trends"
+        - "Confidence distribution by element type"
+        - "Bottleneck analysis"
+        - "Reviewer performance comparison"
+        - "Recommendations for threshold tuning"
+
+      format: "PDF report with charts"
+
+  audit_export:
+    command: "cow-cli review export-audit --since <DATE> --format <FORMAT>"
+    formats:
+      csv:
+        columns:
+          - "timestamp"
+          - "item_id"
+          - "action"
+          - "actor"
+          - "decision"
+          - "comment"
+
+      json:
+        structure: "Array of audit log entries"
+
+      compliance:
+        format: "Structured for regulatory compliance (SOC2, etc.)"
+        includes: "Full chain of custody for each item"
+
+# ============================================================================
+# 9. INTEGRATION POINTS
+# ============================================================================
+
+integration_points:
+  stage_c0_post:
+    description: "After text extraction, before alignment"
+    trigger: "Text element extracted from image"
+    check:
+      - "If confidence < type_threshold[text]: queue_for_review()"
+    blocking: false
+    continue_on: "auto_approve or deferred"
+
+  stage_c_pre:
+    description: "Before text-vision alignment"
+    trigger: "All text elements extracted"
+    check:
+      - "For each text element:"
+      - "  If confidence < threshold: queue_for_review()"
+      - "  If inconsistency_detected: queue_for_review()"
+    blocking: true
+    wait_for: "all critical items reviewed"
+    timeout: "24 hours"
+    timeout_action: "auto_approve pending items with confidence > 0.8"
+
+  stage_d_pre:
+    description: "Before semantic graph construction"
+    trigger: "Alignment complete, ready for graph building"
+    check:
+      - "For each diagram/equation:"
+      - "  If confidence < type_threshold: queue_for_review()"
+      - "  If critical_for_graph: require review"
+    blocking: true
+    wait_for: "all blocking items reviewed"
+    timeout: "48 hours"
+    timeout_action: "skip low-confidence elements, continue with high-confidence"
+
+  pipeline_orchestration:
+    hitl_service:
+      type: "background_service"
+      responsibilities:
+        - "Monitor pipeline stages for low-confidence items"
+        - "Queue items according to routing rules"
+        - "Track review completion"
+        - "Notify pipeline to continue after review"
+
+      api_endpoints:
+        queue_item:
+          method: "POST"
+          path: "/hitl/queue"
+          body:
+            image_path: "string"
+            element_id: "string"
+            element_type: "enum"
+            confidence: "float"
+            stage_context: "enum"
+          response:
+            review_item_id: "uuid"
+
+        get_status:
+          method: "GET"
+          path: "/hitl/status/{item_id}"
+          response:
+            status: "enum"
+            decision: "enum or null"
+            reviewed_at: "timestamp or null"
+
+        wait_for_review:
+          method: "GET"
+          path: "/hitl/wait/{item_id}?timeout=3600"
+          description: "Blocking call until reviewed or timeout"
+          response:
+            status: "enum"
+            decision: "enum"
+            modifications: "json or null"
+
+# ============================================================================
+# 10. CONFIGURATION
+# ============================================================================
+
+configuration:
+  config_file: "cow/config/hitl_config.yaml"
+
+  thresholds:
+    description: "Customizable per deployment"
+    structure:
+      element_types:
+        text:
+          auto_approve: 0.90
+          review_recommended: 0.75
+        equation:
+          auto_approve: 0.95
+          review_recommended: 0.80
+        # ... etc
+
+    override_by_document_type:
+      exams:
+        global_multiplier: 1.1
+        description: "Stricter thresholds for exams"
+
+      drafts:
+        global_multiplier: 0.9
+        description: "More lenient for draft documents"
+
+  queue_settings:
+    max_pending_items: 500
+    max_in_review_items: 50
+    review_timeout_minutes: 30
+    defer_expiration_days: 7
+    auto_approve_stale_items_hours: 72
+
+  notification_settings:
+    email:
+      enabled: true
+      recipients:
+        - "review-team@example.com"
+      events:
+        - "queue_depth_high"
+        - "item_expired"
+        - "daily_summary"
+
+    slack:
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      events:
+        - "critical_item_queued"
+        - "queue_depth_critical"
+
+  reviewer_settings:
+    authentication:
+      method: "SSO"
+      provider: "Okta"
+
+    authorization:
+      roles:
+        reviewer:
+          permissions: ["claim", "approve", "reject", "modify", "defer"]
+
+        senior_reviewer:
+          permissions: ["claim", "approve", "reject", "modify", "defer", "bulk_approve", "configure_thresholds"]
+
+        auditor:
+          permissions: ["view_all", "export_audit"]
+
+  performance_tuning:
+    database:
+      connection_pool_size: 10
+      query_timeout_seconds: 30
+
+    file_operations:
+      image_cache_size_mb: 500
+      thumbnail_generation: true
+      thumbnail_max_dimension: 800
+
+# ============================================================================
+# 11. IMPLEMENTATION CHECKLIST
+# ============================================================================
+
+implementation_checklist:
+  phase_1_foundation:
+    - "Create SQLite database schema (review_items, audit_logs, reviewer_stats)"
+    - "Implement ReviewItem, AuditLog, ReviewerStats data models"
+    - "Build priority scoring algorithm"
+    - "Create file storage directory structure"
+
+  phase_2_routing:
+    - "Implement routing decision tree"
+    - "Add type-specific threshold configuration"
+    - "Build queue insertion logic with priority calculation"
+    - "Create integration hooks for pipeline stages"
+
+  phase_3_cli:
+    - "Implement 'cow-cli review list' command"
+    - "Implement 'cow-cli review show' command"
+    - "Implement approve/reject/modify/defer commands"
+    - "Build claim/unclaim functionality"
+    - "Add stats command"
+
+  phase_4_tui:
+    - "Design TUI layout with rich library"
+    - "Implement keyboard navigation"
+    - "Add image preview support (iTerm2/kitty protocols)"
+    - "Build interactive modify flow"
+    - "Add session statistics display"
+
+  phase_5_reporting:
+    - "Create real-time dashboard"
+    - "Implement daily summary report"
+    - "Implement weekly analysis report"
+    - "Build audit export functionality"
+
+  phase_6_integration:
+    - "Add HITL checks to Stage C0"
+    - "Add HITL checks to Stage C"
+    - "Add HITL checks to Stage D"
+    - "Implement blocking wait mechanism"
+    - "Add timeout handling"
+
+  phase_7_polish:
+    - "Add comprehensive error handling"
+    - "Write unit tests (target 80% coverage)"
+    - "Write integration tests for E2E workflow"
+    - "Performance optimization (query indexes, caching)"
+    - "Documentation (user guide, API reference)"
+
+# ============================================================================
+# 12. SUCCESS METRICS
+# ============================================================================
+
+success_metrics:
+  quality:
+    target_approval_rate: 0.75
+    description: "At least 75% of reviewed items approved or modified (not rejected)"
+
+  efficiency:
+    target_review_time_seconds: 120
+    description: "Average time to review one item under 2 minutes"
+
+  throughput:
+    target_items_per_hour: 30
+    description: "Reviewer can process 30 items/hour in interactive mode"
+
+  accuracy:
+    target_modification_rate: 0.15
+    description: "Less than 15% of items need modification (indicates good extraction quality)"
+
+  user_satisfaction:
+    target_nps: 8
+    description: "Reviewers rate CLI/TUI usability >= 8/10"
+
+# ============================================================================
+# END OF HITL WORKFLOW DESIGN
+# ============================================================================

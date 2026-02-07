@@ -1,0 +1,807 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PALANTIR ONTOLOGY RESEARCH - CROSS-REFERENCE VALIDATION SESSION
+# ═══════════════════════════════════════════════════════════════════════════════
+# 용도: 병렬 세션(SESSION_1~6) 결과물 통합 검증 및 최종 레퍼런스 생성
+# 실행 시점: 모든 리서치 세션 완료 후
+# 입력: SESSION_1~6의 OUTPUT YAML 파일들
+# 출력: PALANTIR_ONTOLOGY_COMPLETE_REFERENCE.yaml (최종 통합본)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION A: PROJECT CONTEXT (이 세션이 왜 필요한지)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+project_context:
+  
+  project_name: "Palantir Ontology Component Definition Reference"
+  
+  ultimate_goal: |
+    Claude-Opus-4.5가 어떠한 코드베이스/프로젝트를 분석하더라도,
+    이 리서치 결과물(YAML)만을 참조하여 Palantir Ontology의 모든 컴포넌트를
+    **완벽하게, 모호함 없이** 정의할 수 있도록 하는 완전한 레퍼런스 생성.
+  
+  primary_domain:
+    name: "K-12 Education Platform"
+    subjects: ["Korean Language", "Mathematics", "Science"]
+    granularity: "ATOMIC LEVEL"
+  
+  this_session_purpose: |
+    6개 병렬 리서치 세션에서 각각 독립적으로 생성된 컴포넌트 정의 결과물을:
+    
+    1. **크로스-레퍼런스 무결성 검증** — 컴포넌트 간 참조가 모두 유효한지
+    2. **일관성 검증** — 명명 규칙, 스키마 형식, 예시 호환성 확인
+    3. **완전성 검증** — 누락된 정의, 빈 필드, 불충분한 예시 탐지
+    4. **충돌 해소** — 세션 간 중복 정의 또는 모순 해결
+    5. **통합 레퍼런스 생성** — 최종 PALANTIR_ONTOLOGY_COMPLETE_REFERENCE.yaml 병합
+    
+    으로 검증하고 통합하는 것이 이 세션의 목적이다.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION B: COMPONENT DEPENDENCY GRAPH (검증 기준)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+dependency_graph:
+  
+  description: |
+    아래 그래프는 20개 컴포넌트 간 의존성을 정의한다.
+    화살표 방향은 "A → B"이면 "A는 B에 의존한다"를 의미.
+    크로스-레퍼런스 검증 시 모든 화살표의 target이 실제로 정의되어 있어야 한다.
+  
+  components:
+    # ─── Layer 1: Semantic Primitives (SESSION_1) ───
+    SharedProperty:
+      defined_in: "SESSION_1"
+      depends_on: []
+      depended_by: ["Interface", "ObjectType"]
+    
+    Property:
+      defined_in: "SESSION_1"
+      depends_on: []
+      depended_by: ["ObjectType"]
+    
+    ObjectType:
+      defined_in: "SESSION_1"
+      depends_on:
+        - { component: "Dataset", relation: "backed_by", required: true }
+        - { component: "Property", relation: "has_many", required: true }
+        - { component: "SharedProperty", relation: "can_use", required: false }
+        - { component: "Interface", relation: "implements", required: false }
+      depended_by:
+        - "LinkType"
+        - "ActionType"
+        - "ObjectSet"
+        - "OntologySync"
+        - "Workshop"
+        - "OSDK"
+        - "REST_API"
+    
+    # ─── Layer 2: Relationship & Abstraction (SESSION_2) ───
+    Interface:
+      defined_in: "SESSION_2"
+      depends_on:
+        - { component: "SharedProperty", relation: "composed_of", required: true }
+      depended_by: ["ObjectType", "ActionType"]
+    
+    LinkType:
+      defined_in: "SESSION_2"
+      depends_on:
+        - { component: "ObjectType", relation: "source_and_target", required: true }
+        - { component: "Dataset", relation: "join_table", required: "only_for_M:N" }
+      depended_by: ["ActionType", "ObjectSet", "Workshop"]
+    
+    # ─── Layer 3: Kinetic Primitives (SESSION_3) ───
+    ActionType:
+      defined_in: "SESSION_3"
+      depends_on:
+        - { component: "ObjectType", relation: "operates_on", required: true }
+        - { component: "LinkType", relation: "creates_or_deletes", required: false }
+        - { component: "Function", relation: "backed_by", required: false }
+      depended_by: ["Workshop", "OSDK", "Automate"]
+    
+    Function:
+      defined_in: "SESSION_3"
+      depends_on:
+        - { component: "ObjectType", relation: "queries_or_edits", required: true }
+      depended_by: ["ActionType"]
+    
+    Rule_Constraint:
+      defined_in: "SESSION_3"
+      depends_on:
+        - { component: "Property", relation: "constrains", required: true }
+        - { component: "ActionType", relation: "submission_criteria", required: false }
+      depended_by: []
+    
+    # ─── Layer 4: Data Pipeline (SESSION_4) ───
+    Dataset:
+      defined_in: "SESSION_4"
+      depends_on: []
+      depended_by: ["ObjectType", "LinkType", "OntologySync", "Pipeline"]
+    
+    Pipeline:
+      defined_in: "SESSION_4"
+      depends_on:
+        - { component: "Dataset", relation: "reads_and_writes", required: true }
+      depended_by: []
+    
+    Transform:
+      defined_in: "SESSION_4"
+      depends_on:
+        - { component: "Dataset", relation: "input_output", required: true }
+      depended_by: ["Pipeline"]
+    
+    OntologySync:
+      defined_in: "SESSION_4"
+      depends_on:
+        - { component: "Dataset", relation: "source", required: true }
+        - { component: "ObjectType", relation: "target", required: true }
+      depended_by: []
+    
+    # ─── Layer 5: Collection & Specialized Storage (SESSION_5) ───
+    ObjectSet:
+      defined_in: "SESSION_5"
+      depends_on:
+        - { component: "ObjectType", relation: "instances_of", required: true }
+        - { component: "LinkType", relation: "search_around", required: false }
+      depended_by: ["Workshop", "ActionType", "Function", "Automate"]
+    
+    TimeSeries:
+      defined_in: "SESSION_5"
+      depends_on:
+        - { component: "Dataset", relation: "source", required: true }
+        - { component: "Property", relation: "timeseries_type", required: true }
+      depended_by: []
+    
+    MediaSet:
+      defined_in: "SESSION_5"
+      depends_on:
+        - { component: "Property", relation: "media_reference_type", required: true }
+      depended_by: []
+    
+    # ─── Layer 6: Application & API (SESSION_6) ───
+    Workshop:
+      defined_in: "SESSION_6"
+      depends_on:
+        - { component: "ObjectType", relation: "widget_binding", required: true }
+        - { component: "ActionType", relation: "action_button", required: false }
+        - { component: "ObjectSet", relation: "data_source", required: true }
+        - { component: "LinkType", relation: "search_around", required: false }
+      depended_by: []
+    
+    OSDK:
+      defined_in: "SESSION_6"
+      depends_on:
+        - { component: "ObjectType", relation: "client_query", required: true }
+        - { component: "ActionType", relation: "action_apply", required: false }
+      depended_by: []
+    
+    Slate:
+      defined_in: "SESSION_6"
+      depends_on:
+        - { component: "Dataset", relation: "query_source", required: true }
+      depended_by: []
+    
+    REST_API:
+      defined_in: "SESSION_6"
+      depends_on:
+        - { component: "ObjectType", relation: "endpoint_target", required: true }
+        - { component: "ActionType", relation: "action_apply", required: false }
+        - { component: "LinkType", relation: "link_navigation", required: false }
+      depended_by: ["OSDK"]
+    
+    Automate:
+      defined_in: "SESSION_6"
+      depends_on:
+        - { component: "ActionType", relation: "effect_action", required: false }
+        - { component: "ObjectSet", relation: "trigger_condition", required: false }
+      depended_by: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION C: VALIDATION PROTOCOL (무엇을 어떻게 검증하는가)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validation_protocol:
+  
+  # ─────────────────────────────────────────────────────────────
+  # PHASE 1: 구조적 완전성 검증 (Structural Completeness)
+  # ─────────────────────────────────────────────────────────────
+  phase_1_structural_completeness:
+    
+    description: "각 컴포넌트 OUTPUT이 필수 8개 섹션을 모두 포함하는지 검증"
+    
+    required_sections_per_component:
+      - section: "official_definition"
+        check: "text, source, last_verified 필드가 모두 존재하는가?"
+        severity: "ERROR"
+      
+      - section: "semantic_definition"
+        check: "analogy, similar_concepts, anti_concepts 중 최소 2개 존재하는가?"
+        severity: "ERROR"
+      
+      - section: "structural_schema"
+        check: |
+          - $schema 필드가 존재하는가?
+          - required 배열이 정의되어 있는가?
+          - properties 객체가 비어있지 않은가?
+          - 각 property에 type과 description이 있는가?
+        severity: "ERROR"
+      
+      - section: "decision_tree"
+        check: |
+          - entry_question이 존재하는가?
+          - nodes 배열이 최소 2개 이상인가?
+          - 모든 node의 yes_next/no_next가 다른 node 또는 terminal_node를 가리키는가?
+          - terminal_nodes가 최소 2개 이상인가?
+          - 도달 불가능한 node가 없는가? (orphan check)
+          - 무한 루프가 없는가? (cycle check)
+        severity: "ERROR"
+      
+      - section: "validation_rules"
+        check: |
+          - required_checks 배열이 최소 1개인가?
+          - 각 rule에 rule_id, description, check_expression, severity가 있는가?
+          - rule_id가 컴포넌트 약자 프리픽스를 따르는가? (OT_, PROP_, LT_, IF_, AT_ 등)
+        severity: "ERROR"
+      
+      - section: "canonical_examples"
+        check: |
+          - K-12 Education 도메인 예시가 최소 1개 있는가?
+          - 각 예시에 yaml_definition이 포함되어 있는가?
+          - yaml_definition이 structural_schema를 준수하는가?
+        severity: "ERROR"
+      
+      - section: "anti_patterns"
+        check: |
+          - 최소 2개의 anti_pattern이 정의되어 있는가?
+          - 각 pattern에 bad_example, correct_approach, reason이 있는가?
+        severity: "WARNING"
+      
+      - section: "integration_points"
+        check: |
+          - depends_on 배열이 dependency_graph와 일치하는가?
+          - depended_by 배열이 dependency_graph와 일치하는가?
+        severity: "ERROR"
+    
+    output_format: |
+      phase_1_results:
+        component_name:
+          status: "PASS" | "FAIL" | "WARNING"
+          missing_sections: []
+          incomplete_sections:
+            - section: "..."
+              issues: ["..."]
+  
+  # ─────────────────────────────────────────────────────────────
+  # PHASE 2: 크로스-레퍼런스 무결성 (Cross-Reference Integrity)
+  # ─────────────────────────────────────────────────────────────
+  phase_2_cross_reference_integrity:
+    
+    description: |
+      컴포넌트 간 참조가 실제로 존재하고, 참조 대상의 스키마가 호환되는지 검증.
+      dependency_graph의 모든 화살표를 순회하며 검사.
+    
+    checks:
+      
+      CR_001_objecttype_dataset_binding:
+        description: "모든 ObjectType의 backingDatasource가 SESSION_4의 Dataset에 정의되어 있는가?"
+        source: "SESSION_1::ObjectType.backingDatasource"
+        target: "SESSION_4::Dataset"
+        validation: |
+          for each ObjectType:
+            assert Dataset.exists(ObjectType.backingDatasource)
+            assert Dataset.schema.columns contains all ObjectType.properties.keys
+        severity: "ERROR"
+      
+      CR_002_objecttype_property_consistency:
+        description: "ObjectType의 모든 Property가 유효한 baseType을 사용하는가?"
+        source: "SESSION_1::ObjectType.properties"
+        target: "SESSION_1::Property.base_type_reference"
+        validation: |
+          for each property in ObjectType.properties:
+            assert property.baseType in Property.VALID_BASE_TYPES
+            if property.baseType == "Struct":
+              assert property.fields.length <= 10
+            if property.baseType == "Vector":
+              assert property.dimensions >= 1 && property.dimensions <= 2048
+        severity: "ERROR"
+      
+      CR_003_objecttype_primarykey_validity:
+        description: "ObjectType의 primaryKey가 properties에 정의된 Property를 참조하는가?"
+        source: "SESSION_1::ObjectType.primaryKey"
+        target: "SESSION_1::ObjectType.properties"
+        validation: |
+          for each ObjectType:
+            for each pk in ObjectType.primaryKey:
+              assert pk in ObjectType.properties
+              assert ObjectType.properties[pk].required == true
+        severity: "ERROR"
+      
+      CR_004_linktype_objecttype_existence:
+        description: "모든 LinkType의 source/target ObjectType이 SESSION_1에 정의되어 있는가?"
+        source: "SESSION_2::LinkType"
+        target: "SESSION_1::ObjectType"
+        validation: |
+          for each LinkType:
+            assert ObjectType.exists(LinkType.sourceObjectType)
+            assert ObjectType.exists(LinkType.targetObjectType)
+        severity: "ERROR"
+      
+      CR_005_linktype_fk_property_existence:
+        description: "FK 기반 LinkType의 foreignKeyProperty가 해당 ObjectType에 존재하는가?"
+        source: "SESSION_2::LinkType.foreignKeyProperty"
+        target: "SESSION_1::ObjectType.properties"
+        validation: |
+          for each LinkType where cardinality != "MANY_TO_MANY":
+            # FK 위치 결정
+            if cardinality == "ONE_TO_MANY":
+              fk_holder = target ObjectType
+            elif cardinality == "MANY_TO_ONE":
+              fk_holder = source ObjectType
+            else: # ONE_TO_ONE
+              fk_holder = source or target (명시된 쪽)
+            
+            assert LinkType.foreignKeyProperty in fk_holder.properties
+        severity: "ERROR"
+      
+      CR_006_linktype_join_table_validity:
+        description: "M:N LinkType의 joinTableDataset이 SESSION_4 Dataset에 존재하는가?"
+        source: "SESSION_2::LinkType.joinTableDataset"
+        target: "SESSION_4::Dataset"
+        validation: |
+          for each LinkType where cardinality == "MANY_TO_MANY":
+            assert Dataset.exists(LinkType.joinTableDataset)
+            joinTable = Dataset.get(LinkType.joinTableDataset)
+            assert joinTable.schema contains sourceObjectType.primaryKey columns
+            assert joinTable.schema contains targetObjectType.primaryKey columns
+        severity: "ERROR"
+      
+      CR_007_interface_sharedproperty_existence:
+        description: "모든 Interface의 sharedProperties가 SESSION_1에 정의되어 있는가?"
+        source: "SESSION_2::Interface.sharedProperties"
+        target: "SESSION_1::SharedProperty"
+        validation: |
+          for each Interface:
+            for each sp in Interface.sharedProperties:
+              assert SharedProperty.exists(sp)
+        severity: "ERROR"
+      
+      CR_008_interface_inheritance_acyclicity:
+        description: "Interface 상속 관계에 순환이 없는가?"
+        source: "SESSION_2::Interface.parentInterfaces"
+        validation: |
+          # DFS로 순환 감지
+          for each Interface:
+            visited = Set()
+            assert !hasCycle(Interface, visited)
+        severity: "ERROR"
+      
+      CR_009_objecttype_interface_implementation:
+        description: "ObjectType이 구현하는 Interface의 모든 SharedProperty를 Property로 가지는가?"
+        source: "SESSION_1::ObjectType.implements"
+        target: "SESSION_2::Interface.sharedProperties"
+        validation: |
+          for each ObjectType:
+            for each iface in ObjectType.implements:
+              allSharedProps = collectInheritedProperties(iface)
+              for each sp in allSharedProps:
+                assert sp.apiName in ObjectType.properties
+                assert ObjectType.properties[sp.apiName].baseType compatible with sp.baseType
+        severity: "ERROR"
+      
+      CR_010_actiontype_objecttype_reference:
+        description: "ActionType의 모든 OBJECT/OBJECT_SET Parameter가 유효한 ObjectType을 참조하는가?"
+        source: "SESSION_3::ActionType.parameters"
+        target: "SESSION_1::ObjectType"
+        validation: |
+          for each ActionType:
+            for each param where param.type in ["OBJECT", "OBJECT_SET"]:
+              assert ObjectType.exists(param.objectTypeId)
+        severity: "ERROR"
+      
+      CR_011_actiontype_rule_objecttype:
+        description: "ActionType Rule의 objectTypeId가 유효한가?"
+        source: "SESSION_3::ActionType.rules"
+        target: "SESSION_1::ObjectType"
+        validation: |
+          for each rule in ActionType.rules:
+            if rule.type in ["CREATE_OBJECT", "MODIFY_OBJECT", "DELETE_OBJECT"]:
+              assert ObjectType.exists(rule.objectTypeId)
+            if rule.type in ["CREATE_LINK", "DELETE_LINK"]:
+              assert LinkType.exists(rule.linkTypeId)
+        severity: "ERROR"
+      
+      CR_012_actiontype_property_assignment:
+        description: "Rule의 propertyAssignment가 해당 ObjectType의 실제 Property를 참조하는가?"
+        source: "SESSION_3::ActionType.rules[].propertyAssignments"
+        target: "SESSION_1::ObjectType.properties"
+        validation: |
+          for each rule with propertyAssignments:
+            targetOT = ObjectType.get(rule.objectTypeId)
+            for each assignment:
+              assert assignment.propertyId in targetOT.properties
+              # valueSource 호환성 검사
+              if assignment.valueSource == "FROM_PARAMETER":
+                assert assignment.parameterId in ActionType.parameters
+              if assignment.valueSource == "OBJECT_PROPERTY":
+                refOT = ObjectType.get(assignment.objectParameterId)
+                assert assignment.objectPropertyId in refOT.properties
+        severity: "ERROR"
+      
+      CR_013_function_objecttype_reference:
+        description: "Function에서 참조하는 ObjectType/ObjectSet이 유효한가?"
+        source: "SESSION_3::Function"
+        target: "SESSION_1::ObjectType"
+        validation: "Function 시그니처의 ObjectType 파라미터가 모두 정의된 ObjectType인지"
+        severity: "WARNING"
+      
+      CR_014_ontologysync_mapping:
+        description: "OntologySync의 Property 매핑이 양쪽 모두에서 유효한가?"
+        source: "SESSION_4::OntologySync"
+        target: "SESSION_1::ObjectType, SESSION_4::Dataset"
+        validation: |
+          for each OntologySync:
+            dataset = Dataset.get(sync.sourceDataset)
+            objectType = ObjectType.get(sync.targetObjectType)
+            
+            # PK 매핑 검증
+            assert sync.primaryKeyMapping.datasetColumn in dataset.schema.columns
+            assert sync.primaryKeyMapping.objectProperty in objectType.properties
+            
+            # Property 매핑 검증
+            for each mapping in sync.propertyMappings:
+              assert mapping.datasetColumn in dataset.schema.columns
+              assert mapping.objectProperty in objectType.properties
+        severity: "ERROR"
+      
+      CR_015_objectset_objecttype_reference:
+        description: "ObjectSet이 참조하는 ObjectType이 유효한가?"
+        source: "SESSION_5::ObjectSet"
+        target: "SESSION_1::ObjectType"
+        validation: |
+          for each ObjectSet:
+            assert ObjectType.exists(ObjectSet.objectType)
+            # filter에서 사용하는 Property가 해당 ObjectType에 존재하는지
+            for each filter in ObjectSet.operations:
+              assert filter.property in ObjectType.properties
+        severity: "ERROR"
+      
+      CR_016_workshop_widget_binding:
+        description: "Workshop 위젯의 ObjectType/ActionType 바인딩이 유효한가?"
+        source: "SESSION_6::Workshop"
+        target: "SESSION_1::ObjectType, SESSION_3::ActionType"
+        validation: |
+          for each Widget:
+            if Widget.type in ["Object Table", "Object List", "Object View"]:
+              assert ObjectType.exists(Widget.config.objectType)
+            if Widget.type == "Action Button":
+              assert ActionType.exists(Widget.config.actionType)
+        severity: "ERROR"
+      
+      CR_017_rest_api_endpoint_coverage:
+        description: "REST API에서 다루는 모든 ObjectType/ActionType이 정의되어 있는가?"
+        source: "SESSION_6::REST_API"
+        target: "SESSION_1::ObjectType, SESSION_3::ActionType"
+        severity: "WARNING"
+      
+      CR_018_automate_action_reference:
+        description: "Automate Workflow의 Action Effect가 유효한 ActionType을 참조하는가?"
+        source: "SESSION_6::Automate.effects"
+        target: "SESSION_3::ActionType"
+        validation: |
+          for each Workflow:
+            for each effect where effect.type == "action":
+              assert ActionType.exists(effect.actionType)
+        severity: "ERROR"
+    
+    output_format: |
+      phase_2_results:
+        total_references_checked: N
+        valid_references: N
+        broken_references:
+          - check_id: "CR_XXX"
+            source: "SESSION_N::Component.field"
+            expected_target: "SESSION_M::Component"
+            issue: "참조 대상 미존재"
+            severity: "ERROR"
+        warnings:
+          - check_id: "CR_XXX"
+            description: "..."
+  
+  # ─────────────────────────────────────────────────────────────
+  # PHASE 3: 일관성 검증 (Consistency Validation)
+  # ─────────────────────────────────────────────────────────────
+  phase_3_consistency:
+    
+    description: "세션 간 명명 규칙, 형식, 용어 일관성 검증"
+    
+    checks:
+      
+      CON_001_naming_convention:
+        description: "모든 apiName이 camelCase 규칙을 준수하는가?"
+        rule: "/^[a-z][a-zA-Z0-9]*$/"
+        applies_to: ["ObjectType.apiName", "Property.apiName", "SharedProperty.apiName", "ActionType.apiName"]
+        exception: "Interface.apiName은 PascalCase: /^[A-Z][a-zA-Z0-9]*$/"
+      
+      CON_002_reserved_words:
+        description: "예약어를 apiName으로 사용하지 않았는가?"
+        reserved_words:
+          - "ontology"
+          - "object"
+          - "property"
+          - "link"
+          - "relation"
+          - "rid"
+          - "primaryKey"
+          - "typeId"
+      
+      CON_003_basetype_consistency:
+        description: "동일한 개념적 Property가 세션 간 같은 baseType을 사용하는가?"
+        example: |
+          gradeLevel이 SESSION_1에서 Integer이면, 
+          SESSION_5의 ObjectSet filter에서도 Integer로 처리되어야 함
+      
+      CON_004_k12_example_consistency:
+        description: "K-12 예시 간 Primary Key, apiName, Property 이름이 일관되는가?"
+        critical_entities:
+          - entity: "mathematicalConcept"
+            primaryKey: "conceptId"
+            key_properties: ["koreanName", "englishName", "gradeLevel", "subject", "difficulty"]
+          - entity: "student"
+            primaryKey: "studentId"
+          - entity: "learningRecord"
+            primaryKey: "recordId"
+            foreign_keys: ["studentId", "conceptId"]
+          - entity: "exampleProblem"
+            primaryKey: "problemId"
+          - entity: "conceptExampleMapping"
+            primaryKey: "mappingId"
+            foreign_keys: ["conceptId", "problemId"]
+      
+      CON_005_schema_format_consistency:
+        description: "모든 structural_schema가 동일한 JSON Schema 버전을 사용하는가?"
+        expected: "https://json-schema.org/draft/2020-12/schema"
+      
+      CON_006_decision_tree_format:
+        description: "모든 decision_tree가 동일한 구조 형식을 따르는가?"
+        required_structure:
+          - "entry_question: string"
+          - "nodes: array of {id, question, yes_next, no_next}"
+          - "terminal_nodes: object of {action, confidence?, next_steps?}"
+      
+      CON_007_validation_rule_id_prefix:
+        description: "validation_rules의 rule_id가 컴포넌트별 표준 프리픽스를 따르는가?"
+        prefixes:
+          ObjectType: "OT_"
+          Property: "PROP_"
+          SharedProperty: "SP_"
+          LinkType: "LT_"
+          Interface: "IF_"
+          ActionType: "AT_"
+          Function: "FN_"
+          Rule_Constraint: "RC_"
+          Dataset: "DS_"
+          Pipeline: "PL_"
+          Transform: "TR_"
+          OntologySync: "OS_"
+          ObjectSet: "OSET_"
+          TimeSeries: "TS_"
+          MediaSet: "MS_"
+          Workshop: "WS_"
+          OSDK: "SDK_"
+          Slate: "SL_"
+          REST_API: "API_"
+          Automate: "AUTO_"
+    
+    output_format: |
+      phase_3_results:
+        naming_violations: []
+        type_mismatches: []
+        example_inconsistencies: []
+        format_deviations: []
+  
+  # ─────────────────────────────────────────────────────────────
+  # PHASE 4: 충돌 해소 (Conflict Resolution)
+  # ─────────────────────────────────────────────────────────────
+  phase_4_conflict_resolution:
+    
+    description: |
+      병렬 세션에서 독립적으로 생성되어 발생할 수 있는 충돌을 감지하고 해소.
+    
+    potential_conflicts:
+      
+      CONF_001_duplicate_apiname:
+        description: "다른 컴포넌트에서 같은 apiName 사용"
+        detection: "전체 OUTPUT에서 apiName 중복 스캔"
+        resolution: "컴포넌트 유형별 네임스페이스 적용"
+      
+      CONF_002_contradictory_basetype:
+        description: "같은 개념의 Property가 다른 baseType으로 정의"
+        detection: |
+          SESSION_1에서 gradeLevel: Integer 인데
+          SESSION_5 ObjectSet 예시에서 gradeLevel을 String으로 필터링
+        resolution: "SESSION_1 정의를 정본(source of truth)으로 채택"
+      
+      CONF_003_overlapping_decision_tree:
+        description: "두 컴포넌트의 decision_tree가 같은 입력에 대해 다른 결론"
+        detection: "동일 시나리오를 여러 decision_tree에 입력했을 때 모순 여부"
+        resolution: |
+          1. 더 구체적인 tree가 우선
+          2. 구체성이 같으면 의존성 하위(downstream) 컴포넌트가 우선
+      
+      CONF_004_example_entity_mismatch:
+        description: "같은 K-12 엔티티가 세션마다 다른 Property 집합을 가짐"
+        detection: |
+          SESSION_1의 mathematicalConcept Properties와
+          SESSION_3의 ActionType에서 참조하는 Properties 비교
+        resolution: "SESSION_1 ObjectType 정의를 정본으로, 다른 세션은 맞춰 수정"
+    
+    resolution_priority: |
+      충돌 발생 시 다음 우선순위로 해소:
+      1. SESSION_1 (Core Semantic) — 가장 높은 우선순위 (정본)
+      2. SESSION_4 (Data Pipeline) — 데이터 소스 정의
+      3. SESSION_2 (Relationship) — 관계 정의
+      4. SESSION_3 (Kinetic) — 행위 정의
+      5. SESSION_5 (Collection) — 컬렉션 정의
+      6. SESSION_6 (Application) — 가장 낮은 우선순위 (소비자)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION D: EXECUTION INSTRUCTIONS (이 세션에서 무엇을 해야 하는가)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+execution_instructions:
+  
+  step_1:
+    name: "결과물 수집 및 파싱"
+    action: |
+      이 프롬프트 아래에 SESSION_1~6의 모든 OUTPUT YAML을 붙여넣을 것이다.
+      각 YAML을 파싱하여 컴포넌트별 정의를 추출하라.
+    
+    expected_input: |
+      === SESSION_1 OUTPUT ===
+      (SESSION_1_OUTPUT_ObjectType.yaml 내용)
+      (SESSION_1_OUTPUT_Property.yaml 내용)
+      (SESSION_1_OUTPUT_SharedProperty.yaml 내용)
+      
+      === SESSION_2 OUTPUT ===
+      (SESSION_2_OUTPUT_LinkType.yaml 내용)
+      (SESSION_2_OUTPUT_Interface.yaml 내용)
+      
+      ... (SESSION_3~6도 동일)
+  
+  step_2:
+    name: "PHASE 1 실행 - 구조적 완전성 검증"
+    action: |
+      validation_protocol.phase_1_structural_completeness의 모든 항목을 검사하고
+      결과를 phase_1_results 형식으로 출력하라.
+    
+    on_failure: |
+      누락/불완전 섹션 발견 시:
+      1. 해당 섹션의 정확한 위치와 문제점 기술
+      2. 수정 제안 제공 (가능한 경우 자동 보완)
+      3. 자동 보완 불가한 경우 "해당 세션 재실행 필요" 표시
+  
+  step_3:
+    name: "PHASE 2 실행 - 크로스-레퍼런스 무결성"
+    action: |
+      validation_protocol.phase_2_cross_reference_integrity의 
+      CR_001 ~ CR_018 모든 체크를 순서대로 실행하고
+      결과를 phase_2_results 형식으로 출력하라.
+    
+    on_failure: |
+      깨진 참조 발견 시:
+      1. 정확한 참조 경로와 예상 대상 기술
+      2. 가능한 수정안 제시
+      3. resolution_priority에 따라 어느 세션의 정의를 정본으로 할지 결정
+  
+  step_4:
+    name: "PHASE 3 실행 - 일관성 검증"
+    action: |
+      validation_protocol.phase_3_consistency의 
+      CON_001 ~ CON_007 모든 체크를 실행하고
+      결과를 phase_3_results 형식으로 출력하라.
+  
+  step_5:
+    name: "PHASE 4 실행 - 충돌 해소"
+    action: |
+      validation_protocol.phase_4_conflict_resolution의 
+      모든 잠재적 충돌을 스캔하고
+      resolution_priority에 따라 해소안을 제시하라.
+  
+  step_6:
+    name: "통합 레퍼런스 생성"
+    action: |
+      모든 검증을 통과한 (또는 수정된) 컴포넌트 정의를 하나의
+      PALANTIR_ONTOLOGY_COMPLETE_REFERENCE.yaml로 병합하라.
+      
+      최종 파일 구조:
+        metadata:
+          version: "1.0.0"
+          created_date: "..."
+          validation_status: "PASSED" | "PASSED_WITH_WARNINGS"
+          component_count: 20
+        
+        components:
+          ObjectType: { ... }
+          Property: { ... }
+          SharedProperty: { ... }
+          LinkType: { ... }
+          Interface: { ... }
+          ActionType: { ... }
+          Function: { ... }
+          Rule_Constraint: { ... }
+          Dataset: { ... }
+          Pipeline: { ... }
+          Transform: { ... }
+          OntologySync: { ... }
+          ObjectSet: { ... }
+          TimeSeries: { ... }
+          MediaSet: { ... }
+          Workshop: { ... }
+          OSDK: { ... }
+          Slate: { ... }
+          REST_API: { ... }
+          Automate: { ... }
+        
+        dependency_graph: { ... }
+        k12_education_complete_example: { ... }
+        validation_report: { ... }
+  
+  step_7:
+    name: "최종 검증 - Smoke Test"
+    action: |
+      생성된 통합 레퍼런스를 사용하여 다음 시나리오를 수행하라:
+      
+      TEST_1: "일차방정식 (3x - 2 = 5)" 개념을 원자 단위로 분해하고
+              각 원자를 적절한 Ontology 컴포넌트로 매핑하라.
+              결과가 모호함 없이 결정되는지 확인.
+      
+      TEST_2: "학생이 일차방정식 개념을 학습 완료" 시나리오에 필요한
+              모든 컴포넌트(ObjectType, LinkType, ActionType, Workshop Widget)를
+              레퍼런스만으로 정의할 수 있는지 확인.
+      
+      TEST_3: 레퍼런스에 없는 새로운 도메인(예: "E-commerce")의 
+              간단한 시나리오를 적용하여 일반성을 검증.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION E: OUTPUT SPECIFICATION (최종 결과물 형식)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_specification:
+  
+  deliverables:
+    
+    1_validation_report:
+      filename: "XREF_VALIDATION_REPORT.yaml"
+      contents: |
+        phase_1_results: { ... }
+        phase_2_results: { ... }
+        phase_3_results: { ... }
+        phase_4_results: { ... }
+        overall_status: "PASSED" | "FAILED" | "PASSED_WITH_WARNINGS"
+        action_items: []
+    
+    2_integrated_reference:
+      filename: "PALANTIR_ONTOLOGY_COMPLETE_REFERENCE.yaml"
+      contents: "20개 컴포넌트 통합 정의 + 의존성 그래프 + 완전한 K-12 예시"
+    
+    3_correction_log:
+      filename: "XREF_CORRECTION_LOG.yaml"
+      contents: |
+        corrections_applied:
+          - component: "..."
+            original: "..."
+            corrected: "..."
+            reason: "..."
+            source_of_truth: "SESSION_N"
+    
+    4_smoke_test_results:
+      filename: "XREF_SMOKE_TEST_RESULTS.yaml"
+      contents: |
+        test_1_atomic_decomposition:
+          status: "PASS" | "FAIL"
+          details: { ... }
+        test_2_end_to_end_scenario:
+          status: "PASS" | "FAIL"
+          details: { ... }
+        test_3_generality_check:
+          status: "PASS" | "FAIL"
+          details: { ... }

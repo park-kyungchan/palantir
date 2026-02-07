@@ -1,0 +1,630 @@
+# =============================================================================
+# Mathpix API Changelog Reference (Machine-Readable)
+# =============================================================================
+# Version: 1.0.0
+# Date: 2026-02-04
+# Source: https://mathpix.com/docs/convert/changelog
+# Purpose: API 호출 및 SDK 업데이트 시 필수 참조 문서
+# =============================================================================
+
+---
+metadata:
+  version: "1.0.0"
+  created_at: "2026-02-04T10:00:00+09:00"
+  source_url: "https://mathpix.com/docs/convert/changelog"
+  last_api_version: "SuperNet-109p6"
+  last_update_date: "2025-12-24"
+
+# =============================================================================
+# SDK UPDATE REQUIRED - 현재 SDK에 누락된 기능들
+# =============================================================================
+sdk_update_required:
+  critical:
+    - feature: "confidence fields"
+      added_date: "2025-02-05"
+      version: "RSK-P127p5"
+      fields:
+        - "confidence"
+        - "confidence_rate"
+      location: "lines.json, lines.mmd.json"
+      current_sdk_status: "NOT_IMPLEMENTED"
+      priority: "HIGH"
+
+    - feature: "is_printed/is_handwritten detection"
+      added_date: "2023-12-28"
+      version: "RSK-M122"
+      fields:
+        - "is_printed"
+        - "is_handwritten"
+      location: "line objects"
+      note: "Both fields can be true simultaneously"
+      current_sdk_status: "NOT_IMPLEMENTED"
+      priority: "HIGH"
+
+    - feature: "figure_label detection"
+      added_date: "2025-08-04"
+      version: "SuperNet-105"
+      fields:
+        - "figure_label"  # line type
+        - "selected_labels"  # list of line IDs
+        - "conversion_output"  # boolean
+      current_sdk_status: "NOT_IMPLEMENTED"
+      priority: "MEDIUM"
+
+  high:
+    - feature: "include_diagram_text option"
+      added_date: "2024-04-16"
+      version: "SuperNet-100"
+      parameter: "include_diagram_text"
+      type: "boolean"
+      default: false
+      description: "Returns in-diagram text as part of line data"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "include_equation_tags option"
+      added_date: "2024-02-06"
+      version: "RSK-P111p2"
+      parameter: "include_equation_tags"
+      type: "boolean"
+      default: false
+      description: "Equation numbers with \\tag elements"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "include_chemistry_as_image option"
+      added_date: "2024-09-30"
+      version: "RSK-P121p6"
+      parameter: "include_chemistry_as_image"
+      type: "boolean"
+      description: "Chemistry as image crop with SMILES alt-text"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "include_page_info option"
+      added_date: "2025-08-11"
+      version: "SuperNet-105p6"
+      parameter: "include_page_info"
+      type: "boolean"
+      default_v3_text: true
+      default_v3_pdf: false
+      description: "Controls page headers, rotated text inclusion"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+  medium:
+    - feature: "XLSX export support"
+      added_date: "2025-11-07"
+      version: "SuperNet-107p3"
+      parameters:
+        - name: "singleSheet"
+          type: "boolean"
+          default: false
+        - name: "mathOutputFormat"
+          type: "enum"
+          values: ["linearmath", "latex", "asciimath"]
+        - name: "maxColumnWidthChars"
+          type: "number"
+          default: 255
+        - name: "fontSize"
+          type: "number"
+        - name: "zoomScale"
+          type: "number"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "DOCX styling options"
+      added_date: "2025-03-06"
+      version: "RSK-P127p8"
+      parameters:
+        - name: "custom_css"
+          type: "string"
+          description: "Custom inline styles for DOCX"
+        - name: "text_color"
+          type: "string"
+          description: "Document text color"
+        - name: "background_color"
+          type: "string"
+          description: "Document background color"
+        - name: "margin"
+          type: "string"
+          description: "Document margin (px units)"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "resource_load_timeout_sec"
+      added_date: "2025-08-07"
+      version: "SuperNet-105p4"
+      parameter: "resource_load_timeout_sec"
+      location: "conversion_options"
+      type: "number"
+      description: "Customizable resource loading timeout"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "max_character_per_line"
+      added_date: "2025-04-18"
+      version: "SuperNet-100p2"
+      parameter: "max_character_per_line"
+      type: "number"
+      min_value: 10
+      description: "Max characters per Markdown line"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+    - feature: "footnote_compact_refs"
+      added_date: "2025-02-17"
+      version: "RSK-P127p6"
+      parameter: "footnote_compact_refs"
+      type: "boolean"
+      description: "Hides repeat footnote indices"
+      current_sdk_status: "NOT_IMPLEMENTED"
+
+# =============================================================================
+# DEPRECATED PARAMETERS - 더 이상 사용하지 말 것
+# =============================================================================
+deprecated_parameters:
+  - parameter: "enable_spelling_correction"
+    deprecated_date: "2025-07-15"
+    version: "SuperNet-103p2"
+    replacement: null
+    action: "REMOVE_FROM_SDK"
+
+  - parameter: "expand_chemistry"
+    deprecated_date: "2024-01-16"
+    version: "RSK-M124p1"
+    replacement: "include_chemistry"
+    action: "RENAME_IN_SDK"
+
+# =============================================================================
+# LINE TYPES - 전체 목록
+# =============================================================================
+line_types:
+  text_content:
+    - "text"
+    - "section_header"
+    - "title"
+    - "abstract"
+    - "footnote"
+    - "page_info"
+    - "figure_label"  # 2025-08-04 추가
+
+  math_content:
+    - "math"
+    - "equation"
+
+  visual_content:
+    - "chart"  # 2023-10-31 diagram 대체
+    - "chart_info"
+    - "diagram"  # deprecated, use chart
+    - "figure"
+    - "table"
+
+  structural:
+    - "column"
+    - "list"
+    - "code"
+    - "pseudocode"
+    - "table_of_contents"
+
+  form_elements:
+    - "form_field"  # 2024-04-18 추가
+
+  chart_subtypes:  # 2023-10-31 추가
+    - "column"
+    - "bar"
+    - "line"
+    - "pie"
+    - "area"
+    - "scatter"
+    - "analytical"  # 2024-05-20 추가
+
+# =============================================================================
+# LINE DATA FIELDS - 전체 스키마
+# =============================================================================
+line_data_schema:
+  core_fields:
+    - name: "id"
+      type: "string"
+      added: "2024-04-16"
+      required: true
+
+    - name: "text"
+      type: "string"
+      required: true
+
+    - name: "type"
+      type: "string"
+      required: true
+
+    - name: "subtype"
+      type: "string"
+      added: "2024-04-16"
+      required: false
+
+  hierarchy_fields:
+    - name: "parent_id"
+      type: "string"
+      added: "2024-04-16"
+      required: false
+
+    - name: "children_ids"
+      type: "array[string]"
+      added: "2024-04-16"
+      required: false
+
+  layout_fields:
+    - name: "column"
+      type: "integer"
+      required: false
+
+    - name: "font_size"
+      type: "integer"
+      unit: "pixels"
+      required: false
+
+    - name: "region"
+      type: "object"
+      fields:
+        - "top_left_x"
+        - "top_left_y"
+        - "width"
+        - "height"
+      required: false
+
+  quality_fields:
+    - name: "confidence"
+      type: "number"
+      added: "2025-02-05"
+      required: false
+
+    - name: "confidence_rate"
+      type: "number"
+      added: "2025-02-05"
+      required: false
+
+  content_type_fields:
+    - name: "is_printed"
+      type: "boolean"
+      added: "2023-12-28"
+      required: false
+
+    - name: "is_handwritten"
+      type: "boolean"
+      added: "2023-12-28"
+      required: false
+
+  processing_fields:
+    - name: "conversion_output"
+      type: "boolean"
+      added: "2024-04-16"
+      required: false
+
+    - name: "text_display"
+      type: "string"
+      added: "2024-04-16"
+      required: false
+
+    - name: "selected_labels"
+      type: "array[string]"
+      added: "2025-08-04"
+      description: "Associated figure/table label line IDs"
+      required: false
+
+# =============================================================================
+# API PARAMETERS - 전체 목록 (v3/pdf)
+# =============================================================================
+api_parameters_v3_pdf:
+  content_options:
+    - name: "include_line_data"
+      type: "boolean"
+      default: false
+      description: "Include detailed line information"
+
+    - name: "include_word_data"
+      type: "boolean"
+      default: false
+      description: "Include word-level data"
+      note: "Mutually exclusive with include_line_data"
+
+    - name: "include_page_info"
+      type: "boolean"
+      default: false
+      description: "Include page headers, rotated text"
+      added: "2025-08-11"
+
+    - name: "include_diagram_text"
+      type: "boolean"
+      default: false
+      description: "Return in-diagram text"
+      added: "2024-04-16"
+
+    - name: "include_equation_tags"
+      type: "boolean"
+      default: false
+      description: "Include equation numbers with \\tag"
+      added: "2024-02-06"
+
+    - name: "include_smiles"
+      type: "boolean"
+      default: true
+      description: "Chemistry SMILES output"
+
+    - name: "include_chemistry_as_image"
+      type: "boolean"
+      description: "Chemistry as image with SMILES alt-text"
+      added: "2024-09-30"
+
+    - name: "include_chemistry"
+      type: "boolean"
+      description: "Enable chemistry recognition"
+      note: "Renamed from expand_chemistry"
+
+  formatting_options:
+    - name: "fullwidth_punctuation"
+      type: "boolean"
+      description: "Unicode fullwidth punctuation"
+      added: "2024-12-30"
+
+    - name: "math_fonts_default_to_math"
+      type: "boolean"
+      default: false
+      description: "Disable text/math spacing normalization"
+
+    - name: "max_character_per_line"
+      type: "number"
+      min: 10
+      description: "Max chars per Markdown line"
+      added: "2025-04-18"
+
+  table_options:
+    - name: "enable_tables_fallback"
+      type: "boolean"
+      default: false
+      description: "Use fallback table recognition"
+      added: "2023-02-22"
+
+  section_options:
+    - name: "remove_section_numbering"
+      type: "boolean"
+      default: false
+      description: "Strip section numbers"
+
+    - name: "preserve_section_numbering"
+      type: "boolean"
+      default: true
+      description: "Keep section numbers"
+
+    - name: "auto_number_sections"
+      type: "boolean"
+      description: "Auto-generate section numbers"
+      note: "Only one of these three allowed"
+
+  footnote_options:
+    - name: "footnote_compact_refs"
+      type: "boolean"
+      description: "Hide repeat footnote indices"
+      added: "2025-02-17"
+
+  conversion_options:
+    - name: "resource_load_timeout_sec"
+      type: "number"
+      description: "Resource loading timeout"
+      added: "2025-08-07"
+
+  docx_specific:
+    - name: "custom_css"
+      type: "string"
+      description: "Custom inline styles"
+      added: "2025-03-06"
+
+    - name: "text_color"
+      type: "string"
+      description: "Document text color"
+      added: "2025-03-06"
+
+    - name: "background_color"
+      type: "string"
+      description: "Document background color"
+      added: "2025-03-06"
+
+    - name: "margin"
+      type: "string"
+      unit: "px"
+      description: "Document margin"
+      added: "2025-03-06"
+
+  xlsx_specific:
+    - name: "singleSheet"
+      type: "boolean"
+      default: false
+      description: "Merge tables into single sheet"
+      added: "2025-11-07"
+
+    - name: "mathOutputFormat"
+      type: "enum"
+      values: ["linearmath", "latex", "asciimath"]
+      description: "Math format in Excel"
+      added: "2025-11-07"
+
+    - name: "maxColumnWidthChars"
+      type: "number"
+      default: 255
+      description: "Max Excel column width"
+      added: "2025-11-07"
+
+    - name: "fontSize"
+      type: "number"
+      description: "Excel font size"
+      added: "2025-11-07"
+
+    - name: "zoomScale"
+      type: "number"
+      description: "Excel zoom scale"
+      added: "2025-11-07"
+
+# =============================================================================
+# EXPORT FORMATS - 지원 형식
+# =============================================================================
+export_formats:
+  text_formats:
+    - "mmd"  # Mathpix Markdown
+    - "md"   # Standard Markdown
+    - "tex"  # LaTeX
+    - "html"
+
+  document_formats:
+    - "docx"
+    - "pdf"
+    - "pptx"
+    - "epub"
+    - "xlsx"  # 2025-11-07 추가
+
+  archive_formats:
+    - "mmd.zip"
+    - "md.zip"
+    - "html.zip"
+    - "tex.zip"
+
+  data_formats:
+    - "lines.json"
+    - "lines.mmd.json"
+
+# =============================================================================
+# IMPORTANT CHANGELOG ENTRIES - 날짜순
+# =============================================================================
+important_changes:
+  "2025-12-24":
+    version: "SuperNet-109p6"
+    changes:
+      - "LaTeX list conversion improvements"
+      - "Custom list marker support"
+
+  "2025-12-17":
+    version: "SuperNet-109p5"
+    changes:
+      - "Full LaTeX lstlisting code block support"
+      - "Unicode in code listings (Cyrillic, Greek, math)"
+      - "mathescape option for math in code"
+
+  "2025-11-07":
+    version: "SuperNet-107p3"
+    changes:
+      - "NEW: XLSX (Excel) export support"
+      - "Native table to spreadsheet conversion"
+
+  "2025-09-11":
+    version: "SuperNet-105p13"
+    changes:
+      - "NEW: SVG export for DOCX/LaTeX/PPTX"
+
+  "2025-08-11":
+    version: "SuperNet-105p6"
+    changes:
+      - "NEW: include_page_info parameter"
+
+  "2025-08-04":
+    version: "SuperNet-105"
+    changes:
+      - "NEW: Figure label detection"
+      - "selected_labels field for associations"
+      - "\\begin{figure} wrapping in MMD"
+
+  "2025-03-06":
+    version: "RSK-P127p8"
+    changes:
+      - "NEW: DOCX custom_css option"
+      - "NEW: DOCX text_color option"
+      - "NEW: DOCX background_color option"
+      - "NEW: DOCX margin option"
+
+  "2025-02-05":
+    version: "RSK-P127p5"
+    changes:
+      - "NEW: confidence field in line data"
+      - "NEW: confidence_rate field in line data"
+
+  "2025-01-15":
+    version: "RSK-P127p1"
+    changes:
+      - "NEW: EPUB, DOCX, PPTX conversion support"
+
+  "2024-12-30":
+    version: "RSK-M136"
+    changes:
+      - "NEW: fullwidth_punctuation parameter"
+
+  "2024-04-16":
+    version: "SuperNet-100"
+    changes:
+      - "Major lines.json structure enhancement"
+      - "NEW: id, parent_id, children_ids fields"
+      - "NEW: type, subtype fields"
+      - "NEW: include_diagram_text option"
+      - "Full hierarchy support"
+
+  "2024-02-06":
+    version: "RSK-P111p2"
+    changes:
+      - "NEW: include_equation_tags parameter"
+      - "Equation numbers with \\tag elements"
+
+  "2023-12-28":
+    version: "RSK-M122"
+    changes:
+      - "NEW: is_printed field"
+      - "NEW: is_handwritten field"
+
+  "2023-10-31":
+    version: "RSK-M120"
+    changes:
+      - "NEW: Chart detection"
+      - "chart type replaces diagram"
+      - "Chart subtypes: column, bar, line, pie, area, scatter"
+
+# =============================================================================
+# AGENT RULES - API 호출 시 필수 준수사항
+# =============================================================================
+agent_rules:
+  before_api_call:
+    - rule: "Check fullwidth_punctuation setting"
+      reason: "None value not allowed, must be true/false or omitted"
+      sdk_file: "mathpix_sdk.py"
+      line: "FULLWIDTH_PUNCTUATION handling"
+
+    - rule: "include_word_data and include_line_data are mutually exclusive"
+      reason: "Cannot use both simultaneously"
+      enforcement: "ParameterValidator class"
+
+    - rule: "Only one section numbering option allowed"
+      options:
+        - "auto_number_sections"
+        - "remove_section_numbering"
+        - "preserve_section_numbering"
+
+  parsing_response:
+    - rule: "Always check for confidence/confidence_rate fields"
+      added: "2025-02-05"
+      usage: "Quality assessment of OCR results"
+
+    - rule: "Check is_printed/is_handwritten for content type detection"
+      added: "2023-12-28"
+      usage: "Adjust processing based on content type"
+
+    - rule: "Parse selected_labels for figure/table associations"
+      added: "2025-08-04"
+      usage: "Link labels to their parent elements"
+
+  sdk_maintenance:
+    - rule: "Update LineData class with new fields"
+      fields_to_add:
+        - "confidence"
+        - "confidence_rate"
+        - "is_printed"
+        - "is_handwritten"
+        - "selected_labels"
+
+    - rule: "Add new API parameters to SDK"
+      parameters_to_add:
+        - "include_page_info"
+        - "include_diagram_text"
+        - "include_equation_tags"
+        - "include_chemistry_as_image"
+        - "footnote_compact_refs"
+        - "resource_load_timeout_sec"
+        - "max_character_per_line"
+
+    - rule: "Remove deprecated parameter"
+      parameter: "enable_spelling_correction"

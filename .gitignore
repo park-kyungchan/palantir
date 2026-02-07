@@ -1,0 +1,105 @@
+# Sensitive files
+.env*
+*.env
+.ssh/
+**/secrets/
+*credentials*
+*.pem
+*.key
+
+# System files
+.bash_history
+.profile
+.bashrc
+.sudo_as_admin_successful
+.motd_shown
+.landscape/
+.pki/
+
+# Cache and temp
+.cache/
+.local/
+.npm/
+.nvm/
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# Large ML models
+.EasyOCR/
+.paddlex/
+
+# Backup files
+*.backup*
+.mcp.json.backup*
+.claude.json.backup*
+
+# Codex
+.codex/
+
+# Config (if contains secrets)
+.config/
+
+# Gemini config
+.gemini/
+
+# Antigravity (removed — no longer used)
+.antigravity
+.antigravity-server/
+.antigravity-server.bak*/
+
+# Large files (>100MB GitHub limit)
+*.jsonl
+
+# Sensitive credentials - NEVER commit
+kc-palantir-*.json
+kc-palantir-*.json:Zone.Identifier
+*.json:Zone.Identifier
+
+# Temp files
+=*
+
+# Personal configs
+.gitconfig
+*.Zone.Identifier
+*:Zone.Identifier
+
+# Docker runtime
+.docker/
+
+# Agent runtime files (session-specific, not for version control)
+.agent/tmp/
+.agent/compact-state/
+.agent/logs/
+.agent/prompts/
+.agent/teams/**/compact-events.log
+.agent/teams/**/teammate-lifecycle.log
+.agent/teams/**/pre-compact-tasks-*.json
+
+# Claude session/cache files
+.claude/session-env/
+.claude/file-history/
+.claude/shell-snapshots/
+.claude/backups/
+.claude/todos/
+.claude/tasks/
+.claude/statsig/
+.claude/stats-cache.json
+.claude/paste-cache/
+.claude/plugins/cache/
+.claude/plugins/install-counts-cache.json
+.claude/plugins/installed_plugins.json
+.claude/plugins/marketplaces/
+.claude/cache/
+.claude/plans/
+
+# Cow runtime cache
+.cow/cache/
+
+# Git worktrees
+.worktrees/

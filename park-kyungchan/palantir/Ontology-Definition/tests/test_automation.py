@@ -1,0 +1,462 @@
+"""
+Unit tests for Automation type definitions.
+
+Tests cover:
+- TIME-based automation conditions (cron schedules)
+- OBJECT_SET-based automation conditions (data triggers)
+- Action, Notification, and Fallback effects
+- Execution settings and retry policies
+- Serialization (to_foundry_dict / from_foundry_dict roundtrip)
+"""
+
+import pytest
+from pydantic import ValidationError
+
+from ontology_definition.types import (
+    Automation,
+    AutomationCondition,
+    AutomationEffect,
+    TimeCondition,
+    ObjectSetCondition,
+    ActionEffect,
+    NotificationEffect,
+    FallbackEffect,
+    RetryPolicy,
+    ExecutionSettings,
+)
+from ontology_definition.core.enums import (
+    AutomationConditionType,
+    TimeConditionMode,
+    ObjectSetConditionTrigger,
+    AutomationEffectType,
+    ActionExecutionMode,
+    RetryPolicyType,
+    NotificationEffectType,
+    EvaluationLatency,
+    AutomationStatus,
+)
+
+
+class TestTimeCondition:
+    """Tests for TIME-based automation conditions."""
+
+    def test_daily_schedule(self):
+        """Daily schedule using cron expression."""
+        condition = TimeCondition(
+            mode=TimeConditionMode.DAILY,
+            cron="0 9 * * *",
+            timezone="America/New_York"
+        )
+        assert condition.mode == TimeConditionMode.DAILY
+        assert condition.cron == "0 9 * * *"
+        assert condition.timezone == "America/New_York"
+
+    def test_cron_schedule(self):
+        """Custom cron expression schedule."""
+        condition = TimeCondition(
+            mode=TimeConditionMode.CRON,
+            cron="0 9 * * MON-FRI"
+        )
+        assert condition.mode == TimeConditionMode.CRON
+        assert condition.cron == "0 9 * * MON-FRI"
+
+    def test_cron_requires_5_fields(self):
+        """Cron expression must have 5 fields (min_length validation)."""
+        with pytest.raises(ValidationError) as exc_info:
+            TimeCondition(mode=TimeConditionMode.CRON, cron="0 9 * *")  # Only 4 fields
+        # Validation catches short cron strings via min_length
+        assert "string_too_short" in str(exc_info.value).lower() or "cron" in str(exc_info.value).lower()
+
+    def test_weekly_schedule(self):
+        """Weekly schedule with cron expression."""
+        condition = TimeCondition(
+            mode=TimeConditionMode.WEEKLY,
+            cron="0 18 * * 1,3,5",  # Mon, Wed, Fri at 6 PM
+            timezone="UTC"
+        )
+        assert condition.mode == TimeConditionMode.WEEKLY
+
+    def test_to_foundry_dict(self):
+        """Export to Foundry dictionary format."""
+        condition = TimeCondition(
+            mode=TimeConditionMode.DAILY,
+            cron="30 8 * * *",
+            timezone="Europe/London"
+        )
+        result = condition.to_foundry_dict()
+        assert result["mode"] == "DAILY"
+        assert result["cron"] == "30 8 * * *"
+        assert result["timezone"] == "Europe/London"
+
+
+class TestObjectSetCondition:
+    """Tests for OBJECT_SET-based automation conditions."""
+
+    def test_objects_added_trigger(self):
+        """Trigger when objects are added."""
+        condition = ObjectSetCondition(
+            trigger=ObjectSetConditionTrigger.OBJECTS_ADDED,
+            object_set_ref="CriticalTickets"
+        )
+        assert condition.trigger == ObjectSetConditionTrigger.OBJECTS_ADDED
+
+    def test_threshold_crossed_with_metric(self):
+        """Trigger when metric crosses threshold."""
+        condition = ObjectSetCondition(
+            trigger=ObjectSetConditionTrigger.THRESHOLD_CROSSED,
+            object_type_ref="Order",
+            threshold_metric="orderCount",
+            threshold_value=1000,
+            threshold_operator="GT"
+        )
+        assert condition.trigger == ObjectSetConditionTrigger.THRESHOLD_CROSSED
+        assert condition.threshold_value == 1000
+
+    def test_threshold_requires_all_fields(self):
+        """THRESHOLD_CROSSED requires metric, value, and operator."""
+        with pytest.raises(ValidationError) as exc_info:
+            ObjectSetCondition(
+                trigger=ObjectSetConditionTrigger.THRESHOLD_CROSSED,
+                object_type_ref="Order"
+                # Missing threshold_metric, threshold_value, threshold_operator
+            )
+        assert "THRESHOLD_CROSSED" in str(exc_info.value)
+
+    def test_requires_object_source(self):
+        """Must specify at least one object source."""
+        with pytest.raises(ValidationError) as exc_info:
+            ObjectSetCondition(
+                trigger=ObjectSetConditionTrigger.OBJECTS_ADDED
+                # Missing all object source fields
+            )
+        assert "Must specify at least one" in str(exc_info.value)
+
+
+class TestAutomationCondition:
+    """Tests for AutomationCondition - unified condition wrapper."""
+
+    def test_time_condition(self):
+        """TIME condition type."""
+        condition = AutomationCondition(
+            condition_type=AutomationConditionType.TIME,
+            time_condition=TimeCondition(
+                mode=TimeConditionMode.DAILY,
+                cron="0 9 * * *"
+            )
+        )
+        assert condition.condition_type == AutomationConditionType.TIME
+
+    def test_object_set_condition(self):
+        """OBJECT_SET condition type."""
+        condition = AutomationCondition(
+            condition_type=AutomationConditionType.OBJECT_SET,
+            objectset_condition=ObjectSetCondition(
+                trigger=ObjectSetConditionTrigger.OBJECTS_ADDED,
+                object_set_ref="CriticalTickets"
+            )
+        )
+        assert condition.condition_type == AutomationConditionType.OBJECT_SET
+
+    def test_time_requires_time_condition(self):
+        """TIME type requires time_condition."""
+        with pytest.raises(ValidationError) as exc_info:
+            AutomationCondition(
+                condition_type=AutomationConditionType.TIME
+                # Missing time_condition
+            )
+        assert "time_condition" in str(exc_info.value)
+
+
+class TestActionEffect:
+    """Tests for ACTION effect type."""
+
+    def test_basic_action_effect(self):
+        """Basic action effect configuration."""
+        effect = ActionEffect(
+            action_type_ref="escalateTicket",
+            execution_mode=ActionExecutionMode.ONCE_EACH_GROUP
+        )
+        assert effect.action_type_ref == "escalateTicket"
+        assert effect.execution_mode == ActionExecutionMode.ONCE_EACH_GROUP
+
+    def test_action_effect_with_parameter_mappings(self):
+        """Action effect with parameter mappings."""
+        effect = ActionEffect(
+            action_type_ref="notifyUser",
+            parameter_mapping={"userId": "object.ownerId", "message": "Alert!"}
+        )
+        assert effect.parameter_mapping["userId"] == "object.ownerId"
+
+    def test_action_effect_default_execution_mode(self):
+        """Default execution mode should be ONCE_ALL."""
+        effect = ActionEffect(action_type_ref="someAction")
+        assert effect.execution_mode == ActionExecutionMode.ONCE_ALL
+
+
+class TestNotificationEffect:
+    """Tests for NOTIFICATION effect type."""
+
+    def test_platform_notification(self):
+        """In-platform notification."""
+        effect = NotificationEffect(
+            notification_type=NotificationEffectType.PLATFORM,
+            recipients=["user:admin@example.com"],
+            body_template="New critical ticket: {{object.title}}"
+        )
+        assert effect.notification_type == NotificationEffectType.PLATFORM
+
+    def test_email_notification(self):
+        """Email notification."""
+        effect = NotificationEffect(
+            notification_type=NotificationEffectType.EMAIL,
+            recipients=["admin@example.com"],
+            body_template="Alert: {{object.title}}",
+            subject_template="[ALERT] New ticket"
+        )
+        assert effect.notification_type == NotificationEffectType.EMAIL
+
+    def test_notification_requires_recipients(self):
+        """Notification must have recipients or recipient_expression."""
+        with pytest.raises(ValidationError) as exc_info:
+            NotificationEffect(
+                notification_type=NotificationEffectType.EMAIL
+                # Missing recipients and recipient_expression
+            )
+        assert "recipients" in str(exc_info.value)
+
+
+class TestRetryPolicy:
+    """Tests for RetryPolicy."""
+
+    def test_constant_retry(self):
+        """Constant delay retry policy."""
+        policy = RetryPolicy(
+            policy_type=RetryPolicyType.CONSTANT,
+            max_retries=3,
+            initial_delay_ms=60000
+        )
+        assert policy.policy_type == RetryPolicyType.CONSTANT
+        assert policy.max_retries == 3
+        assert policy.initial_delay_ms == 60000
+
+    def test_exponential_retry(self):
+        """Exponential backoff retry policy."""
+        policy = RetryPolicy(
+            policy_type=RetryPolicyType.EXPONENTIAL,
+            max_retries=5,
+            initial_delay_ms=1000,
+            max_delay_ms=300000
+        )
+        assert policy.policy_type == RetryPolicyType.EXPONENTIAL
+        assert policy.max_delay_ms == 300000
+
+
+class TestAutomationEffect:
+    """Tests for AutomationEffect - unified effect wrapper."""
+
+    def test_action_effect(self):
+        """ACTION effect type."""
+        effect = AutomationEffect(
+            effect_type=AutomationEffectType.ACTION,
+            action_effect=ActionEffect(
+                action_type_ref="escalateTicket",
+                execution_mode=ActionExecutionMode.ONCE_ALL
+            )
+        )
+        assert effect.effect_type == AutomationEffectType.ACTION
+
+    def test_fallback_effect(self):
+        """FALLBACK effect type."""
+        effect = AutomationEffect(
+            effect_type=AutomationEffectType.FALLBACK,
+            fallback_effect=FallbackEffect(
+                notification_effects=[
+                    NotificationEffect(
+                        notification_type=NotificationEffectType.EMAIL,
+                        recipients=["oncall@example.com"],
+                        body_template="Automation failed: {{error}}"
+                    )
+                ]
+            )
+        )
+        assert effect.effect_type == AutomationEffectType.FALLBACK
+
+
+class TestExecutionSettings:
+    """Tests for ExecutionSettings."""
+
+    def test_basic_settings(self):
+        """Basic execution settings."""
+        settings = ExecutionSettings(
+            evaluation_latency=EvaluationLatency.LIVE,
+            batch_size=100,
+            parallelism=5
+        )
+        assert settings.evaluation_latency == EvaluationLatency.LIVE
+        assert settings.batch_size == 100
+        assert settings.parallelism == 5
+
+    def test_default_settings(self):
+        """Default execution settings."""
+        settings = ExecutionSettings()
+        assert settings.batch_size == 100
+        assert settings.parallelism == 1
+        assert settings.evaluation_latency == EvaluationLatency.LIVE
+
+
+class TestAutomation:
+    """Tests for Automation - the main automation definition."""
+
+    def test_time_based_automation(self):
+        """TIME-based automation (daily report)."""
+        automation = Automation(
+            api_name="dailySalesReport",
+            display_name="Daily Sales Report",
+            enabled=True,
+            condition=AutomationCondition(
+                condition_type=AutomationConditionType.TIME,
+                time_condition=TimeCondition(
+                    mode=TimeConditionMode.CRON,
+                    cron="0 9 * * *",
+                    timezone="America/New_York"
+                )
+            ),
+            effects=[
+                AutomationEffect(
+                    effect_type=AutomationEffectType.ACTION,
+                    action_effect=ActionEffect(
+                        action_type_ref="generateSalesReport",
+                        execution_mode=ActionExecutionMode.ONCE_ALL
+                    )
+                )
+            ],
+            execution_settings=ExecutionSettings(
+                evaluation_latency=EvaluationLatency.SCHEDULED
+            ),
+            status=AutomationStatus.ACTIVE
+        )
+        assert automation.api_name == "dailySalesReport"
+        assert automation.condition.condition_type == AutomationConditionType.TIME
+        assert len(automation.effects) == 1
+
+    def test_object_set_based_automation(self):
+        """OBJECT_SET-based automation (critical ticket escalation)."""
+        automation = Automation(
+            api_name="criticalTicketEscalation",
+            display_name="Critical Ticket Escalation",
+            enabled=True,
+            condition=AutomationCondition(
+                condition_type=AutomationConditionType.OBJECT_SET,
+                objectset_condition=ObjectSetCondition(
+                    trigger=ObjectSetConditionTrigger.OBJECTS_ADDED,
+                    object_set_ref="CriticalTickets"
+                )
+            ),
+            effects=[
+                AutomationEffect(
+                    effect_type=AutomationEffectType.ACTION,
+                    action_effect=ActionEffect(
+                        action_type_ref="escalateTicket",
+                        execution_mode=ActionExecutionMode.ONCE_EACH_GROUP
+                    )
+                ),
+                AutomationEffect(
+                    effect_type=AutomationEffectType.NOTIFICATION,
+                    notification_effect=NotificationEffect(
+                        notification_type=NotificationEffectType.PLATFORM,
+                        recipients=["group:oncall"],
+                        body_template="Critical ticket: {{object.title}}"
+                    )
+                )
+            ],
+            execution_settings=ExecutionSettings(
+                evaluation_latency=EvaluationLatency.LIVE
+            ),
+            status=AutomationStatus.ACTIVE
+        )
+        assert automation.api_name == "criticalTicketEscalation"
+        assert len(automation.effects) == 2
+
+    def test_automation_requires_effects(self):
+        """Automation must have at least one effect."""
+        with pytest.raises(ValidationError) as exc_info:
+            Automation(
+                api_name="noEffects",
+                display_name="No Effects",
+                condition=AutomationCondition(
+                    condition_type=AutomationConditionType.TIME,
+                    time_condition=TimeCondition(mode=TimeConditionMode.DAILY, cron="0 9 * * *")
+                ),
+                effects=[],  # Empty!
+                execution_settings=ExecutionSettings(
+                    evaluation_latency=EvaluationLatency.SCHEDULED
+                ),
+                status=AutomationStatus.ACTIVE
+            )
+        assert "min_length" in str(exc_info.value).lower() or "effects" in str(exc_info.value).lower()
+
+    def test_to_foundry_dict_roundtrip(self):
+        """to_foundry_dict / from_foundry_dict should roundtrip."""
+        original = Automation(
+            api_name="dailySalesReport",
+            display_name="Daily Sales Report",
+            description="Generates daily sales report at 9 AM EST.",
+            enabled=True,
+            condition=AutomationCondition(
+                condition_type=AutomationConditionType.TIME,
+                time_condition=TimeCondition(
+                    mode=TimeConditionMode.CRON,
+                    cron="0 9 * * *",
+                    timezone="America/New_York"
+                )
+            ),
+            effects=[
+                AutomationEffect(
+                    effect_type=AutomationEffectType.ACTION,
+                    action_effect=ActionEffect(
+                        action_type_ref="generateSalesReport",
+                        execution_mode=ActionExecutionMode.ONCE_ALL
+                    )
+                )
+            ],
+            execution_settings=ExecutionSettings(
+                evaluation_latency=EvaluationLatency.SCHEDULED
+            ),
+            status=AutomationStatus.ACTIVE
+        )
+
+        dict_form = original.to_foundry_dict()
+        restored = Automation.from_foundry_dict(dict_form)
+
+        assert restored.api_name == original.api_name
+        assert restored.display_name == original.display_name
+        assert restored.description == original.description
+        assert restored.enabled == original.enabled
+        assert restored.condition.condition_type == original.condition.condition_type
+        assert len(restored.effects) == len(original.effects)
+        assert restored.status == original.status
+
+    def test_disabled_automation(self):
+        """Disabled automation."""
+        automation = Automation(
+            api_name="disabledAutomation",
+            display_name="Disabled Automation",
+            enabled=False,
+            condition=AutomationCondition(
+                condition_type=AutomationConditionType.TIME,
+                time_condition=TimeCondition(mode=TimeConditionMode.DAILY, cron="0 9 * * *")
+            ),
+            effects=[
+                AutomationEffect(
+                    effect_type=AutomationEffectType.ACTION,
+                    action_effect=ActionEffect(action_type_ref="someAction")
+                )
+            ],
+            execution_settings=ExecutionSettings(
+                evaluation_latency=EvaluationLatency.SCHEDULED
+            ),
+            status=AutomationStatus.PAUSED
+        )
+        assert automation.enabled is False
+        assert automation.status == AutomationStatus.PAUSED
+

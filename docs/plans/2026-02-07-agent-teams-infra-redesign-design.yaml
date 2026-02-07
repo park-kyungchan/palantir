@@ -1,0 +1,1643 @@
+# =============================================================================
+# Agent Teams Infrastructure Redesign — Proceeding Design
+# =============================================================================
+# Target: Claude Code Opus 4.6 (CLI-Native, API-Free)
+# Subscription: Claude Max X20
+# Runtime: WSL2 (Ubuntu) + tmux + Claude Code CLI
+# Status: DRAFT
+# Created: 2026-02-06
+# =============================================================================
+
+metadata:
+  title: "Opus-4.6 Agent Teams Infrastructure Redesign"
+  version: "0.1.0"
+  status: DRAFT
+  target_model: claude-opus-4-6
+  subscription: claude-max-x20
+  runtime:
+    os: WSL2-Ubuntu
+    terminal: tmux
+    cli: claude-code
+  api_mode: CLI-NATIVE-ONLY  # No Anthropic API calls. CLI built-in features only.
+  design_decisions:
+    - id: DD-001
+      decision: "Full infrastructure deletion and rebuild from scratch"
+      rationale: "Existing 18 skills, 6 agents, and CLAUDE.md v7.3 are designed for single-session orchestration. Agent Teams requires fundamentally different architecture."
+      scope: "All .claude/skills/, .claude/agents/, .claude/references/, CLAUDE.md, hooks"
+      preserved: "MCP configuration (.mcp.json, .claude.json mcpServers)"
+    - id: DD-002
+      decision: "Pipeline Controller Lead model"
+      rationale: "Lead controls all phase transitions explicitly. Teammates execute only after Plan Approval."
+    - id: DD-003
+      decision: "Dynamic Teammate Spawning (no fixed roles)"
+      rationale: "Lead spawns teammates on-demand based on task nature. Requires sophisticated Orchestrator framework."
+    - id: DD-004
+      decision: "High Control — Lead approves every phase gate"
+      rationale: "Safety-first approach. Teammates cannot autonomously transition between phases."
+    - id: DD-005
+      decision: "tmux split pane display mode"
+      rationale: "WSL2 + tmux provides visual monitoring of all teammates in separate panes."
+
+# =============================================================================
+# Section 1: Overview & Principles
+# =============================================================================
+
+section_1_overview:
+  purpose: |
+    Delete the entire existing single-session orchestration infrastructure
+    (18 Skills, 6 Agents, CLAUDE.md v7.3) and rebuild from scratch using
+    Claude Opus 4.6 Agent Teams native capabilities exclusively.
+
+  constraints:
+    - name: API-Free Operation
+      description: "Claude Max X20 subscription. All operations via `claude` CLI built-in features only. No `client.messages.create()` or direct Anthropic API calls."
+    - name: Opus 4.6 Only
+      description: "All Lead and Teammate instances run claude-opus-4-6 model. No Sonnet/Haiku downgrading."
+    - name: tmux Display
+      description: "WSL2 + tmux split pane for teammate visualization. teammateMode: tmux."
+    - name: High Control
+      description: "Lead explicitly approves every phase gate transition. No autonomous phase switching by teammates."
+
+  architecture_principles:
+    - id: P-001
+      name: Shift-Left
+      description: "Invest 70-80% of total effort in Pre-Execution phases (Discovery through Plan Validation). Eliminate uncertainty before any code is written."
+      enforcement: "Phase gates 1-5 must complete before Phase 6 entry."
+
+    - id: P-002
+      name: Pipeline Controller
+      description: "Lead controls the 9-phase pipeline sequentially. Each phase transition requires Lead's explicit approval judgment."
+      enforcement: "Teammate cannot self-initiate next phase. Must receive Lead directive."
+
+    - id: P-003
+      name: Dynamic Spawning
+      description: "Lead spawns teammates dynamically based on task requirements. No pre-defined fixed team. Teammates created and terminated per-phase."
+      enforcement: "Orchestrator Decision Framework governs spawn/terminate decisions."
+
+    - id: P-004
+      name: Plan-Before-Execute
+      description: "Every teammate must submit a plan for Lead approval before executing any mutation (file edit, git operation, etc.)."
+      enforcement: "Plan Approval Workflow mandatory for all execution phases."
+
+    - id: P-005
+      name: Single Source of Truth
+      description: "CLAUDE.md is the only shared prior knowledge for all teammates. It serves as the team's constitution."
+      enforcement: "No teammate-specific instructions outside CLAUDE.md and agent frontmatter."
+
+  opus_46_native_capabilities_leveraged:
+    - capability: Agent Teams (Experimental)
+      usage: "Core architecture. Lead + dynamic teammates."
+      activation: "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1"
+    - capability: Adaptive Thinking (max effort)
+      usage: "Opus-4.6-only 'max' effort level for deep analysis in Pre-Execution phases."
+      activation: "/effort max"
+    - capability: Extended Context (1M tokens Beta)
+      usage: "For complex research and architecture phases requiring large context."
+      activation: "Automatic when input exceeds 200K tokens."
+    - capability: Compaction API
+      usage: "Custom compaction with preservation rules for Agent Teams context."
+      activation: "Auto-compact at ~95% capacity."
+    - capability: Delegate Mode
+      usage: "Lead operates in Delegate Mode to prevent direct code modification."
+      activation: "Shift+Tab"
+    - capability: Shared Task List
+      usage: "Central task queue visible to all agents. Dependency tracking + auto-unblock."
+      activation: "Ctrl+T to toggle view."
+    - capability: Plan Approval Workflow
+      usage: "Teammates submit plans; Lead approves/rejects before execution."
+      activation: "Native Agent Teams feature."
+    - capability: Parallel Tool Calls
+      usage: "Teammates execute independent tool calls simultaneously within a single response."
+      activation: "Automatic for independent operations."
+    - capability: 128K Max Output
+      usage: "Opus 4.6 supports 128K output tokens (vs 64K for Sonnet/Haiku)."
+      activation: "CLAUDE_CODE_MAX_OUTPUT_TOKENS=128000"
+
+# =============================================================================
+# Section 2: 9-Phase Pipeline Architecture
+# =============================================================================
+
+section_2_pipeline:
+  overview: |
+    9-phase pipeline with Shift-Left emphasis. Pre-Execution phases (1-5) consume
+    70-80% of total effort. Execution phases (6-8) are minimized through thorough
+    upfront preparation. Delivery (9) is Lead-only finalization.
+
+  zones:
+    - name: PRE-EXECUTION
+      phases: [1, 2, 3, 4, 5]
+      effort_allocation: "70-80%"
+      purpose: "Eliminate uncertainty before any code is written"
+    - name: EXECUTION
+      phases: [6, 7, 8]
+      effort_allocation: "20-30%"
+      purpose: "Minimal-risk implementation guided by validated plans"
+    - name: POST-EXECUTION
+      phases: [9]
+      effort_allocation: "<5%"
+      purpose: "Finalization and delivery"
+
+  phases:
+    - id: 1
+      name: Discovery
+      zone: PRE-EXECUTION
+      teammates: []  # Lead only
+      effort_level: max
+      description: "Lead analyzes user request, identifies requirements, constraints, and risk factors. Produces spawn plan for subsequent phases."
+      entry_condition: "User request received"
+      output:
+        - requirements_document
+        - constraints_list
+        - teammate_spawn_plan
+        - risk_assessment
+      gate:
+        id: GATE-1
+        approver: Lead
+        criteria:
+          - "Requirements are unambiguous and complete"
+          - "Constraints are identified and feasible"
+          - "Spawn plan is justified (teammate count, roles)"
+        results: [APPROVE, ITERATE, ABORT]
+
+    - id: 2
+      name: Deep Research
+      zone: PRE-EXECUTION
+      teammates:
+        type: researcher
+        count: "1-3 (dynamic, based on scope)"
+        model: claude-opus-4-6
+      effort_level: max
+      description: "Researcher teammates conduct parallel codebase analysis and external documentation research. Each researcher owns a distinct research domain."
+      entry_condition: "GATE-1 APPROVE"
+      output:
+        - codebase_analysis_per_researcher
+        - external_findings
+        - pattern_inventory
+        - dependency_map
+      gate:
+        id: GATE-2
+        approver: Lead
+        criteria:
+          - "All research domains are covered"
+          - "Findings are consistent across researchers"
+          - "No critical unknowns remain"
+        results: [APPROVE, ITERATE, ABORT]
+
+    - id: 3
+      name: Architecture
+      zone: PRE-EXECUTION
+      teammates:
+        type: architect
+        count: 1
+        model: claude-opus-4-6
+      effort_level: max
+      description: "Architect teammate synthesizes research findings into architecture decisions. Produces risk matrix and alternative analysis."
+      entry_condition: "GATE-2 APPROVE"
+      output:
+        - architecture_decision_records
+        - risk_matrix
+        - alternative_analysis
+        - component_diagram
+      gate:
+        id: GATE-3
+        approver: Lead
+        criteria:
+          - "Architecture decisions are justified with evidence from research"
+          - "Risk matrix covers all identified risks"
+          - "Alternatives were considered and rejected with rationale"
+        results: [APPROVE, ITERATE, ABORT]
+
+    - id: 4
+      name: Detailed Design
+      zone: PRE-EXECUTION
+      teammates:
+        type: architect
+        count: 1
+        model: claude-opus-4-6
+      effort_level: high
+      description: "Same or new architect teammate produces detailed design: file/module boundaries, interface specifications, data flow diagrams."
+      entry_condition: "GATE-3 APPROVE"
+      output:
+        - file_module_boundary_map
+        - interface_specifications
+        - data_flow_diagrams
+        - implementation_task_breakdown
+      gate:
+        id: GATE-4
+        approver: Lead
+        criteria:
+          - "File ownership is clear (no overlapping edits)"
+          - "Interface contracts are explicit"
+          - "Task breakdown maps to implementer assignments"
+        results: [APPROVE, ITERATE, ABORT]
+
+    - id: 5
+      name: Plan Validation
+      zone: PRE-EXECUTION
+      teammates:
+        type: devils-advocate
+        count: 1
+        model: claude-opus-4-6
+      effort_level: max
+      description: "Devil's Advocate teammate systematically challenges the design. Attempts to find flaws, edge cases, missing requirements, and potential failures."
+      entry_condition: "GATE-4 APPROVE"
+      output:
+        - challenge_report
+        - identified_flaws
+        - recommended_mitigations
+        - final_validation_verdict
+      gate:
+        id: GATE-5
+        approver: Lead
+        criteria:
+          - "All critical challenges have been addressed"
+          - "Mitigations are incorporated into the design"
+          - "Devil's Advocate verdict is PASS or CONDITIONAL_PASS"
+        results: [APPROVE, ITERATE, ABORT]
+        note: "ITERATE sends back to Phase 3 or 4 depending on flaw severity"
+
+    - id: 6
+      name: Implementation
+      zone: EXECUTION
+      teammates:
+        type: implementer
+        count: "1-4 (dynamic, one per module boundary)"
+        model: claude-opus-4-6
+      effort_level: high
+      description: "Implementer teammates execute code changes. Each owns a distinct file/module set. Plan Approval mandatory before any mutation."
+      entry_condition: "GATE-5 APPROVE"
+      plan_approval_required: true
+      file_ownership: "Strict — each implementer assigned non-overlapping file set"
+      output:
+        - code_changes_per_implementer
+        - self_test_results
+        - implementation_notes
+      gate:
+        id: GATE-6
+        approver: Lead
+        criteria:
+          - "All assigned tasks completed"
+          - "Self-tests pass"
+          - "No file ownership violations"
+        results: [APPROVE, ITERATE, ABORT]
+
+    - id: 7
+      name: Testing
+      zone: EXECUTION
+      teammates:
+        type: tester
+        count: "1-2"
+        model: claude-opus-4-6
+      effort_level: high
+      description: "Tester teammates verify implementation against design specifications. Write and execute tests. Report coverage and failures."
+      entry_condition: "GATE-6 APPROVE"
+      output:
+        - test_results
+        - coverage_report
+        - failure_analysis
+        - regression_check
+      gate:
+        id: GATE-7
+        approver: Lead
+        criteria:
+          - "All tests pass"
+          - "Coverage meets threshold"
+          - "No regressions detected"
+        results: [APPROVE, ITERATE, ABORT]
+        note: "ITERATE sends back to Phase 6 with specific fix requirements"
+
+    - id: 8
+      name: Integration
+      zone: EXECUTION
+      teammates:
+        type: integrator
+        count: 1
+        model: claude-opus-4-6
+      effort_level: high
+      description: "Integrator teammate resolves conflicts between implementer outputs, performs final merge, and verifies system-level coherence."
+      entry_condition: "GATE-7 APPROVE"
+      output:
+        - merged_codebase
+        - conflict_resolution_log
+        - integration_test_results
+      gate:
+        id: GATE-8
+        approver: Lead
+        criteria:
+          - "All conflicts resolved"
+          - "Integration tests pass"
+          - "System coherence verified"
+        results: [APPROVE, ITERATE, ABORT]
+
+    - id: 9
+      name: Delivery
+      zone: POST-EXECUTION
+      teammates: []  # Lead only
+      effort_level: medium
+      description: "Lead performs final review, creates git commit, and opens pull request. No teammates involved."
+      entry_condition: "GATE-8 APPROVE"
+      output:
+        - git_commit
+        - pull_request
+        - delivery_summary
+      gate: null  # Terminal phase
+
+  iteration_paths:
+    - trigger: "GATE-5 ITERATE (critical flaw)"
+      destination: "Phase 3 (Architecture)"
+      reason: "Fundamental design issue requires architecture rethink"
+    - trigger: "GATE-5 ITERATE (minor flaw)"
+      destination: "Phase 4 (Detailed Design)"
+      reason: "Design adjustment sufficient to address flaw"
+    - trigger: "GATE-7 ITERATE (test failure)"
+      destination: "Phase 6 (Implementation)"
+      reason: "Implementation fix needed for failing tests"
+    - trigger: "Any GATE ITERATE (general)"
+      destination: "Previous phase"
+      reason: "Default iteration returns to immediately preceding phase"
+
+# =============================================================================
+# Section 3: Agent Definitions
+# =============================================================================
+
+section_3_agents:
+  overview: |
+    6 agent types stored as Markdown + YAML frontmatter in .claude/agents/.
+    All agents use claude-opus-4-6 model. Tools are restricted per role
+    following the principle of least privilege. Plan Approval Workflow
+    provides additional control for mutation-capable agents.
+
+  directory: ".claude/agents/"
+
+  agents:
+    - id: researcher
+      file: "researcher.md"
+      model: opus
+      permission_mode: plan
+      spawned_in_phases: [2]
+      max_instances: 3
+      description: "Codebase explorer and external documentation researcher. Read-only access to prevent accidental mutations during research."
+      tools:
+        allowed:
+          - Read
+          - Glob
+          - Grep
+          - WebSearch
+          - WebFetch
+          - TaskCreate
+          - TaskUpdate
+          - TaskList
+          - TaskGet
+          - mcp__sequential-thinking__sequentialthinking
+          - mcp__context7__resolve-library-id
+          - mcp__context7__query-docs
+        disallowed:
+          - Edit
+          - Write
+          - Bash
+          - NotebookEdit
+      output_format: "Structured research report with findings, patterns, and recommendations"
+
+    - id: architect
+      file: "architect.md"
+      model: opus
+      permission_mode: plan
+      spawned_in_phases: [3, 4]
+      max_instances: 1
+      description: "Architecture designer and risk analyst. Can write design documents but cannot modify existing source code."
+      tools:
+        allowed:
+          - Read
+          - Glob
+          - Grep
+          - Write  # Design documents only
+          - TaskCreate
+          - TaskUpdate
+          - TaskList
+          - TaskGet
+          - mcp__sequential-thinking__sequentialthinking
+        disallowed:
+          - Edit  # Cannot modify existing code
+          - Bash
+          - NotebookEdit
+      output_format: "Architecture Decision Records (ADR) + risk matrix + component diagrams"
+
+    - id: devils-advocate
+      file: "devils-advocate.md"
+      model: opus
+      permission_mode: default
+      spawned_in_phases: [5]
+      max_instances: 1
+      description: "Design validator and critical reviewer. Completely read-only. Systematically challenges designs, finds flaws, and proposes mitigations."
+      tools:
+        allowed:
+          - Read
+          - Glob
+          - Grep
+          - TaskCreate
+          - TaskUpdate
+          - TaskList
+          - TaskGet
+          - mcp__sequential-thinking__sequentialthinking
+        disallowed:
+          - Edit
+          - Write
+          - Bash
+          - NotebookEdit
+      output_format: "Challenge report with severity ratings, identified flaws, and recommended mitigations"
+
+    - id: implementer
+      file: "implementer.md"
+      model: opus
+      permission_mode: acceptEdits
+      spawned_in_phases: [6]
+      max_instances: 4
+      description: "Code implementer with full tool access. Each instance owns a non-overlapping file set. Plan Approval mandatory before any mutation."
+      tools:
+        allowed: ALL
+        disallowed:
+          - NotebookEdit
+      constraints:
+        - "Must receive Plan Approval from Lead before any file mutation"
+        - "Can only modify files within assigned file ownership set"
+        - "Must run self-tests before marking task complete"
+      output_format: "Code changes + self-test results + implementation notes"
+
+    - id: tester
+      file: "tester.md"
+      model: opus
+      permission_mode: default
+      spawned_in_phases: [7]
+      max_instances: 2
+      description: "Test writer and executor. Can create test files and run test commands but cannot modify existing source code."
+      tools:
+        allowed:
+          - Read
+          - Glob
+          - Grep
+          - Write  # Test files only
+          - Bash   # pytest, npm test, etc.
+          - TaskCreate
+          - TaskUpdate
+          - TaskList
+          - TaskGet
+          - mcp__sequential-thinking__sequentialthinking
+        disallowed:
+          - Edit  # Cannot modify existing source code
+          - NotebookEdit
+      output_format: "Test results + coverage report + failure analysis"
+
+    - id: integrator
+      file: "integrator.md"
+      model: opus
+      permission_mode: acceptEdits
+      spawned_in_phases: [8]
+      max_instances: 1
+      description: "Conflict resolver and final merger. Full tool access for merge operations. Plan Approval mandatory."
+      tools:
+        allowed: ALL
+        disallowed:
+          - NotebookEdit
+      constraints:
+        - "Must receive Plan Approval from Lead before merge operations"
+        - "Must document all conflict resolutions"
+        - "Must run integration tests after merge"
+      output_format: "Merged codebase + conflict resolution log + integration test results"
+
+# =============================================================================
+# Section 4: CLAUDE.md Redesign
+# =============================================================================
+
+section_4_claude_md:
+  overview: |
+    CLAUDE.md serves as the team's constitution — the only shared prior knowledge
+    for Lead and all Teammates. Must be concise (≤150 lines) because every
+    Teammate loads it on spawn, consuming context window tokens.
+
+  target_line_count: 150
+  location: ".claude/CLAUDE.md"
+
+  sections:
+    - id: S1
+      name: Team Identity
+      lines: 10
+      content_spec:
+        - "Project name, workspace root"
+        - "Model: claude-opus-4-6 (all instances)"
+        - "Runtime: WSL2 + tmux + Claude Code CLI"
+        - "Subscription: Claude Max X20 (API-Free, CLI-Native only)"
+        - "Agent Teams mode: enabled"
+
+    - id: S2
+      name: Phase Pipeline
+      lines: 20
+      content_spec:
+        - "9-phase pipeline summary table (phase name, zone, teammate type)"
+        - "Gate rule: Lead approves every transition"
+        - "Gate results: APPROVE / ITERATE / ABORT"
+        - "Shift-Left allocation: Pre-Execution 70-80%, Execution 20-30%"
+
+    - id: S3
+      name: Role Protocol
+      lines: 25
+      content_spec:
+        - "Lead behavior: Pipeline Controller, Delegate Mode default"
+        - "Lead NEVER modifies code directly"
+        - "Lead responsibilities: spawn, assign, approve, message, terminate"
+        - "Teammate behavior: Plan-Before-Execute for all mutations"
+        - "Teammate MUST submit plan and wait for Lead approval"
+        - "Teammate reports completion via Shared Task List + Direct Message"
+
+    - id: S4
+      name: Communication Protocol
+      lines: 20
+      content_spec:
+        - "Direct Message format: [FROM: role] [TO: role] message"
+        - "Status report format: [PHASE N] [STATUS] details"
+        - "Escalation: Teammate → Lead when blocked or uncertain"
+        - "Broadcast: Lead → All for phase transitions only (cost-conscious)"
+        - "Task claiming: via Shared Task List, file locking for race prevention"
+
+    - id: S5
+      name: File Ownership Rules
+      lines: 15
+      content_spec:
+        - "Each implementer assigned non-overlapping file set by Lead"
+        - "Concurrent editing of same file FORBIDDEN"
+        - "Ownership assignment documented in Shared Task List task description"
+        - "Integrator is the only role that can touch files across boundaries"
+        - "Read access: unrestricted for all roles"
+
+    - id: S6
+      name: Orchestrator Decision Framework
+      lines: 30
+      content_spec:
+        - "SPAWN decision matrix:"
+        - "  - When: Phase entry requires teammate expertise"
+        - "  - How many: scope_size / module_count determines count"
+        - "  - Which type: Phase → Agent type mapping table"
+        - "TERMINATE decision matrix:"
+        - "  - When: Phase complete + all outputs collected"
+        - "  - How: terminate after task completion confirmation"
+        - "GATE APPROVAL checklist:"
+        - "  - All phase outputs present and complete?"
+        - "  - No critical issues unresolved?"
+        - "  - Next phase prerequisites met?"
+        - "ITERATE vs ABORT decision:"
+        - "  - ITERATE: issue is fixable within 1-2 additional cycles"
+        - "  - ABORT: fundamental requirement mismatch or infeasible constraint"
+
+    - id: S7
+      name: Safety Rules
+      lines: 15
+      content_spec:
+        - "Blocked commands: rm -rf, sudo rm, chmod 777, DROP TABLE"
+        - "Blocked files: .env*, credentials, .ssh/id_*, secrets/"
+        - "Git safety: never force push main, never skip hooks"
+        - "No secrets in commits"
+
+    - id: S8
+      name: Compact Recovery
+      lines: 15
+      content_spec:
+        - "Detection: 'This session is being continued from a previous conversation'"
+        - "Recovery: Read Shared Task List → identify current phase → read phase outputs"
+        - "Lead recovery: Re-read all gate approval records"
+        - "Teammate recovery: Re-read own task assignment + phase context"
+        - "NEVER proceed with summarized/remembered information only"
+
+# =============================================================================
+# Section 5: Communication Protocol
+# =============================================================================
+
+section_5_communication:
+  overview: |
+    Three native communication mechanisms + Plan Approval Workflow.
+    Cost-conscious design: minimize broadcasts, prefer direct messages.
+    All messages consume tokens in both sender and receiver context windows.
+
+  message_types:
+    - type: Phase Directive
+      direction: "Lead → Teammate"
+      cost: "1:1"
+      when: "Phase entry — Lead assigns specific task to teammate"
+      format: "[DIRECTIVE] Phase {N}: {task description} | Files: {file list} | Deadline: {gate}"
+
+    - type: Status Report
+      direction: "Teammate → Lead"
+      cost: "1:1"
+      when: "Task completion, blocking issue, or progress update"
+      format: "[STATUS] Phase {N} | {COMPLETE|BLOCKED|IN_PROGRESS} | {details}"
+
+    - type: Plan Submission
+      direction: "Teammate → Lead"
+      cost: "1:1"
+      when: "Before any mutation (file edit, git operation)"
+      format: "[PLAN] Phase {N} | Files: {list} | Changes: {description} | Risk: {low|medium|high}"
+
+    - type: Approval/Rejection
+      direction: "Lead → Teammate"
+      cost: "1:1"
+      when: "Response to Plan Submission"
+      format: "[APPROVED] Proceed. | [REJECTED] Reason: {details}. Revise: {guidance}."
+
+    - type: Phase Broadcast
+      direction: "Lead → All"
+      cost: "1:N (proportional to team size)"
+      when: "Phase transitions ONLY — minimize usage"
+      format: "[BROADCAST] Phase {N} → Phase {N+1} | Gate result: {APPROVE|ITERATE|ABORT}"
+
+    - type: Peer Query
+      direction: "Teammate → Teammate"
+      cost: "1:1"
+      when: "Need to reference another teammate's work output"
+      format: "[QUERY] From {role} to {role}: {question}"
+      note: "Routing through Lead is preferred for information consistency"
+
+  cost_rules:
+    - rule: "Broadcasts ONLY for phase transition announcements"
+      rationale: "Cost scales with team size. Direct messages for all other communication."
+    - rule: "Peer Queries should route through Lead when possible"
+      rationale: "Lead maintains global view; direct peer queries may create inconsistent information."
+    - rule: "Status Reports are mandatory at task completion"
+      rationale: "Lead needs confirmation to proceed with gate evaluation."
+
+  plan_approval_workflow:
+    description: "Mandatory for all mutation operations (Phases 6, 7, 8)"
+    steps:
+      - step: 1
+        actor: Lead
+        action: "Send Phase Directive with task assignment and file ownership"
+      - step: 2
+        actor: Teammate
+        action: "Read task details + relevant code + design specification"
+      - step: 3
+        actor: Teammate
+        action: "Submit Plan to Lead with file list, changes, and risk assessment"
+      - step: 4
+        actor: Lead
+        action: "Evaluate plan against design specification from Phase 4"
+      - step: 5
+        actor: Lead
+        action: "Send APPROVED or REJECTED with reason and revision guidance"
+      - step: 6
+        actor: Teammate
+        action: "If APPROVED: execute plan. If REJECTED: revise and resubmit (goto step 3)"
+      - step: 7
+        actor: Teammate
+        action: "After execution: send Status Report with results"
+    max_revision_cycles: 3
+    escalation: "After 3 rejections, Lead re-evaluates task assignment or design"
+
+# =============================================================================
+# Section 6: Settings & Environment
+# =============================================================================
+
+section_6_settings:
+  overview: |
+    Minimal, clean settings.json optimized for Agent Teams with Opus 4.6.
+    Superpowers plugin and its installed skills are preserved for future
+    enhancement to Agent Teams compatibility.
+
+  settings_json:
+    file: ".claude/settings.json"
+    content:
+      env:
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"
+        CLAUDE_CODE_MAX_OUTPUT_TOKENS: "128000"
+        CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS: "100000"
+        MAX_MCP_OUTPUT_TOKENS: "100000"
+        BASH_MAX_OUTPUT_LENGTH: "200000"
+      teammateMode: tmux
+      model: claude-opus-4-6
+      permissions:
+        deny:
+          - "Read(.env*)"
+          - "Read(**/secrets/**)"
+          - "Read(**/*credentials*)"
+          - "Read(**/.ssh/id_*)"
+          - "Bash(rm:-rf:*)"
+          - "Bash(sudo:rm:*)"
+          - "Bash(chmod:777:*)"
+      enabledPlugins:
+        superpowers-developing-for-claude-code@superpowers-marketplace: true
+        superpowers@superpowers-marketplace: true
+      language: Korean
+
+  changes_from_current:
+    - field: "env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
+      before: "not set"
+      after: "\"1\""
+      reason: "Enable Agent Teams experimental feature"
+    - field: "env.CLAUDE_CODE_MAX_OUTPUT_TOKENS"
+      before: "\"64000\""
+      after: "\"128000\""
+      reason: "Opus 4.6 supports 128K output tokens"
+    - field: "teammateMode"
+      before: "not set"
+      after: "\"tmux\""
+      reason: "WSL2 + tmux split pane for teammate visualization"
+    - field: "model"
+      before: "not set"
+      after: "\"claude-opus-4-6\""
+      reason: "Global Opus 4.6 enforcement for all instances"
+    - field: "env.ORION_*"
+      before: "set"
+      after: "removed"
+      reason: "Legacy single-session orchestration variables no longer needed"
+    - field: "permissions.allow"
+      before: "detailed allowlist"
+      after: "removed"
+      reason: "Tool permissions now controlled per-agent via frontmatter"
+    - field: "enabledPlugins"
+      before: "superpowers + superpowers-developing-for-claude-code"
+      after: "PRESERVED (same)"
+      reason: "Superpowers skills to be enhanced for Agent Teams compatibility"
+
+  preserved_assets:
+    - name: "Superpowers Plugin"
+      location: ".claude/plugins/"
+      reason: "Installed skills (brainstorming, writing-plans, etc.) to be adapted for Agent Teams"
+    - name: "MCP Configuration"
+      location: ".mcp.json + .claude.json mcpServers"
+      reason: "GitHub MCP, Tavily, Context7, Sequential Thinking are infrastructure-level"
+
+  tmux_setup:
+    description: "tmux configuration for Agent Teams split pane display"
+    prerequisite: "tmux installed in WSL2 Ubuntu"
+    session_start: |
+      tmux new -s agent-team
+      cd ~/your-project
+      claude
+
+# =============================================================================
+# Section 7: Orchestrator Decision Framework
+# =============================================================================
+
+section_7_orchestrator_framework:
+  overview: |
+    The Orchestrator Decision Framework is the most critical component of the
+    entire system. It governs how the Lead (Pipeline Controller) makes all
+    strategic decisions: spawning, terminating, approving, iterating, and
+    context management. This framework also defines the L1/L2/L3 file-based
+    handoff system and the Orchestration Plan visualization protocol.
+
+  # ---------------------------------------------------------------------------
+  # 7.1 Spawn Decision Matrix
+  # ---------------------------------------------------------------------------
+  spawn_decisions:
+    criteria:
+      - name: "Spawn Necessity"
+        question: "Does this phase require teammate expertise?"
+        rule: "Phase 1, 9 = Lead-only. All other phases require teammates."
+      - name: "Instance Count"
+        question: "How many teammates to spawn?"
+        rule: "Determined by orthogonality of work: module_count or research_domain_count"
+        examples:
+          - scenario: "3 independent modules to implement"
+            result: "3 implementers"
+          - scenario: "Codebase research + API docs research"
+            result: "2 researchers"
+      - name: "Agent Type"
+        question: "Which agent type?"
+        rule: "Phase-to-Agent mapping table"
+        mapping:
+          phase_2: researcher
+          phase_3: architect
+          phase_4: architect
+          phase_5: devils-advocate
+          phase_6: implementer
+          phase_7: tester
+          phase_8: integrator
+      - name: "Termination Timing"
+        question: "When to terminate?"
+        rule: "After all tasks complete + all outputs collected + L1/L2/L3 files written"
+
+  # ---------------------------------------------------------------------------
+  # 7.2 Gate Approval Checklist
+  # ---------------------------------------------------------------------------
+  gate_approval:
+    universal_checklist:
+      - "All phase output artifacts exist in the teammate's output directory?"
+      - "Output quality meets next-phase entry conditions?"
+      - "No unresolved critical issues?"
+      - "No inter-teammate conflicts?"
+      - "L1/L2/L3 handoff files generated?"
+    decision_matrix:
+      APPROVE: "All checklist items pass"
+      ITERATE: "Issues exist but are fixable within 1-2 additional cycles"
+      ABORT: "Fundamental requirement mismatch or infeasible constraint"
+
+  # ---------------------------------------------------------------------------
+  # 7.3 Iteration Budget
+  # ---------------------------------------------------------------------------
+  iteration_budget:
+    max_per_phase: 3
+    on_budget_exceeded: "Lead must ABORT or reduce scope"
+    rationale: "Opus 4.6 token cost is ~7x standard. Infinite loop prevention is critical."
+
+  # ---------------------------------------------------------------------------
+  # 7.4 Teammate Output Directory Management (CRITICAL)
+  # ---------------------------------------------------------------------------
+  teammate_output_management:
+    overview: |
+      Lead manages a dedicated output directory for EACH active teammate.
+      This directory serves three purposes:
+      1. L1/L2/L3 file-based handoff when replacing teammates
+      2. Global context injection — teammate understands its role in the whole
+      3. Self-reminding task — teammate references this context throughout work
+
+    directory_structure:
+      root: ".agent/teams/{session-id}/"
+      layout: |
+        .agent/teams/{session-id}/
+        ├── orchestration-plan.md          # ASCII visualization of full pipeline
+        ├── global-context.md              # Full project context for all teammates
+        ├── phase-{N}/
+        │   ├── gate-record.yaml           # Gate approval/iteration/abort record
+        │   └── {teammate-role}-{id}/
+        │       ├── L1-index.yaml          # L1: Index of all outputs
+        │       ├── L2-summary.md          # L2: Summary of findings/work
+        │       ├── L3-full/               # L3: Complete detailed outputs
+        │       │   ├── {output-file-1}
+        │       │   ├── {output-file-2}
+        │       │   └── ...
+        │       ├── task-context.md         # What this teammate's work means in the whole
+        │       └── handoff.yaml           # Handoff metadata if teammate replaced
+
+    l1_l2_l3_handoff:
+      description: |
+        When a teammate's context reaches ~75% capacity, instead of summarizing
+        in-memory, the teammate writes L1/L2/L3 files to its output directory.
+        Lead then terminates the teammate and spawns a new one, providing the
+        L1 index + L2 summary as initial context. The new teammate can read
+        L3 files on-demand for full detail.
+      protocol:
+        - step: 1
+          actor: Teammate
+          action: "Detect context pressure (~75%). Write L1/L2/L3 files."
+        - step: 2
+          actor: Teammate
+          action: "Send Status Report to Lead: [STATUS] CONTEXT_PRESSURE | L1/L2/L3 written"
+        - step: 3
+          actor: Lead
+          action: "Verify L1/L2/L3 files exist and are complete"
+        - step: 4
+          actor: Lead
+          action: "Terminate current teammate"
+        - step: 5
+          actor: Lead
+          action: "Spawn replacement teammate with same role"
+        - step: 6
+          actor: Lead
+          action: "Send Phase Directive to new teammate with: task-context.md + L1 index + L2 summary"
+        - step: 7
+          actor: New Teammate
+          action: "Read L1 index → read L2 summary → read L3 files as needed → resume work"
+
+    l1_spec:
+      name: "L1 — Index"
+      format: YAML
+      max_size: "50 lines"
+      content:
+        - "List of all output files with one-line descriptions"
+        - "Current task status"
+        - "Key decisions made"
+        - "Unresolved items"
+
+    l2_spec:
+      name: "L2 — Summary"
+      format: Markdown
+      max_size: "200 lines"
+      content:
+        - "Narrative summary of work completed"
+        - "Key findings and decisions with rationale"
+        - "Blockers and risks identified"
+        - "Recommendations for next steps"
+
+    l3_spec:
+      name: "L3 — Full Detail"
+      format: "Directory of individual files"
+      max_size: "No limit"
+      content:
+        - "Complete research reports"
+        - "Detailed analysis documents"
+        - "Code diff descriptions"
+        - "Test results and logs"
+
+  # ---------------------------------------------------------------------------
+  # 7.5 Global Context Injection (CRITICAL)
+  # ---------------------------------------------------------------------------
+  global_context_injection:
+    overview: |
+      Every teammate must understand TWO things at all times:
+      1. The FULL project context — what is the entire task about?
+      2. Their SPECIFIC role — what exactly is their part in the whole?
+
+      Lead ensures this by maintaining two key files that are injected into
+      every teammate's Phase Directive.
+
+    files:
+      - name: "orchestration-plan.md"
+        purpose: "ASCII visualization of the full 9-phase pipeline with current status"
+        maintained_by: Lead
+        updated: "At every phase transition"
+        content_spec: |
+          # Orchestration Plan
+          ## Full Pipeline Visualization (ASCII)
+          [Detailed ASCII diagram showing all 9 phases, current phase highlighted,
+          completed phases marked, teammate assignments, gate results]
+          ## Current Phase Details
+          [Active phase, active teammates, active tasks]
+          ## Next Steps
+          [What Lead plans to do after current phase]
+        dual_purpose:
+          - "User inspection: User can read this file to understand progress"
+          - "Agent self-reference: Lead uses this to plan next orchestration step"
+
+      - name: "task-context.md"
+        purpose: "Per-teammate context document explaining their role in the whole"
+        maintained_by: Lead
+        created: "At teammate spawn time"
+        location: ".agent/teams/{session-id}/phase-{N}/{teammate-role}-{id}/task-context.md"
+        content_spec: |
+          # Task Context for {Role}
+          ## Full Project Overview
+          [1-paragraph summary of the entire project/task]
+          ## Your Phase
+          Phase {N}: {Phase Name}
+          ## Your Specific Assignment
+          [Detailed task description]
+          ## How Your Work Fits the Whole
+          [Explanation of what downstream phases depend on your output]
+          [What upstream phases have already produced for you]
+          ## Files You Own
+          [List of files this teammate is responsible for]
+          ## Success Criteria
+          [How Lead will judge your output at the gate]
+        self_reminding_protocol: |
+          Teammates MUST reference task-context.md before EVERY Task API call.
+          This ensures continuous awareness of position within the global pipeline.
+
+  # ---------------------------------------------------------------------------
+  # 7.6 Orchestration Plan Visualization Protocol
+  # ---------------------------------------------------------------------------
+  orchestration_plan_visualization:
+    overview: |
+      For EVERY sub-workflow (research, design, planning, execution), Lead
+      produces an Orchestration Plan with ASCII visualization. This serves:
+      1. User verification — user can directly inspect progress
+      2. Lead self-reference — Lead knows what to orchestrate next
+      3. Teammate orientation — teammates know their global position
+
+    format: |
+      ┌──────────────────────────────────────────────────────────┐
+      │                  ORCHESTRATION PLAN                       │
+      │  Task: {task description}                                │
+      │  Session: {session-id}                                   │
+      │  Current Phase: {N} ({phase name}) ◀── YOU ARE HERE      │
+      ├──────────────────────────────────────────────────────────┤
+      │                                                          │
+      │  [✓] Phase 1: Discovery ──── GATE-1: APPROVED            │
+      │  [✓] Phase 2: Deep Research ── GATE-2: APPROVED          │
+      │  [▶] Phase 3: Architecture ── GATE-3: PENDING            │
+      │      └── architect-01 (active)                           │
+      │  [ ] Phase 4: Detailed Design                            │
+      │  [ ] Phase 5: Plan Validation                            │
+      │  ─────────────────── EXECUTION ZONE ───────────────────  │
+      │  [ ] Phase 6: Implementation                             │
+      │  [ ] Phase 7: Testing                                    │
+      │  [ ] Phase 8: Integration                                │
+      │  ─────────────────── DELIVERY ─────────────────────────  │
+      │  [ ] Phase 9: Delivery                                   │
+      │                                                          │
+      │  Active Teammates: architect-01                          │
+      │  Completed Tasks: 5/12                                   │
+      │  Gate Iterations: Phase 2 (1x iterate)                   │
+      └──────────────────────────────────────────────────────────┘
+
+    update_triggers:
+      - "Phase transition (gate approval)"
+      - "Teammate spawn or termination"
+      - "Iteration cycle start"
+      - "Task completion milestone"
+
+  # ---------------------------------------------------------------------------
+  # 7.7 MCP Tools Verification Loop
+  # ---------------------------------------------------------------------------
+  mcp_verification_loop:
+    overview: |
+      All research, design, planning, and execution workflows must periodically
+      validate their outputs using MCP tools. This creates a continuous
+      improvement loop that catches outdated information, suboptimal patterns,
+      and missed best practices.
+
+    required_mcp_tools:
+      - tool: mcp__sequential-thinking__sequentialthinking
+        usage: "Complex reasoning, multi-step analysis, decision making"
+        frequency: "Before every major decision"
+      - tool: mcp__context7__resolve-library-id / mcp__context7__query-docs
+        usage: "Library documentation queries for up-to-date API references"
+        frequency: "During research phase; when implementing with external libraries"
+      - tool: mcp__github-mcp-server__*
+        usage: "GitHub operations: PR, issues, code search"
+        frequency: "During delivery phase; when referencing existing code patterns"
+      - tool: WebSearch (tavily-backed)
+        usage: "External documentation, best practices, current standards"
+        frequency: "During research phase; when validating architecture decisions"
+
+    verification_loop_protocol:
+      description: |
+        For each sub-workflow, teammates execute a verification loop:
+        1. PRODUCE: Generate initial output
+        2. VERIFY: Use MCP tools to cross-check against latest docs/standards
+        3. REFINE: Incorporate verification findings
+        4. REPORT: Include verification evidence in output
+      frequency: "At least once per sub-workflow; more for critical decisions"
+      evidence_requirement: "All verification results must be documented in L3 output files"
+
+  # ---------------------------------------------------------------------------
+  # 7.8 Context Pressure Management
+  # ---------------------------------------------------------------------------
+  context_pressure:
+    teammate_threshold: "~75% context capacity"
+    teammate_action: "Write L1/L2/L3 files → report CONTEXT_PRESSURE → await Lead termination"
+    lead_threshold: "~75% context capacity"
+    lead_action: "/compact with preservation of: Shared Task List, current phase, gate records, orchestration plan"
+    lead_recovery_after_compact:
+      - "Read orchestration-plan.md"
+      - "Read Shared Task List"
+      - "Read current phase gate-record.yaml"
+      - "Read active teammates' L1 indexes"
+
+  # ---------------------------------------------------------------------------
+  # 7.9 [PERMANENT] Semantic Integrity Guard System (CRITICAL)
+  # ---------------------------------------------------------------------------
+  permanent_semantic_integrity_guard:
+    overview: |
+      [PERMANENT] is not a simple "don't forget" tag. It is a SEMANTIC INTEGRITY
+      GUARD — a distributed protocol that ensures every agent in the system
+      (Lead and all Teammates) continuously maintains awareness of how their
+      local actions affect the global system's coherence.
+
+      Without [PERMANENT], agents with independent context windows optimize
+      locally, producing globally contradictory results. [PERMANENT] is the
+      mechanism that prevents this "local-vision hazard" — analogous to
+      eventual consistency protocols in distributed systems.
+
+    why_this_is_critical: |
+      Agent Teams = distributed system of independent context windows.
+      Each Teammate CANNOT see other Teammates' work directly.
+      Without [PERMANENT]:
+        → Teammate A implements interface X one way
+        → Teammate B assumes interface X works differently
+        → Integration Phase discovers fundamental incompatibility
+        → Entire Execution zone effort is wasted
+      With [PERMANENT]:
+        → Every Teammate reads task-context.md before EVERY Task API call
+        → task-context.md includes interface contracts, dependency chains
+        → Teammate B reads "interface X is defined as..." before implementing
+        → Integration Phase finds compatible outputs
+
+    two_levels:
+      - level: "Teammate-Level Semantic Integrity Guard"
+        description: |
+          Each Teammate maintains awareness of:
+          1. "What is my work's position in the entire pipeline?"
+          2. "What downstream phases depend on my output?"
+          3. "What interface contracts must my output satisfy?"
+          4. "If I change something, what else might break?"
+        enforcement: |
+          BEFORE every Task API call (TaskCreate, TaskUpdate):
+          1. Read task-context.md (own assignment + global position)
+          2. Read [PERMANENT] section of task-api-guideline.md
+          3. Include in Task description:
+             - Which [PERMANENT] rules this task enforces
+             - What downstream impact this task has
+             - What interface contracts this task must satisfy
+          4. Create comprehensive Task with full dependency chains
+
+      - level: "Lead-Level Dynamic-Impact-Awareness (DIA)"
+        description: |
+          Lead maintains a REAL-TIME understanding of:
+          1. What each Teammate is producing (code-level logic, not just status)
+          2. How each Teammate's output affects other active Teammates
+          3. Whether any Teammate's work has deviated from the design
+          4. Whether user direct intervention has changed the landscape
+        enforcement: |
+          CONTINUOUS MONITORING:
+          - Read Teammate output directories for new/changed files
+          - Compare against design specification from Phase 4
+          - Detect interface contract violations
+          - Detect architecture deviations
+
+          GATE-TIME VERIFICATION:
+          - Full cross-impact analysis across all Teammate outputs
+          - Verify semantic consistency of combined outputs
+          - Check dependency chain integrity
+
+          REAL-TIME CONTEXT UPDATE:
+          - When deviation detected → update task-context.md for affected Teammates
+          - When user intervenes → re-evaluate orchestration plan
+          - When architecture changes → broadcast updated global-context.md
+
+  # ---------------------------------------------------------------------------
+  # 7.10 Lead's Dynamic-Impact-Awareness (DIA) Engine
+  # ---------------------------------------------------------------------------
+  lead_dia_engine:
+    overview: |
+      The DIA Engine is Lead's core capability for maintaining global coherence
+      across all Teammate activities. It operates in dual mode: continuous
+      monitoring + gate-time verification, with code-level logic detection
+      and real-time orchestration adjustment.
+
+    change_sources:
+      - source: "Teammate work output"
+        detection: "Status Reports + output directory monitoring"
+        risk_level: MEDIUM
+        description: "Expected changes within planned scope"
+      - source: "User → Lead directive"
+        detection: "User types in Lead's terminal"
+        risk_level: LOW
+        description: "Lead controls the response; can plan impact assessment"
+      - source: "User → Teammate direct intervention"
+        detection: "Output directory changes + Task List mutations not initiated by Lead"
+        risk_level: HIGH
+        description: |
+          User enters Teammate's tmux pane and changes task direction.
+          May invalidate other Teammates' work premises.
+          May cause architecture-level changes.
+          Lead MUST detect this and re-orchestrate.
+
+    continuous_monitoring_protocol:
+      trigger: "Every Teammate Status Report"
+      steps:
+        - step: 1
+          action: "Read Status Report content"
+        - step: 2
+          action: "Read Teammate's L1-index.yaml for latest output inventory"
+        - step: 3
+          action: "Compare output against Phase 4 design specification"
+        - step: 4
+          action: "Identify any deviations from planned interface contracts"
+        - step: 5
+          action: "If deviation detected → execute Impact Assessment"
+        - step: 6
+          action: "If no deviation → acknowledge and continue"
+
+    impact_assessment_protocol:
+      trigger: "Deviation detected in any change source"
+      steps:
+        - step: 1
+          action: "Classify deviation: COSMETIC | INTERFACE_CHANGE | ARCHITECTURE_CHANGE"
+        - step: 2
+          action: |
+            COSMETIC: Log and continue. No cross-impact.
+            INTERFACE_CHANGE: Identify all Teammates that depend on changed interface.
+            ARCHITECTURE_CHANGE: Full re-evaluation of orchestration plan.
+        - step: 3
+          action: "For INTERFACE_CHANGE: Update task-context.md for affected Teammates"
+        - step: 4
+          action: "For ARCHITECTURE_CHANGE: Update global-context.md + orchestration-plan.md"
+        - step: 5
+          action: "Send Direct Message to affected Teammates with change notification"
+        - step: 6
+          action: "If user direct intervention caused the change: request user confirmation of new direction"
+
+    code_level_logic_detection:
+      description: |
+        Lead does not just check high-level status. Lead reads actual code
+        changes (via Teammate's L3 output files or direct file reads) to
+        detect logic-level impacts that may not be apparent from Status Reports.
+      triggers:
+        - "Teammate completes a task involving interface definitions"
+        - "Teammate modifies shared data structures"
+        - "Teammate changes function signatures"
+        - "Teammate modifies configuration files"
+      detection_method: |
+        1. Lead reads the changed files from Teammate's output directory
+        2. Lead uses sequential-thinking to analyze impact
+        3. Lead compares against Phase 4 interface specifications
+        4. Lead identifies any contract violations or unexpected changes
+
+    real_time_orchestration_adjustment:
+      description: |
+        When DIA detects that the original orchestration plan is no longer
+        valid due to Teammate output deviations or user intervention, Lead
+        must dynamically adjust the plan.
+      adjustment_types:
+        - type: "Task Reassignment"
+          trigger: "Teammate's output changes another Teammate's input assumptions"
+          action: "Update affected Teammate's task-context.md + send new Phase Directive"
+        - type: "Plan Revision"
+          trigger: "Architecture-level change detected"
+          action: "Update orchestration-plan.md + global-context.md + broadcast to all"
+        - type: "Teammate Replacement"
+          trigger: "Teammate's work is fundamentally misaligned"
+          action: "Terminate Teammate → L1/L2/L3 handoff → spawn replacement with corrected context"
+        - type: "Phase Rollback"
+          trigger: "Critical design flaw discovered during execution"
+          action: "ITERATE gate → return to appropriate Pre-Execution phase"
+
+  # ---------------------------------------------------------------------------
+  # 7.11 Teammate as Sub-Orchestrator
+  # ---------------------------------------------------------------------------
+  teammate_sub_orchestrator:
+    overview: |
+      Each Teammate is NOT just a task executor. Each Teammate is a
+      Sub-Orchestrator within their own session, capable of:
+      - Decomposing their assigned task into sub-tasks
+      - Spawning parallel subagents via Task tool
+      - Managing their own mini-pipeline of sub-workflows
+      - Self-orchestrating research → design → plan → execute → verify cycles
+
+      This leverages Opus 4.6's maximum performance across ALL workflow stages.
+
+    capabilities:
+      - name: "Parallel Task Agents"
+        description: "Spawn multiple subagents simultaneously via Task tool for independent sub-tasks"
+        example: "Researcher spawns 3 subagents: one for codebase patterns, one for API docs, one for best practices"
+      - name: "Native Subagent Delegation"
+        description: "Delegate focused sub-tasks to subagents with specific tool restrictions"
+        example: "Implementer delegates test writing to a tester subagent while focusing on implementation"
+      - name: "Self-Orchestration"
+        description: "Apply the same research→design→plan→verify→execute cycle to own assigned work"
+        example: |
+          Architect Teammate:
+          1. Research: spawn subagents to explore different architecture patterns
+          2. Design: synthesize findings into architecture decision
+          3. Plan: create detailed implementation plan
+          4. Verify: use MCP tools to validate against best practices
+          5. Output: write L1/L2/L3 files with verified architecture
+      - name: "ASCII Sub-Workflow Visualization"
+        description: |
+          Each Teammate outputs ASCII visualization of their own sub-workflow
+          to their tmux pane, enabling user monitoring of sub-orchestration progress.
+        format: |
+          ┌────────────────────────────────────────────────┐
+          │  SUB-ORCHESTRATION: researcher-01               │
+          │  Phase 2: Deep Research                         │
+          │  Parent Task: Analyze codebase architecture     │
+          ├────────────────────────────────────────────────┤
+          │  [✓] 1. Spawn research subagents (3)           │
+          │  [▶] 2. Collect subagent results               │
+          │      ├── subagent-a: patterns ✓                │
+          │      ├── subagent-b: API docs (running...)     │
+          │      └── subagent-c: best practices ✓          │
+          │  [ ] 3. Synthesize findings                    │
+          │  [ ] 4. MCP verification loop                  │
+          │  [ ] 5. Write L1/L2/L3 outputs                 │
+          │  [ ] 6. Report to Lead                         │
+          └────────────────────────────────────────────────┘
+
+    sub_orchestrator_constraints:
+      - "Subagents spawned by Teammate CANNOT spawn further subagents (nesting limit: 1)"
+      - "Teammate's sub-orchestration must stay within assigned file ownership boundaries"
+      - "Teammate must write ALL sub-orchestration outputs to their designated directory"
+      - "Teammate must report significant sub-orchestration decisions to Lead via Status Report"
+
+  # ---------------------------------------------------------------------------
+  # 7.12 [PERMANENT] Task API Guideline (Agent Teams Edition)
+  # ---------------------------------------------------------------------------
+  permanent_task_api_guideline:
+    overview: |
+      This guideline replaces the legacy task-api-guideline.md (41.5KB).
+      Written from scratch for Agent Teams architecture.
+      Location: .claude/references/task-api-guideline.md
+
+      [PERMANENT] — This guideline must be read by EVERY agent (Lead and
+      all Teammates) BEFORE making ANY Task API call. It is the foundation
+      that enables both Teammate-Level Semantic Integrity and Lead-Level
+      Dynamic-Impact-Awareness.
+
+    mandatory_pre_call_protocol:
+      description: |
+        BEFORE calling TaskCreate, TaskUpdate, TaskList, or TaskGet:
+        1. Read .claude/references/task-api-guideline.md [PERMANENT]
+        2. Read own task-context.md (Teammates) or orchestration-plan.md (Lead)
+        3. Ensure Task description meets COMPREHENSIVE requirements below
+      applies_to: "All agents — Lead, all Teammates, all Subagents"
+
+    comprehensive_task_creation:
+      description: |
+        Every TaskCreate call must produce a task that is:
+        - DETAILED: No ambiguity in what needs to be done
+        - COMPLETE: All acceptance criteria explicitly listed
+        - DEPENDENCY-AWARE: Full dependency chain documented
+        - IMPACT-AWARE: Downstream impact explicitly stated
+        - VERIFIABLE: Clear success/failure criteria
+      required_fields:
+        subject: "Imperative action (e.g., 'Implement user authentication module')"
+        description: |
+          Must include ALL of the following sections:
+
+          ## Objective
+          [What this task accomplishes — 1-2 sentences]
+
+          ## Context in Global Pipeline
+          [Which phase this belongs to]
+          [What upstream tasks produced the inputs for this task]
+          [What downstream tasks depend on this task's output]
+
+          ## Detailed Requirements
+          [Numbered list of specific requirements]
+
+          ## Interface Contracts
+          [What interfaces/APIs this task must satisfy]
+          [What data formats this task must produce]
+
+          ## File Ownership
+          [Exact list of files this task may create/modify]
+
+          ## Dependency Chain
+          [blockedBy: list of task IDs that must complete first]
+          [blocks: list of task IDs that wait for this task]
+
+          ## Acceptance Criteria
+          [Numbered list of verifiable criteria]
+          [How Lead/Teammate will verify completion]
+
+          ## Semantic Integrity Check
+          [Which [PERMANENT] rules this task enforces]
+          [What downstream impact this task has if outputs change]
+        activeForm: "Present continuous form (e.g., 'Implementing user authentication')"
+
+    dependency_chain_rules:
+      - rule: "Every task MUST declare blockedBy even if empty (explicit [])"
+        rationale: "Forces conscious consideration of dependencies"
+      - rule: "Every task MUST declare what it blocks (downstream impact)"
+        rationale: "Forces awareness of impact on other agents' work"
+      - rule: "Circular dependencies are FORBIDDEN — Lead must break cycles"
+        rationale: "Prevents deadlocks in distributed execution"
+      - rule: "Cross-Teammate dependencies must be reported to Lead"
+        rationale: "Lead needs this for DIA cross-impact analysis"
+
+  # ---------------------------------------------------------------------------
+  # 7.13 ASCII Visualization Standard
+  # ---------------------------------------------------------------------------
+  ascii_visualization_standard:
+    overview: |
+      Both Lead and Teammates output ASCII visualizations to their tmux panes.
+      This enables the user to monitor progress across all panes simultaneously.
+
+    lead_visualization:
+      frequency: "At every phase transition, teammate spawn/terminate, gate decision"
+      content: "Full 9-phase pipeline status + active teammates + task progress"
+      location: "Lead's tmux pane output + .agent/teams/{session-id}/orchestration-plan.md"
+
+    teammate_visualization:
+      frequency: "At sub-workflow start, subagent spawn, task completion"
+      content: "Sub-orchestration progress + subagent status + current sub-task"
+      location: "Teammate's tmux pane output"
+
+    symbols:
+      completed: "[✓]"
+      in_progress: "[▶]"
+      pending: "[ ]"
+      blocked: "[✗]"
+      gate_approved: "APPROVED"
+      gate_iterate: "ITERATE"
+      gate_abort: "ABORT"
+
+# =============================================================================
+# Section 8: Migration Plan
+# =============================================================================
+
+section_8_migration:
+  overview: |
+    Step-by-step migration from existing single-session infrastructure to
+    Agent Teams architecture. Three phases: Cleanup → Scaffold → Validate.
+
+  # ---------------------------------------------------------------------------
+  # 8.1 Phase A: Cleanup (Delete Existing Infrastructure)
+  # ---------------------------------------------------------------------------
+  phase_a_cleanup:
+    name: "Cleanup — Delete existing infrastructure"
+    order: 1
+    actions:
+      delete:
+        - path: ".claude/skills/"
+          description: "All 18 custom skills (entire directory)"
+        - path: ".claude/agents/"
+          description: "All 6 custom agents (entire directory)"
+        - path: ".claude/references/"
+          description: "All 7 reference documents (entire directory)"
+        - path: ".claude/CLAUDE.md"
+          description: "Existing v7.3 CLAUDE.md"
+        - path: ".claude/rules/"
+          description: "All 4 rule files (coding-style, git-workflow, ontology, security)"
+        - path: ".agent/"
+          description: "All prompts, logs, outputs, tmp (entire directory)"
+
+      preserve:
+        - path: ".claude/settings.json"
+          description: "Will be REPLACED with new Agent Teams settings"
+        - path: ".claude/plugins/"
+          description: "Superpowers plugin and installed skills — PRESERVED for future enhancement"
+        - path: ".mcp.json"
+          description: "Project-level MCP configuration — PRESERVED"
+        - path: ".claude.json"
+          description: "Global MCP servers configuration — PRESERVED"
+        - path: "docs/"
+          description: "Existing documentation — PRESERVED for reference"
+        - path: "docs/agent-teams-architecture-guide.md"
+          description: "Agent Teams reference guide — PRESERVED"
+
+  # ---------------------------------------------------------------------------
+  # 8.2 Phase B: Scaffold (Create New Infrastructure)
+  # ---------------------------------------------------------------------------
+  phase_b_scaffold:
+    name: "Scaffold — Create Agent Teams infrastructure"
+    order: 2
+    actions:
+      create:
+        # Core configuration
+        - path: ".claude/CLAUDE.md"
+          description: "New team constitution (~150 lines) per Section 4 spec"
+          priority: CRITICAL
+
+        - path: ".claude/settings.json"
+          description: "Agent Teams settings per Section 6 spec"
+          priority: CRITICAL
+
+        # Agent definitions (6 agents)
+        - path: ".claude/agents/researcher.md"
+          description: "Research agent — read-only codebase/external exploration"
+          priority: HIGH
+
+        - path: ".claude/agents/architect.md"
+          description: "Architecture agent — design documents, risk analysis"
+          priority: HIGH
+
+        - path: ".claude/agents/devils-advocate.md"
+          description: "Validation agent — design challenge, flaw detection"
+          priority: HIGH
+
+        - path: ".claude/agents/implementer.md"
+          description: "Implementation agent — code changes with Plan Approval"
+          priority: HIGH
+
+        - path: ".claude/agents/tester.md"
+          description: "Testing agent — test writing and execution"
+          priority: HIGH
+
+        - path: ".claude/agents/integrator.md"
+          description: "Integration agent — conflict resolution, final merge"
+          priority: HIGH
+
+        # References
+        - path: ".claude/references/task-api-guideline.md"
+          description: "[PERMANENT] Task API Guideline — Agent Teams Edition per Section 7.12"
+          priority: CRITICAL
+
+        # Team output directory structure
+        - path: ".agent/teams/"
+          description: "Root directory for team session outputs"
+          priority: HIGH
+
+  # ---------------------------------------------------------------------------
+  # 8.3 Phase C: Validation
+  # ---------------------------------------------------------------------------
+  phase_c_validation:
+    name: "Validate — Verify Agent Teams infrastructure"
+    order: 3
+    checks:
+      - id: V-001
+        name: "CLI Version Check"
+        command: "claude --version"
+        expected: "Claude Code CLI with Agent Teams support"
+
+      - id: V-002
+        name: "tmux Session Verification"
+        command: "tmux list-sessions"
+        expected: "Active tmux session available"
+
+      - id: V-003
+        name: "Agent Teams Activation"
+        test: "Start claude in tmux → request team creation"
+        expected: "Agent Teams UI elements appear (Shift+Up/Down, Ctrl+T)"
+
+      - id: V-004
+        name: "Agent Frontmatter Validation"
+        test: "Verify each .claude/agents/*.md has valid YAML frontmatter"
+        expected: "All 6 agents parse without errors"
+
+      - id: V-005
+        name: "MCP Tools Connectivity"
+        test: "Verify sequential-thinking, context7, github, tavily MCP servers respond"
+        expected: "All 4 MCP servers connected"
+
+      - id: V-006
+        name: "Settings Validation"
+        test: "Verify .claude/settings.json loads correctly"
+        expected: "Agent Teams enabled, tmux mode, opus model, plugins preserved"
+
+      - id: V-007
+        name: "CLAUDE.md Load Test"
+        test: "Start new claude session → verify CLAUDE.md is loaded"
+        expected: "Team constitution visible in session context"
+
+      - id: V-008
+        name: "Teammate Spawn Test"
+        test: "Request spawning a researcher teammate in tmux"
+        expected: "New tmux pane opens with researcher agent instance"
+
+      - id: V-009
+        name: "[PERMANENT] Guideline Accessibility"
+        test: "Verify task-api-guideline.md is readable from any agent context"
+        expected: "File accessible at .claude/references/task-api-guideline.md"
+
+      - id: V-010
+        name: "Output Directory Test"
+        test: "Verify .agent/teams/ directory exists and is writable"
+        expected: "Directory exists with correct permissions"
+
+# =============================================================================
+# Section 9: Design Decisions Registry (Addendum)
+# =============================================================================
+
+section_9_decisions_registry:
+  overview: |
+    Complete registry of all design decisions made during brainstorming.
+    Each decision is traceable to user requirements.
+
+  decisions:
+    - id: DD-001
+      decision: "Full infrastructure deletion and rebuild"
+      user_input: "전체 삭제 후 재구축"
+      section: 1
+
+    - id: DD-002
+      decision: "Pipeline Controller Lead model"
+      user_input: "3번 — Lead가 단계 전환 직접 판단"
+      section: 1
+
+    - id: DD-003
+      decision: "Dynamic Teammate Spawning"
+      user_input: "3번 — 동적 팀 구성. Orchestrator 역량 별도 정의"
+      section: 1
+
+    - id: DD-004
+      decision: "High Control — Lead approves every phase gate"
+      user_input: "1번 — 모든 단계 전환을 명시적으로 승인"
+      section: 2
+
+    - id: DD-005
+      decision: "tmux split pane display mode"
+      user_input: "tmux split pane (Recommended)"
+      section: 6
+
+    - id: DD-006
+      decision: "9-phase Shift-Left pipeline"
+      user_input: "단계 확장 — Pre-Execution 70-80%"
+      section: 2
+
+    - id: DD-007
+      decision: "6 agent types (researcher, architect, devils-advocate, implementer, tester, integrator)"
+      user_input: "6개 그대로"
+      section: 3
+
+    - id: DD-008
+      decision: "Preserve superpowers plugin and installed skills"
+      user_input: "superpowers 스킬만은 남겨라"
+      section: 6
+
+    - id: DD-009
+      decision: "L1/L2/L3 file-based handoff (not in-memory summary)"
+      user_input: "결과 요약이 아닌 L1/L2/L3 file system을 통한 handoff"
+      section: 7
+
+    - id: DD-010
+      decision: "[PERMANENT] Semantic Integrity Guard system"
+      user_input: "전체작업에 대한 SEMANTIC INTEGRITY와 Dynamic-Impact-Awareness"
+      section: 7
+
+    - id: DD-011
+      decision: "Teammate as Sub-Orchestrator with parallel subagent spawning"
+      user_input: "각각의 Teammates가 Sub-Orchestrator로서 자신의 터미널에서 작업"
+      section: 7
+
+    - id: DD-012
+      decision: "Task API Guideline rewrite from scratch with [PERMANENT] integration"
+      user_input: "백지 재작성. [PERMANENT]는 매우 중요"
+      section: 7
+
+    - id: DD-013
+      decision: "Lead DIA with code-level logic detection + real-time orchestration"
+      user_input: "Code-Level-Logic까지 감지하고 Real-Time-Orchestration"
+      section: 7
+
+    - id: DD-014
+      decision: "ASCII visualization for both Lead and Teammates"
+      user_input: "각각의 Teammates가 소단위작업들에 대한 ASCII 시각화"
+      section: 7
+
+    - id: DD-015
+      decision: "Dual user intervention paths (Lead terminal + direct Teammate pane)"
+      user_input: "두 가지 모두"
+      section: 7
+
+    - id: DD-016
+      decision: "API-Free, CLI-Native only (Claude Max X20)"
+      user_input: "Claude-Max-X20 구독, API-Free"
+      section: 1
