@@ -1,16 +1,16 @@
 ---
 name: brainstorming-pipeline
-description: Use when starting a new feature or task that needs Agent Teams pipeline orchestration through Phase 1-3 (Discovery, Research, Architecture). Requires Agent Teams mode enabled and CLAUDE.md v3.0+.
+description: Use when starting a new feature or task that needs Agent Teams pipeline orchestration through Phase 1-3 (Discovery, Research, Architecture). Requires Agent Teams mode enabled and CLAUDE.md v5.0+.
 argument-hint: "[feature description or topic]"
 ---
 
 # Brainstorming Pipeline
 
-Agent Teams-native Phase 1-3 orchestrator. Transforms a feature idea into a researched, validated architecture through structured team collaboration with DIA v3.0 enforcement.
+Agent Teams-native Phase 0-3 orchestrator. Transforms a feature idea into a researched, validated architecture through structured team collaboration with understanding verification.
 
 **Announce at start:** "I'm using brainstorming-pipeline to orchestrate Phase 1-3 for this feature."
 
-**Core flow:** Discovery (Lead) → Deep Research (researcher) → Architecture (architect) → Clean Termination
+**Core flow:** PT Check (Lead) → Discovery (Lead) → Deep Research (researcher) → Architecture (architect) → Clean Termination
 
 ## When to Use
 
@@ -49,9 +49,42 @@ The following is auto-injected when this skill loads. Use it for Phase 1 Recon.
 
 ---
 
+## Phase 0: PERMANENT Task Check
+
+Lightweight step (~500 tokens). No teammates spawned, no verification required.
+
+Call `TaskList` and search for a task with `[PERMANENT]` in its subject.
+
+```
+TaskList result
+     │
+┌────┴────┐
+found      not found
+│           │
+▼           ▼
+TaskGet →   AskUser: "No PERMANENT Task found.
+read PT     Create one for this feature?"
+│           │
+▼         ┌─┴─┐
+Continue  Yes   No
+to 1.1    │     │
+          ▼     ▼
+        /permanent-tasks    Continue to 1.1
+        creates PT-v1       without PT
+        → then 1.1
+```
+
+If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
+provides additional context for Phase 1 discovery. Use it alongside the Dynamic Context above.
+
+If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
+the TaskCreate and return a summary. Then continue to Phase 1.1.
+
+---
+
 ## Phase 1: Discovery (Lead Only)
 
-LDAP intensity: NONE (Lead-only phase). No teammates spawned.
+Lead-only phase. No teammates spawned.
 
 Use `sequential-thinking` before every analysis step, judgment, and decision in this phase.
 
@@ -224,8 +257,8 @@ criteria:
 
 ## Phase 2: Deep Research
 
-Researcher teammates execute research. DIA: TIER 3 + LDAP MEDIUM (1Q).
-Protocol execution follows CLAUDE.md [PERMANENT] section 7.
+Researcher teammates execute research. Lead verifies understanding before approving work.
+Protocol execution follows CLAUDE.md §6 and §10.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
@@ -246,7 +279,7 @@ TeamCreate → team_name: "{feature-name}"
 Update orchestration-plan.md with Phase 2 details
 ```
 
-### 2.3 Researcher Spawn + DIA
+### 2.3 Researcher Spawn + Verification
 
 For each researcher:
 
@@ -255,24 +288,22 @@ Task tool:
   subagent_type: "researcher"
   team_name: "{feature-name}"
   name: "researcher-{N}"
-  mode: "plan"
+  mode: "default"
 
 [DIRECTIVE] Phase 2: {research topic}
 Files: {investigation targets}
-[INJECTION] GC-v1:
-{full global-context.md embedded}
+PT-ID: {PERMANENT Task ID} | PT-v{N}
 task-context.md: {research scope, deliverables, exclusions}
 ```
 
-**DIA flow (CLAUDE.md [PERMANENT] section 7):**
-1. Researcher confirms context receipt
-2. Researcher submits Impact Analysis (TIER 3: 3 sections, 5 RC)
-3. Lead verifies RC checklist
-4. Lead issues LDAP challenge (MEDIUM: 1 question)
-5. Researcher defends with evidence
-6. Lead verifies or rejects (max 3 attempts)
+**Verification flow (CLAUDE.md §6 "Verifying Understanding"):**
+1. Researcher reads PERMANENT Task via TaskGet and confirms context receipt
+2. Researcher explains their understanding of the task to Lead
+3. Lead asks 1 probing question grounded in the Codebase Impact Map
+4. Researcher defends with specific evidence
+5. Lead verifies or rejects (max 3 attempts)
 
-All agents use `sequential-thinking` throughout the DIA exchange.
+All agents use `sequential-thinking` throughout.
 
 ### 2.4 Research Execution
 
@@ -309,37 +340,34 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
 
 ## Phase 3: Architecture
 
-Architect teammate designs the system. DIA: TIER 2 + LDAP MAXIMUM (3Q + alternative).
-This is the highest verification intensity in the pipeline.
-Protocol execution follows CLAUDE.md [PERMANENT] section 7.
+Architect teammate designs the system. Architecture receives the deepest scrutiny —
+design flaws here multiply downstream.
+Protocol execution follows CLAUDE.md §6 and §10.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### 3.1 Architect Spawn + CIP
+### 3.1 Architect Spawn
 
 ```
 Task tool:
   subagent_type: "architect"
   team_name: "{feature-name}"
   name: "architect-1"
-  mode: "plan"
+  mode: "default"
 
 [DIRECTIVE] Phase 3: {architecture task}
 Files: {scope from P1 + P2 discoveries}
-[INJECTION] GC-v2:
-{full global-context.md v2 embedded}
+PT-ID: {PERMANENT Task ID} | PT-v{N}
 task-context.md: {scope, research L2 summaries, architecture expectations, constraints}
 ```
 
-### 3.2 DIA: TIER 2 + LDAP MAXIMUM
+### 3.2 Understanding Verification
 
-1. Architect confirms context receipt
-2. Architect submits Impact Analysis (TIER 2: 4 sections, 7 RC)
-3. Lead verifies RC checklist (7 items)
-4. Lead issues LDAP challenge (MAXIMUM: 3 questions + ALTERNATIVE_DEMAND)
-   - Q1-Q3: Three different categories from INTERCONNECTION_MAP, SCOPE_BOUNDARY,
-     RIPPLE_TRACE, FAILURE_MODE, DEPENDENCY_RISK, ASSUMPTION_PROBE
-   - +ALT: "Propose one alternative architecture and defend why yours is superior"
+1. Architect reads PERMANENT Task via TaskGet and confirms context receipt
+2. Architect explains their understanding of the task to Lead
+3. Lead asks 3 probing questions grounded in the Codebase Impact Map, covering
+   interconnections, failure modes, and dependency risks
+4. Lead also asks: "Propose one alternative architecture and defend why yours is superior"
 5. Architect defends each with specific evidence
 6. Lead evaluates defense quality → verify or reject (max 3 attempts)
 
@@ -404,15 +432,16 @@ Present to user:
 **Complexity:** {level}
 
 **Artifacts:**
-- global-context.md (GC-v3)
+- PERMANENT Task (PT-v{N}) — authoritative project context
+- global-context.md (GC-v3) — session artifacts
 - orchestration-plan.md
 - Phase 2: researcher L1/L2/L3
 - Phase 3: architect L1/L2/L3 (architecture-design.md)
 
 **Location:** .agent/teams/{session-id}/
 
-**Next:** Phase 4 (Detailed Design) — use the writing-plans skill.
-Input: the artifacts above.
+**Next:** Phase 4 (Detailed Design) — use `/agent-teams-write-plan`.
+Input: the artifacts above. Update PERMANENT Task with `/permanent-tasks` if scope evolved.
 ```
 
 ### Shutdown Sequence
@@ -434,7 +463,7 @@ analysis, judgment, design, and verification throughout the entire pipeline.
 | Agent | When |
 |-------|------|
 | Lead (P1) | After Recon, after each user response, before Scope Statement, at Gates |
-| Lead (P2-3) | DIA verification, LDAP challenge generation, Gate evaluation, GC updates |
+| Lead (P2-3) | Understanding verification, probing questions, Gate evaluation, PT/GC updates |
 | Researcher (P2) | Research strategy, findings synthesis, L2 writing |
 | Architect (P3) | Component design, trade-off analysis, interface definition |
 
@@ -443,14 +472,14 @@ analysis, judgment, design, and verification throughout the entire pipeline.
 | Situation | Response |
 |-----------|----------|
 | Spawn failure | Retry once, then abort phase with user notification |
-| DIA 3x rejection | Abort teammate, re-spawn with enhanced context |
+| Verification 3x rejection | Abort teammate, re-spawn with enhanced context |
 | Gate 3x iteration | Abort phase, present partial results to user |
-| Context compact | Follow CLAUDE.md section 8 Compact Recovery |
+| Context compact | Follow CLAUDE.md §9 Compact Recovery |
 | User cancellation | Graceful shutdown all teammates, preserve artifacts |
 
 ### Compact Recovery
 
-Follows CLAUDE.md section 8:
+Follows CLAUDE.md §9:
 - Lead: Read orchestration-plan → task list → gate records → L1 indexes → re-inject
 - Teammates: Receive injection → read own L1/L2/L3 → re-submit Impact Analysis
 
@@ -463,7 +492,7 @@ Follows CLAUDE.md section 8:
 - **Freeform Q&A** — question count driven by conversation, not formula
 - **Category Awareness** — internal guide for Lead, not a constraint on user
 - **Sequential thinking always** — structured reasoning at every decision point
-- **DIA delegated** — CLAUDE.md [PERMANENT] owns protocol, skill owns orchestration
+- **Verification delegated** — CLAUDE.md §6/§10 owns protocol, skill owns orchestration
 - **Clean termination** — no auto-chaining. User controls next step
 - **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`
 - **YAGNI** — remove unnecessary features from all designs
@@ -471,7 +500,7 @@ Follows CLAUDE.md section 8:
 
 ## Never
 
-- Skip DIA verification for any teammate
+- Skip understanding verification for any teammate
 - Spawn teammates in Phase 1 (Lead only)
 - Auto-chain to another skill after termination
 - Proceed past a Gate without all criteria met

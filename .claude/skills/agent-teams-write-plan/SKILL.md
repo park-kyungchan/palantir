@@ -1,16 +1,16 @@
 ---
 name: agent-teams-write-plan
-description: Use after brainstorming-pipeline to produce a detailed implementation plan (Phase 4). Takes GC-v3 + architecture artifacts as input, spawns an architect to create a 10-section CH-001-format plan. Requires Agent Teams mode and CLAUDE.md v3.0+.
+description: Use after brainstorming-pipeline to produce a detailed implementation plan (Phase 4). Takes architecture output and PERMANENT Task as input, spawns an architect to create a 10-section plan. Requires Agent Teams mode and CLAUDE.md v6.0+.
 argument-hint: "[brainstorming-session-id or path]"
 ---
 
 # Agent Teams Write Plan
 
-Phase 4 (Detailed Design) orchestrator. Transforms brainstorming-pipeline architecture output into a concrete implementation plan through a DIA-verified architect teammate.
+Phase 4 (Detailed Design) orchestrator. Transforms brainstorming-pipeline architecture output into a concrete implementation plan through a verified architect teammate.
 
 **Announce at start:** "I'm using agent-teams-write-plan to orchestrate Phase 4 (Detailed Design) for this feature."
 
-**Core flow:** Input Discovery → Team Setup → Architect Spawn + DIA → Plan Generation → Gate 4 → Clean Termination
+**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Architect Spawn + Verification → Plan Generation → Gate 4 → Clean Termination
 
 ## When to Use
 
@@ -23,7 +23,7 @@ Have architecture output from brainstorming-pipeline?
 └── Use /agent-teams-write-plan
 ```
 
-**vs. writing-plans (solo):** This skill spawns an architect teammate with full DIA verification (TIER 2 + LDAP MAXIMUM). Solo writing-plans has the Lead write the plan directly with no verification. Use this when the feature complexity justifies the overhead.
+**vs. writing-plans (solo):** This skill spawns an architect teammate with full understanding verification. Solo writing-plans has the Lead write the plan directly with no verification. Use this when the feature complexity justifies the overhead.
 
 ## Dynamic Context
 
@@ -42,9 +42,42 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 
 ---
 
+## Phase 0: PERMANENT Task Check
+
+Lightweight step (~500 tokens). No teammates spawned, no verification required.
+
+Call `TaskList` and search for a task with `[PERMANENT]` in its subject.
+
+```
+TaskList result
+     │
+┌────┴────┐
+found      not found
+│           │
+▼           ▼
+TaskGet →   AskUser: "No PERMANENT Task found.
+read PT     Create one for this feature?"
+│           │
+▼         ┌─┴─┐
+Continue  Yes   No
+to 4.1    │     │
+          ▼     ▼
+        /permanent-tasks    Continue to 4.1
+        creates PT-v1       without PT
+        → then 4.1
+```
+
+If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
+provides additional context for Phase 4 design. Use it alongside the Dynamic Context above.
+
+If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
+the TaskCreate and return a summary. Then continue to Phase 4.1.
+
+---
+
 ## Phase 4.1: Input Discovery + Validation
 
-LDAP intensity: NONE (Lead-only step). No teammates spawned yet.
+No teammates spawned yet. Lead-only step.
 
 Use `sequential-thinking` before every judgment in this phase.
 
@@ -57,6 +90,9 @@ Parse the Dynamic Context above to find brainstorming-pipeline output:
 3. If multiple candidates found, present options via `AskUserQuestion`
 4. If single candidate, confirm with user: "Found brainstorming output at {path}. Use this?"
 5. If no candidates, inform user: "No brainstorming-pipeline output found. Run /brainstorming-pipeline first."
+
+If a PERMANENT Task was loaded in Phase 0, use its Codebase Impact Map and user intent
+to inform validation and provide additional context to the architect.
 
 ### Validation
 
@@ -85,9 +121,9 @@ Create orchestration-plan.md and copy GC-v3 to new session directory.
 
 ---
 
-## Phase 4.3: Architect Spawn + DIA
+## Phase 4.3: Architect Spawn + Verification
 
-DIA: TIER 2 + LDAP MAXIMUM (3Q + alternative). Protocol execution follows CLAUDE.md [PERMANENT] §7.
+Protocol execution follows CLAUDE.md §6 and §10.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
@@ -98,19 +134,21 @@ Task tool:
   subagent_type: "architect"
   team_name: "{feature-name}-write-plan"
   name: "architect-1"
-  mode: "plan"
+  mode: "default"
 ```
 
-### [DIRECTIVE] Construction
+### Directive Construction
 
-The directive must include these 4 context layers:
+The directive must include these context layers:
 
-1. **GC-v3 full embedding** — the entire global-context.md (CIP protocol)
-2. **Phase 3 Architect L2-summary.md** — embedded inline in task-context for architecture narrative
-3. **Architecture Design path** — `{source}/phase-3/architect-1/L3-full/architecture-design.md` for architect to Read
-4. **CH-001 Exemplar path** — `docs/plans/2026-02-07-ch001-ldap-implementation.md` for format reference
+1. **PERMANENT Task ID** — `PT-ID: {task_id} | PT-v{N}` so architect can call TaskGet for full context
+2. **GC-v3 full embedding** — the entire global-context.md (session-level artifacts)
+3. **Phase 3 Architect L2-summary.md** — embedded inline in task-context for architecture narrative
+4. **Architecture Design path** — `{source}/phase-3/architect-1/L3-full/architecture-design.md` for architect to Read
+5. **CH-001 Exemplar path** — `docs/plans/2026-02-07-ch001-ldap-implementation.md` for format reference
 
 Task-context must instruct architect to:
+- Read the PERMANENT Task via TaskGet for full project context (user intent, impact map)
 - Read architecture-design.md and CH-001 exemplar before starting
 - Follow the 10-section template (§1-§10)
 - Use Read-First-Write-Second workflow for §5
@@ -120,16 +158,15 @@ Task-context must instruct architect to:
 - Dual-save plan to docs/plans/ and L3-full/
 - Use sequential-thinking for all design decisions
 
-### DIA Flow
+### Understanding Verification
 
-1. Architect confirms context receipt
-2. Architect submits Impact Analysis (TIER 2: 4 sections, 7 RC)
-3. Lead verifies RC checklist
-4. Lead issues LDAP challenge (MAXIMUM: 3Q + ALTERNATIVE_DEMAND)
-   - Q1-Q3: Context-specific questions from 7 LDAP categories
-   - +ALT: "Propose one alternative plan decomposition and defend current"
-5. Architect defends with specific evidence
-6. Lead verifies or rejects (max 3 attempts)
+1. Architect reads PERMANENT Task via TaskGet and confirms context receipt
+2. Architect explains their understanding of the task to Lead
+3. Lead asks 3 probing questions grounded in the Codebase Impact Map, covering
+   interconnections, failure modes, and dependency risks
+4. Lead also asks: "Propose one alternative plan decomposition and defend current"
+5. Architect defends each with specific evidence
+6. Lead evaluates defense quality → verify or reject (max 3 attempts)
 
 All agents use `sequential-thinking` throughout.
 
@@ -137,7 +174,7 @@ All agents use `sequential-thinking` throughout.
 
 ## Phase 4.4: Plan Generation
 
-After [IMPACT_VERIFIED], architect produces the implementation plan.
+After understanding is verified, architect produces the implementation plan.
 
 Architect works with: Read, Glob, Grep, Write, sequential-thinking.
 
@@ -154,7 +191,7 @@ docs/plans/YYYY-MM-DD-{feature-name}.md
     └── implementation-plan.md  (copy of docs/plans/ file)
 ```
 
-Architect reports `[STATUS] Phase 4 | COMPLETE` via SendMessage.
+Architect reports completion via SendMessage.
 
 ---
 
@@ -194,8 +231,10 @@ Shall I proceed with Gate 4 approval?
 1. GC-v3 → GC-v4 (add Implementation Plan Reference, Task Decomposition,
    File Ownership Map, Phase 6 Entry Conditions, Phase 5 Validation Targets,
    Commit Strategy; update Phase Pipeline Status)
-2. Write phase-4/gate-record.yaml
-3. Proceed to Clean Termination
+2. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) with Implementation Plan Reference,
+   Task Decomposition summary, File Ownership Map, and Phase 4 COMPLETE status
+3. Write phase-4/gate-record.yaml
+4. Proceed to Clean Termination
 
 ### On ITERATE (max 3)
 - Relay specific revision instructions to architect
@@ -215,11 +254,13 @@ After Gate 4 APPROVE:
 **Feature:** {name}
 **Complexity:** {level}
 
-**Implementation Plan:** docs/plans/{filename}
-**Artifacts:** .agent/teams/{session-id}/
+**Artifacts:**
+- PERMANENT Task (PT-v{N}) — authoritative project context (updated with plan reference)
+- Implementation Plan: docs/plans/{filename}
+- Session artifacts: .agent/teams/{session-id}/
 
 **Next:** Phase 5 (Plan Validation) — validates the implementation plan.
-Input: GC-v4 + plan document.
+Input: GC-v4 + plan document. Update PERMANENT Task with `/permanent-tasks` if scope evolved.
 ```
 
 ### Shutdown
@@ -241,14 +282,14 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 | No brainstorming output | Inform user, suggest /brainstorming-pipeline |
 | GC-v3 incomplete | Abort with missing section list |
 | Spawn failure | Retry once, abort with notification |
-| DIA 3x rejection | Abort architect, re-spawn |
+| Understanding verification 3x rejection | Abort architect, re-spawn |
 | Gate 4 3x iteration | Abort, present partial results |
-| Context compact | CLAUDE.md §8 recovery |
+| Context compact | CLAUDE.md §9 recovery |
 | User cancellation | Graceful shutdown, preserve artifacts |
 
 ### Compact Recovery
 - Lead: orchestration-plan → task list → gate records → L1 → re-inject
-- Architect: receive injection → read L1/L2/L3 → re-submit Impact Analysis
+- Architect: call TaskGet on PERMANENT Task for immediate self-recovery, then read own L1/L2/L3 and re-submit understanding
 
 ## Key Principles
 
@@ -258,13 +299,14 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - AC-0 mandatory — every task starts with plan-vs-reality verification
 - V6 Code Plausibility — compensates for architect's inability to run code
 - Sequential thinking always — structured reasoning at every decision point
-- DIA delegated — CLAUDE.md [PERMANENT] owns protocol, skill owns orchestration
+- Protocol delegated — CLAUDE.md owns verification protocol, skill owns orchestration
 - Clean termination — no auto-chaining to Phase 5
 - Dual-save — docs/plans/ (permanent) + .agent/teams/ (session)
 
 ## Never
 
-- Skip DIA verification for the architect
+- Skip understanding verification for the architect
+- Skip Phase 0 PERMANENT Task check
 - Auto-chain to Phase 5 after termination
 - Proceed past Gate 4 without all criteria met
 - Let the architect write to Task API

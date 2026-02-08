@@ -1,79 +1,82 @@
-# Agent Common Protocol
+# Shared Protocol for All Teammates
 
-Shared protocol for all teammate agents. Role-specific behavior is defined in each agent's own `.md` file.
-This file covers operational procedures common to all 6 agent types.
-
----
-
-## Phase 0: Context Receipt
-
-1. Receive [DIRECTIVE] + [INJECTION] from Lead.
-2. Parse embedded global-context.md (note GC-v{N}).
-3. Parse embedded task-context.md.
-4. Send to Lead: `[STATUS] Phase {N} | CONTEXT_RECEIVED | GC-v{ver}, TC-v{ver}`
+This covers procedures common to all 6 agent types. Role-specific guidance is in each agent's own .md file.
 
 ---
 
-## Mid-Execution Updates
+## When You Receive a Task Assignment
 
-On [CONTEXT-UPDATE] from Lead:
-1. Parse updated global-context.md.
-2. Send: `[ACK-UPDATE] GC-v{ver} received. Items: {applied}/{total}. Impact: {assessment}. Action: {CONTINUE|PAUSE|NEED_CLARIFICATION}`
-3. If the update affects your current work, pause and report to Lead.
+Read the PERMANENT Task via TaskGet using the Task ID provided in your assignment — it contains
+the full project context including user intent, codebase impact map, architecture decisions,
+and constraints. Also read the task-specific context provided by Lead. Confirm receipt by
+messaging Lead with the PT version you read (e.g., "PT-v3 received, understood scope").
+Make sure you understand the scope, constraints, and who will consume your output before
+doing anything else.
 
 ---
 
-## Completion
+## When Context Changes Mid-Work
+
+If Lead sends a context update with a new PT version:
+1. Call TaskGet on the PERMANENT Task to read the latest content.
+2. Message Lead confirming what changed, what impact it has on your current work,
+   and whether you can continue or need to pause.
+
+---
+
+## When You Finish
 
 1. Write L1/L2/L3 files to your assigned output directory.
-2. Send to Lead: `[STATUS] Phase {N} | COMPLETE | {summary}`
+2. Message Lead with a summary of what you completed.
 
-Role-specific completion formats (e.g., devils-advocate verdict) are defined in the agent's own file.
+Role-specific completion details (e.g., devils-advocate verdict) are in your agent file.
 
 ---
 
-## Task API Access
+## Task API
 
-Task API is read-only for all teammates: use TaskList and TaskGet only.
-TaskCreate and TaskUpdate are Lead-only (enforced via disallowedTools).
+Tasks are read-only for you: use TaskList and TaskGet to check status, find your assignments,
+and read the PERMANENT Task for project context. Task creation and updates are Lead-only
+(enforced by tool restrictions).
 
 ---
 
 ## Team Memory
 
-Read TEAM-MEMORY.md before starting work for context from prior phases and other teammates.
-- Agents with Edit tool (implementer, integrator): write discoveries to your own section using Edit.
-  Use `## {your-role-id}` in old_string for uniqueness. Do not use Write after initial creation.
-- Agents without Edit tool (researcher, architect, tester): report findings via SendMessage to Lead for relay.
+Read TEAM-MEMORY.md before starting work — it has context from prior phases and other teammates.
+
+- If you have the Edit tool (implementer, integrator): write discoveries to your own section.
+  Use `## {your-role-id}` as anchor for edits. Never overwrite other sections.
+- If you don't have Edit (researcher, architect, tester): message Lead with findings for relay.
 - Devils-advocate: read-only access to Team Memory.
 
-Tags: `[Finding]`, `[Pattern]`, `[Decision]`, `[Warning]`, `[Dependency]`, `[Conflict]`, `[Question]`
+---
+
+## Saving Your Work
+
+Write L1/L2/L3 files throughout your work, not just at the end. These files are your only
+recovery mechanism — anything unsaved is permanently lost if your session compacts.
+
+If you notice you're running low on context: save all work immediately, then tell Lead.
+Lead will shut you down and re-spawn you with your saved progress.
 
 ---
 
-## Context Pressure & Auto-Compact
+## If You Lose Context
 
-### Pre-Compact Obligation
-Write intermediate L1/L2/L3 proactively throughout execution — not only at ~75%.
-L1/L2/L3 are your only recovery mechanism. Unsaved work is permanently lost on compact.
-
-### Context Pressure (~75% capacity)
-1. Immediately write L1/L2/L3 files with all work completed so far.
-2. Send `[STATUS] CONTEXT_PRESSURE | L1/L2/L3 written` to Lead.
-3. Await Lead termination and replacement with L1/L2 injection.
-
-### Auto-Compact Detection
 If you see "This session is being continued from a previous conversation":
-1. Send `[STATUS] CONTEXT_LOST` to Lead immediately.
-2. Do not proceed with any work using only summarized context.
-3. Await [INJECTION] from Lead with full GC + task-context.
-4. Read your own L1/L2/L3 files to restore progress.
-5. Re-submit [IMPACT-ANALYSIS] to Lead (TIER 0 exempt — await Lead instructions instead).
-6. Wait for [IMPACT_VERIFIED] before resuming work.
+1. Tell Lead immediately — do not continue working from memory alone.
+2. Call TaskGet on the PERMANENT Task (find it via TaskList — subject contains "[PERMANENT]")
+   to restore the full project context.
+3. Read your own L1/L2/L3 files to restore your progress.
+4. Reconfirm your understanding of the task before resuming.
+
+Note: You can begin self-recovery with steps 2-3 while waiting for Lead, but always confirm
+your understanding with Lead before resuming work.
 
 ---
 
-## Memory
+## Agent Memory
 
-Consult your persistent agent memory at `~/.claude/agent-memory/{role}/MEMORY.md` at start.
-Update it with patterns, lessons learned, and domain knowledge on completion.
+Check your persistent memory at `~/.claude/agent-memory/{role}/MEMORY.md` when you start.
+Update it with patterns and lessons learned when you finish.
