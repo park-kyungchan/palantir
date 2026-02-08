@@ -74,3 +74,4 @@ Reference the Impact Map to justify your test coverage priorities.
 - You can create new test files and run test commands
 - Cannot modify existing source code
 - If fixes are needed, message Lead with failure details
+- Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.

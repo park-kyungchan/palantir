@@ -1,6 +1,6 @@
 #!/bin/bash
 # Hook: PreCompact — Context compaction state preservation
-# Saves orchestration state before context loss for DIA recovery
+# Saves orchestration state before context loss for recovery
 
 INPUT=$(cat)
 
@@ -37,6 +37,29 @@ if [ -n "$TASK_DIR" ]; then
   done
   echo "]" >> "$SNAPSHOT_FILE"
   echo "[$TIMESTAMP] PRE_COMPACT | Task snapshot saved: $SNAPSHOT_FILE" >> "$LOG_DIR/compact-events.log"
+fi
+
+# H-2 Mitigation: Non-blocking WARNING for missing L1/L2 files
+# Scans agent output directories to warn about unsaved work before compaction
+if [ -n "${CLAUDE_CODE_TASK_LIST_ID:-}" ]; then
+  TEAM_DIR="$LOG_DIR/$CLAUDE_CODE_TASK_LIST_ID"
+else
+  TEAM_DIR=$(ls -td "$LOG_DIR"/*/ 2>/dev/null | head -1)
+fi
+if [ -n "$TEAM_DIR" ] && [ -d "$TEAM_DIR" ]; then
+  MISSING_AGENTS=""
+  for agent_dir in "$TEAM_DIR"/phase-*/*/; do
+    [ -d "$agent_dir" ] || continue
+    agent_name=$(basename "$agent_dir")
+    has_l1=$(ls "$agent_dir"/L1-index.yaml 2>/dev/null)
+    has_l2=$(ls "$agent_dir"/L2-summary.md 2>/dev/null)
+    if [ -z "$has_l1" ] || [ -z "$has_l2" ]; then
+      MISSING_AGENTS="$MISSING_AGENTS $agent_name"
+    fi
+  done
+  if [ -n "$MISSING_AGENTS" ]; then
+    echo "[$TIMESTAMP] PRE_COMPACT | WARNING: Agents missing L1/L2 before compaction:$MISSING_AGENTS" >> "$LOG_DIR/compact-events.log"
+  fi
 fi
 
 exit 0

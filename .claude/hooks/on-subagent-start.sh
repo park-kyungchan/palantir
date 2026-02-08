@@ -32,7 +32,7 @@ if [ "$TEAM_NAME" != "no-team" ] && [ -n "$TEAM_NAME" ]; then
       jq -n --arg ver "$GC_VERSION" --arg team "$TEAM_NAME" '{
         "hookSpecificOutput": {
           "hookEventName": "SubagentStart",
-          "additionalContext": ("[DIA-HOOK] Active team: " + $team + ". Current GC: " + $ver + ". Verify your injected context version matches.")
+          "additionalContext": ("Active team: " + $team + ". Current GC: " + $ver + ". Verify your injected context version matches.")
         }
       }'
       exit 0
@@ -43,7 +43,7 @@ if [ "$TEAM_NAME" != "no-team" ] && [ -n "$TEAM_NAME" ]; then
   jq -n --arg team "$TEAM_NAME" '{
     "hookSpecificOutput": {
       "hookEventName": "SubagentStart",
-      "additionalContext": ("[DIA-HOOK] Active team: " + $team + ". Context is managed via PERMANENT Task. Use TaskGet on task with subject containing [PERMANENT] for full project context.")
+      "additionalContext": ("Active team: " + $team + ". Context is managed via PERMANENT Task. Use TaskGet on task with subject containing [PERMANENT] for full project context.")
     }
   }'
   exit 0
@@ -57,7 +57,7 @@ if [ -n "$LATEST_GC" ] && [ -f "$LATEST_GC" ]; then
     jq -n --arg ver "$GC_VERSION" --arg team "$TEAM_NAME" '{
       "hookSpecificOutput": {
         "hookEventName": "SubagentStart",
-        "additionalContext": ("[DIA-HOOK] Active team: " + $team + ". Current GC: " + $ver + ". Verify your injected context version matches.")
+        "additionalContext": ("Active team: " + $team + ". Current GC: " + $ver + ". Verify your injected context version matches.")
       }
     }'
     exit 0

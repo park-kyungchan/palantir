@@ -31,32 +31,6 @@
         ]
       }
     ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-subagent-stop.sh",
-            "timeout": 10,
-            "statusMessage": "Validating agent output artifacts"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "TaskUpdate",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-task-update.sh",
-            "timeout": 10,
-            "statusMessage": "Logging task state change"
-          }
-        ]
-      }
-    ],
     "PreCompact": [
       {
         "matcher": "",
@@ -78,47 +52,8 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-session-compact.sh",
             "timeout": 15,
-            "statusMessage": "DIA recovery after compaction",
+            "statusMessage": "Recovery after compaction",
             "once": true
-          }
-        ]
-      }
-    ],
-    "TeammateIdle": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-teammate-idle.sh",
-            "timeout": 10,
-            "statusMessage": "Checking teammate output completeness"
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-task-completed.sh",
-            "timeout": 10,
-            "statusMessage": "Validating task completion artifacts"
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-tool-failure.sh",
-            "timeout": 10,
-            "statusMessage": "Logging tool execution failure"
           }
         ]
       }
@@ -129,6 +64,5 @@
     "superpowers@superpowers-marketplace": true
   },
   "language": "Korean",
-  "fastMode": true,
   "teammateMode": "tmux"
 }

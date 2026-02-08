@@ -215,7 +215,7 @@ Task-context must instruct implementer to:
 
 1. Implementer reads PERMANENT Task via TaskGet and confirms context receipt
 2. Implementer explains their understanding of the task to Lead
-3. Lead asks 2 probing questions grounded in the Codebase Impact Map,
+3. Lead asks 1-3 probing questions grounded in the Codebase Impact Map,
    covering interconnections, failure modes, and dependency risks
 4. Implementer defends with specific evidence
 5. Lead verifies or rejects (max 3 attempts)
@@ -239,13 +239,13 @@ Implementers work within their assigned components. Lead monitors and coordinate
 5. Dispatch spec-reviewer subagent (Stage 1)
    ├── PASS → proceed to Stage 2
    └── FAIL → fix → re-dispatch (max 3)
-             └── 3x FAIL → [STATUS] BLOCKED
+             └── 3x FAIL → BLOCKED
 6. Dispatch code-reviewer subagent (Stage 2)
    ├── PASS → proceed to completion
    └── FAIL → fix → re-dispatch (max 3)
-             └── 3x FAIL → [STATUS] BLOCKED
+             └── 3x FAIL → BLOCKED
 7. Write/update L1/L2/L3 (include reviewer raw output in L2)
-8. Report [STATUS] Phase 6 | COMPLETE | Task {N}: {summary}
+8. Report Task {N} complete: {summary}
 9. Proceed to next task in topological order (if any)
 ```
 
@@ -275,8 +275,12 @@ Do Not Trust the Report. Verify by reading actual code.
 
 Report format:
 - Result: PASS / FAIL
-- If FAIL: specific issues with file:line references
+- For EACH spec requirement: file:line reference showing the implementation
+- If FAIL: specific issues with file:line references and explanation
 - Summary: what was checked and what was found
+
+Evidence is mandatory for both PASS and FAIL. A PASS without file:line
+references for each requirement is incomplete and should be treated as FAIL.
 ```
 
 ### Code-Reviewer Subagent Prompt
@@ -297,24 +301,30 @@ Additional context: This is part of {feature-name}. See global-context for proje
 
 Prerequisite: Spec review (Stage 1) must PASS before dispatching code review.
 
-### Implementer [STATUS] COMPLETE Report Format
+### Implementer Completion Report Format
 
 ```
-[STATUS] Phase 6 | COMPLETE | Task {N}: {summary}
+Task {N} implementation complete: {summary}
 
 ## Implementation Summary
 - Files created: {list}
 - Files modified: {list}
 - Tests: {count} added/modified, all passing
 
-## Spec Compliance Review
+## Self-Test Results
+{test command executed}
+{captured stdout/stderr}
+Exit code: 0 (PASS) or non-zero (FAIL)
+
+## Spec Compliance Review (Stage 1)
 - Result: PASS
+- Reviewer raw output: {include full output with file:line references}
 - Issues found and resolved: {count}
 - Fix iterations: {N}/3
 
-## Code Quality Review
+## Code Quality Review (Stage 2)
 - Result: PASS
-- Assessment: Ready to merge
+- Reviewer raw output: {include full output}
 - Critical issues resolved: {count}
 - Important issues resolved: {count}
 
@@ -344,16 +354,16 @@ Prerequisite: Spec review (Stage 1) must PASS before dispatching code review.
 
 | Issue | Lead Action |
 |-------|------------|
-| [STATUS] BLOCKED (cross-boundary) | Follow Cross-Boundary Issue Escalation below |
-| [STATUS] BLOCKED (fix loop exhausted) | Evaluate: revise plan spec / reassign / ABORT |
-| [STATUS] CONTEXT_PRESSURE | Shutdown implementer → re-spawn with L1/L2 injection |
+| BLOCKED (cross-boundary) | Follow Cross-Boundary Issue Escalation below |
+| BLOCKED (fix loop exhausted) | Evaluate: revise plan spec / reassign / ABORT |
+| Context pressure reported | Shutdown implementer → re-spawn with L1/L2 injection |
 | >30 min silence | Send status query to implementer |
 | >40 min silence | Escalate: Read L1, check if stuck, consider intervention |
 | Implementer deviation from spec | Send correction with updated context → implementer acknowledges |
 
 ### Cross-Boundary Issue Escalation
 
-When implementer reports `[STATUS] BLOCKED | Need file outside ownership`:
+When implementer reports `BLOCKED | Need file outside ownership`:
 
 ```
 Stage 1: Read the BLOCKED report — understand the issue
@@ -372,7 +382,7 @@ Use `sequential-thinking` for all gate evaluation.
 
 ### Per-Task Evaluation
 
-For each implementer's [STATUS] COMPLETE:
+For each implementer's completion report:
 
 | # | Criterion | Method |
 |---|-----------|--------|

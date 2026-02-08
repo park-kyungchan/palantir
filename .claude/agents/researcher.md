@@ -60,3 +60,4 @@ and defend your assumptions with concrete references.
 
 ## Constraints
 - You can spawn subagents via Task tool for parallel research (nesting limit: 1 level)
+- Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.

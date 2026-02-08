@@ -107,10 +107,10 @@ When updating orchestration-plan.md, output ASCII status visualization including
 pipeline, workstream progress, teammate status, and key metrics.
 
 ### Coordination Infrastructure
-- **PERMANENT Task:** Task #1 with subject "[PERMANENT] {feature}". Versioned PT-v{N}
-  (monotonically increasing). Contains: User Intent, Codebase Impact Map, Architecture
-  Decisions, Phase Status, Constraints. Lead tracks each teammate's confirmed PT version
-  in orchestration-plan.md.
+- **PERMANENT Task:** Subject "[PERMANENT] {feature}", task ID assigned at creation
+  (find via TaskList). Versioned PT-v{N} (monotonically increasing). Contains: User Intent,
+  Codebase Impact Map, Architecture Decisions, Phase Status, Constraints. Lead tracks each
+  teammate's confirmed PT version in orchestration-plan.md.
 - **L1/L2/L3:** L1 = index (YAML, ≤50 lines). L2 = summary (MD, ≤200 lines). L3 = full detail (directory).
 - **Team Memory:** `.agent/teams/{session-id}/TEAM-MEMORY.md`, section-per-role structure.
 - **Output directory:**
@@ -157,7 +157,7 @@ These principles guide all team interactions and are not overridden by convenien
 - Challenge teammates with probing questions grounded in the Codebase Impact Map — test
   systemic awareness, not surface recall. Scale depth with phase criticality.
 - Maintain Team Memory: create at session start, relay findings from read-only agents, curate at gates.
-- Hooks verify L1/L2 file existence automatically.
+- L1/L2/L3 file creation is reinforced through natural language instructions in each agent's Constraints section and in agent-common-protocol.md.
 
 **Teammate responsibilities:**
 - Read the PERMANENT Task via TaskGet and confirm you understood the context. Explain in your own words.
@@ -169,4 +169,4 @@ These principles guide all team interactions and are not overridden by convenien
 - Your work persists through files and messages, not through memory.
 
 **See also:** agent-common-protocol.md (shared procedures), agent .md files (role-specific guidance),
-hook scripts in `.claude/hooks/` (automated enforcement), `/permanent-tasks` skill (mid-work updates).
+hook scripts in `.claude/hooks/` (session lifecycle support), `/permanent-tasks` skill (mid-work updates).

@@ -78,3 +78,4 @@ the entire codebase — scrutiny matches the scope.
 - You are the only agent that can cross file ownership boundaries
 - Team Memory: edit your own section only (use `## {your-role-id}` as anchor)
 - If conflicts can't be resolved, tell Lead with details of the irreconcilable conflict
+- Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.

@@ -8,7 +8,7 @@
 - **Topic 순서:** T-1 ObjectType → T-2 LinkType → T-3 ActionType → T-4 Integration
 - **세션 종료 시 상태 보고 완료:** ASCII 시각화로 전체 현황 + Topic별 시작 가이드 제공됨
 - **Other pending options (user decides):**
-  1. SKL-006: delivery pipeline (Phase 9 skill)
+  1. SKL-006: delivery pipeline — Phase 6 COMPLETE, RSIL + delivery pending
   2. task-api-guideline.md NLP conversion (v4.0/530 lines)
 
 ## Language Policy [PERMANENT] (2026-02-07)
@@ -22,8 +22,8 @@
 - task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged in this cycle
 - agent-common-protocol.md: v2.1 (84 lines) — v2.0 + RSI fix: PT task list scope clarification
 - Agents: 6 types, 442 total lines (NLP v2.0), disallowedTools = TaskCreate+TaskUpdate only
-- Skills: `/permanent-tasks` (250 lines, NEW), 5 pipeline skills with Phase 0 + NLP terminology
-- Hooks: on-subagent-start.sh updated (67 lines, 3-path GC→PT logic), 8 total hooks hardened
+- Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` (561L, NEW — Meta-Cognition framework)
+- Hooks: 3 lifecycle hooks (SubagentStart, PreCompact, SessionStart) — reduced from 8
 - Verification: Natural language understanding verification (replaces TIER/LDAP protocol markers)
 - MCP Tools: sequential-thinking (mandatory all), tavily/context7 (mandatory by phase), github (as needed)
 - NLP v6.0 conversion: Phase 6 COMPLETE, Gate 6 APPROVED (2026-02-08)
@@ -37,8 +37,9 @@
 | 003 | `/agent-teams-execution-plan` | P6 | DONE + NLP v6.0 + Phase 0 |
 | 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 |
 | 005 | `/verification-pipeline` | P7-8 | DONE + NLP v6.0 + Phase 0 + INFRA RSI |
-| 006 | delivery pipeline | P9 | TODO |
-| NEW | `/permanent-tasks` | — | DONE (GC replacement skill) |
+| 006 | `/delivery-pipeline` | P9 | DONE (422L) — Phase 6 COMPLETE, Gate 6 APPROVED |
+| 007 | `/rsil-review` | — | DONE (561L) — Meta-Cognition framework, 8 Lenses |
+| — | `/permanent-tasks` | — | DONE (GC replacement skill) |
 - Detailed history: `memory/skill-optimization-history.md`
 
 ## Skill Optimization Process [PERMANENT] (2026-02-07)
@@ -82,6 +83,23 @@
 - **Topics:** T-1 ObjectType → T-2 LinkType → T-3 ActionType → T-4 Integration
 - **Critical correction:** Entities are NOT Claude native capabilities — Framework is domain-agnostic
 - **Brainstorming = learning:** User progressively learns Ontology/Foundry through sessions
+
+## RSIL Framework [PERMANENT] (2026-02-08)
+- **Skill:** `/rsil-review` (561 lines) — Meta-Cognition-Level quality review framework
+- **Design:** Universal Framework × $ARGUMENTS = target-specific review (no hardcoding)
+- **Architecture:** Static Layer (Lenses, Layer defs, AD-15) + Dynamic ($ARGUMENTS + !`shell`) + Lead R-0 Synthesis
+- **8 Meta-Research Lenses** (distilled from pilot data, universally applicable):
+  - L1: TRANSITION INTEGRITY — 상태 전이 명시적/검증 가능?
+  - L2: EVALUATION GRANULARITY — 다중 기준 개별 증거?
+  - L3: EVIDENCE OBLIGATION — 산출물이 과정 증거 요구?
+  - L4: ESCALATION PATHS — 중대 발견에 적절한 에스컬레이션?
+  - L5: SCOPE BOUNDARIES — scope 경계 접근 처리?
+  - L6: CLEANUP ORDERING — 해체 선행조건 순서화?
+  - L7: INTERRUPTION RESILIENCE — 중단 대비 중간 상태 보존?
+  - L8: NAMING CLARITY — 식별자 모든 context에서 명확?
+- **Lenses evolve:** 새 패턴 발견 시 L9, L10 추가 가능
+- **Pilot data:** 8 findings, 50% acceptance (tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`)
+- **Handoff (for future brainstorming):** `docs/plans/2026-02-08-narrow-rsil-handoff.md`
 
 ## Deferred Work
 - CH-002~005: `docs/plans/2026-02-07-ch002-ch005-deferred-design.yaml`

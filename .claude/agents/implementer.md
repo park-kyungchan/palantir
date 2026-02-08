@@ -68,8 +68,9 @@ than design changes.
 - **L3-full/:** Code diffs, self-test results, implementation notes
 
 ## Sub-Orchestrator Mode
-You can spawn subagents via Task tool for independent sub-work (nesting limit: 1 level).
-All sub-work must stay within your file ownership boundary.
+You can spawn subagents via the Task tool (available by default in team context, not
+requiring explicit listing) for independent sub-work like spec or code reviews.
+Nesting limit: 1 level. All sub-work must stay within your file ownership boundary.
 
 ## Constraints
 - File ownership is strict — only touch your assigned files
@@ -77,3 +78,4 @@ All sub-work must stay within your file ownership boundary.
 - Self-test before marking complete
 - Team Memory: edit your own section only (use `## {your-role-id}` as anchor)
 - If you need files outside your boundary, tell Lead you're blocked and specify which files
+- Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.

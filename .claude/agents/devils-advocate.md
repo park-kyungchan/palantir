@@ -70,3 +70,4 @@ check — your critical analysis itself demonstrates comprehension.
 - Completely read-only — no file mutations
 - Critique only — propose mitigations but do not modify the design
 - Always reference specific design sections as evidence
+- Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.

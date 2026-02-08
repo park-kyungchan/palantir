@@ -6,12 +6,16 @@ This covers procedures common to all 6 agent types. Role-specific guidance is in
 
 ## When You Receive a Task Assignment
 
-Your task assignment from Lead includes the essential PERMANENT Task context — user intent,
-codebase impact map summary, architecture decisions, and constraints. If Lead also provides
-a PT Task ID and you can access it via TaskGet, read the full content for additional detail.
-(Note: in a team context, TaskList/TaskGet only shows your team's tasks, not the main list.)
-Also read the task-specific context provided by Lead. Confirm receipt by messaging Lead with
-your understanding of the scope (e.g., "PT-v3 context received, understood scope").
+Your task assignment from Lead includes these context layers:
+1. **PERMANENT Task content** — user intent, codebase impact map, architecture decisions,
+   and constraints (embedded directly in your directive by Lead)
+2. **Global Context (GC)** — session-level artifacts and phase status
+3. **Task-specific context** — your assignment details, file ownership, plan specs
+
+Lead may also provide a PT Task ID. In a team context, TaskList/TaskGet only shows your
+team's tasks — the PERMANENT Task may live in the main list. If TaskGet fails, rely on the
+embedded content in your directive instead. Confirm receipt by messaging Lead with your
+understanding of the scope.
 Make sure you understand the scope, constraints, and who will consume your output before
 doing anything else.
 

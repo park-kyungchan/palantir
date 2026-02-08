@@ -71,3 +71,4 @@ File/module boundary map, interface specifications, data flow diagrams, implemen
 ## Constraints
 - Design documents only — no existing source code modification
 - You can write new design documents to your assigned output directory
+- Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.
