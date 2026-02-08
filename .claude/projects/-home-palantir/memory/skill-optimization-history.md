@@ -34,3 +34,22 @@
   - AD-7: Clean termination (no auto-chain to Phase 7)
   - AD-8: SKILL.md follows precedent pattern
 - Session artifacts: `.agent/teams/execution-pipeline/` (historical, not renamed)
+
+## SKL-004 plan-validation-pipeline COMPLETED (2026-02-08)
+- Strategy: Autonomous pipeline (user delegated full autonomy, no interaction)
+- Process: P1 Lead Discovery → P2 claude-code-guide research → P3+P4 combined → P6 implementer
+- SKILL.md: `.claude/skills/plan-validation-pipeline/SKILL.md` (347 → 382 lines)
+- Scope: NLP v6.0 conversion + Phase 0 addition + PT integration (mechanical, SIMPLE complexity)
+- Changes: 7 specifications (C-1 through C-7), 10 total edits
+  - C-1: Phase 0 (PERMANENT Task Check) — adapted from brainstorming-pipeline pattern
+  - C-2: Phase 5.3 NLP — TIER 0/LDAP/CIP markers → natural language (3 edits)
+  - C-3: Status format — [STATUS] protocol → natural language
+  - C-4: Compact recovery — TIER 0 reference → natural language
+  - C-5: Key principles — "DIA delegated" → "Protocol delegated"
+  - C-6: Frontmatter v5.0+ → v6.0+, removed DIA-exempt reference
+  - C-7: Directive PT integration — PT-v{N} + TaskGet instruction
+- Protocol markers: 0 (Grep verified)
+- Gate 6: APPROVED — all criteria PASS, single implementer
+- Session artifacts: `.agent/teams/skl004-execution/`
+- Lesson: PT created in main task list before TeamCreate → teammate couldn't TaskGet it.
+  Workaround: embed full specs in SendMessage directive.

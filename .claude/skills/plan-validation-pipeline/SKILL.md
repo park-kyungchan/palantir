@@ -1,12 +1,12 @@
 ---
 name: plan-validation-pipeline
-description: "Phase 5 plan validation — spawns devils-advocate to challenge Phase 4 design before implementation. Takes GC-v4 + implementation plan as input. Requires Agent Teams mode and CLAUDE.md v5.0+."
+description: "Phase 5 plan validation — spawns devils-advocate to challenge Phase 4 design before implementation. Takes implementation plan as input. Requires Agent Teams mode and CLAUDE.md v6.0+."
 argument-hint: "[session-id or path to Phase 4 output]"
 ---
 
 # Plan Validation Pipeline
 
-Phase 5 (Plan Validation) orchestrator. Challenges the implementation plan from Phase 4 through a DIA-exempt devils-advocate teammate before committing to implementation.
+Phase 5 (Plan Validation) orchestrator. Challenges the implementation plan from Phase 4 through a devils-advocate teammate before committing to implementation.
 
 **Announce at start:** "I'm using plan-validation-pipeline to orchestrate Phase 5 (Plan Validation) for this feature."
 
@@ -39,6 +39,39 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 !`head -3 /home/palantir/.claude/CLAUDE.md 2>/dev/null`
 
 **Feature Input:** $ARGUMENTS
+
+---
+
+## Phase 0: PERMANENT Task Check
+
+Lightweight step (~500 tokens). No teammates spawned, no verification required.
+
+Call `TaskList` and search for a task with `[PERMANENT]` in its subject.
+
+```
+TaskList result
+     │
+┌────┴────┐
+found      not found
+│           │
+▼           ▼
+TaskGet →   AskUser: "No PERMANENT Task found.
+read PT     Create one for this feature?"
+│           │
+▼         ┌─┴─┐
+Continue  Yes   No
+to 5.1    │     │
+          ▼     ▼
+        /permanent-tasks    Continue to 5.1
+        creates PT-v1       without PT
+        → then 5.1
+```
+
+If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
+provides additional context for Phase 5 validation. Use it alongside the Dynamic Context above.
+
+If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
+the TaskCreate and return a summary. Then continue to Phase 5.1.
 
 ---
 
@@ -89,7 +122,7 @@ Create TEAM-MEMORY.md with Lead and devils-advocate sections.
 
 ## Phase 5.3: Devils-Advocate Spawn
 
-DIA: **TIER 0 (exempt)**. Devils-advocate does not submit Impact Analysis — critical analysis itself demonstrates understanding. LDAP: **EXEMPT** (Phase 5 is the adversarial challenge).
+Devils-advocate is exempt from the understanding check — critical analysis itself demonstrates comprehension. Phase 5 is the adversarial challenge by design.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
@@ -107,12 +140,13 @@ Task tool:
 
 The directive must include these context layers:
 
-1. **GC-v4 full embedding** — the entire global-context.md (CIP protocol)
+1. **PERMANENT Task ID** (PT-v{N}) — devils-advocate reads full context via TaskGet
 2. **Implementation plan path** — `docs/plans/{plan-file}` for devils-advocate to Read
 3. **Phase 3 architecture path** — if available, for cross-referencing design intent
 4. **Challenge scope instructions** — what to focus critique on
 
 Task-context must instruct devils-advocate to:
+- Read the PERMANENT Task via TaskGet for full project context
 - Read the implementation plan fully before starting critique
 - Read the architecture design from Phase 3 (if available) for cross-reference
 - Use `sequential-thinking` for every challenge analysis
@@ -124,11 +158,11 @@ Task-context must instruct devils-advocate to:
 - Deliver a final verdict: PASS, CONDITIONAL_PASS, or FAIL
 - Write L1/L2/L3 output files
 
-### DIA Flow (Simplified for TIER 0)
+### Getting Started
 
-1. Devils-advocate confirms context receipt: `[STATUS] Phase 5 | CONTEXT_RECEIVED | GC-v4`
-2. No Impact Analysis required (TIER 0 exempt)
-3. No LDAP challenge required (Phase 5 exempt)
+1. Devils-advocate reads the PERMANENT Task via TaskGet for full project context
+2. Devils-advocate confirms context receipt to Lead
+3. No understanding check needed — the critical analysis itself proves comprehension
 4. Devils-advocate proceeds directly to challenge execution
 
 ---
@@ -172,7 +206,7 @@ For each section of the implementation plan:
     └── challenge-report.md  (full detailed challenge analysis)
 ```
 
-Devils-advocate reports `[STATUS] Phase 5 | COMPLETE | Verdict: {PASS|CONDITIONAL_PASS|FAIL}` via SendMessage.
+Devils-advocate reports completion with their verdict (PASS, CONDITIONAL_PASS, or FAIL) to Lead via SendMessage.
 
 ---
 
@@ -320,7 +354,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 ### Compact Recovery
 
 - Lead: orchestration-plan → task list → gate records → L1 indexes → re-inject
-- Devils-advocate: receive injection → read L1/L2/L3 → resume challenge (TIER 0, no re-submission needed)
+- Devils-advocate: receive fresh context from Lead → read own L1/L2/L3 → resume challenge (no understanding check needed)
 
 ---
 
@@ -332,7 +366,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - **Mitigations always** — identifying problems without solutions is incomplete
 - **Verdict-driven gating** — FAIL blocks Phase 6 entry, CONDITIONAL_PASS requires user consent
 - **Sequential thinking always** — structured reasoning at every decision point
-- **DIA delegated** — CLAUDE.md Semantic Integrity Guard owns protocol, skill owns orchestration
+- **Protocol delegated** — CLAUDE.md owns verification rules, skill owns orchestration
 - **Clean termination** — no auto-chaining to Phase 6
 - **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`
 

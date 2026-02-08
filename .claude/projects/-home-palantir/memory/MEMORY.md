@@ -1,12 +1,15 @@
 # Claude Code Memory
 
 ## Next Session Action [PRIORITY] (2026-02-08)
-- **RSI Loop continues** — NLP v6.0 conversion COMMITTED. Next options:
-  1. SKL-004: `/brainstorming-pipeline` for plan-validation-pipeline (Phase 5 skill)
-  2. Ontology Framework: T-1 (ObjectType) via `/brainstorming-pipeline`
-  3. task-api-guideline.md NLP conversion (currently v4.0/530 lines, still has protocol markers)
-- **Ontology handoff:** `docs/plans/2026-02-08-ontology-bridge-handoff.md` (b3c1012)
-- **User decides next direction**
+- **Ontology Framework T-1 brainstorming** — 사용자가 다음 세션에서 시작 예정
+- **실행:** `/brainstorming-pipeline Ontology Framework T-1: ObjectType 정의 시스템 설계`
+- **핸드오프:** `docs/plans/2026-02-08-ontology-bridge-handoff.md` (b3c1012, 421 lines, 9 user decisions)
+- **참조:** `bridge-reference/` (5 files, 3842 lines) — T-1용 bridge-ref-objecttype.md (1016L)
+- **Topic 순서:** T-1 ObjectType → T-2 LinkType → T-3 ActionType → T-4 Integration
+- **세션 종료 시 상태 보고 완료:** ASCII 시각화로 전체 현황 + Topic별 시작 가이드 제공됨
+- **Other pending options (user decides):**
+  1. SKL-005: verification pipeline (Phase 7-8 skill)
+  2. task-api-guideline.md NLP conversion (v4.0/530 lines)
 
 ## Language Policy [PERMANENT] (2026-02-07)
 - User-facing conversation: Korean only
@@ -19,7 +22,7 @@
 - task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged in this cycle
 - agent-common-protocol.md: v2.0 (82 lines) — NLP + PT/TaskGet context receipt
 - Agents: 6 types, 442 total lines (NLP v2.0), disallowedTools = TaskCreate+TaskUpdate only
-- Skills: `/permanent-tasks` (250 lines, NEW), 3 pipeline skills with Phase 0 + NLP terminology
+- Skills: `/permanent-tasks` (250 lines, NEW), 4 pipeline skills with Phase 0 + NLP terminology
 - Hooks: on-subagent-start.sh updated (67 lines, 3-path GC→PT logic), 8 total hooks hardened
 - Verification: Natural language understanding verification (replaces TIER/LDAP protocol markers)
 - MCP Tools: sequential-thinking (mandatory all), tavily/context7 (mandatory by phase), github (as needed)
@@ -32,7 +35,7 @@
 | 001 | `/brainstorming-pipeline` | P1-3 | DONE + NLP v6.0 + Phase 0 |
 | 002 | `/agent-teams-write-plan` | P4 | DONE + NLP v6.0 + Phase 0 |
 | 003 | `/agent-teams-execution-plan` | P6 | DONE + NLP v6.0 + Phase 0 |
-| 004 | plan-validation-pipeline | P5 | **TODO — NEXT** |
+| 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 |
 | 005 | verification pipeline | P7-8 | TODO |
 | 006 | delivery pipeline | P9 | TODO |
 | NEW | `/permanent-tasks` | — | DONE (GC replacement skill) |
