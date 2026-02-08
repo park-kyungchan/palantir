@@ -105,8 +105,10 @@ standard case — each pipeline skill creates a separate session directory.
 1. Scan ALL `.agent/teams/*/phase-{7,8}/gate-record.yaml` for `result: APPROVED`
 2. If `$ARGUMENTS` provides a feature name, filter directories matching `{feature}*`
 3. If `$ARGUMENTS` provides a specific session-id or path, use that directly
-4. If PT exists, cross-reference PT content for session references not captured by prefix
-   matching (handles renamed features where session directories have different prefixes)
+4. If PT exists, read PT via TaskGet and extract session references from Phase Status
+   and description sections (look for `.agent/teams/{session-id}/` patterns). Cross-reference
+   these against discovered gate records from step 1 — this handles features where session
+   directories have different naming prefixes across pipeline phases
 5. If multiple unrelated candidates found, present options via `AskUserQuestion`
 6. If no candidates, check PT for Phase 7/8 status (PT is cross-session)
 7. If still not found, inform user: "No completed pipeline found. Run /verification-pipeline first."
@@ -122,7 +124,7 @@ Read gate records from each to build a complete phase history for ARCHIVE.md.
 
 | # | Check | On Failure |
 |---|-------|------------|
-| V-1 | PT exists with Phase 7 (or 8) COMPLETE — OR — GC exists with equivalent status | Abort: "No completed pipeline found" |
+| V-1 | PT exists with Phase 7 (or 8) COMPLETE — OR — GC exists with equivalent status. If both exist, PT takes precedence (PT is maintained by Lead, GC may be stale) | Abort: "No completed pipeline found" |
 | V-2 | Gate 7 (or 8) record exists with APPROVED in some session directory | Abort: "Final gate not approved" |
 | V-3 | Implementation plan exists in `docs/plans/` | Warn: "Plan not found — commit will lack plan reference" |
 | V-4 | Git working tree has changes to commit | Warn: "No changes detected — skip to Phase 9.4?" |
@@ -159,7 +161,7 @@ If no PT exists, skip to Op-2 (GC-only pipeline — legacy support).
 
 Migrate durable lessons from the pipeline to persistent memory.
 
-1. Read current MEMORY.md (`~/.claude/projects/-home-palantir/memory/MEMORY.md`)
+1. Read current MEMORY.md (`/home/palantir/.claude/projects/-home-palantir/memory/MEMORY.md`)
 2. Read PT content (or GC + TEAM-MEMORY.md if no PT)
 3. Use `sequential-thinking` to extract durable content:
 
@@ -178,6 +180,10 @@ Migrate durable lessons from the pipeline to persistent memory.
 7. On approval: write merged MEMORY.md
 8. On rejection: skip (MEMORY.md unchanged)
 
+**Note:** ARCHIVE.md (Op-3) depends on MEMORY.md migration results. If Op-2 writes MEMORY.md
+but Op-4 is later rejected and user reverts MEMORY.md, ARCHIVE.md retains the migrated lessons
+as historical record. This is by design — ARCHIVE.md captures the delivery-time state.
+
 ### Op-3: ARCHIVE.md Creation
 
 Generate a complete pipeline record from all available sources.
@@ -188,8 +194,13 @@ Generate a complete pipeline record from all available sources.
 4. Read orchestration-plan.md files for team composition
 5. Generate ARCHIVE.md using the template (see ARCHIVE.md Template section below)
 6. Write to `.agent/teams/{primary-session-id}/ARCHIVE.md`
-   - Use the most recent session directory (verification/execution) as primary
-   - If single session, use that directory
+
+**Selecting primary session (when multiple sessions exist):**
+- If a single session: use that directory
+- If multiple sessions: extract gate record completion dates from each session's
+  `phase-{7,8}/gate-record.yaml`, use the session with the most recent gate date
+- Tie-breaker: lexicographically latest session-id
+- Rationale: gate record timestamps are more reliable than directory mtime
 
 ---
 
@@ -229,6 +240,13 @@ If yes, present two choices:
 1. **Keep changes** — MEMORY.md stays modified on disk (available for a future commit)
 2. **Revert MEMORY.md** — restore original from git (`git checkout -- {path}`)
 
+After MEMORY.md decision, proceed as follows:
+- Skip Op-5 (PR requires a commit — no commit means no PR)
+- Proceed to Op-6 (cleanup) and Op-7 (task cleanup) normally
+- ARCHIVE.md (Op-3) is preserved regardless — it records the pipeline history even without a commit
+- If MEMORY.md was reverted, ARCHIVE.md may still reference migrated lessons; this is acceptable
+  (ARCHIVE.md is the immutable delivery record, MEMORY.md is the living project memory)
+
 ### Op-5: PR Creation (Optional)
 
 1. Ask user: "Create a pull request for this commit?"
@@ -248,19 +266,26 @@ Two operations. Lead-only.
 
 ### Op-6: Session Artifact Cleanup
 
-1. Inventory ALL related `.agent/teams/{session-id}/` directories
-2. Classify files in each:
+1. Inventory ALL files in each `.agent/teams/{session-id}/` directory using Glob
+2. Classify files using the following rules:
 
-   **Preserve:** L1/L2/L3 directories, ARCHIVE.md, gate-record.yaml files,
-   orchestration-plan.md, TEAM-MEMORY.md, global-context.md
+   **Always Preserve:**
+   - `L1-*.yaml`, `L2-*.md`, `L3-full/` directories and all their contents
+   - `ARCHIVE.md`, `gate-record.yaml` files (any nesting depth)
+   - `orchestration-plan.md`, `TEAM-MEMORY.md`, `global-context.md`
 
-   **Delete candidates:** `pre-compact-tasks-*.json`, `tool-failures.log`,
-   `compact-events.log`, `teammate-lifecycle.log`, temporary debug files
+   **Always Delete:**
+   - `pre-compact-tasks-*.json` (transient task snapshots)
+   - `*-lifecycle.log`, `tool-failures.log`, `compact-events.log` (debug logs at session root)
+   - `tmp/` or `temp/` directories
 
-3. Present cleanup plan to user showing preserve vs delete lists
-4. **USER CONFIRMATION REQUIRED**
-5. On approval: delete transient files
-6. On rejection: keep all files
+   **Ambiguous (ask user):** Files not matching either category
+
+3. Use `sequential-thinking` to verify no L2 summaries reference files in the delete list
+4. Present cleanup plan to user showing preserve vs delete lists
+5. **USER CONFIRMATION REQUIRED**
+6. On approval: delete transient files only
+7. On rejection: keep all files
 
 ### Op-7: Task List Cleanup
 
@@ -344,6 +369,16 @@ Use this template when generating ARCHIVE.md in Op-3:
 
 {Extracted from TEAM-MEMORY.md and Lead observations}
 
+## Phase 9 Delivery Record
+
+- PT final version: PT-v{final}
+- MEMORY.md: {N} entries migrated (or "unchanged")
+- ARCHIVE.md: created at {path}
+- Commit: {hash} on {branch} (or "skipped")
+- PR: {URL} (or "not created")
+- Cleanup: {N} transient files deleted (or "skipped")
+- Tasks: all marked completed
+
 ## Team Composition
 
 | Role | Agent | Tasks | Key Contribution |
@@ -386,10 +421,11 @@ decision-making throughout the pipeline.
 
 If Lead's session compacts during Phase 9:
 
-1. Read the most recent ARCHIVE.md (if Op-3 already ran)
-2. Read task list for PT status
-3. Check git log for recent commits (if Op-4 already ran)
-4. Resume from the last incomplete operation
+1. Check `git diff --name-only` for uncommitted MEMORY.md changes (detects Op-2 completed but Op-4 not yet run)
+2. Read the most recent ARCHIVE.md (if Op-3 already ran)
+3. Read task list for PT status
+4. Check git log for recent commits (if Op-4 already ran)
+5. Resume from the last incomplete operation
 
 Phase 9 is Lead-only with no teammates, so recovery is simpler than multi-agent phases.
 

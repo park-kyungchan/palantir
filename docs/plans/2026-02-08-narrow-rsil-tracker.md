@@ -81,9 +81,10 @@ Pipeline Skill Execution Complete
 | SKL-006 | /agent-teams-write-plan | P4 | 4 | 2 | 1 | 1 |
 | SKL-006 | /plan-validation-pipeline | P5 | 4 | 2 | 1 | 1 |
 | SKL-006 | /agent-teams-execution-plan | P6 | 7 | 7 | 0 | 0 |
-| **Total** | | | **15** | **11** | **2** | **2** |
+| SKL-006 | /delivery-pipeline | P9 | 9 | 8 | 0 | 1 |
+| **Total** | | | **24** | **19** | **2** | **3** |
 
-### Acceptance Rate: 73% (11/15)
+### Acceptance Rate: 79% (19/24)
 ### Rejection Reason: AD-15 Hook violation or API-level only (P4/P5 only)
 
 ---
@@ -141,6 +142,30 @@ Pipeline Skill Execution Complete
 - All 7 findings were NL-only (Category B) — execution-plan has no Layer 2 dependencies
 - [STATUS] markers were the only NLP v6.0 violations remaining in the skill
 
+### 3.4 /delivery-pipeline (Phase 9) — 2026-02-08
+
+**Context:** Lead-only terminal skill (422 lines). RSIL applied for general refinement/improvement. 8/8 Lenses applied, 8 RQs generated, 5 Integration Axes audited. 8 of 9 findings accepted — 1 deferred (compact recovery state marker, Layer 2).
+
+| ID | Finding | Category | AD-15 | Status |
+|----|---------|----------|-------|--------|
+| P9-R1 | Op-4 rejection cascade logic (skip Op-5, proceed Op-6/7) | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-R2 | V-1 PT vs GC reconciliation rule (PT takes precedence) | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-R3 | Phase 9 Delivery Record section in ARCHIVE.md template | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-R4 | MEMORY/ARCHIVE consistency note on Op-4 rejection | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-R5 | Multi-session discovery — explicit PT session-id extraction | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-R6 | Cleanup preserve/delete classification with L2 cross-check | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-R7 | Compact recovery state marker between Op-2 and Op-4 | C (L2) | — | DEFERRED |
+| P9-R8 | "Primary session" definition — gate record timestamp rule | B (NL) | ✅ | ACCEPTED + APPLIED |
+| P9-B1 | Tilde→absolute path notation (line 162) | B (NL) | ✅ | ACCEPTED + APPLIED |
+
+**RSIL sources:** claude-code-guide (skill features, recovery docs), Explore (5-axis integration audit)
+
+**Key insights:**
+- Integration Score 4.8/5 — delivery-pipeline has strong cross-file consistency (only 1 cosmetic path issue)
+- L1 Optimality Score 8/10 — only F-7 (compact recovery) requires Layer 2 for a clean solution
+- Lead-only skills are simpler to review (no teammate contract verification needed)
+- The "rejection cascade" pattern (F-1) may apply to other skills with user confirmation gates
+
 ---
 
 ## 4. Cross-Cutting Patterns Discovered
@@ -166,6 +191,13 @@ Pipeline Skill Execution Complete
 **Principle:** Every skill references other .claude/ files. Bidirectional consistency audit catches stale references, scope conflicts, and documentation drift that single-file review misses.
 **Implementation:** RSIL skill's Integration Audit Methodology (6-axis pattern derived from file references).
 
+### Pattern 4: Rejection Cascade Specification in User-Confirmed Operations
+
+**Origin:** P9-R1
+**Scope:** Applicable to all skills with multiple sequential user confirmation points
+**Principle:** When a later confirmation (e.g., Op-4 commit) is rejected, explicitly document which earlier operations' artifacts are preserved, which downstream operations are skipped, and what cleanup is needed.
+**Implementation:** Add cascade logic to rejection handlers in skills with 2+ user confirmation gates.
+
 ---
 
 ## 5. Improvement Backlog (Not Yet Applied)
@@ -181,7 +213,7 @@ These accepted findings have NOT been implemented yet — they are design improv
 
 **Total estimated effort:** ~30 lines across 2 SKILL.md files
 
-**Note:** P6-R1~R7 were ALL applied immediately during the RSIL session (not backlogged).
+**Note:** P6-R1~R7 and P9-R1~R8+B1 were ALL applied immediately during their RSIL sessions (not backlogged).
 
 **When to apply remaining backlog:** After SKL-006 sprint completes, or as part of a dedicated skill improvement sprint.
 
@@ -202,6 +234,7 @@ These accepted findings have NOT been implemented yet — they are design improv
 |----|----------|-------------|---------|
 | P4-R4 | Skill preload templates | Content creation per agent, low ROI this sprint | H-2 |
 | P5-R4 | Effort parameter per agent | API-level only, not CC CLI | H-6 |
+| P9-R7 | Compact recovery state marker (Op-2→Op-4 gap) | Layer 2: requires persistent state across compaction | — |
 
 ---
 

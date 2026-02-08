@@ -98,7 +98,7 @@
   - L7: INTERRUPTION RESILIENCE — 중단 대비 중간 상태 보존?
   - L8: NAMING CLARITY — 식별자 모든 context에서 명확?
 - **Lenses evolve:** 새 패턴 발견 시 L9, L10 추가 가능
-- **Pilot data:** 8 findings, 50% acceptance (tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`)
+- **Cumulative data:** 24 findings, 79% acceptance (tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`)
 - **Handoff (for future brainstorming):** `docs/plans/2026-02-08-narrow-rsil-handoff.md`
 
 ## Deferred Work
