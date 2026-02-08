@@ -78,9 +78,10 @@ Scale teammate count by module or research domain count. Lead only for Phases 1 
 
 ### Assigning Work
 Include the PERMANENT Task ID (PT-v{N}) and task-specific context in every assignment.
-Teammates read the full PERMANENT Task content via TaskGet — no need to embed it in the
-directive. When the PERMANENT Task changes, send context updates to affected teammates
-with the new version number — they'll call TaskGet for the latest content.
+Embed the essential PT content (user intent, impact map summary, constraints) directly
+in the directive — teammates in a team context can only access their team's task list,
+not the main list where the PT lives. When the PERMANENT Task changes, send context
+updates to affected teammates with the new version number and relevant content changes.
 
 ### Verifying Understanding
 After a teammate explains their understanding, ask 1-3 open-ended questions appropriate

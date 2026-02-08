@@ -53,3 +53,26 @@
 - Session artifacts: `.agent/teams/skl004-execution/`
 - Lesson: PT created in main task list before TeamCreate → teammate couldn't TaskGet it.
   Workaround: embed full specs in SendMessage directive.
+
+## SKL-005 verification-pipeline COMPLETED (2026-02-08)
+- Strategy: RSI-optimized Lead-direct execution (user authorized INFRA modifications)
+- Process: Research (claude-code-guide) → Architecture (sequential-thinking) → Lead writes directly
+- RSI improvement over SKL-004: Recognized that spawning a team for a design-heavy task where
+  Lead has 100% of the context is wasteful. Lead-direct is more efficient for skill creation.
+- SKILL.md: `.claude/skills/verification-pipeline/SKILL.md` (521 lines, NEW)
+- Scope: Phase 7 (Testing) + Phase 8 (Integration) combined skill
+- Architecture Decisions:
+  - AD-1: Combined P7+P8 single skill (sequential tester→integrator handoff)
+  - AD-2: Adaptive tester count (1 default, 2 if 2+ independent components)
+  - AD-3: Conditional Phase 8 — skip integrator if single implementer in P6
+  - AD-4: Gate 7 (5 criteria: AC coverage, interface tests, coverage gaps, failure analysis, artifacts)
+  - AD-5: Gate 8 (5 criteria: conflicts resolved, integration tests, interface preservation, no violations, artifacts)
+  - AD-6: PT content embedded in directive (RSI fix from SKL-004 lesson)
+  - AD-7: GC versioning: input GC-v5 → output GC-v6
+- INFRA RSI Fixes applied:
+  - FIX-1: CLAUDE.md §6 — clarified PT must be embedded in directive (teammates can't access main list)
+  - FIX-2: agent-common-protocol.md — clarified PT comes in directive, TaskGet is optional
+- Protocol markers: 0 (Grep verified, NLP v6.0 native from creation)
+- Key RSI lesson: Pipeline overhead should match task complexity. For design-only tasks where Lead
+  has full context, skip TeamCreate/spawn ceremony. Reserve teams for tasks requiring parallel
+  execution or file ownership isolation.

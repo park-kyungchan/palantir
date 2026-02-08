@@ -6,10 +6,12 @@ This covers procedures common to all 6 agent types. Role-specific guidance is in
 
 ## When You Receive a Task Assignment
 
-Read the PERMANENT Task via TaskGet using the Task ID provided in your assignment — it contains
-the full project context including user intent, codebase impact map, architecture decisions,
-and constraints. Also read the task-specific context provided by Lead. Confirm receipt by
-messaging Lead with the PT version you read (e.g., "PT-v3 received, understood scope").
+Your task assignment from Lead includes the essential PERMANENT Task context — user intent,
+codebase impact map summary, architecture decisions, and constraints. If Lead also provides
+a PT Task ID and you can access it via TaskGet, read the full content for additional detail.
+(Note: in a team context, TaskList/TaskGet only shows your team's tasks, not the main list.)
+Also read the task-specific context provided by Lead. Confirm receipt by messaging Lead with
+your understanding of the scope (e.g., "PT-v3 context received, understood scope").
 Make sure you understand the scope, constraints, and who will consume your output before
 doing anything else.
 
@@ -66,8 +68,8 @@ Lead will shut you down and re-spawn you with your saved progress.
 
 If you see "This session is being continued from a previous conversation":
 1. Tell Lead immediately — do not continue working from memory alone.
-2. Call TaskGet on the PERMANENT Task (find it via TaskList — subject contains "[PERMANENT]")
-   to restore the full project context.
+2. Try TaskGet on the PERMANENT Task (find it via TaskList — subject contains "[PERMANENT]").
+   If not found in your team's task list, read your own L1/L2/L3 files instead for context.
 3. Read your own L1/L2/L3 files to restore your progress.
 4. Reconfirm your understanding of the task before resuming.
 

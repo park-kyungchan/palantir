@@ -8,7 +8,7 @@
 - **Topic 순서:** T-1 ObjectType → T-2 LinkType → T-3 ActionType → T-4 Integration
 - **세션 종료 시 상태 보고 완료:** ASCII 시각화로 전체 현황 + Topic별 시작 가이드 제공됨
 - **Other pending options (user decides):**
-  1. SKL-005: verification pipeline (Phase 7-8 skill)
+  1. SKL-006: delivery pipeline (Phase 9 skill)
   2. task-api-guideline.md NLP conversion (v4.0/530 lines)
 
 ## Language Policy [PERMANENT] (2026-02-07)
@@ -18,11 +18,11 @@
 - Rationale: token efficiency for Opus 4.6, machine-readable consistency, cross-agent parsing
 
 ## Current Infrastructure State (v6.0) (2026-02-08)
-- CLAUDE.md: v6.0 (171 lines, §0-§10) — NLP conversion from v5.1, PERMANENT Task integration, C-2.2 fixes
+- CLAUDE.md: v6.1 (172 lines, §0-§10) — v6.0 + RSI fix: PT directive embedding clarification
 - task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged in this cycle
-- agent-common-protocol.md: v2.0 (82 lines) — NLP + PT/TaskGet context receipt
+- agent-common-protocol.md: v2.1 (84 lines) — v2.0 + RSI fix: PT task list scope clarification
 - Agents: 6 types, 442 total lines (NLP v2.0), disallowedTools = TaskCreate+TaskUpdate only
-- Skills: `/permanent-tasks` (250 lines, NEW), 4 pipeline skills with Phase 0 + NLP terminology
+- Skills: `/permanent-tasks` (250 lines, NEW), 5 pipeline skills with Phase 0 + NLP terminology
 - Hooks: on-subagent-start.sh updated (67 lines, 3-path GC→PT logic), 8 total hooks hardened
 - Verification: Natural language understanding verification (replaces TIER/LDAP protocol markers)
 - MCP Tools: sequential-thinking (mandatory all), tavily/context7 (mandatory by phase), github (as needed)
@@ -36,7 +36,7 @@
 | 002 | `/agent-teams-write-plan` | P4 | DONE + NLP v6.0 + Phase 0 |
 | 003 | `/agent-teams-execution-plan` | P6 | DONE + NLP v6.0 + Phase 0 |
 | 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 |
-| 005 | verification pipeline | P7-8 | TODO |
+| 005 | `/verification-pipeline` | P7-8 | DONE + NLP v6.0 + Phase 0 + INFRA RSI |
 | 006 | delivery pipeline | P9 | TODO |
 | NEW | `/permanent-tasks` | — | DONE (GC replacement skill) |
 - Detailed history: `memory/skill-optimization-history.md`
