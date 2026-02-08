@@ -5,6 +5,11 @@
 
 INPUT=$(cat)
 
+if ! command -v jq &>/dev/null; then
+  echo "Hook error: jq required for L1/L2 validation." >&2
+  exit 2
+fi
+
 TEAMMATE_NAME=$(echo "$INPUT" | jq -r '.teammate_name // empty' 2>/dev/null)
 TEAM_NAME=$(echo "$INPUT" | jq -r '.team_name // empty' 2>/dev/null)
 
@@ -21,8 +26,8 @@ if [ ! -d "$TEAM_DIR" ]; then
 fi
 
 # Search for L1 and L2 files under team directory for this teammate
-L1_FILE=$(find "$TEAM_DIR" -path "*/$TEAMMATE_NAME/L1-index.yaml" -type f 2>/dev/null | head -1)
-L2_FILE=$(find "$TEAM_DIR" -path "*/$TEAMMATE_NAME/L2-summary.md" -type f 2>/dev/null | head -1)
+L1_FILE=$(ls "$TEAM_DIR"/phase-*/"$TEAMMATE_NAME"/L1-index.yaml 2>/dev/null | head -1)
+L2_FILE=$(ls "$TEAM_DIR"/phase-*/"$TEAMMATE_NAME"/L2-summary.md 2>/dev/null | head -1)
 
 MISSING=""
 

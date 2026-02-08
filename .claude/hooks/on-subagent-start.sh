@@ -5,6 +5,10 @@
 
 INPUT=$(cat)
 
+if ! command -v jq &>/dev/null; then
+  exit 0
+fi
+
 AGENT_TYPE=$(echo "$INPUT" | jq -r '.agent_type // .tool_input.subagent_type // "unknown"' 2>/dev/null)
 AGENT_NAME=$(echo "$INPUT" | jq -r '.agent_name // .tool_input.name // "unknown"' 2>/dev/null)
 TEAM_NAME=$(echo "$INPUT" | jq -r '.tool_input.team_name // "no-team"' 2>/dev/null)
@@ -22,12 +26,11 @@ if [ "$TEAM_NAME" != "no-team" ] && [ -n "$TEAM_NAME" ]; then
   GC_FILE="$LOG_DIR/$TEAM_NAME/global-context.md"
 fi
 
-# Fallback: scan most recently modified team config
+# Fallback: use most recently modified team directory
 if [ -z "$GC_FILE" ] || [ ! -f "$GC_FILE" ]; then
-  LATEST_TEAM=$(find /home/palantir/.claude/teams/ -name "config.json" -type f -printf '%T@ %h\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')
-  if [ -n "$LATEST_TEAM" ]; then
-    TEAM_FROM_CONFIG=$(basename "$LATEST_TEAM")
-    GC_FILE="$LOG_DIR/$TEAM_FROM_CONFIG/global-context.md"
+  LATEST_TEAM_DIR=$(ls -td "$LOG_DIR"/*/global-context.md 2>/dev/null | head -1)
+  if [ -n "$LATEST_TEAM_DIR" ]; then
+    GC_FILE="$LATEST_TEAM_DIR"
   fi
 fi
 

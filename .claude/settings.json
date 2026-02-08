@@ -6,17 +6,15 @@
     "MAX_MCP_OUTPUT_TOKENS": "100000",
     "BASH_MAX_OUTPUT_LENGTH": "200000"
   },
-  "teammateMode": "tmux",
-  "model": "claude-opus-4-6",
   "permissions": {
     "deny": [
       "Read(.env*)",
       "Read(**/secrets/**)",
       "Read(**/*credentials*)",
       "Read(**/.ssh/id_*)",
-      "Bash(rm:-rf:*)",
-      "Bash(sudo:rm:*)",
-      "Bash(chmod:777:*)"
+      "Bash(rm -rf *)",
+      "Bash(sudo rm *)",
+      "Bash(chmod 777 *)"
     ]
   },
   "hooks": {
@@ -28,7 +26,7 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-subagent-start.sh",
             "timeout": 10,
-            "statusMessage": "Logging teammate spawn"
+            "statusMessage": "Injecting team context to new agent"
           }
         ]
       }
@@ -41,7 +39,7 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-subagent-stop.sh",
             "timeout": 10,
-            "statusMessage": "Logging teammate termination"
+            "statusMessage": "Validating agent output artifacts"
           }
         ]
       }
@@ -80,7 +78,8 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-session-compact.sh",
             "timeout": 15,
-            "statusMessage": "DIA recovery after compaction"
+            "statusMessage": "DIA recovery after compaction",
+            "once": true
           }
         ]
       }
@@ -93,7 +92,7 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-teammate-idle.sh",
             "timeout": 10,
-            "statusMessage": "Verifying teammate output before idle"
+            "statusMessage": "Checking teammate output completeness"
           }
         ]
       }
@@ -106,7 +105,20 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-task-completed.sh",
             "timeout": 10,
-            "statusMessage": "Verifying task completion criteria"
+            "statusMessage": "Validating task completion artifacts"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-tool-failure.sh",
+            "timeout": 10,
+            "statusMessage": "Logging tool execution failure"
           }
         ]
       }
@@ -116,5 +128,7 @@
     "superpowers-developing-for-claude-code@superpowers-marketplace": true,
     "superpowers@superpowers-marketplace": true
   },
-  "language": "Korean"
+  "language": "Korean",
+  "fastMode": true,
+  "teammateMode": "tmux"
 }
