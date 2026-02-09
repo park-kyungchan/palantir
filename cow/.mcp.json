@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "cow-ingest": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.ingest"],
+      "cwd": "cow/cow-mcp",
+      "env": {}
+    },
+    "cow-ocr": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.ocr"],
+      "cwd": "cow/cow-mcp",
+      "env": {
+        "MATHPIX_APP_ID": "",
+        "MATHPIX_APP_KEY": ""
+      }
+    },
+    "cow-vision": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.vision"],
+      "cwd": "cow/cow-mcp",
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "cow-review": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.review"],
+      "cwd": "cow/cow-mcp",
+      "env": {}
+    },
+    "cow-export": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.export"],
+      "cwd": "cow/cow-mcp",
+      "env": {
+        "MATHPIX_APP_ID": "",
+        "MATHPIX_APP_KEY": ""
+      }
+    },
+    "cow-storage": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.storage"],
+      "cwd": "cow/cow-mcp",
+      "env": {}
+    }
+  }
+}

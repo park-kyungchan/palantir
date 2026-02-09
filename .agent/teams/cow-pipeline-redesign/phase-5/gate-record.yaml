@@ -1,0 +1,48 @@
+---
+gate: 5
+phase: "Plan Validation"
+date: 2026-02-09
+gc_version_in: GC-v4
+gc_version_out: GC-v5
+pt_version_in: PT-v2
+pt_version_out: PT-v3
+verdict: CONDITIONAL_PASS
+---
+
+# Gate 5 Record
+
+## Devils-Advocate Verdict: CONDITIONAL_PASS
+
+### Finding Summary
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 0 |
+| HIGH | 4 |
+| MEDIUM | 10 |
+| LOW | 10 |
+| **Total** | **24** |
+
+## HIGH Issues + Mitigations
+| ID | Category | Issue | Mitigation |
+|----|----------|-------|------------|
+| CH-1.1 | Correctness | cnt_to_bbox behavioral regression | Preserve original error-handling semantics in Impl-2 directive |
+| CH-4.2 | Feasibility | MCP SDK API stability uncertain | Pre-Phase 6 import verification |
+| CH-4.3 | Feasibility | Gemini bbox coordinate format unspecified | Add normalization requirement to Impl-2 directive |
+| CH-6.1 | Interface | merge_regions() algorithm unspecified | Add IoU spec to Impl-2 directive |
+
+## Conditions for Phase 6 Entry
+- COND-1: Implementer-2 directive must include cnt_to_bbox compatibility guidance
+- COND-2: Run MCP SDK import verification before Phase 6 starts
+- COND-3: Implementer-2 directive must specify Gemini bbox normalization requirement
+- COND-4: Implementer-2 directive must include merge_regions() IoU algorithm spec
+
+## Notable MEDIUM Issues
+- CH-1.2: ReviewDatabase sync→async migration acknowledged
+- CH-1.3/2.1: Missing OCR exception module
+- CH-1.4: OcrRegion.bbox should be Optional
+- CH-4.4: kotex auto-loads xetexko (redundant package load)
+
+## Artifacts
+- Challenge report: phase-5/devils-advocate-1/L3-full/challenge-report.md (26984 bytes)
+- L1: phase-5/devils-advocate-1/L1-index.yaml
+- L2: phase-5/devils-advocate-1/L2-summary.md

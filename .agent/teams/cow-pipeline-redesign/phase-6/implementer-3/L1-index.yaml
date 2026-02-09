@@ -1,0 +1,60 @@
+## L1 Index — Implementer-3 (Review + Export + .mcp.json)
+## Status: COMPLETE — all 9 files written and self-tested
+
+files:
+  # T-6: cow-review MCP server
+  - path: cow/cow-mcp/cow_mcp/review/__init__.py
+    status: complete
+    task: T-6
+    description: Package init with docstring
+    lines: 1
+
+  - path: cow/cow-mcp/cow_mcp/review/models.py
+    status: complete
+    task: T-6
+    description: SQLAlchemy async ORM models — ReviewItem, AuditLog, enums
+    lines: 156
+
+  - path: cow/cow-mcp/cow_mcp/review/database.py
+    status: complete
+    task: T-6
+    description: Async SQLite database — aiosqlite + create_async_engine
+    lines: 202
+
+  - path: cow/cow-mcp/cow_mcp/review/__main__.py
+    status: complete
+    task: T-6
+    description: FastMCP server — cow_queue_review, cow_get_queue, cow_submit_review
+    lines: 95
+
+  # T-7: cow-export MCP server
+  - path: cow/cow-mcp/cow_mcp/export/__init__.py
+    status: complete
+    task: T-7
+    description: Package init with docstring
+    lines: 1
+
+  - path: cow/cow-mcp/cow_mcp/export/latex.py
+    status: complete
+    task: T-7
+    description: XeLaTeX + kotex LaTeX generation — LatexGenerator class
+    lines: 139
+
+  - path: cow/cow-mcp/cow_mcp/export/compiler.py
+    status: complete
+    task: T-7
+    description: XeLaTeX subprocess compilation + auto-fix + Mathpix backup
+    lines: 269
+
+  - path: cow/cow-mcp/cow_mcp/export/__main__.py
+    status: complete
+    task: T-7
+    description: FastMCP server — cow_generate_latex, cow_compile_pdf, cow_mathpix_mmd_to_pdf
+    lines: 86
+
+  # T-8: MCP server registration
+  - path: cow/.mcp.json
+    status: complete
+    task: T-8
+    description: All 6 MCP servers registered with env placeholders
+    lines: 47

@@ -1,0 +1,46 @@
+---
+# L1 Index — Implementer-2 (OCR + Vision Servers)
+# Phase 6, T-4 + T-5
+# Generated: 2026-02-09
+
+tasks:
+  - id: T-4
+    name: cow-ocr MCP server
+    status: COMPLETE
+    files:
+      - path: cow/cow-mcp/cow_mcp/ocr/__init__.py
+        action: CREATE
+        description: Package init docstring
+      - path: cow/cow-mcp/cow_mcp/ocr/cache.py
+        action: CREATE
+        description: Disk-based OCR cache (diskcache + SHA256 keys)
+      - path: cow/cow-mcp/cow_mcp/ocr/separator.py
+        action: CREATE
+        description: "BBox conversion — cnt_to_bbox() + process_mathpix_regions() (COND-1 compliant)"
+      - path: cow/cow-mcp/cow_mcp/ocr/client.py
+        action: CREATE
+        description: MathpixMcpClient — modernized from cow-cli (env vars, OcrResult return, retry)
+      - path: cow/cow-mcp/cow_mcp/ocr/__main__.py
+        action: CREATE
+        description: FastMCP server — cow_mathpix_ocr_image, cow_mathpix_ocr_pdf, cow_ocr_get_cache
+
+  - id: T-5
+    name: cow-vision MCP server
+    status: COMPLETE
+    files:
+      - path: cow/cow-mcp/cow_mcp/vision/__init__.py
+        action: CREATE
+        description: Package init docstring
+      - path: cow/cow-mcp/cow_mcp/vision/gemini.py
+        action: CREATE
+        description: "GeminiVisionClient — detect_elements, analyze_layout (COND-3 bbox normalization)"
+      - path: cow/cow-mcp/cow_mcp/vision/__main__.py
+        action: CREATE
+        description: "FastMCP server + merge_regions() IoU algorithm (COND-4 compliant)"
+
+verification:
+  imports: PASS
+  cond1_separator: PASS
+  cond4_merge_iou: PASS
+  server_startup_ocr: PASS
+  server_startup_vision: PASS

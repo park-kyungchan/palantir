@@ -1,0 +1,46 @@
+[project]
+name = "cow-mcp"
+version = "0.1.0"
+description = "COW Pipeline MCP Servers — Korean math/science document processing"
+requires-python = ">=3.11"
+dependencies = [
+    # MCP SDK
+    "mcp>=1.0.0",
+
+    # Data models
+    "pydantic>=2.0.0",
+
+    # HTTP clients
+    "httpx>=0.28.0",
+
+    # Image processing (INGEST)
+    "Pillow>=12.0.0",
+    "pypdf>=5.0.0",
+
+    # Mathpix OCR (OCR)
+    "imagehash>=4.3.0",
+    "diskcache>=5.6.0",
+
+    # Gemini Vision (VISION)
+    "google-genai>=1.0.0",
+
+    # Review database (REVIEW)
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.22.0",
+
+    # Configuration
+    "pyyaml>=6.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=7.0.0",
+    "pytest-mock>=3.15.0",
+    "respx>=0.22.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0.0"]
+build-backend = "setuptools.build_meta"

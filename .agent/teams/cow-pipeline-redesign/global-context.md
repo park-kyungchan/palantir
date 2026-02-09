@@ -1,5 +1,5 @@
 ---
-version: GC-v3
+version: GC-v6
 created: 2026-02-09
 feature: cow-pipeline-redesign
 complexity: COMPLEX
@@ -38,7 +38,52 @@ complexity: COMPLEX
 - Phase 1: COMPLETE (Gate 1 APPROVED — Discovery + Requirements R1-R10)
 - Phase 2: COMPLETE (Gate 2 APPROVED — 3 feasibility reports)
 - Phase 3: COMPLETE (Gate 3 APPROVED — 6-stage pipeline + MCP Server architecture)
-- Phase 4: PENDING
+- Phase 4: COMPLETE (Gate 4 APPROVED — 10-section implementation plan, 1274 lines)
+- Phase 5: COMPLETE (Gate 5 CONDITIONAL_PASS — 24 findings, 0 CRITICAL, 4 HIGH mitigated)
+- Phase 6: COMPLETE (Gate 6 APPROVED — 33 files, 3 implementers, all 4 conditions met)
+- Phase 7-8: DEFERRED (self-tested; full integration requires API keys + TeX Live)
+
+## Phase 5 Validation Results
+- **Verdict:** CONDITIONAL_PASS (24 findings: 0C/4H/10M/10L)
+- **HIGH issues mitigated:** cnt_to_bbox regression, MCP SDK stability, Gemini bbox format, merge_regions() spec
+- **Conditions for Phase 6:** 4 conditions tracked (all addressable via implementer directives)
+- **Notable MEDIUM:** ReviewDatabase sync→async, missing exception module, OcrRegion.bbox optionality, kotex/xetexko redundancy
+
+## Implementation Plan Reference
+- **Plan:** docs/plans/2026-02-09-cow-pipeline-redesign.md (1274 lines)
+- **Implementers:** 3 (Foundation+Ingest+Storage, OCR+Vision, Review+Export)
+- **Tasks:** 8 (T-1 through T-8)
+- **New files:** ~33 Python files + pyproject.toml + .mcp.json
+- **Dependency graph:** T-1 → (T-2,T-3 | T-4,T-5 | T-6,T-7) → T-8
+
+## Task Decomposition
+| Task | Implementer | Files | Dependencies |
+|------|-------------|-------|-------------|
+| T-1 | Impl-1 | pyproject.toml, models/ (8 files) | none |
+| T-2 | Impl-1 | ingest/ (3 files) | T-1 |
+| T-3 | Impl-1 | storage/ (3 files) | T-1 |
+| T-4 | Impl-2 | ocr/ (5 files) | T-1 |
+| T-5 | Impl-2 | vision/ (3 files) | T-1 |
+| T-6 | Impl-3 | review/ (4 files) | T-1 |
+| T-7 | Impl-3 | export/ (4 files) | T-1 |
+| T-8 | Impl-3 | .mcp.json | T-2..T-7 |
+
+## File Ownership Map
+- Impl-1: cow/cow-mcp/pyproject.toml, cow_mcp/__init__.py, models/ (8), ingest/ (3), storage/ (3) = 16 files
+- Impl-2: cow_mcp/ocr/ (5), vision/ (3) = 8 files
+- Impl-3: cow_mcp/review/ (4), export/ (4), cow/.mcp.json = 9 files
+
+## Phase 5 Validation Targets
+1. MCP SDK compatibility (mcp Python package API stability)
+2. google-genai structured output for bbox
+3. XeLaTeX + kotex + amsmath coexistence
+4. Implementer-1 file count (16 files, justified as mostly boilerplate)
+5. cow-cli module adaptation scope estimates
+
+## Phase 6 Entry Conditions
+- Phase 5 PASS or CONDITIONAL_PASS
+- Implementation plan unchanged or revised per Phase 5 findings
+- All interface contracts frozen
 
 ## Component Map
 
