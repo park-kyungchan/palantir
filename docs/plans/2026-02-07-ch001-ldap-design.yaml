@@ -1,0 +1,552 @@
+# =============================================================================
+# CH-001: Lead Devil's Advocate Protocol (LDAP) — Design Document
+# =============================================================================
+# Date: 2026-02-07
+# Author: Lead (Opus 4.6)
+# Status: DRAFT — Pending user approval
+# Format: Machine-Readable-English-Only (YAML)
+# Parent: DESIGN-2026-02-07-v3 (Agent Teams Infrastructure v3.0)
+# Scope: DIA v2.0 → v3.0 (LDAP layer addition)
+# =============================================================================
+
+metadata:
+  design_id: "CH-001-LDAP"
+  version: "1.1"
+  base_version: "DIA v2.0"
+  target_version: "DIA v3.0"
+  priority: HIGH
+  philosophy: "Shift-Left — 80%+ effort in PRE-EXEC"
+
+# =============================================================================
+# SECTION 1: PROBLEM STATEMENT
+# =============================================================================
+
+problem:
+  title: "DIA v2.0 verification is static despite 'Dynamic' in name"
+
+  current_dia_layers:
+    layer_1:
+      name: "CIP (Context Injection Protocol)"
+      solves: "GAP-001 — Context not delivered"
+      method: "Physical embedding of global-context.md + task-context.md"
+      verification: "[STATUS] CONTEXT_RECEIVED"
+      status: EFFECTIVE
+
+    layer_2:
+      name: "DIAVP (RC Checklist)"
+      solves: "GAP-002 — Context delivered but not understood"
+      method: "Echo-back in own words, scored against RC-01~RC-10"
+      verification: "RC checklist PASS/FAIL"
+      status: EFFECTIVE_BUT_INCOMPLETE
+
+    layer_3:
+      name: "(MISSING)"
+      solves: "GAP-003 — (unaddressed)"
+      method: "(none)"
+      verification: "(none)"
+      status: ABSENT
+
+  # ---------------------------------------------------------------------------
+  # GAP CHAIN:
+  #
+  #   GAP-001: Didn't read         → Solved by CIP
+  #   GAP-002: Read ≠ Understood   → Solved by DIAVP (RC checklist)
+  #   GAP-003: Understood ≠ Systemic Impact Aware  → UNSOLVED
+  #
+  #   A teammate can pass RC-01 through RC-10 perfectly and still:
+  #   • Build on unchallenged assumptions
+  #   • Consider only one approach (tunnel vision)
+  #   • Ignore failure scenarios entirely
+  #   • Miss how their code participates in the organic whole
+  #   • Not trace how their changes propagate through the system
+  #
+  #   RC checklist verifies: "Do you understand WHAT to do?"
+  #   RC checklist does NOT verify: "Do you understand HOW your work
+  #   affects the interconnected system?"
+  # ---------------------------------------------------------------------------
+
+  gap_003:
+    title: "Systemic Impact Awareness Deficit"
+    formal_definition: |
+      The teammate understood the task requirements but does not
+      demonstrate awareness of the causal propagation chain — how
+      their code-level implementation affects the interconnected,
+      organic operation of the entire task scope and codebase.
+
+    sub_gaps:
+      gap_003a:
+        title: "Interconnection Blindness"
+        definition: |
+          The teammate does not demonstrate awareness of HOW their
+          module participates in the organic/integrated operation of
+          the whole system. They see their code as an isolated unit
+          rather than as a node in an interconnected graph.
+        question: |
+          "Does the teammate understand how their code-level
+          implementation connects to and participates in the
+          integrated, organic operation of the entire task scope
+          and codebase?"
+        # -----------------------------------------------------------------
+        # INTERCONNECTION GRAPH (what teammate must understand):
+        #
+        #        ┌───┐     ┌───┐     ┌───┐     ┌───┐
+        #        │ A │────>│ X │────>│ C │────>│ D │
+        #        └───┘     └─┬─┘     └───┘     └───┘
+        #                    │
+        #                    ├────>┌───┐
+        #                    │     │ E │
+        #                    │     └───┘
+        #                    │
+        #                    └────>┌───┐
+        #                          │ F │
+        #                          └───┘
+        #
+        #   Teammate owns X. Must know:
+        #   • X consumes input from A
+        #   • X produces output consumed by C, E, F
+        #   • C feeds into D (2nd-order dependency)
+        #   • X's output format change → C, E, F break → D breaks
+        #   • This is "organic participation awareness"
+        # -----------------------------------------------------------------
+
+      gap_003b:
+        title: "Ripple Blindness"
+        definition: |
+          The teammate does not demonstrate awareness of WHERE and
+          HOW FAR their changes propagate through the entire task
+          scope and codebase. They cannot trace the causal chain
+          from their change to its terminal effects.
+        question: |
+          "Does the teammate understand that a change in one place
+          propagates to the entire task scope and codebase, and can
+          they trace the full propagation path?"
+        # -----------------------------------------------------------------
+        # RIPPLE PROPAGATION (what teammate must trace):
+        #
+        #        ┌───┐     ┌───┐     ┌───┐     ┌───┐
+        #        │ A │     │ X │ ──> │ C │ ──> │ D │
+        #        └───┘     └─┬─┘     └───┘     └───┘
+        #                    │        ↑ BREAK     ↑ BREAK
+        #                 CHANGE
+        #                    │
+        #                    ├───>┌───┐
+        #                    │    │ E │
+        #                    │    └───┘
+        #                    │      ↑ BREAK
+        #                    │
+        #                    └───>┌───┐
+        #                         │ F │
+        #                         └───┘
+        #                           ↑ BREAK
+        #
+        #   Three propagation dimensions:
+        #   • Interface signature change → immediate consumers break
+        #   • Output semantics change → downstream logic misbehaves
+        #   • Performance characteristic change → timeout/overload
+        # -----------------------------------------------------------------
+
+  static_vs_dynamic:
+    rc_checklist: |
+      Same 10 items every time. Same questions regardless of context.
+      Content changes but the checklist is invariant. This is STATIC.
+    ldap_challenge: |
+      Lead reads the specific [IMPACT-ANALYSIS] content and generates
+      questions tailored to what the teammate actually wrote.
+      Different questions every time. Context-dependent. This is DYNAMIC.
+
+# =============================================================================
+# SECTION 2: SOLUTION — LDAP (Lead Devil's Advocate Protocol)
+# =============================================================================
+
+solution:
+  title: "Add Layer 3 to DIA: LDAP"
+  summary: |
+    Insert adversarial challenge step between RC checklist evaluation
+    and [IMPACT_VERIFIED] issuance. Lead MUST generate context-specific
+    adversarial questions. Teammate MUST defend their analysis.
+    Challenge intensity scales with Shift-Left phase weighting.
+
+  # ---------------------------------------------------------------------------
+  # DIA v3.0 — 3-Layer Verification Architecture:
+  #
+  #   Layer 1: CIP          → Delivery guarantee     (GAP-001)
+  #   Layer 2: DIAVP (RC)   → Comprehension proof     (GAP-002)
+  #   Layer 3: LDAP          → Systemic impact proof   (GAP-003)
+  #            ↑ NEW
+  #
+  #   Progression:
+  #   CIP: "Did you receive it?"           → Yes/No
+  #   RC:  "Did you understand it?"        → Yes/No
+  #   LDAP: "Did you think through the     → Defense quality
+  #          systemic impact?"               (interconnection + ripple)
+  # ---------------------------------------------------------------------------
+
+  verification_flow_v3:
+    step_1:
+      action: "Teammate submits [IMPACT-ANALYSIS]"
+      direction: "Teammate → Lead"
+
+    step_2:
+      action: "Lead evaluates RC-01~RC-10 checklist (Layer 2)"
+      note: "Backward compatible — existing RC logic unchanged"
+
+    step_3:
+      action: "Lead generates [CHALLENGE] questions (Layer 3 — NEW)"
+      details:
+        - "Read teammate's [IMPACT-ANALYSIS] content"
+        - "Identify weak spots in systemic impact reasoning"
+        - "Generate N questions (N = phase intensity)"
+        - "Each question targets a specific challenge category"
+        - "For MAXIMUM phases: require alternative proposal"
+
+    step_4:
+      action: "Teammate responds with [CHALLENGE-RESPONSE]"
+      direction: "Teammate → Lead"
+
+    step_5:
+      action: "Lead evaluates defense quality"
+      outcomes:
+        strong_defense: "[IMPACT_VERIFIED] Proceed."
+        partial_defense: "[VERIFICATION-QA] for specific gaps (follow-up)"
+        failed_defense: "[IMPACT_REJECTED] with challenge evidence cited"
+
+  # ---------------------------------------------------------------------------
+  # FULL FLOW DIAGRAM:
+  #
+  #   ┌──────────┐                              ┌──────────┐
+  #   │ Teammate │                              │   Lead   │
+  #   └────┬─────┘                              └────┬─────┘
+  #        │                                          │
+  #        │  [IMPACT-ANALYSIS]                       │
+  #        │ ────────────────────────────────────────> │
+  #        │                                    ┌─────┴──────┐
+  #        │                                    │ Layer 2:   │
+  #        │                                    │ RC-01~10   │
+  #        │                                    │ (static)   │
+  #        │                                    ├────────────┤
+  #        │                                    │ Layer 3:   │
+  #        │                                    │ Generate   │
+  #        │                                    │ challenges │
+  #        │                                    │ (dynamic)  │
+  #        │                                    └─────┬──────┘
+  #        │  [CHALLENGE] Q1/N: ...                   │
+  #        │  Category: INTERCONNECTION_MAP           │
+  #        │ <──────────────────────────────────────── │
+  #        │                                          │
+  #        │  [CHALLENGE-RESPONSE] Q1: ...            │
+  #        │ ────────────────────────────────────────> │
+  #        │                                          │
+  #        │  ... (repeat Q2..QN) ...                 │
+  #        │                                    ┌─────┴──────┐
+  #        │                                    │ Evaluate:  │
+  #        │                                    │ RC + Def.  │
+  #        │                                    │ quality    │
+  #        │                                    └─────┬──────┘
+  #        │  [IMPACT_VERIFIED] / [REJECTED]          │
+  #        │ <──────────────────────────────────────── │
+  #        │                                          │
+  # ---------------------------------------------------------------------------
+
+# =============================================================================
+# SECTION 3: CHALLENGE CATEGORIES (7 total)
+# =============================================================================
+
+challenge_categories:
+  # --- GAP-003a: Interconnection Awareness ---
+  interconnection_map:
+    id: INTERCONNECTION_MAP
+    gap: "003a"
+    purpose: "Verify teammate sees their module as part of the organic whole"
+    example_question: |
+      "List the inputs your module consumes and the outputs it produces.
+      For each output, name every consumer. For each consumer, name THEIR
+      consumers (2+ hops). Explain how your module's output format
+      participates in the integrated operation of the downstream chain."
+
+  scope_boundary:
+    id: SCOPE_BOUNDARY
+    gap: "003a"
+    purpose: "Verify scope is neither too narrow (missing connections) nor too wide"
+    example_question: |
+      "Are you solving more or less than what was required?
+      Where does your responsibility end and the next module's begin?
+      What happens at the boundary — who owns the interface contract?"
+
+  # --- GAP-003b: Ripple Awareness ---
+  ripple_trace:
+    id: RIPPLE_TRACE
+    gap: "003b"
+    purpose: "Verify teammate can trace change propagation to terminal effects"
+    example_question: |
+      "If you change the interface signature / output semantics /
+      performance characteristics of your implementation, trace the
+      full propagation path to its terminal effect. What is the
+      blast radius? Which teammates' work would need revision?"
+
+  failure_mode:
+    id: FAILURE_MODE
+    gap: "003b"
+    purpose: "Verify teammate understands system-wide failure consequences"
+    example_question: |
+      "If your implementation fails at runtime, what stops working
+      in the entire system? What misbehaves? What propagates
+      incorrect data silently? Distinguish crash vs silent corruption."
+
+  dependency_risk:
+    id: DEPENDENCY_RISK
+    gap: "003b"
+    purpose: "Verify teammate considers upstream volatility propagation"
+    example_question: |
+      "If your upstream dependency changes unexpectedly, how does
+      your implementation break? How does that breakage propagate
+      to your downstream consumers? What is the recovery path?"
+
+  # --- General reasoning quality ---
+  assumption_probe:
+    id: ASSUMPTION_PROBE
+    gap: "003a+003b"
+    purpose: "Challenge unstated assumptions that may hide interconnection/ripple gaps"
+    example_question: |
+      "You assumed X. What if X is false? How would that change
+      your interconnection map and ripple analysis?"
+
+  alternative_demand:
+    id: ALTERNATIVE_DEMAND
+    gap: "003a+003b"
+    purpose: "Prevent tunnel vision — force consideration of systemic alternatives"
+    example_question: |
+      "What other approach did you consider? How would that
+      alternative's interconnection map and ripple profile differ?
+      Why did you reject it?"
+
+# =============================================================================
+# SECTION 4: SHIFT-LEFT CHALLENGE INTENSITY
+# =============================================================================
+
+challenge_intensity:
+  # ---------------------------------------------------------------------------
+  # Phase Weight Distribution (Shift-Left 80/20):
+  #
+  #   PRE-EXEC (80%+ effort)                  EXEC (<20%)       POST
+  #   ┌──────────────────────────────────────┐ ┌──────────────┐ ┌───┐
+  #   │ P1    P2      P3      P4      P5     │ │ P6  P7  P8   │ │P9 │
+  #   │ Disc  Rsrch   Arch    Design  Valid  │ │ Impl Test Int│ │Del│
+  #   └──────────────────────────────────────┘ └──────────────┘ └───┘
+  #
+  #   Challenge Intensity per Phase:
+  #
+  #   P1: ░░░░░░  NONE    (Lead only — no teammate)
+  #   P2: ▓▓░░░░  MEDIUM  (1Q minimum)
+  #   P3: ████░░  MAXIMUM (3Q + alternative proposal required)
+  #   P4: ████░░  MAXIMUM (3Q + alternative proposal required)
+  #   P5: ▒▒▒▒▒▒  EXEMPT  (devils-advocate teammate owns critique)
+  #   P6: ███░░░  HIGH    (2Q minimum)
+  #   P7: ▓▓░░░░  MEDIUM  (1Q minimum)
+  #   P8: ███░░░  HIGH    (2Q minimum)
+  #   P9: ░░░░░░  NONE    (Lead only — no teammate)
+  #
+  #   Defect discovery cost curve (exponential):
+  #
+  #   P3: │█               ← cheapest to fix
+  #   P4: │██
+  #   P5: │███
+  #   P6: │██████████
+  #   P7: │████████████████
+  #   P8: │██████████████████████████  ← most expensive to fix
+  #       └──────────────────────────→ cost
+  #
+  #   Therefore: P3/P4 = MAXIMUM intensity (catch flaws where cheapest)
+  # ---------------------------------------------------------------------------
+
+  matrix:
+    phase_1: { level: NONE, min_questions: 0, reason: "Lead only phase" }
+    phase_2: { level: MEDIUM, min_questions: 1, targets: [researcher], requires_alternative: false }
+    phase_3: { level: MAXIMUM, min_questions: 3, targets: [architect], requires_alternative: true }
+    phase_4: { level: MAXIMUM, min_questions: 3, targets: [architect], requires_alternative: true }
+    phase_5: { level: EXEMPT, min_questions: 0, reason: "devils-advocate teammate handles critique" }
+    phase_6: { level: HIGH, min_questions: 2, targets: [implementer], requires_alternative: false }
+    phase_7: { level: MEDIUM, min_questions: 1, targets: [tester], requires_alternative: false }
+    phase_8: { level: HIGH, min_questions: 2, targets: [integrator], requires_alternative: false }
+    phase_9: { level: NONE, min_questions: 0, reason: "Lead only phase" }
+
+# =============================================================================
+# SECTION 5: MESSAGE FORMATS
+# =============================================================================
+
+message_formats:
+  challenge:
+    format: "[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}"
+    direction: "Lead → Teammate"
+    example: |
+      [CHALLENGE] Phase 6 | Q1/2: You listed 3 output consumers for your
+      module. Trace the propagation path if your output schema adds a
+      required field. Which downstream modules break? Does the breakage
+      stop at direct consumers or propagate further? | Category: RIPPLE_TRACE
+
+  challenge_response:
+    format: "[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense}"
+    direction: "Teammate → Lead"
+    example: |
+      [CHALLENGE-RESPONSE] Phase 6 | Q1: Adding a required field to my
+      output schema would break module C (direct consumer) which expects
+      the current 5-field schema. C's parser would throw a validation
+      error, which would halt D's pipeline (2nd-order). Module E uses
+      only fields 1-3, so it would be unaffected unless its parser is
+      strict. Module F uses a wildcard import and would silently include
+      the new field — no break but potential data leakage into F's output.
+      Blast radius: C+D break hard, E unaffected, F silent propagation.
+
+# =============================================================================
+# SECTION 6: FILES TO MODIFY
+# =============================================================================
+
+files_to_modify:
+  - path: .claude/CLAUDE.md
+    changes:
+      - section: "§3 Role Protocol > Lead"
+        action: ADD_SUBSECTION
+        content: |
+          LDAP subsection: challenge intensity matrix, GAP-003 definition,
+          challenge generation obligation, evaluation criteria
+
+      - section: "§4 Communication Protocol"
+        action: ADD_ROWS
+        content: |
+          [CHALLENGE] and [CHALLENGE-RESPONSE] message types with formats
+
+      - section: "[PERMANENT] Semantic Integrity Guard > Lead Enforcement Duties"
+        action: ADD_ITEM
+        content: |
+          Item 7: Adversarial Challenge (LDAP). Generate context-specific
+          [CHALLENGE] questions after RC checklist. Evaluate defense quality.
+          WHY + enforcement mechanism + failure handling.
+
+  - path: .claude/references/task-api-guideline.md
+    changes:
+      - section: "§11 DIA Enforcement Protocol > DIAVP > Verification Flow"
+        action: MODIFY
+        content: |
+          Insert Layer 3 (LDAP challenge step) between RC evaluation and
+          [IMPACT_VERIFIED]. Add challenge categories reference.
+          Add GAP-003 (a/b) definition to WHY section.
+
+  - path: .claude/agents/researcher.md
+    changes:
+      - section: "Protocol > after Phase 1 (Impact Analysis)"
+        action: ADD_SUBSECTION
+        content: |
+          Phase 1.5: Challenge Response [MANDATORY — MEDIUM: 1Q]
+          Handle [CHALLENGE] from Lead. Defend systemic impact analysis.
+          Expect categories: INTERCONNECTION_MAP, SCOPE_BOUNDARY, ASSUMPTION_PROBE.
+
+  - path: .claude/agents/architect.md
+    changes:
+      - section: "Protocol > after Phase 1 (Impact Analysis)"
+        action: ADD_SUBSECTION
+        content: |
+          Phase 1.5: Challenge Response [MANDATORY — MAXIMUM: 3Q + alternative]
+          Handle [CHALLENGE] from Lead. Defend systemic impact analysis.
+          MUST propose at least one alternative approach when challenged.
+          Expect all 7 categories. Highest scrutiny — design flaws caught
+          here prevent exponential downstream cost.
+
+  - path: .claude/agents/implementer.md
+    changes:
+      - section: "Protocol > after Phase 1 (Impact Analysis)"
+        action: ADD_SUBSECTION
+        content: |
+          Phase 1.5: Challenge Response [MANDATORY — HIGH: 2Q]
+          Handle [CHALLENGE] from Lead. Defend systemic impact analysis.
+          Expect categories: RIPPLE_TRACE, FAILURE_MODE, DEPENDENCY_RISK,
+          INTERCONNECTION_MAP. Focus on code-level propagation paths.
+
+  - path: .claude/agents/tester.md
+    changes:
+      - section: "Protocol > after Phase 1 (Impact Analysis)"
+        action: ADD_SUBSECTION
+        content: |
+          Phase 1.5: Challenge Response [MANDATORY — MEDIUM: 1Q]
+          Handle [CHALLENGE] from Lead. Defend systemic impact analysis.
+          Expect categories: SCOPE_BOUNDARY, FAILURE_MODE, DEPENDENCY_RISK.
+
+  - path: .claude/agents/integrator.md
+    changes:
+      - section: "Protocol > after Phase 1 (Impact Analysis)"
+        action: ADD_SUBSECTION
+        content: |
+          Phase 1.5: Challenge Response [MANDATORY — HIGH: 2Q]
+          Handle [CHALLENGE] from Lead. Defend systemic impact analysis.
+          Expect all 7 categories. Integration = cross-boundary by nature,
+          so interconnection and ripple awareness are critical.
+
+  - path: .claude/agents/devils-advocate.md
+    changes: []
+    note: "No change. TIER 0 exempt. Phase 5 critique IS the challenge."
+
+# =============================================================================
+# SECTION 7: RISK ASSESSMENT
+# =============================================================================
+
+risks:
+  - id: RISK-001
+    description: "LDAP challenge overhead may slow pipeline velocity"
+    severity: MEDIUM
+    mitigation: |
+      Challenge count is bounded (1-3 per phase).
+      Shift-Left: slower PRE-EXEC → faster EXEC.
+      Net velocity improves due to fewer rework cycles.
+      Cost: 5-15K tokens per challenge round.
+      Benefit: prevents full pipeline re-execution on flaw discovery.
+
+  - id: RISK-002
+    description: "Challenge quality depends on Lead's analytical capability"
+    severity: LOW
+    mitigation: |
+      Challenge categories provide structured framework.
+      Lead uses [IMPACT-ANALYSIS] content as input — not generating from nothing.
+      7 categories ensure coverage even if individual question quality varies.
+
+  - id: RISK-003
+    description: "Teammate may produce verbose but shallow defense responses"
+    severity: MEDIUM
+    mitigation: |
+      Lead evaluates defense QUALITY, not LENGTH.
+      Strong defense = specific module names, concrete propagation paths,
+      quantified blast radius. Weak defense = vague/generic claims.
+      [VERIFICATION-QA] follow-up for partial defenses.
+
+# =============================================================================
+# SECTION 8: VERSION DELTA (v2.0 → v3.0 for DIA only)
+# =============================================================================
+
+version_delta:
+  # ---------------------------------------------------------------------------
+  #
+  #   DIA v2.0 (Current)                DIA v3.0 (Proposed)
+  #   ─────────────────                 ─────────────────
+  #   2-Layer verification              3-Layer verification
+  #   CIP + DIAVP(RC)                   CIP + DIAVP(RC) + LDAP
+  #   GAP-001 + GAP-002 solved          GAP-001 + GAP-002 + GAP-003 solved
+  #   Lead = Passive Scorer             Lead = Active Challenger
+  #   Static RC checklist               Static RC + Dynamic challenge
+  #   Flat intensity all phases          Shift-Left intensity scaling
+  #   5 challenge categories (DA only)  7 challenge categories (Lead + DA)
+  #   No systemic impact check          GAP-003a/b explicitly verified
+  #
+  # ---------------------------------------------------------------------------
+
+  from:
+    dia_version: "2.0"
+    layers: 2
+    gaps_solved: ["GAP-001", "GAP-002"]
+    lead_role: "Passive checklist scorer"
+    challenge_categories: 0
+    systemic_impact_check: false
+
+  to:
+    dia_version: "3.0"
+    layers: 3
+    gaps_solved: ["GAP-001", "GAP-002", "GAP-003a", "GAP-003b"]
+    lead_role: "Active adversarial challenger"
+    challenge_categories: 7
+    systemic_impact_check: true

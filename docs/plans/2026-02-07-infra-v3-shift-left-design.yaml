@@ -1,0 +1,582 @@
+# =============================================================================
+# Agent Teams Infrastructure v3.0 — Shift-Left Enhancement Design
+# =============================================================================
+# Date: 2026-02-07
+# Author: Lead (Opus 4.6)
+# Purpose: Codebase improvement after PC-reset cleanup + architecture enhancement
+# Format: Machine-Readable-English-Only (YAML)
+# Usage: Input for /superpowers:write-plan
+# =============================================================================
+
+metadata:
+  version: "3.0"
+  base_version: "2.0 (DIA Enforcement)"
+  branch: main
+  design_id: "DESIGN-2026-02-07-v3"
+  philosophy: "Shift-Left — 80%+ effort in PRE-EXEC (research/design/validation)"
+
+# =============================================================================
+# SECTION 1: CHANGE SUMMARY
+# =============================================================================
+
+changes:
+  - id: CH-001
+    title: "Lead Devil's Advocate Protocol (LDAP)"
+    priority: HIGH
+    scope: CLAUDE.md, task-api-guideline.md
+    description: |
+      Transform Lead from passive checklist-scorer to active challenger
+      during ALL phases. Embed adversarial questioning into DIA verification
+      flow. Shift-Left amplification — heavier scrutiny in PRE-EXEC phases.
+
+  - id: CH-002
+    title: "Memory MCP Integration for Agent Cross-Session Learning"
+    priority: MEDIUM
+    scope: .claude.json, agent .md files, .claude/settings.json
+    description: |
+      Add @modelcontextprotocol/server-memory for persistent agent learning.
+      Each agent type accumulates knowledge across sessions via Knowledge Graph.
+      NOT for DIA state (transient). FOR long-term pattern learning (persistent).
+
+  - id: CH-003
+    title: "cow-cli Legacy Removal"
+    priority: LOW
+    scope: cow/cow-cli/
+    description: |
+      Remove Claude Agent SDK wrapper code. Agent SDK requires API keys,
+      incompatible with Claude Max X20 CLI-native architecture.
+      Preserve cow/ project source (Mathpix integration, docs, images, outputs).
+
+  - id: CH-004
+    title: "MCP Configuration Cleanup"
+    priority: HIGH
+    scope: .mcp.json (delete), .claude.json (already migrated)
+    description: |
+      Delete legacy .mcp.json. All MCP servers now managed via
+      claude mcp add (npx unified). Commit current state.
+
+  - id: CH-005
+    title: "Post-Cleanup Git Commit"
+    priority: HIGH
+    scope: entire workspace
+    description: |
+      Commit all changes from PC-reset cleanup session.
+      Single clean commit on shallow-cloned main branch.
+
+# =============================================================================
+# SECTION 2: CH-001 — LEAD DEVIL'S ADVOCATE PROTOCOL (LDAP)
+# =============================================================================
+
+ch001_lead_devils_advocate:
+  problem: |
+    Current Lead behavior during DIA verification:
+    - RC-01~RC-10 checklist = static scoring (PASS/FAIL per item)
+    - [VERIFICATION-QA] only triggers on checklist failures
+    - No proactive challenge of teammate assumptions
+    - No adversarial questioning of approach choices
+    - "Dynamic" in DIA is unrealized — verification is actually static
+
+  solution: |
+    Add [CHALLENGE] protocol to Lead's DIA verification flow.
+    Lead MUST generate 1-3 adversarial questions BEFORE issuing
+    [IMPACT_VERIFIED]. Teammate MUST respond to challenges.
+    Challenge intensity scales with Shift-Left phase weighting.
+
+  # ---------------------------------------------------------------------------
+  # ARCHITECTURE: Shift-Left Challenge Intensity
+  # ---------------------------------------------------------------------------
+  #
+  #   Phase Weight Distribution (Shift-Left 80/20):
+  #
+  #   PRE-EXEC (80% effort)                    EXEC (20%)        POST
+  #   ┌──────────────────────────────────────┐ ┌──────────────┐ ┌───┐
+  #   │ P1   P2     P3      P4      P5      │ │ P6  P7  P8   │ │P9 │
+  #   │ Disc Rsrch  Arch    Design  Valid    │ │ Impl Test Int│ │Del│
+  #   └──────────────────────────────────────┘ └──────────────┘ └───┘
+  #
+  #   Challenge Intensity per Phase:
+  #
+  #   ████████████████████████████████████████  ████████         ░░░
+  #   P1:--  P2:MED  P3:MAX  P4:MAX  P5:N/A    P6:HIGH P7:MED  P9:--
+  #                                  (DA owns)  P8:HIGH
+  #
+  #   Legend:
+  #   -- = Lead only (no teammate to challenge)
+  #   N/A = Phase 5 has dedicated devils-advocate (exempt)
+  #   MED = 1 challenge question minimum
+  #   HIGH = 2 challenge questions minimum
+  #   MAX = 3 challenge questions minimum + alternative proposal required
+  #
+  # ---------------------------------------------------------------------------
+
+  challenge_intensity:
+    phase_1: { level: NONE, reason: "Lead only phase" }
+    phase_2: { level: MEDIUM, min_questions: 1, targets: [researcher] }
+    phase_3: { level: MAXIMUM, min_questions: 3, targets: [architect], requires_alternative: true }
+    phase_4: { level: MAXIMUM, min_questions: 3, targets: [architect], requires_alternative: true }
+    phase_5: { level: EXEMPT, reason: "devils-advocate teammate handles critique" }
+    phase_6: { level: HIGH, min_questions: 2, targets: [implementer] }
+    phase_7: { level: MEDIUM, min_questions: 1, targets: [tester] }
+    phase_8: { level: HIGH, min_questions: 2, targets: [integrator] }
+    phase_9: { level: NONE, reason: "Lead only phase" }
+
+  # ---------------------------------------------------------------------------
+  # PROTOCOL FLOW: Enhanced DIA with Challenge
+  # ---------------------------------------------------------------------------
+  #
+  #   CURRENT (v2.0):
+  #   ┌──────────┐    [IMPACT-ANALYSIS]    ┌──────────┐
+  #   │ Teammate │ ──────────────────────> │   Lead   │
+  #   │          │                         │          │
+  #   │          │    [IMPACT_VERIFIED]    │ RC check │
+  #   │          │ <────────────────────── │ (static) │
+  #   └──────────┘                         └──────────┘
+  #
+  #   PROPOSED (v3.0):
+  #   ┌──────────┐    [IMPACT-ANALYSIS]    ┌──────────┐
+  #   │ Teammate │ ──────────────────────> │   Lead   │
+  #   │          │                         │          │
+  #   │          │    [CHALLENGE] x N      │ RC check │
+  #   │          │ <────────────────────── │    +     │
+  #   │          │                         │ generate │
+  #   │          │    [CHALLENGE-RESPONSE]  │ adversar │
+  #   │          │ ──────────────────────> │ question │
+  #   │          │                         │    +     │
+  #   │          │    [IMPACT_VERIFIED]    │ evaluate │
+  #   │          │ <────────────────────── │ response │
+  #   └──────────┘                         └──────────┘
+  #
+  # ---------------------------------------------------------------------------
+
+  new_message_formats:
+    - format: "[CHALLENGE] Phase {N} | Q{X}/{total}: {adversarial_question} | Category: {cat}"
+      direction: "Lead -> Teammate"
+      categories:
+        - ASSUMPTION_PROBE     # "You assumed X. What if Y instead?"
+        - ALTERNATIVE_DEMAND   # "What other approach did you consider and why reject?"
+        - FAILURE_MODE         # "How does this fail? What is the blast radius?"
+        - SCOPE_BOUNDARY       # "Are you solving more/less than required?"
+        - DEPENDENCY_RISK      # "What breaks if upstream changes?"
+
+    - format: "[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {response}"
+      direction: "Teammate -> Lead"
+
+  verification_flow_v3:
+    step_1: "Teammate submits [IMPACT-ANALYSIS]"
+    step_2: "Lead evaluates RC-01~RC-10 checklist"
+    step_3: "Lead generates [CHALLENGE] questions (count by phase intensity)"
+    step_4: "Teammate responds with [CHALLENGE-RESPONSE]"
+    step_5: "Lead evaluates responses:"
+    step_5a: "  - Strong defense → [IMPACT_VERIFIED]"
+    step_5b: "  - Weak defense but fixable → [VERIFICATION-QA] for specific gaps"
+    step_5c: "  - Fundamental flaw exposed → [IMPACT_REJECTED] with challenge evidence"
+
+  files_to_modify:
+    - path: .claude/CLAUDE.md
+      changes:
+        - section: "3. Role Protocol > Lead"
+          action: ADD_SUBSECTION
+          content: "Lead Devil's Advocate Protocol (LDAP) with challenge intensity matrix"
+        - section: "4. Communication Protocol"
+          action: ADD_ROWS
+          content: "[CHALLENGE] and [CHALLENGE-RESPONSE] message types"
+        - section: "[PERMANENT] Semantic Integrity Guard"
+          action: MODIFY
+          content: "Add LDAP to Lead Enforcement Duties"
+
+    - path: .claude/references/task-api-guideline.md
+      changes:
+        - section: "11. DIA Enforcement Protocol > DIAVP"
+          action: MODIFY
+          content: "Insert challenge step between RC check and IMPACT_VERIFIED"
+
+    - path: .claude/agents/researcher.md
+      changes:
+        - section: "Protocol"
+          action: ADD
+          content: "[CHALLENGE-RESPONSE] handling instructions"
+
+    - path: .claude/agents/architect.md
+      changes:
+        - section: "Protocol"
+          action: ADD
+          content: "[CHALLENGE-RESPONSE] handling (MAX intensity: 3Q + alternative)"
+
+    - path: .claude/agents/implementer.md
+      changes:
+        - section: "Protocol"
+          action: ADD
+          content: "[CHALLENGE-RESPONSE] handling (HIGH intensity: 2Q)"
+
+    - path: .claude/agents/tester.md
+      changes:
+        - section: "Protocol"
+          action: ADD
+          content: "[CHALLENGE-RESPONSE] handling (MEDIUM intensity: 1Q)"
+
+    - path: .claude/agents/integrator.md
+      changes:
+        - section: "Protocol"
+          action: ADD
+          content: "[CHALLENGE-RESPONSE] handling (HIGH intensity: 2Q)"
+
+# =============================================================================
+# SECTION 3: CH-002 — MEMORY MCP INTEGRATION
+# =============================================================================
+
+ch002_memory_mcp:
+  problem: |
+    Current agent memory system:
+    - memory: user field in agent .md files
+    - References ~/.claude/agent-memory/{role}/MEMORY.md
+    - File-based, unstructured markdown
+    - No entity/relation tracking
+    - No cross-session pattern detection
+
+  solution: |
+    Add @modelcontextprotocol/server-memory as shared MCP server.
+    Configure per-agent-type memory files for isolation.
+    Agents write learnings as entities+relations after each session.
+    Lead reads to detect cross-session patterns.
+
+  # ---------------------------------------------------------------------------
+  # MEMORY ARCHITECTURE
+  # ---------------------------------------------------------------------------
+  #
+  #   ┌─────────────────────────────────────────────────────┐
+  #   │              Memory MCP Server                       │
+  #   │         (Knowledge Graph — JSONL files)              │
+  #   │                                                      │
+  #   │   ┌──────────┐  ┌──────────┐  ┌──────────┐         │
+  #   │   │researcher│  │architect │  │implement │  ...     │
+  #   │   │.jsonl    │  │.jsonl    │  │.jsonl    │         │
+  #   │   └──────────┘  └──────────┘  └──────────┘         │
+  #   │                                                      │
+  #   │   Entities: design_patterns, anti_patterns,          │
+  #   │             recurring_issues, effective_strategies    │
+  #   │   Relations: caused_by, mitigated_by, similar_to    │
+  #   └─────────────────────────────────────────────────────┘
+  #          │ READ/WRITE              │ READ
+  #          ▼                         ▼
+  #   ┌──────────┐              ┌──────────┐
+  #   │ Teammate │              │   Lead   │
+  #   │ (session │              │ (cross-  │
+  #   │  end)    │              │  session │
+  #   │          │              │  pattern │
+  #   │ writes:  │              │  detect) │
+  #   │ lessons  │              │          │
+  #   │ learned  │              │          │
+  #   └──────────┘              └──────────┘
+  #
+  # ---------------------------------------------------------------------------
+
+  proper_use_cases:
+    - "Agent writes lessons learned after completing a phase"
+    - "Agent reads past lessons before starting new work"
+    - "Lead reads all agent memories for cross-session pattern detection"
+    - "Common anti-patterns accumulate across projects"
+    - "Effective strategies are preserved and reused"
+
+  improper_use_cases:
+    - "DIA state management (use L1/L2/L3 + SendMessage instead)"
+    - "Real-time inter-teammate communication (use SendMessage)"
+    - "Task tracking (use Task API via Lead)"
+
+  installation:
+    command: "claude mcp add memory -- npx -y @modelcontextprotocol/server-memory"
+    env:
+      MEMORY_FILE_PATH: "/home/palantir/.claude/agent-memory/shared-memory.jsonl"
+
+  files_to_modify:
+    - path: .claude.json
+      action: "claude mcp add (already handled via CLI)"
+
+    - path: .claude/agents/researcher.md
+      changes:
+        - section: "Memory"
+          action: MODIFY
+          content: "Add Memory MCP usage instructions for cross-session learning"
+
+    - path: .claude/agents/architect.md
+      changes:
+        - section: "Memory"
+          action: MODIFY
+          content: "Add Memory MCP usage instructions for design pattern tracking"
+
+    - path: .claude/agents/implementer.md
+      changes:
+        - section: "Memory"
+          action: MODIFY
+          content: "Add Memory MCP usage instructions for implementation lessons"
+
+    - path: .claude/agents/tester.md
+      changes:
+        - section: "Memory"
+          action: MODIFY
+          content: "Add Memory MCP usage instructions for test strategy learning"
+
+    - path: .claude/agents/integrator.md
+      changes:
+        - section: "Memory"
+          action: MODIFY
+          content: "Add Memory MCP usage instructions for integration issue tracking"
+
+    - path: .claude/agents/devils-advocate.md
+      changes:
+        - section: "Memory"
+          action: MODIFY
+          content: "Add Memory MCP usage for recurring flaw pattern tracking"
+
+# =============================================================================
+# SECTION 4: CH-003 — COW-CLI LEGACY REMOVAL
+# =============================================================================
+
+ch003_cow_cli_removal:
+  problem: |
+    cow/cow-cli/ was built with Claude Agent SDK (API-key-based).
+    Current architecture is Claude Max X20 CLI-native (Agent Teams).
+    Agent SDK wrapper is incompatible and unused.
+    9 stage agents defined but only 3 partially implemented.
+
+  solution: |
+    Remove cow/cow-cli/ directory entirely.
+    Preserve cow/ project root (requirements.txt, docs, images, outputs, .env.example).
+    If Mathpix pipeline needed in future, rebuild as Agent Teams native.
+
+  # ---------------------------------------------------------------------------
+  # BEFORE                              AFTER
+  # ---------------------------------------------------------------------------
+  #
+  #   cow/                              cow/
+  #   ├── cow-cli/       [DELETE]       ├── docs/
+  #   │   ├── cow-env/   (already gone) ├── images/
+  #   │   ├── cow_cli/   [DELETE]       ├── outputs/
+  #   │   ├── tests/     [DELETE]       ├── .env.example
+  #   │   └── ...        [DELETE]       ├── .gitignore
+  #   ├── docs/                         ├── requirements.txt
+  #   ├── images/                       └── sample.pdf
+  #   ├── outputs/
+  #   ├── .env.example
+  #   ├── requirements.txt
+  #   └── sample.pdf
+  #
+  # ---------------------------------------------------------------------------
+
+  files_to_delete:
+    - cow/cow-cli/          # entire directory
+    - cow/.agent/           # cow-specific agent outputs
+    - cow/blacklabel2_5_26.png  # duplicate (also in cow/images/)
+
+  files_to_preserve:
+    - cow/docs/
+    - cow/images/
+    - cow/outputs/
+    - cow/.env.example
+    - cow/.gitignore
+    - cow/.github/
+    - cow/requirements.txt
+    - cow/sample.pdf
+
+# =============================================================================
+# SECTION 5: CH-004 — MCP CONFIGURATION CLEANUP
+# =============================================================================
+
+ch004_mcp_cleanup:
+  completed_actions:
+    - "Removed legacy .mcp.json file"
+    - "Removed all node-path-based MCP servers"
+    - "Re-registered 4 servers via claude mcp add (npx unified)"
+
+  current_state:
+    servers:
+      - name: github-mcp-server
+        command: "npx -y @modelcontextprotocol/server-github"
+        status: registered
+      - name: tavily
+        command: "npx -y @tavily/mcp"
+        status: registered
+      - name: context7
+        command: "npx -y @upstash/context7-mcp"
+        status: registered
+      - name: sequential-thinking
+        command: "npx -y @modelcontextprotocol/server-sequential-thinking"
+        status: registered
+
+  pending_addition:
+    - name: memory
+      command: "npx -y @modelcontextprotocol/server-memory"
+      env: { MEMORY_FILE_PATH: "/home/palantir/.claude/agent-memory/shared-memory.jsonl" }
+      blocked_by: CH-002
+
+  deferred:
+    - name: playwright
+      command: "npx -y @playwright/mcp@latest"
+      reason: "Not needed until browser automation workflow required"
+
+  files_to_delete:
+    - .mcp.json   # already deleted in session
+
+# =============================================================================
+# SECTION 6: CH-005 — POST-CLEANUP GIT COMMIT
+# =============================================================================
+
+ch005_git_commit:
+  description: |
+    Commit all infrastructure changes from this session.
+    This is a continuation of the shallow-clone fresh start.
+
+  changes_to_commit:
+    - ".claude.json (MCP servers migrated to npx)"
+    - ".mcp.json deleted"
+    - "cow/cow-cli/ deleted (if CH-003 approved)"
+    - "CLAUDE.md v3.0 (if CH-001 approved)"
+    - "task-api-guideline.md updated (if CH-001 approved)"
+    - "Agent .md files updated (if CH-001/CH-002 approved)"
+    - "Memory MCP configured (if CH-002 approved)"
+
+  commit_message: |
+    feat: Agent Teams v3.0 — Shift-Left enhancement with LDAP
+
+    - Add Lead Devil's Advocate Protocol (LDAP) for active challenge during DIA
+    - Add Memory MCP for agent cross-session learning
+    - Remove cow-cli Agent SDK legacy (incompatible with CLI-native)
+    - Unify all MCP servers to npx-based (claude mcp add)
+    - Delete .mcp.json in favor of .claude.json managed config
+
+# =============================================================================
+# SECTION 7: VERSION UPGRADE SUMMARY
+# =============================================================================
+
+version_comparison:
+  # ---------------------------------------------------------------------------
+  #
+  #   v2.0 (Current)                    v3.0 (Proposed)
+  #   ─────────────────                 ─────────────────
+  #   Lead = Passive Scorer             Lead = Active Challenger (LDAP)
+  #   RC checklist only                 RC checklist + [CHALLENGE] questions
+  #   Static verification               Dynamic adversarial verification
+  #   Flat intensity (all phases same)  Shift-Left intensity scaling
+  #   No agent memory persistence       Memory MCP Knowledge Graph
+  #   Agent SDK wrapper in codebase     Agent SDK legacy removed
+  #   .mcp.json + .claude.json mixed    .claude.json only (npx unified)
+  #
+  #   Shift-Left Effort Distribution:
+  #
+  #   v2.0: ████████████████░░░░░░░░░░  P1-5: 70%  P6-8: 30%
+  #   v3.0: ██████████████████████░░░░  P1-5: 80%+ P6-8: <20%
+  #                                      ▲
+  #                                      LDAP adds challenge overhead
+  #                                      in PRE-EXEC, reducing EXEC rework
+  #
+  # ---------------------------------------------------------------------------
+
+  v2_to_v3:
+    - aspect: "Lead verification behavior"
+      v2: "Passive RC checklist scoring"
+      v3: "Active adversarial challenging (LDAP)"
+
+    - aspect: "Challenge intensity"
+      v2: "Flat — same for all phases"
+      v3: "Shift-Left scaled — MAX in P3/P4, HIGH in P6/P8, MED in P2/P7"
+
+    - aspect: "Agent memory"
+      v2: "File-based MEMORY.md (unstructured)"
+      v3: "Memory MCP Knowledge Graph (entities + relations)"
+
+    - aspect: "MCP configuration"
+      v2: ".mcp.json + .claude.json (mixed, node-path-based)"
+      v3: ".claude.json only (npx unified via claude mcp add)"
+
+    - aspect: "cow-cli"
+      v2: "Agent SDK wrapper present (unused, incompatible)"
+      v3: "Removed. Source preserved in cow/"
+
+# =============================================================================
+# SECTION 8: RISK ASSESSMENT
+# =============================================================================
+
+risks:
+  - id: RISK-001
+    description: "LDAP challenge overhead may slow down pipeline velocity"
+    severity: MEDIUM
+    mitigation: |
+      Challenge count is bounded (1-3 per phase).
+      Shift-Left philosophy: slower PRE-EXEC → faster EXEC.
+      Net velocity expected to improve due to fewer rework cycles.
+
+  - id: RISK-002
+    description: "Memory MCP concurrent write safety for multi-agent"
+    severity: LOW
+    mitigation: |
+      Memory writes happen at session END (not during execution).
+      Per-agent-type JSONL isolation prevents concurrent conflicts.
+      Shared file only for Lead read access.
+
+  - id: RISK-003
+    description: "cow-cli removal loses Mathpix pipeline code"
+    severity: LOW
+    mitigation: |
+      Code preserved in git history (GitHub shallow clone has 1 commit,
+      but full history was on GitHub before force push).
+      cow/ project root (docs, images, outputs) preserved.
+      Rebuild as Agent Teams native if needed.
+
+  - id: RISK-004
+    description: "LDAP may create adversarial tension with teammates"
+    severity: LOW
+    mitigation: |
+      Challenges are evidence-based, not confrontational.
+      Purpose is quality improvement, not blame.
+      Teammate agents are designed to handle structured questioning.
+
+# =============================================================================
+# SECTION 9: IMPLEMENTATION ORDER
+# =============================================================================
+
+implementation_order:
+  # ---------------------------------------------------------------------------
+  #
+  #   Dependency Graph:
+  #
+  #   CH-004 (MCP cleanup)  ──┐
+  #                            ├──> CH-005 (Git commit)
+  #   CH-003 (cow-cli del)  ──┤
+  #                            │
+  #   CH-001 (LDAP)         ──┤
+  #                            │
+  #   CH-002 (Memory MCP)   ──┘
+  #
+  #   Execution Order:
+  #   1. CH-003 → cow-cli deletion
+  #   2. CH-001 → LDAP protocol (CLAUDE.md, guideline, agents)
+  #   3. CH-002 → Memory MCP (install + agent updates)
+  #   4. CH-004 → already done (verify only)
+  #   5. CH-005 → final commit
+  #
+  # ---------------------------------------------------------------------------
+
+  steps:
+    - order: 1
+      change: CH-003
+      description: "Delete cow/cow-cli/ and cow/.agent/"
+      estimated_files: 3
+
+    - order: 2
+      change: CH-001
+      description: "Implement LDAP in CLAUDE.md, task-api-guideline.md, 5 agent files"
+      estimated_files: 7
+
+    - order: 3
+      change: CH-002
+      description: "Install Memory MCP, update 6 agent files"
+      estimated_files: 7
+
+    - order: 4
+      change: CH-004
+      description: "Verify MCP config (already migrated)"
+      estimated_files: 0
+
+    - order: 5
+      change: CH-005
+      description: "Stage all changes, commit, push"
+      estimated_files: 0

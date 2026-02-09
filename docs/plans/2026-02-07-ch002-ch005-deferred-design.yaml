@@ -1,0 +1,105 @@
+# =============================================================================
+# CH-002~CH-005: Deferred Changes — Design Document
+# =============================================================================
+# Date: 2026-02-07
+# Author: Lead (Opus 4.6)
+# Status: ON HOLD — Pending CH-001 approval and implementation
+# Format: Machine-Readable-English-Only (YAML)
+# Parent: DESIGN-2026-02-07-v3 (Agent Teams Infrastructure v3.0)
+# Note: Extracted from original unified design file. Content unchanged.
+# =============================================================================
+
+metadata:
+  design_id: "CH-002-005-DEFERRED"
+  version: "1.0"
+  status: ON_HOLD
+  blocked_by: "CH-001 approval"
+  original_file: "docs/plans/2026-02-07-infra-v3-shift-left-design.yaml"
+
+# =============================================================================
+# CH-002: Memory MCP Integration for Agent Cross-Session Learning
+# =============================================================================
+
+ch002_memory_mcp:
+  priority: MEDIUM
+  scope: ".claude.json, agent .md files, .claude/settings.json"
+  problem: |
+    Current agent memory system:
+    - memory: user field in agent .md files
+    - References ~/.claude/agent-memory/{role}/MEMORY.md
+    - File-based, unstructured markdown
+    - No entity/relation tracking
+    - No cross-session pattern detection
+
+  solution: |
+    Add @modelcontextprotocol/server-memory as shared MCP server.
+    Configure per-agent-type memory files for isolation.
+    Agents write learnings as entities+relations after each session.
+    Lead reads to detect cross-session patterns.
+    NOT for DIA state (transient). FOR long-term pattern learning (persistent).
+
+  installation:
+    command: "claude mcp add memory -- npx -y @modelcontextprotocol/server-memory"
+    env:
+      MEMORY_FILE_PATH: "/home/palantir/.claude/agent-memory/shared-memory.jsonl"
+
+  files_to_modify:
+    - ".claude.json (via claude mcp add)"
+    - ".claude/agents/researcher.md (Memory section)"
+    - ".claude/agents/architect.md (Memory section)"
+    - ".claude/agents/implementer.md (Memory section)"
+    - ".claude/agents/tester.md (Memory section)"
+    - ".claude/agents/integrator.md (Memory section)"
+    - ".claude/agents/devils-advocate.md (Memory section)"
+
+# =============================================================================
+# CH-003: cow-cli Legacy Removal
+# =============================================================================
+
+ch003_cow_cli_removal:
+  priority: LOW
+  scope: "cow/cow-cli/, cow/.agent/"
+  problem: |
+    cow/cow-cli/ was built with Claude Agent SDK (API-key-based).
+    Current architecture is Claude Max X20 CLI-native (Agent Teams).
+    Agent SDK wrapper is incompatible and unused.
+
+  solution: |
+    Remove cow/cow-cli/ directory entirely.
+    Remove cow/.agent/ directory.
+    Remove cow/blacklabel2_5_26.png (duplicate).
+    Preserve cow/ project root (docs, images, outputs, .env.example).
+
+  files_to_delete:
+    - "cow/cow-cli/"
+    - "cow/.agent/"
+    - "cow/blacklabel2_5_26.png"
+
+# =============================================================================
+# CH-004: MCP Configuration Cleanup (ALREADY COMPLETED)
+# =============================================================================
+
+ch004_mcp_cleanup:
+  priority: HIGH
+  status: COMPLETED
+  completed_actions:
+    - "Removed legacy .mcp.json file"
+    - "Removed all node-path-based MCP servers"
+    - "Re-registered 4 servers via claude mcp add (npx unified)"
+
+  pending:
+    - name: "Remove stale global-level tavily entry in .claude.json mcpServers"
+      note: "Root-level mcpServers still has old node-path-based tavily"
+
+# =============================================================================
+# CH-005: Post-Cleanup Git Commit
+# =============================================================================
+
+ch005_git_commit:
+  priority: HIGH
+  description: |
+    Commit all infrastructure changes from this session.
+    Scope depends on which CHs are approved and implemented.
+
+  commit_message_template: |
+    feat: Agent Teams v3.0 — {approved changes summary}

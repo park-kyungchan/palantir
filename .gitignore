@@ -97,6 +97,9 @@ kc-palantir-*.json:Zone.Identifier
 .claude/plugins/marketplaces/
 .claude/cache/
 .claude/plans/
+.claude/debug/
+.claude/projects/
+.claude/teams/
 
 # Cow runtime cache
 .cow/cache/
