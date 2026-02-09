@@ -1,0 +1,28 @@
+---
+phase: 6
+role: implementer-batch2
+task: "Enrich ontology_4, ontology_5, ontology_6 with palantir/docs/ content"
+gc_version: GC-v7
+status: complete
+---
+
+files:
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_4.md
+    description: "Data Pipeline Layer — enriched with streaming pipelines, incremental config, MDO, code patterns, data connection"
+    status: complete
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_5.md
+    description: "ObjectSet — enriched with searchAround patterns, groupBy patterns, 3D aggregation, extended anti-patterns"
+    status: complete
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_6.md
+    description: "OSDK — enriched with 2025-2026 updates (TS v2, Python v2, Platform SDKs, Functions GA, MCP, dev tooling)"
+    status: complete
+
+decisions:
+  - "Streaming/incremental/MDO/code patterns/data connection added as new sections at end of ontology_4 (before Summary)"
+  - "searchAround/groupBy/3D aggregation added before existing anti-patterns in ontology_5 ObjectSet section"
+  - "OSDK 2025-2026 updates added as section 2.9 within existing OSDK component in ontology_6"
+  - "All additions source-attributed with > Source: lines"
+  - "Existing content preserved unchanged — no duplication introduced"
+unresolved: []

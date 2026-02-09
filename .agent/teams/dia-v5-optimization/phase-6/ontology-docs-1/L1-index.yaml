@@ -1,0 +1,36 @@
+agent: ontology-docs-1
+phase: 6
+task: "Upgrade Ontology.md to v2.0 with comprehensive Palantir Foundry coverage"
+status: COMPLETE
+gc_version: received-from-lead
+
+files_modified:
+  - path: "park-kyungchan/palantir/docs/Ontology.md"
+    change: "Full rewrite from v1.0 (1258 lines) to v2.0 (2213 lines)"
+    sections_added:
+      - "13: OSDK (Ontology SDK) — packages, capabilities, TS/Python examples"
+      - "14: Security & Governance — markings, organizations, RBAC, restricted views"
+      - "15: Data Pipeline & Transforms — datasets, transforms, funnel, data connection"
+      - "16: Application Platform — Workshop, Slate, Quiver, Notepad, Pipeline Builder"
+      - "17: AIP (Artificial Intelligence Platform) — agents, logic"
+      - "18: Marketplace — products, installation, entity remapping"
+    sections_updated:
+      - "6: Function — added TS v2, Python, Pipeline Builder function types + OSDK code examples"
+      - "12: Decision Matrix — added OSDK, Workshop, PipelineBuilder, AIP entries"
+      - "Appendix — enhanced SDK type support matrix, added component selection guide, OSDK quick reference"
+    structural_updates:
+      - "Component Reference Index — added platform category with 6 new components"
+      - "Version footer — updated to 2.0, February 2026, 18 sections"
+
+decisions:
+  - id: D-01
+    decision: "Keep all existing v1.0 content intact, only add and enhance"
+    rationale: "Additive approach preserves backwards compatibility for existing consumers"
+  - id: D-02
+    decision: "Include both TypeScript and Python code examples for OSDK operations"
+    rationale: "Lead directive specified both; two most common SDK languages"
+  - id: D-03
+    decision: "Add Code Pattern Identification Rules for all new sections"
+    rationale: "Consistency with v1.0 pattern; enables AI-assisted code mapping"
+
+unresolved_items: []

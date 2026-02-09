@@ -1,0 +1,26 @@
+task: "Enhance settings.json with PostToolUseFailure hook + once:true optimization"
+task_id: 5
+agent: implementer-5
+phase: 6
+status: COMPLETE
+
+files_modified:
+  - path: .claude/settings.json
+    changes:
+      - Added PostToolUseFailure hook (lines 115-127)
+      - Added "once: true" to SessionStart compact hook (line 83)
+      - Updated SubagentStart statusMessage to "Injecting team context to new agent"
+      - Updated SubagentStop statusMessage to "Validating agent output artifacts"
+      - Updated TeammateIdle statusMessage to "Checking teammate output completeness"
+      - Updated TaskCompleted statusMessage to "Validating task completion artifacts"
+
+files_created:
+  - path: .claude/hooks/on-tool-failure.sh
+    description: PostToolUseFailure hook script — logs tool failures to active team tool-failures.log
+    executable: true
+
+decisions:
+  - Hook script uses graceful exit (exit 0) when no active team directory found
+  - Log format matches existing hook conventions (timestamp + structured fields)
+
+unresolved: []

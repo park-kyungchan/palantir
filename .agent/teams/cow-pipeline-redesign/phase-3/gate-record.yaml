@@ -1,0 +1,30 @@
+phase: 3
+result: APPROVED
+date: 2026-02-09
+feature: cow-pipeline-redesign
+
+architect: architect-1
+artifacts:
+  L1: .agent/teams/cow-pipeline-redesign/phase-3/architect-1/L1-index.yaml
+  L2: .agent/teams/cow-pipeline-redesign/phase-3/architect-1/L2-summary.md
+  L3: .agent/teams/cow-pipeline-redesign/phase-3/architect-1/L3-full/architecture-design.md
+
+criteria:
+  G3-1: PASS  # L1/L2/L3 artifacts exist and complete
+  G3-2: PASS  # Architecture satisfies Scope (6-stage pipeline, MCP Server, all R1-R10)
+  G3-3: PASS  # Phase 2 research findings reflected (all 3 reports incorporated)
+  G3-4: PASS  # Component interfaces clearly defined (6 stage transition contracts)
+  G3-5: PASS  # Phase 4 entry requirements specified
+  G3-6: PASS  # No unresolved HIGH+ architectural risks
+  G3-7: PASS  # 9 decisions documented with rationale (D-1 through D-9)
+
+architecture_decisions:
+  D-1: "MCP Server-centric architecture"
+  D-2: "6-stage pipeline (INGEST→OCR→VISION→VERIFY→COMPOSE→EXPORT)"
+  D-3: "Gemini 3.0 Pro for bbox detection"
+  D-4: "VERIFY/COMPOSE as Claude native reasoning (no MCP tool)"
+  D-5: "XeLaTeX + kotex primary, Mathpix converter backup"
+  D-6: "Dual OCR verification (auto + HITL)"
+  D-7: "Reuse separator.py bbox logic"
+  D-8: "No Anthropic API dependency"
+  D-9: "~/.claude/ INFRA optimization required"

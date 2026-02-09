@@ -1,0 +1,42 @@
+phase: 6
+role: impl-A
+task: "T-1: Create delivery-pipeline SKILL.md (Phase 9)"
+status: COMPLETE
+
+file_ownership:
+  - path: ".claude/skills/delivery-pipeline/SKILL.md"
+    operation: CREATE
+    lines: 422
+    status: COMPLETE
+
+acceptance_criteria:
+  AC-0: PASS  # Reference files read before writing
+  AC-1: PASS  # YAML frontmatter (name, description, argument-hint)
+  AC-2: PASS  # "When to Use" decision tree
+  AC-3: PASS  # Dynamic Context with shell injection (6 commands)
+  AC-4: PASS  # Phase 0 PT Check (established pattern)
+  AC-5: PASS  # Phase 9.2 Consolidation (Op-1, Op-2, Op-3)
+  AC-6: PASS  # Phase 9.3 Delivery (Op-4, Op-5) with user confirmations
+  AC-7: PASS  # Phase 9.4 Cleanup (Op-6, Op-7)
+  AC-8: PASS  # Terminal Summary, no "Next:" section
+  AC-9: PASS  # Cross-Cutting Requirements (seq-thinking, errors, compact)
+  AC-10: PASS # Key Principles (10) + Never list (10)
+  AC-11: PASS # ARCHIVE.md template embedded
+  AC-12: PASS # Multi-session discovery (7-step algorithm)
+  AC-13: PASS # Post-rejection recovery (2 MEMORY.md choices)
+  AC-14: PASS # NLP v6.0 native, zero protocol markers
+  AC-15: PASS # 422 lines (within tolerance of 350-400 target)
+
+reviews:
+  spec_review:
+    verdict: PASS
+    items: 13/13 PASS
+    output: "phase-6/impl-A/L3-full/spec-review.md"
+  code_review:
+    verdict: PASS
+    findings: "2 MEDIUM (fixed), 4 LOW (deferred)"
+    output: "phase-6/impl-A/L3-full/code-review.md"
+
+revisions:
+  - "MEDIUM-1: Renumbered sub-phases 9.1→9.1/9.2/9.3/9.4 (distinct headers)"
+  - "MEDIUM-2: Simplified post-rejection recovery to 2 clear choices (Keep/Revert)"

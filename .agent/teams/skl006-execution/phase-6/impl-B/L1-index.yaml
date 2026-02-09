@@ -1,0 +1,73 @@
+# L1 Index — impl-B (RSIL Infrastructure)
+# Status: ALL 4 TASKS COMPLETE — pending two-stage review
+
+session: skl006-execution
+phase: 6
+role: impl-B
+tasks_completed: [T-2, T-3, T-4, T-5]
+
+changes:
+  # T-2: Hook Reduction (8→3)
+  - file: .claude/settings.json
+    operation: MODIFY
+    description: Removed 5 hook entries (SubagentStop, PostToolUse, TeammateIdle, TaskCompleted, PostToolUseFailure). 3 remain (SubagentStart, PreCompact, SessionStart). Also updated SessionStart statusMessage to remove "DIA" prefix.
+  - file: .claude/hooks/on-subagent-stop.sh
+    operation: DELETE
+  - file: .claude/hooks/on-teammate-idle.sh
+    operation: DELETE
+  - file: .claude/hooks/on-task-completed.sh
+    operation: DELETE
+  - file: .claude/hooks/on-task-update.sh
+    operation: DELETE
+  - file: .claude/hooks/on-tool-failure.sh
+    operation: DELETE
+
+  # T-3: Hook NLP Conversion + H-2
+  - file: .claude/hooks/on-session-compact.sh
+    operation: MODIFY
+    description: Replaced [DIA-RECOVERY], [DIRECTIVE]+[INJECTION], [STATUS] markers with NL. Updated comment and log message.
+  - file: .claude/hooks/on-subagent-start.sh
+    operation: MODIFY
+    description: Removed [DIA-HOOK] prefix from 3 additionalContext strings.
+  - file: .claude/hooks/on-pre-compact.sh
+    operation: MODIFY
+    description: H-2 mitigation — added non-blocking L1/L2 WARNING scan before compaction. Updated comment to remove "DIA" reference.
+
+  # T-4: NL-MIGRATE + H-1
+  - file: .claude/agents/implementer.md
+    operation: MODIFY
+    description: Added L1/L2/L3 proactive save reminder to Constraints section.
+  - file: .claude/agents/integrator.md
+    operation: MODIFY
+    description: Added L1/L2/L3 proactive save reminder to Constraints section.
+  - file: .claude/agents/architect.md
+    operation: MODIFY
+    description: Added L1/L2/L3 proactive save reminder to Constraints section.
+  - file: .claude/agents/tester.md
+    operation: MODIFY
+    description: Added L1/L2/L3 proactive save reminder to Constraints section.
+  - file: .claude/agents/researcher.md
+    operation: MODIFY
+    description: Added L1/L2/L3 proactive save reminder to Constraints section.
+  - file: .claude/agents/devils-advocate.md
+    operation: MODIFY
+    description: Added L1/L2/L3 proactive save reminder to Constraints section.
+  - file: .claude/CLAUDE.md
+    operation: MODIFY
+    description: "H-1 mitigation — line 160: 'Hooks verify L1/L2 file existence automatically.' → NL reinforcement description. Line 172: 'automated enforcement' → 'session lifecycle support'."
+
+  # T-5: Agent MEMORY Templates
+  - file: .claude/agent-memory/tester/MEMORY.md
+    operation: CREATE
+    description: Template with Patterns Learned, Common Mistakes, Effective Strategies sections.
+  - file: .claude/agent-memory/integrator/MEMORY.md
+    operation: CREATE
+    description: Template with Patterns Learned, Common Mistakes, Effective Strategies sections.
+
+validation:
+  settings_json_valid: true
+  hook_count: 3
+  protocol_markers_remaining: 0
+  agent_md_reminder_count: 6
+  memory_templates_created: 2
+  existing_memories_untouched: true

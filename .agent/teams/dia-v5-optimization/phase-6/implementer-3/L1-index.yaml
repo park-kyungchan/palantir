@@ -1,0 +1,43 @@
+phase: 6
+role: implementer-3
+task: "Update 3 SKILL.md files (BUG-001 spawn fix) + optimize 7 hook scripts"
+status: COMPLETE
+date: 2026-02-08
+
+files_modified:
+  skills:
+    - path: .claude/skills/brainstorming-pipeline/SKILL.md
+      changes:
+        - "researcher spawn mode: plan → default (BUG-001)"
+        - "architect spawn mode: plan → default (BUG-001)"
+    - path: .claude/skills/agent-teams-write-plan/SKILL.md
+      changes:
+        - "architect spawn mode: plan → default (BUG-001)"
+    - path: .claude/skills/agent-teams-execution-plan/SKILL.md
+      changes: "NONE — implementer mode: plan kept (Two-Gate System correct)"
+
+  hooks:
+    - path: .claude/hooks/on-subagent-start.sh
+      changes: "find command → ls -t glob for team config lookup"
+    - path: .claude/hooks/on-subagent-stop.sh
+      changes: "Added L1/L2 output validation + JSON hookSpecificOutput"
+    - path: .claude/hooks/on-teammate-idle.sh
+      changes: "find → ls glob for L1/L2 lookup"
+    - path: .claude/hooks/on-task-completed.sh
+      changes: "find → ls glob for L1/L2 lookup"
+    - path: .claude/hooks/on-pre-compact.sh
+      changes: "find → ls -d for task dir, jq guard early-exit"
+    - path: .claude/hooks/on-session-compact.sh
+      changes: "Plain text → JSON additionalContext output + jq fallback"
+    - path: .claude/hooks/on-task-update.sh
+      changes: "Added subject/owner parsing + JSON hookSpecificOutput"
+
+verification:
+  bug001_grep: "mode: plan only in execution-plan (implementer) — CORRECT"
+  find_grep: "Zero find commands remaining in all hooks — CORRECT"
+
+acceptance_criteria:
+  AC-4: PASS  # All SKILL.md spawn examples use correct mode per BUG-001
+  AC-6: PASS  # All hooks use direct paths instead of find
+  AC-7: PASS  # on-session-compact.sh outputs JSON additionalContext
+  AC-10: PASS # All existing functionality preserved

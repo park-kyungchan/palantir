@@ -1,0 +1,85 @@
+tasks:
+  - id: T2
+    subject: "MODIFY CLAUDE.md — NLP v6.0 conversion + C-2.2 fixes"
+    status: COMPLETE
+    file: .claude/CLAUDE.md
+    action: FULL_REPLACEMENT
+    lines_before: 207
+    lines_after: 172
+
+  - id: T8
+    subject: "MODIFY on-subagent-start.sh — GC→PT injection conversion"
+    status: COMPLETE
+    file: .claude/hooks/on-subagent-start.sh
+    action: MODIFY
+    lines_before: 51
+    lines_after: 67
+
+  - id: T12
+    subject: "MODIFY implementer.md + tester.md + integrator.md — NLP v2.0"
+    status: COMPLETE
+    files:
+      - path: .claude/agents/implementer.md
+        action: BODY_REPLACEMENT
+        lines_before: 115
+        lines_after: 80
+        yaml_preserved: true
+      - path: .claude/agents/tester.md
+        action: BODY_REPLACEMENT
+        lines_before: 91
+        lines_after: 77
+        yaml_preserved: true
+      - path: .claude/agents/integrator.md
+        action: BODY_REPLACEMENT
+        lines_before: 117
+        lines_after: 81
+        yaml_preserved: true
+    verification:
+      - "agent-common-protocol.md reference: present in all 3"
+      - "PERMANENT Task/TaskGet: present in all 3"
+      - "Impact Map references: present in all 3"
+      - "Section structure: 6-7 sections each (base 6 + role-specific extras)"
+      - "YAML frontmatter: unchanged in all 3"
+
+  - id: T6
+    subject: "MODIFY agent-teams-write-plan/SKILL.md — add Phase 0 + NLP terminology"
+    status: COMPLETE
+    file: .claude/skills/agent-teams-write-plan/SKILL.md
+    action: FULL_REPLACEMENT
+    lines_before: 275
+    lines_after: 316
+    changes:
+      - "Phase 0: PERMANENT Task Check section added (lines 45-75)"
+      - "NLP terminology: TIER/LDAP/DIA markers → natural language + CLAUDE.md §6/§10 refs"
+      - "DIA Flow → Understanding Verification (natural language)"
+      - "PT-ID added as first context layer in Directive Construction"
+      - "Gate 4 On APPROVE: PT update step added"
+      - "Clean Termination: PT artifacts in output summary"
+      - "Compact Recovery: TaskGet PT self-recovery for architect"
+    verification:
+      - "PERMANENT Task/TaskGet/Impact Map: 14 references across key sections"
+      - "sequential-thinking: 8 references (preserved)"
+      - "Legacy TIER/LDAP/DIAVP markers: 0 (fully removed)"
+      - "Phase 0 pattern matches brainstorming-pipeline exactly"
+
+  - id: T9
+    subject: "MODIFY MEMORY.md — update infrastructure state to v6.0"
+    status: COMPLETE
+    file: .claude/projects/-home-palantir/memory/MEMORY.md
+    action: INCREMENTAL_EDIT
+    lines_before: 80
+    lines_after: 82
+    sections_updated:
+      - "Next Session Action: RSI Loop progress + NLP v6.0 context"
+      - "Current Infrastructure State: v5.1 → v6.0 with verified line counts"
+      - "Skill Pipeline Status: NLP v6.0 + Phase 0 status, /permanent-tasks added"
+    sections_preserved:
+      - "Language Policy [PERMANENT]"
+      - "Skill Optimization Process [PERMANENT]"
+      - "User Visibility [PERMANENT]"
+      - "BUG-001, BUG-002"
+      - "Deferred Work"
+      - "Topic Files Index"
+
+phase: 6
+teammate: implementer-2

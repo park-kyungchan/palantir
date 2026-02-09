@@ -1,0 +1,70 @@
+---
+task: RTDI-010 Integration — Palantir Ontology Documentation
+phase: 6
+role: implementer-integrator
+gc_version: GC-v7
+status: IN_PROGRESS
+checkpoint: step-2-enriching-files
+progress: 20%
+source_reading: COMPLETE
+enrichment_plan: |
+  ontology_1: +UI Metadata (titleProp, icon, visibility, status lifecycle, render hints) from Ontology.md S1
+  ontology_2: +LinkType enhancements from Ontology.md S3, Interface from S4 (mostly covered already)
+  ontology_3: +ActionType enhancements from Ontology.md S5 (transaction semantics, value sources)
+  ontology_4: +Streaming pipelines, incremental patterns, MDO from Ontology.md S15
+  ontology_5: +searchAround traversal, groupBy patterns, 3D aggregations from Ontology.md S7
+  ontology_6: +OSDK 2025-2026 updates, batch ops, error handling, Java SDK from OSDK_Reference.md
+  ontology_7: CREATE — Function (S6), Automation (S8), Rules Engine (S9), Writeback (S10), Versioning (S11), AIP (S17)
+  ontology_8: CREATE — Security full: Markings, CBAC, Orgs, RBAC, Views, Audit, Compliance, Granular Policies
+  ontology_9: CREATE — Decomposition Guide (S20), Decision Matrix (S12), Platform (S16), Marketplace (S18), Edge (S19)
+
+files_owned:
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_1.md
+    action: ENRICH
+    status: pending
+    enrichment_source: Ontology.md Section 1 (UI Metadata), ObjectType_Reference.md
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_2.md
+    action: ENRICH
+    status: pending
+    enrichment_source: Ontology.md Sections 3-4
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_3.md
+    action: ENRICH
+    status: pending
+    enrichment_source: Ontology.md Section 5
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_4.md
+    action: ENRICH
+    status: pending
+    enrichment_source: Ontology.md pipeline sections if relevant
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_5.md
+    action: ENRICH
+    status: pending
+    enrichment_source: Ontology.md Section 7 (searchAround depth, groupBy, 3D aggregations)
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_6.md
+    action: ENRICH
+    status: pending
+    enrichment_source: OSDK_Reference.md (TS v2, Python, Java, Platform SDK, 2025-2026 updates)
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_7.md
+    action: CREATE
+    status: pending
+    content: Function, Automation, Rules Engine, AIP Logic
+    source: Ontology.md Sections 6, 8-19
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_8.md
+    action: CREATE
+    status: pending
+    content: Security & Governance
+    source: Security_and_Governance.md
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_9.md
+    action: CREATE
+    status: pending
+    content: Ontology Decomposition Guide
+    source: Ontology.md Section 20
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/gap-analysis.md
+    action: UPDATE
+    status: pending
+    content: Updated coverage matrix after all integration
+
+decisions:
+  - User added ontology_5.md and ontology_6.md — only 3 new files needed (7, 8, 9)
+  - Enrich existing 1-6 rather than rewrite
+
+unresolved: []

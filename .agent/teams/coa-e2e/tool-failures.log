@@ -1,0 +1,1 @@
+[2026-02-08 14:06:24] TOOL_FAILURE | agent=unknown | tool=Skill | error=Bash command failed for pattern "!`ls docs/plans/*-implementation.md 2>/dev/null; ls docs/plans/*-plan.md 2>/dev/null`": docs/plans/2026-02-07-ch001-ldap-implementation.md

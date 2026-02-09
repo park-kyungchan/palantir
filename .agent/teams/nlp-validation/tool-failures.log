@@ -1,0 +1,2 @@
+[2026-02-08 16:21:15] TOOL_FAILURE | agent=unknown | tool=Bash | error=Exit code 1
+cp: cannot create regular file '/home/palantir/.agent/teams/nlp-execution/global-context.md': No such file or directory

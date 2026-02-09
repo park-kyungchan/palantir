@@ -1,0 +1,51 @@
+---
+# L1 Index — implementer-1 (SKL-004 NLP v6.0 conversion)
+session: skl004-execution
+phase: 6
+role: implementer-1
+timestamp: "2026-02-08"
+
+files_modified:
+  - path: ".claude/skills/plan-validation-pipeline/SKILL.md"
+    before_lines: 347
+    after_lines: 382
+    changes:
+      - id: C-1
+        description: "Added Phase 0 (PERMANENT Task Check) before Phase 5.1"
+        lines_added: 32
+        pattern_source: "brainstorming-pipeline/SKILL.md lines 52-82, adapted for Phase 5"
+      - id: C-2
+        description: "Phase 5.3 NLP conversion — replaced TIER 0/LDAP/CIP markers with natural language"
+        edits: 3
+        targets: ["line 92 DIA exemption", "line 110 GC embedding", "lines 127-133 DIA Flow"]
+      - id: C-3
+        description: "Phase 5.4 status format — replaced [STATUS] protocol format with natural language"
+        edits: 1
+      - id: C-4
+        description: "Compact recovery NLP — replaced TIER 0 reference with natural language"
+        edits: 1
+      - id: C-5
+        description: "Key principles NLP — replaced DIA/Semantic Integrity Guard with natural reference"
+        edits: 1
+      - id: C-6
+        description: "CLAUDE.md v6.0 reference alignment — frontmatter v5.0+→v6.0+, removed DIA-exempt"
+        edits: 2
+      - id: C-7
+        description: "Directive PT integration — added PT-v{N} context layer and TaskGet instruction"
+        edits: 1
+
+verification:
+  protocol_markers: 0  # Grep TIER|LDAP|DIAVP|CIP|Semantic Integrity → 0 matches
+  phase_0_present: true
+  pt_in_directive: true
+  section_references_v6: true
+  functional_logic_preserved: true  # challenge categories, gate criteria, termination flow intact
+  total_edits: 10
+
+acceptance_criteria:
+  AC-0: PASS  # Line references verified before editing
+  AC-1: PASS  # 0 protocol marker matches
+  AC-2: PASS  # Phase 0 at line 45, before Phase 5.1 at line 78
+  AC-3: PASS  # PT-v{N} in directive construction (lines 143, 149)
+  AC-4: PASS  # CLAUDE.md §9 reference correct for v6.0
+  AC-5: PASS  # All functional logic preserved

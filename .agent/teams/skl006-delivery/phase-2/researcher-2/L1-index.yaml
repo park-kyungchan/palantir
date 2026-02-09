@@ -1,0 +1,115 @@
+research_area: "INFRA Pattern Analysis + Improvement Opportunities"
+researcher: researcher-2
+date: 2026-02-08
+
+infra_inventory:
+  total_files: 24
+  total_lines: 4845
+  categories:
+    claude_md: { files: 1, lines: 172 }
+    agents: { files: 6, lines: 442 }
+    skills: { files: 6, lines: 2549 }
+    hooks: { files: 8, lines: 362 }
+    references: { files: 2, lines: 620 }
+    settings: { files: 3, lines: 691 }
+    agent_memory: { files: 4, lines: ~200 }
+
+pattern_analysis:
+  consistent_patterns:
+    - YAML frontmatter in all agents (name, description, model, tools, disallowedTools)
+    - Phase 0 PT Check in all 5 pipeline skills (identical flow diagram)
+    - Clean Termination in all 5 pipeline skills (shutdown + TeamDelete + preserve)
+    - Cross-Cutting sections in all 5 pipeline skills (seq-thinking, error handling, compact recovery)
+    - Key Principles + Never sections in all 6 skills
+    - L1/L2/L3 output structure consistent across all agents and skills
+    - disallowedTools: [TaskCreate, TaskUpdate] in all 6 agents
+    - mode: "default" spawn pattern in all skills (BUG-001 workaround)
+  inconsistencies:
+    - task-api-guideline.md still uses protocol markers ([DIRECTIVE], [STATUS], [IMPACT-ANALYSIS], etc.) — 32+ occurrences vs NLP v6.0 standard
+    - on-session-compact.sh uses old protocol markers ([DIA-RECOVERY], [DIRECTIVE]+[INJECTION], [STATUS])
+    - on-subagent-start.sh uses [DIA-HOOK] prefix — legacy marker
+    - tester.md has Write+Edit tools but description says "Cannot modify existing source code" — Write tool listed (can create new test files), Edit tool absent (correct), but inconsistent with integrator/implementer patterns
+    - researcher.md lists Write tool but Agent Teams system definition does NOT include it — mismatch
+    - Agent maxTurns vary (researcher/architect/tester: 50, devils-advocate: 30, implementer/integrator: 100) — not documented why
+    - global-context.md still referenced in 24+ places across skills despite PERMANENT Task being the successor
+    - brainstorming-pipeline creates global-context.md (GC-v1→v3) as primary artifact — not yet migrated to PT-only
+  dry_violations:
+    - Phase 0 PT Check block: ~28 identical lines repeated in 5 skills
+    - Clean Termination pattern: ~15 lines repeated in 5 skills
+    - Cross-Cutting Sequential Thinking section: ~8 lines repeated in 5 skills
+    - Error Handling table: ~10 lines repeated in 5 skills (with minor variations)
+    - Compact Recovery section: ~3 lines repeated in 5 skills
+    - Dynamic Context shell commands: ~5 lines repeated across skills (infrastructure version, existing plans)
+    - Understanding Verification flow: ~8 lines repeated in brainstorming, write-plan, execution, verification
+
+improvement_opportunities:
+  high_priority:
+    - { file: task-api-guideline.md, desc: "530 lines with 32+ protocol markers — needs NLP v6.0 conversion + major restructure (§11 alone is 220 lines)", id: IMP-001 }
+    - { file: hooks/on-session-compact.sh, desc: "Uses old [DIA-RECOVERY], [DIRECTIVE]+[INJECTION] markers — NLP conversion needed", id: IMP-002 }
+    - { file: hooks/on-subagent-start.sh, desc: "Uses [DIA-HOOK] prefix — NLP conversion needed", id: IMP-003 }
+    - { file: CLAUDE.md, desc: "ARCHIVE.md referenced in §10 line 155 but never created/defined anywhere — dead reference", id: IMP-004 }
+    - { file: skills/*, desc: "Phase 0 PT Check duplicated across 5 skills (~140 lines total) — extract to shared reference", id: IMP-005 }
+    - { file: skills/brainstorming, desc: "Still creates global-context.md as primary artifact — should transition to PT-only", id: IMP-006 }
+  medium_priority:
+    - { file: agents/researcher.md, desc: "Write tool listed in frontmatter but researcher type definition doesn't include Write — verify intent", id: IMP-007 }
+    - { file: skills/*, desc: "Clean Termination + Cross-Cutting repeated in all skills — extract common patterns", id: IMP-008 }
+    - { file: task-api-guideline.md §11, desc: "DIAVP/LDAP sections are 220 lines of ceremony — skills already embed verification naturally", id: IMP-009 }
+    - { file: .agent/teams/, desc: "29+ pre-compact snapshot files accumulating — no cleanup mechanism", id: IMP-010 }
+    - { file: settings.json, desc: "Contains GitHub PAT and Tavily API key in plaintext — security concern", id: IMP-011 }
+  low_priority:
+    - { file: agents/*, desc: "maxTurns rationale undocumented — add comment or standardize", id: IMP-012 }
+    - { file: hooks/*, desc: "Duplicate jq availability check in every hook — could use shared preamble", id: IMP-013 }
+    - { file: .claude.json, desc: "536 lines mostly auto-generated stats — no cleanup needed but large", id: IMP-014 }
+
+phase_9_requirements:
+  inputs:
+    - PERMANENT Task (PT-v{final}) with all phase statuses COMPLETE
+    - Global Context (GC-v{final}) from verification-pipeline
+    - All L1/L2/L3 artifacts from phases 2-8
+    - orchestration-plan.md (session state)
+    - TEAM-MEMORY.md (session knowledge)
+    - Implementation plan (docs/plans/)
+    - Git working tree with all code changes
+  outputs:
+    - Git commit (or series of commits)
+    - PR (optional, user-driven)
+    - MEMORY.md update (project memory persistence)
+    - ARCHIVE.md (referenced but undefined — needs design)
+    - Session cleanup (team files, task list)
+    - User-facing summary
+  key_operations:
+    - PT content → MEMORY.md migration (selective persistence)
+    - Session artifact cleanup (.agent/teams/ directory)
+    - Git staging + commit (respecting git safety rules from CLAUDE.md §8)
+    - PR creation (optional, user-confirmed)
+    - Team Memory curation → archive
+    - Task list cleanup
+  existing_patterns:
+    - Clean Termination in each skill: shutdown teammates + TeamDelete + preserve artifacts
+    - CLAUDE.md §10 "Archive to MEMORY.md + ARCHIVE.md at work end"
+    - verification-pipeline outputs Phase 9 Entry Conditions
+    - /permanent-tasks handles PT Read-Merge-Write (could be used for final PT update)
+
+layer_2_readiness:
+  ready:
+    - Phase pipeline structure (9 phases) is domain-agnostic
+    - Agent type definitions are generic (researcher, architect, etc.)
+    - L1/L2/L3 output format is domain-agnostic
+    - PERMANENT Task template is extensible (sections can be added)
+    - Skill YAML frontmatter is standardized
+  needs_change:
+    - task-api-guideline.md references specific GAP-001~005 codes — should be generic
+    - Hook messages reference "GC" (global-context) which is Layer 1 specific
+    - Skills hardcode /home/palantir paths in Dynamic Context shell commands
+    - CLAUDE.md §1 workspace path is hardcoded
+    - Agent Memory paths hardcoded to ~/.claude/agent-memory/{role}/
+  blockers:
+    - No abstraction layer between skill orchestration and domain-specific logic
+    - Skills contain domain-specific gate criteria (e.g., CH-001 exemplar path in write-plan)
+
+gaps:
+  - ARCHIVE.md: referenced but never defined — what goes in it vs MEMORY.md?
+  - Phase 9 scope: is it commit-only or commit+PR+documentation?
+  - Session cleanup: which .agent/teams/ files to preserve vs delete?
+  - Pre-compact snapshot cleanup: 29+ files accumulating with no GC
+  - tester.md Write tool: intentional (create test files) or oversight?

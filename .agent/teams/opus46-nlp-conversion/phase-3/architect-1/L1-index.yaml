@@ -1,0 +1,146 @@
+# L1 Index — Opus 4.6 NLP Conversion Architecture
+# architect-1 | Phase 3 | GC-v2 | 2026-02-08
+
+deliverables:
+  - id: D1
+    name: "CLAUDE.md v6.0 Structure Specification"
+    status: complete
+    target_lines: 132
+    current_lines: 207
+    reduction: "36%"
+    sections: 11
+    key_changes:
+      - "[PERMANENT] 40 lines → §10 Integrity Principles 18 lines"
+      - "§4 Communication: 13-row table → 3-group description"
+      - "§6 consolidated from §6 + [PERMANENT] Lead duties"
+      - "§7 MCP: 9-row matrix → 3 bullets"
+    semantic_preservation: "28/28 behavioral requirements verified"
+
+  - id: D2
+    name: "agent-common-protocol.md v2.0"
+    status: complete
+    target_lines: 48
+    current_lines: 79
+    reduction: "39%"
+    key_changes:
+      - "Protocol markers → natural language"
+      - "Context Pressure + Auto-Compact → 2 concise sections"
+      - "Phase numbering removed"
+    semantic_preservation: "13/13 behaviors preserved"
+
+  - id: D3
+    name: "Agent .md Template Design"
+    status: complete
+    template_structure:
+      - "Role (who + why)"
+      - "Before Starting Work (understanding check)"
+      - "If Lead Asks Probing Questions (defense)"
+      - "How to Work (execution)"
+      - "Output Format (L1/L2/L3)"
+      - "Constraints (boundaries)"
+    reference_template: "implementer.md (68 lines)"
+    per_file_targets:
+      researcher: 48
+      architect: 55
+      devils_advocate: 48
+      implementer: 68
+      tester: 58
+      integrator: 68
+    total_agent_lines: 345
+    current_total: 561
+    reduction: "38%"
+
+  - id: D4
+    name: "DIA v6.0 Specification"
+    status: complete
+    key_changes:
+      - "DIAVP 4-tier → role-appropriate questions (1-3 per role)"
+      - "LDAP 5-level → 2-level (Standard/Deep)"
+      - "RC-01~RC-10 → removed, replaced by open-ended questions"
+      - "7 named categories → removed, organic questioning"
+      - "Protocol markers → natural conversation flow"
+    pass_criteria: "Genuine understanding of interconnections, failure modes, interface impact"
+    fail_criteria: "Surface rephrasing, generic answers, can't name specifics"
+
+architecture_decisions:
+  - id: AD-1
+    topic: "Deduplication strategy"
+    decision: "State once in authoritative location, reference elsewhere"
+    lines_saved: 22
+
+  - id: AD-2
+    topic: "[PERMANENT] transformation"
+    decision: "Replace with concise §10 Integrity Principles"
+    lines: "40 → 18"
+
+  - id: AD-3
+    topic: "Communication simplification"
+    decision: "13-row table → 3 flow-direction groups"
+
+  - id: AD-4
+    topic: "MCP tools simplification"
+    decision: "9-row phase matrix → 3 bullets"
+
+  - id: AD-5
+    topic: "DIA v6.0 open questions"
+    decision: "Checklists → role-appropriate open-ended questions"
+
+  - id: AD-6
+    topic: "Agent template standardization"
+    decision: "4-section structure: Role, Before Starting, How to Work, Constraints"
+
+risks:
+  - id: R-1
+    risk: "Semantic loss during conversion"
+    likelihood: medium
+    impact: critical
+    mitigation: "28/28 preservation checklist verified"
+
+  - id: R-2
+    risk: "Implementers deviate from design text"
+    likelihood: low
+    impact: high
+    mitigation: "Full rewritten text provided — minimal interpretation"
+
+  - id: R-3
+    risk: "DIA v6.0 too permissive"
+    likelihood: medium
+    impact: medium
+    mitigation: "Lead judgment + max attempts + re-spawn escalation"
+
+  - id: R-4
+    risk: "Agent file inconsistency after parallel impl"
+    likelihood: low
+    impact: medium
+    mitigation: "Template pattern + integrator verification"
+
+  - id: R-5
+    risk: "Line targets exceeded"
+    likelihood: low
+    impact: low
+    mitigation: "Targets approximate; semantic quality > line count"
+
+implementation_tasks:
+  - id: T1
+    files: ["CLAUDE.md"]
+    lines: 132
+    dependencies: []
+  - id: T2
+    files: ["agent-common-protocol.md"]
+    lines: 48
+    dependencies: []
+  - id: T3
+    files: ["researcher.md", "architect.md", "devils-advocate.md"]
+    lines: 151
+    dependencies: [T1, T2]
+  - id: T4
+    files: ["implementer.md", "tester.md", "integrator.md"]
+    lines: 194
+    dependencies: [T1, T2]
+
+line_count_summary:
+  current_total: 847
+  designed_total: 525
+  reduction_pct: 38
+  target_was: 535
+  verdict: "Exceeds target by 10 lines"

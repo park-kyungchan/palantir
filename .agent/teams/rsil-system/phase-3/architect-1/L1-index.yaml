@@ -1,0 +1,71 @@
+# L1 Index — RSIL System Architecture
+# architect-1 | Phase 3 | rsil-system | 2026-02-09
+
+components:
+  - id: C-1
+    name: "/rsil-global Complete Flow"
+    status: complete
+    summary: "G-0→G-4 flow: Observation Window (Three-Tier per work type A/B/C) → Tiered Reading + Lens Application → Discovery (Tier 3 rare) → Classification (AD-15 + BREAK escalation) → Record (tracker + memory)"
+
+  - id: C-2
+    name: "/rsil-review Refinement Delta"
+    status: complete
+    summary: "5 deltas: ultrathink (+0L), wc-l pre-check (+1L), agent memory R-0/R-4 (+8L), principles merge (-14L), output simplify (-5L). Net: -10L (561→~551)"
+
+  - id: C-3
+    name: "Shared Foundation Specification"
+    status: complete
+    summary: "8 Lenses + AD-15 + Boundary Test = identical embedded copy. Cross-ref: G-{N} ↔ P-R{N} via promoted_to/decomposed_to. Promotion at ≥3 reviews."
+
+  - id: C-4
+    name: "CLAUDE.md Integration"
+    status: complete
+    summary: "5-line NL discipline after §2 Phase Pipeline. Auto-invoke after Phase 9 or .claude/ commit. Skip: trivial edits, non-INFRA, read-only."
+
+  - id: C-5
+    name: "Agent Memory Schema"
+    status: complete
+    summary: "4-section: Config(8L) + Stats(18L) + Patterns(50-80L) + Evolution(10-30L). Seeded from 24 findings. Shared by both skills. Read via dynamic context, write via R-4/G-4."
+
+  - id: C-6
+    name: "Cumulative Data Flow"
+    status: complete
+    summary: "observation → findings → tracker → memory → next cycle. Trigger matrix: 7 events × 3 stores. Version via monotonic IDs + date counters."
+
+decisions:
+  - id: AD-6
+    decision: "Findings-only output (no auto-apply)"
+    rationale: "GC-v2 constraint; user always confirms"
+  - id: AD-7
+    decision: "Three-Tier per work type (adaptive sources, fixed budget)"
+    rationale: "Type B/C lack gate records; git diff substitutes"
+  - id: AD-8
+    decision: "BREAK escalation via AskUserQuestion"
+    rationale: "User present in auto-invoke context"
+  - id: AD-9
+    decision: "Tracker section isolation + ID namespacing"
+    rationale: "G-{N} vs P-R{N}; sequential consistency"
+  - id: AD-10
+    decision: "Shared Foundation = embedded copy"
+    rationale: "Stability; no external dependency; ~85L stable"
+  - id: AD-11
+    decision: "Single shared agent memory"
+    rationale: "Patterns are universal; separation fragments learning"
+
+risks:
+  - id: R-1
+    risk: "Tier 0 misclassification"
+    score: 3
+    mitigation: "Multiple signals + Type A fallback"
+  - id: R-2
+    risk: "Context budget overrun"
+    score: 4
+    mitigation: "Cap 3 L1 files"
+  - id: R-3
+    risk: "NL discipline non-compliance"
+    score: 4
+    mitigation: "CLAUDE.md + memory staleness"
+  - id: R-7
+    risk: "Global noise (low-value findings)"
+    score: 4
+    mitigation: "Tier gates + AD-15 + acceptance tracking"

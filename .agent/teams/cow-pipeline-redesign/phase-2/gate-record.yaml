@@ -1,0 +1,29 @@
+phase: 2
+result: APPROVED
+date: 2026-02-09
+feature: cow-pipeline-redesign
+
+researchers:
+  - id: researcher-1
+    topic: "Mathpix API v3 latest features and bbox capabilities"
+    output: cow/docs/research/mathpix-api-feasibility.md (690 lines)
+  - id: researcher-2
+    topic: "Claude Opus 4.6 vision capabilities and limitations"
+    output: cow/docs/research/claude-vision-feasibility.md (449 lines)
+  - id: researcher-3
+    topic: "Korean LaTeX PDF generation options"
+    output: cow/docs/research/pdf-generation-feasibility.md (848 lines)
+
+criteria:
+  G2-1: PASS  # All researcher L1/L2 artifacts exist (3 feasibility reports)
+  G2-2: PASS  # All research needs covered (OCR, Vision, PDF)
+  G2-3: PASS  # Sufficient information for Phase 3 architecture
+  G2-4: PASS  # Critical unknowns resolved (Claude bbox → Gemini, Korean PDF → XeLaTeX)
+  G2-5: PASS  # Report quality meets standard (690+449+848 = 1987 lines total)
+
+key_findings:
+  - "Claude bbox NOT FEASIBLE — Anthropic official limitation"
+  - "Gemini 3.0 Pro has native bbox support (mAP ~0.43)"
+  - "Mathpix cnt→region bbox conversion already implemented in separator.py"
+  - "XeLaTeX + kotex = gold standard for Korean math PDF"
+  - "Mathpix handwritten Korean = NOT SUPPORTED"

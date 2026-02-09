@@ -1,0 +1,79 @@
+---
+phase: 6
+agent: implementer-ontology-2
+status: AWAITING_IMPACT_VERIFICATION
+gc_version: GC-v4
+task: "Refine Palantir docs to Ontology decomposition reference quality"
+last_updated: "2026-02-08"
+
+files_to_modify:
+  - path: park-kyungchan/palantir/docs/Ontology.md
+    current_version: "3.0"
+    target_version: "4.0"
+    changes:
+      - type: ADD_SECTION
+        section: "20. Ontology Decomposition Guide"
+        description: "Step-by-step LLM-driven codebase → Ontology mapping methodology"
+        priority: 1
+      - type: ENHANCE
+        section: "Ontology Manager UI Metadata"
+        description: "Render hints, title key config, icon, search config"
+        priority: 3
+
+  - path: park-kyungchan/palantir/docs/Security_and_Governance.md
+    current_version: "2.0"
+    target_version: "3.0"
+    changes:
+      - type: ADD_SECTION
+        section: "Granular Policies"
+        description: "Property-level policies, column-level security, policy templates"
+        priority: 2
+
+  - path: park-kyungchan/palantir/docs/OSDK_Reference.md
+    current_version: "2.0"
+    target_version: "2.1"
+    changes:
+      - type: VERIFY_CURRENCY
+        description: "Check OSDK 2025-2026 updates via tavily/context7"
+        priority: 4
+      - type: UPDATE_CROSS_REFS
+        description: "Add references to new decomposition guide"
+        priority: 5
+
+  - path: park-kyungchan/palantir/docs/ObjectType_Reference.md
+    current_version: "1.0"
+    target_version: "1.1"
+    changes:
+      - type: UPDATE_CROSS_REFS
+        description: "Add references to decomposition guide"
+        priority: 5
+
+scope_correction_applied: true
+scope_correction_detail: "GC-v3/v4: Do NOT add content that already exists. searchAround, groupBy, 3D aggregations, AIP Logic, Funnel already documented."
+
+true_gaps:
+  - id: GAP-1
+    title: "Ontology Decomposition Guide"
+    priority: PRIMARY
+    target_file: Ontology.md
+  - id: GAP-2
+    title: "Granular Policies"
+    priority: SECONDARY
+    target_file: Security_and_Governance.md
+  - id: GAP-3
+    title: "Ontology Manager UI Metadata"
+    priority: TERTIARY
+    target_file: Ontology.md
+  - id: GAP-4
+    title: "OSDK 2025-2026 Currency"
+    priority: QUATERNARY
+    target_file: OSDK_Reference.md
+  - id: GAP-5
+    title: "Cross-reference Updates"
+    priority: FINAL
+    target_file: all
+
+completed_changes: []
+decisions: []
+unresolved:
+  - "Awaiting Lead [IMPACT_VERIFIED] before any mutations"

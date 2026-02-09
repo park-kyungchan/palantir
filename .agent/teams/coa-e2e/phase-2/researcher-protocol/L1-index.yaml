@@ -1,0 +1,81 @@
+# L1-index.yaml — researcher-protocol (COA-1~5)
+# Status: COMPLETE
+# Phase: 2 (Deep Research)
+# GC Version: GC-v1
+
+findings:
+  - id: F-001
+    topic: Inter-COA Topology
+    priority: critical
+    status: complete
+    target_doc: 00-coa-system-overview.md
+    action: ARCHITECT_INPUT
+    summary: "5 COAs form layered system: COA-2 (signal) → COA-1 (dashboard) → COA-3 (evidence) → COA-4 (framework) → COA-5 (check type)"
+
+  - id: F-002
+    topic: "COA-2: Self-Location Protocol"
+    priority: high
+    status: complete
+    target_doc: 01-coa-2-self-location-protocol.md
+    action: NEW_PROTOCOL
+    summary: "[SELF-LOCATE] format with 6 fields, 5 trigger types, per-role expectations. Foundational signal layer."
+
+  - id: F-003
+    topic: "COA-1: Sub-Workflow Tracking"
+    priority: high
+    status: complete
+    target_doc: 02-coa-1-sub-workflow-tracking.md
+    action: NEW_PROTOCOL
+    summary: "Sub-workflow table in orchestration-plan.md, 6 status types, feeds ASCII viz, enables anomaly detection."
+
+  - id: F-004
+    topic: "COA-3: Continuous Documentation"
+    priority: high
+    status: complete
+    target_doc: 03-coa-3-continuous-documentation.md
+    action: ENHANCE_EXISTING
+    summary: "6 checkpoint triggers replace vague 'proactively'. Docs status in [SELF-LOCATE]. Tied to COA-2."
+
+  - id: F-005
+    topic: "COA-4: Verification Continuity"
+    priority: high
+    status: complete
+    target_doc: 04-coa-4-verification-continuity.md
+    action: NEW_PROTOCOL
+    summary: "3-level re-verification (RV-1/2/3). 7 trigger conditions. Escalation path. Contains COA-5."
+
+  - id: F-006
+    topic: "COA-5: MCP Usage Verification"
+    priority: medium
+    status: complete
+    target_doc: 05-coa-5-mcp-usage-verification.md
+    action: ENHANCE_EXISTING
+    summary: "Specialized COA-4 check type. MCP field in [SELF-LOCATE]. Phase-based minimum expectations."
+
+  - id: F-007
+    topic: "E2E Scenario Walkthroughs"
+    priority: high
+    status: complete
+    target_doc: 06-e2e-scenarios.md
+    action: VALIDATION
+    summary: "6 scenarios: happy path, multi-impl, compact recovery, DIA rejection, scope change, skill chain."
+
+status: complete
+progress:
+  all_coa_specs: complete
+  scenarios_traced: 6
+  conflicts_found: 0
+  l3_files: 7
+
+unresolved: []
+
+decisions:
+  - id: D-R1
+    decision: "COA-2 is the foundational signal; all other COAs consume or are triggered by it"
+    rationale: "Single signal source prevents protocol fragmentation"
+  - id: D-R2
+    decision: "COA-5 is a check type within COA-4, not a standalone protocol"
+    rationale: "MCP verification is one dimension of mid-execution verification"
+  - id: D-R3
+    decision: "3 new format strings: [SELF-LOCATE], [REVERIFY], [REVERIFY-RESPONSE]"
+    rationale: "Minimal additions to §4 Communication Protocol"

@@ -1,0 +1,64 @@
+---
+role: implementer-ws1
+phase: 6
+workstream: WS-1 (Critical Safety Fixes)
+gc_version: GC-v1
+status: COMPLETE
+timestamp: 2026-02-08
+
+files_modified:
+  - path: .claude/settings.json
+    task: "A-1: Fix Bash deny syntax (colon → space)"
+    lines: 15-17
+    status: done
+    verification: "grep 'Bash(' confirms space syntax on all 3 rules"
+
+  - path: .claude/hooks/on-teammate-idle.sh
+    task: "A-2: Add jq availability guard (exit 2)"
+    lines: 8-11 (inserted)
+    status: done
+    verification: "jq guard between INPUT=$(cat) and first jq call"
+
+  - path: .claude/hooks/on-task-completed.sh
+    task: "A-2: Add jq availability guard (exit 2)"
+    lines: 8-11 (inserted)
+    status: done
+    verification: "jq guard between INPUT=$(cat) and first jq call"
+
+  - path: .claude/hooks/on-tool-failure.sh
+    task: "A-3: Remove set -euo pipefail + add jq fallback"
+    changes: "removed line 4 (set -euo pipefail), inserted jq fallback lines 11-15"
+    status: done
+    verification: "no set -euo pipefail; fallback logs raw_input_length; exit 0"
+
+  - path: .claude/hooks/on-pre-compact.sh
+    task: "A-4: Add stdin consumption"
+    lines: 5 (inserted INPUT=$(cat))
+    status: done
+    verification: "INPUT=$(cat) before TIMESTAMP and all other logic"
+
+  - path: .claude/hooks/on-subagent-start.sh
+    task: "C-3: Add jq graceful fallback (exit 0)"
+    lines: 8-10 (inserted)
+    status: done
+    verification: "jq guard after INPUT=$(cat), before first jq call"
+
+  - path: .claude/hooks/on-subagent-stop.sh
+    task: "C-3: Add jq graceful fallback (exit 0)"
+    lines: 8-10 (inserted)
+    status: done
+    verification: "jq guard after INPUT=$(cat), before first jq call"
+
+  - path: .claude/hooks/on-task-update.sh
+    task: "C-3: Add jq graceful fallback (exit 0)"
+    lines: 7-9 (inserted)
+    status: done
+    verification: "jq guard after INPUT=$(cat), before first jq call"
+
+decisions:
+  - "All jq guards placed AFTER INPUT=$(cat) to ensure stdin is consumed before any early exit"
+  - "Blocking hooks (TeammateIdle, TaskCompleted) use exit 2 + stderr message"
+  - "Non-blocking hooks (SubagentStart, SubagentStop, TaskUpdate) use exit 0 (graceful)"
+  - "tool-failure.sh fallback logs raw_input_length for minimal diagnostics without jq"
+
+unresolved: []

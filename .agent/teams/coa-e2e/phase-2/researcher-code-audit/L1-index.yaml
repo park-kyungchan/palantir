@@ -1,0 +1,60 @@
+# L1-index.yaml — researcher-code-audit (COA-6~7)
+# Status: COMPLETE
+# GC Version: GC-v1
+
+findings:
+  - id: COA-6-BUG001
+    topic: "BUG-001 → CLAUDE.md §6 SC-1"
+    priority: HIGH
+    status: complete
+    target_doc: ".claude/CLAUDE.md"
+    action: "Add SC-1 (Mode Override) to new §6 Spawn Constraints subsection"
+    summary: "Plan mode blocks MCP — add permanent constraint to authority file"
+
+  - id: COA-6-BUG002
+    topic: "BUG-002 — already in §6 Pre-Spawn Checklist"
+    priority: HIGH
+    status: verified-complete
+    target_doc: ".claude/CLAUDE.md"
+    action: "No change — S-2/S-3 coverage is complete"
+    summary: "Auto-compact prevention already fully covered by gates S-2 and S-3"
+
+  - id: COA-6-RTDI009
+    topic: "RTDI-009 → CLAUDE.md §6 SC-2"
+    priority: HIGH
+    status: complete
+    target_doc: ".claude/CLAUDE.md"
+    action: "Add SC-2 (Plan Mode Disabled) to new §6 Spawn Constraints subsection"
+    summary: "Plan mode permanently disabled — add as consequence of SC-1"
+
+  - id: COA-7-ISS001-START
+    topic: "SubagentStart hook fix (validated)"
+    priority: CRITICAL
+    status: fix-ready
+    target_doc: ".claude/hooks/on-subagent-start.sh"
+    action: "Replace with L3-full/COA-7-hook-fix-subagent-start.sh"
+    summary: "Use agent_id+agent_type, remove non-existent fields, filesystem GC heuristic"
+
+  - id: COA-7-ISS001-STOP
+    topic: "SubagentStop hook fix (validated)"
+    priority: CRITICAL
+    status: fix-ready
+    target_doc: ".claude/hooks/on-subagent-stop.sh"
+    action: "Replace with L3-full/COA-7-hook-fix-subagent-stop.sh"
+    summary: "Use agent_id+transcript_path, remove broken L1/L2 check"
+
+  - id: COA-7-ISS002
+    topic: "PostToolUseFailure hook fix (validated)"
+    priority: MEDIUM
+    status: fix-ready
+    target_doc: ".claude/hooks/on-tool-failure.sh"
+    action: "Replace with L3-full/COA-7-hook-fix-tool-failure.sh"
+    summary: "Remove set -euo pipefail and agent_name, add fallback logging"
+
+  - id: COA-7-WORKING-5
+    topic: "5 working hooks verified"
+    priority: LOW
+    status: verified-ok
+    target_doc: "5 hook scripts"
+    action: "No changes needed"
+    summary: "All use correct schema fields, no issues found"

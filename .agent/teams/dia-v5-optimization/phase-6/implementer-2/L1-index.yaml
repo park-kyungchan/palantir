@@ -1,0 +1,75 @@
+version: "1.0"
+phase: 6
+role: implementer-2
+task: "Rewrite 6 agent .md files with Opus 4.6 measured language + BUG-001 fix"
+status: COMPLETE
+
+files_modified:
+  - path: .claude/agents/researcher.md
+    changes:
+      - "BUG-001: permissionMode plan → default"
+      - "Removed all [MANDATORY], [PERMANENT], [FORBIDDEN] inline markers"
+      - "Natural phrasing: 'Do not' instead of ALL CAPS restrictions"
+      - "Kept protocol tags [IMPACT-ANALYSIS], [STATUS], [CHALLENGE] intact"
+    lines_before: 141
+    lines_after: 141
+
+  - path: .claude/agents/architect.md
+    changes:
+      - "BUG-001: permissionMode plan → default"
+      - "Removed all [MANDATORY], [PERMANENT], [FORBIDDEN] inline markers"
+      - "Natural phrasing throughout"
+    lines_before: 158
+    lines_after: 158
+
+  - path: .claude/agents/implementer.md
+    changes:
+      - "Removed all [MANDATORY], [PERMANENT], [FORBIDDEN] inline markers"
+      - "Natural phrasing: 'required' instead of bold MANDATORY"
+      - "permissionMode: acceptEdits (unchanged, correct)"
+    lines_before: 177
+    lines_after: 177
+
+  - path: .claude/agents/devils-advocate.md
+    changes:
+      - "Removed all [MANDATORY] from Phase 0 header"
+      - "Fixed duplicate numbering in Phase 1 Execution (was 2,2,3 → now 2,3,4)"
+      - "Natural phrasing throughout"
+      - "permissionMode: default (unchanged, correct)"
+    lines_before: 125
+    lines_after: 125
+
+  - path: .claude/agents/tester.md
+    changes:
+      - "Removed all [MANDATORY], [PERMANENT], [FORBIDDEN] inline markers"
+      - "Natural phrasing throughout"
+      - "permissionMode: default (unchanged, correct)"
+    lines_before: 152
+    lines_after: 152
+
+  - path: .claude/agents/integrator.md
+    changes:
+      - "Removed all [MANDATORY], [PERMANENT], [FORBIDDEN] inline markers"
+      - "Fixed duplicate numbering (was 5,5,6,8,9,10 → now 5,6,7,8,9,10)"
+      - "Natural phrasing: 'required' instead of bold MANDATORY"
+      - "permissionMode: acceptEdits (unchanged, correct)"
+    lines_before: 183
+    lines_after: 183
+
+acceptance_criteria:
+  AC-1_no_mandatory_inline: PASS
+  AC-3_bug001_fixed: PASS
+  AC-5_integrator_numbering: PASS
+  AC-8_cross_file_consistency: PASS
+  AC-10_functionality_preserved: PASS
+
+validation:
+  grep_MANDATORY_count: 0
+  grep_FORBIDDEN_count: 0
+  grep_PERMANENT_count: 0
+  researcher_permissionMode: default
+  architect_permissionMode: default
+  implementer_permissionMode: acceptEdits
+  integrator_permissionMode: acceptEdits
+  tester_permissionMode: default
+  devils_advocate_permissionMode: default

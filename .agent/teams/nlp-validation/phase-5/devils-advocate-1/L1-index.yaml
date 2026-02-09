@@ -1,0 +1,114 @@
+# L1 Index — Phase 5 Plan Validation
+# devils-advocate-1 | Phase 5 | 2026-02-08
+
+verdict: CONDITIONAL_PASS
+condition: "Resolve C-2.2 (restore 4 lost behaviors) before proceeding to Phase 6"
+
+challenges:
+  correctness:
+    - id: C-1.1
+      title: "NLP approach is fundamentally sound"
+      severity: PASS
+
+    - id: C-1.2
+      title: "DIA v6.0 weaker in Phases 1-2 without Impact Map"
+      severity: MEDIUM
+      mitigation: "Add fallback guidance for early phases"
+
+  completeness:
+    - id: C-2.1
+      title: "Line count claim inaccurate (~167 vs ~136)"
+      severity: MEDIUM
+      mitigation: "Recount with consistent methodology"
+
+    - id: C-2.2
+      title: "4+ v5.1 behaviors lost in NLP conversion"
+      severity: HIGH
+      details: "Max iterations, DIA mandate, Spawn Matrix, S-2 threshold"
+      mitigation: "Add ~4 lines to CLAUDE.md v6.0"
+      blocks_gate: conditional
+
+    - id: C-2.3
+      title: "PT Operational Constraints missing from CLAUDE.md v6.0"
+      severity: MEDIUM
+      mitigation: "Add to §6 or PT template"
+
+    - id: C-2.4
+      title: "Team Memory tags dropped"
+      severity: LOW
+
+  consistency:
+    - id: C-3.1
+      title: "AD-7/8/9 consistent with AD-1~6"
+      severity: PASS
+
+    - id: C-3.2
+      title: "Impact Map vs Codebase Impact Map naming"
+      severity: LOW
+
+    - id: C-3.3
+      title: "§3 and §9 TaskGet references consistent"
+      severity: PASS
+
+    - id: C-3.4
+      title: "Devils-advocate exemption not in CLAUDE.md"
+      severity: LOW
+
+  feasibility:
+    - id: C-4.1
+      title: "12 tasks in 5-6 rounds feasible"
+      severity: PASS
+
+    - id: C-4.2
+      title: "T4 parallel with T11 contradicts dependency graph"
+      severity: MEDIUM
+      mitigation: "Make T11/T12 strictly depend on T4"
+
+    - id: C-4.3
+      title: "T3 exclusion creates cross-terminal coordination gap"
+      severity: MEDIUM
+      mitigation: "Define handoff protocol"
+
+  robustness:
+    - id: C-5.1
+      title: "Impact Map empty in Phases 1-2 (chicken-and-egg)"
+      severity: MEDIUM
+      mitigation: "Acknowledge scope; add early-phase fallback"
+
+    - id: C-5.2
+      title: "TaskGet failure during recovery"
+      severity: LOW
+
+    - id: C-5.3
+      title: "PT description size growth risk"
+      severity: MEDIUM
+      mitigation: "Add ~150 line target to §10"
+
+    - id: C-5.4
+      title: "Teammate skips TaskGet"
+      severity: LOW
+
+  interface_contracts:
+    - id: C-6.1
+      title: "CLAUDE.md and common-protocol interface clean"
+      severity: PASS
+
+    - id: C-6.2
+      title: "Agent .md and CLAUDE.md §6 alignment correct"
+      severity: PASS
+
+    - id: C-6.3
+      title: "YAML frontmatter and Team Memory access consistent"
+      severity: LOW
+
+    - id: C-6.4
+      title: "/permanent-tasks skill reference adequate"
+      severity: LOW
+
+summary:
+  total_challenges: 21
+  pass: 6
+  critical: 0
+  high: 1
+  medium: 7
+  low: 7
