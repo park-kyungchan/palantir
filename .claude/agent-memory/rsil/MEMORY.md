@@ -1,26 +1,26 @@
 # RSIL Agent Memory
 
 ## 1. Configuration
-- Last review: 2026-02-08
-- Total reviews: 4 (global: 0, narrow: 4)
-- Cumulative findings: 24 (accepted: 19, rejected: 2, deferred: 3)
-- Acceptance rate: 79%
+- Last review: 2026-02-09
+- Total reviews: 5 (global: 1, narrow: 4)
+- Cumulative findings: 28 (accepted: 23, rejected: 2, deferred: 3)
+- Acceptance rate: 82%
 - Active lenses: L1-L8
 
 ## 2. Lens Performance
 | Lens | Applied | Findings | Accepted | Rate |
 |------|---------|----------|----------|------|
-| L1 TRANSITION INTEGRITY | 4 | 3 | 3 | 100% |
+| L1 TRANSITION INTEGRITY | 5 | 4 | 4 | 100% |
 | L2 EVALUATION GRANULARITY | 3 | 2 | 2 | 100% |
-| L3 EVIDENCE OBLIGATION | 4 | 3 | 3 | 100% |
+| L3 EVIDENCE OBLIGATION | 5 | 5 | 5 | 100% |
 | L4 ESCALATION PATHS | 3 | 2 | 2 | 100% |
-| L5 SCOPE BOUNDARIES | 4 | 4 | 4 | 100% |
+| L5 SCOPE BOUNDARIES | 5 | 5 | 5 | 100% |
 | L6 CLEANUP ORDERING | 2 | 1 | 1 | 100% |
-| L7 INTERRUPTION RESILIENCE | 2 | 1 | 0 | 0% |
+| L7 INTERRUPTION RESILIENCE | 3 | 2 | 1 | 50% |
 | L8 NAMING CLARITY | 3 | 2 | 2 | 100% |
 
-Top performers: L1, L3, L5 (highest finding yield with 100% acceptance)
-Low yield: L7 (1 finding, 0% acceptance — deferred to Layer 2)
+Top performers: L3, L5 (highest finding yield with 100% acceptance)
+Improving: L7 (2 findings, 50% acceptance — up from 0%)
 
 ## 3. Cross-Cutting Patterns
 Patterns applicable across ANY target. One-off findings stay in tracker.

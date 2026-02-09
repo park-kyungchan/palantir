@@ -6,17 +6,20 @@
 - **Package:** `cow/cow-mcp/` (Python, FastMCP, Pydantic 2.0)
 - **6 MCP Servers:** cow-ingest, cow-ocr, cow-vision, cow-review, cow-export, cow-storage
 - **33 Python files** + .mcp.json registration
-- **Tech:** Mathpix API v3, Gemini 3.0 Pro, XeLaTeX+kotex, FastMCP (MCP SDK v1.26.0)
+- **Tech:** Mathpix API v3, Gemini 3-pro-preview, XeLaTeX+kotex, FastMCP (MCP SDK v1.26.0)
 - **Pipeline artifacts:** `.agent/teams/cow-pipeline-redesign/` (GC-v6, PT-v4, 3 gate records)
 - **Plan:** `docs/plans/2026-02-09-cow-pipeline-redesign.md` (1274L)
 - **Key deviations:** FastMCP (DEV-1), setuptools.build_meta (DEV-2), cow_ prefix (DEV-4)
-- **Next steps:** API keys (Mathpix, Gemini) + TeX Live setup + first real usage test
+- **First test:** Session cbcc34036137 — blacklabel_circle_9.png, 6-stage end-to-end complete (17KB PDF)
+- **Code fixes applied:** ocr/client.py (full params + opts_conflict fix), vision/gemini.py (model name fix)
+- **Docs cleanup:** 14 old Mathpix docs deleted → single `docs/mathpix-api-reference.md` (923L)
+- **Known bug:** BUG-COW-1 — Stage 5 Python raw string `\!` breaks TikZ `blue!15` syntax
+- **Next steps:** BUG-COW-1 systematic fix + more test images + iterative pipeline improvement
 
 ### Pending options (user decides):
   1. Ontology Framework T-1 brainstorming (`docs/plans/2026-02-08-ontology-bridge-handoff.md`)
   2. task-api-guideline.md NLP conversion (v4.0/530 lines)
   3. P4-R1/R2, P5-R1/R2 backlog (30 lines across 2 skills)
-  4. COW pipeline first integration test (requires API keys + TeX Live)
 
 ## Language Policy [PERMANENT] (2026-02-07)
 - User-facing conversation: Korean only

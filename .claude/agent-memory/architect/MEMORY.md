@@ -173,3 +173,18 @@
 - §6 Integration Points should be specific enough to be executable as grep + diff commands
 - §10 Phase 5 targets should challenge ASSUMPTIONS (with evidence + risk-if-wrong), not just design choices
 - Agent memory seed data should be DERIVABLE from existing data stores — no manual reconstruction
+
+## COW Pipeline Redesign — Phase 4 (2026-02-09)
+
+### Key Patterns Learned
+- **Boilerplate count vs complexity:** 16 files for Implementer-1 exceeds the 4-file guideline, but most are <30 lines (__init__.py, Pydantic model files). File count is a proxy for complexity, not the metric itself. When files are boilerplate, the real metric is functional surface area.
+- **Foundation-first task graph:** When all N servers depend on shared models, making models the first task with zero dependencies maximizes parallelism for subsequent tasks. T-1 (models) → T-2..T-7 (parallel) is optimal.
+- **Adaptation scope grading:** "Reuse existing module" spans from copy+rename-imports (low) to significant rewrite (high). For each module, grade the adaptation: client.py = HIGH (new return types, config approach), separator.py = HIGH (extract subset, new output types), database.py = MEDIUM (same schema, new imports), models.py = LOW (copy, rename imports).
+- **MCP server pattern is uniform:** All 6 servers follow the identical __main__.py pattern (Server, list_tools, call_tool, stdio_server). Defining this once in §5 with a "pattern" spec eliminates repetition. Implementers only need to know their tool signatures.
+- **Read-every-source-file discipline (confirmed):** Reading all 10 cow-cli source files before writing specs caught: (1) LaTeX exporter uses pdfLaTeX not XeLaTeX — needs full rewrite, not adaptation. (2) separator.py is 712L but only _cnt_to_region() is needed. (3) config.py uses keyring — MCP servers use env vars instead.
+
+### Implementation Plan Design Principles (new)
+- For greenfield packages (all CREATE, no MODIFY): §10 Migration focuses on what to reuse/remove, not backward compatibility
+- §5 should provide code signatures (class + method) not just prose descriptions — implementers need API contracts
+- V6 Code Plausibility items should focus on external dependency assumptions (SDK API shape, API response format) not internal logic
+- Phase 5 targets should be framed as falsifiable assumptions with specific risk-if-wrong scenarios

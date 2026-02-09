@@ -107,7 +107,7 @@ class GeminiVisionClient:
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "gemini-3.0-pro",
+        model: str = "gemini-3-pro-preview",
         confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
     ):
         self._api_key = api_key or os.environ.get("GEMINI_API_KEY", "")

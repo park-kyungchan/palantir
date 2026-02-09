@@ -158,7 +158,7 @@ class MathpixMcpClient:
 
         # Extract math elements from line_data or data arrays
         math_elements: list[MathElement] = []
-        line_data = response_data.get("line_data") or response_data.get("word_data") or []
+        line_data = response_data.get("line_data") or []
 
         math_idx = 0
         for line in line_data:
@@ -280,14 +280,25 @@ class MathpixMcpClient:
         # Encode image
         src = f"data:image/png;base64,{base64.b64encode(image_bytes).decode()}"
 
-        # Build payload
+        # Build payload — maximize data per call (cost is per-call, not per-param)
+        # Reference: cow/docs/mathpix-api-reference.md
         payload: dict = {
             "src": src,
-            "formats": ["text", "latex_styled"],
-            "data_options": {"include_latex": True, "include_asciimath": False},
+            "formats": ["text", "data", "latex_styled"],
+            "data_options": {
+                "include_latex": True,
+                "include_mathml": True,
+                "include_tsv": True,
+                "include_table_html": True,
+            },
             "include_line_data": True,
-            "include_word_data": True,
-            "include_geometry_data": True,
+            "include_diagram_text": True,
+            "include_equation_tags": True,
+            "include_detected_alphabets": True,
+            "include_smiles": True,
+            "math_inline_delimiters": ["$", "$"],
+            "rm_spaces": True,
+            "idiomatic_eqn_arrays": True,
         }
         if options:
             payload.update(options)
@@ -357,12 +368,14 @@ class MathpixMcpClient:
             "app_key": self._app_key,
         }
 
+        # Maximize data per call — reference: cow/docs/mathpix-api-reference.md
         pdf_options = {
             "conversion_formats": {"docx": False, "tex.zip": False},
             "math_inline_delimiters": ["$", "$"],
-            "math_display_delimiters": ["$$", "$$"],
-            "include_line_data": True,
-            "include_geometry_data": True,
+            "include_diagram_text": True,
+            "include_equation_tags": True,
+            "include_smiles": True,
+            "idiomatic_eqn_arrays": True,
         }
         if pages:
             pdf_options["page_ranges"] = ",".join(str(p) for p in pages)

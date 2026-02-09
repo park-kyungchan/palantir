@@ -82,9 +82,10 @@ Pipeline Skill Execution Complete
 | SKL-006 | /plan-validation-pipeline | P5 | rsil-review | 4 | 2 | 1 | 1 |
 | SKL-006 | /agent-teams-execution-plan | P6 | rsil-review | 7 | 7 | 0 | 0 |
 | SKL-006 | /delivery-pipeline | P9 | rsil-review | 9 | 8 | 0 | 1 |
-| **Total** | | | | **24** | **19** | **2** | **3** |
+| COW-iter1 | COW pipeline iteration | run | rsil-global | 4 | 4 | 0 | 0 |
+| **Total** | | | | **28** | **23** | **2** | **3** |
 
-### Acceptance Rate: 79% (19/24)
+### Acceptance Rate: 82% (23/28)
 ### Rejection Reason: AD-15 Hook violation or API-level only (P4/P5 only)
 
 ---
@@ -168,10 +169,14 @@ Pipeline Skill Execution Complete
 
 ### 3.5 Global Findings (/rsil-global)
 
-_No global findings yet. This section will be populated when /rsil-global runs._
+### First /rsil-global run — 2026-02-09 (COW pipeline iteration 1)
 
 | ID | Finding | Category | Severity | Tier | Lens | Status |
 |----|---------|----------|----------|------|------|--------|
+| G-25 | PT-v1 Phase Status stale — Stage 3-6 shows PENDING, actual = TESTED | B | FIX | 1 | L1, L5 | ACCEPTED — PT updated to v2 |
+| G-26 | Stage 5 TikZ escape bug (BUG-COW-1) not recorded in PT Constraints | B | FIX | 1 | L3 | ACCEPTED — added to PT Known Bugs |
+| G-27 | MEMORY.md "Next steps" lists completed item as pending | B | WARN | 1 | L3 | ACCEPTED — MEMORY updated |
+| G-28 | cow/ changes 24 files uncommitted — interruption risk | B | WARN | 1 | L7 | ACCEPTED — noted for user |
 
 ---
 
