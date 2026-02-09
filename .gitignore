@@ -101,8 +101,12 @@ kc-palantir-*.json:Zone.Identifier
 .claude/projects/
 .claude/teams/
 
-# Cow runtime cache
+# Cow runtime cache and sessions
 .cow/cache/
+.cow/sessions/
+
+# Cow MCP config with API keys (contains secrets)
+cow/.mcp.json
 
 # Git worktrees
 .worktrees/

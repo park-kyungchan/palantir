@@ -139,16 +139,16 @@ P7 [________] ---   P8 [________] ---   P9 [________] ---
 - **GC:** v5 → v6 | **PT:** v3 → v4
 - **All implementers:** shutdown clean, artifacts preserved
 
-### Pipeline Status (Phase 6 COMPLETE)
+### Pipeline Status (DELIVERED)
 ```
 P1 [████████] DONE  P2 [████████] DONE  P3 [████████] DONE
 P4 [████████] DONE  P5 [████████] DONE  P6 [████████] DONE
-P7 [▓░░░░░░░] 5%    P8 [________] ---   P9 [________] ---
+P7 [  DEFER  ] ---   P8 [  DEFER  ] ---   P9 [████████] DONE
 ```
 
 ---
 
-## Phase 7-8: Verification + Integration — PENDING
+## Phase 7-8: Verification + Integration — DEFERRED
 
 Decision: Given this is a NEW codebase (no existing tests, no integration points to merge),
 Phase 7-8 is deferred. The implementation was self-tested by each implementer:
@@ -158,3 +158,12 @@ Phase 7-8 is deferred. The implementation was self-tested by each implementer:
 
 Full integration testing requires actual API keys (Mathpix, Gemini) and runtime environment
 (TeX Live for XeLaTeX). These are deferred to first real usage.
+
+---
+
+## Phase 9: Delivery — COMPLETE
+
+- **Commit:** c14d592 — 53 files, 7367 lines added
+- **PT:** Task #1 completed (PT-v4)
+- **MEMORY.md:** Updated with delivery status
+- **TEAM-MEMORY:** Archived with all implementer findings

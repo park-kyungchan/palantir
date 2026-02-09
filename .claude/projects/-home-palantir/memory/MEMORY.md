@@ -1,26 +1,22 @@
 # Claude Code Memory
 
-## Next Session Action [PRIORITY] (2026-02-09)
-- **COW Pipeline Phase 4→9 자율 실행**
-- **방법:** Lead tmux 세션에 자율 실행 프롬프트 붙여넣기 (이 세션에서 작성 완료, ~310줄 영문)
-- **프롬프트 핵심:** §1 Autonomous Protocol (7 rules) → §3 PT-v1 생성 → §4 P4→P9 순차 실행
-- **INFRA 준비 완료:** `.agent/teams/cow-pipeline-redesign/` (8 files — GC-v3, orchestration-plan, 3 gate records, L1/L2/L3)
-- **리서치 보고서:** `cow/docs/research/` (3 files, 1987 lines total)
-- **INFRA 교차 검증 완료 (11 files):** C-1 integrator mode fix, M-1 TEAM-MEMORY, M-2 spawn modes — all applied
-- **Spawn Mode 확정:** architect/implementer/tester/integrator = "acceptEdits", devils-advocate = "default"
+## COW Pipeline — DELIVERED (2026-02-09)
+- **Status:** Phase 1-6 COMPLETE, Phase 7-8 DEFERRED, Phase 9 DELIVERED
+- **Commit:** c14d592 — 53 files, 7367 lines added
+- **Package:** `cow/cow-mcp/` (Python, FastMCP, Pydantic 2.0)
+- **6 MCP Servers:** cow-ingest, cow-ocr, cow-vision, cow-review, cow-export, cow-storage
+- **33 Python files** + .mcp.json registration
+- **Tech:** Mathpix API v3, Gemini 3.0 Pro, XeLaTeX+kotex, FastMCP (MCP SDK v1.26.0)
+- **Pipeline artifacts:** `.agent/teams/cow-pipeline-redesign/` (GC-v6, PT-v4, 3 gate records)
+- **Plan:** `docs/plans/2026-02-09-cow-pipeline-redesign.md` (1274L)
+- **Key deviations:** FastMCP (DEV-1), setuptools.build_meta (DEV-2), cow_ prefix (DEV-4)
+- **Next steps:** API keys (Mathpix, Gemini) + TeX Live setup + first real usage test
 
-### COW Pipeline Brainstorming 완료 요약 (2026-02-09)
-- **확정 요구사항:** R1-R10 (한국어 수학/과학 문제 처리, MCP Server 중심, Claude MAX X20, Gemini 3.0 Pro 유료)
-- **6단계 파이프라인:** INGEST → OCR → VISION → VERIFY → COMPOSE → EXPORT
-- **MCP Servers:** cow-ingest, cow-ocr, cow-vision, cow-review, cow-export, cow-storage
-- **VERIFY/COMPOSE:** Claude native reasoning (MCP tool 아님)
-- **기술 스택:** Mathpix API v3, Gemini 3.0 Pro, XeLaTeX+kotex, Claude Opus 4.6
-- **핵심 발견:** Claude bbox NOT FEASIBLE → Gemini 보완, XeLaTeX+kotex = gold standard
-
-### Other pending options (user decides):
+### Pending options (user decides):
   1. Ontology Framework T-1 brainstorming (`docs/plans/2026-02-08-ontology-bridge-handoff.md`)
   2. task-api-guideline.md NLP conversion (v4.0/530 lines)
   3. P4-R1/R2, P5-R1/R2 backlog (30 lines across 2 skills)
+  4. COW pipeline first integration test (requires API keys + TeX Live)
 
 ## Language Policy [PERMANENT] (2026-02-07)
 - User-facing conversation: Korean only
