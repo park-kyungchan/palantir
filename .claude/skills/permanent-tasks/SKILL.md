@@ -49,16 +49,24 @@ Use `sequential-thinking` to analyze $ARGUMENTS and conversation context before 
 
 Call `TaskList` and scan all tasks for a subject containing `[PERMANENT]`.
 
+Note: a DELIVERED task (subject ending with `— DELIVERED`) is a completed pipeline's
+artifact. Treat it as "not found" for a new feature — create a fresh PT. If the user
+wants to update the same delivered feature, re-open by removing the DELIVERED suffix.
+
 ```
 TaskList result
      │
-┌────┴────┐
-not found  found
-│           │
-▼           ▼
-Step 2A    Step 2B
-(CREATE)   (READ-MERGE-WRITE)
+┌────┴─────────────┐
+not found           found
+(or only DELIVERED) │
+│                   ▼
+▼              Step 2B
+Step 2A        (READ-MERGE-WRITE)
+(CREATE)
 ```
+
+If multiple `[PERMANENT]` tasks found (excluding DELIVERED): use the first one and
+warn the user about duplicates. Never create a new one when an active one exists.
 
 ---
 
@@ -97,7 +105,7 @@ Extract the current PT version number from `## [PERMANENT] — PT-v{N}`.
 
 ### 2B.2 Consolidate
 
-Use `sequential-thinking` to merge new requirements ($ARGUMENTS + conversation) with existing content:
+Use `sequential-thinking` to merge new requirements ($ARGUMENTS + conversation) with existing content.
 
 **Consolidation Rules:**
 1. **Deduplicate** — same intent expressed differently → merge into one
@@ -105,12 +113,18 @@ Use `sequential-thinking` to merge new requirements ($ARGUMENTS + conversation) 
 3. **Elevate abstraction** — 3+ specific requests sharing a principle → consolidate into the principle
 4. **Result**: Always a refined current state. Never an append-only log.
 
-Assess each section:
+**Assess each section:**
 - **User Intent**: merge new requirements with existing
 - **Codebase Impact Map**: add new dependency/ripple paths discovered; update existing
 - **Architecture Decisions**: add new decisions, update changed ones
 - **Phase Status**: update if phase transitions occurred
 - **Constraints**: add new, remove obsolete
+
+**Track consolidation actions** (include in the update output summary):
+- Deduplication: how many items merged
+- Contradictions resolved: which ones and why latest chosen
+- Abstractions elevated: which groups consolidated
+- Net change: sections added, modified, or removed
 
 ### 2B.3 Bump Version and Update
 
@@ -122,28 +136,15 @@ TaskUpdate:
 
 ### 2B.4 Teammate Notification Decision
 
-Use `sequential-thinking` to assess impact:
+Use `sequential-thinking` to assess whether active teammates need to know about this change.
 
-```
-PT-v{N} → PT-v{N+1} change
-     │
-     ▼
-Impact analysis on active teammates
-     │
-┌────┴────┐
-CRITICAL   LOW
-│           │
-▼           ▼
-Immediate   Next task only
-SendMessage  (update description,
-to affected  no notification)
-teammates
-[CONTEXT-UPDATE]
-+ Task ID
-```
+**CRITICAL impact** — the change touches Codebase Impact Map ripple paths that include
+files currently owned by active teammates. Send an immediate message to each affected
+teammate explaining what changed, why it matters to their work, and asking them to
+call TaskGet on the PERMANENT Task for the full updated context.
 
-- **CRITICAL**: Impact Map ripple paths include files owned by currently active teammates → immediate `SendMessage` with `[CONTEXT-UPDATE] PT-v{old} → PT-v{new} | Delta: {summary} | TaskGet for full content`
-- **LOW**: Change affects areas unrelated to current in-progress work → no notification needed
+**LOW impact** — the change affects areas unrelated to current in-progress work.
+No notification needed; teammates will see the update on their next TaskGet call.
 
 ---
 
@@ -199,8 +200,8 @@ abstraction elevation. Always a clean, coherent document.
 
 ### Codebase Impact Map
 The authoritative reference for module/file dependencies and ripple paths.
-Lead uses this for LDAP challenge generation.
-Teammates use this for Impact Analysis.
+Lead uses this to ground probing questions during understanding verification.
+Teammates reference this when explaining their understanding of interconnections.
 
 - Module Dependencies: A → B → C (directional)
 - Ripple Paths: Change X → affects {Y, Z}

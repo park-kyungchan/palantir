@@ -1,17 +1,17 @@
-# [PERMANENT] Task API Guideline — Agent Teams Edition
+# Task API Guideline — Agent Teams Edition
 
-> **Status:** [PERMANENT] — Must be read by EVERY agent before ANY Task API call.
+> **Status:** Permanent — every agent must read this before any Task API call.
 > **Applies to:** Lead, all Teammates, all Subagents spawned by Teammates.
-> **Version:** 4.0 (DIA + LDAP + Team Memory + Context Delta + Hooks) | Updated: 2026-02-07
+> **Version:** 5.0 (DIA + LDAP + Team Memory + Context Delta + Hooks) | Updated: 2026-02-08
 >
-> **OWNERSHIP NOTE:** Only Lead may call TaskCreate/TaskUpdate.
+> **Ownership:** Only Lead may call TaskCreate/TaskUpdate.
 > Teammates: TaskList/TaskGet only (read-only).
 
 ---
 
-## 1. Mandatory Pre-Call Protocol
+## 1. Pre-Call Protocol
 
-**BEFORE** calling `TaskCreate`, `TaskUpdate`, `TaskList`, or `TaskGet`:
+Before calling `TaskCreate`, `TaskUpdate`, `TaskList`, or `TaskGet`:
 
 1. Read this file (`.claude/references/task-api-guideline.md`)
 2. Read your own context:
@@ -23,22 +23,22 @@
 
 ## 2. Task Storage Architecture
 
-### Scoping Rules (ABSOLUTE — Cross-scope access is IMPOSSIBLE)
+### Scoping Rules (cross-scope access is impossible)
 
 | Context | Storage Location | Accessible By |
 |---------|-----------------|---------------|
 | Team session | `~/.claude/tasks/{team-name}/` | All team members (Lead + Teammates) |
 | Solo session (no team) | `~/.claude/tasks/{sessionId}/` | That session only |
 
-- **Always use TeamCreate** to establish team scope — avoids session-scoped task orphaning
-- `CLAUDE_CODE_TASK_LIST_ID` env var → forces shared task list override
+- Always use TeamCreate to establish team scope — avoids session-scoped task orphaning.
+- `CLAUDE_CODE_TASK_LIST_ID` env var → forces shared task list override.
 
 ### File Structure
 ```
 ~/.claude/tasks/{scope}/
 ├── {id}.json         ← Individual task (numeric ID, e.g., "1", "12")
 ├── .lock             ← File lock (prevents race conditions on concurrent access)
-└── .highwatermark    ← Next task ID counter (system-managed, do NOT modify)
+└── .highwatermark    ← Next task ID counter (system-managed, do not modify)
 ```
 
 ### Cross-Agent Visibility (Team Scope)
@@ -53,8 +53,8 @@
 
 | Operation | Lead | Teammate |
 |-----------|------|----------|
-| TaskCreate | Sole writer | FORBIDDEN (disallowedTools) |
-| TaskUpdate | Sole writer | FORBIDDEN (disallowedTools) |
+| TaskCreate | Sole writer | Blocked (disallowedTools) |
+| TaskUpdate | Sole writer | Blocked (disallowedTools) |
 | TaskList | Full access | Read-only |
 | TaskGet | Full access | Read-only |
 
@@ -62,14 +62,14 @@
 
 ## 3. Comprehensive Task Creation
 
-> **Note:** This section applies to **Lead only**. Teammates cannot call TaskCreate.
+> **Note:** This section applies to Lead only. Teammates cannot call TaskCreate.
 
-Every `TaskCreate` call MUST produce a task that is:
-- **DETAILED** — No ambiguity in what needs to be done
-- **COMPLETE** — All acceptance criteria explicitly listed
-- **DEPENDENCY-AWARE** — Full dependency chain documented
-- **IMPACT-AWARE** — Downstream impact explicitly stated
-- **VERIFIABLE** — Clear success/failure criteria
+Every `TaskCreate` call must produce a task that is:
+- **Detailed** — No ambiguity in what needs to be done
+- **Complete** — All acceptance criteria explicitly listed
+- **Dependency-aware** — Full dependency chain documented
+- **Impact-aware** — Downstream impact explicitly stated
+- **Verifiable** — Clear success/failure criteria
 
 ### Required Fields
 
@@ -77,7 +77,7 @@ Every `TaskCreate` call MUST produce a task that is:
 - Good: "Implement user authentication module"
 - Bad: "Work on auth"
 
-**description:** Must include ALL of the following sections:
+**description:** Must include all of the following sections:
 
 ```
 ## Objective
@@ -110,7 +110,7 @@ Every `TaskCreate` call MUST produce a task that is:
 ...
 
 ## Semantic Integrity Check
-- [PERMANENT] rules this task enforces: [list]
+- Permanent rules this task enforces: [list]
 - Downstream impact if output changes: [description]
 ```
 
@@ -122,17 +122,17 @@ Every `TaskCreate` call MUST produce a task that is:
 
 | Rule | Rationale |
 |------|-----------|
-| Every task MUST declare `blockedBy` (even if empty `[]`) | Forces conscious consideration of dependencies |
-| Every task MUST declare what it `blocks` | Forces awareness of downstream impact |
-| Circular dependencies are FORBIDDEN | Prevents deadlocks in distributed execution |
-| Cross-Teammate dependencies MUST be reported to Lead | Lead needs this for DIA cross-impact analysis |
+| Every task must declare `blockedBy` (even if empty `[]`) | Forces conscious consideration of dependencies |
+| Every task must declare what it `blocks` | Forces awareness of downstream impact |
+| Circular dependencies are never allowed | Prevents deadlocks in distributed execution |
+| Cross-teammate dependencies must be reported to Lead | Lead needs this for DIA cross-impact analysis |
 
 ### Dependency Behavior (Verified)
 - `addBlockedBy(["X"])` → **Bidirectional auto-sync**: `this.blockedBy += ["X"]` AND `X.blocks += [this.id]`
 - `addBlocks(["Y"])` → **Bidirectional auto-sync**: `this.blocks += ["Y"]` AND `Y.blockedBy += [this.id]`
-- **Blocker completion does NOT auto-remove blockedBy entries** — they persist as permanent record
-- **TaskList filters blockedBy to show only OPEN blockers** — use TaskList (not TaskGet) to determine if truly blocked
-- **TaskGet shows raw blockedBy** (includes completed blockers) — do NOT use for blocked/unblocked judgment
+- Blocker completion does not auto-remove blockedBy entries — they persist as permanent record.
+- TaskList filters blockedBy to show only open blockers — use TaskList (not TaskGet) to determine if truly blocked.
+- TaskGet shows raw blockedBy (includes completed blockers) — do not use for blocked/unblocked judgment.
 
 ---
 
@@ -146,40 +146,40 @@ pending ──→ in_progress ──→ completed
   └──→ deleted (file immediately removed from disk, "Task not found" on access)
 ```
 
-- **Before starting:** Check `blockedBy` is resolved (use TaskList, not TaskGet)
-- **During work:** Update status to `in_progress`
-- **On completion:** Update to `completed` + send Status Report to Lead
-- **On blocker:** Update with `addBlockedBy` + send Status Report with BLOCKED
-- **Delete:** `status: "deleted"` permanently removes the task JSON from disk
+- **Before starting:** Check `blockedBy` is resolved (use TaskList, not TaskGet).
+- **During work:** Update status to `in_progress`.
+- **On completion:** Update to `completed` + send Status Report to Lead.
+- **On blocker:** Update with `addBlockedBy` + send Status Report with BLOCKED.
+- **Delete:** `status: "deleted"` permanently removes the task JSON from disk.
 
 ---
 
-## 6. [PERMANENT] Semantic Integrity Integration
+## 6. Semantic Integrity Integration
 
 ### Lead-Level (DIA Enforcement)
-Before EVERY Task API call:
-1. Read `orchestration-plan.md` — understand current pipeline state
-2. Read all active teammates' L1-index.yaml — understand current progress
-3. Verify no cross-impact conflicts exist
-4. Update task-context.md for affected teammates if deviation detected
-5. Embed FULL global-context.md (GC-v{N}) + task-context.md in EVERY [DIRECTIVE]
-6. Review teammate [IMPACT-ANALYSIS] before approving any work
-7. Conduct [VERIFICATION-QA] for gaps in teammate understanding
+Before every Task API call:
+1. Read `orchestration-plan.md` — understand current pipeline state.
+2. Read all active teammates' L1-index.yaml — understand current progress.
+3. Verify no cross-impact conflicts exist.
+4. Update task-context.md for affected teammates if deviation detected.
+5. Embed full global-context.md (GC-v{N}) + task-context.md in every [DIRECTIVE].
+6. Review teammate [IMPACT-ANALYSIS] before approving any work.
+7. Conduct [VERIFICATION-QA] for gaps in teammate understanding.
 
 ### Teammate-Level
-On EVERY [DIRECTIVE] received:
-1. Parse [INJECTION] — extract global-context.md and task-context.md
-2. Send [STATUS] CONTEXT_RECEIVED with version numbers
-3. Submit [IMPACT-ANALYSIS] before ANY work begins
-4. Wait for [IMPACT_VERIFIED] before proceeding
-5. Reference .claude/references/task-api-guideline.md for protocol rules
+On every [DIRECTIVE] received:
+1. Parse [INJECTION] — extract global-context.md and task-context.md.
+2. Send [STATUS] CONTEXT_RECEIVED with version numbers.
+3. Submit [IMPACT-ANALYSIS] before any work begins.
+4. Wait for [IMPACT_VERIFIED] before proceeding.
+5. Reference .claude/references/task-api-guideline.md for protocol rules.
 
 ### Task API Restrictions (Teammates)
-- TaskList: Read-only access — check task status and dependencies
-- TaskGet: Read-only access — retrieve task details
-- TaskCreate: FORBIDDEN (enforced via disallowedTools in agent definition)
-- TaskUpdate: FORBIDDEN (enforced via disallowedTools in agent definition)
-- State persistence: Use L1/L2/L3 files + SendMessage to Lead
+- TaskList: Read-only access — check task status and dependencies.
+- TaskGet: Read-only access — retrieve task details.
+- TaskCreate: Blocked (enforced via disallowedTools in agent definition).
+- TaskUpdate: Blocked (enforced via disallowedTools in agent definition).
+- State persistence: Use L1/L2/L3 files + SendMessage to Lead.
 
 ---
 
@@ -189,31 +189,31 @@ On EVERY [DIRECTIVE] received:
 |-------------|----------------|
 | `TaskCreate({subject: "Do the thing"})` | Full comprehensive description |
 | Skipping `blockedBy` declaration | Always declare, even if `[]` |
-| Not reading task-context.md first | ALWAYS read before Task API call |
+| Not reading task-context.md first | Always read before Task API call |
 | Creating tasks without acceptance criteria | Every task must be verifiable |
 | Ignoring downstream impact | Always state what this task blocks |
 | Updating status without Status Report | Always notify Lead on completion |
 | Using TaskGet to check if task is blocked | Use TaskList — it filters completed blockers |
 | Relying on completed task data persistence | Save important info to separate files |
 | Mixing team scope and session scope | Always use TeamCreate for team work |
-| Teammate calling TaskCreate/TaskUpdate | FORBIDDEN — Lead only (enforced by disallowedTools) |
+| Teammate calling TaskCreate/TaskUpdate | Lead only (enforced by disallowedTools) |
 
 ---
 
 ## 8. Known Issues & Operational Cautions
 
 ### ISS-001: Completed Task Auto-Cleanup [HIGH]
-- **Completed tasks may be auto-deleted from disk** under certain conditions
-- Exact trigger unknown (possible: background GC, time-based, turn boundary)
-- **Mitigation:** Do NOT rely on completed task data. Save critical information to L1/L2/L3 files or separate artifacts before marking complete.
+- Completed tasks may be auto-deleted from disk under certain conditions.
+- Exact trigger unknown (possible: background GC, time-based, turn boundary).
+- **Mitigation:** Do not rely on completed task data. Save critical information to L1/L2/L3 files or separate artifacts before marking complete.
 
 ### ISS-002: TaskGet vs TaskList — blockedBy Display Mismatch [MEDIUM]
-- TaskGet shows raw `blockedBy` array (includes completed blockers)
-- TaskList shows only open blockers (correctly filtered)
+- TaskGet shows raw `blockedBy` array (includes completed blockers).
+- TaskList shows only open blockers (correctly filtered).
 - **Mitigation:** Always use TaskList output to determine blocked status.
 
 ### ISS-003: Task Orphaning on Context Clear [HIGH]
-- Context clear creates new sessionId → previous session's tasks become invisible
+- Context clear creates new sessionId → previous session's tasks become invisible.
 - **Mitigation:** Always use Team scope. Set `CLAUDE_CODE_TASK_LIST_ID` env var if needed.
 
 ### ISS-004: Platform Limitations
@@ -226,14 +226,14 @@ On EVERY [DIRECTIVE] received:
 | Fixed lead (no leadership transfer) | Lead is permanent | Plan at team creation |
 
 ### ISS-005: Teammate Auto-Compact Recovery [HIGH]
-- **Teammates have independent context windows** — Lead's PreCompact hook only protects Lead session
-- Teammate auto-compact permanently destroys all in-memory work not saved to L1/L2/L3
+- Teammates have independent context windows — Lead's PreCompact hook only protects the Lead session.
+- Teammate auto-compact permanently destroys all in-memory work not saved to L1/L2/L3.
 - **Mitigation (Teammate):** Write L1/L2/L3 intermediate artifacts proactively throughout execution.
   On ~75% context pressure → save immediately → report [STATUS] CONTEXT_PRESSURE.
   On compact detection → report [STATUS] CONTEXT_LOST → await Lead re-injection.
 - **Mitigation (Lead):** On CONTEXT_PRESSURE → shutdown teammate → re-spawn with L1/L2 injection (IP-006).
   On CONTEXT_LOST → re-inject GC + task-context → teammate re-submits Impact Analysis.
-- **Not yet verified in practice** — proactive L1/L2/L3 saving is the primary defense
+- Not yet verified in practice — proactive L1/L2/L3 saving is the primary defense.
 
 ---
 
@@ -241,11 +241,11 @@ On EVERY [DIRECTIVE] received:
 
 When a Teammate acts as Sub-Orchestrator (spawning subagents via Task tool):
 
-1. **Task tool only:** Use Task tool to spawn subagents — NOT TaskCreate (forbidden)
-2. **Communication:** Use SendMessage to coordinate with subagents, report to Lead
-3. **Nesting Limit:** Subagents spawned by Teammate CANNOT spawn further subagents (depth = 1)
-4. **Boundary Constraint:** All sub-work must stay within the Teammate's assigned file ownership
-5. **Reporting:** Report significant sub-orchestration decisions to Lead via SendMessage
+1. **Task tool only:** Use the Task tool to spawn subagents — not TaskCreate (which is blocked).
+2. **Communication:** Use SendMessage to coordinate with subagents and report to Lead.
+3. **Nesting Limit:** Subagents spawned by a Teammate cannot spawn further subagents (depth = 1).
+4. **Boundary Constraint:** All sub-work must stay within the Teammate's assigned file ownership.
+5. **Reporting:** Report significant sub-orchestration decisions to Lead via SendMessage.
 6. **Shared Task List:** Lead-only. Teammates coordinate sub-work through direct messaging, not Task API.
 
 ---
@@ -265,13 +265,13 @@ When a Teammate acts as Sub-Orchestrator (spawning subagents via Task tool):
 
 ### Context Injection Protocol (CIP)
 
-Every [DIRECTIVE] from Lead to Teammate MUST include:
+Every [DIRECTIVE] from Lead to Teammate must include:
 1. Global-context.md full text (with version: GC-v{N})
 2. Task-context.md full text
-3. Explicit [REQUIRED] context receipt confirmation instruction
+3. Explicit context receipt confirmation instruction
 
-**WHY:** Eliminates GAP-001 (no read verification) and GAP-005 (auto-compact context loss).
-Physical embedding guarantees delivery regardless of teammate's context window state.
+Eliminates GAP-001 (no read verification) and GAP-005 (auto-compact context loss).
+Physical embedding guarantees delivery regardless of the teammate's context window state.
 
 **Injection Points:**
 | ID | Trigger | Content | Method |
@@ -279,7 +279,7 @@ Physical embedding guarantees delivery regardless of teammate's context window s
 | IP-001 | Initial Spawn | GC + TC full text | Task tool prompt |
 | IP-002 | Mid-session Assignment | GC + TC full text | SendMessage |
 | IP-003 | Interface Change | Delta if gap==1, else Full GC + TC | SendMessage |
-| IP-004 | Architecture Change | Always Full GC + TC (ALL teammates) | Sequential SendMessage |
+| IP-004 | Architecture Change | Always Full GC + TC (all teammates) | Sequential SendMessage |
 | IP-005 | Auto-compact Recovery | GC + TC + L1/L2 | SendMessage |
 | IP-006 | L1/L2/L3 Handoff Replacement | GC + TC + predecessor L1/L2 | Task tool prompt |
 | IP-007 | Plan Approval/Rejection | Version assert header only | SendMessage |
@@ -320,8 +320,8 @@ Delta mode applies when `version_gap == 1` and no fallback condition is active.
 
 ### Impact Awareness Verification Protocol (DIAVP)
 
-**WHY:** Eliminates GAP-002 (read ≠ understood). Echo-back in own words proves comprehension.
-Verification before execution prevents rework cost (prevention << correction).
+Eliminates GAP-002 (read ≠ understood). Echo-back in own words proves comprehension.
+Verification before execution prevents rework cost (prevention is far cheaper than correction).
 
 **Verification Tiers:**
 | Tier | Agent Type | IAS Sections | Checklist Items | Max Attempts |
@@ -346,19 +346,19 @@ Verification before execution prevents rework cost (prevention << correction).
 | RC-10 | No critical omissions vs Lead DIA | Analysis blind spots |
 
 **Verification Flow:**
-1. Teammate submits [IMPACT-ANALYSIS] to Lead
+1. Teammate submits [IMPACT-ANALYSIS] to Lead.
 2. Lead reviews against RC checklist:
-   - ALL PASS → [IMPACT_VERIFIED] Proceed.
-   - 1-2 FAIL (non-critical) → [VERIFICATION-QA] → Teammate answers → re-evaluate
-   - 1-2 FAIL (RC-05/06/07) → [VERIFICATION-QA] mandatory → correction confirmation
-   - 3+ FAIL → [IMPACT_REJECTED] + [RE-EDUCATION] (Attempt N/3)
-3. Max 3 failures → [IMPACT_ABORT] → Teammate terminated → re-spawn with enhanced context
+   - All pass → [IMPACT_VERIFIED] Proceed.
+   - 1-2 fail (non-critical) → [VERIFICATION-QA] → Teammate answers → re-evaluate.
+   - 1-2 fail (RC-05/06/07) → [VERIFICATION-QA] required → correction confirmation.
+   - 3+ fail → [IMPACT_REJECTED] + [RE-EDUCATION] (Attempt N/3).
+3. After 3 failures → [IMPACT_ABORT] → Teammate terminated → re-spawn with enhanced context.
 
 **Layer 3: Adversarial Challenge Protocol (LDAP)**
 
-**WHY:** Eliminates GAP-003 (understood but no systemic impact awareness).
-RC checklist verifies "do you understand WHAT to do?" but not "do you understand
-HOW your work affects the interconnected system?" LDAP forces critical reasoning
+Eliminates GAP-003 (understood but no systemic impact awareness).
+The RC checklist verifies "do you understand what to do?" but not "do you understand
+how your work affects the interconnected system?" LDAP forces critical reasoning
 about interconnection (GAP-003a) and ripple propagation (GAP-003b).
 
 **GAP-003 Definition:**
@@ -394,35 +394,35 @@ about interconnection (GAP-003a) and ripple propagation (GAP-003b).
 | P9 | NONE | 0 | — | Lead only phase |
 
 **Challenge Flow (within Gate A, after RC evaluation):**
-1. Lead reads teammate's [IMPACT-ANALYSIS] content
-2. Lead identifies weak spots in systemic impact reasoning
-3. Lead generates N questions (N = phase intensity min_questions)
+1. Lead reads teammate's [IMPACT-ANALYSIS] content.
+2. Lead identifies weak spots in systemic impact reasoning.
+3. Lead generates N questions (N = phase intensity min_questions).
 4. Lead sends: `[CHALLENGE] Phase {N} | Q{X}/{total}: {question} | Category: {category_id}`
 5. Teammate responds: `[CHALLENGE-RESPONSE] Phase {N} | Q{X}: {defense}`
-6. Repeat for all questions (turn-based via IDLE-WAKE cycle)
+6. Repeat for all questions (turn-based via IDLE-WAKE cycle).
 7. Lead evaluates combined RC + challenge defense quality:
    - Strong defense → [IMPACT_VERIFIED] Proceed.
-   - Partial defense → [VERIFICATION-QA] follow-up for specific gaps
-   - Failed defense → [IMPACT_REJECTED] with challenge evidence cited
-8. For MAXIMUM intensity: teammate MUST propose at least one alternative approach
-   with its own interconnection map and ripple profile
+   - Partial defense → [VERIFICATION-QA] follow-up for specific gaps.
+   - Failed defense → [IMPACT_REJECTED] with challenge evidence cited.
+8. For MAXIMUM intensity: teammate must propose at least one alternative approach
+   with its own interconnection map and ripple profile.
 
 **Enforcement Mechanism:**
-- Structural: Lead withholds [IMPACT_VERIFIED] until challenge defense passes
+- Structural: Lead withholds [IMPACT_VERIFIED] until challenge defense passes.
 - Turn-based: Teammate IDLE after [IMPACT-ANALYSIS] → Lead sends [CHALLENGE] →
-  Teammate WAKES → responds → IDLE → Lead evaluates (natural pause via IDLE state)
-- Hard: Gate A prerequisite for Gate B (implementer/integrator)
-- Soft: Agent .md Phase 1.5 instructions (guidance)
+  Teammate WAKES → responds → IDLE → Lead evaluates (natural pause via IDLE state).
+- Hard: Gate A prerequisite for Gate B (implementer/integrator).
+- Soft: Agent .md Phase 1.5 instructions (guidance).
 
 **Defense Quality Criteria:**
-- Strong: Specific module names, concrete propagation paths, quantified blast radius
-- Weak: Vague claims, generic statements, missing propagation paths
-- Failed: No systemic reasoning, copy-paste from [IMPACT-ANALYSIS], factual errors
+- Strong: Specific module names, concrete propagation paths, quantified blast radius.
+- Weak: Vague claims, generic statements, missing propagation paths.
+- Failed: No systemic reasoning, copy-paste from [IMPACT-ANALYSIS], factual errors.
 
 **Compaction Recovery:**
-- Challenge round/state persisted in task-context.md by Lead
-- PreCompact hook includes challenge state in pre-compact snapshot
-- On recovery: Lead re-injects task-context.md with challenge state → resumes from last round
+- Challenge round/state persisted in task-context.md by Lead.
+- PreCompact hook includes challenge state in pre-compact snapshot.
+- On recovery: Lead re-injects task-context.md with challenge state → resumes from last round.
 
 **Two-Gate Flow (implementer/integrator only):**
 - Gate A: [IMPACT-ANALYSIS] → [IMPACT_VERIFIED] (understanding gate)
@@ -444,9 +444,9 @@ CLAUDE_CODE_TASK_LIST_ID=palantir-dev claude
 3. Session-scoped default (lowest priority — avoid for team work)
 
 **Benefits:**
-- Tasks persist across `/resume` and context clears
-- All team members share the same task namespace
-- Avoids ISS-003 (task orphaning on context clear)
+- Tasks persist across `/resume` and context clears.
+- All team members share the same task namespace.
+- Avoids ISS-003 (task orphaning on context clear).
 
 ---
 
@@ -454,9 +454,9 @@ CLAUDE_CODE_TASK_LIST_ID=palantir-dev claude
 
 ### TEAM-MEMORY.md
 - Location: `.agent/teams/{session-id}/TEAM-MEMORY.md`
-- Purpose: Real-time knowledge sharing within a team session
-- Created by Lead at TeamCreate time (Write tool, once)
-- Deleted with team directory at TeamDelete
+- Purpose: Real-time knowledge sharing within a team session.
+- Created by Lead at TeamCreate time (Write tool, once).
+- Deleted with team directory at TeamDelete.
 
 ### Access Rules
 | Agent Type | Has Edit? | Access Method |
@@ -470,16 +470,16 @@ CLAUDE_CODE_TASK_LIST_ID=palantir-dev claude
 | Lead | N/A | Full (Write initial, Edit curation) |
 
 ### Rules
-1. Edit only — Write forbidden after initial creation
-2. `old_string` MUST include section header (`## {role-id}`) for uniqueness
-3. Edit own section only — cross-section edit is a protocol violation
+1. Edit only — do not use Write after initial creation.
+2. `old_string` must include section header (`## {role-id}`) for uniqueness.
+3. Edit own section only — cross-section edit is a protocol violation.
 4. Tags: `[Finding]`, `[Pattern]`, `[Decision]`, `[Warning]`, `[Dependency]`, `[Conflict]`, `[Question]`
 
 ### Lead Curation
-- At Gate time: prefix stale items with `[ARCHIVED]`
-- At GC version bump: update `## Meta` section GC Version
-- At teammate replacement: prefix old section with `[REPLACED]`
-- At 500-line threshold: remove `[ARCHIVED]` items
+- At Gate time: prefix stale items with `[ARCHIVED]`.
+- At GC version bump: update `## Meta` section GC Version.
+- At teammate replacement: prefix old section with `[REPLACED]`.
+- At 500-line threshold: remove `[ARCHIVED]` items.
 
 ### vs L1/L2/L3
 | Aspect | Team Memory | L1/L2/L3 |
@@ -531,6 +531,6 @@ ELSE                               →       DELTA
 | No ACK within reasonable time | Ping teammate, check for compact |
 
 ### Edge Cases
-- Rapid sequential updates (v5→v6→v7): Lead checks teammate's confirmed version, not sent version
-- Partial ACK: Re-send unclear items or full fallback if >50% unclear
-- Delta during gate: Gate freezes GC version. Delta only after gate conclusion
+- Rapid sequential updates (v5→v6→v7): Lead checks teammate's confirmed version, not sent version.
+- Partial ACK: Re-send unclear items or full fallback if >50% unclear.
+- Delta during gate: Gate freezes GC version. Delta only after gate conclusion.
