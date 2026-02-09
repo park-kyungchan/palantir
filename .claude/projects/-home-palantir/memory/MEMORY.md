@@ -1,15 +1,26 @@
 # Claude Code Memory
 
-## Next Session Action [PRIORITY] (2026-02-08)
-- **Ontology Framework T-1 brainstorming** — 사용자가 다음 세션에서 시작 예정
-- **실행:** `/brainstorming-pipeline Ontology Framework T-1: ObjectType 정의 시스템 설계`
-- **핸드오프:** `docs/plans/2026-02-08-ontology-bridge-handoff.md` (b3c1012, 421 lines, 9 user decisions)
-- **참조:** `bridge-reference/` (5 files, 3842 lines) — T-1용 bridge-ref-objecttype.md (1016L)
-- **Topic 순서:** T-1 ObjectType → T-2 LinkType → T-3 ActionType → T-4 Integration
-- **세션 종료 시 상태 보고 완료:** ASCII 시각화로 전체 현황 + Topic별 시작 가이드 제공됨
-- **Other pending options (user decides):**
-  1. SKL-006: delivery pipeline — Phase 6 COMPLETE, RSIL + delivery pending
+## Next Session Action [PRIORITY] (2026-02-09)
+- **COW Pipeline Phase 4→9 자율 실행**
+- **방법:** Lead tmux 세션에 자율 실행 프롬프트 붙여넣기 (이 세션에서 작성 완료, ~310줄 영문)
+- **프롬프트 핵심:** §1 Autonomous Protocol (7 rules) → §3 PT-v1 생성 → §4 P4→P9 순차 실행
+- **INFRA 준비 완료:** `.agent/teams/cow-pipeline-redesign/` (8 files — GC-v3, orchestration-plan, 3 gate records, L1/L2/L3)
+- **리서치 보고서:** `cow/docs/research/` (3 files, 1987 lines total)
+- **INFRA 교차 검증 완료 (11 files):** C-1 integrator mode fix, M-1 TEAM-MEMORY, M-2 spawn modes — all applied
+- **Spawn Mode 확정:** architect/implementer/tester/integrator = "acceptEdits", devils-advocate = "default"
+
+### COW Pipeline Brainstorming 완료 요약 (2026-02-09)
+- **확정 요구사항:** R1-R10 (한국어 수학/과학 문제 처리, MCP Server 중심, Claude MAX X20, Gemini 3.0 Pro 유료)
+- **6단계 파이프라인:** INGEST → OCR → VISION → VERIFY → COMPOSE → EXPORT
+- **MCP Servers:** cow-ingest, cow-ocr, cow-vision, cow-review, cow-export, cow-storage
+- **VERIFY/COMPOSE:** Claude native reasoning (MCP tool 아님)
+- **기술 스택:** Mathpix API v3, Gemini 3.0 Pro, XeLaTeX+kotex, Claude Opus 4.6
+- **핵심 발견:** Claude bbox NOT FEASIBLE → Gemini 보완, XeLaTeX+kotex = gold standard
+
+### Other pending options (user decides):
+  1. Ontology Framework T-1 brainstorming (`docs/plans/2026-02-08-ontology-bridge-handoff.md`)
   2. task-api-guideline.md NLP conversion (v4.0/530 lines)
+  3. P4-R1/R2, P5-R1/R2 backlog (30 lines across 2 skills)
 
 ## Language Policy [PERMANENT] (2026-02-07)
 - User-facing conversation: Korean only
@@ -17,12 +28,12 @@
 - CLAUDE.md §0 Language Policy
 - Rationale: token efficiency for Opus 4.6, machine-readable consistency, cross-agent parsing
 
-## Current Infrastructure State (v6.0) (2026-02-08)
-- CLAUDE.md: v6.1 (172 lines, §0-§10) — v6.0 + RSI fix: PT directive embedding clarification
+## Current Infrastructure State (v6.0) (2026-02-09)
+- CLAUDE.md: v6.2 (~178 lines, §0-§10) — v6.1 + /rsil-global auto-invoke after §2 Phase Pipeline table
 - task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged in this cycle
 - agent-common-protocol.md: v2.1 (84 lines) — v2.0 + RSI fix: PT task list scope clarification
 - Agents: 6 types, 442 total lines (NLP v2.0), disallowedTools = TaskCreate+TaskUpdate only
-- Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` (561L, NEW — Meta-Cognition framework)
+- Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` + `/rsil-global` (NEW — auto-invoke INFRA health)
 - Hooks: 3 lifecycle hooks (SubagentStart, PreCompact, SessionStart) — reduced from 8
 - Verification: Natural language understanding verification (replaces TIER/LDAP protocol markers)
 - MCP Tools: sequential-thinking (mandatory all), tavily/context7 (mandatory by phase), github (as needed)
@@ -38,7 +49,8 @@
 | 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 |
 | 005 | `/verification-pipeline` | P7-8 | DONE + NLP v6.0 + Phase 0 + INFRA RSI |
 | 006 | `/delivery-pipeline` | P9 | DONE (422L) — Phase 6 COMPLETE, Gate 6 APPROVED |
-| 007 | `/rsil-review` | — | DONE (561L) — Meta-Cognition framework, 8 Lenses |
+| 007 | `/rsil-review` | — | DONE (549L) — Meta-Cognition framework, 8 Lenses, REFINED via RSIL System |
+| 008 | `/rsil-global` | — | DONE (452L) — Auto-invoke INFRA health, Three-Tier Observation Window |
 | — | `/permanent-tasks` | — | DONE (GC replacement skill) |
 - Detailed history: `memory/skill-optimization-history.md`
 
@@ -84,22 +96,17 @@
 - **Critical correction:** Entities are NOT Claude native capabilities — Framework is domain-agnostic
 - **Brainstorming = learning:** User progressively learns Ontology/Foundry through sessions
 
-## RSIL Framework [PERMANENT] (2026-02-08)
-- **Skill:** `/rsil-review` (561 lines) — Meta-Cognition-Level quality review framework
-- **Design:** Universal Framework × $ARGUMENTS = target-specific review (no hardcoding)
-- **Architecture:** Static Layer (Lenses, Layer defs, AD-15) + Dynamic ($ARGUMENTS + !`shell`) + Lead R-0 Synthesis
-- **8 Meta-Research Lenses** (distilled from pilot data, universally applicable):
-  - L1: TRANSITION INTEGRITY — 상태 전이 명시적/검증 가능?
-  - L2: EVALUATION GRANULARITY — 다중 기준 개별 증거?
-  - L3: EVIDENCE OBLIGATION — 산출물이 과정 증거 요구?
-  - L4: ESCALATION PATHS — 중대 발견에 적절한 에스컬레이션?
-  - L5: SCOPE BOUNDARIES — scope 경계 접근 처리?
-  - L6: CLEANUP ORDERING — 해체 선행조건 순서화?
-  - L7: INTERRUPTION RESILIENCE — 중단 대비 중간 상태 보존?
-  - L8: NAMING CLARITY — 식별자 모든 context에서 명확?
-- **Lenses evolve:** 새 패턴 발견 시 L9, L10 추가 가능
-- **Cumulative data:** 24 findings, 79% acceptance (tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`)
-- **Handoff (for future brainstorming):** `docs/plans/2026-02-08-narrow-rsil-handoff.md`
+## RSIL System — DELIVERED (2026-02-09)
+- **Status:** DELIVERED — P1→P6→P9 complete (P7-8 skipped, markdown-only)
+- **Two-Skill System:** `/rsil-global` (452L, auto-invoke via CLAUDE.md §2) + `/rsil-review` (549L, user-invoke)
+- **Shared Foundation:** 8 Lenses + AD-15 + Boundary Test (~85L embedded copy per skill, verified identical)
+- **CLAUDE.md §2:** 5-line NL discipline for auto-invoke trigger
+- **Agent Memory:** `~/.claude/agent-memory/rsil/MEMORY.md` (53L seed, 4-section schema)
+- **Tracker:** `docs/plans/2026-02-08-narrow-rsil-tracker.md` (283L, G-{N}/P-R{N} namespacing)
+- **Plan:** `docs/plans/2026-02-09-rsil-system.md` (1231L, 26 specs)
+- **Architecture Decisions:** AD-6~AD-11 (findings-only, three-tier, BREAK via AskUser, tracker namespacing, embedded copy, shared memory)
+- **Sessions:** rsil-system (P1-3), rsil-write-plan (P4), rsil-validation (P5), rsil-execution (P6)
+- **Cumulative data:** 24 findings, 79% acceptance
 
 ## Deferred Work
 - CH-002~005: `docs/plans/2026-02-07-ch002-ch005-deferred-design.yaml`

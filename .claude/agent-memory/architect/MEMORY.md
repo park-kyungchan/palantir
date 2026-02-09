@@ -108,3 +108,68 @@
 - Implementation task breakdown must align with upstream design's recommended split (10-task from PT design), not just original L3's split
 - Excluded files (task-api-guideline.md in separate terminal) must be explicitly marked in task list
 - Change delta appendix is high-value for implementers — shows exactly what moved, not just final state
+
+## SKL-006 Delivery Pipeline Architecture (2026-02-08)
+
+### Key Patterns Learned
+- **Terminal phase design differs fundamentally:** No teammates, no TeamCreate/TeamDelete, no understanding verification, no "Next" phase. The skill pattern must be adapted, not copied.
+- **User confirmation scaling:** External-facing operations (git, MEMORY persistence) need more confirmation points than internal operations. SKL-006 has 4 vs 0 for internal phases.
+- **Dual-input discovery:** Supporting both PT and GC as input sources maintains backward compatibility during migration. "Preferred + fallback" is the right pattern for gradual transitions.
+- **RSIL scoping discipline:** "Enables SKL-006 OR quick win OR correctness fix" as inclusion criteria prevents scope creep. 5 in / 8+ deferred from 13+ total candidates.
+- **DRY extraction timing:** Extracting shared patterns across 6 files while creating a 7th is high-risk. Better to match the pattern now and extract later in a dedicated sprint.
+
+### Risk Patterns (new)
+- External-facing operations (git) need explicit user confirmation — blast radius extends beyond session
+- Read-Merge-Write on critical files (MEMORY.md) needs preview step — corruption has cross-session impact
+- Session cleanup must classify preserve/delete explicitly — implicit rules lead to accidental deletion
+
+## SKL-006 Detailed Design / Phase 4 (2026-02-08)
+
+### Key Patterns Learned
+- **Zero-overlap parallel split:** When workstreams have zero file overlap, 2 implementers is strictly better than 1 — no coordination overhead, pure parallelism. The test: can you draw a complete file list per implementer with no intersection?
+- **Hook removal = 3-step migration:** (1) Remove from settings.json, (2) Delete .sh files, (3) Add NL replacement in agent .md. Steps 1+2 can be one task, step 3 depends on it to avoid duplicate enforcement.
+- **Triple NL reinforcement:** When replacing mechanical enforcement (hook exit 2) with NL, ensure the instruction appears in 3 independent locations (CLAUDE.md §10 + agent-common-protocol.md + agent .md Constraints). Any one location might be skipped; three makes it reliable.
+- **Feasibility re-evaluation heuristic:** For "re-evaluate" items, apply the same scoping criteria as RSIL: "Enables the primary deliverable OR quick win OR correctness fix." Everything else defers.
+- **Read-every-file discipline:** Reading all 8 hook .sh files, all 6 agent .md files, and all existing MEMORY.md files before writing specs catches assumptions. Example: discovered only 2 (not 5) MEMORY.md templates needed because 4 already existed.
+
+### Implementation Plan Design Principles
+- §5 Change Specifications must cover DELETE operations (not just MODIFY and CREATE) — CH-001 exemplar didn't have deletions
+- VL (Verification Level) tags: VL-1 (trivial/self-evident), VL-2 (moderate/needs-review), VL-3 (complex/needs-testing) — signals effort to downstream validators
+- §6 Interface Contracts should document the enforcement migration explicitly (before: hook exit 2, after: NL instruction) — this is the highest-risk interface change
+- §9 Commit Strategy: for mixed new+modified+deleted files, use `git add` for new/modified and `git rm` for deleted — don't rely on `git add -A`
+
+## RSIL System Architecture (2026-02-09)
+
+### Key Patterns Learned
+- **Breadth vs depth = separate skills:** When a system needs both lightweight scanning (auto-invoked, budget-constrained) and deep analysis (user-invoked, thorough), merging into one skill creates branching complexity without benefit. Two independent skills sharing a stable foundation is superior.
+- **Adaptive data source per work type:** When the same analysis framework applies to different work types (pipeline/skill/direct edit), keep the escalation logic constant but swap data sources at Tier 0 classification. Git diff substitutes for gate records in non-pipeline work.
+- **Probing Q → design refinement:** Q1 (Three-Tier degradation) produced the per-work-type tables that became G-0/G-1 core architecture. Q2 (BREAK escalation) resolved the D-3 vs findings-only tension. Q3 (tracker consistency) validated the namespacing strategy. All 3 questions improved the design.
+- **Constraint tension resolution:** When two design inputs appear contradictory (D-3 "immediate application" vs constraint "findings-only output"), resolve by reinterpreting the earlier decision in light of the later constraint. "Immediate" ≠ "automatic" — it means "propose immediately upon discovery."
+- **Embedded copy > shared reference for stable content:** When shared content is small (~85L), stable (changes only on Lens additions), and critical (skills must be self-contained), embedded identical copies eliminate external dependency. The maintenance cost of updating 2 files simultaneously is lower than the fragility risk of a shared reference.
+
+### Multi-Skill System Design Principles
+- When to Use tree for auto-invoked skills must include explicit SKIP criteria (not just invoke criteria)
+- Findings-only output is the safe default for auto-invoked skills — user is present, approval is fast
+- ID namespacing (prefix per skill) eliminates collision in shared data stores without locks
+- Section isolation in shared files (each writer owns a section) enables sequential multi-writer safety
+- Shared agent memory between complementary skills accelerates cumulative learning — patterns are universal
+
+### Risk Patterns (new)
+- Tier 0 misclassification → multiple independent signals + comprehensive fallback (Type A)
+- NL discipline non-compliance → CLAUDE.md instruction + staleness tracking in agent memory (no hook needed)
+- Noise from auto-invoked reviews → tier escalation gates + AD-15 filter + acceptance rate self-correction
+
+## RSIL System Detailed Design / Phase 4 (2026-02-09)
+
+### Key Patterns Learned
+- **Interface consistency by construction:** When two parallel implementers share an interface (agent memory schema), defining BOTH sides in the SAME §5 document using identical terminology from a single architecture source guarantees consistency without runtime coordination. The plan IS the coordination mechanism.
+- **Verbatim text > file reference for shared content:** Providing Foundation text verbatim in §5 (not "copy from rsil-review lines X-Y") eliminates dependency on the other implementer's file state. One-time cost at plan writing; permanent safety at implementation.
+- **VL-3 scoping discipline:** In a ~26-spec plan, only 1 spec (A7: G-1 Tiered Reading) was VL-3. Shell commands are VL-1 (verbatim from architecture). Classification logic is VL-2 (decision tree provided). Tight VL-3 scoping reduces implementation risk and V6 verification burden.
+- **L3 internal discrepancy detection:** L3 §3.3 said head -30, L3 §7 said head -50. Architecture discrepancies are normal in 1000+ line designs — the plan author must identify the authoritative section and resolve. Document the resolution (PD-2) for traceability.
+- **V6 items as first-3-runs monitoring:** V6 Code Plausibility items can't be resolved by the architect. Rather than leaving them as abstract risks, recommending "first 3 runs manual monitoring" gives testers a concrete verification plan.
+
+### Implementation Plan Design Principles (new)
+- For multi-implementer plans: define shared interfaces once in §5 and reference from both sides
+- §6 Integration Points should be specific enough to be executable as grep + diff commands
+- §10 Phase 5 targets should challenge ASSUMPTIONS (with evidence + risk-if-wrong), not just design choices
+- Agent memory seed data should be DERIVABLE from existing data stores — no manual reconstruction

@@ -6,9 +6,10 @@ argument-hint: "[target skill/component/scope + specific concerns]"
 
 # RSIL Review
 
-Meta-Cognition-Level quality review skill. Applies universal research lenses and
-integration auditing to any target within .claude/ infrastructure. Identifies Layer 1
-(NL-achievable) improvements and Layer 2 (Ontology Framework) deferrals.
+Meta-Cognition-Level quality review skill with ultrathink deep reasoning. Applies
+universal research lenses and integration auditing to any target within .claude/
+infrastructure. Identifies Layer 1 (NL-achievable) improvements and Layer 2
+(Ontology Framework) deferrals.
 
 **Announce at start:** "I'm using rsil-review to run Meta-Cognition quality review
 for: $ARGUMENTS"
@@ -48,6 +49,10 @@ teammates, or auto-chain to other skills.
 !`cd /home/palantir && git diff --name-only HEAD~1 2>/dev/null | head -20`
 
 !`wc -l /home/palantir/.claude/references/agent-common-protocol.md 2>/dev/null`
+
+!`wc -l $ARGUMENTS 2>/dev/null`
+
+!`cat ~/.claude/agent-memory/rsil/MEMORY.md 2>/dev/null | head -50`
 
 **Feature Input:** $ARGUMENTS
 
@@ -200,34 +205,19 @@ derived by Lead in Phase R-0 based on the target's file references.
 
 ## Static Layer: Output Format
 
-Both agents use this standardized output structure.
+Both agents produce structured findings reports.
 
-**[A] claude-code-guide output:**
-```
-## Findings Table
-| ID | Finding | Layer | Category | Lens | CC Evidence |
+**[A] claude-code-guide output should include:**
+- Findings Table: ID, Finding, Layer, Category, Lens, CC Evidence
+- Category B Detail: What, Where (file:section), CC Capability, Why suboptimal, Proposed NL text
+- Category C Detail: What, Why L1 cannot, What L2 provides, Current best NL workaround
+- L1 Optimality Score (X/10)
+- Top 3 Recommendations
 
-## Category B Detail (Layer 1 — actionable)
-Per finding: What, Where (file:section), CC Capability, Why suboptimal, Proposed NL text
-
-## Category C Detail (Layer 2 — deferred)
-Per finding: What, Why L1 cannot, What L2 provides, Current best NL workaround
-
-## L1 Optimality Score: X/10
-## Top 3 Recommendations
-```
-
-**[B] Explore output:**
-```
-## Axis Results
-| Axis | File A | File B | Status | Findings |
-
-## Findings Detail
-Per finding: Axis, Severity, File A (path:line + content), File B (path:line + content),
-Inconsistency description, Specific fix
-
-## Integration Score: X/N axes passing
-```
+**[B] Explore output should include:**
+- Axis Results Table: Axis, File A, File B, Status, Findings
+- Findings Detail: Axis, Severity, File A (path:line + content), File B (path:line + content), Inconsistency, Specific fix
+- Integration Score (X/N axes passing)
 
 ---
 
@@ -482,6 +472,16 @@ If a durable pattern was discovered (applicable beyond this specific target):
 
 One-off findings go to tracker only. MEMORY.md receives patterns only.
 
+### Agent Memory Update
+
+Update `~/.claude/agent-memory/rsil/MEMORY.md` using Read-Merge-Write:
+- §1 Configuration: increment review count, update last review date
+- §2 Lens Performance: update per-lens statistics from this review
+- §3 Cross-Cutting Patterns: add new universal pattern (if discovered in this review)
+- §4 Lens Evolution: add candidate (if a new universal pattern suggests a new lens)
+
+Only add patterns that apply across ANY target. One-off findings stay in tracker only.
+
 ### PT Update
 
 If a PERMANENT Task exists, update Phase Status with RSIL results.
@@ -534,28 +534,16 @@ Pipeline complete. No auto-chaining.
 
 ---
 
-## Key Principles
+## Principles
 
-- **Framework is universal, scope is dynamic** — SKILL.md never changes per target
-- **Lead's R-0 synthesis is the core value** — Lenses × TARGET = specific questions
-- **Accumulated context is distilled into Lenses** — individual findings are not in SKILL.md
-- **AD-15 inviolable** — Category A REJECT, Category B ACCEPT, Category C DEFER
-- **Layer 1/2 boundary is the single test** — "achievable through NL + existing infra?"
-- **Lenses evolve** — new patterns discovered in future reviews can become L9, L10
-- **Evidence-based only** — every finding cites CC docs or file:line references
-- **User confirms application** — BREAK/FIX applied only after user approval
-- **Sequential thinking always** — Lead uses structured reasoning at every decision point
-- **Terminal, no auto-chain** — after RSIL, the user decides what happens next
-
-## Never
-
-- Use hardcoded Research Questions (generate from Lenses in R-0)
-- Use hardcoded Integration Axes (derive from file references in R-0)
-- Propose adding a new hook (AD-15 8→3 inviolable)
-- Promote Category C to Category B (if L2 needed, it's DEFER)
-- Accept findings without evidence (CC doc or file:line required)
-- Modify files without user approval
-- Auto-chain to another skill after completion
-- Embed accumulated context in SKILL.md (only Lenses, never raw findings)
-- Skip R-0 synthesis (the universal→specific bridge is mandatory)
-- Treat Lenses as fixed (they evolve with new pattern discoveries)
+- Framework is universal, scope is dynamic — generate Research Questions and Integration Axes from Lenses in R-0, never hardcode them
+- R-0 synthesis is the core value — the universal→specific bridge is mandatory for every review
+- Accumulated context distills into Lenses — individual findings stay in tracker, not SKILL.md
+- AD-15 inviolable — Category A REJECT, B ACCEPT, C DEFER. Never propose new hooks.
+- Layer 1/2 boundary test is definitive — if Layer 2 is needed, it's DEFER. Never promote C to B.
+- Lenses evolve — new universal patterns from future reviews become L9, L10
+- Every finding cites CC documentation or file:line references — no unsupported claims
+- User confirms all changes — present findings, wait for approval before modifying files
+- Use sequential-thinking at every decision point throughout the review
+- Terminal skill — user decides next step. No auto-chaining to other skills.
+- Never embed raw findings in SKILL.md — only universal Lenses belong here

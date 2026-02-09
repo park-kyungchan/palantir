@@ -28,3 +28,21 @@ When a design says it "absolutely" reflects an upstream requirement document, cr
 section-by-section cross-reference table. Found Operational Constraints from
 permanent-tasks-design §1 (max 2 concurrent, no token conservation) missing entirely
 from the CLAUDE.md v6.0 rewrite.
+
+### 6. Semantic mapping for section merges (2026-02-09)
+When a plan merges N items into M items (N>M), create an explicit mapping table:
+old item → new item. Count actual items, not "lines" (headers/blanks inflate counts).
+Found architecture claimed "21→11" but actual was 20→11 (off by 1 due to counting headers).
+The mapping itself was complete — all 20 original semantics preserved in 11 new items.
+
+### 7. Seed data derivability (2026-02-09)
+When a plan claims data is "derived from" a source, verify the derivation is mechanical.
+RSIL agent memory seed claimed per-lens statistics derived from tracker, but tracker had
+no per-lens tags. Statistics were actually manual estimates. Not a blocking issue when
+the data is self-correcting, but should be labeled as estimated.
+
+### 8. Chicken-and-egg in NL enforcement (2026-02-09)
+NL-based triggers have a fundamental detection gap: if the trigger fails to fire, the
+detection mechanism (which lives inside the triggered skill) also fails. Look for
+cross-system staleness detection — in RSIL, /rsil-review's dynamic context provides
+cross-skill visibility into /rsil-global staleness.

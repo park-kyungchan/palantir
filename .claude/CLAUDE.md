@@ -32,6 +32,12 @@ Pre-Execution (Phases 1-5) receives 70-80% of effort. Lead approves each phase t
 Max 3 iterations per phase before escalating.
 Every task assignment requires understanding verification before work begins.
 
+After completing pipeline delivery (Phase 9) or committing .claude/ infrastructure
+changes, Lead invokes /rsil-global for INFRA health assessment. Skip for trivial
+single-file edits (typo fixes), non-.claude/ changes, or read-only sessions.
+The review is lightweight (~2000 token observation budget) and presents findings
+for user approval before any changes are applied.
+
 ## 3. Roles
 
 ### Lead (Pipeline Controller)

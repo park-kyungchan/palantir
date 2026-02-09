@@ -76,13 +76,13 @@ Pipeline Skill Execution Complete
 
 ### Summary Table
 
-| Sprint | Skill | Phase | Findings | Accepted | Rejected | Deferred |
-|--------|-------|-------|----------|----------|----------|----------|
-| SKL-006 | /agent-teams-write-plan | P4 | 4 | 2 | 1 | 1 |
-| SKL-006 | /plan-validation-pipeline | P5 | 4 | 2 | 1 | 1 |
-| SKL-006 | /agent-teams-execution-plan | P6 | 7 | 7 | 0 | 0 |
-| SKL-006 | /delivery-pipeline | P9 | 9 | 8 | 0 | 1 |
-| **Total** | | | **24** | **19** | **2** | **3** |
+| Sprint | Skill | Phase | Source | Findings | Accepted | Rejected | Deferred |
+|--------|-------|-------|--------|----------|----------|----------|----------|
+| SKL-006 | /agent-teams-write-plan | P4 | rsil-review | 4 | 2 | 1 | 1 |
+| SKL-006 | /plan-validation-pipeline | P5 | rsil-review | 4 | 2 | 1 | 1 |
+| SKL-006 | /agent-teams-execution-plan | P6 | rsil-review | 7 | 7 | 0 | 0 |
+| SKL-006 | /delivery-pipeline | P9 | rsil-review | 9 | 8 | 0 | 1 |
+| **Total** | | | | **24** | **19** | **2** | **3** |
 
 ### Acceptance Rate: 79% (19/24)
 ### Rejection Reason: AD-15 Hook violation or API-level only (P4/P5 only)
@@ -166,6 +166,13 @@ Pipeline Skill Execution Complete
 - Lead-only skills are simpler to review (no teammate contract verification needed)
 - The "rejection cascade" pattern (F-1) may apply to other skills with user confirmation gates
 
+### 3.5 Global Findings (/rsil-global)
+
+_No global findings yet. This section will be populated when /rsil-global runs._
+
+| ID | Finding | Category | Severity | Tier | Lens | Status |
+|----|---------|----------|----------|------|------|--------|
+
 ---
 
 ## 4. Cross-Cutting Patterns Discovered
@@ -235,6 +242,29 @@ These accepted findings have NOT been implemented yet — they are design improv
 | P4-R4 | Skill preload templates | Content creation per agent, low ROI this sprint | H-2 |
 | P5-R4 | Effort parameter per agent | API-level only, not CC CLI | H-6 |
 | P9-R7 | Compact recovery state marker (Op-2→Op-4 gap) | Layer 2: requires persistent state across compaction | — |
+
+---
+
+## 6.5 Finding Schema (Extended)
+
+Findings from /rsil-global use extended YAML schema fields:
+
+```yaml
+- id: G-{N}                    # Global finding ID (monotonically increasing)
+  source_skill: rsil-global    # or rsil-review
+  finding_type: global         # or narrow
+  finding: "{description}"
+  category: "B"                # A (REJECT) / B (ACCEPT) / C (DEFER)
+  severity: "FIX"              # BREAK / FIX / WARN
+  detection_tier: 1            # 0-3 (which tier detected it)
+  cross_refs: []               # Related finding IDs from other skill
+  decomposed_to: []            # Narrow finding IDs if decomposed
+  promoted_to: null            # Global ID if promoted from narrow
+  status: "ACCEPTED"           # ACCEPTED / REJECTED / DEFERRED / APPLIED
+```
+
+Existing narrow findings (P4-R{N}, P5-R{N}, etc.) retain their current format.
+New narrow findings may optionally use the extended schema.
 
 ---
 
