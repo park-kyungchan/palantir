@@ -1,8 +1,20 @@
 # Claude Code Memory
 
+## INFRA v7.0 Integration Sprint — DELIVERED (2026-02-10)
+- **Status:** WS-A + WS-B COMPLETE
+- **WS-A:** task-api-guideline.md v5.0 (537L) → v6.0 (118L), 78% reduction
+  - Commit: 15521ec — 10→7 sections, 49/52 BRs preserved, 3 delegated to CLAUDE.md
+- **WS-B:** RSIL Audit S-2~S-4, 36 findings across 3 reviews, 27 APPLIED
+  - S-2: write-plan + validation (15 findings, all APPLIED, P4-R1/R2/P5-R1/R2 backlog cleared)
+  - S-3: permanent-tasks (11 findings, 5 APPLIED, 265→273L)
+  - S-4: execution-plan (10 findings, 7 APPLIED, 597→604L)
+- **4 SKILL.md modified:** write-plan (+8L), validation (+7L), permanent-tasks (+8L), execution-plan (+7L)
+- **Key patterns applied:** PT disambiguation (RA-R1-3), Phase 0 frontmatter (P-5), Evidence Sources (P-1), DP-{N} naming, v6.0 refs, GC preservation, semantic V-3
+- **Sessions:** infra-v7-integration (P1-3, P6 WS-A, WS-B S-2~S-4)
+
 ## RTD System + INFRA v7.0 — DELIVERED (2026-02-10)
 - **Status:** Phase 0→1→2→3→4→5→6→9 COMPLETE (P7-8 skipped, markdown-only)
-- **Commit:** TBD (pending Phase 9 commit)
+- **Commit:** 06c179d — 26 files changed, 1915 insertions, 89 deletions
 - **Architecture:** 4-Layer Observability
   - Layer 0: events.jsonl (async PostToolUse hook, 8-field JSONL per tool call)
   - Layer 1: rtd-index.md (Lead-maintained, WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS entries)
@@ -41,8 +53,7 @@
 
 ### Pending options (user decides):
   1. Ontology Framework T-1 brainstorming (`docs/plans/2026-02-08-ontology-bridge-handoff.md`)
-  2. task-api-guideline.md NLP conversion (v4.0/530 lines)
-  3. .claude.json MCP server entries cleanup (remove v1.0 cow-* servers)
+  2. .claude.json MCP server entries cleanup (remove v1.0 cow-* servers)
 
 ## Language Policy [PERMANENT] (2026-02-07)
 - User-facing conversation: Korean only
@@ -52,7 +63,7 @@
 
 ## Current Infrastructure State (v7.0) (2026-02-10)
 - CLAUDE.md: v7.0 (~206 lines, §0-§10) — v6.2 + §6 Observability RTD + §6 observability dir + §9 RTD recovery
-- task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged
+- task-api-guideline.md: v6.0 (118 lines, §1-§7) — NLP consolidated from v5.0 (537L), 78% reduction
 - agent-common-protocol.md: v3.0 (~108 lines) — v2.1 + L1/L2 PT Goal Linkage (optional)
 - Agents: 6 types (~460 lines) — v2.0 + RTD awareness (pt_goal_link + auto-capture notice)
 - Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` + `/rsil-global` — all 7 pipeline skills + permanent-tasks have RTD Index template
@@ -108,6 +119,14 @@
 - **Key lesson:** Lead must split at orchestration level (multiple tasks + multiple teammates), NOT tell a single teammate to "self-split internally"
 - **Details:** 3x failure in RTDI Sprint — monolithic 9-file directive → compact → re-spawn same → compact again → finally split into 3 parallel tasks
 
+## BUG-003: $CLAUDE_SESSION_ID not available in hook contexts [MEDIUM]
+- **Symptom:** PostToolUse hook cannot identify which agent made a tool call — all events attributed to "lead"
+- **Root cause:** $CLAUDE_SESSION_ID env var does not exist in Claude Code hook contexts (GitHub #17188 OPEN)
+- **Workaround (AD-29):** Use stdin `session_id` from SubagentStart (parent's SID) → map to agent name in session-registry.json. Unresolved SIDs fall back to "lead".
+- **Impact:** Agent attribution in events.jsonl is best-effort, not 100% accurate
+- **Fix:** When Claude Code exposes $CLAUDE_SESSION_ID to hooks, update on-subagent-start.sh to use child's actual SID
+- **Details:** `memory/agent-teams-bugs.md`
+
 ## Ontology Framework Status (2026-02-08)
 - **Architecture:** Layer 1 (Claude Code CLI + Agent Teams) + Layer 2 (Ontology Framework)
 - **Layer 2 scope:** General-purpose Ontology Framework mimicking Palantir Foundry
@@ -128,15 +147,15 @@
 - **Plan:** `docs/plans/2026-02-09-rsil-system.md` (1231L, 26 specs)
 - **Architecture Decisions:** AD-6~AD-11 (findings-only, three-tier, BREAK via AskUser, tracker namespacing, embedded copy, shared memory)
 - **Sessions:** rsil-system (P1-3), rsil-write-plan (P4), rsil-validation (P5), rsil-execution (P6)
-- **Cumulative data:** 24 findings, 79% acceptance
+- **Cumulative data:** 72 findings, 92% acceptance (after INFRA v7.0 S-2~S-4)
 
 ## Deferred Work
 - CH-002~005: `docs/plans/2026-02-07-ch002-ch005-deferred-design.yaml`
 - Agent memory initialization: Create MEMORY.md templates for each agent type
 - Observability Dashboard UI: Separate /brainstorming-pipeline (reads events.jsonl + rtd-index.md)
-- RSIL Audit S-2~S-7: Resume after INFRA v7.0 (tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`)
+- RSIL Audit S-5~S-7: Remaining targets (brainstorming [done S-1], CLAUDE.md, agent-common-protocol, hooks)
 
 ## Topic Files Index
 - `memory/infrastructure-history.md` — DIA evolution (v1→v4), Agent Teams redesign, Task API investigation, Ontology
 - `memory/skill-optimization-history.md` — SKL-001/002/003 detailed records
-- `memory/agent-teams-bugs.md` — BUG-001 details and workaround
+- `memory/agent-teams-bugs.md` — BUG-001, BUG-003 details and workarounds

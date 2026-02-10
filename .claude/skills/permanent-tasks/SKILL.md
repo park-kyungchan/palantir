@@ -8,7 +8,7 @@ argument-hint: "[requirement description or context]"
 
 # Permanent Tasks
 
-Reflect user requirements and conversation context into a PERMANENT Task — the Single Source of Truth that replaces `global-context.md` for all pipeline execution. The PERMANENT Task is a Task API entity (Task #1) that persists across the pipeline lifecycle.
+Reflect user requirements and conversation context into a PERMANENT Task — the Single Source of Truth that replaces `global-context.md` for all pipeline execution. The PERMANENT Task is a Task API entity (identified by subject "[PERMANENT]") that persists across the pipeline lifecycle. It is discovered dynamically via TaskList search (Step 1); no fixed task ID is assumed.
 
 **Announce at start:** "I'm using permanent-tasks to reflect requirements into the PERMANENT Task."
 
@@ -65,6 +65,9 @@ Step 2A        (READ-MERGE-WRITE)
 (CREATE)
 ```
 
+If a `[PERMANENT]` task is found, compare its User Intent against `$ARGUMENTS`. If they
+describe different features, ask the user to clarify before proceeding (RA-R1-3 pattern).
+
 If multiple `[PERMANENT]` tasks found (excluding DELIVERED): use the first one and
 warn the user about duplicates. Never create a new one when an active one exists.
 
@@ -85,7 +88,11 @@ TaskCreate:
   subject: "[PERMANENT] {feature/project name}"
   description: (see PT Description Template below)
   activeForm: "Managing PERMANENT Task"
+  blockedBy: []
+  blocks: []
 ```
+
+Task descriptions follow task-api-guideline.md v6.0 §3 for field requirements.
 
 After creation, output a summary to the user (see Step 3).
 
@@ -112,6 +119,9 @@ Use `sequential-thinking` to merge new requirements ($ARGUMENTS + conversation) 
 2. **Resolve contradictions** — old requirement vs new requirement → keep latest intent
 3. **Elevate abstraction** — 3+ specific requests sharing a principle → consolidate into the principle
 4. **Result**: Always a refined current state. Never an append-only log.
+
+Read-Merge-Write is idempotent: if context compact interrupts mid-consolidation,
+re-running the skill with the same input produces the same result safely.
 
 **Assess each section:**
 - **User Intent**: merge new requirements with existing
@@ -242,8 +252,8 @@ At each Decision Point in this phase, update the RTD index:
 3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
 
 Decision Points for this skill:
-- DP: PT creation or update decision
-- DP: Teammate notification (if PT version changes mid-work)
+- DP-1: PT creation or update decision
+- DP-2: Teammate notification (if PT version changes mid-work)
 
 ## Key Principles
 

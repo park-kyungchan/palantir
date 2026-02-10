@@ -1,6 +1,6 @@
 ---
 name: plan-validation-pipeline
-description: "Phase 5 plan validation — spawns devils-advocate to challenge Phase 4 design before implementation. Takes implementation plan as input. Requires Agent Teams mode and CLAUDE.md v6.0+."
+description: "Phase 0 (PT Check) + Phase 5 (Plan Validation) — spawns devils-advocate to challenge Phase 4 design. Requires Agent Teams mode and CLAUDE.md v6.0+."
 argument-hint: "[session-id or path to Phase 4 output]"
 ---
 
@@ -73,6 +73,9 @@ provides additional context for Phase 5 validation. Use it alongside the Dynamic
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
 the TaskCreate and return a summary. Then continue to Phase 5.1.
 
+If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
+User Intent, ask the user to clarify which feature to work on before proceeding.
+
 ---
 
 ## Phase 5.1: Input Discovery + Validation
@@ -99,7 +102,7 @@ After identifying the source, verify:
 |---|-------|------------|
 | V-1 | `global-context.md` exists with `Phase 4: COMPLETE` | Abort: "GC-v4 not found or Phase 4 not complete" |
 | V-2 | Implementation plan exists in `docs/plans/` | Abort: "Implementation plan not found" |
-| V-3 | Plan contains architecture decisions, file ownership, and change specifications | Abort: "Plan missing required sections: {list}" |
+| V-3 | Plan follows 10-section template (§1-§10) including architecture decisions, file ownership, and change specifications | Abort: "Plan missing required sections: {list}" |
 | V-4 | GC-v4 contains Scope, Phase 4 decisions, and implementation task breakdown | Abort: "GC-v4 missing required context sections" |
 
 Use `sequential-thinking` to evaluate validation results.
@@ -201,7 +204,7 @@ For each section of the implementation plan:
 ```
 .agent/teams/{session-id}/phase-5/devils-advocate-1/
 ├── L1-index.yaml    (YAML, ≤50 lines — challenges with severity ratings)
-├── L2-summary.md    (Markdown, ≤200 lines — challenge narrative with verdict)
+├── L2-summary.md    (Markdown, ≤200 lines — challenge narrative, verdict, Evidence Sources)
 └── L3-full/
     └── challenge-report.md  (full detailed challenge analysis)
 ```
@@ -240,6 +243,9 @@ Read the devils-advocate's L2-summary.md and L3-full/challenge-report.md:
 - If rejected: Return to Phase 4 with specific revision targets.
 
 **FAIL (critical issues found):**
+- Before presenting to user, Lead sends a re-verification message to devils-advocate
+  requesting specific evidence and confirmation for each CRITICAL finding. This multi-turn
+  exchange ensures CRITICAL verdicts are grounded.
 - Present critical issues to user with clear explanation.
 - Must return to Phase 4 for redesign.
 - Include specific sections that need revision.
@@ -273,7 +279,7 @@ Shall I proceed with Gate 5 approval?
 1. Update global-context.md:
    - Add `Phase 5: COMPLETE (Gate 5 APPROVED, Verdict: {verdict})`
    - If CONDITIONAL_PASS: add accepted mitigations to Constraints section
-   - Bump version if mitigations added (GC-v4 → GC-v5)
+   - Bump version if mitigations added (GC-v4 → GC-v5, preserving all prior sections)
 2. Write `phase-5/gate-record.yaml`
 3. Proceed to Clean Termination
 
@@ -336,10 +342,10 @@ At each Decision Point in this phase, update the RTD index:
 3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
 
 Decision Points for this skill:
-- DP: Devils-advocate spawn
-- DP: Verdict evaluation
-- DP: User review decision
-- DP: Gate 5 evaluation
+- DP-1: Devils-advocate spawn
+- DP-2: Verdict evaluation
+- DP-3: User review decision
+- DP-4: Gate 5 evaluation
 
 ### Sequential Thinking
 
@@ -382,6 +388,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - **Protocol delegated** — CLAUDE.md owns verification rules, skill owns orchestration
 - **Clean termination** — no auto-chaining to Phase 6
 - **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`
+- Task descriptions follow task-api-guideline.md v6.0 §3 for field requirements
 
 ## Never
 

@@ -83,9 +83,12 @@ Pipeline Skill Execution Complete
 | SKL-006 | /agent-teams-execution-plan | P6 | rsil-review | 7 | 7 | 0 | 0 |
 | SKL-006 | /delivery-pipeline | P9 | rsil-review | 9 | 8 | 0 | 1 |
 | COW-iter1 | COW pipeline iteration | run | rsil-global | 4 | 4 | 0 | 0 |
-| **Total** | | | | **28** | **23** | **2** | **3** |
+| INFRA-v7 | /agent-teams-write-plan + /plan-validation-pipeline | P4+P5 | rsil-review S-2 | 10+5 | 15 | 0 | 0 |
+| INFRA-v7 | /permanent-tasks | — | rsil-review S-3 | 7+4 | 10 | 0 | 1 |
+| INFRA-v7 | /agent-teams-execution-plan | P6 | rsil-review S-4 | 6+4 | 10 | 0 | 0 |
+| **Total** | | | | **64** | **58** | **2** | **4** |
 
-### Acceptance Rate: 82% (23/28)
+### Acceptance Rate: 91% (58/64)
 ### Rejection Reason: AD-15 Hook violation or API-level only (P4/P5 only)
 
 ---
@@ -216,18 +219,132 @@ Pipeline Skill Execution Complete
 
 These accepted findings have NOT been implemented yet — they are design improvements for future SKILL.md updates.
 
-| ID | Target Skill | Change Type | Effort |
-|----|-------------|-------------|--------|
-| P4-R1 | /agent-teams-write-plan | Directive template update | ~10 lines |
-| P4-R2 | /agent-teams-write-plan | Gate section guidance | ~5 lines |
-| P5-R1 | /plan-validation-pipeline | Directive output requirements | ~5 lines |
-| P5-R2 | /plan-validation-pipeline | Gate section multi-turn logic | ~10 lines |
+| ID | Target Skill | Change Type | Effort | Status |
+|----|-------------|-------------|--------|--------|
+| P4-R1 | /agent-teams-write-plan | Directive template update | ~10 lines | APPLIED (S-2) |
+| P4-R2 | /agent-teams-write-plan | Gate section guidance | ~5 lines | APPLIED (S-2) |
+| P5-R1 | /plan-validation-pipeline | Directive output requirements | ~5 lines | APPLIED (S-2) |
+| P5-R2 | /plan-validation-pipeline | Gate section multi-turn logic | ~10 lines | APPLIED (S-2) |
 
-**Total estimated effort:** ~30 lines across 2 SKILL.md files
+**All backlog items applied in S-2 retroactive audit (2026-02-10).**
 
-**Note:** P6-R1~R7 and P9-R1~R8+B1 were ALL applied immediately during their RSIL sessions (not backlogged).
+---
 
-**When to apply remaining backlog:** After SKL-006 sprint completes, or as part of a dedicated skill improvement sprint.
+## 3.6 Retroactive Audit (2026-02-10)
+
+### S-1: R1 brainstorming-pipeline (509L → 564L)
+
+| # | Finding | Category | Severity | Lens | Status |
+|---|---------|----------|----------|------|--------|
+| RA-R1-1 | Phase 0 missing from CLAUDE.md §2 Phase Pipeline table | B | FIX | L8 | APPLIED |
+| RA-R1-2 | Self-description "Phase 1-3" vs actual "Phase 0-3" (frontmatter + announce) | B | FIX | L8 | APPLIED |
+| RA-R1-3 | PT disambiguation: auto-match $ARGUMENTS vs PT User Intent, AskUser on mismatch only | B | FIX | L5 | APPLIED |
+| RA-R1-4 | Phase 1 auto-compact recovery gap: qa-checkpoint.md after 1.3 | B | FIX | L7 | APPLIED |
+| RA-R1-5 | Phase 1 intermediate state not persisted (category tracking) | B | WARN | L7 | ACCEPTED |
+| RA-R1-6 | GC-v2/v3 incremental schema formalized (explicit section templates) | B | FIX | L5 | APPLIED |
+| RA-R1-7 | Gate criteria lack per-criterion rationale fields | B | WARN | L2 | ACCEPTED |
+| RA-R1-8 | Phase 1 reasoning artifact not preserved beyond Scope Statement | B | WARN | L3 | ACCEPTED |
+
+**Totals:** 8 findings (5 APPLIED, 3 ACCEPTED-as-WARN), 0 BREAK, 0 REJECT, 0 DEFER
+**L1 Optimality:** 7.5/10 → ~8.5/10 (after applying 5 FIX items)
+**Integration Score:** 4/5 axes → 5/5 (after fixing Axis 1)
+**Files Modified:** CLAUDE.md (+1L), brainstorming-pipeline/SKILL.md (+55L)
+**Cross-Cutting Pattern Candidate:** P-5 "Phase 0 documentation gap" — Phase 0 exists in all 7 pipeline skills but was absent from CLAUDE.md §2.
+
+### 3.7 /agent-teams-write-plan + /plan-validation-pipeline (S-2) — 2026-02-10
+
+**Context:** Dual-skill retroactive audit as part of INFRA v7.0 Integration Sprint WS-B. Included 4 backlog items (P4-R1/R2, P5-R1/R2) plus 6 new findings + 2 architecture-derived RQs. Integration audit verified 5 axes.
+
+**Layer Boundary Findings (10, all Category B):**
+
+| ID | Finding | Lens | Severity | Target | Status |
+|----|---------|------|----------|--------|--------|
+| RA-S2-R1 | GC version schema implicit — add explicit preservation note | L1 | HIGH | both | APPLIED |
+| RA-S2-R2 | Gate-record lacks per-criterion evidence requirement (P4-R2) | L2 | MED | write-plan | APPLIED |
+| RA-S2-R3 | L2 output lacks Evidence Sources section (P5-R1) | L3 | MED | both | APPLIED |
+| RA-S2-R4 | G4-2 vs V-3 structural/semantic mismatch — align V-3 with 10-section | L5 | HIGH | validation | APPLIED |
+| RA-S2-R5 | PT scope disambiguation missing from Phase 0 (RA-R1-3) | L5 | MED | both | APPLIED |
+| RA-S2-R6 | CRITICAL verdict lacks multi-turn re-verification (P5-R2) | L4 | MED | validation | APPLIED |
+| RA-S2-R7 | Understanding checkpoint not explicit in directive template (P4-R1) | L1 | MED | write-plan | APPLIED |
+| RA-S2-R8 | Phase 0 not in frontmatter descriptions (P-5 pattern) | L8 | LOW | both | APPLIED |
+| RA-S2-R9 | RTD DP naming inconsistent — standardize DP-{N} format | L8 | LOW | both | APPLIED |
+| RA-S2-R10 | v6.0 task-api compatibility undocumented | L5 | MED | both | APPLIED |
+
+**Integration Audit (5 axes):**
+
+| Axis | Files | Status | Finding |
+|------|-------|--------|---------|
+| 1 | write-plan ↔ brainstorming-pipeline (GC-v3) | PASS | Consistent after S-1 fixes |
+| 2 | write-plan ↔ validation (GC-v4 contract) | WARN | V-3 semantic vs structural → fixed (RA-S2-R4) |
+| 3 | write-plan ↔ CLAUDE.md §6 (verification) | PASS | Aligned |
+| 4 | validation ↔ devils-advocate.md (exemption) | WARN | Evidence Sources gap → fixed (RA-S2-R3) |
+| 5 | Both ↔ tracker backlog (P4-R1/R2, P5-R1/R2) | BREAK→FIXED | Backlog status contradicted actual → §5 updated |
+
+**Totals:** 15 findings (10 layer + 5 integration), all APPLIED, 0 REJECT, 0 DEFER
+**L1 Optimality:** 6.5/10 → ~8/10 (after applying all FIX items)
+**Integration Score:** 3/5 → 5/5 (after BREAK fix + 2 WARN fixes)
+**Files Modified:** write-plan/SKILL.md (+8L), validation/SKILL.md (+7L), tracker §5 (backlog status)
+**Backlog cleared:** P4-R1, P4-R2, P5-R1, P5-R2 all APPLIED in this review
+
+### 3.8 /permanent-tasks (S-3) — 2026-02-10
+
+**Context:** Standalone skill (265L) for PERMANENT Task management. Reviewed for RA-R1-3 cascade, RTD naming, v6.0 compat. Integration audit verified 4 axes.
+
+**Layer Boundary Findings (7, all Category B):**
+
+| ID | Finding | Lens | Severity | Status |
+|----|---------|------|----------|--------|
+| RA-S3-R1 | DELIVERED transition contract note | L1 | MED | ACCEPTED-as-is |
+| RA-S3-R2 | Notification threshold adequate | L4 | MED | ACCEPTED-as-is |
+| RA-S3-R3 | PT disambiguation missing (RA-R1-3) | L5 | HIGH | APPLIED |
+| RA-S3-R4 | v6.0 task-api reference | L5 | LOW | APPLIED |
+| RA-S3-R5 | Compaction recovery idempotency | L7 | MED | APPLIED |
+| RA-S3-R6 | "Task #1" hardcoded (P6-R1) | L8 | LOW | APPLIED |
+| RA-S3-R7 | RTD DP naming (RA-S2-R9) | L8 | LOW | APPLIED |
+
+**Integration Audit (4 axes):**
+
+| Axis | Files | Status | Finding |
+|------|-------|--------|---------|
+| 1 | permanent-tasks ↔ brainstorming Phase 0 | PASS | All consistent |
+| 2 | permanent-tasks ↔ CLAUDE.md | PASS | 1 WARN (notification asymmetry) |
+| 3 | permanent-tasks ↔ task-api-guideline v6.0 | FIX | Missing blockedBy/blocks → APPLIED |
+| 4 | permanent-tasks ↔ agent-common-protocol | PASS | 1 WARN (Phase Status mention) |
+
+**Totals:** 11 findings (7 layer + 4 integration), 5 APPLIED, 2 ACCEPTED-as-is, 1 FIX APPLIED, 2 WARN, 1 ACCEPTED-as-is
+**L1 Optimality:** 7/10 → ~8.5/10
+**Integration Score:** 3/4 → 4/4
+**Files Modified:** permanent-tasks/SKILL.md (+8L, 265→273L)
+
+### 3.9 /agent-teams-execution-plan (S-4) — 2026-02-10
+
+**Context:** Phase 6 orchestrator skill (597L). CRITICAL focus on §3 reference check (V-3 semantic vs structural), GC schema chain preservation, Phase 0 cascade. Integration audit verified 4 axes.
+
+**Layer Boundary Findings (6, all Category B):**
+
+| ID | Finding | Lens | Severity | Status |
+|----|---------|------|----------|--------|
+| RA-EP-1 | V-3 semantic validation — replace §-number references with semantic descriptions | L5 | HIGH | APPLIED |
+| RA-EP-2 | Phase 0 PT disambiguation missing (RA-R1-3 cascade) | L5 | MED | APPLIED |
+| RA-EP-3 | Phase 0 not in frontmatter description (P-5 pattern) | L8 | LOW | APPLIED |
+| RA-EP-4 | RTD DP naming inconsistent — standardize DP-{N} (RA-S2-R9 cascade) | L8 | LOW | APPLIED |
+| RA-EP-5 | GC-v4→v5 update lacks explicit preservation instruction | L1 | MED | APPLIED |
+| RA-EP-6 | Implementer completion report missing Evidence Sources section (P-1 cascade) | L3 | MED | APPLIED |
+
+**Integration Audit (4 axes):**
+
+| Axis | Files | Status | Finding |
+|------|-------|--------|---------|
+| 1 | execution-plan ↔ write-plan (GC-v4 contract) | PASS | Input validation aligned |
+| 2 | execution-plan ↔ CLAUDE.md §6 (verification protocol) | WARN | Minor wording variation, functionally aligned |
+| 3 | execution-plan ↔ implementer.md (self-review source) | FIX | "implementer.md checklist" ambiguous → clarified "per §6.4 flow" — APPLIED |
+| 4 | execution-plan ↔ task-api-guideline v6.0 | PASS | §3 reference verified safe |
+
+**Totals:** 10 findings (6 layer + 4 integration), 7 APPLIED (6 layer + 1 axis FIX), 3 PASS/WARN (noted), 0 REJECT, 0 DEFER
+**L1 Optimality:** 6.5/10 → ~8/10 (after applying all FIX items)
+**Integration Score:** 3.5/4 → 4/4
+**Files Modified:** execution-plan/SKILL.md (+7L, 597→604L)
+**Key insight:** V-3 semantic validation (EP-1) was the highest-value finding — structural §-number references are fragile against plan template evolution; semantic descriptions are resilient.
 
 ---
 

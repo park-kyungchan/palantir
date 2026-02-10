@@ -1,6 +1,6 @@
 ---
 name: agent-teams-write-plan
-description: Use after brainstorming-pipeline to produce a detailed implementation plan (Phase 4). Takes architecture output and PERMANENT Task as input, spawns an architect to create a 10-section plan. Requires Agent Teams mode and CLAUDE.md v6.0+.
+description: "Phase 0 (PT Check) + Phase 4 (Detailed Design) — produces implementation plan from brainstorming architecture. Spawns verified architect for 10-section plan. Requires Agent Teams mode and CLAUDE.md v6.0+."
 argument-hint: "[brainstorming-session-id or path]"
 ---
 
@@ -72,6 +72,9 @@ provides additional context for Phase 4 design. Use it alongside the Dynamic Con
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
 the TaskCreate and return a summary. Then continue to Phase 4.1.
+
+If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
+User Intent, ask the user to clarify which feature to work on before proceeding.
 
 ---
 
@@ -148,8 +151,9 @@ The directive must include these context layers:
 5. **CH-001 Exemplar path** — `docs/plans/2026-02-07-ch001-ldap-implementation.md` for format reference
 
 Task-context must instruct architect to:
-- Read the PERMANENT Task via TaskGet for full project context (user intent, impact map)
-- Read architecture-design.md and CH-001 exemplar before starting
+- Step 1: Read the PERMANENT Task via TaskGet, read architecture-design.md and CH-001
+  exemplar, then explain your understanding to Lead and wait for verification
+- Step 2: After Lead confirms understanding, proceed with plan generation
 - Follow the 10-section template (§1-§10)
 - Use Read-First-Write-Second workflow for §5
 - Tag all §5 specs with Verification Level
@@ -186,7 +190,7 @@ docs/plans/YYYY-MM-DD-{feature-name}.md
 
 .agent/teams/{session-id}/phase-4/architect-1/
 ├── L1-index.yaml    (≤50 lines — tasks, files, decisions, risks)
-├── L2-summary.md    (≤200 lines — design narrative, trade-offs)
+├── L2-summary.md    (≤200 lines — design narrative, trade-offs, Evidence Sources)
 └── L3-full/
     └── implementation-plan.md  (copy of docs/plans/ file)
 ```
@@ -212,6 +216,9 @@ Use `sequential-thinking` for all gate evaluation.
 | G4-7 | §5 specs have Verification Level tags |
 | G4-8 | Plan satisfies GC-v3 Phase 4 Entry Requirements |
 
+Gate-record.yaml must include per-criterion evidence (file:line references or specific
+observations). A PASS without evidence is incomplete.
+
 ### User Review
 
 Present plan summary to user before final approval:
@@ -228,9 +235,9 @@ Shall I proceed with Gate 4 approval?
 ```
 
 ### On APPROVE
-1. GC-v3 → GC-v4 (add Implementation Plan Reference, Task Decomposition,
-   File Ownership Map, Phase 6 Entry Conditions, Phase 5 Validation Targets,
-   Commit Strategy; update Phase Pipeline Status)
+1. GC-v3 → GC-v4: preserve all GC-v3 sections and add Implementation Plan Reference,
+   Task Decomposition, File Ownership Map, Phase 6 Entry Conditions, Phase 5 Validation
+   Targets, Commit Strategy; update Phase Pipeline Status
 2. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) with Implementation Plan Reference,
    Task Decomposition summary, File Ownership Map, and Phase 4 COMPLETE status
 3. Write phase-4/gate-record.yaml
@@ -281,10 +288,10 @@ At each Decision Point in this phase, update the RTD index:
 3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
 
 Decision Points for this skill:
-- DP: Input validation and plan scope
-- DP: Architect spawn
-- DP: Plan completion assessment
-- DP: Gate 4 evaluation
+- DP-1: Input validation and plan scope
+- DP-2: Architect spawn
+- DP-3: Plan completion assessment
+- DP-4: Gate 4 evaluation
 
 ### Sequential Thinking
 All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, design, and verification.
@@ -315,6 +322,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - Protocol delegated — CLAUDE.md owns verification protocol, skill owns orchestration
 - Clean termination — no auto-chaining to Phase 5
 - Dual-save — docs/plans/ (permanent) + .agent/teams/ (session)
+- Task descriptions follow task-api-guideline.md v6.0 §3 for field requirements
 
 ## Never
 

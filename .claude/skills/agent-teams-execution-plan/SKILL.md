@@ -1,6 +1,6 @@
 ---
 name: agent-teams-execution-plan
-description: Use after agent-teams-write-plan (or plan-validation) to execute an implementation plan (Phase 6). Spawns adaptive implementers with understanding verification, two-stage review, and Gate 6 evaluation. Requires Agent Teams mode and CLAUDE.md v6.0+.
+description: "Phase 0 (PT Check) + Phase 6 (Implementation) — executes implementation plan from agent-teams-write-plan. Spawns adaptive implementers with understanding verification, two-stage review, and Gate 6 evaluation. Requires Agent Teams mode and CLAUDE.md v6.0+."
 argument-hint: "[session-id or path to implementation plan]"
 ---
 
@@ -79,6 +79,9 @@ provides additional context for Phase 6 execution. Use it alongside the Dynamic 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
 the TaskCreate and return a summary. Then continue to Phase 6.1.
 
+If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
+User Intent, ask the user to clarify which feature to work on before proceeding.
+
 ---
 
 ## Phase 6.1: Input Discovery + Validation
@@ -108,7 +111,7 @@ After identifying the source, verify:
 |---|-------|------------|
 | V-1 | `global-context.md` exists with Phase 4 or 5 COMPLETE | Abort: "GC-v4 not found or Phase 4 not complete" |
 | V-2 | Implementation plan file exists in `docs/plans/` | Abort: "Implementation plan not found" |
-| V-3 | Plan contains §3 (File Ownership) and §4 (TaskCreate Definitions) | Abort: "Plan missing required sections: {list}" |
+| V-3 | Plan contains File Ownership Assignment and TaskCreate Definitions (§3/§4 in 10-section template or equivalent) | Abort: "Plan missing required sections: {list}" |
 | V-4 | Plan contains §5 (Change Specifications) | Abort: "Plan missing §5 Change Specifications" |
 
 On all checks PASS → proceed to 6.2.
@@ -204,7 +207,7 @@ Task-context must instruct implementer to:
 - Read the PERMANENT Task via TaskGet for full project context (user intent, impact map)
 - Read the implementation plan before starting (especially §5 for their tasks)
 - Execute tasks in topological order within their component
-- Run self-review after each task using implementer.md checklist
+- Run self-review after each task (completeness, quality, YAGNI, testing per §6.4 flow)
 - Dispatch spec-reviewer then code-reviewer subagents (two-stage, ordered)
 - Include reviewer raw output in L2-summary.md
 - Write L1/L2/L3 after each task completion (Pre-Compact Obligation)
@@ -330,6 +333,11 @@ Exit code: 0 (PASS) or non-zero (FAIL)
 
 ## Self-Review Findings
 - {any issues found and fixed}
+
+## Evidence Sources
+- Sequential thinking: {key decision points analyzed}
+- Files read: {count} via Read/Glob/Grep
+- Reviewer evidence: included in Stage 1-2 sections above
 
 ## Artifacts
 - L1: .agent/teams/{session-id}/phase-6/implementer-{N}/L1-index.yaml
@@ -459,7 +467,7 @@ After Gate 6 APPROVE:
 
 Update PERMANENT Task (PT-v{N} → PT-v{N+1}) with implementation results and Phase 6 COMPLETE status.
 
-Add to global-context.md:
+Preserve all existing GC-v4 sections, then add to global-context.md:
 
 ```markdown
 ## Phase Pipeline Status
@@ -531,11 +539,11 @@ At each Decision Point in this phase, update the RTD index:
 3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
 
 Decision Points for this skill:
-- DP: Input validation and spawn algorithm
-- DP: Each implementer spawn
-- DP: Per-task completion assessment
-- DP: Monitoring interventions
-- DP: Gate 6 evaluation
+- DP-1: Input validation and spawn algorithm
+- DP-2: Each implementer spawn
+- DP-3: Per-task completion assessment
+- DP-4: Monitoring interventions
+- DP-5: Gate 6 evaluation
 
 ### Sequential Thinking
 
