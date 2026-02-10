@@ -1,161 +1,93 @@
 # Claude Code Memory
 
-## INFRA v7.0 Integration Sprint — DELIVERED (2026-02-10)
-- **Status:** WS-A + WS-B COMPLETE
-- **WS-A:** task-api-guideline.md v5.0 (537L) → v6.0 (118L), 78% reduction
-  - Commit: 15521ec — 10→7 sections, 49/52 BRs preserved, 3 delegated to CLAUDE.md
-- **WS-B:** RSIL Audit S-2~S-4, 36 findings across 3 reviews, 27 APPLIED
-  - S-2: write-plan + validation (15 findings, all APPLIED, P4-R1/R2/P5-R1/R2 backlog cleared)
-  - S-3: permanent-tasks (11 findings, 5 APPLIED, 265→273L)
-  - S-4: execution-plan (10 findings, 7 APPLIED, 597→604L)
-- **4 SKILL.md modified:** write-plan (+8L), validation (+7L), permanent-tasks (+8L), execution-plan (+7L)
-- **Key patterns applied:** PT disambiguation (RA-R1-3), Phase 0 frontmatter (P-5), Evidence Sources (P-1), DP-{N} naming, v6.0 refs, GC preservation, semantic V-3
-- **Sessions:** infra-v7-integration (P1-3, P6 WS-A, WS-B S-2~S-4)
+## Permanent Rules
 
-## RTD System + INFRA v7.0 — DELIVERED (2026-02-10)
-- **Status:** Phase 0→1→2→3→4→5→6→9 COMPLETE (P7-8 skipped, markdown-only)
-- **Commit:** 06c179d — 26 files changed, 1915 insertions, 89 deletions
-- **Architecture:** 4-Layer Observability
-  - Layer 0: events.jsonl (async PostToolUse hook, 8-field JSONL per tool call)
-  - Layer 1: rtd-index.md (Lead-maintained, WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS entries)
-  - Layer 2: Enhanced DIA (L1 pt_goal_link + L2 PT Goal Linkage)
-  - Layer 3: Recovery (PreCompact snapshot + SessionStart RTD injection)
-- **23 files, ~360 lines:** 2 created, 21 modified
-  - Hooks: on-rtd-post-tool.sh (NEW 147L), 3 hooks extended/rewritten, settings.json PostToolUse async
-  - CLAUDE.md v7.0: §6 Observability RTD + directory spec, §9 RTD recovery rewrite
-  - Protocol v3.0: L1/L2 PT Goal Linkage (optional, backward-compatible)
-  - 7 skills × RTD Index template, 6 agents × RTD awareness
-- **Key decisions:** AD-12~AD-29 (18 total), AD-29 ($CLAUDE_SESSION_ID doesn't exist — best-effort)
-- **Phase 5 amendments:** AD-29 (session registry limitation), CH-5 (permanent-tasks Cross-Cutting)
-- **RTD Pilot:** 5 DPs dogfooded during own implementation, ~120 tok/entry validated
-- **2 implementers:** Impl-1 (hooks+config 8 files) ∥ Impl-2 (docs 15 files), zero overlap
-- **Gate 6:** G6-1~G6-7 ALL PASS, interface consistency verified
-- **Plan:** `docs/plans/2026-02-10-rtd-system-implementation.md` (1244L)
-- **Sessions:** rtd-system (P1-3), rtd-write-plan (P4), rtd-validation (P5), rtd-execution (P6)
-- **Observability:** `.agent/observability/rtd-system/` (pilot data persists)
-
-## COW Pipeline v2.0 — DELIVERED (2026-02-09)
-- **Status:** Phase 4→5→6→9 COMPLETE (P7-8 skipped per user mandate)
-- **Commit:** 0e603f3 — 149 files changed, 4857 insertions, 36181 deletions
-- **Architecture:** Python SDK + CLI wrapper (Triple-Layer Verification)
-  - L1: gemini-3-pro-image-preview (visual), L2: gemini-3-pro-preview (reasoning), L3: Opus 4.6 (logic)
-- **Package:** `cow/core/` (SDK) + `cow/cli.py` (CLI) + `cow/config/` (config)
-- **12 new files** (~1536 lines): gemini_loop, ocr, diagram, layout_design, layout_verify, compile, cli, models, profiles, 3x __init__
-- **Deleted:** cow-cli/ (~90 files), cow-mcp/ (~33 files), outputs/, artifacts (~36K lines)
-- **Tech:** google-genai SDK v1.62.0 (sync API), PIL Image, Mathpix v3/text, XeLaTeX multi-pass
-- **Key decisions:** AD-8 (model role separation), AD-9 (fail-stop, no fallback), CH-01/02/03 (Phase 5 amendments)
-- **Pipeline artifacts:** `.agent/teams/cow-v2-{write-plan,validation,execution}/`
-- **Plans:** `docs/plans/2026-02-09-cow-v2-design.md` (778L) + `cow-v2-implementation.md` (2498L)
-- **4 implementers:** Foundation → {Extraction, Layout} parallel → CLI+Cleanup
-- **Gate 6:** All 7 criteria PASS, FROZEN CONTRACT verified
-- **Previous v1.0:** Superseded (was c14d592, MCP server-centric, 53 files/7367L)
-- **Next steps:** End-to-end integration testing with sample images, MCP server cleanup in .claude.json
-
-### Pending options (user decides):
-  1. Ontology Framework T-1 brainstorming (`docs/plans/2026-02-08-ontology-bridge-handoff.md`)
-  2. .claude.json MCP server entries cleanup (remove v1.0 cow-* servers)
-
-## Language Policy [PERMANENT] (2026-02-07)
+### Language Policy (2026-02-07)
 - User-facing conversation: Korean only
-- All technical artifacts: English only (GC, directives, tasks, L1/L2/L3, gates, hooks, designs, CLAUDE.md, agent .md, MEMORY.md)
-- CLAUDE.md §0 Language Policy
-- Rationale: token efficiency for Opus 4.6, machine-readable consistency, cross-agent parsing
+- All technical artifacts: English only
+- Rationale: token efficiency for Opus 4.6, cross-agent parsing consistency
 
-## Current Infrastructure State (v7.0) (2026-02-10)
-- CLAUDE.md: v7.0 (~206 lines, §0-§10) — v6.2 + §6 Observability RTD + §6 observability dir + §9 RTD recovery
-- task-api-guideline.md: v6.0 (118 lines, §1-§7) — NLP consolidated from v5.0 (537L), 78% reduction
-- agent-common-protocol.md: v3.0 (~108 lines) — v2.1 + L1/L2 PT Goal Linkage (optional)
-- Agents: 6 types (~460 lines) — v2.0 + RTD awareness (pt_goal_link + auto-capture notice)
-- Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` + `/rsil-global` — all 7 pipeline skills + permanent-tasks have RTD Index template
-- Hooks: 4 lifecycle hooks (SubagentStart, PreCompact, SessionStart, **PostToolUse NEW**) — PostToolUse async, captures ALL tools
-- Observability: `.agent/observability/{project-slug}/` — rtd-index.md, events.jsonl, session-registry.json, snapshots/
-- Verification: Natural language understanding verification (unchanged)
-- MCP Tools: sequential-thinking (mandatory all), tavily/context7 (mandatory by phase), github (as needed)
-- Detailed history: `memory/infrastructure-history.md`
+### Skill Optimization Process (2026-02-07)
+- claude-code-guide agent research required for every skill optimization
+- Common improvements: Dynamic Context Injection, $ARGUMENTS, Opus 4.6 Measured Language, argument-hint frontmatter
+- Per-skill improvements derived from claude-code-guide research (different each time)
+- Process: claude-code-guide research → design doc → SKILL.md → validation → commit
 
-## Skill Pipeline Status (2026-02-10)
-| SKL | Skill | Phase | Status |
-|-----|-------|-------|--------|
-| 001 | `/brainstorming-pipeline` | P1-3 | DONE + NLP v6.0 + Phase 0 + RTD template |
-| 002 | `/agent-teams-write-plan` | P4 | DONE + NLP v6.0 + Phase 0 + RTD template |
-| 003 | `/agent-teams-execution-plan` | P6 | DONE + NLP v6.0 + Phase 0 + RTD template |
-| 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 + RTD template |
-| 005 | `/verification-pipeline` | P7-8 | DONE + NLP v6.0 + Phase 0 + INFRA RSI + RTD template |
-| 006 | `/delivery-pipeline` | P9 | DONE (422L) + RTD template |
-| 007 | `/rsil-review` | — | DONE (549L) — Meta-Cognition framework, 8 Lenses |
-| 008 | `/rsil-global` | — | DONE (452L) — Auto-invoke INFRA health, Three-Tier |
-| — | `/permanent-tasks` | — | DONE + RTD template (CH-5: new Cross-Cutting section) |
-- Detailed history: `memory/skill-optimization-history.md`
-
-## Skill Optimization Process [PERMANENT] (2026-02-07)
-- **claude-code-guide agent research required**: Every skill optimization must investigate latest Claude Code features/Opus 4.6 optimization points relevant to that skill
-- **Common improvements (all skills)**:
-  1. Dynamic Context Injection (`!`shell``) — auto-inject relevant context at skill load
-  2. `$ARGUMENTS` variable — receive user input directly in skill
-  3. Opus 4.6 Measured Language — natural instructions, not excessive ALL CAPS/[MANDATORY]
-  4. `argument-hint` frontmatter — autocomplete UX
-- **Per-skill improvements**: Derived from claude-code-guide research (different each time)
-- **Design file format**: Markdown + YAML frontmatter
-- **Process**: claude-code-guide research → design doc → SKILL.md → validation → commit
-
-## User Visibility — ASCII Visualization [PERMANENT] (2026-02-08)
-- When updating orchestration-plan.md or reporting state changes, Lead outputs ASCII status visualization
-- User co-monitors orchestration-plan.md — visual progress reporting is essential
+### ASCII Status Visualization (2026-02-08)
+- Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
-- Added to CLAUDE.md §6 "User Visibility — ASCII Status Visualization"
 
-## BUG-001: permissionMode: plan blocks MCP tools [CRITICAL]
-- researcher/architect with `permissionMode: plan` get stuck on MCP tool calls
-- **Workaround: Always spawn with `mode: "default"`** (disallowedTools already blocks mutations)
-- Details: `memory/agent-teams-bugs.md`
+## Current INFRA State (v7.0, 2026-02-10)
 
-## BUG-002: Large-task teammates auto-compact before producing L1/L2 [HIGH]
-- **Symptom:** Teammate receives directive with massive scope (e.g., 9-file integration + MCP research), context fills with file reads before any work begins, auto-compact triggers, teammate loses all context with zero artifacts saved
-- **Root cause:** Directive prompt too large + reading many large files + MCP tool calls = context exhaustion before first write
-- **Meta-Level fix (CLAUDE.md §6 Pre-Spawn Checklist):**
-  - Gate S-1: Resolve ambiguity BEFORE spawning (ask user)
-  - Gate S-2: >4 files → MANDATORY split into multiple tasks/teammates (Lead orchestrates, not teammate)
-  - Gate S-3: Re-spawn after failure → directive MUST differ (same approach = same failure)
-- **Key lesson:** Lead must split at orchestration level (multiple tasks + multiple teammates), NOT tell a single teammate to "self-split internally"
-- **Details:** 3x failure in RTDI Sprint — monolithic 9-file directive → compact → re-spawn same → compact again → finally split into 3 parallel tasks
+| Component | Version | Size | Key Feature |
+|-----------|---------|------|-------------|
+| CLAUDE.md | v7.0 | ~206L | §6 Observability RTD, §9 RTD recovery |
+| task-api-guideline.md | v6.0 | 118L | NLP consolidated (was 537L, 78% reduction) |
+| agent-common-protocol.md | v3.0 | ~108L | L1/L2 PT Goal Linkage (optional) |
+| Agents | v2.0 | ~460L | 6 types, RTD awareness |
+| Hooks | 4 total | — | SubagentStart, PreCompact, SessionStart, PostToolUse (async) |
+| Observability | — | — | `.agent/observability/{slug}/` (rtd-index, events.jsonl, registry) |
 
-## BUG-003: $CLAUDE_SESSION_ID not available in hook contexts [MEDIUM]
-- **Symptom:** PostToolUse hook cannot identify which agent made a tool call — all events attributed to "lead"
-- **Root cause:** $CLAUDE_SESSION_ID env var does not exist in Claude Code hook contexts (GitHub #17188 OPEN)
-- **Workaround (AD-29):** Use stdin `session_id` from SubagentStart (parent's SID) → map to agent name in session-registry.json. Unresolved SIDs fall back to "lead".
-- **Impact:** Agent attribution in events.jsonl is best-effort, not 100% accurate
-- **Fix:** When Claude Code exposes $CLAUDE_SESSION_ID to hooks, update on-subagent-start.sh to use child's actual SID
-- **Details:** `memory/agent-teams-bugs.md`
+### Skills (10 total)
 
-## Ontology Framework Status (2026-02-08)
-- **Architecture:** Layer 1 (Claude Code CLI + Agent Teams) + Layer 2 (Ontology Framework)
-- **Layer 2 scope:** General-purpose Ontology Framework mimicking Palantir Foundry
-- **First domain:** TBD (user decides during brainstorming)
-- **Handoff:** `docs/plans/2026-02-08-ontology-bridge-handoff.md` (b3c1012)
-- **Reference files:** `park-kyungchan/palantir/Ontology-Definition/docs/bridge-reference/` (5 files, 3842 lines)
-- **Topics:** T-1 ObjectType → T-2 LinkType → T-3 ActionType → T-4 Integration
-- **Critical correction:** Entities are NOT Claude native capabilities — Framework is domain-agnostic
-- **Brainstorming = learning:** User progressively learns Ontology/Foundry through sessions
+| SKL | Skill | Phase | Notes |
+|-----|-------|-------|-------|
+| 001 | `/brainstorming-pipeline` | P1-3 | NLP v6.0 + Phase 0 + RTD |
+| 002 | `/agent-teams-write-plan` | P4 | NLP v6.0 + Phase 0 + RTD |
+| 003 | `/agent-teams-execution-plan` | P6 | NLP v6.0 + Phase 0 + RTD |
+| 004 | `/plan-validation-pipeline` | P5 | NLP v6.0 + Phase 0 + RTD |
+| 005 | `/verification-pipeline` | P7-8 | NLP v6.0 + Phase 0 + INFRA RSI + RTD |
+| 006 | `/delivery-pipeline` | P9 | 422L + RTD |
+| 007 | `/rsil-review` | — | 549L, 8 Lenses, Meta-Cognition |
+| 008 | `/rsil-global` | — | 452L, auto-invoke, Three-Tier |
+| — | `/permanent-tasks` | — | RTD + Cross-Cutting (CH-5) |
 
-## RSIL System — DELIVERED (2026-02-09)
-- **Status:** DELIVERED — P1→P6→P9 complete (P7-8 skipped, markdown-only)
-- **Two-Skill System:** `/rsil-global` (452L, auto-invoke via CLAUDE.md §2) + `/rsil-review` (549L, user-invoke)
-- **Shared Foundation:** 8 Lenses + AD-15 + Boundary Test (~85L embedded copy per skill, verified identical)
-- **CLAUDE.md §2:** 5-line NL discipline for auto-invoke trigger
-- **Agent Memory:** `~/.claude/agent-memory/rsil/MEMORY.md` (53L seed, 4-section schema)
-- **Tracker:** `docs/plans/2026-02-08-narrow-rsil-tracker.md` (283L, G-{N}/P-R{N} namespacing)
-- **Plan:** `docs/plans/2026-02-09-rsil-system.md` (1231L, 26 specs)
-- **Architecture Decisions:** AD-6~AD-11 (findings-only, three-tier, BREAK via AskUser, tracker namespacing, embedded copy, shared memory)
-- **Sessions:** rsil-system (P1-3), rsil-write-plan (P4), rsil-validation (P5), rsil-execution (P6)
-- **Cumulative data:** 72 findings, 92% acceptance (after INFRA v7.0 S-2~S-4)
+### RSIL Quality Data
+- Cumulative: 72 findings, 92% acceptance (9 reviews: 1 global, 4 narrow, 4 retroactive)
+- Tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`
+- Agent memory: `~/.claude/agent-memory/rsil/MEMORY.md`
+- Remaining audit targets: S-5 brainstorming (done S-1), S-6 CLAUDE.md, S-7 agent-common-protocol+hooks
 
-## Deferred Work
+### Known Bugs
+
+| ID | Severity | Summary | Workaround |
+|----|----------|---------|------------|
+| BUG-001 | CRITICAL | `permissionMode: plan` blocks MCP tools | Always spawn with `mode: "default"` |
+| BUG-002 | HIGH | Large-task teammates auto-compact before L1/L2 | CLAUDE.md §6 Pre-Spawn Checklist (S-1/S-2/S-3 gates) |
+| BUG-003 | MEDIUM | $CLAUDE_SESSION_ID unavailable in hooks (GH #17188) | AD-29: SubagentStart stdin SID → session-registry.json |
+
+Details: `memory/agent-teams-bugs.md`
+
+## Next Topics
+
+### Ontology Framework — Brainstorming Chain
+
+Layer 2 (Ontology Framework) is the next major initiative. Entry via `/brainstorming-pipeline`.
+Layer 1 achievement ~70% (RTDI assessment). Layer 2 = 0% → ~30% of full vision.
+
+| Topic | Name | Input Docs | Depends On | Output |
+|-------|------|-----------|------------|--------|
+| T-0 | RTDI Layer 2 Strategy | `rtdi-codebase-assessment.md` + `ontology-bridge-handoff.md` | — | L2 scope, bootstrap domain, migration strategy |
+| T-1 | ObjectType + Property + Struct | T-0 output + `bridge-reference/` (5 files) | T-0 | ObjectType schema, Property system, Struct definitions |
+| T-2 | LinkType + Interface | T-1 output + existing L1 cross-refs | T-1 | LinkType schema, Interface contracts |
+| T-3 | ActionType + Pre/Postconditions | T-1 output + pipeline phase definitions | T-1 | ActionType schema, guard/effect system |
+| T-4 | Framework Integration | T-1~T-3 outputs + current INFRA state | T-1,T-2,T-3 | Runtime integration architecture |
+
+Key docs:
+- WHY: `docs/plans/2026-02-10-rtdi-codebase-assessment.md` (660L, 6 gaps, 8 success criteria)
+- WHAT: `docs/plans/2026-02-08-ontology-bridge-handoff.md` (~450L, T-1~T-4 definitions)
+- HOW: `docs/plans/2026-02-10-ontology-sequential-protocol.md` (~418L, T-0~T-4 calling protocol)
+- Bridge Reference: `park-kyungchan/palantir/Ontology-Definition/docs/bridge-reference/` (5 files, 3842L)
+- 6 Layer 1 structural gaps: NL assertion fragility, unstructured state, knowledge fragmentation, validation without enforcement, agent attribution (BUG-003), ripple detection
+- 8 deferred items mapped to Ontology components (see assessment §8)
+
+### Other Deferred Work
 - CH-002~005: `docs/plans/2026-02-07-ch002-ch005-deferred-design.yaml`
-- Agent memory initialization: Create MEMORY.md templates for each agent type
-- Observability Dashboard UI: Separate /brainstorming-pipeline (reads events.jsonl + rtd-index.md)
-- RSIL Audit S-5~S-7: Remaining targets (brainstorming [done S-1], CLAUDE.md, agent-common-protocol, hooks)
+- Agent memory initialization: MEMORY.md templates for each agent type
+- Observability Dashboard: `/brainstorming-pipeline` topic (reads events.jsonl + rtd-index.md)
+- COW v2.0: End-to-end testing with sample images, .claude.json MCP cleanup
 
 ## Topic Files Index
-- `memory/infrastructure-history.md` — DIA evolution (v1→v4), Agent Teams redesign, Task API investigation, Ontology
-- `memory/skill-optimization-history.md` — SKL-001/002/003 detailed records
-- `memory/agent-teams-bugs.md` — BUG-001, BUG-003 details and workarounds
+- `memory/infrastructure-history.md` — Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
+- `memory/skill-optimization-history.md` — SKL-001~SKL-005 detailed records
+- `memory/agent-teams-bugs.md` — BUG-001~BUG-003 details and workarounds

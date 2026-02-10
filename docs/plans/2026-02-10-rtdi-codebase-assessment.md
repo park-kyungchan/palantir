@@ -28,8 +28,9 @@ This Document (RTDI Assessment)
 ```
 
 Other related artifacts:
-- `MEMORY.md` → "Ontology Framework Status" section (index entry)
-- `MEMORY.md` → "INFRA v7.0 Integration Sprint" section (Layer 1 completion context)
+- `MEMORY.md` → "Next Topics → Ontology Framework — Brainstorming Chain" section (index entry)
+- `MEMORY.md` → "Current INFRA State (v7.0, 2026-02-10)" section (Layer 1 completion context)
+- `docs/plans/2026-02-10-ontology-sequential-protocol.md` → Sequential calling protocol (T-0~T-4)
 - `.claude/skills/rsil-review/SKILL.md` → Layer 1/2 boundary definitions (Static Layer)
 - `.claude/skills/rsil-global/SKILL.md` → Category C DEFER items (Layer 2 evidence)
 - `docs/plans/2026-02-08-narrow-rsil-tracker.md` → §6 Deferred Items (concrete L2 gaps)

@@ -18,10 +18,28 @@
 | 3 | Full migration awareness in every design | "항상 Ontology 전체로 마이그레이션할 것임을 고려해야한다" |
 | 4 | Full Ontology doc reference (all 9 docs), restructured | "전체 Ontology 문서 참조, 재구조화해서 저장" |
 | 5 | Layer 2 = general-purpose Ontology Framework | "범용 프레임워크" |
-| 6 | First domain: TBD | "아직 미정" |
+| 6 | First domain: INFRA itself (bootstrap) | "아직 미정" → resolved in rtdi-codebase-assessment.md §9 |
 | 7 | CORRECTION: Entities are NOT Claude native capabilities | "왜 Entity가 Claude Native Capabilities 자체가 되어버렸나?" |
 | 8 | Foundry scope: definition system first → runtime later | "정의 시스템이 가장 중요하다" |
 | 9 | Brainstorming = user learning + decision-making | "사용자가 Ontology/Foundry에 대한 학습을 해서 더 상세한 feedback을 해나갈 수 있도록" |
+
+### Decision #6 Resolution (2026-02-10)
+
+First domain resolved to **INFRA itself** (bootstrap: infrastructure defines its own
+schema). Evidence: `docs/plans/2026-02-10-rtdi-codebase-assessment.md` §9 — "First
+domain for Ontology Framework is the INFRA itself." This means T-1~T-4 brainstorming
+will use the 35 INFRA entities (from v7.0 inventory) as the initial ObjectType candidates.
+
+### Topic Chain (T-0 → T-1 → T-2 → T-3 → T-4)
+
+This document covers T-1 (ObjectType) through T-4 (Integration Architecture).
+
+**Prerequisite:** T-0 (RTDI Layer 2 Integration Strategy) must complete first.
+- T-0 input: `docs/plans/2026-02-10-rtdi-codebase-assessment.md` (WHY Layer 2)
+- T-0 output: Design file defining Layer 2 scope, bootstrap domain, migration strategy
+- Sequential protocol: `docs/plans/2026-02-10-ontology-sequential-protocol.md`
+
+Once T-0 completes, proceed to T-1 with the selected domain as context.
 
 ### Critical Architectural Correction (Decision #7)
 
@@ -418,3 +436,8 @@ Design file → `/agent-teams-write-plan` → `/agent-teams-execution-plan`.
 - Sequential and thorough execution
 - claude-code-guide research mandatory before any skill/protocol design
 - Each design file must include Forward-Compatibility section
+- Layer 2 must not invalidate any RSIL finding (72 findings, all remain valid)
+- Layer 2 adoption must be incremental (one ObjectType at a time, not big-bang)
+- First domain is INFRA itself (bootstrap: INFRA defines its own schema)
+- RSIL Category C items (rtdi-codebase-assessment.md §8) are minimum viable Layer 2 scope
+- AD-15 inviolable: 4 hooks maximum, no new hooks for Layer 2
