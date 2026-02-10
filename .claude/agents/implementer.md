@@ -64,6 +64,7 @@ than design changes.
 
 ## Output Format
 - **L1-index.yaml:** Modified files with change descriptions
+- Include `pt_goal_link:` in L1 entries when your work directly addresses a project requirement (R-{N}) or architecture decision (AD-{M}).
 - **L2-summary.md:** Implementation narrative with decisions
 - **L3-full/:** Code diffs, self-test results, implementation notes
 
@@ -79,3 +80,4 @@ Nesting limit: 1 level. All sub-work must stay within your file ownership bounda
 - Team Memory: edit your own section only (use `## {your-role-id}` as anchor)
 - If you need files outside your boundary, tell Lead you're blocked and specify which files
 - Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.
+- Your tool calls are automatically captured by the RTD system for observability. No action needed — focus on your assigned work.

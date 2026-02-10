@@ -174,17 +174,56 @@
 - §10 Phase 5 targets should challenge ASSUMPTIONS (with evidence + risk-if-wrong), not just design choices
 - Agent memory seed data should be DERIVABLE from existing data stores — no manual reconstruction
 
-## COW Pipeline Redesign — Phase 4 (2026-02-09)
+## COW v2.0 Implementation Plan — Phase 4 (2026-02-09)
 
 ### Key Patterns Learned
-- **Boilerplate count vs complexity:** 16 files for Implementer-1 exceeds the 4-file guideline, but most are <30 lines (__init__.py, Pydantic model files). File count is a proxy for complexity, not the metric itself. When files are boilerplate, the real metric is functional surface area.
-- **Foundation-first task graph:** When all N servers depend on shared models, making models the first task with zero dependencies maximizes parallelism for subsequent tasks. T-1 (models) → T-2..T-7 (parallel) is optimal.
-- **Adaptation scope grading:** "Reuse existing module" spans from copy+rename-imports (low) to significant rewrite (high). For each module, grade the adaptation: client.py = HIGH (new return types, config approach), separator.py = HIGH (extract subset, new output types), database.py = MEDIUM (same schema, new imports), models.py = LOW (copy, rename imports).
-- **MCP server pattern is uniform:** All 6 servers follow the identical __main__.py pattern (Server, list_tools, call_tool, stdio_server). Defining this once in §5 with a "pattern" spec eliminates repetition. Implementers only need to know their tool signatures.
-- **Read-every-source-file discipline (confirmed):** Reading all 10 cow-cli source files before writing specs caught: (1) LaTeX exporter uses pdfLaTeX not XeLaTeX — needs full rewrite, not adaptation. (2) separator.py is 712L but only _cnt_to_region() is needed. (3) config.py uses keyring — MCP servers use env vars instead.
+- **Verbatim code specs > prose descriptions:** For greenfield 12-file SDK, providing full Python code with imports, classes, and method signatures in §5 eliminates implementer interpretation variance. ~900L plan for ~12 files is the right ratio (~75L spec per file avg).
+- **Canonical error location discipline:** ModelUnavailableError defined in config/models.py, imported by gemini_loop.py. Rule: error classes live near their primary trigger, not their primary raiser.
+- **Incremental __init__.py construction:** When parallel implementers create modules in the same package, __init__.py starts with foundation exports only. Integrator completes it. Prevents import errors during parallel work.
+- **Lazy CLI imports for graceful degradation:** Each `cmd_*` imports its module at call time → `--help` works without all deps, and import errors are specific to the failing command.
+- **API key extraction from MCP config:** When migrating from MCP-server architecture to SDK, API keys move from `.claude.json` mcpServers env to shell env vars. Document exact values in §10 for Lead to verify.
+- **Adaptation scope grading (refined):** HIGH=new dual-model loop from single-model (gemini.py→gemini_loop.py), MEDIUM=simplify async→sync (client.py→ocr.py mathpix), LOW=remove fallback+sync (compiler.py→compile.py), NEW=no v1.0 analog.
 
-### Implementation Plan Design Principles (new)
-- For greenfield packages (all CREATE, no MODIFY): §10 Migration focuses on what to reuse/remove, not backward compatibility
-- §5 should provide code signatures (class + method) not just prose descriptions — implementers need API contracts
-- V6 Code Plausibility items should focus on external dependency assumptions (SDK API shape, API response format) not internal logic
-- Phase 5 targets should be framed as falsifiable assumptions with specific risk-if-wrong scenarios
+### Implementation Plan Design Principles
+- For greenfield packages (all CREATE, no MODIFY): §10 Entry Conditions focus on environment + API keys + legacy inventory
+- §5 should provide complete runnable code with imports — implementers copy-adapt, not interpret prose
+- V6 Code Plausibility items focus on SDK API surface assumptions (VP-1~7), not internal logic
+- Phase 5 targets (Appendix B) framed as falsifiable assumptions with evidence + risk-if-wrong
+- §6 Interface Contracts should be a complete reference table: model→module→fields mapping
+- §9 Commit Strategy: for rebuild projects, explicit `git add` for new + `git rm -r` for deleted
+
+## RTD System Architecture — Phase 3 (2026-02-10)
+
+### Key Patterns Learned
+- **Scope isolation resolves AD contradictions:** When two ADs appear to conflict (AD-15 "no new hooks" vs AD-17 "all tools captured"), check if they were established in different project contexts. Scoping each to its own context resolves the tension without amending either. This is cleaner than carve-outs or amendments.
+- **Coordination file > env var for cross-hook communication:** Hooks cannot reliably access environment variables set by Lead or other hooks. A single-line file (`.current-project`) that all hooks read is the simplest coordination mechanism. Lower complexity than scanning directories or parsing manifests.
+- **Redundancy elimination saves per-event:** Removing fields derivable from context (pid from directory, phase from DP, tags from tool name) reduced event schema from 10→8 fields. Each ~50B savings × 200-500 events/session = measurable.
+- **No new section when existing sections fit:** Proposed §11 "Observability" was unnecessary — RTD principles fit naturally in §6 (Lead behavior) and §9 (recovery). Adding sections fragments related content. Always check if existing structure accommodates new content before creating new structure.
+- **YAGNI over comprehensive capture:** Removing diffs/ directory (git handles diffs) and manifest config (all projects use same scope) eliminated complexity without losing R-1~R-7 capability. Feature request ≠ implementation requirement.
+
+### Infrastructure Architecture Principles
+- **4-layer stack** (raw events → curated index → enhanced artifacts → recovery) is reusable for any observability-augmented system
+- **Best-effort linking** (DP signal file) is acceptable when an authoritative source (rtd-index) exists — convenience data can be lossy, truth source cannot
+- **Per-session event files** (not single file) enable natural lifecycle management without rotation logic
+- **Graceful degradation** as the universal safety net: every new v7.0 feature falls back to v6.2 behavior when RTD data is absent
+
+### Gate 3 Probing Lessons (architect-2 continuation)
+- **Single-file coordination has concurrency limits:** `.current-project` assumes single-pipeline — consistent with entire INFRA being single-pipeline. Document as known limitation with deferred migration path (`.current-projects.json` session→slug map). Don't add multi-X support to one subsystem when the whole system is single-X.
+- **Verify hook input schemas at implementation, not design:** AD-23 assumed SubagentStart provides child session_id, but SubagentStart fires in PARENT context. Design 3-tier fallbacks for uncertain API surface: verify→workaround→graceful-degradation. The existing hook code (what fields it actually parses) is the best evidence for input availability.
+- **Cohesion > Navigation for LLM-consumed documents:** When deciding between a new section (§11) vs extending existing sections (§6+§9), LLMs benefit from co-located related content over clean header-based navigation. Humans scan headers; LLMs read sequentially. Cheap mitigation: add keywords to existing headers (`### Monitoring Progress (including RTD Observability)`).
+
+### Risk Patterns (new)
+- AD contradiction across projects → scope isolation (both ADs valid in their context)
+- Hook coordination → shared file (not env var, not scanning)
+- Large stdin to hooks → field-level summarization with hard byte limits
+- Recovery rewrite → fallback to previous behavior on any failure path
+- Uncertain API surface → 3-tier fallback (verify at impl → workaround → graceful degradation)
+- Single-resource coordination → document limitation + deferred migration, don't over-solve
+
+## RTD System Implementation Plan — Phase 4 (2026-02-10)
+
+### Key Patterns Learned
+- **V-EXACT for shell scripts, V-HIGH for templates:** Shell scripts are fragile (missing quote = broken hook). Copy-paste-ready specs eliminate interpretation risk. Templates with variable substitution can be V-HIGH safely.
+- **AC-0 anchors plan to reality:** Every task starts with "Read current file, verify context matches." Line numbers drift between plan writing and execution — AC-0 catches this at task start, not at edit failure.
+- **Bootstrap templates ≠ live files:** When pilot files already exist, templates are documentation (reference formats for future projects), not files to create. Distinguish clearly to prevent overwrite.
+- **Cross-implementer contracts are the integration spec:** With zero file overlap, the only coordination needed is shared data format (events.jsonl schema, .current-project format, DP naming). Specify these explicitly in §6.

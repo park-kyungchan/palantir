@@ -1,6 +1,6 @@
 ---
 name: brainstorming-pipeline
-description: Use when starting a new feature or task that needs Agent Teams pipeline orchestration through Phase 1-3 (Discovery, Research, Architecture). Requires Agent Teams mode enabled and CLAUDE.md v5.0+.
+description: Use when starting a new feature or task that needs Agent Teams pipeline orchestration through Phase 0-3 (PT Check, Discovery, Research, Architecture). Requires Agent Teams mode enabled and CLAUDE.md v5.0+.
 argument-hint: "[feature description or topic]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[feature description or topic]"
 
 Agent Teams-native Phase 0-3 orchestrator. Transforms a feature idea into a researched, validated architecture through structured team collaboration with understanding verification.
 
-**Announce at start:** "I'm using brainstorming-pipeline to orchestrate Phase 1-3 for this feature."
+**Announce at start:** "I'm using brainstorming-pipeline to orchestrate Phase 0-3 for this feature."
 
 **Core flow:** PT Check (Lead) → Discovery (Lead) → Deep Research (researcher) → Architecture (architect) → Clean Termination
 
@@ -53,28 +53,36 @@ The following is auto-injected when this skill loads. Use it for Phase 1 Recon.
 
 Lightweight step (~500 tokens). No teammates spawned, no verification required.
 
-Call `TaskList` and search for a task with `[PERMANENT]` in its subject.
+Call `TaskList` and search for tasks with `[PERMANENT]` in their subject.
 
 ```
 TaskList result
      │
-┌────┴────┐
-found      not found
-│           │
-▼           ▼
-TaskGet →   AskUser: "No PERMANENT Task found.
-read PT     Create one for this feature?"
-│           │
-▼         ┌─┴─┐
-Continue  Yes   No
-to 1.1    │     │
-          ▼     ▼
-        /permanent-tasks    Continue to 1.1
-        creates PT-v1       without PT
-        → then 1.1
+┌────┼────────┐
+none  1        2+
+│     │        │
+▼     ▼        ▼
+Ask   Validate Match $ARGUMENTS against
+User  match    each PT's User Intent
+│     │        │
+▼     │     ┌──┴──┐
+Create│     match  no match
+PT    │     │      │
+│     ▼     ▼      ▼
+│   Continue  Continue  AskUser:
+│   to 1.1    to 1.1    "Multiple PTs found.
+▼                       Which is for this session?"
+/permanent-tasks
+creates PT-v1
+→ then 1.1
 ```
 
-If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
+**PT validation:** When a [PERMANENT] task is found, compare its User Intent section
+against `$ARGUMENTS`. If they describe the same feature, use it. If they clearly describe
+a different feature (e.g., PT says "COW Pipeline" but $ARGUMENTS says "Ontology Framework"),
+ask the user whether to use the existing PT or create a new one.
+
+If a PERMANENT Task exists and matches, its content (user intent, codebase impact map, prior decisions)
 provides additional context for Phase 1 discovery. Use it alongside the Dynamic Context above.
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
@@ -141,6 +149,32 @@ When the conversation reaches strategy decisions, present a structured compariso
 Always 2-3 options. Lead with the recommended option and explain why.
 Use `sequential-thinking` to formulate the trade-off analysis before presenting.
 After user selection, Q&A may continue for remaining categories.
+
+### 1.3.5 Phase 1 Checkpoint
+
+After Approach Exploration (1.3), create a lightweight checkpoint to protect against
+auto-compact during extended Q&A:
+
+**`.agent/teams/{session-id}/phase-1/qa-checkpoint.md`:**
+
+```markdown
+# Phase 1 Q&A Checkpoint — {feature}
+
+## Categories Covered
+{List which of PURPOSE/SCOPE/CONSTRAINTS/APPROACH/RISK/INTEGRATION are resolved}
+
+## Approach Selected
+{The comparison result from 1.3 and user's choice}
+
+## Key Decisions So Far
+{Decisions locked in from conversation}
+
+## Scope Direction (Draft)
+{Early boundary draft before formal Scope Statement}
+```
+
+This file enables recovery if compact occurs before Gate 1 creates formal artifacts.
+On recovery, read qa-checkpoint.md and resume Q&A from the last covered category.
 
 ### 1.4 Scope Crystallization
 
@@ -329,7 +363,17 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
 | G2-5 | L1/L2 quality meets standard |
 
 **On APPROVE:**
-1. Update global-context.md → GC-v2 (add research findings, codebase constraints, Phase 3 input)
+1. Update global-context.md → GC-v2 with these additions:
+   ```markdown
+   ## Research Findings
+   {Per-domain key findings, gaps, and recommendations from researcher L2s}
+
+   ## Codebase Constraints
+   {Technical constraints discovered during research that affect architecture}
+
+   ## Phase 3 Input
+   {Architecture focus areas, expected decisions, known risks}
+   ```
 2. Shutdown researchers
 3. Write `phase-2/gate-record.yaml`
 4. Update orchestration-plan.md
@@ -409,7 +453,18 @@ Architect submits [PLAN] before execution. Lead approves, then architect designs
 | G3-7 | Decisions documented with rationale |
 
 **On APPROVE:**
-1. Update global-context.md → GC-v3 (architecture decisions, component map, interfaces, Phase 4 entry)
+1. Update global-context.md → GC-v3 with these additions:
+   ```markdown
+   ## Architecture Summary
+   {Component overview, hierarchy, key interfaces from architect L2}
+
+   ## Architecture Decisions
+   | # | Decision | Rationale | Phase |
+   {AD-{N} entries from architect's design}
+
+   ## Phase 4 Entry Requirements
+   {Implementation constraints, verification criteria, expected file count}
+   ```
 2. Write `phase-3/gate-record.yaml`
 3. Proceed to Clean Termination
 
@@ -454,6 +509,22 @@ Input: the artifacts above. Update PERMANENT Task with `/permanent-tasks` if sco
 ---
 
 ## Cross-Cutting Requirements
+
+### RTD Index
+
+At each Decision Point in this phase, update the RTD index:
+1. Update `current-dp.txt` with the new DP number
+2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
+3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+
+Decision Points for this skill:
+- DP: Scope crystallization (1.4 approval)
+- DP: Approach selection (1.3 user choice)
+- DP: Researcher spawn (2.3)
+- DP: Gate 1 evaluation
+- DP: Gate 2 evaluation
+- DP: Architect spawn (3.1)
+- DP: Gate 3 evaluation
 
 ### Sequential Thinking
 

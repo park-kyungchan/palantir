@@ -57,6 +57,19 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-rtd-post-tool.sh",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
@@ -64,5 +77,6 @@
     "superpowers@superpowers-marketplace": true
   },
   "language": "Korean",
-  "teammateMode": "tmux"
+  "teammateMode": "auto",
+  "model": "claude-opus-4-6"
 }

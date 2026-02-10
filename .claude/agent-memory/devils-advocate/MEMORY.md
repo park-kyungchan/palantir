@@ -46,3 +46,52 @@ NL-based triggers have a fundamental detection gap: if the trigger fails to fire
 detection mechanism (which lives inside the triggered skill) also fails. Look for
 cross-system staleness detection — in RSIL, /rsil-review's dynamic context provides
 cross-skill visibility into /rsil-global staleness.
+
+### 9. Empirical SDK verification is the strongest evidence (2026-02-09)
+When a plan assumes SDK API surface (method exists, type signature, error types), don't
+rely on documentation alone. Install the SDK locally and test:
+- `inspect.signature()` for method signatures
+- `asyncio.iscoroutinefunction()` to distinguish sync/async
+- `type(e).__mro__` for exception hierarchies
+- Live API calls with valid/invalid inputs for error behavior
+In COW v2.0 validation: verified google-genai 1.62.0 sync API, PIL Image support in
+contents Union type, models.get() method, and ClientError exception hierarchy — all
+via direct Python introspection. This resolved 6/7 assumptions definitively.
+
+### 10. Code specs with inline class definitions create dual-definition risk (2026-02-09)
+When a plan's code spec defines a class in Module A but a note says "actually define in
+Module B and import", the code spec itself becomes misleading. An implementer following
+the code literally creates a duplicate. Always check: does the code spec match the
+architectural decision about canonical location? In COW v2.0: ModelUnavailableError
+defined in both §5.2 (gemini_loop.py) and §5.4 (config/models.py) with a note resolving
+to config/models.py as canonical — but the §5.2 code was never updated.
+
+### 11. String-scanning exception messages is fragile pattern (2026-02-09)
+Plans that detect error types via `if "404" in str(e).lower()` are fragile. Modern SDKs
+(google-genai, httpx, etc.) have typed exception hierarchies. Always check:
+- What specific exception type is raised? (ClientError, APIError, etc.)
+- Does it have structured error codes? (.code, .status, etc.)
+- Would string-scanning false-positive on content text containing the signal word?
+Recommend: catch by type first, string-scan as fallback only.
+
+### 12. Verify environment variables actually exist before trusting plan assumptions (2026-02-10)
+When a plan assumes an environment variable is available (e.g., `$CLAUDE_SESSION_ID`),
+verify against official documentation AND check for open feature requests. Found that
+`CLAUDE_SESSION_ID` is NOT exposed as an env var — only available in JSON stdin. This
+made an entire SubagentStart session registry block dead code. Always check:
+- Official docs "Environment Variables" section
+- GitHub issues for feature requests about that variable
+- The existing hook scripts for precedent usage
+
+### 13. Section headers vary across files even in "identical" templates (2026-02-10)
+When a plan says "insert into {section name} in all N files," verify that ALL N files
+actually have that section with that exact name. Found 1 of 7 skills had no
+"Cross-Cutting Requirements" section at all, and another used a shortened header.
+Grep for the section header across all target files BEFORE trusting the plan's claim.
+
+### 14. Check real-world API field names against multiple source authority levels (2026-02-10)
+Documentation ecosystem can have inconsistencies. The official Claude Code hooks docs
+used `tool_response` while a third-party TypeScript SDK wrapper used `tool_result`.
+Always establish a priority order: (1) official docs example JSON > (2) official docs
+prose > (3) SDK TypeScript interfaces > (4) community docs. The plan should include
+first-run verification (AC-0) for any assumed API field names.

@@ -18,6 +18,7 @@
 
 | # | Phase | Zone | Teammate | Effort |
 |---|-------|------|----------|--------|
+| 0 | PT Check | PRE-EXEC | Lead only | minimal |
 | 1 | Discovery | PRE-EXEC | Lead only | max |
 | 2 | Deep Research | PRE-EXEC | researcher (1-3) | max |
 | 3 | Architecture | PRE-EXEC | architect (1) | max |
@@ -28,7 +29,7 @@
 | 8 | Integration | EXEC | integrator (1) | high |
 | 9 | Delivery | POST-EXEC | Lead only | medium |
 
-Pre-Execution (Phases 1-5) receives 70-80% of effort. Lead approves each phase transition.
+Pre-Execution (Phases 0-5) receives 70-80% of effort, with Phase 0 (~500 tokens) as lightweight prerequisite. Lead approves each phase transition.
 Max 3 iterations per phase before escalating.
 Every task assignment requires understanding verification before work begins.
 
@@ -104,6 +105,16 @@ Impact Map to trace whether changes in one area have unintended effects on depen
 Log cosmetic deviations, re-inject context for interface changes, re-plan for architectural
 changes. No gate approval while any teammate has stale context.
 
+### Observability (RTD)
+Lead maintains real-time documentation through the RTD system:
+- Write an rtd-index.md entry at each Decision Point (gate approvals, task assignments,
+  architecture decisions, conflict resolutions, context updates)
+- Update `.agent/observability/{slug}/current-dp.txt` before each DP's associated actions
+- Read rtd-index.md alongside L1/L2/L3 when monitoring progress — it provides the
+  temporal dimension that Impact Map queries need
+- The PostToolUse hook automatically captures all tool calls to events.jsonl — no
+  manual event logging needed
+
 ### Phase Gates
 Before approving a phase transition: Do all output artifacts exist? Does quality meet
 the next phase's entry conditions? Are there unresolved critical issues? Are L1/L2/L3 generated?
@@ -125,6 +136,16 @@ pipeline, workstream progress, teammate status, and key metrics.
   ├── orchestration-plan.md, TEAM-MEMORY.md
   └── phase-{N}/ → gate-record.yaml, {role}-{id}/ → L1, L2, L3-full/, task-context.md
   ```
+- **Observability directory:**
+  ```
+  .agent/observability/
+  ├── .current-project           # Active project slug
+  └── {project-slug}/
+      ├── manifest.json, rtd-index.md, current-dp.txt, session-registry.json
+      └── events/{session}.jsonl
+  ```
+  Lead initializes at pipeline start. Hooks populate automatically.
+  Persists across sessions for project-scoped observability.
 
 ## 7. Tools
 
@@ -142,8 +163,14 @@ Tool availability per agent is defined in each agent's YAML frontmatter.
 ## 9. Recovery
 
 If your session is continued from a previous conversation:
-- **Lead:** Read orchestration-plan.md, task list (including PERMANENT Task), latest gate
-  record, and teammate L1 indexes. Send fresh context to each active teammate.
+- **Lead:** The SessionStart hook provides RTD recovery context (project slug, phase,
+  last decision point). Follow these steps:
+  1. Read `.agent/observability/{slug}/rtd-index.md` for decision history (last 10 entries)
+  2. Read orchestration-plan.md for teammate status and phase details
+  3. TaskGet on the PERMANENT Task for full project context
+  4. Send fresh context to each active teammate with the latest PT version
+  If no RTD data is available, read orchestration-plan.md, task list, latest gate record,
+  and teammate L1 indexes directly.
 - **Teammates:** See agent-common-protocol.md for recovery procedure. You can call TaskGet
   on the PERMANENT Task for immediate self-recovery — it contains the full project context.
   Core rule: never proceed with summarized or remembered information alone.

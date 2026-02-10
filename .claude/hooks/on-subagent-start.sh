@@ -19,6 +19,31 @@ mkdir -p "$LOG_DIR"
 
 echo "[$TIMESTAMP] SUBAGENT_START | name=$AGENT_NAME | type=$AGENT_TYPE | team=$TEAM_NAME" >> "$LOG_DIR/teammate-lifecycle.log"
 
+# RTD Session Registry — map session_id → agent for PostToolUse identification (AD-23)
+# AD-29: $CLAUDE_SESSION_ID env var does NOT exist in hook contexts.
+# Using stdin session_id instead (parent's/Lead's SID). Known limitation: maps Lead's
+# session to spawned agent name. Still useful for PostToolUse agent resolution since
+# Lead's session is the one triggering SubagentStart.
+RTD_SID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+if [ -n "$RTD_SID" ] && [ -n "$AGENT_NAME" ] && [ "$AGENT_NAME" != "unknown" ]; then
+  PROJECT_FILE="/home/palantir/.agent/observability/.current-project"
+  if [ -f "$PROJECT_FILE" ]; then
+    RTD_SLUG=$(head -1 "$PROJECT_FILE" 2>/dev/null)
+    if [ -n "$RTD_SLUG" ]; then
+      REGISTRY="/home/palantir/.agent/observability/$RTD_SLUG/session-registry.json"
+      if [ -f "$REGISTRY" ] && command -v jq &>/dev/null; then
+        TMP=$(mktemp)
+        jq --arg sid "$RTD_SID" --arg name "$AGENT_NAME" --arg type "$AGENT_TYPE" \
+          '. + {($sid): {name: $name, type: $type}}' "$REGISTRY" > "$TMP" && mv "$TMP" "$REGISTRY"
+      elif command -v jq &>/dev/null; then
+        mkdir -p "$(dirname "$REGISTRY")"
+        jq -n --arg sid "$RTD_SID" --arg name "$AGENT_NAME" --arg type "$AGENT_TYPE" \
+          '{($sid): {name: $name, type: $type}}' > "$REGISTRY"
+      fi
+    fi
+  fi
+fi
+
 # Context injection via additionalContext
 # Strategy: check team-specific global-context.md (legacy) → PT message → cross-team fallback
 

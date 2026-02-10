@@ -66,6 +66,25 @@ recovery mechanism — anything unsaved is permanently lost if your session comp
 If you notice you're running low on context: save all work immediately, then tell Lead.
 Lead will shut you down and re-spawn you with your saved progress.
 
+### L1/L2 Project Goal Linkage (Optional)
+
+When working on a project with RTD active, include goal references in your deliverables:
+
+- **L1 YAML:** Add `pt_goal_link:` field to findings or task entries, referencing
+  the requirement (R-{N}) or architecture decision (AD-{M}) your work addresses.
+  ```yaml
+  findings:
+    - id: F-1
+      summary: "Hooks fire for all sessions"
+      pt_goal_link: "R-5 (Agent Teams Shared)"
+  ```
+
+- **L2 MD:** Add a `## PT Goal Linkage` section at the end connecting your work
+  to the project's requirements and architecture decisions.
+
+This is backward-compatible — omitting these fields does not break any process.
+Lead uses them for traceability.
+
 ---
 
 ## If You Lose Context

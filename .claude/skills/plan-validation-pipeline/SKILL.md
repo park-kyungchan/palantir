@@ -328,6 +328,19 @@ After Gate 5 decision:
 
 ## Cross-Cutting Requirements
 
+### RTD Index
+
+At each Decision Point in this phase, update the RTD index:
+1. Update `current-dp.txt` with the new DP number
+2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
+3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+
+Decision Points for this skill:
+- DP: Devils-advocate spawn
+- DP: Verdict evaluation
+- DP: User review decision
+- DP: Gate 5 evaluation
+
 ### Sequential Thinking
 
 All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, and verification.

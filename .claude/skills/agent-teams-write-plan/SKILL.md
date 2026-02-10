@@ -273,6 +273,19 @@ Input: GC-v4 + plan document. Update PERMANENT Task with `/permanent-tasks` if s
 
 ## Cross-Cutting
 
+### RTD Index
+
+At each Decision Point in this phase, update the RTD index:
+1. Update `current-dp.txt` with the new DP number
+2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
+3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+
+Decision Points for this skill:
+- DP: Input validation and plan scope
+- DP: Architect spawn
+- DP: Plan completion assessment
+- DP: Gate 4 evaluation
+
 ### Sequential Thinking
 All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, design, and verification.
 

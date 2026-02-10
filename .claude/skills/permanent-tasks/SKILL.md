@@ -232,6 +232,19 @@ Technical constraints, project rules, safety rules.
 
 ---
 
+## Cross-Cutting
+
+### RTD Index
+
+At each Decision Point in this phase, update the RTD index:
+1. Update `current-dp.txt` with the new DP number
+2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
+3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+
+Decision Points for this skill:
+- DP: PT creation or update decision
+- DP: Teammate notification (if PT version changes mid-work)
+
 ## Key Principles
 
 - **Single Source of Truth** — one PERMANENT Task per project, not per pipeline

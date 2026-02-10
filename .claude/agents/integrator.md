@@ -70,6 +70,7 @@ the entire codebase — scrutiny matches the scope.
 
 ## Output Format
 - **L1-index.yaml:** Conflicts resolved, integration test results
+- Include `pt_goal_link:` in L1 entries when your work directly addresses a project requirement (R-{N}) or architecture decision (AD-{M}).
 - **L2-summary.md:** Integration narrative with conflict resolution rationale
 - **L3-full/:** Conflict resolution log, merged diffs, integration test logs
 
@@ -79,3 +80,4 @@ the entire codebase — scrutiny matches the scope.
 - Team Memory: edit your own section only (use `## {your-role-id}` as anchor)
 - If conflicts can't be resolved, tell Lead with details of the irreconcilable conflict
 - Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.
+- Your tool calls are automatically captured by the RTD system for observability. No action needed — focus on your assigned work.

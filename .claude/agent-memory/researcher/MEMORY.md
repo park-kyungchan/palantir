@@ -73,6 +73,14 @@
 - Hybrid approach: keep cross-agent gates global, add role-specific hooks in frontmatter
 - Lead flagged this as a gap in H-3 recommendation — architect should address in Phase 3
 
+### Pattern Correlation Analysis Approach (2026-02-10)
+- For predicting findings across related targets: categorize existing findings by TYPE first (NL-structure, cross-file, evidence, process-gap), then assess which types are target-agnostic vs target-specific
+- Cross-reference density between targets creates finding CASCADES — account for 15-20% overlap in predictions
+- Priority ordering should minimize cascade waste: review high-cross-ref targets AFTER their dependents, not before
+- Lead will probe on cascade handling — defend with concrete examples from existing data and quantitative overlap estimates
+- "Review chain" design (each review feeds context to next) is the key architect recommendation
+- For pure local-file analysis, no MCP tools needed — Read all targets in parallel, write L1/L2 immediately
+
 ### Artifact Signal Analysis Pattern (2026-02-09)
 - When researching session artifact structures, use `find` + `wc -l` to build size inventories across ALL sessions
 - Gate records are the highest signal-per-token artifact (9-116L YAML, structured)

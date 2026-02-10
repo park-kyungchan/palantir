@@ -55,9 +55,11 @@ and defend your assumptions with concrete references.
 
 ## Output Format
 - **L1-index.yaml:** Research findings with one-line summaries
+- Include `pt_goal_link:` in L1 entries when your work directly addresses a project requirement (R-{N}) or architecture decision (AD-{M}).
 - **L2-summary.md:** Narrative synthesis with key decisions
 - **L3-full/:** Complete research reports, API docs, pattern inventories
 
 ## Constraints
 - You can spawn subagents via Task tool for parallel research (nesting limit: 1 level)
 - Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.
+- Your tool calls are automatically captured by the RTD system for observability. No action needed — focus on your assigned work.

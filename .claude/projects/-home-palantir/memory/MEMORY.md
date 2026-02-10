@@ -1,25 +1,48 @@
 # Claude Code Memory
 
-## COW Pipeline — DELIVERED (2026-02-09)
-- **Status:** Phase 1-6 COMPLETE, Phase 7-8 DEFERRED, Phase 9 DELIVERED
-- **Commit:** c14d592 — 53 files, 7367 lines added
-- **Package:** `cow/cow-mcp/` (Python, FastMCP, Pydantic 2.0)
-- **6 MCP Servers:** cow-ingest, cow-ocr, cow-vision, cow-review, cow-export, cow-storage
-- **33 Python files** + .mcp.json registration
-- **Tech:** Mathpix API v3, Gemini 3-pro-preview, XeLaTeX+kotex, FastMCP (MCP SDK v1.26.0)
-- **Pipeline artifacts:** `.agent/teams/cow-pipeline-redesign/` (GC-v6, PT-v4, 3 gate records)
-- **Plan:** `docs/plans/2026-02-09-cow-pipeline-redesign.md` (1274L)
-- **Key deviations:** FastMCP (DEV-1), setuptools.build_meta (DEV-2), cow_ prefix (DEV-4)
-- **First test:** Session cbcc34036137 — blacklabel_circle_9.png, 6-stage end-to-end complete (17KB PDF)
-- **Code fixes applied:** ocr/client.py (full params + opts_conflict fix), vision/gemini.py (model name fix)
-- **Docs cleanup:** 14 old Mathpix docs deleted → single `docs/mathpix-api-reference.md` (923L)
-- **Known bug:** BUG-COW-1 — Stage 5 Python raw string `\!` breaks TikZ `blue!15` syntax
-- **Next steps:** BUG-COW-1 systematic fix + more test images + iterative pipeline improvement
+## RTD System + INFRA v7.0 — DELIVERED (2026-02-10)
+- **Status:** Phase 0→1→2→3→4→5→6→9 COMPLETE (P7-8 skipped, markdown-only)
+- **Commit:** TBD (pending Phase 9 commit)
+- **Architecture:** 4-Layer Observability
+  - Layer 0: events.jsonl (async PostToolUse hook, 8-field JSONL per tool call)
+  - Layer 1: rtd-index.md (Lead-maintained, WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS entries)
+  - Layer 2: Enhanced DIA (L1 pt_goal_link + L2 PT Goal Linkage)
+  - Layer 3: Recovery (PreCompact snapshot + SessionStart RTD injection)
+- **23 files, ~360 lines:** 2 created, 21 modified
+  - Hooks: on-rtd-post-tool.sh (NEW 147L), 3 hooks extended/rewritten, settings.json PostToolUse async
+  - CLAUDE.md v7.0: §6 Observability RTD + directory spec, §9 RTD recovery rewrite
+  - Protocol v3.0: L1/L2 PT Goal Linkage (optional, backward-compatible)
+  - 7 skills × RTD Index template, 6 agents × RTD awareness
+- **Key decisions:** AD-12~AD-29 (18 total), AD-29 ($CLAUDE_SESSION_ID doesn't exist — best-effort)
+- **Phase 5 amendments:** AD-29 (session registry limitation), CH-5 (permanent-tasks Cross-Cutting)
+- **RTD Pilot:** 5 DPs dogfooded during own implementation, ~120 tok/entry validated
+- **2 implementers:** Impl-1 (hooks+config 8 files) ∥ Impl-2 (docs 15 files), zero overlap
+- **Gate 6:** G6-1~G6-7 ALL PASS, interface consistency verified
+- **Plan:** `docs/plans/2026-02-10-rtd-system-implementation.md` (1244L)
+- **Sessions:** rtd-system (P1-3), rtd-write-plan (P4), rtd-validation (P5), rtd-execution (P6)
+- **Observability:** `.agent/observability/rtd-system/` (pilot data persists)
+
+## COW Pipeline v2.0 — DELIVERED (2026-02-09)
+- **Status:** Phase 4→5→6→9 COMPLETE (P7-8 skipped per user mandate)
+- **Commit:** 0e603f3 — 149 files changed, 4857 insertions, 36181 deletions
+- **Architecture:** Python SDK + CLI wrapper (Triple-Layer Verification)
+  - L1: gemini-3-pro-image-preview (visual), L2: gemini-3-pro-preview (reasoning), L3: Opus 4.6 (logic)
+- **Package:** `cow/core/` (SDK) + `cow/cli.py` (CLI) + `cow/config/` (config)
+- **12 new files** (~1536 lines): gemini_loop, ocr, diagram, layout_design, layout_verify, compile, cli, models, profiles, 3x __init__
+- **Deleted:** cow-cli/ (~90 files), cow-mcp/ (~33 files), outputs/, artifacts (~36K lines)
+- **Tech:** google-genai SDK v1.62.0 (sync API), PIL Image, Mathpix v3/text, XeLaTeX multi-pass
+- **Key decisions:** AD-8 (model role separation), AD-9 (fail-stop, no fallback), CH-01/02/03 (Phase 5 amendments)
+- **Pipeline artifacts:** `.agent/teams/cow-v2-{write-plan,validation,execution}/`
+- **Plans:** `docs/plans/2026-02-09-cow-v2-design.md` (778L) + `cow-v2-implementation.md` (2498L)
+- **4 implementers:** Foundation → {Extraction, Layout} parallel → CLI+Cleanup
+- **Gate 6:** All 7 criteria PASS, FROZEN CONTRACT verified
+- **Previous v1.0:** Superseded (was c14d592, MCP server-centric, 53 files/7367L)
+- **Next steps:** End-to-end integration testing with sample images, MCP server cleanup in .claude.json
 
 ### Pending options (user decides):
   1. Ontology Framework T-1 brainstorming (`docs/plans/2026-02-08-ontology-bridge-handoff.md`)
   2. task-api-guideline.md NLP conversion (v4.0/530 lines)
-  3. P4-R1/R2, P5-R1/R2 backlog (30 lines across 2 skills)
+  3. .claude.json MCP server entries cleanup (remove v1.0 cow-* servers)
 
 ## Language Policy [PERMANENT] (2026-02-07)
 - User-facing conversation: Korean only
@@ -27,30 +50,30 @@
 - CLAUDE.md §0 Language Policy
 - Rationale: token efficiency for Opus 4.6, machine-readable consistency, cross-agent parsing
 
-## Current Infrastructure State (v6.0) (2026-02-09)
-- CLAUDE.md: v6.2 (~178 lines, §0-§10) — v6.1 + /rsil-global auto-invoke after §2 Phase Pipeline table
-- task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged in this cycle
-- agent-common-protocol.md: v2.1 (84 lines) — v2.0 + RSI fix: PT task list scope clarification
-- Agents: 6 types, 442 total lines (NLP v2.0), disallowedTools = TaskCreate+TaskUpdate only
-- Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` + `/rsil-global` (NEW — auto-invoke INFRA health)
-- Hooks: 3 lifecycle hooks (SubagentStart, PreCompact, SessionStart) — reduced from 8
-- Verification: Natural language understanding verification (replaces TIER/LDAP protocol markers)
+## Current Infrastructure State (v7.0) (2026-02-10)
+- CLAUDE.md: v7.0 (~206 lines, §0-§10) — v6.2 + §6 Observability RTD + §6 observability dir + §9 RTD recovery
+- task-api-guideline.md: v4.0 (~530 lines, §1-§14) — unchanged
+- agent-common-protocol.md: v3.0 (~108 lines) — v2.1 + L1/L2 PT Goal Linkage (optional)
+- Agents: 6 types (~460 lines) — v2.0 + RTD awareness (pt_goal_link + auto-capture notice)
+- Skills: 7 pipeline skills + `/permanent-tasks` + `/rsil-review` + `/rsil-global` — all 7 pipeline skills + permanent-tasks have RTD Index template
+- Hooks: 4 lifecycle hooks (SubagentStart, PreCompact, SessionStart, **PostToolUse NEW**) — PostToolUse async, captures ALL tools
+- Observability: `.agent/observability/{project-slug}/` — rtd-index.md, events.jsonl, session-registry.json, snapshots/
+- Verification: Natural language understanding verification (unchanged)
 - MCP Tools: sequential-thinking (mandatory all), tavily/context7 (mandatory by phase), github (as needed)
-- NLP v6.0 conversion: Phase 6 COMPLETE, Gate 6 APPROVED (2026-02-08)
 - Detailed history: `memory/infrastructure-history.md`
 
-## Skill Pipeline Status (2026-02-08)
+## Skill Pipeline Status (2026-02-10)
 | SKL | Skill | Phase | Status |
 |-----|-------|-------|--------|
-| 001 | `/brainstorming-pipeline` | P1-3 | DONE + NLP v6.0 + Phase 0 |
-| 002 | `/agent-teams-write-plan` | P4 | DONE + NLP v6.0 + Phase 0 |
-| 003 | `/agent-teams-execution-plan` | P6 | DONE + NLP v6.0 + Phase 0 |
-| 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 |
-| 005 | `/verification-pipeline` | P7-8 | DONE + NLP v6.0 + Phase 0 + INFRA RSI |
-| 006 | `/delivery-pipeline` | P9 | DONE (422L) — Phase 6 COMPLETE, Gate 6 APPROVED |
-| 007 | `/rsil-review` | — | DONE (549L) — Meta-Cognition framework, 8 Lenses, REFINED via RSIL System |
-| 008 | `/rsil-global` | — | DONE (452L) — Auto-invoke INFRA health, Three-Tier Observation Window |
-| — | `/permanent-tasks` | — | DONE (GC replacement skill) |
+| 001 | `/brainstorming-pipeline` | P1-3 | DONE + NLP v6.0 + Phase 0 + RTD template |
+| 002 | `/agent-teams-write-plan` | P4 | DONE + NLP v6.0 + Phase 0 + RTD template |
+| 003 | `/agent-teams-execution-plan` | P6 | DONE + NLP v6.0 + Phase 0 + RTD template |
+| 004 | `/plan-validation-pipeline` | P5 | DONE + NLP v6.0 + Phase 0 + RTD template |
+| 005 | `/verification-pipeline` | P7-8 | DONE + NLP v6.0 + Phase 0 + INFRA RSI + RTD template |
+| 006 | `/delivery-pipeline` | P9 | DONE (422L) + RTD template |
+| 007 | `/rsil-review` | — | DONE (549L) — Meta-Cognition framework, 8 Lenses |
+| 008 | `/rsil-global` | — | DONE (452L) — Auto-invoke INFRA health, Three-Tier |
+| — | `/permanent-tasks` | — | DONE + RTD template (CH-5: new Cross-Cutting section) |
 - Detailed history: `memory/skill-optimization-history.md`
 
 ## Skill Optimization Process [PERMANENT] (2026-02-07)
@@ -110,6 +133,8 @@
 ## Deferred Work
 - CH-002~005: `docs/plans/2026-02-07-ch002-ch005-deferred-design.yaml`
 - Agent memory initialization: Create MEMORY.md templates for each agent type
+- Observability Dashboard UI: Separate /brainstorming-pipeline (reads events.jsonl + rtd-index.md)
+- RSIL Audit S-2~S-7: Resume after INFRA v7.0 (tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`)
 
 ## Topic Files Index
 - `memory/infrastructure-history.md` — DIA evolution (v1→v4), Agent Teams redesign, Task API investigation, Ontology

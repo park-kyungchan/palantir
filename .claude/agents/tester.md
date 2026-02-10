@@ -67,6 +67,7 @@ Reference the Impact Map to justify your test coverage priorities.
 
 ## Output Format
 - **L1-index.yaml:** Test files, pass/fail counts, coverage summary
+- Include `pt_goal_link:` in L1 entries when your work directly addresses a project requirement (R-{N}) or architecture decision (AD-{M}).
 - **L2-summary.md:** Test narrative with failure analysis
 - **L3-full/:** Test files, execution logs, coverage reports
 
@@ -75,3 +76,4 @@ Reference the Impact Map to justify your test coverage priorities.
 - Cannot modify existing source code
 - If fixes are needed, message Lead with failure details
 - Write L1/L2/L3 files proactively throughout your work — they are your only recovery mechanism if your session compacts. Do not wait until the end.
+- Your tool calls are automatically captured by the RTD system for observability. No action needed — focus on your assigned work.
