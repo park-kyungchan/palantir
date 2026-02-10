@@ -92,16 +92,21 @@ phase_focus:
     - APPROACH: Incremental adoption vs full migration? YAML-on-disk confirmed?
     - DOMAIN: INFRA itself as bootstrap domain (confirmed in assessment §9)
     - RISK: Layer 1 readability preserved? RSIL findings remain valid?
+    - LEARNING: Explain Layer 1/Layer 2 distinction and gap concepts to user
+      before asking strategy decisions (Rule 7: TEACH → CONTEXTUALIZE → ASK)
   phase_2_research:
     - Read assessment §3-§4 (gap analysis + component mapping)
     - Read handoff §2-§3 (framework components + topic dependency)
+    - Read handoff §5.0-§5.1 (Dual Purpose session flow + teaching methodology)
     - Read bridge-ref-methodology.md (decomposition guide)
     - Investigate: how do YAML-on-disk schemas coexist with markdown?
+    - Prepare teaching materials: Ontology vocabulary, concrete examples for user
   phase_3_architecture:
     - Migration strategy (NL → NL+Schema, incremental per ObjectType)
     - Bootstrap sequence (which INFRA entity first?)
     - Storage format decision (YAML-on-disk details)
     - Success criteria mapping (assessment §10 SC-1~SC-8)
+    - Include learning notes in design file (user comprehension checkpoint)
 
 output:
   design_file: docs/plans/YYYY-MM-DD-ontology-layer2-strategy-design.md
@@ -353,6 +358,20 @@ Every design file must include a "Forward-Compatibility" section explaining:
 - How subsequent components will reference this design
 - What decisions are deferred to later topics
 - What interface contracts this design exposes
+
+### Rule 7: Dual Purpose — Decision-Making + Learning
+Every session serves two purposes simultaneously (see handoff §5.0):
+1. **Decision-Making:** Lead guides user through Ontology component design decisions
+2. **Learning:** User progressively learns Ontology/Foundry concepts across sessions
+
+Lead must follow TEACH → CONTEXTUALIZE → ASK flow:
+- Phase 1: Explain the component concept using reference docs BEFORE asking decisions
+- Phase 2: Researcher prepares teaching materials (key concepts, examples, decision points)
+- Phase 3: Walk user through discovery process, present trade-offs, build on prior sessions
+
+Learning progression accumulates: T-0 (strategy vocabulary) → T-1 (entity concepts) →
+T-2 (relationship patterns) → T-3 (state machine thinking) → T-4 (full schema comprehension).
+Each T-N assumes knowledge from all prior topics.
 
 ---
 

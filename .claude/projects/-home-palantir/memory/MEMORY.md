@@ -64,6 +64,8 @@ Details: `memory/agent-teams-bugs.md`
 
 Layer 2 (Ontology Framework) is the next major initiative. Entry via `/brainstorming-pipeline`.
 Layer 1 achievement ~70% (RTDI assessment). Layer 2 = 0% → ~30% of full vision.
+Brainstorming = Dual Purpose: decision-making + user learning (handoff §5.0, protocol Rule 7).
+Each session teaches Ontology/Foundry concepts progressively (TEACH → CONTEXTUALIZE → ASK).
 
 | Topic | Name | Input Docs | Depends On | Output |
 |-------|------|-----------|------------|--------|
