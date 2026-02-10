@@ -83,12 +83,13 @@ Pipeline Skill Execution Complete
 | SKL-006 | /agent-teams-execution-plan | P6 | rsil-review | 7 | 7 | 0 | 0 |
 | SKL-006 | /delivery-pipeline | P9 | rsil-review | 9 | 8 | 0 | 1 |
 | COW-iter1 | COW pipeline iteration | run | rsil-global | 4 | 4 | 0 | 0 |
+| INFRA-v7 | /brainstorming-pipeline | P0-3 | rsil-review S-1 | 8 | 8 | 0 | 0 |
 | INFRA-v7 | /agent-teams-write-plan + /plan-validation-pipeline | P4+P5 | rsil-review S-2 | 10+5 | 15 | 0 | 0 |
 | INFRA-v7 | /permanent-tasks | — | rsil-review S-3 | 7+4 | 10 | 0 | 1 |
 | INFRA-v7 | /agent-teams-execution-plan | P6 | rsil-review S-4 | 6+4 | 10 | 0 | 0 |
-| **Total** | | | | **64** | **58** | **2** | **4** |
+| **Total** | | | | **72** | **66** | **2** | **4** |
 
-### Acceptance Rate: 91% (58/64)
+### Acceptance Rate: 92% (66/72)
 ### Rejection Reason: AD-15 Hook violation or API-level only (P4/P5 only)
 
 ---
