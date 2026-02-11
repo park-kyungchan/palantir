@@ -1,7 +1,7 @@
 # Agent Catalog — Selective Coordinator Model (v3.0)
 
 Two-level catalog: **Level 1** (Lead reads, ~280L) + **Level 2** (on-demand, ~1600L).
-42 agents (34 workers + 8 coordinators), 13 categories.
+43 agents (35 workers + 8 coordinators), 14 categories.
 All agents follow `agent-common-protocol.md`. All coordinators also follow `coordinator-shared-protocol.md`.
 
 ---
@@ -162,6 +162,7 @@ Parallel chains:
 | dynamic-impact-analyst | Impact | 2d, 6+ | Pre-impl change prediction |
 | devils-advocate | Review | 5 | STANDARD tier plan validation |
 | execution-monitor | Monitoring | 6+ | Real-time drift detection |
+| gate-auditor | Audit | G3-G8 | Independent gate evaluation (tier-dependent, see gate-evaluation-standard.md §6) |
 
 **Note:** spec-reviewer, code-reviewer, contract-reviewer, and regression-reviewer are
 dispatched by execution-coordinator during Phase 6 (peer messaging), or by Lead directly
@@ -190,6 +191,7 @@ in other phases (dual-mode agents).
 | impact-verifier | opus | default | 40 | 10 | Y | — | — | Y |
 | dynamic-impact-analyst | opus | default | 30 | 7 | Y | — | — | — |
 | execution-monitor | opus | default | 40 | 7 | Y | — | — | — |
+| gate-auditor | opus | default | 15 | 7 | Y | — | — | — |
 | architect | opus | default | 50 | 10 | Y | — | — | Y |
 | structure-architect | opus | default | 40 | 10 | Y | — | — | Y |
 | interface-architect | opus | default | 40 | 10 | Y | — | — | Y |
@@ -1846,6 +1848,16 @@ L1: `II-{N}` findings with proposed_change, direct_files, cascade_depth, total_a
 - Write L1/L2/L3 proactively.
 
 ### Category 10: Monitoring
+
+#### gate-auditor
+
+Independent gate evaluator. Receives gate criteria and evidence artifact paths,
+renders PASS/FAIL verdict independent of Lead. Cannot be overridden by Lead without
+user escalation. Max 1 instance per gate. Spawned at designated gates per pipeline
+tier (see `gate-evaluation-standard.md` §6). Tools: Read, Glob, Grep, Write,
+TaskList, TaskGet, sequential-thinking. No Edit, no Bash. See `.claude/agents/gate-auditor.md`.
+
+---
 
 #### execution-monitor
 

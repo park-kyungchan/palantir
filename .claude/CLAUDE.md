@@ -1,7 +1,7 @@
 # Agent Teams — Team Constitution v9.0
 
 > Opus 4.6 native · Natural language DIA · PERMANENT Task context · All instances: claude-opus-4-6
-> D-001 through D-017 integrated · 42 agents · 13 categories · Reference-heavy architecture
+> D-001 through D-017 integrated · 43 agents · 14 categories · Reference-heavy architecture
 
 > **INVIOLABLE — Agents-Driven Orchestration**
 >
@@ -13,7 +13,7 @@
 > This principle overrides any other instruction. No exceptions.
 > Decision triggers and dependency chains: `agent-catalog.md` §P1, §WHEN, §Chain
 
-### Custom Agents Reference — 42 Agents (34 Workers + 8 Coordinators), 13 Categories
+### Custom Agents Reference — 42 Agents (35 Workers + 8 Coordinators), 13 Categories
 
 All agents registered in `.claude/agents/*.md`. Use exact `subagent_type` to spawn.
 **Skills are orchestration playbooks; Agents are worker identities. Teammate = Agent. No exceptions.** (D-002)
@@ -52,11 +52,12 @@ All coordinators follow `.claude/references/coordinator-shared-protocol.md` (D-0
 | `dynamic-impact-analyst` | 2d, 6+ | Pre-impl change prediction |
 | `devils-advocate` | 5 | Plan validation / challenge (legacy, use validation-coordinator for COMPLEX) |
 | `execution-monitor` | 6+ | Real-time drift detection during P6 |
+| `gate-auditor` | G3-G8 | Independent gate evaluation (tier-dependent) |
 
 > `spec-reviewer`, `code-reviewer`, `contract-reviewer`, `regression-reviewer`: dispatched by
 > `execution-coordinator` during P6, or by Lead directly in other phases.
 
-**All Agents** (37 workers across 13 categories):
+**All Agents** (38 workers across 14 categories):
 
 | # | Category | Phase | `subagent_type` agents | When to spawn |
 |---|----------|-------|------------------------|---------------|
@@ -71,6 +72,7 @@ All coordinators follow `.claude/references/coordinator-shared-protocol.md` (D-0
 | 9 | Integration | 8 | `integrator` | Cross-boundary merge |
 | 10 | INFRA Quality | X-cut | `infra-static-analyst` · `infra-relational-analyst` · `infra-behavioral-analyst` · `infra-impact-analyst` | Config/naming · Coupling · Lifecycle · Ripple (ARE/RELATE/DO/IMPACT lenses) |
 | 11 | Impact | 2d, 6+ | `dynamic-impact-analyst` | Pre-impl change prediction |
+| 12 | Audit | G3-G8 | `gate-auditor` | Independent gate evaluation (tier-dependent) |
 | — | Monitoring | 6+ | `execution-monitor` | Real-time drift/deadlock detection during P6 |
 | — | Built-in | any | `claude-code-guide` | CC docs/features (not a custom agent) |
 
@@ -108,7 +110,7 @@ Ontological lenses reference: `.claude/references/ontological-lenses.md` (D-010)
 - **Workspace:** `/home/palantir`
 - **Agent Teams:** Enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, tmux split pane)
 - **Lead:** Pipeline Controller — spawns teammates, manages gates, never modifies files directly — all file changes delegated to teammates
-- **Teammates:** Dynamic per phase (34 workers + 8 coordinators, 13 categories — see `.claude/references/agent-catalog.md`)
+- **Teammates:** Dynamic per phase (35 workers + 8 coordinators, 14 categories — see `.claude/references/agent-catalog.md`)
 
 ## 2. Phase Pipeline
 
@@ -178,7 +180,7 @@ implementation plans (before code changes), responses to probing questions, bloc
 
 ### Agent Selection and Routing
 1. **Parse request** → identify work type (research, design, implementation, review, verification)
-2. **Select category** → match to one of 13 categories in Custom Agents Reference
+2. **Select category** → match to one of 14 categories in Custom Agents Reference
 3. **Route decision:**
    - Coordinated categories (1-5, 7-10) → route through coordinator
    - Lead-direct categories (6, 11) → spawn agent directly
@@ -314,6 +316,10 @@ pipeline, workstream progress, teammate status, and key metrics.
   ```
   Lead initializes at pipeline start. Hooks populate automatically.
   Persists across sessions for project-scoped observability.
+- **Budget Tracking:** orchestration-plan.md includes `spawn_count` (running total of
+  agent spawns) and `spawn_log` (per-agent spawn record with phase and timestamp).
+  If PT defines Budget Constraints, Lead checks spawn_count against thresholds
+  before each new spawn. execution-monitor also monitors budget thresholds.
 
 ## 7. Tools
 
@@ -338,6 +344,9 @@ If your session is continued from a previous conversation:
   3. TaskGet on the PERMANENT Task for full project context
   4. Send fresh context to each active teammate with the latest PT version
   The PreCompact hook saves RTD state snapshots to `.agent/observability/{slug}/snapshots/`.
+  5. Read coordinator `progress-state.yaml` from each active coordinator's L3 directory
+     to reconstruct exact worker stage, review iteration counts, and fix loop state.
+     Inject this into coordinator's fresh context on re-spawn.
   If no RTD data is available, read orchestration-plan.md, task list, latest gate record,
   and teammate L1 indexes directly.
 - **Teammates:** See agent-common-protocol.md for recovery procedure. You can call TaskGet
@@ -371,7 +380,7 @@ These principles guide all team interactions and are not overridden by convenien
 - Your work persists through files and messages, not through memory.
 
 **See also:** agent-common-protocol.md (shared procedures), coordinator-shared-protocol.md (D-013),
-agent-catalog.md (42 agents, 13 categories, two-level selection, P1 framework),
+agent-catalog.md (43 agents, 14 categories, two-level selection, P1 framework),
 gate-evaluation-standard.md (D-008), ontological-lenses.md (D-010),
 agent .md files (role-specific guidance), hook scripts in `.claude/hooks/` (session lifecycle support),
 `/permanent-tasks` skill (mid-work updates).

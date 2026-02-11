@@ -119,7 +119,42 @@ Each coordinator category has a shared memory file:
 **Timeout thresholds:** Configurable per coordinator. Default: 5 minutes for status query,
 10 minutes for Lead escalation.
 
-## 7. Handoff Protocol (D-011)
+## 7. Progress State (Compact Recovery)
+
+Coordinators must maintain a `progress-state.yaml` file, updated after each worker
+stage transition (task assignment, review dispatch, review result, fix loop iteration,
+completion). This file enables Lead to recover coordinator state after context compact.
+
+**Location:** Your L3-full/ directory (e.g., `.agent/teams/{session-id}/phase-{N}/{coordinator-name}/progress-state.yaml`)
+
+**Schema:**
+```yaml
+coordinator: {your-role-id}
+session: {session-id}
+phase: {N}
+updated: {ISO 8601}
+
+workers:
+  {worker-name}:
+    status: pending | in_progress | completed | blocked
+    current_task: {task-id or null}
+    completed_tasks: [{task-ids}]
+    review_state:
+      spec_review: { status: pending | pass | fail, iterations: 0 }
+      code_review: { status: pending | pass | fail, iterations: 0 }
+    fix_loops: { current: 0, max: 3 }
+
+escalations: []
+next_action: "{description of next planned action}"
+```
+
+**Rules:**
+- Update after EVERY worker stage transition — not just at completion
+- Always write the full state, not incremental patches
+- If context is running low, prioritize writing progress-state.yaml over other output
+- Lead reads this file during recovery to reconstruct your exact operational state
+
+## 8. Handoff Protocol (D-011)
 
 When your category's work feeds into the next phase:
 1. Write Downstream Handoff section in your L2 (see §4 above)

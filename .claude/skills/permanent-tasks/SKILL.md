@@ -226,6 +226,11 @@ Pipeline progress. Phase-by-phase COMPLETE/IN_PROGRESS/PENDING.
 
 ### Constraints
 Technical constraints, project rules, safety rules.
+
+### Budget Constraints (Optional)
+- Agent spawn limit: {max total spawns, default: no limit}
+- Phase iteration limit: {max gate ITERATE across all gates, default: 3/gate}
+- User alert threshold: {after N spawns, present awareness message}
 ```
 
 ---

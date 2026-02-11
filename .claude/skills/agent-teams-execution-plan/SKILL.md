@@ -103,6 +103,13 @@ Parse the Dynamic Context above to find agent-teams-write-plan output:
 If a PERMANENT Task was loaded in Phase 0, use its Codebase Impact Map and user intent
 to inform validation and provide additional context to implementers.
 
+### Rollback Detection
+
+Check for `rollback-record.yaml` in downstream phase directories (phase-7/, phase-8/):
+- If found: read rollback context (revision targets, prior-attempt lessons) per `pipeline-rollback-protocol.md` §3
+- Include rollback context in implementer directives (what was attempted, why rolled back, specific revision targets)
+- If not found: proceed normally
+
 ### Validation
 
 After identifying the source, verify:
@@ -395,6 +402,31 @@ coordinator and included in the coordinator's consolidated L2, not the implement
 
 ---
 
+## Phase 6.4.5: Mid-Execution User Update (COMPLEX only)
+
+When 50% of tasks completed (by count from coordinator progress reports):
+
+Present progress summary to user:
+
+```markdown
+## Implementation Progress — 50% Checkpoint
+
+**Completed:** {N}/{total} tasks
+**Files created/modified:** {list}
+**Deviations from plan:** {any plan deviations, or "None"}
+**Remaining work:** {summary of pending tasks}
+
+Continue? [Yes / Pause to review code / Adjust scope]
+```
+
+- **Yes** → continue execution
+- **Pause to review** → present specific file paths for user inspection, resume on approval
+- **Adjust scope** → update PT via `/permanent-tasks`, relay changes to coordinator
+
+Skip for TRIVIAL and STANDARD tiers.
+
+---
+
 ## Phase 6.5: Monitoring + Issue Resolution
 
 ### Monitoring Cadence
@@ -470,6 +502,12 @@ After ALL implementers complete:
 If 2+ implementers AND (complex interfaces OR concerns found during cross-task):
 - Dispatch code-reviewer subagent with full project scope
 - Include all implementer outputs as review target
+
+### Gate Audit (STANDARD/COMPLEX)
+
+Mandatory for STANDARD and COMPLEX tiers (see `gate-evaluation-standard.md` §6).
+Spawn `gate-auditor` with G6 criteria and evidence paths (coordinator L2, implementer L1/L2, gate-record.yaml).
+Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ### Gate 6 Result
 

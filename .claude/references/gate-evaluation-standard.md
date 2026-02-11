@@ -144,7 +144,40 @@ After each Skill invocation, Lead checks:
 
 Failure → Tier 2/3 escalation per error handling protocol.
 
-## 6. Shift-Left Gate Distribution
+## 6. Gate Audit Requirements
+
+Independent gate auditing prevents self-evaluation bias. A `gate-auditor` agent
+evaluates gates independently of Lead.
+
+### Audit Trigger Rules by Pipeline Tier
+
+| Pipeline Tier | Mandatory Audit Gates | Optional Audit Gates |
+|---------------|----------------------|---------------------|
+| TRIVIAL | None | — |
+| STANDARD | G4, G6 | G2, G3, G5, G7 |
+| COMPLEX | G3, G4, G5, G6, G7, G8 | G1, G2 |
+
+### Audit Procedure
+
+When audit is required for a gate:
+1. Lead spawns `gate-auditor` with: gate criteria (from §3), evidence paths, pipeline tier
+2. Gate-auditor independently reads all evidence and evaluates criteria
+3. Gate-auditor writes `phase-{N}/gate-audit.yaml` with its verdict
+4. Lead compares verdicts:
+   - **Both PASS** → proceed to On APPROVE
+   - **Both FAIL** → proceed to On ITERATE
+   - **Disagreement** → present both verdicts to user via AskUserQuestion:
+     "Gate {N} verdict conflict: Lead says {X}, Auditor says {Y}. [details]
+      Accept Lead verdict / Accept Auditor verdict / Request re-evaluation"
+5. Gate-audit.yaml is preserved alongside gate-record.yaml
+
+### When Audit is Optional
+
+Lead may skip optional audits to conserve resources. However, if Lead has failed
+a gate evaluation in the current pipeline (was overridden or corrected), all
+subsequent gates become mandatory audit regardless of tier rules.
+
+## 7. Shift-Left Gate Distribution
 
 | Phase Range | Effort % | Gate Rigor |
 |------------|:---:|---|

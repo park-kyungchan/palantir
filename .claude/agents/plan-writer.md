@@ -49,6 +49,13 @@ Read the PERMANENT Task via TaskGet and P3 architect output. Message your coordi
 4. File Inventory, 5. Change Specification, 6. Interface Contracts,
 7. Dependency Order, 8. Risk Matrix, 9. Testing Strategy, 10. Rollback Plan
 
+**§9 Testing Strategy must include:**
+- Test framework name and version (discovered from project)
+- Test directory path and naming convention
+- Test runner command
+- CI integration status (existing CI config? test stage defined?)
+- Minimum coverage expectations
+
 ## Output Format
 - **L1-index.yaml:** Plan sections, task definitions, file ownership, `pt_goal_link:` where applicable
 - **L2-summary.md:** Plan narrative with rationale and trade-offs

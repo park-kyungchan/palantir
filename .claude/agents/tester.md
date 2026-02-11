@@ -38,7 +38,15 @@ Read PERMANENT Task via TaskGet. Message your coordinator (or Lead if assigned d
 - What you're testing and how it connects to the design spec
 - What interfaces and acceptance criteria you'll test against
 
+## Test Framework Discovery
+1. Check package.json / pyproject.toml / Cargo.toml for test config
+2. Glob for existing test files (`**/*test*`, `**/*spec*`, `**/test_*`)
+3. Report discovered framework to coordinator/Lead:
+   - Framework name/version, naming convention, test directory, existing test count
+4. Use discovered framework. Do NOT introduce a different one without Lead approval.
+
 ## How to Work
+- Run Test Framework Discovery before writing any tests
 - Read Phase 4 design spec and Phase 6 implementation output
 - Write tests for each acceptance criterion
 - Execute tests and capture results

@@ -56,3 +56,5 @@ Follow L1/L2 canonical format from agent-common-protocol.md.
 - Do NOT modify code or infrastructure — L1/L2/L3 output only
 - Follow sub-gate protocol before reporting completion
 - Write L1/L2/L3 proactively
+- Write `progress-state.yaml` after every worker stage transition (task assignment,
+  completion, review). See `coordinator-shared-protocol.md` §7.

@@ -100,6 +100,13 @@ Parse the Dynamic Context above to find Phase 6 execution output:
 4. If single candidate, confirm with user: "Found Phase 6 output at {path}. Use this?"
 5. If no candidates, inform user: "No Phase 6 output found. Run /agent-teams-execution-plan first."
 
+### Rollback Detection
+
+Check for `rollback-record.yaml` in downstream phase directories (phase-8/):
+- If found: read rollback context (revision targets, prior-attempt lessons) per `pipeline-rollback-protocol.md` §3
+- Include rollback context in tester directives (what was attempted, why rolled back, areas to focus on)
+- If not found: proceed normally
+
 ### Validation
 
 After identifying the source, verify:
@@ -249,7 +256,9 @@ For each assigned component:
    - Interface contract tests (every contract from Phase 4 §3)
    - Edge case tests (derived from Impact Map ripple paths)
    - Error condition tests (failure modes from Phase 4 §8)
-3. **Write** test files to L3-full/ directory
+3. **Write** test files to TWO locations:
+   a. **Project test directory** — following discovered conventions (committable, CI-discoverable)
+   b. **L3-full/** — copy for session archival
 4. **Execute** tests via Bash (language-appropriate test runner)
 5. **Analyze** failures — root cause, affected modules, fix recommendations
 
@@ -295,7 +304,13 @@ Read testing-coordinator's consolidated L2-summary.md (includes tester results):
 - Present failure summary to user
 - Ask: "Accept failures and proceed to integration, or return to Phase 6 for fixes?"
 - If accepted: Document known failures in GC, proceed
-- If rejected: Return to Phase 6 with specific fix targets
+- If rejected: Execute rollback P7→P6 per `pipeline-rollback-protocol.md` with specific fix targets
+
+### Gate Audit (STANDARD/COMPLEX)
+
+Optional for STANDARD, mandatory for COMPLEX (see `gate-evaluation-standard.md` §6).
+If audit required: spawn `gate-auditor` with G7 criteria and evidence paths.
+Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ### On APPROVE
 
@@ -400,6 +415,12 @@ Use `sequential-thinking` for all gate evaluation.
 | G8-4 | No unauthorized cross-boundary modifications | Verify changes within integrator's scope |
 | G8-5 | Integrator L1/L2/L3 artifacts exist | Check file existence |
 | G8-6 | Testing-coordinator consolidated L2 exists | Check file existence |
+
+### Gate Audit (COMPLEX only)
+
+Mandatory for COMPLEX tier (see `gate-evaluation-standard.md` §6).
+Spawn `gate-auditor` with G8 criteria and evidence paths (integrator L2, merge results).
+Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ### On APPROVE
 

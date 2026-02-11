@@ -42,6 +42,7 @@ Repeat at regular intervals (Lead specifies cadence):
    - File modified outside ownership boundary → ALERT: ownership violation
    - Implementation deviates from plan spec → ALERT: drift detected
    - Context budget approaching limit → ALERT: compact risk
+   - Spawn count exceeding PT budget threshold → ALERT: budget threshold reached
    - No progress for extended period → ALERT: possible block
 5. **Report:** SendMessage to Lead with anomaly details
 

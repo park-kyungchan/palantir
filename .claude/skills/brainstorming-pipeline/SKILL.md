@@ -234,6 +234,8 @@ Evaluate before proceeding:
 | G1-4 | Phase 3 entry conditions clear |
 | G1-5 | No unresolved critical ambiguities |
 
+**Gate Audit:** Optional for all tiers (see `gate-evaluation-standard.md` §6).
+
 **On APPROVE** — create these files:
 
 **`.agent/teams/{session-id}/global-context.md` (GC-v1):**
@@ -411,6 +413,8 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
 | G2-4 | No unresolved critical unknowns |
 | G2-5 | L1/L2 quality meets standard |
 
+**Gate Audit:** Optional for STANDARD/COMPLEX (see `gate-evaluation-standard.md` §6).
+
 **On APPROVE:**
 1. Update global-context.md → GC-v2 with these additions:
    ```markdown
@@ -513,6 +517,30 @@ Architect submits [PLAN] before execution. Lead approves, then architect designs
 | G3-5 | Phase 4 entry requirements specified |
 | G3-6 | No unresolved HIGH+ architectural risks |
 | G3-7 | Decisions documented with rationale |
+
+### User Architecture Review
+
+Present architecture summary to user before final gate decision:
+
+```markdown
+## Architecture Review
+
+**Feature:** {name}
+**Components:** {count} designed
+**Key decisions:** {AD-1, AD-2 summaries}
+**Top risks:** {3 highest risks from risk matrix}
+
+Does this architecture align with your vision?
+[Approve / Request changes / Discuss further]
+```
+
+- **Approve** → proceed to Gate Audit (if required) then On APPROVE
+- **Request changes** → relay to architect with revision targets (no iteration limit for user-initiated)
+- **Discuss further** → freeform Q&A, then re-present summary
+
+**Gate Audit:** Mandatory for COMPLEX (see `gate-evaluation-standard.md` §6).
+If audit required: spawn `gate-auditor` with G3 criteria and evidence paths.
+Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 **On APPROVE:**
 1. Update global-context.md → GC-v3 with these additions:

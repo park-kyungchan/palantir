@@ -94,6 +94,13 @@ Parse the Dynamic Context above to find agent-teams-write-plan output:
 4. If single candidate, confirm with user: "Found Phase 4 output at {path}. Use this?"
 5. If no candidates, inform user: "No Phase 4 output found. Run /agent-teams-write-plan first."
 
+### Rollback Detection
+
+Check for `rollback-record.yaml` in downstream phase directories (phase-6/, phase-7/):
+- If found: read rollback context (revision targets, prior-attempt lessons) per `pipeline-rollback-protocol.md` §3
+- Include rollback context in challenger directives (what was attempted, why rolled back, areas to focus on)
+- If not found: proceed normally
+
 ### Validation
 
 After identifying the source, verify:
@@ -260,15 +267,15 @@ Read the devils-advocate's L2-summary.md and L3-full/challenge-report.md:
 - Present identified issues and proposed mitigations to user.
 - Ask user: "Accept mitigations and proceed, or return to Phase 4?"
 - If accepted: Document accepted mitigations in GC update.
-- If rejected: Return to Phase 4 with specific revision targets.
+- If rejected: Execute rollback P5→P4 per `pipeline-rollback-protocol.md` with revision targets.
 
 **FAIL (critical issues found):**
 - Before presenting to user, Lead sends a re-verification message to devils-advocate
   requesting specific evidence and confirmation for each CRITICAL finding. This multi-turn
   exchange ensures CRITICAL verdicts are grounded.
 - Present critical issues to user with clear explanation.
-- Must return to Phase 4 for redesign.
-- Include specific sections that need revision.
+- Execute rollback P5→P4 per `pipeline-rollback-protocol.md`.
+- Include specific sections that need revision in `rollback-record.yaml` revision_targets.
 
 ### User Review
 
@@ -293,6 +300,12 @@ Present challenge summary to user before final gate decision:
 
 Shall I proceed with Gate 5 approval?
 ```
+
+### Gate Audit (COMPLEX only)
+
+Mandatory for COMPLEX tier (see `gate-evaluation-standard.md` §6).
+Spawn `gate-auditor` with G5 criteria and evidence paths (challenge report, L1/L2).
+Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ### On APPROVE
 

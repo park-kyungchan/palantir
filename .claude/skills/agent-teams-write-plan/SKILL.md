@@ -253,6 +253,12 @@ Present plan summary to user before final approval:
 Shall I proceed with Gate 4 approval?
 ```
 
+### Gate Audit (STANDARD/COMPLEX)
+
+Mandatory for STANDARD and COMPLEX tiers (see `gate-evaluation-standard.md` §6).
+Spawn `gate-auditor` with G4 criteria and evidence paths (plan, L1/L2, GC).
+Compare verdicts per §6 procedure. On disagreement → escalate to user.
+
 ### On APPROVE
 1. GC-v3 → GC-v4: preserve all GC-v3 sections and add Implementation Plan Reference,
    Task Decomposition, File Ownership Map, Phase 6 Entry Conditions, Phase 5 Validation

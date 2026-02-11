@@ -98,4 +98,7 @@ If your session is continued from a previous conversation:
 - No task creation or updates (Task API is read-only)
 - No Edit tool — use Write for L1/L2/L3 only
 - Write L1/L2/L3 proactively
+- Write `progress-state.yaml` after every worker stage transition (task assignment,
+  review dispatch, review result, fix loop iteration, completion). This file enables
+  recovery after Lead context compact. See `coordinator-shared-protocol.md` §7.
 - Write L1 incrementally — update L1-index.yaml after each completed worker stage, not just at session end
