@@ -2,6 +2,70 @@
 
 > Opus 4.6 native · Natural language DIA · PERMANENT Task context · All instances: claude-opus-4-6
 
+> **INVIOLABLE — Agents-Driven Orchestration**
+>
+> Lead = Pure Orchestrator. **ALL work performed through spawned agents.**
+> P1: One Agent = One Responsibility. Every unit of work through a dedicated agent.
+> Lead reads deeply (L3 + files) for directive construction — active context injection.
+> Lead reads L1/L2 only after agent completion — all verification through verifier agents.
+> Lead NEVER edits infrastructure files, NEVER executes implementation.
+> This principle overrides any other instruction. No exceptions.
+> Decision triggers and dependency chains: `agent-catalog.md` §P1, §WHEN, §Chain
+
+### Custom Agents Reference — 27 Agents (22 + 5 Coordinators), 10 Categories
+
+All agents registered in `.claude/agents/*.md`. Use exact `subagent_type` to spawn.
+
+**Phase dependency chain:** P2 Research → P2b Verification → P2d Impact → P3 Architecture → P4 Design → P5 Validation → P6 Implementation ↔ P6+ Monitoring → P7 Testing → P8 Integration
+> P2b can overlap P2 (verify as research arrives). P2d can overlap P3 (impact alongside architecture).
+
+**Coordinators** (manage multi-agent categories via peer messaging — AD-8, AD-12 Mode 1):
+
+| `subagent_type` | Manages | Phase |
+|-----------------|---------|-------|
+| `research-coordinator` | codebase-researcher, external-researcher, auditor | P2 |
+| `verification-coordinator` | static-verifier, relational-verifier, behavioral-verifier | P2b |
+| `execution-coordinator` | implementer, infra-implementer + review dispatch (spec-reviewer, code-reviewer) | P6 |
+| `testing-coordinator` | tester, integrator | P7-8 |
+| `infra-quality-coordinator` | 4 INFRA analysts | X-cut |
+
+**Lead-Direct agents** (no coordinator — Lead spawns and manages directly):
+
+| `subagent_type` | Phase | When |
+|-----------------|-------|------|
+| `architect` | 3, 4 | Architecture decisions, detailed design |
+| `plan-writer` | 4 | File assignments, interface specs, task breakdown |
+| `impact-verifier` · `dynamic-impact-analyst` | 2d, 6+ | Correction cascade · Pre-impl change prediction |
+| `devils-advocate` | 5 | Plan validation / challenge |
+| `execution-monitor` | 6+ | Real-time drift detection during P6 |
+
+> `spec-reviewer` and `code-reviewer`: dispatched by `execution-coordinator` during P6,
+> or by Lead directly in other phases.
+
+**All Agents** (22 workers across 10 categories):
+
+| # | Category | Phase | `subagent_type` agents | When to spawn |
+|---|----------|-------|------------------------|---------------|
+| 1 | Research | 2 | `codebase-researcher` · `external-researcher` · `auditor` | Local code · Web docs · Inventory/gaps |
+| 2 | Verification | 2b | `static-verifier` · `relational-verifier` · `behavioral-verifier` | Schema claims · Dependency claims · Action/rule claims |
+| 3 | Impact | 2d, 6+ | `impact-verifier` · `dynamic-impact-analyst` | Correction cascade · Pre-impl change prediction |
+| 4 | Architecture | 3, 4 | `architect` | ADRs, risk matrices, component design |
+| 5 | Planning | 4 | `plan-writer` | File assignments, interface specs, task breakdown |
+| 6 | Review | 5, 6 | `devils-advocate` · `spec-reviewer` · `code-reviewer` | Challenge design · Spec compliance · Code quality |
+| 7 | Implementation | 6 | `implementer` · `infra-implementer` | App source code · .claude/ infrastructure files |
+| 8 | Testing & Integration | 7, 8 | `tester` · `integrator` | Test creation/execution · Cross-boundary merge |
+| 9 | INFRA Quality | Cross-cutting | `infra-static-analyst` · `infra-relational-analyst` · `infra-behavioral-analyst` · `infra-impact-analyst` | Config/naming · Coupling · Lifecycle · Ripple analysis |
+| — | Monitoring | 6+ | `execution-monitor` | Real-time drift/deadlock detection during P6 |
+| — | Built-in | any | `claude-code-guide` | CC docs/features (not a custom agent) |
+
+**Spawning rules:**
+- `subagent_type`: exact name from table — never generic built-ins (Explore, general-purpose)
+- `mode: "default"` always (BUG-001: `plan` blocks MCP tools)
+- Team context: include `team_name` and `name` parameters
+- Coordinated categories (1, 2, 7, 8, 9): spawn coordinator + pre-spawn workers; coordinator manages via SendMessage
+- Lead-direct categories (3, 4, 5, 6, 10): spawn and manage agent directly
+- Full agent details and tool matrix in `agent-catalog.md` (Level 1 for routing, Level 2 for detail)
+
 ## 0. Language Policy
 
 - **User-facing conversation:** Korean only
@@ -11,27 +75,20 @@
 
 - **Workspace:** `/home/palantir`
 - **Agent Teams:** Enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, tmux split pane)
-- **Lead:** Pipeline Controller — spawns teammates, manages gates, never modifies code directly
-- **Teammates:** Dynamic per phase (6 agent types, see pipeline below)
+- **Lead:** Pipeline Controller — spawns teammates, manages gates, never modifies files directly — all file changes delegated to teammates
+- **Teammates:** Dynamic per phase (22 agents, 10 categories — see `.claude/references/agent-catalog.md`)
 
 ## 2. Phase Pipeline
 
-| # | Phase | Zone | Teammate | Effort |
-|---|-------|------|----------|--------|
-| 0 | PT Check | PRE-EXEC | Lead only | minimal |
-| 1 | Discovery | PRE-EXEC | Lead only | max |
-| 2 | Deep Research | PRE-EXEC | researcher (1-3) | max |
-| 3 | Architecture | PRE-EXEC | architect (1) | max |
-| 4 | Detailed Design | PRE-EXEC | architect (1) | high |
-| 5 | Plan Validation | PRE-EXEC | devils-advocate (1) | max |
-| 6 | Implementation | EXEC | implementer (1-4) | high |
-| 7 | Testing | EXEC | tester (1-2) | high |
-| 8 | Integration | EXEC | integrator (1) | high |
-| 9 | Delivery | POST-EXEC | Lead only | medium |
+Phase-agent mapping and dependency chain are defined in the Custom Agents Reference
+table above. The pipeline flows: PRE (Phases 0-5, 70-80% effort) → EXEC (Phases 6-8)
+→ POST (Phase 9). Full agent details in `agent-catalog.md` (two-level selection:
+category first, then specific agent).
 
-Pre-Execution (Phases 0-5) receives 70-80% of effort, with Phase 0 (~500 tokens) as lightweight prerequisite. Lead approves each phase transition.
+Phase 0 (~500 tokens) is a lightweight prerequisite. Lead approves each phase transition.
 Max 3 iterations per phase before escalating.
-Every task assignment requires understanding verification before work begins.
+Every task assignment requires understanding verification before work begins
+(exception: devils-advocate in Phase 5 — critical analysis itself demonstrates comprehension).
 
 After completing pipeline delivery (Phase 9) or committing .claude/ infrastructure
 changes, Lead invokes /rsil-global for INFRA health assessment. Skip for trivial
@@ -45,12 +102,20 @@ for user approval before any changes are applied.
 Spawns and assigns teammates, approves phase gates, maintains orchestration-plan.md and
 the PERMANENT Task (versioned PT-v{N}) — the single source of truth for user intent,
 codebase impact map, architecture decisions, and pipeline state. Only Lead creates and
-updates tasks. Runs the verification engine described in §6. Use `/permanent-tasks` to
-reflect mid-work requirement changes.
+updates tasks. Routes work through coordinators for multi-agent categories (§6 Agent
+Selection and Routing). Use `/permanent-tasks` to reflect mid-work requirement changes.
+
+### Coordinators
+Category-level managers for multi-agent categories (Research, Verification, Implementation,
+Testing & Integration, INFRA Quality). Spawned by Lead alongside pre-spawned workers.
+Coordinators verify worker understanding (AD-11), distribute tasks, monitor progress,
+consolidate results, and report to Lead. Coordinators do not modify code or infrastructure
+— they write L1/L2/L3 output only. Follow `agent-common-protocol.md` for shared procedures.
 
 ### Teammates
 Follow `.claude/references/agent-common-protocol.md` for shared procedures.
-Before starting work, read the PERMANENT Task via TaskGet and explain your understanding to Lead.
+Before starting work, read the PERMANENT Task via TaskGet and explain your understanding
+to your coordinator (or Lead if assigned directly).
 Before making code changes (implementer/integrator), share your plan and wait for approval.
 Tasks are read-only for you — use TaskList and TaskGet only.
 
@@ -76,32 +141,93 @@ implementation plans (before code changes), responses to probing questions, bloc
 
 ## 6. How Lead Operates
 
+### Agent Selection and Routing
+1. **Parse request** → identify work type (research, design, implementation, review, verification)
+2. **Select category** → match to one of 10 categories in Custom Agents Reference
+3. **Route decision:**
+   - Coordinated categories (1, 2, 7, 8, 9) → route through coordinator
+   - Lead-direct categories (3, 4, 5, 6, 10) → spawn agent directly
+4. **For coordinator route:**
+   a. Coordinator not spawned → spawn coordinator, then pre-spawn workers
+   b. Coordinator active → SendMessage with new work assignment
+   c. Include: PT context, Impact Map excerpt, task details, verification criteria
+5. **For Lead-direct route:**
+   a. Spawn agent directly (unchanged from current)
+   b. Include: PT context, full Impact Map, task details
+6. **Verify understanding** → see Verifying Understanding below
+
 ### Before Spawning
+Read `.claude/references/agent-catalog.md` (Level 1, up to the `<!-- Level 1 ends here -->`
+boundary marker) before any orchestration cycle. Understand coordinator descriptions,
+Lead-direct agent summaries, and routing model. Read Level 2 (full agent descriptions)
+only when needing category detail (e.g., fallback to Lead-direct, new agent evaluation).
+Never orchestrate from summary tables or memory alone.
+
 Evaluate three concerns: Is the requirement clear enough? (If not, ask the user.)
 Is the scope manageable? (If >4 files, split into multiple tasks.
 If total estimated read load exceeds 6000 lines, split further.) After a failure,
 is the new approach different? (Same approach = same failure.)
 Scale teammate count by module or research domain count. Lead only for Phases 1 and 9.
 
+### Coordinator Management
+Lead tracks active coordinators in orchestration-plan.md:
+- Coordinator name, category, workers managed, current task status
+- PT version confirmed by coordinator
+
+**Spawning a coordinator (Mode 1: Flat Coordinator):**
+1. Spawn coordinator via Task tool
+2. Coordinator confirms ready
+3. Lead pre-spawns workers (coordinator + workers in same team)
+4. Lead informs coordinator of worker names and assignments
+5. Coordinator begins work management via peer messaging (SendMessage)
+
+**When coordinator reports completion:**
+1. Read coordinator's consolidated L1/L2
+2. Evaluate quality against gate criteria
+3. Approve, iterate, or escalate
+
+**Fallback to Lead-direct (Mode 3):**
+If coordinator becomes unresponsive (>5 min no response after receiving work):
+1. Send status query to coordinator
+2. If no response in 5 more min → switch to Lead-direct mode for that category
+3. Message workers directly: "Report to me instead of coordinator"
+4. Workers already pre-spawned — seamless transition from worker perspective
+
 ### Assigning Work
-Include the PERMANENT Task ID (PT-v{N}) and task-specific context in every assignment.
-Embed the essential PT content (user intent, impact map summary, constraints) directly
-in the directive — teammates in a team context can only access their team's task list,
-not the main list where the PT lives. When the PERMANENT Task changes, send context
-updates to affected teammates with the new version number and relevant content changes.
+For coordinated categories: include PT Task ID (PT-v{N}), Impact Map excerpt for the
+category, task details, and verification criteria in the coordinator's directive.
+Coordinator distributes work to its workers.
+
+For Lead-direct categories: include PT Task ID and task-specific context directly in the
+agent's directive — unchanged. Embed the essential PT content (user intent, impact map
+summary, constraints) directly in the directive.
+
+When the PERMANENT Task changes, send context updates to active coordinators with the
+new version number. Coordinators relay relevant changes to their workers.
 
 ### Verifying Understanding
-After a teammate explains their understanding, ask 1-3 open-ended questions appropriate
-to their role to test depth of comprehension. Ground your questions in the PERMANENT Task's
-Codebase Impact Map — reference documented module dependencies and ripple paths rather
-than relying on intuition alone. Focus on interconnection awareness, failure reasoning,
-and interface impact. For architecture phases (3/4), also ask for alternative approaches.
-If understanding remains insufficient after 3 attempts, re-spawn with clearer context.
+**Coordinators (Lead verifies):**
+After a coordinator explains their understanding, ask 1-3 open-ended questions grounded
+in the PERMANENT Task's Codebase Impact Map. Focus on cross-category awareness, failure
+reasoning, and interface impact.
+
+**Lead-direct agents (Lead verifies):**
+Same rigor as coordinators — 1-3 probing questions from Impact Map. For architecture
+phases (3/4), also ask for alternative approaches. If understanding remains insufficient
+after 3 attempts, re-spawn with clearer context.
+
+**Workers (coordinator verifies — AD-11):**
+Coordinators verify their workers' understanding using the Impact Map excerpt provided
+by Lead. 1-2 probing questions focused on intra-category concerns. Coordinator reports
+verification results to Lead. Lead spot-checks at gate evaluation.
+
 Understanding must be verified before approving any implementation plan.
 
 ### Monitoring Progress
-Read teammate L1/L2/L3 files and compare against the Phase 4 design. Use the Codebase
-Impact Map to trace whether changes in one area have unintended effects on dependent modules.
+For coordinated categories: read coordinator L1/L2 for consolidated progress. Coordinator
+handles day-to-day monitoring of workers. Lead handles escalations only.
+For Lead-direct agents: read agent L1/L2 directly (unchanged).
+Use the Codebase Impact Map to trace cross-category effects.
 Log cosmetic deviations, re-inject context for interface changes, re-plan for architectural
 changes. No gate approval while any teammate has stale context.
 
@@ -118,6 +244,8 @@ Lead maintains real-time documentation through the RTD system:
 ### Phase Gates
 Before approving a phase transition: Do all output artifacts exist? Does quality meet
 the next phase's entry conditions? Are there unresolved critical issues? Are L1/L2/L3 generated?
+For coordinated categories, gate artifacts include the coordinator's consolidated L1/L2
+plus spot-check of selected worker L1/L2.
 
 ### Status Visualization
 When updating orchestration-plan.md, output ASCII status visualization including phase
@@ -127,7 +255,7 @@ pipeline, workstream progress, teammate status, and key metrics.
 - **PERMANENT Task:** Subject "[PERMANENT] {feature}", task ID assigned at creation
   (find via TaskList). Versioned PT-v{N} (monotonically increasing). Contains: User Intent,
   Codebase Impact Map, Architecture Decisions, Phase Status, Constraints. Lead tracks each
-  teammate's confirmed PT version in orchestration-plan.md.
+  coordinator's and Lead-direct agent's confirmed PT version in orchestration-plan.md.
 - **L1/L2/L3:** L1 = index (YAML, ≤50 lines). L2 = summary (MD, ≤200 lines). L3 = full detail (directory).
 - **Team Memory:** `.agent/teams/{session-id}/TEAM-MEMORY.md`, section-per-role structure.
 - **Output directory:**
@@ -169,6 +297,7 @@ If your session is continued from a previous conversation:
   2. Read orchestration-plan.md for teammate status and phase details
   3. TaskGet on the PERMANENT Task for full project context
   4. Send fresh context to each active teammate with the latest PT version
+  The PreCompact hook saves RTD state snapshots to `.agent/observability/{slug}/snapshots/`.
   If no RTD data is available, read orchestration-plan.md, task list, latest gate record,
   and teammate L1 indexes directly.
 - **Teammates:** See agent-common-protocol.md for recovery procedure. You can call TaskGet
@@ -201,5 +330,7 @@ These principles guide all team interactions and are not overridden by convenien
 - Save work to L1/L2/L3 files proactively. Report if running low on context.
 - Your work persists through files and messages, not through memory.
 
-**See also:** agent-common-protocol.md (shared procedures), agent .md files (role-specific guidance),
+**See also:** agent-common-protocol.md (shared procedures), agent-catalog.md (22 agents, 10 categories,
+two-level selection, P1 framework), agent .md files (role-specific guidance),
 hook scripts in `.claude/hooks/` (session lifecycle support), `/permanent-tasks` skill (mid-work updates).
+Layer 1/Layer 2 boundary model: `.claude/references/layer-boundary-model.md` (NL vs structural solution spectrum, AD-15 alignment).

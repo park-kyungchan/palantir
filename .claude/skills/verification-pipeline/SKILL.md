@@ -10,7 +10,7 @@ Phase 7 (Testing) + Phase 8 (Integration) orchestrator. Verifies implementation 
 
 **Announce at start:** "I'm using verification-pipeline to orchestrate Phase 7-8 (Testing + Integration) for this feature."
 
-**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Tester Spawn → Test Execution → Gate 7 → Integrator Spawn (conditional) → Integration → Gate 8 → Clean Termination
+**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Coordinator + Worker Spawn → Coordinator-Managed Testing → Gate 7 → Coordinator-Managed Integration (conditional) → Gate 8 → Clean Termination
 
 ## When to Use
 
@@ -140,11 +140,11 @@ TeamCreate:
 ```
 
 Create orchestration-plan.md and copy GC-v5 to new session directory.
-Create TEAM-MEMORY.md with Lead, tester, and integrator (if applicable) sections.
+Create TEAM-MEMORY.md with Lead, testing-coordinator, tester, and integrator (if applicable) sections.
 
 ---
 
-## Phase 7.3: Tester Spawn + Verification
+## Phase 7.3: Testing Coordinator Spawn + Worker Pre-Spawn
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
@@ -161,46 +161,66 @@ Phase 6 independent component groups
             (one per group)
 ```
 
-### Spawn
-
-For each tester:
+### Testing Coordinator Spawn
 
 ```
 Task tool:
-  subagent_type: "tester"
+  subagent_type: "testing-coordinator"
   team_name: "{feature-name}-verification"
-  name: "tester-{N}"
+  name: "test-coord"
   mode: "default"
 ```
 
-### Directive Construction
+#### [DIRECTIVE] for Testing Coordinator
 
-The directive must include these context layers:
+Include these context layers:
 
-1. **PERMANENT Task summary** — embed essential PT content (user intent, impact map, constraints) directly in the directive. Teammates in team context cannot access the main task list.
-2. **Phase 6 implementer outputs** — paths to L1/L2 files for the tester's assigned component
+1. **PERMANENT Task content** — embed essential PT content (user intent, impact map, constraints)
+2. **Phase 6 implementer outputs** — paths to L1/L2 files per component
 3. **Design spec path** — `docs/plans/{plan-file}` for acceptance criteria reference
 4. **Test scope instructions** — which components to test, which interfaces to verify
+5. **Phase 8 conditional trigger** — integrator needed if 2+ implementers in Phase 6
+6. **Worker names** — sent via follow-up message after worker pre-spawn
 
-Task-context must instruct tester to:
-- Read the design spec (Phase 4 plan) for acceptance criteria and interface contracts
-- Read Phase 6 implementer L2 summaries for implementation context
-- Use `sequential-thinking` for test strategy decisions
-- Use `mcp__context7__query-docs` to verify testing framework APIs
-- Design tests covering: acceptance criteria, interface contracts, edge cases, error conditions
-- Execute tests and capture results
-- Analyze failures with root cause identification
-- Write L1/L2/L3 output files
-- Report completion with pass/fail summary to Lead via SendMessage
+### Worker Pre-Spawn
 
-### Verifying Understanding
+After testing-coordinator confirms ready, pre-spawn workers:
 
-After tester confirms receipt:
-1. Tester explains their test strategy in their own words
-2. Lead asks 1 probing question grounded in the Impact Map:
-   - Example: "Given that module X depends on Y's output format, what specific contract tests will you write?"
-3. On satisfactory answer → tester proceeds
-4. On insufficient answer → clarify and re-ask (max 3 attempts)
+```
+# Testers (per adaptive tester count)
+Task(subagent_type="tester", name="tester-{N}",
+     mode="default", team_name="{feature}-verification")
+
+# Integrator (conditional — only if 2+ implementers)
+Task(subagent_type="integrator", name="integrator-1",
+     mode="default", team_name="{feature}-verification")
+```
+
+Worker directives include:
+- "Your coordinator is: test-coord. Report progress and completion to your coordinator."
+- PT content (embedded) — user intent, impact map, constraints
+- Phase 6 output paths for test reference
+- Design spec path for acceptance criteria
+
+After workers spawned, inform coordinator:
+```
+SendMessage to test-coord:
+  "Workers spawned: tester-1, [tester-2], [integrator-1].
+   Begin worker verification and test execution."
+```
+
+### Understanding Verification (Delegated — AD-11)
+
+```
+Level 1: Lead verifies testing-coordinator
+  - Full Impact Map context
+  - 1-2 probing questions about test + integration strategy
+  - Coordinator explains their management plan
+
+Level 2: Testing-coordinator verifies workers
+  - 1-2 questions per worker using Impact Map excerpt
+  - Reports verification status to Lead
+```
 
 ---
 
@@ -254,7 +274,7 @@ Use `sequential-thinking` for all gate evaluation.
 
 ### Test Result Evaluation
 
-Read tester L2-summary.md:
+Read testing-coordinator's consolidated L2-summary.md (includes tester results):
 
 **ALL PASS:**
 - Proceed to Phase 8 (or Clean Termination if single implementer)
@@ -281,51 +301,36 @@ Read tester L2-summary.md:
 
 ---
 
-## Phase 8.1: Integrator Spawn + Verification
+## Phase 8.1: Integration Phase (Coordinator-Managed)
 
-**Conditional phase** — only runs if Phase 6 had 2+ implementers with separate file ownership boundaries. If Phase 6 had a single implementer, skip to Clean Termination.
+**Conditional phase** — only runs if Phase 6 had 2+ implementers with separate file ownership
+boundaries. If Phase 6 had a single implementer, skip to Clean Termination.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Spawn
+### Coordinator Transition
 
+Testing-coordinator is already active from Phase 7. Integrator was pre-spawned in Phase 7.3.
+No new spawning needed.
+
+Lead sends transition message to testing-coordinator:
 ```
-Task tool:
-  subagent_type: "integrator"
-  team_name: "{feature-name}-verification"
-  name: "integrator-1"
-  mode: "default"
+SendMessage to test-coord:
+  "Phase 7 Gate APPROVED. Transition to Phase 8.
+   Integration scope: {file ownership boundaries from Phase 6}
+   Tester results: {path to Phase 7 output}
+   Begin integrator management."
 ```
 
-### Directive Construction
+### Coordinator Manages Integration
 
-The directive must include these context layers:
-
-1. **PERMANENT Task summary** — embed essential PT content directly in directive
-2. **Phase 6 implementer L1/L2 paths** — all implementer outputs for conflict detection
-3. **Phase 7 tester L2 path** — test results informing merge priorities
-4. **Design spec path** — interface contracts that must be preserved
-5. **File ownership map** — from Phase 6, which implementer owned which files
-
-Task-context must instruct integrator to:
-- Read all Phase 6 implementer L1/L2/L3 outputs
-- Read Phase 7 tester results
-- Identify conflicts (file overlaps, interface mismatches, dependency issues)
-- Submit integration plan to Lead before any file modifications
-- Resolve conflicts preserving both implementers' intent
-- Run integration tests after each batch of resolutions
-- Write discoveries to TEAM-MEMORY.md (own section)
-- Write L1/L2/L3 output files
-- Report completion to Lead via SendMessage
-
-### Verifying Understanding
-
-After integrator confirms receipt:
-1. Integrator explains the conflicts they've identified
-2. Lead asks 2 probing questions grounded in the Impact Map:
-   - Example: "Trace the dependency chain from module A to C — what happens if the merge changes B's interface?"
-   - Example: "How will you verify the merge doesn't break the tested interfaces from Phase 7?"
-3. On satisfactory answers → integrator submits plan → Lead approves → execution begins
+Testing-coordinator:
+1. Assigns integration scope to integrator with: Phase 6 outputs, Phase 7 test results,
+   file ownership map, design spec interface contracts
+2. Verifies integrator understanding (1-2 probing questions from Impact Map excerpt)
+3. Reviews integrator's plan before approving execution
+4. Monitors integration progress
+5. Reports to Lead for Gate 8 evaluation
 
 ---
 
@@ -383,6 +388,7 @@ Use `sequential-thinking` for all gate evaluation.
 | G8-3 | Phase 4 interface contracts preserved post-merge | Cross-reference spec vs. merged code |
 | G8-4 | No unauthorized cross-boundary modifications | Verify changes within integrator's scope |
 | G8-5 | Integrator L1/L2/L3 artifacts exist | Check file existence |
+| G8-6 | Testing-coordinator consolidated L2 exists | Check file existence |
 
 ### On APPROVE
 
@@ -450,8 +456,9 @@ Add to global-context.md:
 
 ### Shutdown
 
-1. Shutdown testers: `SendMessage type: "shutdown_request"` to each
-2. Shutdown integrator (if spawned): `SendMessage type: "shutdown_request"`
+1. Shutdown testing-coordinator: `SendMessage type: "shutdown_request"`
+   (coordinator signals workers to stop)
+2. Shutdown remaining workers directly if still active
 3. `TeamDelete` — cleans team coordination files
 4. Artifacts preserved in `.agent/teams/{session-id}/`
 
@@ -513,7 +520,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 
 - **Test behavior, not implementation** — verify what the code does, not how it does it
 - **Evidence-based coverage** — every test gap must be justified with rationale
-- **Sequential phases** — testers complete before integrator starts (P7 feeds P8)
+- **Sequential phases** — testers complete before integrator starts, enforced by testing-coordinator
 - **Conditional integration** — skip Phase 8 if single implementer (no cross-boundary merges)
 - **Conflict resolution documented** — every merge decision has rationale in L2
 - **Sequential thinking always** — structured reasoning at every decision point

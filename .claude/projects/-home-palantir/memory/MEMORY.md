@@ -13,19 +13,35 @@
 - Per-skill improvements derived from claude-code-guide research (different each time)
 - Process: claude-code-guide research → design doc → SKILL.md → validation → commit
 
+### claude-code-guide Output Management (2026-02-11)
+- claude-code-guide agent has NO Write tool → output stored only in volatile /tmp
+- **Lead must read output immediately after task completion** — /tmp/ files are cleaned up on a timer
+- If output is lost: use `resume` parameter to retrieve from agent context
+- Never substitute domain knowledge for CC research — always re-request if output is lost
+
+### Pre-Orchestration Agent Description Reading (2026-02-11)
+- Before ANY orchestration, Lead must read `.claude/references/agent-catalog.md` Level 1 (up to boundary marker, ~227L)
+- Level 2 (~1186L) read only when needing category detail or fallback evaluation
+- 27 agents (22 workers + 5 coordinators) across 10 categories
+- Purpose: understand routing model, coordinator descriptions, spawn conditions
+- This is mandatory — never orchestrate from summary tables or memory alone
+- CLAUDE.md §6 "Before Spawning" directs this read → auto-recovery after compaction
+
 ### ASCII Status Visualization (2026-02-08)
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-## Current INFRA State (v7.0, 2026-02-10)
+## Current INFRA State (v8.0, 2026-02-11)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v7.0 | ~206L | §6 Observability RTD, §9 RTD recovery |
+| CLAUDE.md | v8.0 | ~336L | §3 3-tier roles, §6 Agent Selection+Routing, Coordinator Management |
 | task-api-guideline.md | v6.0 | 118L | NLP consolidated (was 537L, 78% reduction) |
-| agent-common-protocol.md | v3.0 | ~108L | L1/L2 PT Goal Linkage (optional) |
-| Agents | v2.0 | ~460L | 6 types, RTD awareness |
-| Hooks | 4 total | — | SubagentStart, PreCompact, SessionStart, PostToolUse (async) |
+| agent-common-protocol.md | v3.2 | ~162L | Coordinator routing overlay + Working with Coordinators (6 rules) |
+| agent-catalog.md | v2.0 | ~1415L | Two-Level (L1 ~227L + boundary marker + L2 ~1186L), 27 agents |
+| Agents | v4.0 | 27 files | 22 workers + 5 coordinators, coordinator-aware routing |
+| Settings | — | ~84L | MCP Tool Search auto:7 enabled |
+| Hooks | 4 total | ~220L | SubagentStart, PreCompact (hookOutput), SessionStart, PostToolUse |
 | Observability | — | — | `.agent/observability/{slug}/` (rtd-index, events.jsonl, registry) |
 
 ### Skills (10 total)
@@ -43,10 +59,24 @@
 | — | `/permanent-tasks` | — | RTD + Cross-Cutting (CH-5) |
 
 ### RSIL Quality Data
-- Cumulative: 72 findings, 92% acceptance (9 reviews: 1 global, 4 narrow, 4 retroactive)
+- RSIL INFRA Score: 5.9→9.5/10 (+61%, 5 cycles, Baseline→C4→C5)
+- Dimensions: Static 10/10, Relational 9/10, Behavioral 9.5/10
+- Cumulative: 92 findings, 93% acceptance (11 reviews: 1 global, 4 narrow, 6 retroactive)
+- Cycle 7: 20 new (integration 7 + protocol 13), 6 FIX + 7 WARN all applied, 7 INFO noted
+- CC Optimization (Task #23): MCP Tool Search, RTD dedup, protocol expansion, PreCompact hookOutput
 - Tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`
 - Agent memory: `~/.claude/agent-memory/rsil/MEMORY.md`
-- Remaining audit targets: S-5 brainstorming (done S-1), S-6 CLAUDE.md, S-7 agent-common-protocol+hooks
+- All audit targets COMPLETE (S-1~S-4, S-6, S-7)
+
+### Agents-Driven Workflow (PT #4→#5, 2026-02-11)
+- 27 agents (22 workers + 5 coordinators), 10 categories — `.claude/references/agent-catalog.md` (1415L Two-Level)
+- P1: One Agent = One Responsibility — WHEN/WHY/HOW framework
+- Layer 1/2 Boundary: `.claude/references/layer-boundary-model.md` (Coordinator Orchestration section added)
+- CLAUDE.md §6: Agent Selection and Routing (6-step), Coordinator Management (Mode 1+3)
+- 5 coordinators: research, verification, execution, testing, infra-quality
+- AD-8~AD-13 + PD-1~PD-3: Selective Coordinator, Two-Level Catalog, Delegated Verification
+- Lead Architecture Redesign: P1-P6 COMPLETE, Gate 6 APPROVED, PT-v6
+- BN-1→BN-3→BN-4 cascade resolved via Selective Coordinator model
 
 ### Known Bugs
 
@@ -55,37 +85,31 @@
 | BUG-001 | CRITICAL | `permissionMode: plan` blocks MCP tools | Always spawn with `mode: "default"` |
 | BUG-002 | HIGH | Large-task teammates auto-compact before L1/L2 | CLAUDE.md §6 Pre-Spawn Checklist (S-1/S-2/S-3 gates) |
 | BUG-003 | MEDIUM | $CLAUDE_SESSION_ID unavailable in hooks (GH #17188) | AD-29: SubagentStart stdin SID → session-registry.json |
+| BUG-004 | HIGH | No cross-agent compaction notification | tmux monitoring + H-3 incremental L1 + protocol self-report |
 
 Details: `memory/agent-teams-bugs.md`
 
 ## Next Topics
 
-### Ontology Framework — Brainstorming Chain
+### Ontology Communication Protocol [ALWAYS ACTIVE] (2026-02-10)
 
-Layer 2 (Ontology Framework) is the next major initiative. Entry via `/brainstorming-pipeline`.
-Layer 1 achievement ~70% (RTDI assessment). Layer 2 = 0% → ~30% of full vision.
-Brainstorming = Dual Purpose: decision-making + user learning (handoff §5.0, protocol Rule 7).
-Each session teaches Ontology/Foundry concepts progressively (TEACH → CONTEXTUALIZE → ASK).
+Active whenever Ontology/Foundry concepts arise. User = concept-level decision-maker.
+4-step pattern: **TEACH → IMPACT ASSESS → RECOMMEND → ASK**
+Reference: `.claude/references/ontology-communication-protocol.md`
 
-| Topic | Name | Input Docs | Depends On | Output |
-|-------|------|-----------|------------|--------|
-| T-0 | RTDI Layer 2 Strategy | `rtdi-codebase-assessment.md` + `ontology-bridge-handoff.md` | — | L2 scope, bootstrap domain, migration strategy |
-| T-1 | ObjectType + Property + Struct | T-0 output + `bridge-reference/` (5 files) | T-0 | ObjectType schema, Property system, Struct definitions |
-| T-2 | LinkType + Interface | T-1 output + existing L1 cross-refs | T-1 | LinkType schema, Interface contracts |
-| T-3 | ActionType + Pre/Postconditions | T-1 output + pipeline phase definitions | T-1 | ActionType schema, guard/effect system |
-| T-4 | Framework Integration | T-1~T-3 outputs + current INFRA state | T-1,T-2,T-3 | Runtime integration architecture |
+### Ontology PLS — Deferred to New Session (2026-02-10)
 
-Key docs:
-- WHY: `docs/plans/2026-02-10-rtdi-codebase-assessment.md` (660L, 6 gaps, 8 success criteria)
-- WHAT: `docs/plans/2026-02-08-ontology-bridge-handoff.md` (~450L, T-1~T-4 definitions)
-- HOW: `docs/plans/2026-02-10-ontology-sequential-protocol.md` (~418L, T-0~T-4 calling protocol)
-- Bridge Reference: `park-kyungchan/palantir/Ontology-Definition/docs/bridge-reference/` (5 files, 3842L)
-- 6 Layer 1 structural gaps: NL assertion fragility, unstructured state, knowledge fragmentation, validation without enforcement, agent attribution (BUG-003), ripple detection
-- 8 deferred items mapped to Ontology components (see assessment §8)
+All phases complete (P0-P3), no implementation needed. PT #3 archived.
+Next: T-0 brainstorming via `/brainstorming-pipeline`.
+13 architecture decisions (AD-1~AD-13), 15 corrections applied, 10 deferred.
+Details + complete document index (30+ files): `memory/ontology-pls.md`
 
 ### Other Deferred Work
 - CH-002~005: `docs/plans/2026-02-07-ch002-ch005-deferred-design.yaml`
-- Agent memory initialization: MEMORY.md templates for each agent type
+- Agent memory initialization: MEMORY.md templates for each agent type (CC research confirmed 15-20% savings)
+- ~~MCP Tool Search~~: DONE (auto:7 in settings.json)
+- O-A: Phase 0 DRY (~132L savings, 3 variants across 8 skills)
+- O-C: Cross-Cutting DRY (~60L savings)
 - Observability Dashboard: `/brainstorming-pipeline` topic (reads events.jsonl + rtd-index.md)
 - COW v2.0: End-to-end testing with sample images, .claude.json MCP cleanup
 
@@ -93,3 +117,4 @@ Key docs:
 - `memory/infrastructure-history.md` — Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
 - `memory/skill-optimization-history.md` — SKL-001~SKL-005 detailed records
 - `memory/agent-teams-bugs.md` — BUG-001~BUG-003 details and workarounds
+- `memory/ontology-pls.md` — Ontology PLS full handoff (30+ connected docs, AD-1~AD-13, brainstorming chain T-0~T-4)

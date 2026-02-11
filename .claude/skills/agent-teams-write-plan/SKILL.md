@@ -140,6 +140,9 @@ Task tool:
   mode: "default"
 ```
 
+> Architect is a Lead-direct agent (CLAUDE.md §6). No coordinator involved —
+> Lead spawns and manages the architect directly.
+
 ### Directive Construction
 
 The directive must include these context layers:
@@ -153,6 +156,7 @@ The directive must include these context layers:
 Task-context must instruct architect to:
 - Step 1: Read the PERMANENT Task via TaskGet, read architecture-design.md and CH-001
   exemplar, then explain your understanding to Lead and wait for verification
+- Read TEAM-MEMORY.md before starting (protocol requirement)
 - Step 2: After Lead confirms understanding, proceed with plan generation
 - Follow the 10-section template (§1-§10)
 - Use Read-First-Write-Second workflow for §5
@@ -180,7 +184,7 @@ All agents use `sequential-thinking` throughout.
 
 After understanding is verified, architect produces the implementation plan.
 
-Architect works with: Read, Glob, Grep, Write, sequential-thinking.
+Architect works with: Read, Glob, Grep, Write, sequential-thinking (key tools; full set in agent-catalog.md).
 
 **Expected output:**
 

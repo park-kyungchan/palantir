@@ -139,6 +139,9 @@ Task tool:
   mode: "default"
 ```
 
+> Devils-advocate is a Lead-direct agent (CLAUDE.md §6). No coordinator involved —
+> Lead spawns and manages the devils-advocate directly.
+
 ### [DIRECTIVE] Construction
 
 The directive must include these context layers:
@@ -172,7 +175,7 @@ Task-context must instruct devils-advocate to:
 
 ## Phase 5.4: Challenge Execution
 
-Devils-advocate works with: Read, Glob, Grep, sequential-thinking, context7, tavily.
+Devils-advocate works with: Read, Glob, Grep, Write, sequential-thinking, context7, tavily.
 
 ### Challenge Categories
 
@@ -396,6 +399,6 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - Auto-approve a FAIL verdict (user must decide)
 - Auto-chain to Phase 6 after termination
 - Proceed past Gate 5 without all criteria met
-- Let devils-advocate modify any files (it is completely read-only)
+- Let devils-advocate modify project files (Write access is for L1/L2/L3 output only)
 - Accept challenges without evidence (vague "this might fail" is not a valid critique)
 - Suppress critical issues to achieve PASS verdict

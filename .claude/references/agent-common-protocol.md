@@ -1,6 +1,10 @@
 # Shared Protocol for All Teammates
 
-This covers procedures common to all 6 agent types. Role-specific guidance is in each agent's own .md file.
+This covers procedures common to all teammate agent types (22 agents across 10 categories). Role-specific guidance is in each agent's own .md file.
+
+> **Coordinator routing:** If your work is assigned through a coordinator, "message Lead"
+> in the sections below means "message your coordinator." For emergencies or coordinator
+> failure, message Lead directly. See "Working with Coordinators" section for details.
 
 ---
 
@@ -25,6 +29,7 @@ doing anything else.
 
 If Lead sends a context update with a new PT version:
 1. Call TaskGet on the PERMANENT Task to read the latest content.
+   If TaskGet fails (PT not in your team's task list), ask Lead for the updated content via SendMessage.
 2. Message Lead confirming what changed, what impact it has on your current work,
    and whether you can continue or need to pause.
 
@@ -32,10 +37,35 @@ If Lead sends a context update with a new PT version:
 
 ## When You Finish
 
-1. Write L1/L2/L3 files to your assigned output directory.
-2. Message Lead with a summary of what you completed.
+1. If you have Write: write L1/L2/L3 files to your assigned output directory.
+   If you don't have Write: send your full output to Lead via SendMessage.
+2. Include an Evidence Sources section in L2-summary.md listing key references,
+   MCP tool findings, and verification data that support your conclusions.
+3. Message Lead with a summary of what you completed.
 
 Role-specific completion details (e.g., devils-advocate verdict) are in your agent file.
+
+---
+
+## Working with Coordinators
+
+Some categories use coordinators to manage workflow. If your work is assigned through
+a coordinator (not Lead directly):
+
+- **Your coordinator is your primary contact.** Report progress, issues, and
+  completion to the coordinator, not to Lead.
+- **Lead may still contact you directly** for cross-cutting operations (PT updates,
+  emergency intervention, gate spot-checks).
+- **If coordinator becomes unresponsive:** Message Lead directly. Lead will manage
+  you in fallback mode (Mode 3).
+- **Understanding verification:** Your coordinator verifies your understanding using
+  Impact Map context. Answer their probing questions with the same rigor as you
+  would for Lead.
+- **Review agents:** If you receive a review request from execution-coordinator,
+  respond to execution-coordinator with your review results.
+- **How to know if you have a coordinator:** Your spawn directive will state
+  "Your coordinator is: {name}" if you were assigned through one. If no coordinator
+  is mentioned, you are Lead-direct.
 
 ---
 
@@ -51,10 +81,11 @@ and read the PERMANENT Task for project context. Task creation and updates are L
 
 Read TEAM-MEMORY.md before starting work — it has context from prior phases and other teammates.
 
-- If you have the Edit tool (implementer, integrator): write discoveries to your own section.
+- If you have the Edit tool (implementer, infra-implementer, integrator): write discoveries to your own section.
   Use `## {your-role-id}` as anchor for edits. Never overwrite other sections.
-- If you don't have Edit (researcher, architect, tester): message Lead with findings for relay.
-- Devils-advocate: read-only access to Team Memory.
+- If you don't have Edit: message Lead with findings for relay.
+- If you don't have Write: communicate results via SendMessage to Lead. Your output
+  will be captured in Lead's L2 or the consuming agent's report.
 
 ---
 
@@ -62,6 +93,8 @@ Read TEAM-MEMORY.md before starting work — it has context from prior phases an
 
 Write L1/L2/L3 files throughout your work, not just at the end. These files are your only
 recovery mechanism — anything unsaved is permanently lost if your session compacts.
+The PostToolUse hook automatically captures all tool calls to events.jsonl — no manual
+event logging needed.
 
 If you notice you're running low on context: save all work immediately, then tell Lead.
 Lead will shut you down and re-spawn you with your saved progress.
@@ -87,6 +120,17 @@ Lead uses them for traceability.
 
 ---
 
+## Edge Cases
+
+- **TEAM-MEMORY.md doesn't exist:** You may be the first teammate in this session.
+  Skip the read and note this to Lead. Your section will be created when you write to it.
+- **Output directory doesn't exist:** Create it before writing L1/L2/L3 files.
+  Standard path: `.agent/teams/{session-id}/phase-{N}/{your-role-id}/`
+- **Multiple [PERMANENT] tasks found:** Use the first one (lowest task ID).
+  Warn Lead about duplicates via SendMessage.
+
+---
+
 ## If You Lose Context
 
 If you see "This session is being continued from a previous conversation":
@@ -104,4 +148,14 @@ your understanding with Lead before resuming work.
 ## Agent Memory
 
 Check your persistent memory at `~/.claude/agent-memory/{role}/MEMORY.md` when you start.
-Update it with patterns and lessons learned when you finish.
+Update it when you finish — use Read-Merge-Write (read current, merge new findings, write back).
+
+What to save:
+- Patterns confirmed across multiple tasks (not one-off observations)
+- Key file paths and conventions for your role
+- Solutions to recurring problems
+- Lessons learned from review feedback
+
+What NOT to save:
+- Session-specific context (current task details, temporary state)
+- Anything that duplicates protocol or agent .md instructions

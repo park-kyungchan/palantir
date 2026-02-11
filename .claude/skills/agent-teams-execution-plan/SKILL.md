@@ -10,7 +10,7 @@ Phase 6 (Implementation) orchestrator. Transforms an implementation plan into wo
 
 **Announce at start:** "I'm using agent-teams-execution-plan to orchestrate Phase 6 (Implementation) for this feature."
 
-**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Adaptive Spawn + Verification → Task Execution + Review → Gate 6 → Clean Termination
+**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Coordinator Setup + Adaptive Spawn + Verification → Coordinator-Mediated Execution + Review → Gate 6 → Clean Termination
 
 ## When to Use
 
@@ -135,7 +135,7 @@ Read the implementation plan fully:
 
 ---
 
-## Phase 6.3: Adaptive Spawn + Verification
+## Phase 6.3: Adaptive Spawn + Coordinator Setup + Verification
 
 Protocol execution follows CLAUDE.md §6 and §10.
 
@@ -163,12 +163,15 @@ Present spawn plan to user:
 
 **Tasks:** {total} tasks in {component_count} independent groups
 **Implementers:** {count}
+**Coordinator:** execution-coordinator (manages implementation-review lifecycle)
 **Strategy:** {parallel / sequential / mixed}
 
 | Implementer | Tasks | Files |
 |-------------|-------|-------|
 | implementer-1 | Task 1, 2, 5 | src/auth/*, config/auth.yaml |
 | implementer-2 | Task 3, 4 | src/api/*, tests/api/* |
+
+**Reviewers:** spec-reviewer, code-reviewer (dispatched by execution-coordinator)
 ```
 
 ### TaskCreate
@@ -181,80 +184,113 @@ For each task from plan §4, create via TaskCreate with comprehensive descriptio
 
 Set up dependencies via addBlockedBy/addBlocks.
 
-### Implementer Spawn + Verification
-
-For each implementer:
+### Execution Coordinator Spawn
 
 ```
 Task tool:
-  subagent_type: "implementer"
+  subagent_type: "execution-coordinator"
   team_name: "{feature-name}-execution"
-  name: "implementer-{N}"
+  name: "exec-coord"
   mode: "default"
 ```
 
-#### [DIRECTIVE] Construction
+#### [DIRECTIVE] for Execution Coordinator
 
 The directive must include these context layers:
 
-1. **PERMANENT Task ID** — `PT-ID: {task_id} | PT-v{N}` so implementer can call TaskGet for full context
-2. **GC-v4 full embedding** — the entire global-context.md (session-level artifacts)
-3. **Task-context.md** — assignment, file ownership, task list, plan §5 specs for assigned tasks
-4. **Review instructions** — two-stage review protocol, fix loop rules, reviewer prompt templates
-5. **Implementation plan path** — for implementer to Read directly
+1. **PERMANENT Task ID** — `PT-ID: {task_id} | PT-v{N}` for TaskGet
+2. **Implementation plan** — full §1-§10 path for coordinator to Read
+3. **Task list with file ownership** — per component grouping from adaptive spawn
+4. **Review prompt templates** — spec-reviewer and code-reviewer prompts (see §6.4 Templates)
+5. **Impact Map excerpt** — for worker understanding verification (AD-11)
+6. **Verification criteria** — what to check in worker understanding
+7. **Fix loop rules** — max 3 per review stage, escalate to Lead on exhaustion
+8. **Worker names** — sent via follow-up message after worker pre-spawn (Step below)
 
-Task-context must instruct implementer to:
-- Read the PERMANENT Task via TaskGet for full project context (user intent, impact map)
-- Read the implementation plan before starting (especially §5 for their tasks)
-- Execute tasks in topological order within their component
-- Run self-review after each task (completeness, quality, YAGNI, testing per §6.4 flow)
-- Dispatch spec-reviewer then code-reviewer subagents (two-stage, ordered)
-- Include reviewer raw output in L2-summary.md
-- Write L1/L2/L3 after each task completion (Pre-Compact Obligation)
-- Report completion per task with structured report
-- Report immediately if cross-boundary issue found
+### Worker Pre-Spawn
 
-#### Understanding Verification
+After execution-coordinator confirms ready, pre-spawn all workers in parallel:
 
-1. Implementer reads PERMANENT Task via TaskGet and confirms context receipt
-2. Implementer explains their understanding of the task to Lead
-3. Lead asks 1-3 probing questions grounded in the Codebase Impact Map,
-   covering interconnections, failure modes, and dependency risks
-4. Implementer defends with specific evidence
-5. Lead verifies or rejects (max 3 attempts)
-6. Once understanding is verified: implementer shares their plan, Lead approves → execution begins
+```
+# Implementers (per adaptive spawn algorithm)
+Task(subagent_type="implementer", name="implementer-{N}",
+     mode="default", team_name="{feature}-execution")
+
+# Reviewers
+Task(subagent_type="spec-reviewer", name="spec-rev",
+     mode="default", team_name="{feature}-execution")
+Task(subagent_type="code-reviewer", name="code-rev",
+     mode="default", team_name="{feature}-execution")
+```
+
+Worker directives include:
+- "Your coordinator is: exec-coord. Report progress and completion to your coordinator."
+- PT-ID for TaskGet
+- Implementation plan path for direct reading
+- File ownership assignment (implementers only)
+
+After all workers spawned, inform coordinator:
+```
+SendMessage to exec-coord:
+  "Workers spawned: implementer-1, implementer-2, spec-rev, code-rev.
+   Task assignments: {per component grouping}.
+   Begin worker verification and task execution."
+```
+
+### Understanding Verification (Delegated — AD-11)
+
+```
+Level 1: Lead verifies execution-coordinator
+  - Full Impact Map context
+  - 1-3 probing questions covering cross-category awareness
+  - Coordinator explains implementation plan understanding
+
+Level 2: Execution-coordinator verifies implementers
+  - Category-scoped Impact Map excerpt (from Lead's directive)
+  - 1-2 questions per implementer on intra-category concerns
+  - Coordinator approves implementer plans before execution
+  - Coordinator reports verification status to Lead
+```
+
+Once all verification passes: coordinator signals execution start.
 
 All agents use `sequential-thinking` throughout.
 
 ---
 
-## Phase 6.4: Task Execution + Review
+## Phase 6.4: Task Execution + Review (Coordinator-Mediated)
 
-Implementers work within their assigned components. Lead monitors and coordinates.
+Execution-coordinator manages the full implementation-review lifecycle.
+Lead receives consolidated reports only.
 
-### Implementer Execution Flow (per task)
+### Implementer Execution Flow (per task, managed by coordinator)
 
 ```
-1. Read plan §5 spec for current task
-2. Implement changes within file ownership boundary
-3. Run self-tests (Bash: relevant test commands)
-4. Self-review (completeness, quality, YAGNI, testing)
-5. Dispatch spec-reviewer subagent (Stage 1)
-   ├── PASS → proceed to Stage 2
-   └── FAIL → fix → re-dispatch (max 3)
-             └── 3x FAIL → BLOCKED
-6. Dispatch code-reviewer subagent (Stage 2)
-   ├── PASS → proceed to completion
-   └── FAIL → fix → re-dispatch (max 3)
-             └── 3x FAIL → BLOCKED
-7. Write/update L1/L2/L3 (include reviewer raw output in L2)
-8. Report Task {N} complete: {summary}
-9. Proceed to next task in topological order (if any)
+1. Coordinator assigns task to implementer with plan §5 spec
+2. Implementer reads plan §5 spec for current task
+3. Implementer implements changes within file ownership boundary
+4. Implementer runs self-tests (Bash: relevant test commands)
+5. Implementer self-reviews (completeness, quality, YAGNI, testing)
+6. Implementer reports to coordinator for review dispatch
+   Coordinator dispatches spec-reviewer (Stage 1):
+   ├── PASS → coordinator dispatches code-reviewer (Stage 2)
+   └── FAIL → coordinator relays fix to implementer (max 3)
+             └── 3x FAIL → coordinator escalates to Lead: BLOCKED
+   Code-reviewer (Stage 2):
+   ├── PASS → task complete
+   └── FAIL → coordinator relays fix to implementer (max 3)
+             └── 3x FAIL → coordinator escalates to Lead: BLOCKED
+7. Coordinator updates task status, sends consolidated report to Lead
+8. Coordinator assigns next task to implementer (if any)
 ```
 
-### Spec-Reviewer Subagent Prompt
+### Review Prompt Templates
 
-Implementer dispatches via Task tool (general-purpose):
+These templates are embedded in the execution-coordinator's directive by Lead.
+The coordinator constructs actual review prompts by filling template variables
+with task-specific content.
+
+**Spec-Reviewer Template:**
 
 ```
 You are reviewing whether an implementation matches its specification.
@@ -263,7 +299,7 @@ You are reviewing whether an implementation matches its specification.
 {plan §5 Change Specification for this task}
 
 ## Implementer Report
-{self-review report}
+{self-review report from implementer}
 
 ## Files to Inspect
 {files within implementer's ownership}
@@ -286,9 +322,7 @@ Evidence is mandatory for both PASS and FAIL. A PASS without file:line
 references for each requirement is incomplete and should be treated as FAIL.
 ```
 
-### Code-Reviewer Subagent Prompt
-
-Implementer dispatches via Task tool (superpowers:code-reviewer):
+**Code-Reviewer Template:**
 
 ```
 Review the implementation for code quality, architecture, and production readiness.
@@ -302,9 +336,22 @@ DESCRIPTION: {task summary}
 Additional context: This is part of {feature-name}. See global-context for project-level constraints.
 ```
 
-Prerequisite: Spec review (Stage 1) must PASS before dispatching code review.
+Prerequisite: Spec review (Stage 1) must PASS before coordinator dispatches code review.
 
-### Implementer Completion Report Format
+### Consolidated Reporting (Coordinator → Lead)
+
+After each task completion, coordinator sends to Lead:
+
+```
+Task {N}: {PASS/FAIL}
+  - Spec review: {PASS/FAIL} ({iterations} iteration(s))
+  - Quality review: {PASS/FAIL} ({iterations} iteration(s))
+  - Files: {list of files changed}
+  - Issues: {resolved count}, {outstanding count}
+  Proceeding to Task {N+1}. / All tasks complete.
+```
+
+### Implementer Completion Report (to Coordinator)
 
 ```
 Task {N} implementation complete: {summary}
@@ -319,31 +366,21 @@ Task {N} implementation complete: {summary}
 {captured stdout/stderr}
 Exit code: 0 (PASS) or non-zero (FAIL)
 
-## Spec Compliance Review (Stage 1)
-- Result: PASS
-- Reviewer raw output: {include full output with file:line references}
-- Issues found and resolved: {count}
-- Fix iterations: {N}/3
-
-## Code Quality Review (Stage 2)
-- Result: PASS
-- Reviewer raw output: {include full output}
-- Critical issues resolved: {count}
-- Important issues resolved: {count}
-
 ## Self-Review Findings
 - {any issues found and fixed}
 
 ## Evidence Sources
 - Sequential thinking: {key decision points analyzed}
 - Files read: {count} via Read/Glob/Grep
-- Reviewer evidence: included in Stage 1-2 sections above
 
 ## Artifacts
 - L1: .agent/teams/{session-id}/phase-6/implementer-{N}/L1-index.yaml
 - L2: .agent/teams/{session-id}/phase-6/implementer-{N}/L2-summary.md
 - L3: .agent/teams/{session-id}/phase-6/implementer-{N}/L3-full/
 ```
+
+Note: Review output (spec-reviewer, code-reviewer raw responses) is captured by the
+coordinator and included in the coordinator's consolidated L2, not the implementer's L2.
 
 ---
 
@@ -357,6 +394,7 @@ Exit code: 0 (PASS) or non-zero (FAIL)
 | TaskList | ~500 tokens | Every 15 min | Periodic check |
 | Read L1 | ~2K tokens | On demand | When blocker reported |
 | SendMessage query | ~200 tokens | On silence | >30 min no update |
+| Read coordinator L2 | ~2K tokens | On demand | When coordinator reports completion |
 
 ### Issue Resolution
 
@@ -390,7 +428,7 @@ Use `sequential-thinking` for all gate evaluation.
 
 ### Per-Task Evaluation
 
-For each implementer's completion report:
+For each task in the coordinator's consolidated report:
 
 | # | Criterion | Method |
 |---|-----------|--------|
@@ -579,7 +617,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 ## Key Principles
 
 - **Adaptive parallelism** — spawn only as many implementers as independent components require
-- **Two-stage review always** — spec compliance before code quality, within implementer scope
+- **Two-stage review always** — spec compliance before code quality, coordinator-managed
 - **Fix loop bounded** — max 3 per stage, escalate on exhaustion
 - **File ownership strict** — no cross-boundary writes, ever (except integrator)
 - **3-Layer Defense** — automated review + self-report + risk-proportional spot-check
@@ -592,6 +630,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 ## Never
 
 - Skip understanding verification for any implementer
+- Bypass execution-coordinator for review dispatch during Phase 6
 - Skip Phase 0 PERMANENT Task check
 - Allow concurrent editing of the same file by multiple implementers
 - Dispatch code-reviewer before spec-reviewer passes

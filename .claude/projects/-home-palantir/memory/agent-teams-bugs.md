@@ -62,3 +62,44 @@
 
 ### Discovered During
 - RTD System (INFRA v7.0) Phase 5 — devils-advocate-1 발견, AD-29로 문서화
+
+## BUG-004: No cross-agent compaction notification (2026-02-11)
+
+### Problem
+- Teammate가 auto-compact되면 Lead에게 자동 알림이 전달되지 않음
+- Teammate는 summarized context로 계속 작업할 수 있어 품질 저하 위험
+- Lead는 teammate의 compact 발생을 알 수 없음 (tmux 모니터링 외 방법 없음)
+
+### Root Cause
+- PreCompact hook은 해당 teammate 프로세스 내부에서 shell command로 실행
+- Hook에서 SendMessage (Claude Code tool)를 직접 호출할 수 없음
+- Claude Code에 cross-agent event system이 존재하지 않음
+- Agent isolation 설계로 인해 한 agent의 lifecycle event가 다른 agent에게 전파되지 않음
+
+### Current Defense Layers
+| Layer | Mechanism | Gap |
+|-------|-----------|-----|
+| PreCompact hook | teammate state를 파일로 저장 | Lead에게 알림 없음 |
+| SessionStart hook | compact 후 recovery context 제공 | 이미 summarized 상태 |
+| H-3 (incremental L1) | 매 task 후 L1 기록 | compact 전 마지막 미저장 작업 유실 가능 |
+| agent-common-protocol | compact 후 Lead에게 메시지 | teammate가 자발적으로 해야 함 |
+
+### Workaround
+- **User tmux 모니터링** — 현재 가장 빠른 감지 수단
+- **H-3 mitigation** — incremental L1로 유실 최소화
+- **agent-common-protocol §If You Lose Context** — teammate가 compact 인지 시 Lead에게 보고
+
+### Possible Layer 1 Improvement
+- PreCompact hook에서 파일 기반 알림: `echo "COMPACTED $(date)" >> .agent/teams/compact-alerts.log`
+- Lead가 주기적으로 폴링 (자동이 아닌 수동 체크)
+- 한계: 진정한 자동 알림이 아닌 polling 방식
+
+### Layer 2 Required For
+- Structured cross-agent event bus (compaction event → Lead notification)
+- Real-time agent lifecycle monitoring dashboard
+- Automatic re-spawn on compaction detection
+
+### Classification
+- Severity: HIGH (summarized context로 작업 시 품질 저하 직결)
+- Layer: 1 partial / 2 full solution
+- Discovered: Lead Architecture Redesign Phase 6 execution (2026-02-11)

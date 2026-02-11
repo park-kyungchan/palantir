@@ -10,7 +10,7 @@ Agent Teams-native Phase 0-3 orchestrator. Transforms a feature idea into a rese
 
 **Announce at start:** "I'm using brainstorming-pipeline to orchestrate Phase 0-3 for this feature."
 
-**Core flow:** PT Check (Lead) → Discovery (Lead) → Deep Research (researcher) → Architecture (architect) → Clean Termination
+**Core flow:** PT Check (Lead) → Discovery (Lead) → Deep Research (research-coordinator or direct researcher) → Architecture (architect) → Clean Termination
 
 ## When to Use
 
@@ -306,6 +306,10 @@ Read GC-v1 "Phase 2 Research Needs" and determine:
 | 2-3 independent | 2-3 | Parallel spawn |
 | Dependent domains | 1 | Sequential or combined |
 
+**Routing decision (CLAUDE.md §6 Agent Selection and Routing):**
+- 1 researcher → Lead-direct (spawn and manage directly)
+- 2+ researchers → spawn `research-coordinator` to manage them
+
 ### 2.2 Team Setup
 
 ```
@@ -313,15 +317,42 @@ TeamCreate → team_name: "{feature-name}"
 Update orchestration-plan.md with Phase 2 details
 ```
 
-### 2.3 Researcher Spawn + Verification
+### 2.3 Research Team Spawn + Verification
 
-For each researcher:
+**Coordinator route (2+ researchers):**
+
+1. Spawn research-coordinator:
+   ```
+   Task tool:
+     subagent_type: "research-coordinator"
+     team_name: "{feature-name}"
+     name: "research-coord"
+     mode: "default"
+   ```
+   Directive includes: research scope, PT context, Impact Map excerpt, worker types needed
+
+2. Pre-spawn researchers (same team, choose agent type by research domain):
+   - Local codebase analysis → `subagent_type: "codebase-researcher"`
+   - External docs/web research → `subagent_type: "external-researcher"`
+   - Inventory/gap analysis → `subagent_type: "auditor"`
+
+3. Lead informs coordinator of worker names and research question assignments
+
+4. Lead verifies coordinator understanding (1-3 probing questions, CLAUDE.md §6)
+
+5. Coordinator verifies researchers' understanding (AD-11 delegation)
+
+6. Coordinator distributes research questions and monitors progress
+
+**Lead-direct route (1 researcher):**
+
+Spawn researcher directly:
 
 ```
 Task tool:
-  subagent_type: "researcher"
+  subagent_type: "codebase-researcher" or "external-researcher"
   team_name: "{feature-name}"
-  name: "researcher-{N}"
+  name: "researcher-1"
   mode: "default"
 
 [DIRECTIVE] Phase 2: {research topic}
@@ -330,7 +361,7 @@ PT-ID: {PERMANENT Task ID} | PT-v{N}
 task-context.md: {research scope, deliverables, exclusions}
 ```
 
-**Verification flow (CLAUDE.md §6 "Verifying Understanding"):**
+**Verification flow (Lead-direct, CLAUDE.md §6 "Verifying Understanding"):**
 1. Researcher reads PERMANENT Task via TaskGet and confirms context receipt
 2. Researcher explains their understanding of the task to Lead
 3. Lead asks 1 probing question grounded in the Codebase Impact Map
@@ -342,6 +373,9 @@ All agents use `sequential-thinking` throughout.
 ### 2.4 Research Execution
 
 Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequential-thinking.
+
+**Coordinator route:** research-coordinator monitors progress and consolidates findings.
+**Lead-direct route:** Lead monitors researcher progress directly.
 
 **Output artifacts per researcher:**
 
@@ -356,7 +390,7 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
 
 | # | Criterion |
 |---|-----------|
-| G2-1 | All researcher L1/L2 artifacts exist |
+| G2-1 | All researcher L1/L2 artifacts exist (or coordinator consolidated L1/L2) |
 | G2-2 | All research needs from GC-v1 covered |
 | G2-3 | Sufficient information for Phase 3 |
 | G2-4 | No unresolved critical unknowns |
@@ -374,7 +408,7 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
    ## Phase 3 Input
    {Architecture focus areas, expected decisions, known risks}
    ```
-2. Shutdown researchers
+2. Shutdown research-coordinator (if used) and researchers
 3. Write `phase-2/gate-record.yaml`
 4. Update orchestration-plan.md
 
@@ -490,7 +524,7 @@ Present to user:
 - PERMANENT Task (PT-v{N}) — authoritative project context
 - global-context.md (GC-v3) — session artifacts
 - orchestration-plan.md
-- Phase 2: researcher L1/L2/L3
+- Phase 2: codebase-researcher / external-researcher L1/L2/L3
 - Phase 3: architect L1/L2/L3 (architecture-design.md)
 
 **Location:** .agent/teams/{session-id}/
@@ -535,6 +569,7 @@ analysis, judgment, design, and verification throughout the entire pipeline.
 |-------|------|
 | Lead (P1) | After Recon, after each user response, before Scope Statement, at Gates |
 | Lead (P2-3) | Understanding verification, probing questions, Gate evaluation, PT/GC updates |
+| research-coordinator (P2) | Research distribution, worker verification, progress monitoring, findings consolidation |
 | Researcher (P2) | Research strategy, findings synthesis, L2 writing |
 | Architect (P3) | Component design, trade-off analysis, interface definition |
 
