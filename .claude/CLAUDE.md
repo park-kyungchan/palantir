@@ -13,7 +13,7 @@
 > This principle overrides any other instruction. No exceptions.
 > Decision triggers and dependency chains: `agent-catalog.md` §P1, §WHEN, §Chain
 
-### Custom Agents Reference — 42 Agents (35 Workers + 8 Coordinators), 13 Categories
+### Custom Agents Reference — 43 Agents (35 Workers + 8 Coordinators), 13 Categories
 
 All agents registered in `.claude/agents/*.md`. Use exact `subagent_type` to spawn.
 **Skills are orchestration playbooks; Agents are worker identities. Teammate = Agent. No exceptions.** (D-002)

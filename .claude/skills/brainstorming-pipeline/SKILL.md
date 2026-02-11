@@ -10,7 +10,7 @@ Agent Teams-native Phase 0-3 orchestrator. Transforms a feature idea into a rese
 
 **Announce at start:** "I'm using brainstorming-pipeline to orchestrate Phase 0-3 for this feature."
 
-**Core flow:** PT Check (Lead) → Tier Classification → Discovery (Lead) → Deep Research (research-coordinator or direct researcher) → Architecture (architect or architecture-coordinator) → Clean Termination
+**Core flow:** PT Check (Lead) → Discovery (Lead) → Deep Research (research-coordinator or direct researcher) → Architecture (architect or architecture-coordinator) → Clean Termination
 
 ## When to Use
 
@@ -43,7 +43,7 @@ The following is auto-injected when this skill loads. Use it for Phase 1 Recon.
 !`head -3 /home/palantir/.claude/CLAUDE.md 2>/dev/null`
 
 **Active Branches:**
-!`cd /home/palantir && git branch 2>/dev/null`
+!`cd /home/palantir && git branch 2>/dev/null | head -10`
 
 **Feature Request:** $ARGUMENTS
 
@@ -62,54 +62,23 @@ TaskList result
 none  1        2+
 │     │        │
 ▼     ▼        ▼
-Ask   Validate Match $ARGUMENTS against
-User  match    each PT's User Intent
-│     │        │
-▼     │     ┌──┴──┐
-Create│     match  no match
-PT    │     │      │
-│     ▼     ▼      ▼
-│   Continue  Continue  AskUser:
-│   to 1.1    to 1.1    "Multiple PTs found.
-▼                       Which is for this session?"
-/permanent-tasks
-creates PT-v1
-→ then 1.1
+Note  Validate  Match $ARGUMENTS
+"no PT" match   against each
+→ P1  → P1     │
+              ┌──┴──┐
+            match  no match
+            → P1   → AskUser
 ```
 
-**PT validation:** When a [PERMANENT] task is found, compare its User Intent section
-against `$ARGUMENTS`. If they describe the same feature, use it. If they clearly describe
-a different feature (e.g., PT says "COW Pipeline" but $ARGUMENTS says "Ontology Framework"),
-ask the user whether to use the existing PT or create a new one.
-
-If a PERMANENT Task exists and matches, its content (user intent, codebase impact map, prior decisions)
-provides additional context for Phase 1 discovery. Use it alongside the Dynamic Context above.
-
-If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
-the TaskCreate and return a summary. Then continue to Phase 1.1.
-
----
-
-### Pipeline Tier Routing (D-001/D-005)
-
-After PT check, classify pipeline tier from initial scope estimate:
-
-| Tier | Phase Coverage | Architecture Route |
-|------|---------------|-------------------|
-| TRIVIAL | Skip P2/P3 entirely → go to P6 | N/A |
-| STANDARD | P1 → P2 (Lead-direct researcher) → P3 (Lead-direct architect) | Single `architect` |
-| COMPLEX | P1 → P2 (research-coordinator) → P3 (architecture-coordinator) | `architecture-coordinator` + 3 architects |
-
-Tier is confirmed at Scope Crystallization (1.4). If TRIVIAL, skip to Clean Termination
-with a lightweight scope statement and route user to `/agent-teams-execution-plan` directly.
+If a [PERMANENT] task is found and matches `$ARGUMENTS`, its content (user intent,
+impact map, prior decisions) provides additional context for Phase 1 discovery.
+If no PT exists, one will be created at Gate 1 (1.5).
 
 ---
 
 ## Phase 1: Discovery (Lead Only)
 
 Lead-only phase. No teammates spawned.
-
-Use `sequential-thinking` before every analysis step, judgment, and decision in this phase.
 
 ### 1.1 Structured Recon
 
@@ -119,7 +88,6 @@ Synthesize the Dynamic Context above with targeted investigation:
 **Layer B — Domain:** Prior designs in `docs/plans/`, MEMORY.md entries, infrastructure state.
 **Layer C — Constraints:** Conflicts with existing systems, available teammate types, user's `$ARGUMENTS`.
 
-Use `sequential-thinking` to synthesize Recon into an internal assessment before starting Q&A.
 No files are created in this step.
 
 ### 1.2 Freeform Q&A with Category Awareness
@@ -143,8 +111,50 @@ Internally track which categories have been explored:
 Categories may be covered in any order. Not all need explicit questions — natural conversation
 coverage counts. Gently steer toward uncovered categories when the flow allows it.
 
-Use `sequential-thinking` after each user response to analyze the answer and determine
-the next question or whether to proceed to Scope Crystallization.
+**Feasibility Check** — After the user explains PURPOSE, validate before deep-diving:
+
+```
+PURPOSE answered
+     │
+├── Produces a concrete codebase deliverable?
+│     ├── NO → "This sounds strategic. What would change in the codebase?"
+│     └── YES ↓
+├── Overlaps with completed work? (check git log, MEMORY.md)
+│     ├── YES → "This overlaps with {X}. Extending it or new?"
+│     └── NO ↓
+├── Scope estimable? (can you name affected modules/files?)
+│     ├── NO → "Too open-ended. What's the specific deliverable?"
+│     └── YES ↓
+└── FEASIBLE → continue Q&A for remaining categories
+```
+
+On failure: user refines (loop to failed criterion) or pivots (restart from PURPOSE).
+User can override: "I want to proceed anyway" — log override in checkpoint.
+
+### 1.2.5 Phase 1 Checkpoint
+
+After feasibility check passes (or user overrides) AND at least 2 Q&A categories are
+covered, create a lightweight checkpoint to protect against auto-compact:
+
+**`.agent/teams/{session-id}/phase-1/qa-checkpoint.md`:**
+
+```markdown
+# Phase 1 Q&A Checkpoint — {feature}
+
+## Feasibility
+{PASS | OVERRIDE with rationale}
+
+## Categories Covered
+{List which of PURPOSE/SCOPE/CONSTRAINTS/APPROACH/RISK/INTEGRATION are resolved}
+
+## Key Decisions So Far
+{Decisions locked in from conversation — approach not yet selected}
+
+## Scope Direction (Draft)
+{Early boundary draft — what's in, what's obviously out}
+```
+
+On recovery: read qa-checkpoint.md, resume Q&A from last covered category.
 
 ### 1.3 Approach Exploration
 
@@ -162,34 +172,7 @@ When the conversation reaches strategy decisions, present a structured compariso
 ```
 
 Always 2-3 options. Lead with the recommended option and explain why.
-Use `sequential-thinking` to formulate the trade-off analysis before presenting.
 After user selection, Q&A may continue for remaining categories.
-
-### 1.3.5 Phase 1 Checkpoint
-
-After Approach Exploration (1.3), create a lightweight checkpoint to protect against
-auto-compact during extended Q&A:
-
-**`.agent/teams/{session-id}/phase-1/qa-checkpoint.md`:**
-
-```markdown
-# Phase 1 Q&A Checkpoint — {feature}
-
-## Categories Covered
-{List which of PURPOSE/SCOPE/CONSTRAINTS/APPROACH/RISK/INTEGRATION are resolved}
-
-## Approach Selected
-{The comparison result from 1.3 and user's choice}
-
-## Key Decisions So Far
-{Decisions locked in from conversation}
-
-## Scope Direction (Draft)
-{Early boundary draft before formal Scope Statement}
-```
-
-This file enables recovery if compact occurs before Gate 1 creates formal artifacts.
-On recovery, read qa-checkpoint.md and resume Q&A from the last covered category.
 
 ### 1.4 Scope Crystallization
 
@@ -209,7 +192,12 @@ When you judge sufficient understanding, propose a Scope Statement for user appr
 **Success Criteria:**
 - {measurable outcome}
 
-**Estimated Complexity:** SIMPLE / MEDIUM / COMPLEX
+**Pipeline Tier:** TRIVIAL | STANDARD | COMPLEX
+**Tier Rationale:**
+- File count: ~N
+- Module count: ~N
+- Cross-boundary impact: YES/NO
+
 **Phase 2 Research Needs:**
 - {topic}
 
@@ -217,92 +205,66 @@ When you judge sufficient understanding, propose a Scope Statement for user appr
 - {decision}
 ```
 
-Use `sequential-thinking` to synthesize all Q&A into the Scope Statement.
+If tier = TRIVIAL: skip Phases 2-3. Create lightweight scope statement,
+route to `/agent-teams-execution-plan`.
 
 - User rejects → return to Q&A. No iteration limit on Phase 1 dialogue.
 - User approves → proceed to Gate 1.
 
 ### 1.5 Gate 1
 
-Evaluate before proceeding:
-
-| # | Criterion |
-|---|-----------|
-| G1-1 | Scope Statement approved by user |
-| G1-2 | Complexity classification confirmed |
-| G1-3 | Phase 2 research scope defined |
-| G1-4 | Phase 3 entry conditions clear |
-| G1-5 | No unresolved critical ambiguities |
+Evaluate per `gate-evaluation-standard.md` §6. Key criteria: Scope approved,
+tier determined with rationale, research scope defined, Phase 3 entry clear,
+no critical ambiguities.
 
 **Gate Audit:** Optional for all tiers (see `gate-evaluation-standard.md` §6).
 
-**On APPROVE** — create these files:
+**On APPROVE** — create artifacts in this sequence:
 
-**`.agent/teams/{session-id}/global-context.md` (GC-v1):**
+**Step 1: Create PERMANENT Task**
 
-```markdown
+Invoke `/permanent-tasks` with conversation context (Scope Statement + approach + tier).
+Creates PT-v1 with full 5-section template. Note the PT task ID for Step 2.
+Control returns to Lead automatically after skill completion.
+
+**Step 2: Create GC-v1**
+
+`.agent/teams/{session-id}/global-context.md`:
+
+```yaml
 ---
 version: GC-v1
+pt_version: PT-v1
 created: {YYYY-MM-DD}
 feature: {feature-name}
-complexity: {SIMPLE|MEDIUM|COMPLEX}
+tier: TRIVIAL | STANDARD | COMPLEX
 ---
-
-# Global Context — {Feature Name}
-
-## Scope
-{Full Scope Statement from 1.4}
-
-## Phase Pipeline Status
-- Phase 1: COMPLETE (Gate 1 APPROVED)
-- Phase 2: PENDING
-- Phase 3: PENDING
-
-## Constraints
-{From Q&A}
-
-## Decisions Log
-| # | Decision | Rationale | Phase |
-|---|----------|-----------|-------|
-| D-1 | {approach} | {reason} | P1 |
 ```
 
-**`.agent/teams/{session-id}/orchestration-plan.md`:**
+Body: **## Scope** (verbatim from 1.4) · **## Phase Pipeline Status** (P1 COMPLETE,
+P2/P3 PENDING) · **## Constraints** (from Q&A) · **## Decisions Log** (table:
+#/Decision/Rationale/Phase)
 
-```markdown
+**Step 3: Create orchestration-plan.md**
+
+`.agent/teams/{session-id}/orchestration-plan.md`:
+
+```yaml
 ---
 feature: {feature-name}
 current_phase: 2
 gc_version: GC-v1
+pt_version: PT-v1
 ---
-
-# Orchestration Plan
-
-## Gate History
-- Phase 1: APPROVED ({date})
-
-## Active Teammates
-(none yet — Phase 2 will spawn researchers)
-
-## Phase 2 Plan
-- Research domains: {from Scope Statement}
-- Researcher count: {1-3}
-- Strategy: {parallel or sequential}
 ```
 
-**`.agent/teams/{session-id}/phase-1/gate-record.yaml`:**
+Body: **## Gate History** (P1 APPROVED + date) · **## Active Teammates** (none yet) ·
+**## Phase 2 Plan** (research domains, count, strategy)
 
-```yaml
-phase: 1
-result: APPROVED
-date: {YYYY-MM-DD}
-criteria:
-  G1-1: PASS
-  G1-2: PASS
-  G1-3: PASS
-  G1-4: PASS
-  G1-5: PASS
-```
+**Step 4: Create gate-record.yaml**
+
+`.agent/teams/{session-id}/phase-1/gate-record.yaml` per `gate-evaluation-standard.md`
+format. Include phase: 1, result: APPROVED, date, and pass/fail for each G1 criterion.
 
 ---
 
@@ -310,8 +272,6 @@ criteria:
 
 Researcher teammates execute research. Lead verifies understanding before approving work.
 Protocol execution follows CLAUDE.md §6 and §10.
-
-Use `sequential-thinking` for all Lead decisions in this phase.
 
 ### 2.1 Research Scope Determination
 
@@ -385,8 +345,6 @@ task-context.md: {research scope, deliverables, exclusions}
 4. Researcher defends with specific evidence
 5. Lead verifies or rejects (max 3 attempts)
 
-All agents use `sequential-thinking` throughout.
-
 ### 2.4 Research Execution
 
 Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequential-thinking.
@@ -441,8 +399,6 @@ Architect teammate designs the system. Architecture receives the deepest scrutin
 design flaws here multiply downstream.
 Protocol execution follows CLAUDE.md §6 and §10.
 
-Use `sequential-thinking` for all Lead decisions in this phase.
-
 ### 3.1 Architect Spawn
 
 **Tier-based routing (D-001/D-005):**
@@ -480,8 +436,6 @@ For COMPLEX tier, Lead follows CLAUDE.md §6 Coordinator Management protocol.
 4. Lead also asks: "Propose one alternative architecture and defend why yours is superior"
 5. Architect defends each with specific evidence
 6. Lead evaluates defense quality → verify or reject (max 3 attempts)
-
-All agents use `sequential-thinking` throughout.
 
 ### 3.3 Architecture Design
 
@@ -608,26 +562,14 @@ At each Decision Point in this phase, update the RTD index:
 3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
 
 Decision Points for this skill:
-- DP: Scope crystallization (1.4 approval)
-- DP: Approach selection (1.3 user choice)
-- DP: Researcher spawn (2.3)
-- DP: Gate 1 evaluation
-- DP: Gate 2 evaluation
-- DP: Architect spawn (3.1)
-- DP: Gate 3 evaluation
+- DP-1: Gate 1 evaluation (P1 → P2 transition)
+- DP-2: Gate 2 evaluation (P2 → P3 transition)
+- DP-3: Gate 3 evaluation (P3 → termination)
 
 ### Sequential Thinking
 
-All agents (Lead and teammates) use `mcp__sequential-thinking__sequentialthinking` for
-analysis, judgment, design, and verification throughout the entire pipeline.
-
-| Agent | When |
-|-------|------|
-| Lead (P1) | After Recon, after each user response, before Scope Statement, at Gates |
-| Lead (P2-3) | Understanding verification, probing questions, Gate evaluation, PT/GC updates |
-| research-coordinator (P2) | Research distribution, worker verification, progress monitoring, findings consolidation |
-| Researcher (P2) | Research strategy, findings synthesis, L2 writing |
-| Architect (P3) | Component design, trade-off analysis, interface definition |
+All agents (Lead and teammates) use `mcp__sequential-thinking__sequentialthinking`
+for every analysis, judgment, and decision throughout all phases. No exceptions.
 
 ### Error Handling
 
@@ -653,7 +595,7 @@ Follows CLAUDE.md §9:
 - **Multiple choice preferred** — easier to answer than open-ended
 - **Freeform Q&A** — question count driven by conversation, not formula
 - **Category Awareness** — internal guide for Lead, not a constraint on user
-- **Sequential thinking always** — structured reasoning at every decision point
+- **Feasibility first** — validate topic produces actionable codebase deliverable before deep Q&A
 - **Verification delegated** — CLAUDE.md §6/§10 owns protocol, skill owns orchestration
 - **Clean termination** — no auto-chaining. User controls next step
 - **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`
@@ -666,6 +608,6 @@ Follows CLAUDE.md §9:
 - Spawn teammates in Phase 1 (Lead only)
 - Auto-chain to another skill after termination
 - Proceed past a Gate without all criteria met
+- Skip the feasibility check (unless user explicitly overrides)
 - Let teammates write to Task API (TaskCreate/TaskUpdate)
-- Present the Scope Statement without using sequential-thinking first
 - Rush through Q&A — follow the user's pace

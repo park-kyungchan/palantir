@@ -1,6 +1,6 @@
 # Shared Protocol for All Teammates
 
-This covers procedures common to all teammate agent types (42 agents across 13 categories). Role-specific guidance is in each agent's own .md file.
+This covers procedures common to all teammate agent types (43 agents across 13 categories). Role-specific guidance is in each agent's own .md file.
 
 > **Coordinator routing:** If your work is assigned through a coordinator, "message Lead"
 > in the sections below means "message your coordinator." For emergencies or coordinator
