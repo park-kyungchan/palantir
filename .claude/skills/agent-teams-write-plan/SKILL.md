@@ -10,7 +10,7 @@ Phase 4 (Detailed Design) orchestrator. Transforms brainstorming-pipeline archit
 
 **Announce at start:** "I'm using agent-teams-write-plan to orchestrate Phase 4 (Detailed Design) for this feature."
 
-**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Architect Spawn + Verification → Plan Generation → Gate 4 → Clean Termination
+**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Planner Spawn + Verification → Plan Generation → Gate 4 → Clean Termination
 
 ## When to Use
 
@@ -124,13 +124,20 @@ Create orchestration-plan.md and copy GC-v3 to new session directory.
 
 ---
 
-## Phase 4.3: Architect Spawn + Verification
+## Phase 4.3: Planner Spawn + Verification
 
 Protocol execution follows CLAUDE.md §6 and §10.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Spawn
+### Tier-Based Routing (D-001/D-005)
+
+| Tier | Route | Agents |
+|------|-------|--------|
+| STANDARD | Lead-direct | Single `architect` |
+| COMPLEX | Coordinator | `planning-coordinator` + decomposition-planner, interface-planner, strategy-planner |
+
+### Spawn (STANDARD — Lead-direct)
 
 ```
 Task tool:
@@ -140,8 +147,16 @@ Task tool:
   mode: "default"
 ```
 
-> Architect is a Lead-direct agent (CLAUDE.md §6). No coordinator involved —
-> Lead spawns and manages the architect directly.
+### Spawn (COMPLEX — Coordinator Route)
+
+```
+1. Spawn planning-coordinator (subagent_type: "planning-coordinator")
+2. Pre-spawn: decomposition-planner, interface-planner, strategy-planner
+3. Coordinator distributes: task decomposition, interface contracts, implementation strategy
+4. Coordinator consolidates into unified 10-section plan
+```
+For COMPLEX tier, Lead writes phase-context.md (D-012) with Phase 3 architecture
+summary and constraints before spawning. Follow CLAUDE.md §6 Coordinator Management.
 
 ### Directive Construction
 

@@ -30,17 +30,21 @@ official_definition:
     actiontype: "Schema/template defining what changes are possible"
     action: "Single execution instance applying the ActionType"
 
-  rule_types_complete_list:
+  rule_types_complete_list:  # 12 total: 10 Ontology Edit Rules + 2 Side-Effect Rules
+    # Ontology Edit Rules (10)
     - CREATE_OBJECT: "Creates new object with required primary key"
     - MODIFY_OBJECT: "Updates existing object properties"
     - CREATE_OR_MODIFY_OBJECT: "Upsert pattern based on object reference"
     - DELETE_OBJECT: "Removes object (links implicitly removed)"
     - CREATE_LINK: "Creates many-to-many links only"
     - DELETE_LINK: "Removes many-to-many links only"
-    - FUNCTION_RULE: "Delegates to Ontology Edit Function (exclusive)"
+    - FUNCTION_RULE: "Delegates to Ontology Edit Function (exclusive — no other rules allowed)"
     - CREATE_OBJECT_OF_INTERFACE: "Polymorphic object creation"
     - MODIFY_OBJECT_OF_INTERFACE: "Polymorphic property update"
     - DELETE_OBJECT_OF_INTERFACE: "Polymorphic object deletion"
+    # Side-Effect Rules (2)
+    - NOTIFICATION: "Send notification to users on Action execution"
+    - WEBHOOK: "Trigger external webhook on Action execution"
 
   parameter_types_complete_list:
     - STRING
@@ -63,7 +67,7 @@ official_definition:
     - GEOPOINT
     - GEOSHAPE
     - MEDIA
-    - VECTOR
+    # Note: VECTOR is a Property baseType only, NOT valid as Action parameter
 
   value_source_options:
     - FROM_PARAMETER
@@ -75,6 +79,17 @@ official_definition:
   transaction_semantics:
     atomicity: true
     description: "All rules in an Action execute atomically (all-or-nothing)"
+
+  scale_limits:
+    objects_per_submission: 10000
+    object_types_per_submission: 50
+    primitive_list_params: 10000
+    object_reference_list: 1000
+    individual_edit_size_osv1: "32KB"
+    individual_edit_size_osv2: "3MB"
+    batch_calls_standard: 10000
+    batch_calls_function_backed: 20  # Without batching support
+    notification_recipients: 500  # 50 for function-rendered
 ```
 
 ### 1.2 Semantic Definition
@@ -381,19 +396,36 @@ official_definition:
   verification_date: "2026-02-05"
 
   function_types:
+    # Taxonomy: 2 primary types × 3 languages + 1 separate category
+    # Type dimension (purpose):
     query_function:
       description_kr: "읽기 전용 함수"
       capabilities: [read properties, filter ObjectSets, traverse links, aggregations]
       constraints: [cannot create/update/delete]
-      
+
     ontology_edit_function:
       description_kr: "온톨로지 편집 함수"
       capabilities: [create objects, update properties, manage links, delete objects]
       constraints: [must be Action-backed to apply, search returns stale data during execution]
 
+    # Language dimension (orthogonal to type):
+    #   - TypeScript v2 (recommended): @osdk/client, @osdk/functions
+    #   - TypeScript v1 (legacy): @foundry/functions-api
+    #   - Python: functions.api, ontology_sdk
+    # Separate category:
+    #   - AIP Logic: no-code, LLM-powered (not a function language)
+
   critical_caveat: |
-    "Changes to objects and links are propagated to the object set APIs after your 
+    "Changes to objects and links are propagated to the object set APIs after your
     function has finished executing." — Palantir Docs
+
+  scale_limits:
+    default_runtime: "60 seconds (280s for live preview)"
+    ts_v1_memory: "128 MB"
+    ts_v1_cpu_time: "30 seconds"
+    serverless_memory: "512-5120 MiB configurable (default 1024 MiB)"
+    deployed_python_memory: "2 GiB (not configurable)"
+    max_search_around_operations: 3
 ```
 
 ### 2.2 Semantic Definition
@@ -628,18 +660,17 @@ official_definition:
       description_kr: "스케줄링 수준 제약 조건"
       types: { HARD: "Blocks submission", SOFT: "Warning only" }
 
-  property_constraint_types_complete_list:
+  property_constraint_types_complete_list:  # 8 core ValueTypeConstraints
     - ONE_OF: "Enum - static set of allowed values"
-    - RANGE: "Min/max for numbers, dates, string length, array size"
+    - RANGE: "Min/max for numbers, dates, string length, array size (subsumes STRING_LENGTH and ARRAY_SIZE)"
     - STRING_REGEX_MATCH: "Pattern matching with regex"
-    - STRING_LENGTH: "String length bounds"
-    - ARRAY_SIZE: "Array length bounds"
     - UNIQUENESS: "Array elements must be unique"
     - NESTED: "Constraint applied to each array element"
     - STRUCT_ELEMENT: "Constraint on specific struct field"
     - RID: "Must be valid Foundry Resource Identifier"
     - UUID: "Must be valid UUID"
-    - REQUIRED: "Property must have non-null value"
+    # Note: STRING_LENGTH and ARRAY_SIZE are RANGE variants (use RANGE with string/array types)
+    # Note: REQUIRED is a property-level flag, NOT a ValueTypeConstraint
 ```
 
 ### 3.2 Semantic Definition

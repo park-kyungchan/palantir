@@ -148,6 +148,11 @@ Create TEAM-MEMORY.md with Lead, testing-coordinator, tester, and integrator (if
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
+### Pipeline Tier Awareness (D-001)
+
+> TRIVIAL tier skips Phase 7 entirely. STANDARD tier runs Phase 7 only (no Phase 8).
+> COMPLEX tier runs full Phase 7 + Phase 8.
+
 ### Adaptive Tester Count
 
 ```
@@ -159,6 +164,8 @@ Phase 6 independent component groups
 ▼           ▼
 1 tester   2 testers
             (one per group)
+
+COMPLEX tier: add contract-tester for interface verification
 ```
 
 ### Testing Coordinator Spawn
@@ -189,6 +196,10 @@ After testing-coordinator confirms ready, pre-spawn workers:
 ```
 # Testers (per adaptive tester count)
 Task(subagent_type="tester", name="tester-{N}",
+     mode="default", team_name="{feature}-verification")
+
+# Contract Tester (D-005 — COMPLEX tier only, interface contract verification)
+Task(subagent_type="contract-tester", name="contract-test",
      mode="default", team_name="{feature}-verification")
 
 # Integrator (conditional — only if 2+ implementers)

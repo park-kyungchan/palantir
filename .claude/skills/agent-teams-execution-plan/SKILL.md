@@ -216,12 +216,23 @@ After execution-coordinator confirms ready, pre-spawn all workers in parallel:
 Task(subagent_type="implementer", name="implementer-{N}",
      mode="default", team_name="{feature}-execution")
 
-# Reviewers
+# Reviewers (includes D-005 contract-reviewer and regression-reviewer)
 Task(subagent_type="spec-reviewer", name="spec-rev",
      mode="default", team_name="{feature}-execution")
 Task(subagent_type="code-reviewer", name="code-rev",
      mode="default", team_name="{feature}-execution")
+Task(subagent_type="contract-reviewer", name="contract-rev",
+     mode="default", team_name="{feature}-execution")   # COMPLEX only
+Task(subagent_type="regression-reviewer", name="regression-rev",
+     mode="default", team_name="{feature}-execution")   # COMPLEX only
+
+# Execution Monitor (D-014 — COMPLEX tier only, Lead-direct)
+Task(subagent_type="execution-monitor", name="exec-monitor",
+     mode="default", team_name="{feature}-execution")
 ```
+
+For COMPLEX tier, Lead writes phase-context.md (D-012) with Impact Map excerpt,
+interface contracts, and constraints before spawning implementers.
 
 Worker directives include:
 - "Your coordinator is: exec-coord. Report progress and completion to your coordinator."

@@ -46,7 +46,8 @@ if command -v jq &>/dev/null; then
     }
   }'
 else
-  echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"$MSG\"}}"
+  ESCAPED_MSG=$(printf '%s' "$MSG" | sed 's/\\/\\\\/g; s/"/\\"/g')
+  echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"$ESCAPED_MSG\"}}"
 fi
 
 exit 0

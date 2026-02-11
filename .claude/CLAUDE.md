@@ -1,6 +1,7 @@
-# Agent Teams — Team Constitution v6.0
+# Agent Teams — Team Constitution v9.0
 
 > Opus 4.6 native · Natural language DIA · PERMANENT Task context · All instances: claude-opus-4-6
+> D-001 through D-017 integrated · 42 agents · 13 categories · Reference-heavy architecture
 
 > **INVIOLABLE — Agents-Driven Orchestration**
 >
@@ -12,59 +13,90 @@
 > This principle overrides any other instruction. No exceptions.
 > Decision triggers and dependency chains: `agent-catalog.md` §P1, §WHEN, §Chain
 
-### Custom Agents Reference — 27 Agents (22 + 5 Coordinators), 10 Categories
+### Custom Agents Reference — 42 Agents (34 Workers + 8 Coordinators), 13 Categories
 
 All agents registered in `.claude/agents/*.md`. Use exact `subagent_type` to spawn.
+**Skills are orchestration playbooks; Agents are worker identities. Teammate = Agent. No exceptions.** (D-002)
 
 **Phase dependency chain:** P2 Research → P2b Verification → P2d Impact → P3 Architecture → P4 Design → P5 Validation → P6 Implementation ↔ P6+ Monitoring → P7 Testing → P8 Integration
 > P2b can overlap P2 (verify as research arrives). P2d can overlap P3 (impact alongside architecture).
 
-**Coordinators** (manage multi-agent categories via peer messaging — AD-8, AD-12 Mode 1):
+**Pipeline Tiers** (D-001): Each pipeline is classified at Phase 0:
+
+| Tier | Criteria | Phases | Gate Depth |
+|------|----------|--------|------------|
+| TRIVIAL | ≤2 files, single module | P0→P6→P9 (skip P2b,P5,P7,P8) | 3-item |
+| STANDARD | 3-8 files, 1-2 modules | P0→P2→P3→P4→P6→P7→P9 (skip P2b,P5,P8) | 5-item |
+| COMPLEX | >8 files, 3+ modules | All phases (P0→P9) | 7-10 item |
+
+Gate evaluation standard: `.claude/references/gate-evaluation-standard.md` (D-008)
+
+**Coordinators** (8 total — manage multi-agent categories via peer messaging):
+All coordinators follow `.claude/references/coordinator-shared-protocol.md` (D-013)
 
 | `subagent_type` | Manages | Phase |
 |-----------------|---------|-------|
 | `research-coordinator` | codebase-researcher, external-researcher, auditor | P2 |
-| `verification-coordinator` | static-verifier, relational-verifier, behavioral-verifier | P2b |
-| `execution-coordinator` | implementer, infra-implementer + review dispatch (spec-reviewer, code-reviewer) | P6 |
-| `testing-coordinator` | tester, integrator | P7-8 |
+| `verification-coordinator` | static-verifier, relational-verifier, behavioral-verifier, impact-verifier | P2b |
+| `architecture-coordinator` | structure-architect, interface-architect, risk-architect | P3 |
+| `planning-coordinator` | decomposition-planner, interface-planner, strategy-planner | P4 |
+| `validation-coordinator` | correctness-challenger, completeness-challenger, robustness-challenger | P5 |
+| `execution-coordinator` | implementer, infra-implementer + review dispatch | P6 |
+| `testing-coordinator` | tester, contract-tester, integrator | P7-8 |
 | `infra-quality-coordinator` | 4 INFRA analysts | X-cut |
 
 **Lead-Direct agents** (no coordinator — Lead spawns and manages directly):
 
 | `subagent_type` | Phase | When |
 |-----------------|-------|------|
-| `architect` | 3, 4 | Architecture decisions, detailed design |
-| `plan-writer` | 4 | File assignments, interface specs, task breakdown |
-| `impact-verifier` · `dynamic-impact-analyst` | 2d, 6+ | Correction cascade · Pre-impl change prediction |
-| `devils-advocate` | 5 | Plan validation / challenge |
+| `dynamic-impact-analyst` | 2d, 6+ | Pre-impl change prediction |
+| `devils-advocate` | 5 | Plan validation / challenge (legacy, use validation-coordinator for COMPLEX) |
 | `execution-monitor` | 6+ | Real-time drift detection during P6 |
 
-> `spec-reviewer` and `code-reviewer`: dispatched by `execution-coordinator` during P6,
-> or by Lead directly in other phases.
+> `spec-reviewer`, `code-reviewer`, `contract-reviewer`, `regression-reviewer`: dispatched by
+> `execution-coordinator` during P6, or by Lead directly in other phases.
 
-**All Agents** (22 workers across 10 categories):
+**All Agents** (37 workers across 13 categories):
 
 | # | Category | Phase | `subagent_type` agents | When to spawn |
 |---|----------|-------|------------------------|---------------|
 | 1 | Research | 2 | `codebase-researcher` · `external-researcher` · `auditor` | Local code · Web docs · Inventory/gaps |
-| 2 | Verification | 2b | `static-verifier` · `relational-verifier` · `behavioral-verifier` | Schema claims · Dependency claims · Action/rule claims |
-| 3 | Impact | 2d, 6+ | `impact-verifier` · `dynamic-impact-analyst` | Correction cascade · Pre-impl change prediction |
-| 4 | Architecture | 3, 4 | `architect` | ADRs, risk matrices, component design |
-| 5 | Planning | 4 | `plan-writer` | File assignments, interface specs, task breakdown |
-| 6 | Review | 5, 6 | `devils-advocate` · `spec-reviewer` · `code-reviewer` | Challenge design · Spec compliance · Code quality |
+| 2 | Verification | 2b | `static-verifier` · `relational-verifier` · `behavioral-verifier` · `impact-verifier` | Schema · Dependency · Action/rule · Correction cascade |
+| 3 | Architecture | 3 | `structure-architect` · `interface-architect` · `risk-architect` | Structure · Interfaces · Risk assessment |
+| 4 | Planning | 4 | `decomposition-planner` · `interface-planner` · `strategy-planner` | Task breakdown · Interface specs · Strategy |
+| 5 | Validation | 5 | `correctness-challenger` · `completeness-challenger` · `robustness-challenger` | Correctness · Completeness · Robustness |
+| 6 | Review | 6 | `devils-advocate` · `spec-reviewer` · `code-reviewer` · `contract-reviewer` · `regression-reviewer` | Challenge · Spec · Code quality · Contract · Regression |
 | 7 | Implementation | 6 | `implementer` · `infra-implementer` | App source code · .claude/ infrastructure files |
-| 8 | Testing & Integration | 7, 8 | `tester` · `integrator` | Test creation/execution · Cross-boundary merge |
-| 9 | INFRA Quality | Cross-cutting | `infra-static-analyst` · `infra-relational-analyst` · `infra-behavioral-analyst` · `infra-impact-analyst` | Config/naming · Coupling · Lifecycle · Ripple analysis |
+| 8 | Testing | 7 | `tester` · `contract-tester` | Unit/integration tests · Contract tests |
+| 9 | Integration | 8 | `integrator` | Cross-boundary merge |
+| 10 | INFRA Quality | X-cut | `infra-static-analyst` · `infra-relational-analyst` · `infra-behavioral-analyst` · `infra-impact-analyst` | Config/naming · Coupling · Lifecycle · Ripple (ARE/RELATE/DO/IMPACT lenses) |
+| 11 | Impact | 2d, 6+ | `dynamic-impact-analyst` | Pre-impl change prediction |
 | — | Monitoring | 6+ | `execution-monitor` | Real-time drift/deadlock detection during P6 |
 | — | Built-in | any | `claude-code-guide` | CC docs/features (not a custom agent) |
+
+Ontological lenses reference: `.claude/references/ontological-lenses.md` (D-010)
 
 **Spawning rules:**
 - `subagent_type`: exact name from table — never generic built-ins (Explore, general-purpose)
 - `mode: "default"` always (BUG-001: `plan` blocks MCP tools)
 - Team context: include `team_name` and `name` parameters
-- Coordinated categories (1, 2, 7, 8, 9): spawn coordinator + pre-spawn workers; coordinator manages via SendMessage
-- Lead-direct categories (3, 4, 5, 6, 10): spawn and manage agent directly
+- Coordinated categories (1-5, 7-10): spawn coordinator + pre-spawn workers; coordinator manages via SendMessage
+- Lead-direct categories (6, 11): spawn and manage agent directly
 - Full agent details and tool matrix in `agent-catalog.md` (Level 1 for routing, Level 2 for detail)
+
+**Skill Reference Table** (D-003 — Skills are phase-scoped orchestration playbooks, not agents):
+
+| Skill | Phase | Coordinator(s) Involved |
+|-------|-------|------------------------|
+| `/brainstorming-pipeline` | P1-3 | research-coordinator |
+| `/agent-teams-write-plan` | P4 | planning-coordinator |
+| `/plan-validation-pipeline` | P5 | validation-coordinator |
+| `/agent-teams-execution-plan` | P6 | execution-coordinator |
+| `/verification-pipeline` | P7-8 | testing-coordinator |
+| `/delivery-pipeline` | P9 | Lead-only |
+| `/permanent-tasks` | X-cut | Lead-only |
+| `/rsil-global` | Post | Lead-only (INFRA assessment) |
+| `/rsil-review` | Any | Lead-only (targeted review) |
 
 ## 0. Language Policy
 
@@ -76,7 +108,7 @@ All agents registered in `.claude/agents/*.md`. Use exact `subagent_type` to spa
 - **Workspace:** `/home/palantir`
 - **Agent Teams:** Enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, tmux split pane)
 - **Lead:** Pipeline Controller — spawns teammates, manages gates, never modifies files directly — all file changes delegated to teammates
-- **Teammates:** Dynamic per phase (22 agents, 10 categories — see `.claude/references/agent-catalog.md`)
+- **Teammates:** Dynamic per phase (34 workers + 8 coordinators, 13 categories — see `.claude/references/agent-catalog.md`)
 
 ## 2. Phase Pipeline
 
@@ -85,7 +117,8 @@ table above. The pipeline flows: PRE (Phases 0-5, 70-80% effort) → EXEC (Phase
 → POST (Phase 9). Full agent details in `agent-catalog.md` (two-level selection:
 category first, then specific agent).
 
-Phase 0 (~500 tokens) is a lightweight prerequisite. Lead approves each phase transition.
+Phase 0 (~500 tokens) is a lightweight prerequisite — classifies pipeline tier (D-001).
+Lead approves each phase transition per gate-evaluation-standard.md (D-008).
 Max 3 iterations per phase before escalating.
 Every task assignment requires understanding verification before work begins
 (exception: devils-advocate in Phase 5 — critical analysis itself demonstrates comprehension).
@@ -106,11 +139,13 @@ updates tasks. Routes work through coordinators for multi-agent categories (§6 
 Selection and Routing). Use `/permanent-tasks` to reflect mid-work requirement changes.
 
 ### Coordinators
-Category-level managers for multi-agent categories (Research, Verification, Implementation,
-Testing & Integration, INFRA Quality). Spawned by Lead alongside pre-spawned workers.
+Category-level managers for 8 coordinated categories (Research, Verification, Architecture,
+Planning, Validation, Implementation, Testing & Integration, INFRA Quality). Spawned by
+Lead alongside pre-spawned workers. All coordinators follow
+`.claude/references/coordinator-shared-protocol.md` (D-013) and `agent-common-protocol.md`.
 Coordinators verify worker understanding (AD-11), distribute tasks, monitor progress,
 consolidate results, and report to Lead. Coordinators do not modify code or infrastructure
-— they write L1/L2/L3 output only. Follow `agent-common-protocol.md` for shared procedures.
+— they write L1/L2/L3 output only.
 
 ### Teammates
 Follow `.claude/references/agent-common-protocol.md` for shared procedures.
@@ -143,10 +178,10 @@ implementation plans (before code changes), responses to probing questions, bloc
 
 ### Agent Selection and Routing
 1. **Parse request** → identify work type (research, design, implementation, review, verification)
-2. **Select category** → match to one of 10 categories in Custom Agents Reference
+2. **Select category** → match to one of 13 categories in Custom Agents Reference
 3. **Route decision:**
-   - Coordinated categories (1, 2, 7, 8, 9) → route through coordinator
-   - Lead-direct categories (3, 4, 5, 6, 10) → spawn agent directly
+   - Coordinated categories (1-5, 7-10) → route through coordinator
+   - Lead-direct categories (6, 11) → spawn agent directly
 4. **For coordinator route:**
    a. Coordinator not spawned → spawn coordinator, then pre-spawn workers
    b. Coordinator active → SendMessage with new work assignment
@@ -254,8 +289,13 @@ pipeline, workstream progress, teammate status, and key metrics.
 ### Coordination Infrastructure
 - **PERMANENT Task:** Subject "[PERMANENT] {feature}", task ID assigned at creation
   (find via TaskList). Versioned PT-v{N} (monotonically increasing). Contains: User Intent,
-  Codebase Impact Map, Architecture Decisions, Phase Status, Constraints. Lead tracks each
-  coordinator's and Lead-direct agent's confirmed PT version in orchestration-plan.md.
+  Codebase Impact Map, Architecture Decisions, Phase Status, Constraints (D-012: lean PT).
+  Lead tracks each coordinator's and Lead-direct agent's confirmed PT version in
+  orchestration-plan.md.
+- **Phase Context Files** (D-012): For COMPLEX pipelines, Lead writes per-phase context
+  files to `.agent/teams/{session-id}/phase-{N}/phase-context.md` — containing phase-specific
+  Impact Map excerpts, constraints, and interface contracts. Keeps PT lean while providing
+  rich context to agents.
 - **L1/L2/L3:** L1 = index (YAML, ≤50 lines). L2 = summary (MD, ≤200 lines). L3 = full detail (directory).
 - **Team Memory:** `.agent/teams/{session-id}/TEAM-MEMORY.md`, section-per-role structure.
 - **Output directory:**
@@ -330,7 +370,9 @@ These principles guide all team interactions and are not overridden by convenien
 - Save work to L1/L2/L3 files proactively. Report if running low on context.
 - Your work persists through files and messages, not through memory.
 
-**See also:** agent-common-protocol.md (shared procedures), agent-catalog.md (22 agents, 10 categories,
-two-level selection, P1 framework), agent .md files (role-specific guidance),
-hook scripts in `.claude/hooks/` (session lifecycle support), `/permanent-tasks` skill (mid-work updates).
+**See also:** agent-common-protocol.md (shared procedures), coordinator-shared-protocol.md (D-013),
+agent-catalog.md (42 agents, 13 categories, two-level selection, P1 framework),
+gate-evaluation-standard.md (D-008), ontological-lenses.md (D-010),
+agent .md files (role-specific guidance), hook scripts in `.claude/hooks/` (session lifecycle support),
+`/permanent-tasks` skill (mid-work updates).
 Layer 1/Layer 2 boundary model: `.claude/references/layer-boundary-model.md` (NL vs structural solution spectrum, AD-15 alignment).

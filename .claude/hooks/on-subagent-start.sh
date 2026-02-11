@@ -31,7 +31,7 @@ if [ -n "$RTD_SID" ] && [ -n "$AGENT_NAME" ] && [ "$AGENT_NAME" != "unknown" ]; 
     RTD_SLUG=$(head -1 "$PROJECT_FILE" 2>/dev/null)
     if [ -n "$RTD_SLUG" ]; then
       REGISTRY="/home/palantir/.agent/observability/$RTD_SLUG/session-registry.json"
-      if [ -f "$REGISTRY" ] && command -v jq &>/dev/null; then
+      if [ -f "$REGISTRY" ]; then
         TMP=$(mktemp)
         jq --arg sid "$RTD_SID" --arg name "$AGENT_NAME" --arg type "$AGENT_TYPE" \
           '. + {($sid): {name: $name, type: $type}}' "$REGISTRY" > "$TMP" && mv "$TMP" "$REGISTRY"

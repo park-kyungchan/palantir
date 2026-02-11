@@ -116,7 +116,7 @@ properties:
     
   status:
     type: string
-    enum: ["ACTIVE", "EXPERIMENTAL", "DEPRECATED", "EXAMPLE", "ENDORSED"]
+    enum: ["ACTIVE", "EXPERIMENTAL", "DEPRECATED", "ENDORSED"]  # 4 values per API v2 (EXAMPLE removed)
     default: "EXPERIMENTAL"
     
   visibility:
@@ -925,9 +925,12 @@ START: What baseType should this Property use?
 ├─► Is it a COLLECTION?
 │   ├─ List of primitives → Array<baseType>
 │   │   └─ Note: Cannot contain nulls, no nested arrays in OSv2
+│   │   └─ Cannot use Vector or TimeSeries as inner types
 │   │
 │   └─ Structured object → Struct
-│       └─ Constraints: depth=1, max 10 fields, no nested structs
+│       └─ Constraints: depth=1, max 10 fields, no nested structs, fields CANNOT be arrays
+│       └─ Only 12 primitive types: Boolean, Byte, Date, Decimal, Double, Float, Geopoint, Integer, Long, Short, String, Timestamp
+│       └─ OSv2 only
 │
 ├─► Is it for ML/EMBEDDINGS?
 │   └─ Vector (max 2048 dimensions, KNN queries only)
@@ -1007,6 +1010,8 @@ validation_rules:
   struct_constraints:
     max_depth: 1
     max_fields: 10
+    fields_cannot_be_arrays: true  # Struct fields are primitives only
+    osv2_only: true  # Structs require Object Storage v2
     allowed_field_types:
       - "Boolean"
       - "Byte"
@@ -1269,7 +1274,7 @@ integration_points:
       
   constraints:
     relationship: "Property CAN HAVE Constraints"
-    types: ["enum", "range", "regex", "rid", "uuid", "uniqueness"]
+    types: ["enum (ONE_OF)", "range", "regex", "rid", "uuid", "uniqueness", "nested", "struct_element"]  # 8 core ValueTypeConstraints
     
   renderHints:
     relationship: "Property HAS RenderHints"
@@ -1486,9 +1491,9 @@ validation_rules:
       behavior: "Local apiName and metadata preserved"
 
   deletion:
-    - rule: "deletion_cascades"
-      description: "Deleting SharedProperty reverts all using Properties to local"
-      warning: "All {count} ObjectTypes will have their properties reverted"
+    - rule: "deletion_safe_revert"
+      description: "Deleting SharedProperty safely reverts all using Properties to regular local properties"
+      behavior: "All using ObjectTypes retain their properties — they revert to local (like detaching for all)"
 
   naming:
     - rule: "consistent_naming"
@@ -1709,12 +1714,12 @@ integration_points:
       - "Breaking changes to SharedProperty blocked if Properties would break"
       
   interface:
-    relationship: "Interface REQUIRES SharedProperty"
-    constraint: "Interface schema composed ONLY of SharedProperties"
+    relationship: "Interface CAN USE SharedProperty (optional, auto-mapping convenience)"
+    note: "Interface properties can be local (RECOMMENDED) or mapped from SharedProperties"
     workflow:
-      1: "Create SharedProperties first"
-      2: "Create Interface referencing SharedProperties"
-      3: "ObjectTypes implement Interface by having required SharedProperties"
+      1: "Define Interface with local properties (recommended) or SharedProperties"
+      2: "ObjectTypes implement Interface by mapping to required properties"
+      3: "SharedProperties enable automatic cross-implementor mapping convenience"
       
   objectType:
     relationship: "ObjectType USES SharedProperty"

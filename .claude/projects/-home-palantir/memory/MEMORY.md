@@ -31,15 +31,16 @@
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-## Current INFRA State (v8.0, 2026-02-11)
+## Current INFRA State (v9.0, 2026-02-11)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v8.0 | ~336L | §3 3-tier roles, §6 Agent Selection+Routing, Coordinator Management |
+| CLAUDE.md | v9.0 | ~378L | D-001~D-017 integrated, 42 agents, 13 categories, reference-heavy |
 | task-api-guideline.md | v6.0 | 118L | NLP consolidated (was 537L, 78% reduction) |
-| agent-common-protocol.md | v3.2 | ~162L | Coordinator routing overlay + Working with Coordinators (6 rules) |
-| agent-catalog.md | v2.0 | ~1415L | Two-Level (L1 ~227L + boundary marker + L2 ~1186L), 27 agents |
-| Agents | v4.0 | 27 files | 22 workers + 5 coordinators, coordinator-aware routing |
+| agent-common-protocol.md | v4.0 | ~180L | +Memory, +Error (D-017), +Output, +Handoff (D-011) |
+| agent-catalog.md | v3.0 | ~1882L | Two-Level (L1 ~280L + L2 ~1600L), 42 agents (34W+8C) |
+| Agents | v5.0 | 42 files | 34 workers + 8 coordinators, 13 categories |
+| References | v1.0 | 3 new | gate-evaluation-standard (D-008), ontological-lenses (D-010), coordinator-shared-protocol (D-013) |
 | Settings | — | ~84L | MCP Tool Search auto:7 enabled |
 | Hooks | 4 total | ~220L | SubagentStart, PreCompact (hookOutput), SessionStart, PostToolUse |
 | Observability | — | — | `.agent/observability/{slug}/` (rtd-index, events.jsonl, registry) |
@@ -48,11 +49,11 @@
 
 | SKL | Skill | Phase | Notes |
 |-----|-------|-------|-------|
-| 001 | `/brainstorming-pipeline` | P1-3 | NLP v6.0 + Phase 0 + RTD |
-| 002 | `/agent-teams-write-plan` | P4 | NLP v6.0 + Phase 0 + RTD |
-| 003 | `/agent-teams-execution-plan` | P6 | NLP v6.0 + Phase 0 + RTD |
-| 004 | `/plan-validation-pipeline` | P5 | NLP v6.0 + Phase 0 + RTD |
-| 005 | `/verification-pipeline` | P7-8 | NLP v6.0 + Phase 0 + INFRA RSI + RTD |
+| 001 | `/brainstorming-pipeline` | P1-3 | +D-001 tier routing, +architecture-coordinator (COMPLEX) |
+| 002 | `/agent-teams-write-plan` | P4 | +D-001 tier routing, +planning-coordinator (COMPLEX), +D-012 |
+| 003 | `/agent-teams-execution-plan` | P6 | +contract-reviewer, +regression-reviewer, +D-012/D-014 |
+| 004 | `/plan-validation-pipeline` | P5 | +D-001 tier routing, +validation-coordinator (COMPLEX) |
+| 005 | `/verification-pipeline` | P7-8 | +D-001 tier awareness, +contract-tester |
 | 006 | `/delivery-pipeline` | P9 | 422L + RTD |
 | 007 | `/rsil-review` | — | 549L, 8 Lenses, Meta-Cognition |
 | 008 | `/rsil-global` | — | 452L, auto-invoke, Three-Tier |
@@ -68,15 +69,15 @@
 - Agent memory: `~/.claude/agent-memory/rsil/MEMORY.md`
 - All audit targets COMPLETE (S-1~S-4, S-6, S-7)
 
-### Agents-Driven Workflow (PT #4→#5, 2026-02-11)
-- 27 agents (22 workers + 5 coordinators), 10 categories — `.claude/references/agent-catalog.md` (1415L Two-Level)
+### Agents-Driven Workflow (PT #4→#5→v9.0, 2026-02-11)
+- 42 agents (34 workers + 8 coordinators), 13 categories — `.claude/references/agent-catalog.md` (1882L Two-Level)
 - P1: One Agent = One Responsibility — WHEN/WHY/HOW framework
 - Layer 1/2 Boundary: `.claude/references/layer-boundary-model.md` (Coordinator Orchestration section added)
 - CLAUDE.md §6: Agent Selection and Routing (6-step), Coordinator Management (Mode 1+3)
-- 5 coordinators: research, verification, execution, testing, infra-quality
-- AD-8~AD-13 + PD-1~PD-3: Selective Coordinator, Two-Level Catalog, Delegated Verification
-- Lead Architecture Redesign: P1-P6 COMPLETE, Gate 6 APPROVED, PT-v6
-- BN-1→BN-3→BN-4 cascade resolved via Selective Coordinator model
+- 8 coordinators: research, verification, architecture, planning, validation, execution, testing, infra-quality
+- D-001~D-017: Pipeline Tiers, Full Decomposition, Gate Standard, Ontological Lenses, Error Taxonomy
+- New references: gate-evaluation-standard.md (D-008), ontological-lenses.md (D-010), coordinator-shared-protocol.md (D-013)
+- INFRA v9.0: 17 Decisions integrated across 6 batches, 378L CLAUDE.md (reference-heavy)
 
 ### Known Bugs
 

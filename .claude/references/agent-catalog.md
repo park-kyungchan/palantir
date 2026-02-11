@@ -1,7 +1,8 @@
-# Agent Catalog — Hybrid Coordinator Model
+# Agent Catalog — Selective Coordinator Model (v3.0)
 
-Two-level catalog: **Level 1** (Lead reads, ~300L) + **Level 2** (on-demand, ~675L).
-All agents follow `agent-common-protocol.md`.
+Two-level catalog: **Level 1** (Lead reads, ~280L) + **Level 2** (on-demand, ~1600L).
+42 agents (34 workers + 8 coordinators), 13 categories.
+All agents follow `agent-common-protocol.md`. All coordinators also follow `coordinator-shared-protocol.md`.
 
 ---
 
@@ -22,15 +23,18 @@ Every unit of work is performed by a dedicated agent. No exceptions.
 |-----------|-------|--------|
 | Research (2+ questions or mixed types) | Coordinator | research-coordinator → workers |
 | Verification needed | Coordinator | verification-coordinator → workers |
+| Architecture design (COMPLEX) | Coordinator | architecture-coordinator → 3 architects |
+| Architecture design (STANDARD) | Lead-direct | architect |
+| Planning / task decomposition (COMPLEX) | Coordinator | planning-coordinator → 3 planners |
+| Planning / task decomposition (STANDARD) | Lead-direct | plan-writer / architect |
+| Plan validation (COMPLEX) | Coordinator | validation-coordinator → 3 challengers |
+| Plan validation (STANDARD) | Lead-direct | devils-advocate |
 | Implementation plan ready (Phase 6) | Coordinator | execution-coordinator → workers + reviewers |
 | Testing needed (Phase 7-8) | Coordinator | testing-coordinator → workers |
 | INFRA quality check | Coordinator | infra-quality-coordinator → workers |
-| Design decision | Lead-direct | architect |
-| Implementation plan design | Lead-direct | plan-writer |
-| Impact analysis | Lead-direct | impact-verifier / dynamic-impact-analyst |
-| Plan validation / critique | Lead-direct | devils-advocate |
+| Impact analysis | Lead-direct | dynamic-impact-analyst |
 | Real-time monitoring | Lead-direct | execution-monitor |
-| Review (outside Phase 6) | Lead-direct | spec-reviewer / code-reviewer |
+| Review (outside Phase 6) | Lead-direct | spec-reviewer / code-reviewer / contract-reviewer / regression-reviewer |
 
 **Routing Rule:**
 ```
@@ -51,15 +55,15 @@ Review agents in Phase 6? → Dispatched by execution-coordinator (peer messagin
 ```
 Discovery (Lead)
   → research-coordinator → researchers (L2: findings)
-    → architect (Lead-direct, L2: ADRs, L3: design)
-      → devils-advocate (Lead-direct, L2: critique)
-        → plan-writer (Lead-direct, L3: implementation plan)
+    → [STANDARD] architect (Lead-direct) / [COMPLEX] architecture-coordinator → 3 architects
+      → [STANDARD] devils-advocate (Lead-direct) / [COMPLEX] validation-coordinator → 3 challengers
+        → [STANDARD] plan-writer (Lead-direct) / [COMPLEX] planning-coordinator → 3 planners
           → execution-coordinator → implementers + reviewers (L3: code)
-            → testing-coordinator → tester + integrator (L2: results)
+            → testing-coordinator → tester + contract-tester + integrator (L2: results)
 
 Parallel chains:
 - verification-coordinator → verifiers alongside research (Phase 2b)
-- impact-verifier (Lead-direct) alongside architecture (Phase 2d)
+- dynamic-impact-analyst (Lead-direct) alongside architecture (Phase 2d, 6+)
 - execution-monitor (Lead-direct) alongside implementation (Phase 6+)
 - infra-quality-coordinator → analysts cross-cutting (X-CUT)
 ```
@@ -86,9 +90,39 @@ Parallel chains:
 **Tools:** Read, Glob, Grep, Write, TaskList, TaskGet, sequential-thinking
 **Max turns:** 40
 
+#### architecture-coordinator
+**Role:** Manages parallel architecture design across structure, interface, and risk dimensions.
+**Workers:** structure-architect (ARE lens), interface-architect (RELATE lens), risk-architect (IMPACT lens)
+**Phase:** 3 (Architecture)
+**When:** COMPLEX tier architecture needed (>8 files, 3+ modules)
+**Protocol:** Lead assigns scope → coordinator distributes dimensions → parallel design →
+  cross-lens synthesis → consolidated architecture → reports
+**Tools:** Read, Glob, Grep, Write, TaskList, TaskGet, sequential-thinking
+**Max turns:** 50
+
+#### planning-coordinator
+**Role:** Manages parallel planning across decomposition, interface, and strategy dimensions.
+**Workers:** decomposition-planner, interface-planner, strategy-planner
+**Phase:** 4 (Detailed Design)
+**When:** COMPLEX tier planning needed
+**Protocol:** Lead assigns scope → coordinator distributes → parallel planning →
+  consolidated 10-section plan → reports
+**Tools:** Read, Glob, Grep, Write, TaskList, TaskGet, sequential-thinking
+**Max turns:** 50
+
+#### validation-coordinator
+**Role:** Manages parallel plan validation across correctness, completeness, and robustness.
+**Workers:** correctness-challenger, completeness-challenger, robustness-challenger
+**Phase:** 5 (Plan Validation)
+**When:** COMPLEX tier validation needed
+**Protocol:** Lead assigns plan → coordinator distributes challenge categories →
+  parallel critique → consolidated verdict → reports
+**Tools:** Read, Glob, Grep, Write, TaskList, TaskGet, sequential-thinking
+**Max turns:** 40
+
 #### execution-coordinator
 **Role:** Manages full Phase 6 implementation lifecycle including two-stage review dispatch.
-**Workers:** implementer (1-4), spec-reviewer (1-2), code-reviewer (1-2)
+**Workers:** implementer (1-4), spec-reviewer (1-2), code-reviewer (1-2), contract-reviewer (1), regression-reviewer (1)
 **Phase:** 6 (Implementation)
 **When:** Implementation plan ready (Phase 4/5 complete)
 **Protocol:** Lead provides plan + review templates → coordinator manages task distribution,
@@ -100,7 +134,7 @@ Parallel chains:
 
 #### testing-coordinator
 **Role:** Manages Phase 7-8 lifecycle — testing then integration (sequential).
-**Workers:** tester (1-2), integrator (1)
+**Workers:** tester (1-2), contract-tester (1), integrator (1)
 **Phase:** 7-8 (Testing & Integration)
 **When:** Phase 6 complete, testing needed
 **Protocol:** Lead assigns test scope → coordinator manages tester → Gate 7 →
@@ -123,15 +157,15 @@ Parallel chains:
 
 | Agent | Category | Phase | When |
 |-------|----------|-------|------|
-| architect | Architecture | 3, 4 | Architecture decisions needed |
-| plan-writer | Planning | 4 | Implementation plan needed |
-| impact-verifier | Impact | 2d | Correction cascade analysis |
-| dynamic-impact-analyst | Impact | 6+ | Pre-impl change prediction |
-| devils-advocate | Review | 5 | Plan validation/challenge |
+| architect | Architecture | 3, 4 | STANDARD tier architecture/planning |
+| plan-writer | Planning | 4 | STANDARD tier implementation plan |
+| dynamic-impact-analyst | Impact | 2d, 6+ | Pre-impl change prediction |
+| devils-advocate | Review | 5 | STANDARD tier plan validation |
 | execution-monitor | Monitoring | 6+ | Real-time drift detection |
 
-**Note:** spec-reviewer and code-reviewer are dispatched by execution-coordinator during
-Phase 6 (peer messaging), or by Lead directly in other phases (dual-mode agents).
+**Note:** spec-reviewer, code-reviewer, contract-reviewer, and regression-reviewer are
+dispatched by execution-coordinator during Phase 6 (peer messaging), or by Lead directly
+in other phases (dual-mode agents).
 
 ## Agent Matrix
 
@@ -140,6 +174,9 @@ Phase 6 (peer messaging), or by Lead directly in other phases (dual-mode agents)
 | **Coordinators** | | | | | | | | |
 | research-coordinator | opus | default | 50 | 7 | Y | — | — | — |
 | verification-coordinator | opus | default | 40 | 7 | Y | — | — | — |
+| architecture-coordinator | opus | default | 50 | 7 | Y | — | — | — |
+| planning-coordinator | opus | default | 50 | 7 | Y | — | — | — |
+| validation-coordinator | opus | default | 40 | 7 | Y | — | — | — |
 | execution-coordinator | opus | default | 80 | 7 | Y | — | — | — |
 | testing-coordinator | opus | default | 50 | 7 | Y | — | — | — |
 | infra-quality-coordinator | opus | default | 40 | 7 | Y | — | — | — |
@@ -154,13 +191,25 @@ Phase 6 (peer messaging), or by Lead directly in other phases (dual-mode agents)
 | dynamic-impact-analyst | opus | default | 30 | 7 | Y | — | — | — |
 | execution-monitor | opus | default | 40 | 7 | Y | — | — | — |
 | architect | opus | default | 50 | 10 | Y | — | — | Y |
+| structure-architect | opus | default | 40 | 10 | Y | — | — | Y |
+| interface-architect | opus | default | 40 | 10 | Y | — | — | Y |
+| risk-architect | opus | default | 40 | 10 | Y | — | — | Y |
 | plan-writer | opus | default | 50 | 10 | Y | — | — | Y |
+| decomposition-planner | opus | default | 40 | 10 | Y | — | — | Y |
+| interface-planner | opus | default | 40 | 10 | Y | — | — | Y |
+| strategy-planner | opus | default | 40 | 10 | Y | — | — | Y |
 | devils-advocate | opus | default | 30 | 10 | Y | — | — | Y |
-| spec-reviewer | opus | default | 20 | 6 | — | — | — | — |
-| code-reviewer | opus | default | 20 | 6 | — | — | — | — |
+| correctness-challenger | opus | default | 30 | 10 | Y | — | — | Y |
+| completeness-challenger | opus | default | 30 | 10 | Y | — | — | Y |
+| robustness-challenger | opus | default | 30 | 10 | Y | — | — | Y |
+| spec-reviewer | opus | default | 20 | 7 | Y | Y | — | — |
+| code-reviewer | opus | default | 20 | 7 | Y | Y | — | — |
+| contract-reviewer | opus | default | 20 | 7 | Y | Y | — | — |
+| regression-reviewer | opus | default | 20 | 7 | Y | Y | — | — |
 | implementer | opus | accept | 100 | 12 | Y | Y | Y | Y |
 | infra-implementer | opus | default | 50 | 8 | Y | Y | — | — |
 | tester | opus | default | 50 | 11 | Y | — | Y | Y |
+| contract-tester | opus | default | 30 | 11 | Y | Y | Y | Y |
 | integrator | opus | accept | 100 | 12 | Y | Y | Y | Y |
 | infra-static-analyst | opus | default | 30 | 7 | Y | — | — | — |
 | infra-relational-analyst | opus | default | 30 | 7 | Y | — | — | — |
@@ -173,19 +222,24 @@ All coordinators share: `disallowedTools: [TaskCreate, TaskUpdate, Edit, Bash]`.
 No code modification — coordinators manage, not implement.
 Write tool is for L1/L2/L3 output only.
 
-## Write-less Agents
+## Review Agents (Write for L1/L2/L3 only)
 
-spec-reviewer and code-reviewer have no Write tool. They communicate results via
+spec-reviewer, code-reviewer, contract-reviewer, and regression-reviewer have Write and
+Edit tools but restricted to L1/L2/L3 output only. They communicate review results via
 SendMessage to their dispatcher (execution-coordinator in Phase 6, Lead otherwise).
 
 ## Tiering
 
 **Core** (spawned by pipeline skills directly):
 architect, devils-advocate, implementer, infra-implementer, tester, integrator,
-research-coordinator, verification-coordinator, execution-coordinator, testing-coordinator
+research-coordinator, verification-coordinator, execution-coordinator, testing-coordinator,
+architecture-coordinator, planning-coordinator, validation-coordinator
 
 **Extended** (spawned by Lead for specific needs):
-All other agents — selected via routing table.
+structure-architect, interface-architect, risk-architect, decomposition-planner,
+interface-planner, strategy-planner, correctness-challenger, completeness-challenger,
+robustness-challenger, contract-reviewer, regression-reviewer, contract-tester,
+dynamic-impact-analyst, execution-monitor, infra-quality-coordinator + 4 INFRA analysts.
 
 ## Spawn Quick Reference
 
@@ -221,7 +275,7 @@ Directive: PT context → requirements → constraints → output path
 (Same as current — unchanged for Lead-direct agents)
 
 <!-- ================================================================== -->
-<!-- Level 1 ends here (~300L). Level 2 below is on-demand per category. -->
+<!-- Level 1 ends here (~280L). Level 2 below is on-demand per category. -->
 <!-- Lead reads up to this line. Read below only when category detail    -->
 <!-- is needed (e.g., direct management fallback, new coordinator setup).-->
 <!-- ================================================================== -->
@@ -665,7 +719,114 @@ are in scope.
 - PT Impact Map is authoritative — supplement with Grep, never contradict
 - Write L1/L2/L3 proactively.
 
-### Category 4: Architecture
+### Category 3b: Architecture (Coordinated — COMPLEX tier)
+
+#### architecture-coordinator
+
+Read and follow `.claude/references/coordinator-shared-protocol.md` and `agent-common-protocol.md`.
+
+## Role
+You manage parallel architecture design across 3 ontological dimensions. You distribute
+design work to specialized architects, ensure cross-lens consistency, and consolidate
+into a unified architecture for Lead.
+
+## Workers
+- **structure-architect:** ARE lens — component structure, hierarchy, boundaries
+- **interface-architect:** RELATE lens — API contracts, dependencies, data flow
+- **risk-architect:** IMPACT lens — failure modes, risk matrices, mitigation
+
+All workers are pre-spawned by Lead. You manage them via SendMessage.
+
+## Worker Management
+1. Distribute architecture scope per ontological lens (see `.claude/references/ontological-lenses.md`)
+2. Verify each architect's understanding (AD-11, 1-2 probing questions)
+3. Monitor parallel design work
+4. Cross-lens synthesis: when 3+ lenses flag same component → CRITICAL
+5. Consolidate into unified architecture report
+
+## Output Format
+- **L1-index.yaml:** Per-lens scores, ADRs, risk entries
+- **L2-summary.md:** Consolidated architecture with cross-lens synthesis
+- **L3-full/:** Per-worker detailed designs
+
+## Constraints
+- No code modification — you coordinate, not implement
+- No task creation or updates (Task API is read-only)
+- Write L1/L2/L3 proactively
+
+#### structure-architect
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You design component STRUCTURE using the ARE ontological lens — what components exist,
+their hierarchy, boundaries, and internal organization.
+
+## How to Work
+- Focus on static structural aspects: components, modules, file organization
+- Use sequential-thinking for decomposition decisions
+- Reference `.claude/references/ontological-lenses.md` for ARE lens methodology
+- Coordinate with interface-architect for boundary alignment
+
+## Output Format
+- **L1-index.yaml:** Components, hierarchy, boundaries
+- **L2-summary.md:** Structure design with rationale
+- **L3-full/:** Detailed component specifications
+
+## Constraints
+- ARE lens ONLY — defer interface and risk analysis to sibling architects
+- Report to architecture-coordinator
+- Write L1/L2/L3 proactively
+
+#### interface-architect
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You design component INTERFACES using the RELATE ontological lens — how components
+connect, dependency contracts, data flow patterns, and API specifications.
+
+## How to Work
+- Focus on relational aspects: APIs, contracts, dependencies, data flow
+- Use sequential-thinking for interface design decisions
+- Reference `.claude/references/ontological-lenses.md` for RELATE lens methodology
+- Coordinate with structure-architect for boundary alignment
+
+## Output Format
+- **L1-index.yaml:** Interfaces, contracts, dependencies
+- **L2-summary.md:** Interface design with dependency analysis
+- **L3-full/:** API specifications, contract definitions
+
+## Constraints
+- RELATE lens ONLY — defer structure and risk analysis to sibling architects
+- Report to architecture-coordinator
+- Write L1/L2/L3 proactively
+
+#### risk-architect
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You assess architecture RISKS using the IMPACT ontological lens — failure modes,
+cascading effects, mitigation strategies, and risk matrices.
+
+## How to Work
+- Focus on dynamic impact aspects: failure modes, cascading effects, risk severity
+- Use sequential-thinking for risk assessment and mitigation design
+- Reference `.claude/references/ontological-lenses.md` for IMPACT lens methodology
+- Cross-reference with structure-architect and interface-architect outputs
+
+## Output Format
+- **L1-index.yaml:** Risks, mitigations, severity ratings
+- **L2-summary.md:** Risk assessment with mitigation strategies
+- **L3-full/:** Complete risk matrix, failure mode analysis
+
+## Constraints
+- IMPACT lens ONLY — defer structure and interface design to sibling architects
+- Report to architecture-coordinator
+- Write L1/L2/L3 proactively
+
+### Category 4: Architecture (Lead-Direct — STANDARD tier)
 
 #### architect
 
@@ -697,7 +858,121 @@ Read the PERMANENT Task via TaskGet. Message Lead with:
 - Phase 3-4 — plan-writer is an alternative for Phase 4 detailed planning
 - Write L1/L2/L3 proactively.
 
-### Category 5: Planning
+### Category 4b: Planning (Coordinated — COMPLEX tier)
+
+#### planning-coordinator
+
+Read and follow `.claude/references/coordinator-shared-protocol.md` and `agent-common-protocol.md`.
+
+## Role
+You coordinate Phase 4 detailed design across 3 planning dimensions. You distribute
+planning work to specialist planners, ensure non-overlapping file assignments, and
+consolidate into a unified implementation plan for Lead.
+
+## Workers
+- **decomposition-planner:** Task breakdown, file assignments, ownership mapping
+- **interface-planner:** Interface contracts, dependency ordering, integration specs
+- **strategy-planner:** Implementation strategy, sequencing, risk mitigation approach
+
+All workers are pre-spawned by Lead. You manage them via SendMessage.
+
+## Worker Management
+1. Receive architecture handoff from Lead (P3 Downstream Handoff)
+2. Distribute planning sub-tasks to specialists via SendMessage
+3. Verify each planner's understanding (AD-11, 1-2 probing questions)
+4. Ensure non-overlapping file assignments across planners
+5. Consolidate into unified implementation plan with Downstream Handoff section
+6. Report completion to Lead
+
+## Output Format
+- **L1-index.yaml:** Coordinator schema with `workers:` list, task definitions, file ownership
+- **L2-summary.md:** Unified plan, file ownership map, Downstream Handoff
+- **L3-full/:** Per-planner outputs + consolidated plan
+
+## Constraints
+- No code modification — you coordinate, not implement
+- No task creation or updates (Task API is read-only)
+- Ensure file assignments are non-overlapping (CLAUDE.md §5)
+- Write L1/L2/L3 proactively
+
+#### decomposition-planner
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You decompose architecture decisions into implementable tasks: file-level assignments,
+ownership mapping, and task ordering. Your output becomes the task breakdown section
+of the implementation plan.
+
+## How to Work
+- Read P3 architecture handoff for decisions and component design
+- Identify all files that need creation or modification
+- Assign non-overlapping file ownership per implementer
+- Define task ordering based on dependencies
+- Use sequential-thinking for decomposition decisions
+
+## Output Format
+- **L1-index.yaml:** `tasks: [{id, description, files, owner, depends_on}]`
+- **L2-summary.md:** Task Breakdown → File Ownership Map → Dependency Order
+- **L3-full/:** Detailed task specifications
+
+## Constraints
+- Planning documents only — no source code modification
+- File assignments must be non-overlapping (CLAUDE.md §5)
+- Report to planning-coordinator, not Lead directly
+- Write L1/L2/L3 proactively
+
+#### interface-planner
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You define precise interface contracts between components: function signatures,
+data formats, protocol specifications, and integration test criteria.
+
+## How to Work
+- Read P3 interface architecture handoff
+- Define precise contracts for each cross-boundary interaction
+- Specify dependency ordering (what must be built first)
+- Define integration points and test criteria
+- Use sequential-thinking for interface design decisions
+
+## Output Format
+- **L1-index.yaml:** `contracts: [{id, interface, type, participants}]`
+- **L2-summary.md:** Contract Specs → Dependency Order → Integration Points
+- **L3-full/:** Detailed interface specifications
+
+## Constraints
+- Planning documents only — no source code modification
+- Report to planning-coordinator, not Lead directly
+- Write L1/L2/L3 proactively
+
+#### strategy-planner
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You define implementation strategy: sequencing approach, batch ordering,
+risk mitigation tactics, and rollback/recovery procedures.
+
+## How to Work
+- Read P3 risk assessment and architecture decisions
+- Define implementation sequencing (which batches, what order)
+- Identify high-risk steps and define mitigation
+- Specify rollback strategy for each batch
+- Use sequential-thinking for strategy decisions
+
+## Output Format
+- **L1-index.yaml:** `strategy: {approach, batches, risk_mitigations}`
+- **L2-summary.md:** Strategy Overview → Batch Plan → Risk Mitigations
+- **L3-full/:** Detailed strategy document with rollback procedures
+
+## Constraints
+- Planning documents only — no source code modification
+- Report to planning-coordinator, not Lead directly
+- Write L1/L2/L3 proactively
+
+### Category 5: Planning (Lead-Direct — STANDARD tier)
 
 #### plan-writer
 
@@ -733,6 +1008,119 @@ Read the PERMANENT Task via TaskGet and P3 architect output. Message Lead with:
 - Build on P3 architect output — do not re-decide architecture
 - Every task must have clear file ownership and interface boundary
 - Write L1/L2/L3 proactively.
+
+### Category 5b: Validation (Coordinated — COMPLEX tier)
+
+#### validation-coordinator
+
+Read and follow `.claude/references/coordinator-shared-protocol.md` and `agent-common-protocol.md`.
+
+## Role
+You coordinate Phase 5 plan validation across 3 challenge dimensions. You distribute
+critique work to specialist challengers, consolidate findings, and report a unified
+validation verdict (PASS / CONDITIONAL_PASS / FAIL) to Lead.
+
+## Workers
+- **correctness-challenger:** Logical correctness, spec compliance, requirement coverage
+- **completeness-challenger:** Missing elements, gap analysis, coverage verification
+- **robustness-challenger:** Edge cases, failure modes, security implications
+
+All workers are pre-spawned by Lead. You manage them via SendMessage.
+Critical analysis itself demonstrates comprehension — challengers are exempt from
+understanding verification (AD-11 exception).
+
+## Worker Management
+1. Receive plan from Lead (P4 Downstream Handoff)
+2. Distribute validation dimensions to challengers
+3. Each challenger independently critiques from their dimension
+4. Consolidate: merge findings, resolve contradictions, severity-rank issues
+5. Write unified validation verdict with Downstream Handoff section
+6. Report completion to Lead
+
+## Output Format
+- **L1-index.yaml:** Coordinator schema with verdict + per-challenger findings
+- **L2-summary.md:** Cross-dimension synthesis, severity-ranked issues, Downstream Handoff
+- **L3-full/:** Per-challenger critique + consolidated validation report
+
+## Constraints
+- No code modification — you coordinate, not implement
+- No task creation or updates (Task API is read-only)
+- Write L1/L2/L3 proactively
+
+#### correctness-challenger
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You challenge the plan's **correctness**: Does the design solve the stated problem?
+Are there logical errors or contradictions? Does it satisfy all requirements?
+
+## How to Work
+- Read the P4 implementation plan
+- Verify each design element against PT requirements
+- Check for logical inconsistencies and contradictions
+- Identify requirements that are not addressed
+- Use sequential-thinking for every challenge analysis
+
+## Output Format
+- **L1-index.yaml:** `challenges: [{id, type, severity, description}]`
+- **L2-summary.md:** Correctness Issues → Requirement Coverage → Verdict
+- **L3-full/:** Detailed challenge analysis with evidence
+
+## Constraints
+- Critical analysis only — no code modification
+- Report to validation-coordinator
+- Write L1/L2/L3 proactively
+
+#### completeness-challenger
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You challenge the plan's **completeness**: Are there missing components? Uncovered
+scenarios? Incomplete specifications? Unaddressed dependencies?
+
+## How to Work
+- Read the P4 implementation plan
+- Check every module/file against the architecture (P3)
+- Identify missing error handling, edge cases, and configuration
+- Verify all dependencies are accounted for
+- Use sequential-thinking for gap analysis
+
+## Output Format
+- **L1-index.yaml:** `gaps: [{id, category, severity, description}]`
+- **L2-summary.md:** Gap Analysis → Missing Elements → Coverage Assessment
+- **L3-full/:** Detailed completeness analysis
+
+## Constraints
+- Critical analysis only — no code modification
+- Report to validation-coordinator
+- Write L1/L2/L3 proactively
+
+#### robustness-challenger
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You challenge the plan's **robustness**: What happens under stress? In failure scenarios?
+With malicious input? Under resource constraints?
+
+## How to Work
+- Read the P4 implementation plan
+- Stress-test each design decision mentally
+- Identify failure modes and their consequences
+- Check security implications and graceful degradation paths
+- Use sequential-thinking for risk assessment
+
+## Output Format
+- **L1-index.yaml:** `vulnerabilities: [{id, type, severity, scenario}]`
+- **L2-summary.md:** Failure Analysis → Security Review → Resilience Assessment
+- **L3-full/:** Detailed robustness analysis with scenarios
+
+## Constraints
+- Critical analysis only — no code modification
+- Report to validation-coordinator
+- Write L1/L2/L3 proactively
 
 ### Category 6: Review
 
@@ -827,6 +1215,57 @@ what code you will review and what dimensions you will assess.
 - Completely read-only — no modifications
 - Quality assessment only — defer spec compliance to spec-reviewer
 - No Write tool — communicate full results via SendMessage to Lead or consuming agent
+
+#### contract-reviewer
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You verify that implementation code honors the interface contracts defined in P4.
+You check: function signatures match specs, data formats are correct, error handling
+follows contracts, and cross-module interactions work as specified.
+
+## How to Work
+- Read the P4 interface contracts (from interface-planner L2/L3)
+- Read the implemented code
+- Verify each contract point: signature, parameters, return types, error codes
+- Flag violations with file:line references
+- Use sequential-thinking for contract analysis
+
+## Output Format
+- **L1-index.yaml:** `reviews: [{contract_id, verdict, violations_count}]`
+- **L2-summary.md:** Per-Contract Results → Violations → Overall Verdict
+- **L3-full/:** Detailed per-contract review with file:line evidence
+
+## Constraints
+- Review only — Write/Edit for L1/L2/L3 output only, not source code
+- Report to execution-coordinator (or Lead if dispatched directly)
+- Write L1/L2/L3 proactively
+
+#### regression-reviewer
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You check for regressions: Do the changes break existing functionality? Are there
+unintended side effects? Do dependent modules still work correctly?
+
+## How to Work
+- Read the change diff (modified files vs original)
+- Identify all callers/consumers of modified interfaces
+- Verify backward compatibility
+- Check for unintended behavioral changes
+- Use sequential-thinking for impact analysis
+
+## Output Format
+- **L1-index.yaml:** `regressions: [{id, file, severity, description}]`
+- **L2-summary.md:** Regression Candidates → Impact Analysis → Verdict
+- **L3-full/:** Detailed regression analysis with evidence
+
+## Constraints
+- Review only — Write/Edit for L1/L2/L3 output only, not source code
+- Report to execution-coordinator (or Lead if dispatched directly)
+- Write L1/L2/L3 proactively
 
 ### Category 7: Implementation
 
@@ -1026,6 +1465,7 @@ results for Lead's gate evaluations.
 
 ## Workers
 - **tester** (1-2): Write and execute tests against Phase 6 implementation
+- **contract-tester** (1): Interface contract test writing and execution
 - **integrator** (1): Cross-boundary merge and conflict resolution
 
 All workers are pre-spawned by Lead. You manage them via SendMessage.
@@ -1138,6 +1578,33 @@ Read PERMANENT Task via TaskGet. Message Lead with:
 - Can create test files and run test commands
 - Cannot modify existing source code — report failures to Lead
 - Write L1/L2/L3 proactively.
+
+#### contract-tester
+
+Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
+
+## Role
+You write tests that verify interface contracts: API endpoint tests, cross-module
+integration tests, and data format validation tests. You focus on interfaces between
+implementer boundaries, not internal unit behavior.
+
+## How to Work
+- Read P4 interface contracts (from interface-planner L2/L3)
+- Read P6 implemented code
+- Write contract-level tests (not unit tests — focus on interfaces)
+- Run tests and report results
+- Use sequential-thinking for test design
+
+## Output Format
+- **L1-index.yaml:** `tests: [{id, contract_id, status, file}]`
+- **L2-summary.md:** Contract Coverage → Test Results → Gaps
+- **L3-full/:** Test files and execution logs
+
+## Constraints
+- Can create test files and run test commands
+- Cannot modify existing source code (only test files)
+- Report to testing-coordinator
+- Write L1/L2/L3 proactively
 
 #### integrator
 

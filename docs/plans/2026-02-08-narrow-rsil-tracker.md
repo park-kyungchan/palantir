@@ -87,9 +87,11 @@ Pipeline Skill Execution Complete
 | INFRA-v7 | /agent-teams-write-plan + /plan-validation-pipeline | P4+P5 | rsil-review S-2 | 10+5 | 15 | 0 | 0 |
 | INFRA-v7 | /permanent-tasks | — | rsil-review S-3 | 7+4 | 10 | 0 | 1 |
 | INFRA-v7 | /agent-teams-execution-plan | P6 | rsil-review S-4 | 6+4 | 10 | 0 | 0 |
-| **Total** | | | | **72** | **66** | **2** | **4** |
+| INFRA-v7 | CLAUDE.md | — | rsil-review S-6 | 9 | 9 | 0 | 0 |
+| INFRA-v7 | write-plan + plan-validation + protocol + hooks | P4+P5+X | rsil-review S-7 | 7+13 | 20 | 0 | 0 |
+| **Total** | | | | **92** | **86** | **2** | **4** |
 
-### Acceptance Rate: 92% (66/72)
+### Acceptance Rate: 93% (86/92)
 ### Rejection Reason: AD-15 Hook violation or API-level only (P4/P5 only)
 
 ---
@@ -346,6 +348,63 @@ These accepted findings have NOT been implemented yet — they are design improv
 **Integration Score:** 3.5/4 → 4/4
 **Files Modified:** execution-plan/SKILL.md (+7L, 597→604L)
 **Key insight:** V-3 semantic validation (EP-1) was the highest-value finding — structural §-number references are fragile against plan template evolution; semantic descriptions are resilient.
+
+### 3.10 CLAUDE.md (S-6) — 2026-02-10
+
+**Context:** RSIL Cycle 6 — CLAUDE.md v7.0 optimization review. 6 lenses, 9 RQs, 4 integration axes. Parallel with cosmetic residual fixes (3 items from Cycle 5).
+
+| ID | Finding | Lens | Severity | Status |
+|----|---------|------|----------|--------|
+| F-S6-01 | Phase category "5, 6+" → "5, 6" (misleading suffix) | L8 | FIX | APPLIED |
+| F-S6-02 | §6 Agent Selection Flow — 8-step decision pattern documented | L1 | FIX | APPLIED |
+| F-S6-03 | Phase overlap note missing (P2b∥P2, P2d∥P3) | L1 | FIX | APPLIED |
+| F-S6-04 | Spawn Quick Reference section needed in agent-catalog.md | L5 | FIX | APPLIED |
+| F-S6-05 | §6 "Directive Templates" reference name → "Spawn Quick Reference" | L8 | FIX | APPLIED (S-7) |
+| F-S6-06 | O-4 CLAUDE.md structural optimization (removal of duplicate blocks) | L5 | FIX | APPLIED |
+| F-S6-07 | O-2 Decision flow visualization for Lead | L1 | FIX | APPLIED |
+| F-S6-08 | Agent catalog category templates (10 categories) | L5 | FIX | APPLIED |
+| F-S6-09 | DA verification exemption not in CLAUDE.md | L4 | FIX | APPLIED (S-7) |
+
+**Totals:** 9 findings, 9 APPLIED, 0 REJECT, 0 DEFER
+**Files Modified:** CLAUDE.md, agent-catalog.md (+68L)
+
+### 3.11 write-plan + plan-validation + protocol + hooks (S-7) — 2026-02-11
+
+**Context:** RSIL Cycle 7 — Multi-track RSIL with 4 parallel agents. 7-axis integration audit (write-plan + plan-validation ↔ CLAUDE.md + catalog + protocol) and S-7 protocol+hooks audit (5 files, 8 lenses).
+
+**Integration Audit (7 axes, 7 findings):**
+
+| ID | Axis | Severity | Files | Status |
+|----|------|----------|-------|--------|
+| IA-1 | 2 | FIX | plan-validation ↔ CLAUDE.md | APPLIED (DA exemption) |
+| IA-2 | 4 | FIX | plan-validation ↔ DA agent def | APPLIED (Write tool + read-only note) |
+| IA-3 | 7 | FIX | CLAUDE.md §6 ↔ agent-catalog | APPLIED (naming mismatch) |
+| IA-4 | 3 | WARN | write-plan ↔ protocol | APPLIED (TEAM-MEMORY instruction) |
+| IA-5 | 6 | WARN | write-plan ↔ catalog | APPLIED (tool list note) |
+| IA-6 | 6 | WARN | plan-validation ↔ catalog | NOTED (amplifies IA-2) |
+| IA-7 | 1 | INFO | write-plan ↔ catalog | NOTED (architect vs plan-writer) |
+
+**Protocol + Hooks Audit (5 files, 13 findings):**
+
+| ID | Section | Severity | Target | Status |
+|----|---------|----------|--------|--------|
+| S7-A1 | Protocol | FIX | agent-common-protocol.md:24-29 | APPLYING (TaskGet fallback) |
+| S7-A2 | Protocol | WARN | agent-common-protocol.md:106-110 | ACCEPTED (agent memory sparse) |
+| S7-A3 | Protocol | WARN | agent-common-protocol.md (global) | ACCEPTED (edge cases) |
+| S7-A4 | Protocol | INFO | agent-common-protocol.md:55-59 | NOTED (condition overlap) |
+| S7-B1 | Hooks | FIX | on-session-compact.sh:49 | APPLYING (JSON escaping) |
+| S7-B2 | Hooks | WARN | on-pre-compact.sh:42-62 | ACCEPTED (hookOutput missing) |
+| S7-B3 | Hooks | WARN | CLAUDE.md:201-214 | ACCEPTED (PreCompact mention) |
+| S7-B4 | Hooks | INFO | on-subagent-start.sh:53-65 | NOTED (GC legacy) |
+| S7-B5 | Hooks | INFO | on-subagent-start.sh:12-14 | NOTED (jq optimization) |
+| S7-B6 | Hooks | INFO | on-rtd-post-tool.sh:124-128 | NOTED (SendMessage handling) |
+| S7-C1 | Optimization | FIX | agent-common-protocol.md (missing) | APPLYING (Evidence Sources) |
+| S7-C2 | Optimization | WARN | 22 agent .md files | ACCEPTED (RTD line duplication) |
+| S7-C3 | Optimization | INFO | Multiple files | NOTED (PT redundancy intentional) |
+
+**Totals:** 20 findings (7 integration + 13 protocol), 6 FIX (applying), 7 WARN (accepted), 7 INFO (noted)
+**Integration Score:** 4/7 axes passing → 7/7 after fixes
+**Files Modified:** CLAUDE.md (+2L), plan-validation/SKILL.md (~2L), write-plan/SKILL.md (+2L), agent-common-protocol.md (+3L), on-session-compact.sh (+1L)
 
 ---
 

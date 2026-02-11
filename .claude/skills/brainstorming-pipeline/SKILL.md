@@ -10,7 +10,7 @@ Agent Teams-native Phase 0-3 orchestrator. Transforms a feature idea into a rese
 
 **Announce at start:** "I'm using brainstorming-pipeline to orchestrate Phase 0-3 for this feature."
 
-**Core flow:** PT Check (Lead) → Discovery (Lead) → Deep Research (research-coordinator or direct researcher) → Architecture (architect) → Clean Termination
+**Core flow:** PT Check (Lead) → Tier Classification → Discovery (Lead) → Deep Research (research-coordinator or direct researcher) → Architecture (architect or architecture-coordinator) → Clean Termination
 
 ## When to Use
 
@@ -87,6 +87,21 @@ provides additional context for Phase 1 discovery. Use it alongside the Dynamic 
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
 the TaskCreate and return a summary. Then continue to Phase 1.1.
+
+---
+
+### Pipeline Tier Routing (D-001/D-005)
+
+After PT check, classify pipeline tier from initial scope estimate:
+
+| Tier | Phase Coverage | Architecture Route |
+|------|---------------|-------------------|
+| TRIVIAL | Skip P2/P3 entirely → go to P6 | N/A |
+| STANDARD | P1 → P2 (Lead-direct researcher) → P3 (Lead-direct architect) | Single `architect` |
+| COMPLEX | P1 → P2 (research-coordinator) → P3 (architecture-coordinator) | `architecture-coordinator` + 3 architects |
+
+Tier is confirmed at Scope Crystallization (1.4). If TRIVIAL, skip to Clean Termination
+with a lightweight scope statement and route user to `/agent-teams-execution-plan` directly.
 
 ---
 
@@ -426,6 +441,9 @@ Use `sequential-thinking` for all Lead decisions in this phase.
 
 ### 3.1 Architect Spawn
 
+**Tier-based routing (D-001/D-005):**
+
+**STANDARD tier (Lead-direct):**
 ```
 Task tool:
   subagent_type: "architect"
@@ -438,6 +456,16 @@ Files: {scope from P1 + P2 discoveries}
 PT-ID: {PERMANENT Task ID} | PT-v{N}
 task-context.md: {scope, research L2 summaries, architecture expectations, constraints}
 ```
+
+**COMPLEX tier (coordinator route):**
+```
+1. Spawn architecture-coordinator (subagent_type: "architecture-coordinator")
+2. Pre-spawn: structure-architect, interface-architect, risk-architect
+3. Coordinator verifies workers and distributes architecture tasks
+4. Each architect applies their ontological lens (ARE/RELATE/IMPACT)
+5. Coordinator consolidates into unified architecture
+```
+For COMPLEX tier, Lead follows CLAUDE.md §6 Coordinator Management protocol.
 
 ### 3.2 Understanding Verification
 

@@ -227,3 +227,15 @@
 - **AC-0 anchors plan to reality:** Every task starts with "Read current file, verify context matches." Line numbers drift between plan writing and execution — AC-0 catches this at task start, not at edit failure.
 - **Bootstrap templates ≠ live files:** When pilot files already exist, templates are documentation (reference formats for future projects), not files to create. Distinguish clearly to prevent overwrite.
 - **Cross-implementer contracts are the integration spec:** With zero file overlap, the only coordination needed is shared data format (events.jsonl schema, .current-project format, DP naming). Specify these explicitly in §6.
+
+## Lead Architecture Redesign (2026-02-11)
+
+Details: `lead-arch-redesign.md` (Phase 3 architecture + Phase 4 detailed design)
+
+### Key Principles (consolidated)
+- **Co-locality principle:** Creator + primary consumer of shared artifacts → same implementer scope. Zero cross-implementer reads.
+- **Verbatim shared interface:** COORDINATOR REFERENCE TABLE in §6 eliminates cross-implementer dependency. Plan IS coordination.
+- **Complete content for CREATE, old/new for MODIFY:** Infrastructure .md files need full content (65-110L each). Section rewrites need atomic replacement.
+- **Grep verification for mechanical tasks:** Pattern-based spec + grep count assertion (25 new matches, 0 old) for high-count changes.
+- **Three-mode defensive design:** Flat (primary) + nested (future) + Lead-direct (fallback) — zero extra implementation.
+- **File count correction discipline:** Architecture 37 → Plan 34, each removal justified. Never silently adjust scope.

@@ -176,7 +176,7 @@ cardinality_specifications:
   MANY_TO_MANY:
     definition: "Objects of Type A can link to many of Type B and vice versa"
     fk_location: "NEITHER - uses join table"
-    backing_mechanism: "JOIN_TABLE (mandatory) or OBJECT_BACKED"
+    backing_mechanism: "JOIN_TABLE (simple M:N) or OBJECT_BACKED (extends M:1 pattern with intermediary ObjectType for M:N with properties)"
     join_table_requirements:
       required_columns:
         - "Column matching source ObjectType primary key"
@@ -260,8 +260,12 @@ link_traversal:
     
     performance_limits:
       max_search_around_operations: 3
-      scale_threshold: "50,000 objects"
-      recommendation: "Use join materializations above threshold"
+      scale_limits:
+        osv2_search_around: "10,000,000 objects"
+        osv1_search_around: "100,000 objects"
+        object_loading: "100,000 objects (>10,000 may timeout)"
+        pagination: "10,000 per page"
+      recommendation: "Monitor timeout risk above 10K objects; use join materializations for large traversals"
     
   api_names:
     sourceApiName:
@@ -367,6 +371,12 @@ linktype_validation_rules:
     name: "Plural names for many-side"
     condition: "API name on 'many' side should be plural (employees not employee)"
     severity: "WARNING"
+
+  - rule_id: "LT009"
+    name: "No cross-ontology links"
+    condition: "Both source and target ObjectTypes must belong to the same Ontology"
+    severity: "ERROR"
+    note: "Cross-ontology linking is NOT supported at runtime"
 ```
 
 ### LinkType anti-patterns
@@ -588,7 +598,7 @@ interface:
 
 ### Interface vs ObjectType comparison
 
-Interfaces are **abstract** with schemas defined only by shared properties, no dataset backing, and cannot be instantiated directly. ObjectTypes are **concrete** with schemas defined by shared or local properties, backed by datasets, and can be instantiated as objects. Interfaces appear with dashed-line icons in UI to distinguish them.
+Interfaces are **abstract** with schemas defined by local properties (recommended) and/or shared properties (optional, auto-mapping convenience), no dataset backing, and cannot be instantiated directly. ObjectTypes are **concrete** with schemas defined by shared or local properties, backed by datasets, and can be instantiated as objects. Interfaces appear with dashed-line icons in UI to distinguish them.
 
 ```yaml
 interface_vs_objecttype:
@@ -601,7 +611,7 @@ interface_vs_objecttype:
     
   interface:
     nature: "Abstract"
-    schema_source: "ONLY shared properties"
+    schema_source: "Local properties (recommended) and/or SharedProperties (optional, auto-mapping)"
     data_backing: "NOT backed by datasets"
     instantiation: "Must instantiate as specific ObjectType"
     visual_indicator: "Dashed line icons"
@@ -1416,7 +1426,7 @@ integration_points:
     
     interface_actions:
       create_object: "Create object of any implementing type"
-      modify_object: "Only interface shared properties modifiable"
+      modify_object: "Only interface properties (local or shared) modifiable"
       delete_object: "Delete any implementing object"
       limitation: "Cannot reference interface link type constraints directly"
   

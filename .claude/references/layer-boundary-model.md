@@ -35,7 +35,7 @@ validation engine — making L2 unnecessary for most cases.
 
 **L1 Procedure:**
 1. Read each agent .md YAML frontmatter
-2. Verify disallowedTools match role (e.g., devils-advocate has no Write/Edit/Bash)
+2. Verify disallowedTools match role (e.g., spec-reviewer has no Write/Edit/Bash)
 3. Compare agent behavior (from L2 output) against agent-common-protocol.md procedures
 4. Verify lifecycle: spawn → understand → plan → execute → L1/L2/L3 → report
 

@@ -1,6 +1,6 @@
 # Shared Protocol for All Teammates
 
-This covers procedures common to all teammate agent types (22 agents across 10 categories). Role-specific guidance is in each agent's own .md file.
+This covers procedures common to all teammate agent types (42 agents across 13 categories). Role-specific guidance is in each agent's own .md file.
 
 > **Coordinator routing:** If your work is assigned through a coordinator, "message Lead"
 > in the sections below means "message your coordinator." For emergencies or coordinator
@@ -99,24 +99,65 @@ event logging needed.
 If you notice you're running low on context: save all work immediately, then tell Lead.
 Lead will shut you down and re-spawn you with your saved progress.
 
-### L1/L2 Project Goal Linkage (Optional)
+### L1 Canonical Format (Mandatory Keys)
 
-When working on a project with RTD active, include goal references in your deliverables:
+All L1-index.yaml files MUST include these top-level keys:
 
-- **L1 YAML:** Add `pt_goal_link:` field to findings or task entries, referencing
-  the requirement (R-{N}) or architecture decision (AD-{M}) your work addresses.
-  ```yaml
-  findings:
-    - id: F-1
-      summary: "Hooks fire for all sessions"
-      pt_goal_link: "R-5 (Agent Teams Shared)"
-  ```
+```yaml
+agent: {your-role-id}           # e.g., "static-verifier"
+phase: P{N}                      # e.g., "P2b"
+status: complete | in_progress | blocked
+timestamp: {ISO 8601}
 
-- **L2 MD:** Add a `## PT Goal Linkage` section at the end connecting your work
-  to the project's requirements and architecture decisions.
+# Domain-specific keys below (per your agent .md specification)
+# ...
 
-This is backward-compatible — omitting these fields does not break any process.
-Lead uses them for traceability.
+# Recommended footer
+evidence_count: {N}
+pt_goal_links:
+  - "R-1 (Requirement Name)"
+  - "AD-3 (Decision Name)"
+```
+
+**4 mandatory keys:** `agent`, `phase`, `status`, `timestamp`
+**2 recommended keys:** `evidence_count`, `pt_goal_links`
+Domain-specific keys: per your agent .md (e.g., `findings:`, `tasks:`, `workers:`)
+
+### L2 Canonical Section Order
+
+All L2-summary.md files MUST follow this section order:
+
+1. `## Summary` — 1-3 sentence executive summary (ALWAYS FIRST)
+2. `## {Domain-Specific Sections}` — Findings, decisions, reviews, etc. (per your role)
+3. `## PT Goal Linkage` — Connecting work to requirements/decisions (recommended)
+4. `## Evidence Sources` — Key references, MCP findings, verification data (ALWAYS present)
+5. `## Downstream Handoff` — Coordinators ONLY, ALWAYS LAST (see D-011 protocol)
+
+**Rules:** Summary first. Evidence Sources second-to-last. Downstream Handoff last
+(coordinators only). Domain sections in between.
+
+### L3 Format
+
+No standardization. L3 is raw work product. Directory structure at your discretion.
+Only requirement: L3 lives in `L3-full/` subdirectory.
+
+### Downstream Handoff (Coordinators Only)
+
+If you are a coordinator, your L2 MUST end with a `## Downstream Handoff` section
+containing these 6 categories (populate all, even if empty):
+
+```markdown
+## Downstream Handoff
+### Decisions Made (forward-binding)
+### Risks Identified (must-track)
+### Interface Contracts (must-satisfy)
+### Constraints (must-enforce)
+### Open Questions (requires resolution)
+### Artifacts Produced
+```
+
+Lead reads this section to construct the next phase's directive. The next-phase agent
+reads your L2 directly for detailed context. Reference-based, not paraphrase-based.
 
 ---
 
@@ -147,6 +188,7 @@ your understanding with Lead before resuming work.
 
 ## Agent Memory
 
+### Per-Agent Memory
 Check your persistent memory at `~/.claude/agent-memory/{role}/MEMORY.md` when you start.
 Update it when you finish — use Read-Merge-Write (read current, merge new findings, write back).
 
@@ -159,3 +201,46 @@ What to save:
 What NOT to save:
 - Session-specific context (current task details, temporary state)
 - Anything that duplicates protocol or agent .md instructions
+
+### Category Memory (Shared)
+Your category has a shared memory file at `.claude/agent-memory/{category}/MEMORY.md`
+(e.g., `research/MEMORY.md`, `verification/MEMORY.md`). This captures cross-role patterns
+within your category.
+
+**Rules:**
+- **Read it** at the start of your work for category-level context
+- **Only coordinators write** to category memory (single-writer pattern to avoid conflicts)
+- If you are a worker: report noteworthy patterns to your coordinator for inclusion
+- If you are a coordinator: update category memory at the end of each coordination cycle
+- Keep under 100 lines. Use Read-Merge-Write pattern.
+
+---
+
+## Error Handling
+
+### Tier 1: Self-Recoverable
+Errors you can handle without external help. Log in your L2 output and continue.
+- File not found → Create from template or skip with warning
+- Tool parse error → Use fallback or retry once
+- MCP server timeout → Proceed without that tool's data, note in L2
+
+### Tier 2: Escalation-Required
+Errors requiring external help. Save your work immediately, then escalate.
+1. Write current L1/L2/L3 files (your recovery checkpoint)
+2. SendMessage to coordinator (or Lead if no coordinator):
+   - What failed: exact error description
+   - What you tried: Tier 1 recovery attempt (if any)
+   - What you need: specific ask (re-assign, more context, intervention)
+   - Current status: what work is saved and what is lost
+3. Wait for response. Do NOT continue working on the failed task.
+4. If no response in 5 minutes: SendMessage to Lead directly.
+
+### Tier 3: Pipeline-Affecting
+Errors that stop the pipeline. Typically handled by coordinators and Lead.
+If you detect a Tier 3 error as a worker:
+1. Save all work immediately
+2. Escalate to coordinator with URGENT flag in SendMessage
+3. The coordinator/Lead will determine: retry, skip, or abort
+
+**Tier mapping:** File not found = Tier 1. Context pressure = Tier 2. Gate failure = Tier 3.
+Worker unresponsive = Tier 2 (coordinator handles). Coordinator unresponsive = Tier 3 (Lead handles).

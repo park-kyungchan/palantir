@@ -106,9 +106,9 @@ Everything achievable through these native mechanisms:
   PERMANENT Task pattern: [PERMANENT] subject, versioned PT-v{N}.
 - **Agent Teams:** TeamCreate, TeamDelete, SendMessage (message, broadcast,
   shutdown_request/response, plan_approval_response). Team config with member list.
-- **Task Tool:** subagent_type (researcher, architect, implementer, tester,
-  integrator, devils-advocate, general-purpose, Explore, Plan, Bash,
-  claude-code-guide, superpowers:code-reviewer). Parameters: team_name, name,
+- **Task Tool:** subagent_type (codebase-researcher, external-researcher, architect,
+  implementer, tester, integrator, devils-advocate, spec-reviewer, code-reviewer,
+  Plan, Bash, claude-code-guide — see agent-catalog.md for full 22-agent list). Parameters: team_name, name,
   mode, model, max_turns, run_in_background, resume.
 - **Skills:** YAML frontmatter, dynamic context injection (bang-backtick pattern), $ARGUMENTS.
 - **MCP Tools:** sequential-thinking, tavily (search/extract/crawl/map/research),
@@ -214,7 +214,7 @@ Both agents produce structured findings reports.
 - L1 Optimality Score (X/10)
 - Top 3 Recommendations
 
-**[B] Explore output should include:**
+**[B] codebase-researcher output should include:**
 - Axis Results Table: Axis, File A, File B, Status, Findings
 - Findings Detail: Axis, Severity, File A (path:line + content), File B (path:line + content), Inconsistency, Specific fix
 - Integration Score (X/N axes passing)
@@ -304,7 +304,7 @@ Instruction: "Research CC documentation for each RQ.
               For L2: explain why L1 is insufficient."
 ```
 
-**[B] Explore directive:**
+**[B] codebase-researcher directive:**
 ```
 Static:  Integration Audit Methodology (S-E) + Output Format (S-G [B] section)
 Dynamic: Integration Axes from Step 3 (file pairs + consistency criteria)
@@ -338,7 +338,7 @@ one-shot Task tool invocations.
   prompt: {constructed directive from R-0 Step 4}
 
 [B] Task tool:
-  subagent_type: "Explore"
+  subagent_type: "codebase-researcher"
   prompt: {constructed directive from R-0 Step 4}
 ```
 

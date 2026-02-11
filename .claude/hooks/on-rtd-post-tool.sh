@@ -3,9 +3,7 @@
 # Captures ALL tool calls from ALL sessions as JSONL events.
 # Async mode (settings.json) — zero latency impact on agentic loop.
 # Any error → exit 0 (never block pipeline). AD-28.
-
-set -e
-trap 'exit 0' ERR
+# All error paths use explicit || exit 0 fallbacks.
 
 INPUT=$(cat)
 

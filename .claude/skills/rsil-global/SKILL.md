@@ -237,10 +237,10 @@ Otherwise                           → Skip G-2, proceed to G-3
 
 Most runs skip this phase entirely. Only triggered by Tier 2 escalation.
 
-Spawn an Explore agent to investigate systemic anomalies:
+Spawn a codebase-researcher agent to investigate systemic anomalies:
 
 ```
-subagent_type: "Explore"
+subagent_type: "codebase-researcher"
 prompt:
   "Investigate the following INFRA anomalies detected by /rsil-global:
    {list anomalies from Tier 2 with file paths and observations}
@@ -432,7 +432,7 @@ Hook    → REJECT unconditionally (AD-15: 8→3 inviolable)
 - Findings-only output — user approves before any changes
 - AD-15 inviolable — Category A REJECT, B ACCEPT, C DEFER
 - Lenses generate observations, not prescriptions
-- Tier 3 (Explore agent) is the exception, not the norm
+- Tier 3 (codebase-researcher agent) is the exception, not the norm
 - Record everything — even "clean" runs update agent memory statistics
 - Self-healing through persistence — unfixed BREAKs are re-detected next session
 - Terminal — no auto-chaining to /rsil-review or other skills

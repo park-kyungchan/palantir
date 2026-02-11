@@ -20,7 +20,10 @@ fi
 if [ -n "${CLAUDE_CODE_TASK_LIST_ID:-}" ]; then
   TASK_DIR="/home/palantir/.claude/tasks/$CLAUDE_CODE_TASK_LIST_ID/"
 else
-  TASK_DIR=$(ls -td /home/palantir/.claude/tasks/*/ 2>/dev/null | head -1)
+  TASK_DIR=""
+  for d in /home/palantir/.claude/tasks/*/; do
+    [ -d "$d" ] && TASK_DIR="$d" && break
+  done
 fi
 if [ -n "$TASK_DIR" ]; then
   SNAPSHOT_FILE="$LOG_DIR/pre-compact-tasks-$(date '+%s').json"
@@ -44,16 +47,17 @@ fi
 if [ -n "${CLAUDE_CODE_TASK_LIST_ID:-}" ]; then
   TEAM_DIR="$LOG_DIR/$CLAUDE_CODE_TASK_LIST_ID"
 else
-  TEAM_DIR=$(ls -td "$LOG_DIR"/*/ 2>/dev/null | head -1)
+  TEAM_DIR=""
+  for d in "$LOG_DIR"/*/; do
+    [ -d "$d" ] && TEAM_DIR="$d" && break
+  done
 fi
 if [ -n "$TEAM_DIR" ] && [ -d "$TEAM_DIR" ]; then
   MISSING_AGENTS=""
   for agent_dir in "$TEAM_DIR"/phase-*/*/; do
     [ -d "$agent_dir" ] || continue
     agent_name=$(basename "$agent_dir")
-    has_l1=$(ls "$agent_dir"/L1-index.yaml 2>/dev/null)
-    has_l2=$(ls "$agent_dir"/L2-summary.md 2>/dev/null)
-    if [ -z "$has_l1" ] || [ -z "$has_l2" ]; then
+    if [ ! -f "$agent_dir/L1-index.yaml" ] || [ ! -f "$agent_dir/L2-summary.md" ]; then
       MISSING_AGENTS="$MISSING_AGENTS $agent_name"
     fi
   done
@@ -69,7 +73,7 @@ if [ -f "$PROJECT_FILE" ]; then
   OBS_DIR="/home/palantir/.agent/observability/$RTD_SLUG"
   RTD_INDEX="$OBS_DIR/rtd-index.md"
 
-  if [ -d "$OBS_DIR" ] && command -v jq &>/dev/null; then
+  if [ -d "$OBS_DIR" ]; then
     SNAPSHOT_DIR="$OBS_DIR/snapshots"
     mkdir -p "$SNAPSHOT_DIR"
     SNAPSHOT_FILE="$SNAPSHOT_DIR/$(date '+%s')-pre-compact.json"
@@ -92,6 +96,26 @@ if [ -f "$PROJECT_FILE" ]; then
 
     echo "[$TIMESTAMP] PRE_COMPACT | RTD snapshot: $SNAPSHOT_FILE (DP=$LAST_DP, Phase=$ACTIVE_PHASE)" \
       >> "$LOG_DIR/compact-events.log"
+  fi
+fi
+
+# Output hookSpecificOutput for agent context
+COMPACT_MSG=""
+if [ -n "$MISSING_AGENTS" ]; then
+  COMPACT_MSG="PreCompact WARNING: Agents missing L1/L2:$MISSING_AGENTS — save work immediately."
+fi
+
+if [ -n "$COMPACT_MSG" ]; then
+  if command -v jq &>/dev/null; then
+    jq -n --arg msg "$COMPACT_MSG" '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreCompact",
+        "additionalContext": $msg
+      }
+    }'
+  else
+    ESCAPED_MSG=$(printf '%s' "$COMPACT_MSG" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"$ESCAPED_MSG\"}}"
   fi
 fi
 

@@ -16,6 +16,14 @@ official_definition:
     - https://www.palantir.com/docs/foundry/ontology/overview
   verification_date: "2026-02-08"
 
+  attribution: "Community-derived methodology — NOT from official Palantir documentation"
+  note: |
+    This decomposition methodology was synthesized using authentic Palantir Ontology
+    concepts (ObjectType, LinkType, etc.) but the 8-phase sequential workflow, decision
+    trees, indicator counts, and output templates are locally created. Palantir does NOT
+    provide a formal multi-phase decomposition guide. Individual component concepts ARE
+    transferable Palantir knowledge; the systematic workflow is OUR approach.
+
   definition_en: |
     Ontology Decomposition is the systematic methodology for analyzing an existing codebase,
     data model, or business domain and producing a complete set of Palantir Ontology definitions.

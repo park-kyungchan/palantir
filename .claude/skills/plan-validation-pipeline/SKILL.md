@@ -10,7 +10,7 @@ Phase 5 (Plan Validation) orchestrator. Challenges the implementation plan from 
 
 **Announce at start:** "I'm using plan-validation-pipeline to orchestrate Phase 5 (Plan Validation) for this feature."
 
-**Core flow:** Input Discovery → Team Setup → Devils-Advocate Spawn → Challenge Execution → Gate 5 → Clean Termination
+**Core flow:** PT Check → Input Discovery → Team Setup → Validation Spawn (tier-routed) → Challenge Execution → Gate 5 → Clean Termination
 
 ## When to Use
 
@@ -123,13 +123,22 @@ Create TEAM-MEMORY.md with Lead and devils-advocate sections.
 
 ---
 
-## Phase 5.3: Devils-Advocate Spawn
+## Phase 5.3: Validation Spawn
 
 Devils-advocate is exempt from the understanding check — critical analysis itself demonstrates comprehension. Phase 5 is the adversarial challenge by design.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Spawn
+### Tier-Based Routing (D-001/D-005)
+
+| Tier | Route | Agents |
+|------|-------|--------|
+| STANDARD | Lead-direct | Single `devils-advocate` |
+| COMPLEX | Coordinator | `validation-coordinator` + correctness-challenger, completeness-challenger, robustness-challenger |
+
+> TRIVIAL tier skips Phase 5 entirely.
+
+### Spawn (STANDARD — Lead-direct)
 
 ```
 Task tool:
@@ -139,8 +148,16 @@ Task tool:
   mode: "default"
 ```
 
-> Devils-advocate is a Lead-direct agent (CLAUDE.md §6). No coordinator involved —
-> Lead spawns and manages the devils-advocate directly.
+### Spawn (COMPLEX — Coordinator Route)
+
+```
+1. Spawn validation-coordinator (subagent_type: "validation-coordinator")
+2. Pre-spawn: correctness-challenger, completeness-challenger, robustness-challenger
+3. Each challenger focuses on specific challenge categories (C-1/C-2 correctness,
+   C-3/C-4 completeness, C-5/C-6 robustness)
+4. Coordinator consolidates into unified verdict
+```
+For COMPLEX tier, follow CLAUDE.md §6 Coordinator Management protocol.
 
 ### [DIRECTIVE] Construction
 
