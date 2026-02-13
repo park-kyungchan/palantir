@@ -1,1 +1,0 @@
-[2026-02-08 14:54:31] TOOL_FAILURE | agent=unknown | tool=TeamCreate | error=Already leading team "infra-e2e-optimization". A leader can only manage one team at a time. Use TeamDelete to end the current team before creating a new one.

@@ -7,6 +7,8 @@ description: |
   Spawned in Phase 5 (Plan Validation). Max 1 instance.
 model: opus
 permissionMode: default
+memory: project
+color: yellow
 maxTurns: 40
 tools:
   - Read
@@ -19,11 +21,13 @@ tools:
 disallowedTools:
   - TaskCreate
   - TaskUpdate
+  - Edit
+  - Bash
 ---
 # Validation Coordinator
 
-Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
-Read `.claude/references/coordinator-shared-protocol.md` for coordinator-specific protocol.
+Follow `.claude/references/coordinator-shared-protocol.md` for shared procedures.
+Follow `.claude/references/agent-common-protocol.md` for common agent procedures.
 
 ## Role
 You coordinate Phase 5 plan validation across three specialist challengers:

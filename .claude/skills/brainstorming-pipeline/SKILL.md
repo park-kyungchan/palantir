@@ -49,38 +49,50 @@ The following is auto-injected when this skill loads. Use it for Phase 1 Recon.
 
 ---
 
-## Phase 0: PERMANENT Task Check
+## A) Phase 0: PERMANENT Task Check
 
 Lightweight step (~500 tokens). No teammates spawned, no verification required.
 
-Call `TaskList` and search for tasks with `[PERMANENT]` in their subject.
+Call `TaskList` and search for a task with `[PERMANENT]` in its subject.
 
 ```
 TaskList result
      │
-┌────┼────────┐
-none  1        2+
-│     │        │
-▼     ▼        ▼
-Note  Validate  Match $ARGUMENTS
-"no PT" match   against each
-→ P1  → P1     │
-              ┌──┴──┐
-            match  no match
-            → P1   → AskUser
+┌────┴────┐
+found      not found
+│           │
+▼           ▼
+TaskGet →   AskUser: "No PERMANENT Task found.
+read PT     Create one for this feature?"
+│           │
+▼         ┌─┴─┐
+Continue  Yes   No
+to B)     │     │
+          ▼     ▼
+        /permanent-tasks    Continue to B)
+        creates PT-v1       without PT
+        → then B)
 ```
 
-If a [PERMANENT] task is found and matches `$ARGUMENTS`, its content (user intent,
-impact map, prior decisions) provides additional context for Phase 1 discovery.
-If no PT exists, one will be created at Gate 1 (1.5).
+If a PERMANENT Task exists, read it via TaskGet. Its content (user intent, codebase impact map,
+architecture decisions, phase status, constraints) provides authoritative cross-phase context.
+Use it alongside the Dynamic Context above.
+
+If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
+the TaskCreate and return a summary. Then continue to B) Core Workflow.
+
+If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
+User Intent, ask the user to clarify which feature to work on before proceeding.
 
 ---
 
-## Phase 1: Discovery (Lead Only)
+## B) Phase 1-3: Core Workflow
+
+### Phase 1: Discovery (Lead Only)
 
 Lead-only phase. No teammates spawned.
 
-### 1.1 Structured Recon
+#### 1.1 Structured Recon
 
 Synthesize the Dynamic Context above with targeted investigation:
 
@@ -90,7 +102,7 @@ Synthesize the Dynamic Context above with targeted investigation:
 
 No files are created in this step.
 
-### 1.2 Freeform Q&A with Category Awareness
+#### 1.2 Freeform Q&A with Category Awareness
 
 Engage the user in natural conversation to understand the feature. One question at a time.
 Multiple choice via `AskUserQuestion` preferred, open-ended when appropriate.
@@ -100,7 +112,7 @@ Multiple choice via `AskUserQuestion` preferred, open-ended when appropriate.
 Internally track which categories have been explored:
 
 | Category | What to Understand |
-|----------|--------------------|
+|----------|-------------------|
 | PURPOSE | What are we building and why? |
 | SCOPE | Where are the boundaries? |
 | CONSTRAINTS | Invariants, limitations, non-negotiables? |
@@ -131,7 +143,7 @@ PURPOSE answered
 On failure: user refines (loop to failed criterion) or pivots (restart from PURPOSE).
 User can override: "I want to proceed anyway" — log override in checkpoint.
 
-### 1.2.5 Phase 1 Checkpoint
+#### 1.2.5 Phase 1 Checkpoint
 
 After feasibility check passes (or user overrides) AND at least 2 Q&A categories are
 covered, create a lightweight checkpoint to protect against auto-compact:
@@ -156,25 +168,25 @@ covered, create a lightweight checkpoint to protect against auto-compact:
 
 On recovery: read qa-checkpoint.md, resume Q&A from last covered category.
 
-### 1.3 Approach Exploration
+#### 1.3 Approach Exploration
 
 When the conversation reaches strategy decisions, present a structured comparison:
 
 ```markdown
 | Criterion         | Option A: {name}  | Option B: {name}  | Option C: {name} |
-|-------------------|--------------------|--------------------|--------------------|
-| Complexity        | LOW / MED / HIGH   |                    |                    |
-| Risk              | LOW / MED / HIGH   |                    |                    |
-| Phase 2 Research  | {scope desc}       |                    |                    |
-| Phase 3 Arch      | {expected effort}  |                    |                    |
-| File Count (est)  | ~N files           |                    |                    |
-| Recommendation    | *                  |                    |                    |
+|-------------------|--------------------|--------------------|-------------------|
+| Complexity        | LOW / MED / HIGH   |                    |                   |
+| Risk              | LOW / MED / HIGH   |                    |                   |
+| Phase 2 Research  | {scope desc}       |                    |                   |
+| Phase 3 Arch      | {expected effort}  |                    |                   |
+| File Count (est)  | ~N files           |                    |                   |
+| Recommendation    | *                  |                    |                   |
 ```
 
 Always 2-3 options. Lead with the recommended option and explain why.
 After user selection, Q&A may continue for remaining categories.
 
-### 1.4 Scope Crystallization
+#### 1.4 Scope Crystallization
 
 When you judge sufficient understanding, propose a Scope Statement for user approval:
 
@@ -211,7 +223,7 @@ route to `/agent-teams-execution-plan`.
 - User rejects → return to Q&A. No iteration limit on Phase 1 dialogue.
 - User approves → proceed to Gate 1.
 
-### 1.5 Gate 1
+#### 1.5 Gate 1
 
 Evaluate per `gate-evaluation-standard.md` §6. Key criteria: Scope approved,
 tier determined with rationale, research scope defined, Phase 3 entry clear,
@@ -227,7 +239,7 @@ Invoke `/permanent-tasks` with conversation context (Scope Statement + approach 
 Creates PT-v1 with full 5-section template. Note the PT task ID for Step 2.
 Control returns to Lead automatically after skill completion.
 
-**Step 2: Create GC-v1**
+**Step 2: Create GC-v1 (scratch)**
 
 `.agent/teams/{session-id}/global-context.md`:
 
@@ -244,6 +256,9 @@ tier: TRIVIAL | STANDARD | COMPLEX
 Body: **## Scope** (verbatim from 1.4) · **## Phase Pipeline Status** (P1 COMPLETE,
 P2/P3 PENDING) · **## Constraints** (from Q&A) · **## Decisions Log** (table:
 #/Decision/Rationale/Phase)
+
+> Note: GC is session-scoped scratch only. Cross-phase state is in PT. GC holds
+> scope snapshot, pipeline status, and constraint/decision drafts for session recovery.
 
 **Step 3: Create orchestration-plan.md**
 
@@ -268,14 +283,14 @@ format. Include phase: 1, result: APPROVED, date, and pass/fail for each G1 crit
 
 ---
 
-## Phase 2: Deep Research
+### Phase 2: Deep Research
 
 Researcher teammates execute research. Lead verifies understanding before approving work.
 Protocol execution follows CLAUDE.md §6 and §10.
 
-### 2.1 Research Scope Determination
+#### 2.1 Research Scope Determination
 
-Read GC-v1 "Phase 2 Research Needs" and determine:
+Read PT §Phase 2 Research Needs (from /permanent-tasks) and determine:
 
 | Domains | Researchers | Strategy |
 |---------|-------------|----------|
@@ -287,14 +302,14 @@ Read GC-v1 "Phase 2 Research Needs" and determine:
 - 1 researcher → Lead-direct (spawn and manage directly)
 - 2+ researchers → spawn `research-coordinator` to manage them
 
-### 2.2 Team Setup
+#### 2.2 Team Setup
 
 ```
 TeamCreate → team_name: "{feature-name}"
 Update orchestration-plan.md with Phase 2 details
 ```
 
-### 2.3 Research Team Spawn + Verification
+#### 2.3 Research Team Spawn + Verification
 
 **Coordinator route (2+ researchers):**
 
@@ -306,7 +321,7 @@ Update orchestration-plan.md with Phase 2 details
      name: "research-coord"
      mode: "default"
    ```
-   Directive includes: research scope, PT context, Impact Map excerpt, worker types needed
+   Directive includes: research scope, PT-ID for TaskGet, Impact Map excerpt, worker types needed
 
 2. Pre-spawn researchers (same team, choose agent type by research domain):
    - Local codebase analysis → `subagent_type: "codebase-researcher"`
@@ -345,7 +360,7 @@ task-context.md: {research scope, deliverables, exclusions}
 4. Researcher defends with specific evidence
 5. Lead verifies or rejects (max 3 attempts)
 
-### 2.4 Research Execution
+#### 2.4 Research Execution
 
 Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequential-thinking.
 
@@ -361,12 +376,12 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
 └── L3-full/         (raw data, code snippets, external docs)
 ```
 
-### 2.5 Gate 2
+#### 2.5 Gate 2
 
 | # | Criterion |
 |---|-----------|
 | G2-1 | All researcher L1/L2 artifacts exist (or coordinator consolidated L1/L2) |
-| G2-2 | All research needs from GC-v1 covered |
+| G2-2 | All research needs from PT covered |
 | G2-3 | Sufficient information for Phase 3 |
 | G2-4 | No unresolved critical unknowns |
 | G2-5 | L1/L2 quality meets standard |
@@ -374,32 +389,26 @@ Researchers work with: Read, Glob, Grep, WebSearch, WebFetch, context7, sequenti
 **Gate Audit:** Optional for STANDARD/COMPLEX (see `gate-evaluation-standard.md` §6).
 
 **On APPROVE:**
-1. Update global-context.md → GC-v2 with these additions:
-   ```markdown
-   ## Research Findings
-   {Per-domain key findings, gaps, and recommendations from researcher L2s}
-
-   ## Codebase Constraints
-   {Technical constraints discovered during research that affect architecture}
-
-   ## Phase 3 Input
-   {Architecture focus areas, expected decisions, known risks}
-   ```
-2. Shutdown research-coordinator (if used) and researchers
-3. Write `phase-2/gate-record.yaml`
-4. Update orchestration-plan.md
+1. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+   - Add research findings to §Codebase Impact Map
+   - Add discovered constraints to §Constraints
+   - Update §phase_status.P2 = COMPLETE with l2_path
+2. Update GC scratch: Phase Pipeline Status (session-scoped only)
+3. Shutdown research-coordinator (if used) and researchers
+4. Write `phase-2/gate-record.yaml`
+5. Update orchestration-plan.md
 
 **On ITERATE (max 3):** Re-direct researcher or spawn new one with gap instructions.
 
 ---
 
-## Phase 3: Architecture
+### Phase 3: Architecture
 
 Architect teammate designs the system. Architecture receives the deepest scrutiny —
 design flaws here multiply downstream.
 Protocol execution follows CLAUDE.md §6 and §10.
 
-### 3.1 Architect Spawn
+#### 3.1 Architect Spawn
 
 **Tier-based routing (D-001/D-005):**
 
@@ -427,7 +436,7 @@ task-context.md: {scope, research L2 summaries, architecture expectations, const
 ```
 For COMPLEX tier, Lead follows CLAUDE.md §6 Coordinator Management protocol.
 
-### 3.2 Understanding Verification
+#### 3.2 Understanding Verification
 
 1. Architect reads PERMANENT Task via TaskGet and confirms context receipt
 2. Architect explains their understanding of the task to Lead
@@ -437,7 +446,7 @@ For COMPLEX tier, Lead follows CLAUDE.md §6 Coordinator Management protocol.
 5. Architect defends each with specific evidence
 6. Lead evaluates defense quality → verify or reject (max 3 attempts)
 
-### 3.3 Architecture Design
+#### 3.3 Architecture Design
 
 Architect submits [PLAN] before execution. Lead approves, then architect designs.
 
@@ -460,7 +469,7 @@ Architect submits [PLAN] before execution. Lead approves, then architect designs
     └── architecture-design.md  (full design, no length limit)
 ```
 
-### 3.4 Gate 3
+#### 3.4 Gate 3
 
 | # | Criterion |
 |---|-----------|
@@ -472,7 +481,7 @@ Architect submits [PLAN] before execution. Lead approves, then architect designs
 | G3-6 | No unresolved HIGH+ architectural risks |
 | G3-7 | Decisions documented with rationale |
 
-### User Architecture Review
+#### User Architecture Review
 
 Present architecture summary to user before final gate decision:
 
@@ -497,30 +506,23 @@ If audit required: spawn `gate-auditor` with G3 criteria and evidence paths.
 Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 **On APPROVE:**
-1. Update global-context.md → GC-v3 with these additions:
-   ```markdown
-   ## Architecture Summary
-   {Component overview, hierarchy, key interfaces from architect L2}
-
-   ## Architecture Decisions
-   | # | Decision | Rationale | Phase |
-   {AD-{N} entries from architect's design}
-
-   ## Phase 4 Entry Requirements
-   {Implementation constraints, verification criteria, expected file count}
-   ```
-2. Write `phase-3/gate-record.yaml`
-3. Proceed to Clean Termination
+1. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+   - Add §Architecture Decisions from architect's design
+   - Update §Codebase Impact Map with architecture components
+   - Update §phase_status.P3 = COMPLETE with l2_path
+2. Update GC scratch: Phase Pipeline Status (session-scoped only)
+3. Write `phase-3/gate-record.yaml`
+4. Proceed to Clean Termination
 
 **On ITERATE (max 3):** Specific redesign instructions to architect.
 
 ---
 
-## Clean Termination
+### Clean Termination
 
 After Gate 3 APPROVE:
 
-### Output Summary
+#### Output Summary
 
 Present to user:
 
@@ -532,18 +534,14 @@ Present to user:
 
 **Artifacts:**
 - PERMANENT Task (PT-v{N}) — authoritative project context
-- global-context.md (GC-v3) — session artifacts
-- orchestration-plan.md
-- Phase 2: codebase-researcher / external-researcher L1/L2/L3
+- Session artifacts: .agent/teams/{session-id}/
+- Phase 2: researcher L1/L2/L3
 - Phase 3: architect L1/L2/L3 (architecture-design.md)
 
-**Location:** .agent/teams/{session-id}/
-
 **Next:** Phase 4 (Detailed Design) — use `/agent-teams-write-plan`.
-Input: the artifacts above. Update PERMANENT Task with `/permanent-tasks` if scope evolved.
 ```
 
-### Shutdown Sequence
+#### Shutdown Sequence
 
 1. Shutdown architect: `SendMessage type: "shutdown_request"`
    (researchers already shut down after Gate 2)
@@ -552,40 +550,41 @@ Input: the artifacts above. Update PERMANENT Task with `/permanent-tasks` if sco
 
 ---
 
-## Cross-Cutting Requirements
+## C) Interface
 
-### RTD Index
+### Input
+- **$ARGUMENTS:** Feature description or topic (seed for User Intent)
+- **No predecessor L2:** This is the pipeline start — no prior phase output
+- **No prior PT:** This skill creates the PERMANENT Task (via /permanent-tasks at Gate 1)
 
-At each Decision Point in this phase, update the RTD index:
-1. Update `current-dp.txt` with the new DP number
-2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
-3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+### Output
+- **PT-v1** (created via /permanent-tasks): User Intent, Codebase Impact Map, Architecture Decisions, Phase Status (P1-P3=COMPLETE), Constraints
+- **L1/L2/L3:** research-coordinator L1/L2/L3, architecture-coordinator L1/L2/L3 (COMPLEX) or researcher/architect L1/L2/L3 (STANDARD)
+- **Gate records:** gate-record.yaml for Gates 1, 2, 3
+- **GC scratch:** Phase Pipeline Status, execution metrics, version marker (session-scoped only)
 
-Decision Points for this skill:
-- DP-1: Gate 1 evaluation (P1 → P2 transition)
-- DP-2: Gate 2 evaluation (P2 → P3 transition)
-- DP-3: Gate 3 evaluation (P3 → termination)
+### Next
+Invoke `/agent-teams-write-plan "$ARGUMENTS"`.
+Write-plan needs:
+- PT §phase_status.P3.status == COMPLETE
+- PT §phase_status.P3.l2_path → arch-coordinator/L2 §Downstream Handoff (contains Architecture Decisions, Constraints, Interface Contracts, Risks)
 
-### Sequential Thinking
+---
 
-All agents (Lead and teammates) use `mcp__sequential-thinking__sequentialthinking`
-for every analysis, judgment, and decision throughout all phases. No exceptions.
+## D) Cross-Cutting
 
-### Error Handling
+Follow CLAUDE.md §6 (Agent Selection and Routing), §9 (Compact Recovery), §10 (Integrity Principles) for all protocol decisions.
+Follow `coordinator-shared-protocol.md` for coordinator management when COMPLEX tier is active.
+Follow `gate-evaluation-standard.md` §6 for gate audit requirements.
+All agents use `sequential-thinking` for analysis, judgment, and verification.
+
+### Skill-Specific Error Handling
 
 | Situation | Response |
 |-----------|----------|
 | Spawn failure | Retry once, then abort phase with user notification |
 | Verification 3x rejection | Abort teammate, re-spawn with enhanced context |
 | Gate 3x iteration | Abort phase, present partial results to user |
-| Context compact | Follow CLAUDE.md §9 Compact Recovery |
-| User cancellation | Graceful shutdown all teammates, preserve artifacts |
-
-### Compact Recovery
-
-Follows CLAUDE.md §9:
-- Lead: Read orchestration-plan → task list → gate records → L1 indexes → re-inject
-- Teammates: Receive injection → read own L1/L2/L3 → re-submit Impact Analysis
 
 ---
 

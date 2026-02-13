@@ -1,5 +1,0 @@
-[2026-02-08 18:43:44] TOOL_FAILURE | agent=unknown | tool=Read | error=EISDIR: illegal operation on a directory, read
-[2026-02-08 18:43:59] TOOL_FAILURE | agent=unknown | tool=Read | error=EISDIR: illegal operation on a directory, read
-[2026-02-08 18:44:00] TOOL_FAILURE | agent=unknown | tool=Read | error=EISDIR: illegal operation on a directory, read
-[2026-02-08 18:49:17] TOOL_FAILURE | agent=unknown | tool=Read | error=EISDIR: illegal operation on a directory, read
-[2026-02-08 19:25:03] TOOL_FAILURE | agent=unknown | tool=WebFetch | error=maxContentLength size of 10485760 exceeded

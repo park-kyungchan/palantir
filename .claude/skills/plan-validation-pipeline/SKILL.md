@@ -18,7 +18,7 @@ Phase 5 (Plan Validation) orchestrator. Challenges the implementation plan from 
 Have an implementation plan from agent-teams-write-plan?
 ├── Working in Agent Teams mode? ─── no ──→ Review the plan manually
 ├── yes
-├── GC-v4 with Phase 4 COMPLETE? ── no ──→ Run /agent-teams-write-plan first
+├── PT with Phase 4 COMPLETE? ── no ──→ Run /agent-teams-write-plan first
 ├── yes
 └── Use /plan-validation-pipeline
 ```
@@ -29,8 +29,8 @@ Have an implementation plan from agent-teams-write-plan?
 
 The following is auto-injected when this skill loads. Use it for Input Discovery.
 
-**Previous Pipeline Output:**
-!`ls -d /home/palantir/.agent/teams/*/global-context.md 2>/dev/null | while read f; do dir=$(dirname "$f"); echo "---"; echo "Dir: $dir"; head -8 "$f"; echo ""; done`
+**Pipeline Session Directories:**
+!`ls -d /home/palantir/.agent/teams/*/ 2>/dev/null | while read d; do echo "$(basename "$d"): $(ls "$d"phase-*/gate-record.yaml 2>/dev/null | wc -l) gates"; done`
 
 **Implementation Plans:**
 !`ls /home/palantir/docs/plans/ 2>/dev/null`
@@ -42,7 +42,7 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 
 ---
 
-## Phase 0: PERMANENT Task Check
+## A) Phase 0: PERMANENT Task Check
 
 Lightweight step (~500 tokens). No teammates spawned, no verification required.
 
@@ -60,57 +60,58 @@ read PT     Create one for this feature?"
 │           │
 ▼         ┌─┴─┐
 Continue  Yes   No
-to 5.1    │     │
+to B)     │     │
           ▼     ▼
-        /permanent-tasks    Continue to 5.1
+        /permanent-tasks    Continue to B)
         creates PT-v1       without PT
-        → then 5.1
+        → then B)
 ```
 
-If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
-provides additional context for Phase 5 validation. Use it alongside the Dynamic Context above.
+If a PERMANENT Task exists, read it via TaskGet. Its content (user intent, codebase impact map,
+architecture decisions, phase status, constraints) provides authoritative cross-phase context.
+Use it alongside the Dynamic Context above.
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
-the TaskCreate and return a summary. Then continue to Phase 5.1.
+the TaskCreate and return a summary. Then continue to B) Core Workflow.
 
 If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
 User Intent, ask the user to clarify which feature to work on before proceeding.
 
 ---
 
-## Phase 5.1: Input Discovery + Validation
+## B) Phase 5: Core Workflow
+
+### 5.1 Input Discovery + Validation
 
 No teammates spawned. Lead-only step.
 
 Use `sequential-thinking` before every judgment in this phase.
 
-### Discovery
+#### Discovery (PT + L2)
 
-Parse the Dynamic Context above to find agent-teams-write-plan output:
+1. **TaskGet** on PERMANENT Task → read full PT
+2. **Verify:** PT §phase_status.P4.status == COMPLETE
+3. **Read:** PT §phase_status.P4.l2_path → planning-coordinator/L2 location
+4. **Read:** planning-coordinator/L2 §Downstream Handoff for entry context
+5. If `$ARGUMENTS` provides a session-id or path, use that directly
+6. If multiple candidates found, present options via `AskUserQuestion`
+7. If PT not found or Phase 4 not complete: "Phase 4 not complete. Run /agent-teams-write-plan first."
 
-1. Look for `.agent/teams/*/global-context.md` files with `Phase 4: COMPLETE`
-2. If `$ARGUMENTS` provides a session-id or path, use that directly
-3. If multiple candidates found, present options via `AskUserQuestion`
-4. If single candidate, confirm with user: "Found Phase 4 output at {path}. Use this?"
-5. If no candidates, inform user: "No Phase 4 output found. Run /agent-teams-write-plan first."
-
-### Rollback Detection
+#### Rollback Detection
 
 Check for `rollback-record.yaml` in downstream phase directories (phase-6/, phase-7/):
 - If found: read rollback context (revision targets, prior-attempt lessons) per `pipeline-rollback-protocol.md` §3
 - Include rollback context in challenger directives (what was attempted, why rolled back, areas to focus on)
 - If not found: proceed normally
 
-### Validation
-
-After identifying the source, verify:
+#### Validation
 
 | # | Check | On Failure |
 |---|-------|------------|
-| V-1 | `global-context.md` exists with `Phase 4: COMPLETE` | Abort: "GC-v4 not found or Phase 4 not complete" |
+| V-1 | PT exists with §phase_status.P4.status == COMPLETE | Abort: "Phase 4 not complete. Run /agent-teams-write-plan first" |
 | V-2 | Implementation plan exists in `docs/plans/` | Abort: "Implementation plan not found" |
 | V-3 | Plan follows 10-section template (§1-§10) including architecture decisions, file ownership, and change specifications | Abort: "Plan missing required sections: {list}" |
-| V-4 | GC-v4 contains Scope, Phase 4 decisions, and implementation task breakdown | Abort: "GC-v4 missing required context sections" |
+| V-4 | PT §Implementation Plan + planning-coordinator/L2 §Downstream Handoff contain required context | Abort: "Phase 4 design context not available" |
 
 Use `sequential-thinking` to evaluate validation results.
 
@@ -118,25 +119,25 @@ On all checks PASS → proceed to 5.2.
 
 ---
 
-## Phase 5.2: Team Setup
+### 5.2 Team Setup
 
 ```
 TeamCreate:
   team_name: "{feature-name}-validation"
 ```
 
-Create orchestration-plan.md and copy GC-v4 to new session directory.
+Create orchestration-plan.md in new session directory.
 Create TEAM-MEMORY.md with Lead and devils-advocate sections.
 
 ---
 
-## Phase 5.3: Validation Spawn
+### 5.3 Validation Spawn
 
 Devils-advocate is exempt from the understanding check — critical analysis itself demonstrates comprehension. Phase 5 is the adversarial challenge by design.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Tier-Based Routing (D-001/D-005)
+#### Tier-Based Routing (D-001/D-005)
 
 | Tier | Route | Agents |
 |------|-------|--------|
@@ -145,7 +146,7 @@ Use `sequential-thinking` for all Lead decisions in this phase.
 
 > TRIVIAL tier skips Phase 5 entirely.
 
-### Spawn (STANDARD — Lead-direct)
+#### Spawn (STANDARD — Lead-direct)
 
 ```
 Task tool:
@@ -155,7 +156,7 @@ Task tool:
   mode: "default"
 ```
 
-### Spawn (COMPLEX — Coordinator Route)
+#### Spawn (COMPLEX — Coordinator Route)
 
 ```
 1. Spawn validation-coordinator (subagent_type: "validation-coordinator")
@@ -166,19 +167,19 @@ Task tool:
 ```
 For COMPLEX tier, follow CLAUDE.md §6 Coordinator Management protocol.
 
-### [DIRECTIVE] Construction
+#### [DIRECTIVE] Construction
 
 The directive must include these context layers:
 
 1. **PERMANENT Task ID** (PT-v{N}) — devils-advocate reads full context via TaskGet
 2. **Implementation plan path** — `docs/plans/{plan-file}` for devils-advocate to Read
-3. **Phase 3 architecture path** — if available, for cross-referencing design intent
+3. **Predecessor L2 path** — planning-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P4.l2_path)
 4. **Challenge scope instructions** — what to focus critique on
 
 Task-context must instruct devils-advocate to:
 - Read the PERMANENT Task via TaskGet for full project context
 - Read the implementation plan fully before starting critique
-- Read the architecture design from Phase 3 (if available) for cross-reference
+- Read the predecessor L2 §Downstream Handoff for Phase 4 design rationale
 - Use `sequential-thinking` for every challenge analysis
 - Use `mcp__tavily__search` to find real-world failure cases as evidence
 - Use `mcp__context7__query-docs` to verify library/framework claims in the plan
@@ -188,7 +189,7 @@ Task-context must instruct devils-advocate to:
 - Deliver a final verdict: PASS, CONDITIONAL_PASS, or FAIL
 - Write L1/L2/L3 output files
 
-### Getting Started
+#### Getting Started
 
 1. Devils-advocate reads the PERMANENT Task via TaskGet for full project context
 2. Devils-advocate confirms context receipt to Lead
@@ -197,11 +198,11 @@ Task-context must instruct devils-advocate to:
 
 ---
 
-## Phase 5.4: Challenge Execution
+### 5.4 Challenge Execution
 
 Devils-advocate works with: Read, Glob, Grep, Write, sequential-thinking, context7, tavily.
 
-### Challenge Categories
+#### Challenge Categories
 
 The devils-advocate must exercise all 6 categories against the implementation plan:
 
@@ -214,7 +215,7 @@ The devils-advocate must exercise all 6 categories against the implementation pl
 | C-5 | **Robustness** | What happens when things go wrong? Failure modes, recovery paths? |
 | C-6 | **Interface Contracts** | Are all interfaces between implementers explicit and compatible? |
 
-### Challenge Targets
+#### Challenge Targets
 
 For each section of the implementation plan:
 
@@ -226,7 +227,7 @@ For each section of the implementation plan:
 - **Risk assessment:** Are risks properly identified? Are mitigations realistic?
 - **Verification strategy:** Does V6 (Code Plausibility) cover enough ground?
 
-### Expected Output
+#### Expected Output
 
 ```
 .agent/teams/{session-id}/phase-5/devils-advocate-1/
@@ -240,11 +241,11 @@ Devils-advocate reports completion with their verdict (PASS, CONDITIONAL_PASS, o
 
 ---
 
-## Phase 5.5: Gate 5
+### 5.5 Gate 5
 
 Use `sequential-thinking` for all gate evaluation.
 
-### Criteria
+#### Criteria
 
 | # | Criterion |
 |---|-----------|
@@ -255,18 +256,17 @@ Use `sequential-thinking` for all gate evaluation.
 | G5-5 | Final verdict provided with justification |
 | G5-6 | No CRITICAL issues left unresolved |
 
-### Verdict Evaluation
+#### Verdict Evaluation
 
 Read the devils-advocate's L2-summary.md and L3-full/challenge-report.md:
 
 **PASS (no critical or high issues):**
 - Plan is sound. Proceed to Phase 6.
-- GC-v4 stays as-is, add Phase 5 status.
 
 **CONDITIONAL_PASS (high issues with accepted mitigations):**
 - Present identified issues and proposed mitigations to user.
 - Ask user: "Accept mitigations and proceed, or return to Phase 4?"
-- If accepted: Document accepted mitigations in GC update.
+- If accepted: Document accepted mitigations.
 - If rejected: Execute rollback P5→P4 per `pipeline-rollback-protocol.md` with revision targets.
 
 **FAIL (critical issues found):**
@@ -277,7 +277,7 @@ Read the devils-advocate's L2-summary.md and L3-full/challenge-report.md:
 - Execute rollback P5→P4 per `pipeline-rollback-protocol.md`.
 - Include specific sections that need revision in `rollback-record.yaml` revision_targets.
 
-### User Review
+#### User Review
 
 Present challenge summary to user before final gate decision:
 
@@ -301,28 +301,29 @@ Present challenge summary to user before final gate decision:
 Shall I proceed with Gate 5 approval?
 ```
 
-### Gate Audit (COMPLEX only)
+#### Gate Audit (COMPLEX only)
 
 Mandatory for COMPLEX tier (see `gate-evaluation-standard.md` §6).
 Spawn `gate-auditor` with G5 criteria and evidence paths (challenge report, L1/L2).
 Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
-### On APPROVE
+#### On APPROVE
 
-1. Update global-context.md:
-   - Add `Phase 5: COMPLETE (Gate 5 APPROVED, Verdict: {verdict})`
-   - If CONDITIONAL_PASS: add accepted mitigations to Constraints section
-   - Bump version if mitigations added (GC-v4 → GC-v5, preserving all prior sections)
+1. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+   - Add §Validation Verdict: {PASS | CONDITIONAL_PASS}
+   - Update §phase_status.P5 = COMPLETE with l2_path
+   - If CONDITIONAL_PASS: add accepted mitigations to §Constraints
 2. Write `phase-5/gate-record.yaml`
-3. Proceed to Clean Termination
+3. Update GC scratch: Phase Pipeline Status (session-scoped only)
+4. Proceed to Clean Termination
 
-### On ITERATE (max 3)
+#### On ITERATE (max 3)
 
 - If challenge quality is insufficient: relay specific critique improvement instructions
 - Devils-advocate revises and resubmits
 - Re-evaluate Gate 5
 
-### On FAIL (verdict FAIL with user agreement)
+#### On FAIL (verdict FAIL with user agreement)
 
 - Do not create Gate 5 APPROVED record
 - Write `phase-5/gate-record.yaml` with result: ITERATE_TO_P4
@@ -331,11 +332,11 @@ Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ---
 
-## Clean Termination
+### Clean Termination
 
 After Gate 5 decision:
 
-### Output Summary
+#### Output Summary
 
 ```markdown
 ## plan-validation-pipeline Complete (Phase 5)
@@ -349,15 +350,17 @@ After Gate 5 decision:
 - High issues: {count}
 - Mitigations accepted: {count}
 
-**Artifacts:** .agent/teams/{session-id}/
-**Challenge Report:** .agent/teams/{session-id}/phase-5/devils-advocate-1/L3-full/challenge-report.md
+**Artifacts:**
+- PERMANENT Task (PT-v{N}) — updated with validation verdict
+- Session artifacts: .agent/teams/{session-id}/
+- Challenge Report: .agent/teams/{session-id}/phase-5/devils-advocate-1/L3-full/challenge-report.md
 
 **Next:** {verdict-dependent}
 - PASS/CONDITIONAL_PASS → Phase 6 (Implementation) — use /agent-teams-execution-plan
 - FAIL → Phase 4 (Redesign) — use /agent-teams-write-plan with revision targets
 ```
 
-### Shutdown
+#### Shutdown
 
 1. Shutdown devils-advocate-1: `SendMessage type: "shutdown_request"`
 2. `TeamDelete` — cleans team coordination files
@@ -365,48 +368,48 @@ After Gate 5 decision:
 
 ---
 
-## Cross-Cutting Requirements
+## C) Interface
 
-### RTD Index
+### Input
+- **PT-v{N}** (via TaskGet): §User Intent, §Architecture Decisions, §Constraints, §Implementation Plan (pointer to L3)
+- **Predecessor L2:** planning-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P4.l2_path)
+  - Contains: Task Decomposition, File Ownership Map, Phase 5 Validation Targets, Commit Strategy
+- **Implementation plan file:** path from PT §implementation_plan.l3_path
 
-At each Decision Point in this phase, update the RTD index:
-1. Update `current-dp.txt` with the new DP number
-2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
-3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+### Output
+- **PT-v{N+1}** (via /permanent-tasks or TaskUpdate): adds §Validation Verdict (PASS | CONDITIONAL_PASS | FAIL), §phase_status.P5=COMPLETE. If CONDITIONAL_PASS: adds mitigations to §Constraints
+- **L1/L2/L3:** validation-coordinator L1/L2/L3 (COMPLEX) or devils-advocate L1/L2/L3 (STANDARD)
+- **Gate record:** gate-record.yaml for Gate 5
+- **GC scratch:** Phase Pipeline Status update (session-scoped only)
 
-Decision Points for this skill:
-- DP-1: Devils-advocate spawn
-- DP-2: Verdict evaluation
-- DP-3: User review decision
-- DP-4: Gate 5 evaluation
+### Next
+If PASS or CONDITIONAL_PASS: invoke `/agent-teams-execution-plan "$ARGUMENTS"`.
+If FAIL: return to `/agent-teams-write-plan` for plan revision.
+Execution needs:
+- PT §phase_status.P4.status == COMPLETE (reads plan)
+- PT §validation_verdict (PASS or CONDITIONAL_PASS)
+- PT §phase_status.P4.l2_path → planning-coordinator/L2 (for plan context)
+- PT §phase_status.P5.l2_path → validation-coordinator/L2 §Downstream Handoff (for validation conditions)
 
-### Sequential Thinking
+---
 
-All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, and verification.
+## D) Cross-Cutting
 
-| Agent | When |
-|-------|------|
-| Lead (5.1) | Input validation, candidate evaluation |
-| Lead (5.5) | Gate evaluation, verdict assessment, user presentation |
-| Devils-advocate | Every challenge analysis, severity assessment, mitigation design |
+Follow CLAUDE.md §6 (Agent Selection and Routing), §9 (Compact Recovery), §10 (Integrity Principles) for all protocol decisions.
+Follow `coordinator-shared-protocol.md` for coordinator management when COMPLEX tier is active.
+Follow `gate-evaluation-standard.md` §6 for gate audit requirements.
+Follow `pipeline-rollback-protocol.md` for rollback procedures.
+All agents use `sequential-thinking` for analysis, judgment, and verification.
+Task descriptions follow `task-api-guideline.md` v6.0 §3 for field requirements.
 
-### Error Handling
+### Skill-Specific Error Handling
 
 | Situation | Response |
 |-----------|----------|
-| No Phase 4 output found | Inform user, suggest /agent-teams-write-plan |
-| GC-v4 incomplete | Abort with missing section list |
-| Spawn failure | Retry once, abort with notification |
+| PT not found or Phase 4 not complete | Inform user, suggest /agent-teams-write-plan |
+| Implementation plan not found | Abort with guidance |
 | Devils-advocate silent >20 min | Send status query |
 | Challenge quality too low (Gate 5 iterate) | Re-direct with specific improvement instructions |
-| Gate 5 3x iteration | Abort, present partial challenge results to user |
-| Context compact | CLAUDE.md §9 recovery |
-| User cancellation | Graceful shutdown, preserve artifacts |
-
-### Compact Recovery
-
-- Lead: orchestration-plan → task list → gate records → L1 indexes → re-inject
-- Devils-advocate: receive fresh context from Lead → read own L1/L2/L3 → resume challenge (no understanding check needed)
 
 ---
 
@@ -421,7 +424,6 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - **Protocol delegated** — CLAUDE.md owns verification rules, skill owns orchestration
 - **Clean termination** — no auto-chaining to Phase 6
 - **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`
-- Task descriptions follow task-api-guideline.md v6.0 §3 for field requirements
 
 ## Never
 

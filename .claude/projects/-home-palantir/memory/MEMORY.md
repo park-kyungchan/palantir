@@ -31,33 +31,50 @@
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-## Current INFRA State (v9.0, 2026-02-11)
+### Dual Environment: Claude Code CLI vs Warp (2026-02-13)
+- **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
+- **Warp Agent (Oz)**: Single-instance. Reads CLAUDE.md + WARP.md + Warp Manage Rules. Lead↔Teammate role switching.
+- **Bridge files** (both environments read): CLAUDE.md, MEMORY.md, WARP.md, agent .md, SKILL.md
+- **Warp-only**: 4 Manage Rules (not visible to Claude Code CLI)
+- WARP.md (`/home/palantir/WARP.md`) = compact single-instance protocol + tool mapping
+
+### Warp Manage Rules Configuration (2026-02-13)
+4 Rules in Warp's Manage Rules (replace all prior rules):
+- **Rule 1: Session Bootstrap** — Model identity, session start reads, language, core mandates
+- **Rule 2: Warp Single-Instance Execution** — Lead↔Teammate switching, persona binding, output, pipeline tiers
+- **Rule 3: Warp Tool Mapping** — Warp native tools → INFRA pattern mapping (plan, TODO, grep, edit, shell, review, PR)
+- **Rule 4: Verification & Context Engineering** — Step-by-step verification, V1-V6 checks, context preservation, WARP.md maintenance
+- Active task rule: 장기 작업 시 Rule 5로 추가, 완료 후 삭제
+
+## Current INFRA State (v9.0 + Phase 6, 2026-02-13)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v9.0 | ~378L | D-001~D-017 integrated, 43 agents, 13 categories, reference-heavy |
+| CLAUDE.md | v9.0+ | ~394L | D-001~D-017, §10 fork exception (pt-manager, delivery-agent, rsil-agent) |
 | task-api-guideline.md | v6.0 | 118L | NLP consolidated (was 537L, 78% reduction) |
-| agent-common-protocol.md | v4.0 | ~180L | +Memory, +Error (D-017), +Output, +Handoff (D-011) |
+| agent-common-protocol.md | v4.1 | ~200L | +§Task API fork exception (3 agents listed) |
 | agent-catalog.md | v3.0 | ~1882L | Two-Level (L1 ~280L + L2 ~1600L), 43 agents (35W+8C) |
-| Agents | v5.0 | 43 files | 35 workers + 8 coordinators, 13 categories |
+| Agents | v6.0 | 46 files | 35 workers + 8 coordinators + 3 fork agents, 13 categories |
+| Fork Agents | v1.0 | 3 files | pt-manager (full API), delivery-agent (−Create), rsil-agent (−Create) |
+| Coordinators | Template B | 8 files | memory:project, color, disallowedTools:[4], protocol refs standardized |
 | References | v1.0 | 3 new | gate-evaluation-standard (D-008), ontological-lenses (D-010), coordinator-shared-protocol (D-013) |
 | Settings | — | ~84L | MCP Tool Search auto:7 enabled |
 | Hooks | 4 total | ~220L | SubagentStart, PreCompact (hookOutput), SessionStart, PostToolUse |
 | Observability | — | — | `.agent/observability/{slug}/` (rtd-index, events.jsonl, registry) |
 
-### Skills (10 total)
+### Skills (10 total: 5 coordinator-based + 4 fork-based + 1 solo)
 
-| SKL | Skill | Phase | Notes |
-|-----|-------|-------|-------|
-| 001 | `/brainstorming-pipeline` | P1-3 | +Feasibility Check (AD-2), +simplified P0, +consolidated seq-thinking, 613L |
-| 002 | `/agent-teams-write-plan` | P4 | +D-001 tier routing, +planning-coordinator (COMPLEX), +D-012 |
-| 003 | `/agent-teams-execution-plan` | P6 | +contract-reviewer, +regression-reviewer, +D-012/D-014 |
-| 004 | `/plan-validation-pipeline` | P5 | +D-001 tier routing, +validation-coordinator (COMPLEX) |
-| 005 | `/verification-pipeline` | P7-8 | +D-001 tier awareness, +contract-tester |
-| 006 | `/delivery-pipeline` | P9 | 422L + RTD |
-| 007 | `/rsil-review` | — | 549L, 8 Lenses, Meta-Cognition |
-| 008 | `/rsil-global` | — | 452L, auto-invoke, Three-Tier |
-| — | `/permanent-tasks` | — | RTD + Cross-Cutting (CH-5) |
+| SKL | Skill | Phase | Type | Notes |
+|-----|-------|-------|------|-------|
+| 001 | `/brainstorming-pipeline` | P1-3 | coord | §A/§B/§C/§D template, 612L |
+| 002 | `/agent-teams-write-plan` | P4 | coord | §A/§B/§C/§D template, 372L |
+| 003 | `/agent-teams-execution-plan` | P6 | coord | §A/§B/§C/§D template, 671L |
+| 004 | `/plan-validation-pipeline` | P5 | coord | §A/§B/§C/§D template, 436L |
+| 005 | `/verification-pipeline` | P7-8 | coord | §A/§B/§C/§D template, 553L |
+| 006 | `/delivery-pipeline` | P9 | fork | context:fork, agent:delivery-agent, 499L |
+| 007 | `/rsil-review` | — | fork | context:fork, agent:rsil-agent, 8 Lenses |
+| 008 | `/rsil-global` | — | fork | context:fork, agent:rsil-agent, Three-Tier |
+| — | `/permanent-tasks` | — | fork | context:fork, agent:pt-manager, PT lifecycle |
 
 ### RSIL Quality Data
 - RSIL INFRA Score: 5.9→9.5/10 (+61%, 5 cycles, Baseline→C4→C5)
@@ -69,15 +86,20 @@
 - Agent memory: `~/.claude/agent-memory/rsil/MEMORY.md`
 - All audit targets COMPLETE (S-1~S-4, S-6, S-7)
 
-### Agents-Driven Workflow (PT #4→#5→v9.0, 2026-02-11)
-- 43 agents (35 workers + 8 coordinators), 13 categories — `.claude/references/agent-catalog.md` (1882L Two-Level)
+### Agents-Driven Workflow (PT #4→#5→v9.0+P6, 2026-02-13)
+- 46 agent files (35 workers + 8 coordinators + 3 fork agents), 13 categories
+- Agent catalog: `.claude/references/agent-catalog.md` (1882L Two-Level)
 - P1: One Agent = One Responsibility — WHEN/WHY/HOW framework
-- Layer 1/2 Boundary: `.claude/references/layer-boundary-model.md` (Coordinator Orchestration section added)
+- Layer 1/2 Boundary: `.claude/references/layer-boundary-model.md`
 - CLAUDE.md §6: Agent Selection and Routing (6-step), Coordinator Management (Mode 1+3)
-- 8 coordinators: research, verification, architecture, planning, validation, execution, testing, infra-quality
+- CLAUDE.md §10: Fork exception — pt-manager, delivery-agent, rsil-agent get Task API access
+- 8 coordinators (Template B): memory:project, color, disallowedTools:[TaskCreate,TaskUpdate,Edit,Bash]
+- 3 fork agents: pt-manager (full API), delivery-agent (−TaskCreate), rsil-agent (−TaskCreate)
+- 5 coordinator SKILL.md: §A Phase 0 / §B Core / §C Interface / §D Cross-Cutting template
+- 4 fork SKILL.md: context:fork + agent: frontmatter → fork agent .md binding
 - D-001~D-017: Pipeline Tiers, Full Decomposition, Gate Standard, Ontological Lenses, Error Taxonomy
-- New references: gate-evaluation-standard.md (D-008), ontological-lenses.md (D-010), coordinator-shared-protocol.md (D-013)
-- INFRA v9.0: 17 Decisions integrated across 6 batches, 378L CLAUDE.md (reference-heavy)
+- Skill Opt v9.0 Phase 6 output: `palantir_coding/.agent/teams/skill-opt-v9-p6/phase-6/`
+- Verification report: `palantir_coding/.agent/teams/skill-opt-v9-p6/phase-6/verifier/L2-verification-report.md`
 
 ### Known Bugs
 

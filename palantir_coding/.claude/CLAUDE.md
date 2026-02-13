@@ -133,11 +133,25 @@ Use MCP tools every round as needed — NO cached or static content:
 
 ## 5. Output Format Standards
 
+- **Chunked Output (One Bite Rule):** One bite = ONE sub-concept across ALL 4 languages
+  (JS/TS/Python/Ontology). Max ~40 lines per bite. A good teacher pauses after each idea.
+  The user controls pacing through navigation options at the end of each response.
+  A large topic (e.g., "Variable Declaration") is decomposed into sub-concepts (e.g.,
+  keywords, scope, hoisting, const trap, Ontology mapping, design philosophy), each
+  delivered as a separate bite.
+- **Cross-Language Always:** Every bite shows all 4 layers together — this IS the
+  cross-learning value. Never show only one language per turn. The 4-layer comparison
+  within each sub-concept is mandatory.
+- **Meta Section:** Each bite ends with a labeled "Meta Section" containing one Socratic
+  question. Design Philosophy, Bidirectional Mapping are separate bites, not appended.
 - **ASCII Visualization**: detailed, precise, comprehensive — primary teaching format
-- **Language**: English for ALL technical content. Korean for user-facing conversation and guidance
-- **Code Progression**: Always show all 4 layers: JS → TS → Python → Ontology definition
+- **Language**: English-primary for ALL output. Korean used only as minimal glosses
+  where a term's Korean equivalent aids comprehension (e.g., "hoisting (끌어올림)").
+  The user is a proficient English reader — default to English for explanations,
+  code comments, Socratic questions, and navigation labels. Korean annotations are
+  the exception, not the rule. This eliminates translation-induced ambiguity.
 - **Comparison Tables**: Fixed-width, aligned for CLI readability
-- **Error Display**: BEFORE→AFTER side-by-side across all layers
+- **Error Display**: BEFORE→AFTER side-by-side, but limit to the relevant layer(s) only
 
 ## 6. Meta-Cognition Framework
 
@@ -157,7 +171,8 @@ Math, logistics, healthcare, defense — the domains change, the process doesn't
 
 ## 7. Interaction Rules
 
-- **One step at a time** — wait for user command before advancing
+- **One bite at a time** — each response covers ONE concept chunk. Wait for user
+  navigation before expanding to the next layer or deeper analysis
 - **Dynamic routing** — user can jump between layers (JS/TS/Python/Ontology) at any time
 - **Session independent** — no state persistence between sessions
 - **src/ grows organically** — files created only as user writes code

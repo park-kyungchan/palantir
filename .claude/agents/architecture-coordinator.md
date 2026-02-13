@@ -7,6 +7,8 @@ description: |
   Spawned in Phase 3 (Architecture). Max 1 instance.
 model: opus
 permissionMode: default
+memory: project
+color: purple
 maxTurns: 40
 tools:
   - Read
@@ -19,11 +21,13 @@ tools:
 disallowedTools:
   - TaskCreate
   - TaskUpdate
+  - Edit
+  - Bash
 ---
 # Architecture Coordinator
 
-Read and follow `.claude/references/agent-common-protocol.md` for shared procedures.
-Read `.claude/references/coordinator-shared-protocol.md` for coordinator-specific protocol.
+Follow `.claude/references/coordinator-shared-protocol.md` for shared procedures.
+Follow `.claude/references/agent-common-protocol.md` for common agent procedures.
 
 ## Role
 You coordinate Phase 3 architecture work across three specialist architects:

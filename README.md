@@ -1,14 +1,15 @@
-# Palantir Development Workspace — Agent Teams INFRA v9.0
+# Palantir Development Workspace — Agent Teams INFRA v9.0+
 
 > Opus 4.6-native multi-agent orchestration system for Claude Code
-> (Opus 4.6 네이티브 다중 에이전트 오케스트레이션 시스템)
+> Dual Environment: Agent Teams (CLI/tmux) + Warp Single-Instance
 
-![Version](https://img.shields.io/badge/INFRA-v9.0-brightgreen)
-![Agents](https://img.shields.io/badge/Agents-43-blue)
-![Skills](https://img.shields.io/badge/Skills-10-green)
+![Version](https://img.shields.io/badge/INFRA-v9.0%2BPhase6-brightgreen)
+![Agents](https://img.shields.io/badge/Agents-46_(35W%2B8C%2B3F)-blue)
+![Skills](https://img.shields.io/badge/Skills-9-green)
 ![Hooks](https://img.shields.io/badge/Hooks-4-orange)
 ![References](https://img.shields.io/badge/References-9-purple)
-![Lines](https://img.shields.io/badge/Lines-~10K-lightgrey)
+![Lines](https://img.shields.io/badge/Lines-~11K-lightgrey)
+![Environments](https://img.shields.io/badge/Env-CLI%20%2B%20Warp-ff69b4)
 
 ---
 
@@ -19,12 +20,13 @@
   - [2.1 Phase Dependency Chain](#21-phase-dependency-chain)
   - [2.2 Pipeline Tiers](#22-pipeline-tiers)
   - [2.3 Rollback Paths](#23-rollback-paths)
-- [3. Agents (43)](#3-agents-43)
+- [3. Agents (46)](#3-agents-46)
   - [3.1 Overview](#31-overview)
-  - [3.2 Coordinators (8)](#32-coordinators-8)
-  - [3.3 Workers by Category (35)](#33-workers-by-category-35)
-  - [3.4 Tool Distribution Matrix](#34-tool-distribution-matrix)
-- [4. Skills (10)](#4-skills-10)
+  - [3.2 Coordinators (8 — Template B)](#32-coordinators-8--template-b)
+  - [3.3 Fork Agents (3)](#33-fork-agents-3)
+  - [3.4 Workers by Category (35)](#34-workers-by-category-35)
+  - [3.5 Tool Distribution Matrix](#35-tool-distribution-matrix)
+- [4. Skills (9)](#4-skills-9)
   - [4.1 Pipeline Phase Coverage](#41-pipeline-phase-coverage)
   - [4.2 Skill Reference](#42-skill-reference)
 - [5. Hooks (4)](#5-hooks-4)
@@ -49,6 +51,9 @@
   - [12.3 Ontological Lenses](#123-ontological-lenses)
   - [12.4 Pipeline Tier Routing](#124-pipeline-tier-routing)
   - [12.5 Coordinator Management Modes](#125-coordinator-management-modes)
+  - [12.6 Fork Agents & Task API Delegation](#126-fork-agents--task-api-delegation)
+  - [12.7 Coordinator Template B](#127-coordinator-template-b)
+- [13. Dual Environment (CLI + Warp)](#13-dual-environment-cli--warp)
 - [Version History](#version-history)
 
 ---
@@ -64,17 +69,24 @@
 |                        LEAD  (Pipeline Controller)                     |
 |  Pure Orchestrator . Spawns Agents . Manages Gates . Never Edits Files |
 |                                                                        |
-|  Skills(10) <-- orchestrate --> Hooks(4) --> Observability(RTD)        |
+|  Skills(9) <-- orchestrate --> Hooks(4) --> Observability(RTD)         |
 +--+------+------+------+------+------+------+------+-------------------+
    |      |      |      |      |      |      |      |
  +-+-+  +-+-+  +-+-+  +-+-+  +-+-+  +-+-+  +-+-+  +-+-+
  |Res|  |Ver|  |Arc|  |Pln|  |Val|  |Exe|  |Tst|  |INF|  8 Coordinators
- | P2|  |P2b|  | P3|  | P4|  | P5|  | P6|  |P78|  |Xct|  (category mgrs)
+ | P2|  |P2b|  | P3|  | P4|  | P5|  | P6|  |P78|  |Xct|  (Template B)
  | 3W|  | 4W|  | 4W|  | 4W|  | 3W|  |6+W|  | 3W|  | 4W|
  +---+  +---+  +---+  +---+  +---+  +---+  +---+  +---+
 
  Lead-Direct: dynamic-impact-analyst . execution-monitor
               gate-auditor . devils-advocate
+
+ Fork Agents (Task API Delegation — CLAUDE.md §10):
+ +-----------+  +----------------+  +-------------+
+ | pt-manager|  | delivery-agent |  | rsil-agent  |
+ | Full API  |  | −TaskCreate    |  | −TaskCreate |
+ | PT lifecycle| | P9 delivery   |  | RSIL review |
+ +-----------+  +----------------+  +-------------+
 
 +-------------------+  +------------------+  +----------------------------+
 |  References (9)   |  | Agent Memory (8) |  |  Configuration (3 files)   |
@@ -212,24 +224,26 @@ Rule: Rollback >2 phases requires user confirmation
 
 ---
 
-## 3. Agents (43)
+## 3. Agents (46)
 
 ### 3.1 Overview
 
 | Metric | Value |
 |--------|-------|
-| Total agents | 43 |
+| Total agent files | 46 |
 | Workers | 35 |
-| Coordinators | 8 |
-| Categories | 14 |
+| Coordinators | 8 (Template B) |
+| Fork Agents | 3 (Task API delegation) |
+| Categories | 13 + 1 built-in |
 | Min maxTurns | 15 (gate-auditor) |
 | Max maxTurns | 100 (implementer, integrator) |
 | Agents with Bash | 4 |
 | Agents with Edit | 5 |
 | Agents with Write | 39 |
 | Agents with WebSearch | 5 |
+| Agents with Task API | 3 (fork agents) |
 
-### 3.2 Coordinators (8)
+### 3.2 Coordinators (8 — Template B)
 
 | Coordinator | Phase | Workers | MaxTurns |
 |-------------|-------|---------|----------|
@@ -242,9 +256,26 @@ Rule: Rollback >2 phases requires user confirmation
 | testing-coordinator | P7-8 | tester, contract-tester, integrator | 50 |
 | infra-quality-coordinator | X-cut | 4 infra analysts (ARE/RELATE/DO/IMPACT) | 40 |
 
-All coordinators share: Read, Glob, Grep, Write, sequential-thinking. They follow `coordinator-shared-protocol.md` and `agent-common-protocol.md`.
+All coordinators follow **Template B** standardization (Phase 6):
+- `memory: project` — shared project context
+- `color` — unique coordinator color identifier
+- `disallowedTools: [TaskCreate, TaskUpdate, Edit, Bash]` — orchestration-only scope
+- Protocol refs: `coordinator-shared-protocol.md` + `agent-common-protocol.md`
+- Shared tools: Read, Glob, Grep, Write, sequential-thinking
 
-### 3.3 Workers by Category (35)
+### 3.3 Fork Agents (3)
+
+Fork agents are Lead-delegated agents with **Task API access** (CLAUDE.md §10 exception). They execute skills that Lead invokes — extensions of Lead's intent, not independent actors.
+
+| Agent | Task API Scope | Skill | Description |
+|-------|---------------|-------|-------------|
+| pt-manager | TaskCreate + TaskUpdate | /permanent-tasks | Creates and maintains PERMANENT Task |
+| delivery-agent | TaskUpdate only (−Create) | /delivery-pipeline | Marks PT as DELIVERED at P9 |
+| rsil-agent | TaskUpdate only (−Create) | /rsil-global, /rsil-review | Updates PT with RSIL review results |
+
+All fork agents: `memory: user`, `permissionMode: default`, follow `agent-common-protocol.md` §Task API fork exception.
+
+### 3.4 Workers by Category (35)
 
 <details>
 <summary><strong>Category 1: Research (3 agents) -- Phase 2</strong></summary>
@@ -394,58 +425,60 @@ All coordinators share: Read, Glob, Grep, Write, sequential-thinking. They follo
 
 </details>
 
-### 3.4 Tool Distribution Matrix
+### 3.5 Tool Distribution Matrix
 
-| Tool | Workers | Coordinators | Total |
-|------|---------|--------------|-------|
-| Read | 35 | 8 | 43 |
-| Glob | 35 | 8 | 43 |
-| Grep | 35 | 8 | 43 |
-| Write | 31 | 8 | 39 |
-| Edit | 5 | 0 | 5 |
-| Bash | 4 | 0 | 4 |
-| seq-thinking | 35 | 8 | 43 |
-| tavily | 16 | 0 | 16 |
-| context7 | 13 | 0 | 13 |
-| WebSearch | 5 | 0 | 5 |
+| Tool | Workers | Coordinators | Fork | Total |
+|------|---------|--------------|------|-------|
+| Read | 35 | 8 | 3 | 46 |
+| Glob | 35 | 8 | 3 | 46 |
+| Grep | 35 | 8 | 3 | 46 |
+| Write | 31 | 8 | 3 | 42 |
+| Edit | 5 | 0 | 3 | 8 |
+| Bash | 4 | 0 | 3 | 7 |
+| seq-thinking | 35 | 8 | 3 | 46 |
+| tavily | 16 | 0 | 0 | 16 |
+| context7 | 13 | 0 | 0 | 13 |
+| WebSearch | 5 | 0 | 0 | 5 |
+| TaskCreate | 0 | 0 | 1 | 1 |
+| TaskUpdate | 0 | 0 | 3 | 3 |
 
 ---
 
-## 4. Skills (10)
+## 4. Skills (9)
 
 ### 4.1 Pipeline Phase Coverage
 
 ```
 Phase:  P0    P1    P2    P3    P4    P5    P6   P6+   P7    P8    P9   Post
 
-        +-------brainstorming-pipeline-------+
-                                       +--write-plan--+
-                                                   +-validation-+
-                                                          +--execution-plan--+
-                                                                      +-verification--+
-                                                                                  +delivery+
-                                                                                        +rsil-global+
-        +------------------ permanent-tasks (cross-cutting) -------------------+
-                              rsil-review (any phase, on-demand)
-                              palantir-dev (standalone, not pipeline)
+        +-------brainstorming-pipeline-------+                              coord
+                                       +--write-plan--+                     coord
+                                                   +-validation-+           coord
+                                                          +--execution-plan--+  coord
+                                                                      +-verification--+  coord
+                                                                                  +delivery+  fork
+                                                                                        +rsil-global+  fork
+        +------------------ permanent-tasks (cross-cutting) -------------------+  fork
+                              rsil-review (any phase, on-demand)                  fork
 ```
 
 ### 4.2 Skill Reference
 
-| Skill | Phase | Lines | Coordinator | Description |
-|-------|-------|-------|-------------|-------------|
-| brainstorming-pipeline | P0-3 | 490 | research-coord, arch-coord | Feature idea to architecture |
-| agent-teams-write-plan | P4 | 262 | planning-coordinator | Architecture to implementation plan |
-| plan-validation-pipeline | P5 | 313 | validation-coordinator | Last checkpoint before implementation |
-| agent-teams-execution-plan | P6 | 511 | execution-coordinator | Plan to working code with review |
-| verification-pipeline | P7-8 | 419 | testing-coordinator | Test execution and integration |
-| delivery-pipeline | P9 | 341 | Lead-only | Consolidate, commit, archive |
-| rsil-global | Post | 337 | Lead-only | INFRA health assessment (auto) |
-| rsil-review | Any | 406 | Lead-only | Targeted quality review (on-demand) |
-| permanent-tasks | X-cut | 198 | Lead-only | PT create/update via Read-Merge-Write |
-| palantir-dev | -- | 97 | N/A | Programming language learning support |
+| Skill | Phase | Type | Lines | Agent/Coordinator | Description |
+|-------|-------|------|-------|-------------------|-------------|
+| brainstorming-pipeline | P0-3 | coord | 612 | research-coord, arch-coord | Feature idea to architecture |
+| agent-teams-write-plan | P4 | coord | 372 | planning-coordinator | Architecture to implementation plan |
+| plan-validation-pipeline | P5 | coord | 436 | validation-coordinator | Last checkpoint before implementation |
+| agent-teams-execution-plan | P6 | coord | 671 | execution-coordinator | Plan to working code with review |
+| verification-pipeline | P7-8 | coord | 553 | testing-coordinator | Test execution and integration |
+| delivery-pipeline | P9 | fork | 498 | delivery-agent | Consolidate, commit, archive |
+| rsil-global | Post | fork | 481 | rsil-agent | INFRA health assessment (auto) |
+| rsil-review | Any | fork | 578 | rsil-agent | Targeted quality review (on-demand) |
+| permanent-tasks | X-cut | fork | 331 | pt-manager | PT create/update via Read-Merge-Write |
 
-**Total skill lines: ~3,374**
+**Skill types:** 5 coordinator-based (§A/§B/§C/§D template) + 4 fork-based (context:fork + agent binding)
+
+**Total skill lines: ~4,532**
 
 ---
 
@@ -477,12 +510,12 @@ on-subagent-start.sh      on-rtd-post-tool.sh       on-pre-compact.sh
 
 | Event | Script | Mode | Timeout | Lines | Purpose |
 |-------|--------|------|---------|-------|---------|
-| SubagentStart | on-subagent-start.sh | sync | 10s | 93 | Context injection for new agents |
-| PreCompact | on-pre-compact.sh | sync | 30s | 123 | Preserve state before compaction |
-| SessionStart | on-session-compact.sh | sync, once | 15s | 54 | RTD-centric compact recovery |
-| PostToolUse | on-rtd-post-tool.sh | async | 5s | 146 | Capture all tool calls as JSONL |
+| SubagentStart | on-subagent-start.sh | sync | 10s | 92 | Context injection for new agents |
+| PreCompact | on-pre-compact.sh | sync | 30s | 122 | Preserve state before compaction |
+| SessionStart | on-session-compact.sh | sync, once | 15s | 53 | RTD-centric compact recovery |
+| PostToolUse | on-rtd-post-tool.sh | async | 5s | 145 | Capture all tool calls as JSONL |
 
-**Total hook lines: ~416**
+**Total hook lines: ~412**
 
 ### 5.3 Hook Data Dependencies
 
@@ -505,25 +538,25 @@ on-session-compact.sh --reads--> rtd-index.md --injects--> recovery context
 
 | Document | Version | Lines | Decision Source |
 |----------|---------|-------|-----------------|
-| agent-catalog.md | v3.0 | 1,489 | D-002, D-005 |
-| agent-common-protocol.md | v4.0 | 247 | D-009, D-011, D-017 |
-| coordinator-shared-protocol.md | v1.0 | 135 | D-013 |
-| gate-evaluation-standard.md | v1.0 | 151 | D-008 |
-| ontological-lenses.md | v1.0 | 84 | D-010, D-005 |
-| task-api-guideline.md | v6.0 | 80 | -- |
-| layer-boundary-model.md | v1.0 | 130 | AD-15 |
-| ontology-communication-protocol.md | v1.0 | 318 | -- |
-| pipeline-rollback-protocol.md | v1.0 | 74 | GAP-5 |
+| agent-catalog.md | v3.0 | 1,894 | D-002, D-005 |
+| agent-common-protocol.md | v4.1 | 252 | D-009, D-011, D-017 |
+| coordinator-shared-protocol.md | v1.0 | 166 | D-013 |
+| gate-evaluation-standard.md | v1.0 | 186 | D-008 |
+| ontological-lenses.md | v1.0 | 106 | D-010, D-005 |
+| task-api-guideline.md | v6.0 | 118 | -- |
+| layer-boundary-model.md | v1.0 | 173 | AD-15 |
+| ontology-communication-protocol.md | v1.0 | 387 | -- |
+| pipeline-rollback-protocol.md | v1.0 | 94 | GAP-5 |
 
-**Total reference lines: ~2,708**
+**Total reference lines: ~3,376**
 
 ### 6.2 Consumer Network
 
 ```
 Reference                             Consumers                     Criticality
 ---------------------------------------------------------------------------
-agent-common-protocol.md -----------> ALL 43 agents                 CRITICAL
-task-api-guideline.md --------------> ALL 43 agents (TaskList/Get)  HIGH
+agent-common-protocol.md -----------> ALL 46 agents                 CRITICAL
+task-api-guideline.md --------------> ALL 46 agents (TaskList/Get)  HIGH
 agent-catalog.md -------------------> Lead (routing decisions)      CRITICAL
 gate-evaluation-standard.md --------> Lead, gate-auditor, skills    HIGH
 coordinator-shared-protocol.md -----> 8 coordinators                HIGH
@@ -645,11 +678,11 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 
 ## 10. CLAUDE.md Constitution
 
-**Path:** `.claude/CLAUDE.md` | **Version:** v9.0 | **Lines:** ~317
+**Path:** `.claude/CLAUDE.md` | **Version:** v9.0+ (Phase 6) | **Lines:** ~394
 
 | Section | Title | Content Summary |
 |---------|-------|-----------------|
-| Header | Custom Agents Reference | 43 agents, 14 categories, phase chain, tiers, spawning rules |
+| Header | Custom Agents Reference | 46 agents (35W+8C+3F), 13 categories, phase chain, tiers, spawning rules |
 | 0 | Language Policy | Korean user-facing, English technical |
 | 1 | Team Identity | Workspace, Agent Teams config, Lead/Teammates |
 | 2 | Phase Pipeline | Phase-agent mapping, tiers (D-001), gate standard |
@@ -660,7 +693,7 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 | 7 | Tools | sequential-thinking, tavily, context7, github |
 | 8 | Safety | Blocked commands, protected files, git safety |
 | 9 | Recovery | Lead recovery (RTD-centric), Teammate recovery |
-| 10 | Integrity Principles | Lead and Teammate responsibilities |
+| 10 | Integrity Principles | Lead/Teammate responsibilities + **Fork Agent Task API exception** (pt-manager, delivery-agent, rsil-agent) |
 
 **Decisions integrated:** D-001 (Pipeline Tiers), D-002 (Skills vs Agents), D-003 (Skill Routing), D-005 (Domain Decomposition), D-008 (Gate Evaluation), D-009 (Agent Memory), D-010 (Ontological Lenses), D-011 (Cross-Phase Handoff), D-012 (PT Scalability), D-013 (Coordinator Protocol), D-014 (Observability/RTD), D-015 (Output Standardization), D-016 (Constitution Redesign), D-017 (Error Handling)
 
@@ -669,15 +702,15 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 ## 11. Directory Tree
 
 <details>
-<summary><strong>Complete .claude/ file listing (78 infrastructure files)</strong></summary>
+<summary><strong>Complete .claude/ file listing (80 infrastructure files)</strong></summary>
 
 ```
 .claude/
-+-- CLAUDE.md                                          # Team Constitution v9.0 (~317L)
++-- CLAUDE.md                                          # Team Constitution v9.0+ (~394L)
 |
-+-- agents/                                            # 43 agent definitions
++-- agents/                                            # 46 agent definitions (35W + 8C + 3F)
 |   +-- architect.md                                   # Legacy general-purpose architect
-|   +-- architecture-coordinator.md                    # P3 coordinator
+|   +-- architecture-coordinator.md                    # P3 coordinator (Template B)
 |   +-- auditor.md                                     # Systematic artifact analyst
 |   +-- behavioral-verifier.md                         # DO lens verifier
 |   +-- code-reviewer.md                               # Quality/architecture reviewer
@@ -687,6 +720,7 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 |   +-- contract-tester.md                             # Interface contract tester
 |   +-- correctness-challenger.md                      # Logical correctness challenger
 |   +-- decomposition-planner.md                       # Task breakdown planner
+|   +-- delivery-agent.md                              # Fork: P9 delivery (Task API: -Create)
 |   +-- devils-advocate.md                             # Design validator / critical reviewer
 |   +-- dynamic-impact-analyst.md                      # Change cascade predictor
 |   +-- execution-coordinator.md                       # P6 coordinator
@@ -705,12 +739,14 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 |   +-- interface-architect.md                         # RELATE lens architect
 |   +-- interface-planner.md                           # Interface contract planner
 |   +-- plan-writer.md                                 # Legacy implementation planner
-|   +-- planning-coordinator.md                        # P4 coordinator
+|   +-- planning-coordinator.md                        # P4 coordinator (Template B)
+|   +-- pt-manager.md                                  # Fork: PT lifecycle (Task API: full)
 |   +-- regression-reviewer.md                         # Regression/side-effect reviewer
 |   +-- relational-verifier.md                         # RELATE lens verifier
-|   +-- research-coordinator.md                        # P2 coordinator
+|   +-- research-coordinator.md                        # P2 coordinator (Template B)
 |   +-- risk-architect.md                              # IMPACT lens architect
 |   +-- robustness-challenger.md                       # Edge case/security challenger
+|   +-- rsil-agent.md                                  # Fork: RSIL review (Task API: -Create)
 |   +-- spec-reviewer.md                               # Spec compliance reviewer
 |   +-- static-verifier.md                             # ARE lens verifier
 |   +-- strategy-planner.md                            # Implementation strategy planner
@@ -720,15 +756,15 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 |   +-- validation-coordinator.md                      # P5 coordinator
 |   +-- verification-coordinator.md                    # P2b coordinator
 |
-+-- hooks/                                             # 4 lifecycle hooks (~416L)
++-- hooks/                                             # 4 lifecycle hooks (~412L)
 |   +-- on-subagent-start.sh                           # SubagentStart: context injection
 |   +-- on-pre-compact.sh                              # PreCompact: state preservation
 |   +-- on-session-compact.sh                          # SessionStart: compact recovery
 |   +-- on-rtd-post-tool.sh                            # PostToolUse: JSONL event capture
 |
-+-- references/                                        # 9 reference documents (~2,708L)
-|   +-- agent-catalog.md                               # Two-level agent catalog (v3.0)
-|   +-- agent-common-protocol.md                       # Shared teammate protocol (v4.0)
++-- references/                                        # 9 reference documents (~3,376L)
+|   +-- agent-catalog.md                               # Two-level agent catalog (v3.0, 1894L)
+|   +-- agent-common-protocol.md                       # Shared teammate protocol (v4.1)
 |   +-- coordinator-shared-protocol.md                 # Coordinator protocol (v1.0)
 |   +-- gate-evaluation-standard.md                    # Gate criteria standard (v1.0)
 |   +-- layer-boundary-model.md                        # L1/L2 boundary model (v1.0)
@@ -737,17 +773,16 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 |   +-- pipeline-rollback-protocol.md                  # Rollback procedures (v1.0)
 |   +-- task-api-guideline.md                          # Task API guide (v6.0)
 |
-+-- skills/                                            # 10 orchestration skills (~3,374L)
-|   +-- brainstorming-pipeline/SKILL.md                # P0-3: Feature to architecture
-|   +-- agent-teams-write-plan/SKILL.md                # P4: Architecture to plan
-|   +-- plan-validation-pipeline/SKILL.md              # P5: Plan validation
-|   +-- agent-teams-execution-plan/SKILL.md            # P6: Plan to code
-|   +-- verification-pipeline/SKILL.md                 # P7-8: Testing + integration
-|   +-- delivery-pipeline/SKILL.md                     # P9: Consolidate and commit
-|   +-- rsil-global/SKILL.md                           # Post: INFRA health assessment
-|   +-- rsil-review/SKILL.md                           # Any: Targeted quality review
-|   +-- permanent-tasks/SKILL.md                       # X-cut: PT create/update
-|   +-- palantir-dev/SKILL.md                          # Standalone: Language learning
++-- skills/                                            # 9 orchestration skills (~4,532L)
+|   +-- brainstorming-pipeline/SKILL.md                # P0-3: coord, 612L
+|   +-- agent-teams-write-plan/SKILL.md                # P4: coord, 372L
+|   +-- plan-validation-pipeline/SKILL.md              # P5: coord, 436L
+|   +-- agent-teams-execution-plan/SKILL.md            # P6: coord, 671L
+|   +-- verification-pipeline/SKILL.md                 # P7-8: coord, 553L
+|   +-- delivery-pipeline/SKILL.md                     # P9: fork(delivery-agent), 498L
+|   +-- rsil-global/SKILL.md                           # Post: fork(rsil-agent), 481L
+|   +-- rsil-review/SKILL.md                           # Any: fork(rsil-agent), 578L
+|   +-- permanent-tasks/SKILL.md                       # X-cut: fork(pt-manager), 331L
 |
 +-- agent-memory/                                      # 8 persistent memory files
 |   +-- implementer/MEMORY.md
@@ -759,13 +794,14 @@ Persistent cross-session memory stored in `~/.claude/agent-memory/`.
 |   +-- architect/MEMORY.md
 |   +-- architect/lead-arch-redesign.md                # Topic file
 |
-+-- settings.json                                      # Team-level settings (~84L)
-+-- settings.local.json                                # Local overrides (~29L)
++-- settings.json                                      # Team-level settings (~95L)
++-- settings.local.json                                # Local overrides (~28L)
 
-.claude.json                                           # Project-level MCP config
+.claude.json                                           # Project-level MCP config (~538L)
+WARP.md                                                # Warp Single-Instance Protocol (~52L)
 ```
 
-**File counts:** 43 agents + 10 skills + 4 hooks + 9 references + 3 settings + 1 CLAUDE.md + 8 agent memory = **78 files**
+**File counts:** 46 agents + 9 skills + 4 hooks + 9 references + 3 settings + 1 CLAUDE.md + 8 agent memory = **80 files**
 
 </details>
 
@@ -823,12 +859,86 @@ Every pipeline is classified at Phase 0 into one of three tiers (D-001). The tie
 
 Transition from Mode 1 to Mode 3 is seamless -- workers are pre-spawned and simply receive messages from Lead instead of the coordinator.
 
+### 12.6 Fork Agents & Task API Delegation
+
+Fork agents solve a key autonomy problem: certain skills (delivery, RSIL, PT management) need to create or update Tasks, but only Lead should have Task API access. The solution (CLAUDE.md §10):
+
+- **Fork agents** are Lead-delegated agents that receive explicit Task API access via their `.md` frontmatter
+- They execute skills that Lead invokes -- extensions of Lead's intent, not independent actors
+- Each fork agent has **scoped** Task API access (full, or minus TaskCreate)
+- Referenced in `agent-common-protocol.md` §Task API fork exception
+
+```
+Lead --invokes--> /permanent-tasks --fork--> pt-manager (TaskCreate + TaskUpdate)
+Lead --invokes--> /delivery-pipeline --fork--> delivery-agent (TaskUpdate only)
+Lead --invokes--> /rsil-global --fork--> rsil-agent (TaskUpdate only)
+```
+
+### 12.7 Coordinator Template B
+
+All 8 coordinators were standardized to **Template B** in Phase 6:
+
+```
+Template B Coordinator:
++-- memory: project              (shared project context, not user-level)
++-- color: <unique>              (visual identification)
++-- disallowedTools:             (orchestration-only scope)
+|   +-- TaskCreate
+|   +-- TaskUpdate
+|   +-- Edit
+|   +-- Bash
++-- Protocol refs:               (standardized behavior)
+|   +-- coordinator-shared-protocol.md (§1-§8)
+|   +-- agent-common-protocol.md
++-- Body: role, constraints      (category-specific logic)
+```
+
+This replaces the previous Template A (varied boilerplate) and ensures consistent coordinator behavior across all 8 categories.
+
+---
+
+## 13. Dual Environment (CLI + Warp)
+
+This infrastructure supports two execution environments:
+
+```
++===========================================================================+
+|                    Shared Infrastructure (.claude/)                        |
+|  CLAUDE.md . agents/ . skills/ . hooks/ . references/ . settings          |
++====+=========================+============================================+
+     |                         |
++----+-------------------------+--+   +------------------------------------+
+|  Claude Code CLI (tmux)         |   |  Warp Agent (Oz)                   |
+|                                 |   |                                    |
+|  Agent Teams multi-instance     |   |  Single-instance execution         |
+|  Lead spawns real teammates     |   |  Lead <-> Teammate role switching  |
+|  Full pipeline with tmux panes  |   |  Sequential persona binding        |
+|  Task API via spawned agents    |   |  Warp Manage Rules (4 rules)      |
+|                                 |   |  WARP.md protocol                 |
+|  Hooks: all 4 active            |   |  Tools: plan, TODO, grep,         |
+|  MCP: full server suite         |   |    edit, shell, web_search,       |
+|  Observability: RTD full        |   |    review, PR, skills             |
++---------------------------------+   +------------------------------------+
+
+Bridge files (both environments read):
+- CLAUDE.md, MEMORY.md, WARP.md, agent .md files, SKILL.md files
+```
+
+**WARP.md** (`/home/palantir/WARP.md`): Compact single-instance protocol with tool→INFRA pattern mapping. See `WARP.md` for details.
+
+**Warp Manage Rules** (4 rules, Warp-only -- not visible to CLI):
+1. **Session Bootstrap** -- Model identity, session start reads, language, core mandates
+2. **Warp Single-Instance Execution** -- Lead↔Teammate switching, persona binding, output, pipeline tiers
+3. **Warp Tool Mapping** -- Warp native tools → INFRA pattern mapping
+4. **Verification & Context Engineering** -- Step-by-step verification, V1-V6, context preservation
+
 ---
 
 ## Version History
 
 | Version | Date | Description |
 |---------|------|-------------|
+| INFRA v9.0+P6 | 2026-02-13 | Phase 6: 3 fork agents, 8 coordinators Template B, 5 coord + 4 fork skill restructure, §A/§B/§C/§D template, Warp dual-env support, 46 agents |
 | INFRA v9.0 | 2026-02-11 | D-001~D-017 integrated, 43 agents, 14 categories, 6 autonomy gaps closed |
 | INFRA v8.0 | 2026-02-10 | Selective Coordinator model, 27 agents, Two-Level Catalog |
 | INFRA v7.0 | 2026-02-09 | COW v2.0 pipeline, RTD observability, RSIL system |
@@ -836,4 +946,4 @@ Transition from Mode 1 to Mode 3 is seamless -- workers are pre-spawned and simp
 
 ---
 
-*Powered by Claude Code with Agent Teams | Model: claude-opus-4-6 | 43 agents across 14 categories*
+*Powered by Claude Code with Agent Teams + Warp | Model: claude-opus-4-6 | 46 agents (35W+8C+3F) across 13 categories*

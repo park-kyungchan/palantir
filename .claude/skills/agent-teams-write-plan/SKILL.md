@@ -10,7 +10,7 @@ Phase 4 (Detailed Design) orchestrator. Transforms brainstorming-pipeline archit
 
 **Announce at start:** "I'm using agent-teams-write-plan to orchestrate Phase 4 (Detailed Design) for this feature."
 
-**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Planner Spawn + Verification → Plan Generation → Gate 4 → Clean Termination
+**Core flow:** PT Check → Input Discovery → Team Setup → Planner Spawn + Verification → Plan Generation → Gate 4 → Clean Termination
 
 ## When to Use
 
@@ -18,7 +18,7 @@ Phase 4 (Detailed Design) orchestrator. Transforms brainstorming-pipeline archit
 Have architecture output from brainstorming-pipeline?
 ├── Working in Agent Teams mode? ─── no ──→ Use /writing-plans (solo)
 ├── yes
-├── GC-v3 with Phase 3 COMPLETE? ── no ──→ Run /brainstorming-pipeline first
+├── PT with Phase 3 COMPLETE? ── no ──→ Run /brainstorming-pipeline first
 ├── yes
 └── Use /agent-teams-write-plan
 ```
@@ -29,8 +29,8 @@ Have architecture output from brainstorming-pipeline?
 
 The following is auto-injected when this skill loads. Use it for Input Discovery.
 
-**Previous Pipeline Output:**
-!`ls -d /home/palantir/.agent/teams/*/global-context.md 2>/dev/null | while read f; do dir=$(dirname "$f"); echo "---"; echo "Dir: $dir"; head -8 "$f"; echo ""; done`
+**Pipeline Session Directories:**
+!`ls -d /home/palantir/.agent/teams/*/ 2>/dev/null | while read d; do echo "$(basename "$d"): $(ls "$d"phase-*/gate-record.yaml 2>/dev/null | wc -l) gates"; done`
 
 **Existing Plans:**
 !`ls /home/palantir/docs/plans/ 2>/dev/null`
@@ -42,7 +42,7 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 
 ---
 
-## Phase 0: PERMANENT Task Check
+## A) Phase 0: PERMANENT Task Check
 
 Lightweight step (~500 tokens). No teammates spawned, no verification required.
 
@@ -60,52 +60,54 @@ read PT     Create one for this feature?"
 │           │
 ▼         ┌─┴─┐
 Continue  Yes   No
-to 4.1    │     │
+to B)     │     │
           ▼     ▼
-        /permanent-tasks    Continue to 4.1
+        /permanent-tasks    Continue to B)
         creates PT-v1       without PT
-        → then 4.1
+        → then B)
 ```
 
-If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
-provides additional context for Phase 4 design. Use it alongside the Dynamic Context above.
+If a PERMANENT Task exists, read it via TaskGet. Its content (user intent, codebase impact map,
+architecture decisions, phase status, constraints) provides authoritative cross-phase context.
+Use it alongside the Dynamic Context above.
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
-the TaskCreate and return a summary. Then continue to Phase 4.1.
+the TaskCreate and return a summary. Then continue to B) Core Workflow.
 
 If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
 User Intent, ask the user to clarify which feature to work on before proceeding.
 
 ---
 
-## Phase 4.1: Input Discovery + Validation
+## B) Phase 4: Core Workflow
+
+### 4.1 Input Discovery + Validation
 
 No teammates spawned yet. Lead-only step.
 
 Use `sequential-thinking` before every judgment in this phase.
 
-### Discovery
+#### Discovery (PT + L2)
 
-Parse the Dynamic Context above to find brainstorming-pipeline output:
-
-1. Look for `.agent/teams/*/global-context.md` files with `Phase 3: COMPLETE`
-2. If `$ARGUMENTS` provides a session-id or path, use that directly
-3. If multiple candidates found, present options via `AskUserQuestion`
-4. If single candidate, confirm with user: "Found brainstorming output at {path}. Use this?"
-5. If no candidates, inform user: "No brainstorming-pipeline output found. Run /brainstorming-pipeline first."
+1. **TaskGet** on PERMANENT Task → read full PT
+2. **Verify:** PT §phase_status.P3.status == COMPLETE
+3. **Read:** PT §phase_status.P3.l2_path → arch-coordinator/L2 location
+4. **Read:** arch-coordinator/L2 §Downstream Handoff for entry context
+   - Contains: Decisions Made, Risks Identified, Interface Contracts, Constraints, Open Questions, Artifacts Produced
+5. If `$ARGUMENTS` provides a session-id or path, use that directly
+6. If multiple candidates found, present options via `AskUserQuestion`
+7. If PT not found or Phase 3 not complete: "Phase 3 not complete. Run /brainstorming-pipeline first."
 
 If a PERMANENT Task was loaded in Phase 0, use its Codebase Impact Map and user intent
 to inform validation and provide additional context to the architect.
 
-### Validation
-
-After identifying the source directory, verify:
+#### Validation
 
 | # | Check | On Failure |
 |---|-------|------------|
-| V-1 | `global-context.md` exists with `Phase 3: COMPLETE` | Abort: "GC-v3 not found or Phase 3 not complete" |
-| V-2 | `phase-3/architect-1/L3-full/architecture-design.md` exists | Abort: "Architecture design not found" |
-| V-3 | GC-v3 contains Scope, Component Map, Interface Contracts sections | Abort: "GC-v3 missing required sections: {list}" |
+| V-1 | PT exists with §phase_status.P3.status == COMPLETE | Abort: "Phase 3 not complete. Run /brainstorming-pipeline first" |
+| V-2 | Architecture design L3 exists (path from PT §phase_status.P3.l2_path → L3 reference) | Abort: "Architecture design not found" |
+| V-3 | PT §Architecture Decisions + arch-coordinator/L2 §Downstream Handoff contain Scope, Component Map, Interface Contracts | Abort: "Phase 3 context missing required sections: {list}" |
 
 Use `sequential-thinking` to evaluate validation results.
 
@@ -113,31 +115,31 @@ On all checks PASS → proceed to 4.2.
 
 ---
 
-## Phase 4.2: Team Setup
+### 4.2 Team Setup
 
 ```
 TeamCreate:
   team_name: "{feature-name}-write-plan"
 ```
 
-Create orchestration-plan.md and copy GC-v3 to new session directory.
+Create orchestration-plan.md in new session directory.
 
 ---
 
-## Phase 4.3: Planner Spawn + Verification
+### 4.3 Planner Spawn + Verification
 
 Protocol execution follows CLAUDE.md §6 and §10.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Tier-Based Routing (D-001/D-005)
+#### Tier-Based Routing (D-001/D-005)
 
 | Tier | Route | Agents |
 |------|-------|--------|
 | STANDARD | Lead-direct | Single `architect` |
 | COMPLEX | Coordinator | `planning-coordinator` + decomposition-planner, interface-planner, strategy-planner |
 
-### Spawn (STANDARD — Lead-direct)
+#### Spawn (STANDARD — Lead-direct)
 
 ```
 Task tool:
@@ -147,7 +149,7 @@ Task tool:
   mode: "default"
 ```
 
-### Spawn (COMPLEX — Coordinator Route)
+#### Spawn (COMPLEX — Coordinator Route)
 
 ```
 1. Spawn planning-coordinator (subagent_type: "planning-coordinator")
@@ -158,15 +160,14 @@ Task tool:
 For COMPLEX tier, Lead writes phase-context.md (D-012) with Phase 3 architecture
 summary and constraints before spawning. Follow CLAUDE.md §6 Coordinator Management.
 
-### Directive Construction
+#### Directive Construction
 
 The directive must include these context layers:
 
 1. **PERMANENT Task ID** — `PT-ID: {task_id} | PT-v{N}` so architect can call TaskGet for full context
-2. **GC-v3 full embedding** — the entire global-context.md (session-level artifacts)
-3. **Phase 3 Architect L2-summary.md** — embedded inline in task-context for architecture narrative
-4. **Architecture Design path** — `{source}/phase-3/architect-1/L3-full/architecture-design.md` for architect to Read
-5. **CH-001 Exemplar path** — `docs/plans/2026-02-07-ch001-ldap-implementation.md` for format reference
+2. **Predecessor L2 path** — arch-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P3.l2_path) — embedded or referenced for architecture narrative
+3. **Architecture Design path** — L3 architecture-design.md for architect to Read
+4. **CH-001 Exemplar path** — `docs/plans/2026-02-07-ch001-ldap-implementation.md` for format reference
 
 Task-context must instruct architect to:
 - Step 1: Read the PERMANENT Task via TaskGet, read architecture-design.md and CH-001
@@ -181,7 +182,7 @@ Task-context must instruct architect to:
 - Dual-save plan to docs/plans/ and L3-full/
 - Use sequential-thinking for all design decisions
 
-### Understanding Verification
+#### Understanding Verification
 
 1. Architect reads PERMANENT Task via TaskGet and confirms context receipt
 2. Architect explains their understanding of the task to Lead
@@ -195,7 +196,7 @@ All agents use `sequential-thinking` throughout.
 
 ---
 
-## Phase 4.4: Plan Generation
+### 4.4 Plan Generation
 
 After understanding is verified, architect produces the implementation plan.
 
@@ -218,11 +219,11 @@ Architect reports completion via SendMessage.
 
 ---
 
-## Phase 4.5: Gate 4
+### 4.5 Gate 4
 
 Use `sequential-thinking` for all gate evaluation.
 
-### Criteria
+#### Criteria
 
 | # | Criterion |
 |---|-----------|
@@ -233,12 +234,12 @@ Use `sequential-thinking` for all gate evaluation.
 | G4-5 | §4 tasks all have AC-0 |
 | G4-6 | §7 includes V6 Code Plausibility |
 | G4-7 | §5 specs have Verification Level tags |
-| G4-8 | Plan satisfies GC-v3 Phase 4 Entry Requirements |
+| G4-8 | Plan satisfies Phase 3 architecture decisions and constraints |
 
 Gate-record.yaml must include per-criterion evidence (file:line references or specific
 observations). A PASS without evidence is incomplete.
 
-### User Review
+#### User Review
 
 Present plan summary to user before final approval:
 
@@ -253,32 +254,32 @@ Present plan summary to user before final approval:
 Shall I proceed with Gate 4 approval?
 ```
 
-### Gate Audit (STANDARD/COMPLEX)
+#### Gate Audit (STANDARD/COMPLEX)
 
 Mandatory for STANDARD and COMPLEX tiers (see `gate-evaluation-standard.md` §6).
-Spawn `gate-auditor` with G4 criteria and evidence paths (plan, L1/L2, GC).
+Spawn `gate-auditor` with G4 criteria and evidence paths (plan, L1/L2).
 Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
-### On APPROVE
-1. GC-v3 → GC-v4: preserve all GC-v3 sections and add Implementation Plan Reference,
-   Task Decomposition, File Ownership Map, Phase 6 Entry Conditions, Phase 5 Validation
-   Targets, Commit Strategy; update Phase Pipeline Status
-2. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) with Implementation Plan Reference,
-   Task Decomposition summary, File Ownership Map, and Phase 4 COMPLETE status
-3. Write phase-4/gate-record.yaml
+#### On APPROVE
+
+1. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+   - Add §Implementation Plan (l3_path, task_count, file_ownership)
+   - Update §phase_status.P4 = COMPLETE with l2_path
+2. Write `phase-4/gate-record.yaml`
+3. Update GC scratch: Phase Pipeline Status (session-scoped only)
 4. Proceed to Clean Termination
 
-### On ITERATE (max 3)
+#### On ITERATE (max 3)
 - Relay specific revision instructions to architect
 - Architect revises and resubmits
 
 ---
 
-## Clean Termination
+### Clean Termination
 
 After Gate 4 APPROVE:
 
-### Output Summary
+#### Output Summary
 
 ```markdown
 ## agent-teams-write-plan Complete (Phase 4)
@@ -287,15 +288,14 @@ After Gate 4 APPROVE:
 **Complexity:** {level}
 
 **Artifacts:**
-- PERMANENT Task (PT-v{N}) — authoritative project context (updated with plan reference)
+- PERMANENT Task (PT-v{N}) — updated with implementation plan reference
 - Implementation Plan: docs/plans/{filename}
 - Session artifacts: .agent/teams/{session-id}/
 
-**Next:** Phase 5 (Plan Validation) — validates the implementation plan.
-Input: GC-v4 + plan document. Update PERMANENT Task with `/permanent-tasks` if scope evolved.
+**Next:** Phase 5 (Plan Validation) — use /plan-validation-pipeline.
 ```
 
-### Shutdown
+#### Shutdown
 
 1. Shutdown architect-1: `SendMessage type: "shutdown_request"`
 2. `TeamDelete` — cleans team coordination files
@@ -303,51 +303,61 @@ Input: GC-v4 + plan document. Update PERMANENT Task with `/permanent-tasks` if s
 
 ---
 
-## Cross-Cutting
+## C) Interface
 
-### RTD Index
+### Input
+- **PT-v{N}** (via TaskGet): §User Intent, §Codebase Impact Map, §Architecture Decisions, §Constraints
+- **Predecessor L2:** arch-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P3.l2_path)
+  - Contains: Decisions Made, Risks Identified, Interface Contracts, Constraints, Open Questions, Artifacts Produced
+- **CH-001 exemplar:** `docs/plans/2026-02-07-ch001-ldap-implementation.md` (10-section format reference)
 
-At each Decision Point in this phase, update the RTD index:
-1. Update `current-dp.txt` with the new DP number
-2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
-3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+### Output
+- **PT-v{N+1}** (via /permanent-tasks or TaskUpdate): adds §Implementation Plan (l3_path, task_count, file_ownership), §phase_status.P4=COMPLETE
+- **L1/L2/L3:** planning-coordinator L1/L2/L3 (COMPLEX) or architect L1/L2/L3 (STANDARD)
+- **Gate record:** gate-record.yaml for Gate 4
+- **Implementation plan file:** `docs/plans/{date}-{feature}-implementation.md` (10-section format)
+- **GC scratch:** Phase Pipeline Status update (session-scoped only)
 
-Decision Points for this skill:
-- DP-1: Input validation and plan scope
-- DP-2: Architect spawn
-- DP-3: Plan completion assessment
-- DP-4: Gate 4 evaluation
+### Next
+Invoke `/plan-validation-pipeline "$ARGUMENTS"`.
+Validation needs:
+- PT §phase_status.P4.status == COMPLETE
+- PT §phase_status.P4.l2_path → planning-coordinator/L2 §Downstream Handoff (contains Task Decomposition, File Ownership, Validation Targets, Commit Strategy)
+- PT §implementation_plan.l3_path → detailed plan for challenge
 
-### Sequential Thinking
-All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, design, and verification.
+---
 
-### Error Handling
+## D) Cross-Cutting
+
+Follow CLAUDE.md §6 (Agent Selection and Routing), §9 (Compact Recovery), §10 (Integrity Principles) for all protocol decisions.
+Follow `coordinator-shared-protocol.md` for coordinator management when COMPLEX tier is active.
+Follow `gate-evaluation-standard.md` §6 for gate audit requirements.
+All agents use `sequential-thinking` for analysis, judgment, and verification.
+Task descriptions follow `task-api-guideline.md` v6.0 §3 for field requirements.
+
+### Skill-Specific Error Handling
+
 | Situation | Response |
 |-----------|----------|
-| No brainstorming output | Inform user, suggest /brainstorming-pipeline |
-| GC-v3 incomplete | Abort with missing section list |
-| Spawn failure | Retry once, abort with notification |
-| Understanding verification 3x rejection | Abort architect, re-spawn |
+| PT not found or Phase 3 not complete | Inform user, suggest /brainstorming-pipeline |
+| Architecture design not found | Abort with guidance |
+| Understanding verification 3x rejection | Abort architect, re-spawn with enhanced context |
 | Gate 4 3x iteration | Abort, present partial results |
-| Context compact | CLAUDE.md §9 recovery |
-| User cancellation | Graceful shutdown, preserve artifacts |
 
-### Compact Recovery
-- Lead: orchestration-plan → task list → gate records → L1 → re-inject
-- Architect: call TaskGet on PERMANENT Task for immediate self-recovery, then read own L1/L2/L3 and re-submit understanding
+---
 
 ## Key Principles
 
-- DRY, YAGNI, TDD — preserved from writing-plans
-- Exact file paths always — even more critical with multiple implementers
-- Complete code in plan — with Verification Level tags for confidence signaling
-- AC-0 mandatory — every task starts with plan-vs-reality verification
-- V6 Code Plausibility — compensates for architect's inability to run code
-- Sequential thinking always — structured reasoning at every decision point
-- Protocol delegated — CLAUDE.md owns verification protocol, skill owns orchestration
-- Clean termination — no auto-chaining to Phase 5
-- Dual-save — docs/plans/ (permanent) + .agent/teams/ (session)
-- Task descriptions follow task-api-guideline.md v6.0 §3 for field requirements
+- **DRY, YAGNI, TDD** — preserved from writing-plans
+- **Exact file paths always** — even more critical with multiple implementers
+- **Complete code in plan** — with Verification Level tags for confidence signaling
+- **AC-0 mandatory** — every task starts with plan-vs-reality verification
+- **V6 Code Plausibility** — compensates for architect's inability to run code
+- **Sequential thinking always** — structured reasoning at every decision point
+- **Protocol delegated** — CLAUDE.md owns verification protocol, skill owns orchestration
+- **Clean termination** — no auto-chaining to Phase 5
+- **Dual-save** — docs/plans/ (permanent) + .agent/teams/ (session)
+- **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`
 
 ## Never
 
@@ -356,7 +366,7 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - Auto-chain to Phase 5 after termination
 - Proceed past Gate 4 without all criteria met
 - Let the architect write to Task API
-- Skip input validation (GC-v3 must exist with Phase 3 COMPLETE)
+- Skip input validation (PT must exist with Phase 3 COMPLETE)
 - Omit AC-0 from any TaskCreate definition
 - Omit V6 from the validation checklist
 - Write §5 specs without reading target files first

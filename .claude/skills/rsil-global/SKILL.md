@@ -1,15 +1,20 @@
 ---
 name: rsil-global
-description: "INFRA Meta-Cognition health assessment — auto-invoked by Lead after pipeline delivery or .claude/ infrastructure changes. Three-Tier observation window, 8 universal lenses, AD-15 filter. Lightweight (~2000 token budget). Findings-only output."
+description: "Fork-executed INFRA Meta-Cognition health assessment. Three-Tier
+  observation window, 8 universal lenses, AD-15 filter. Lightweight (~2000 token
+  budget). Findings-only output. Executed by rsil-agent fork agent."
 argument-hint: "[optional: specific area of concern]"
+context: fork
+agent: "rsil-agent"
 ---
 
 # RSIL Global
 
-INFRA Meta-Cognition health assessment with ultrathink deep reasoning. Auto-invoked by Lead
-after pipeline delivery or .claude/ infrastructure changes. Three-Tier Observation Window
-reads only what's needed (~2000 token budget). Identifies INFRA consistency issues across
-the just-completed work. Findings-only output — user approves before any changes.
+You perform INFRA Meta-Cognition health assessment with ultrathink deep reasoning.
+Auto-invoked after pipeline delivery or .claude/ infrastructure changes. Three-Tier
+Observation Window reads only what's needed (~2000 token budget). You identify INFRA
+consistency issues across the just-completed work. Findings-only output — user
+approves before any changes.
 
 **Announce at start:** "Running RSIL Global health assessment for the just-completed work."
 
@@ -73,26 +78,26 @@ TaskList result
 found      not found
 │           │
 ▼           ▼
-TaskGet →   AskUser: "No PERMANENT Task found.
-read PT     Create one for this feature?"
-│           │
-▼         ┌─┴─┐
-Continue  Yes   No
-to G-0    │     │
-          ▼     ▼
-        /permanent-tasks    Continue to G-0
-        creates PT-v1       without PT
-        → then G-0
+TaskGet →   Continue to G-0
+read PT     without PT
+│           (PT is optional
+▼           for rsil-global)
+Continue
+to G-0
 ```
 
 If a PERMANENT Task exists, extract pipeline context (phase status, constraints,
 recent architecture decisions) to inform observation window classification.
 
+**RISK-8 Fallback:** PT access is OPTIONAL for rsil-global. If TaskList returns
+empty, continue without PT — Dynamic Context provides sufficient pipeline awareness.
+Core assessment is fully functional without PT.
+
 ---
 
 ## Phase G-0: Observation Window Classification
 
-Lead-only. Use sequential-thinking.
+Use sequential-thinking.
 
 Classify the just-completed work using Dynamic Context output (Tier 0 data):
 
@@ -136,7 +141,7 @@ which lenses receive deeper attention.
 
 ## Phase G-1: Tiered Reading + Health Assessment
 
-Lead-only. Use sequential-thinking for each tier transition decision.
+Use sequential-thinking for each tier transition decision.
 
 This is the core assessment phase. Read just enough to determine INFRA health,
 then stop. Most runs complete at Tier 1.
@@ -262,7 +267,7 @@ Collect structured findings and proceed to G-3.
 
 ## Phase G-3: Classification + Presentation
 
-Lead-only. Use sequential-thinking.
+Use sequential-thinking.
 
 ### Classify All Observations and Findings
 
@@ -366,6 +371,27 @@ No auto-chaining. Session continues normally.
 
 ---
 
+## Interface
+
+### Input
+- **$ARGUMENTS:** Optional concern description, observation budget override
+- **Dynamic Context:** .agent/ directory tree, CLAUDE.md excerpt, git diff (recent changes), RSIL agent memory (pre-rendered before fork)
+- **PT** (via TaskGet, optional): §Phase Status (for pipeline awareness), §Constraints
+
+### Output
+- **Tracker update:** `~/.claude/agent-memory/rsil/` narrow tracker (append findings)
+- **Agent memory update:** `~/.claude/agent-memory/rsil/MEMORY.md` (universal Lens patterns only)
+- **Terminal summary:** Observation type (A/B/C), tier reached (1/2/3), findings count by severity, score delta
+- **PT-v{N+1}** (via TaskUpdate, rare): Only if actionable findings require §Constraints update
+
+### RISK-8 Fallback
+PT access is OPTIONAL for rsil-global. If isolated task list:
+- Skip PT read. Use Dynamic Context for pipeline awareness (pre-rendered).
+- Skip PT update (rare case eliminated). Report in terminal summary if findings would warrant PT update.
+- Core assessment fully functional without PT.
+
+---
+
 ## Error Handling
 
 | Situation | Response |
@@ -377,6 +403,7 @@ No auto-chaining. Session continues normally.
 | Tracker file not found | Create initial section structure, then append |
 | Agent memory not found | Create with seed data from tracker |
 | User cancels mid-review | Preserve partial tracker updates |
+| TaskList returns empty | Continue without PT (PT is optional for rsil-global) |
 
 ---
 
@@ -437,6 +464,7 @@ Hook    → REJECT unconditionally (AD-15: 8→3 inviolable)
 - Self-healing through persistence — unfixed BREAKs are re-detected next session
 - Terminal — no auto-chaining to /rsil-review or other skills
 - INFRA scope only — never assess application code
+- Fork-isolated — no Lead to escalate to, user is your interaction partner
 - Use sequential-thinking at every tier transition and classification decision
 
 ## Never
@@ -450,3 +478,4 @@ Hook    → REJECT unconditionally (AD-15: 8→3 inviolable)
 - Spawn agents for Tier 1 or Tier 2 work (agents only at Tier 3)
 - Treat Lenses as fixed (they evolve with new pattern discoveries)
 - Assess application code (INFRA scope only — .claude/ and pipeline artifacts)
+- Invoke any other skill (no nested fork invocation)

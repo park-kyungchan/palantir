@@ -48,13 +48,6 @@ node_modules/
 # Config (if contains secrets)
 .config/
 
-# Gemini config
-.gemini/
-
-# Antigravity (removed — no longer used)
-.antigravity
-.antigravity-server/
-.antigravity-server.bak*/
 
 # Large files (>100MB GitHub limit)
 *.jsonl

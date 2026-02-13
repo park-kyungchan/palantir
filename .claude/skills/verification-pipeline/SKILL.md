@@ -10,7 +10,7 @@ Phase 7 (Testing) + Phase 8 (Integration) orchestrator. Verifies implementation 
 
 **Announce at start:** "I'm using verification-pipeline to orchestrate Phase 7-8 (Testing + Integration) for this feature."
 
-**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Coordinator + Worker Spawn → Coordinator-Managed Testing → Gate 7 → Coordinator-Managed Integration (conditional) → Gate 8 → Clean Termination
+**Core flow:** PT Check → Input Discovery → Team Setup → Coordinator + Worker Spawn → Coordinator-Managed Testing → Gate 7 → Coordinator-Managed Integration (conditional) → Gate 8 → Clean Termination
 
 ## When to Use
 
@@ -18,7 +18,7 @@ Phase 7 (Testing) + Phase 8 (Integration) orchestrator. Verifies implementation 
 Have Phase 6 implementation output?
 ├── Working in Agent Teams mode? ─── no ──→ Run tests manually
 ├── yes
-├── GC-v5 with Phase 6 COMPLETE? ── no ──→ Run /agent-teams-execution-plan first
+├── PT with Phase 6 COMPLETE? ── no ──→ Run /agent-teams-execution-plan first
 ├── yes
 ├── Multiple implementers in Phase 6?
 │   ├── yes ──→ Full pipeline (Phase 7 + Phase 8)
@@ -51,7 +51,7 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 
 ---
 
-## Phase 0: PERMANENT Task Check
+## A) Phase 0: PERMANENT Task Check
 
 Lightweight step (~500 tokens). No teammates spawned, no verification required.
 
@@ -69,56 +69,61 @@ read PT     Create one for this feature?"
 │           │
 ▼         ┌─┴─┐
 Continue  Yes   No
-to 7.1    │     │
+to B)     │     │
           ▼     ▼
-        /permanent-tasks    Continue to 7.1
+        /permanent-tasks    Continue to B)
         creates PT-v1       without PT
-        → then 7.1
+        → then B)
 ```
 
-If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
-provides additional context for verification. Use it alongside the Dynamic Context above.
+If a PERMANENT Task exists, read it via TaskGet. Its content (user intent, codebase impact map,
+architecture decisions, phase status, constraints) provides authoritative cross-phase context.
+Use it alongside the Dynamic Context above.
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
-the TaskCreate and return a summary. Then continue to Phase 7.1.
+the TaskCreate and return a summary. Then continue to B) Core Workflow.
+
+If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
+User Intent, ask the user to clarify which feature to work on before proceeding.
 
 ---
 
-## Phase 7.1: Input Discovery + Validation
+## B) Phase 7-8: Core Workflow
+
+### 7.1 Input Discovery + Validation
 
 No teammates spawned. Lead-only step.
 
 Use `sequential-thinking` before every judgment in this phase.
 
-### Discovery
+#### Discovery (PT + L2)
 
-Parse the Dynamic Context above to find Phase 6 execution output:
+1. **TaskGet** on PERMANENT Task → read full PT
+2. **Verify:** PT §phase_status.P6.status == COMPLETE
+3. **Read:** PT §phase_status.P6.l2_path → execution-coordinator/L2 location
+4. **Read:** execution-coordinator/L2 §Downstream Handoff for entry context
+   - Contains: Implementation Results, Interface Changes from Spec, Test Coverage Targets, Phase 7 Entry Conditions
+5. If `$ARGUMENTS` provides a session-id or path, use that directly
+6. If multiple candidates found, present options via `AskUserQuestion`
+7. If PT not found or Phase 6 not complete: "Phase 6 not complete. Run /agent-teams-execution-plan first."
 
-1. Look for `.agent/teams/*/phase-6/gate-record.yaml` with `result: APPROVED`
-2. If `$ARGUMENTS` provides a session-id or path, use that directly
-3. If multiple candidates found, present options via `AskUserQuestion`
-4. If single candidate, confirm with user: "Found Phase 6 output at {path}. Use this?"
-5. If no candidates, inform user: "No Phase 6 output found. Run /agent-teams-execution-plan first."
-
-### Rollback Detection
+#### Rollback Detection
 
 Check for `rollback-record.yaml` in downstream phase directories (phase-8/):
 - If found: read rollback context (revision targets, prior-attempt lessons) per `pipeline-rollback-protocol.md` §3
 - Include rollback context in tester directives (what was attempted, why rolled back, areas to focus on)
 - If not found: proceed normally
 
-### Validation
-
-After identifying the source, verify:
+#### Validation
 
 | # | Check | On Failure |
 |---|-------|------------|
-| V-1 | `global-context.md` exists with `Phase 6: COMPLETE` | Abort: "GC-v5 not found or Phase 6 not complete" |
+| V-1 | PT exists with §phase_status.P6.status == COMPLETE | Abort: "Phase 6 not complete. Run /agent-teams-execution-plan first" |
 | V-2 | Phase 6 `gate-record.yaml` with `result: APPROVED` | Abort: "Phase 6 gate not approved" |
 | V-3 | At least one implementer L1/L2 exists in `phase-6/` | Abort: "No implementer output found" |
 | V-4 | Implementation plan exists in `docs/plans/` | Abort: "Design spec not found for test reference" |
 
-### Component Analysis
+#### Component Analysis
 
 Count implementers from Phase 6 gate record to determine pipeline shape:
 
@@ -139,28 +144,28 @@ On all checks PASS → proceed to 7.2.
 
 ---
 
-## Phase 7.2: Team Setup
+### 7.2 Team Setup
 
 ```
 TeamCreate:
   team_name: "{feature-name}-verification"
 ```
 
-Create orchestration-plan.md and copy GC-v5 to new session directory.
+Create orchestration-plan.md in new session directory.
 Create TEAM-MEMORY.md with Lead, testing-coordinator, tester, and integrator (if applicable) sections.
 
 ---
 
-## Phase 7.3: Testing Coordinator Spawn + Worker Pre-Spawn
+### 7.3 Testing Coordinator Spawn + Worker Pre-Spawn
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Pipeline Tier Awareness (D-001)
+#### Pipeline Tier Awareness (D-001)
 
 > TRIVIAL tier skips Phase 7 entirely. STANDARD tier runs Phase 7 only (no Phase 8).
 > COMPLEX tier runs full Phase 7 + Phase 8.
 
-### Adaptive Tester Count
+#### Adaptive Tester Count
 
 ```
 Phase 6 independent component groups
@@ -175,7 +180,7 @@ Phase 6 independent component groups
 COMPLEX tier: add contract-tester for interface verification
 ```
 
-### Testing Coordinator Spawn
+#### Testing Coordinator Spawn
 
 ```
 Task tool:
@@ -189,14 +194,15 @@ Task tool:
 
 Include these context layers:
 
-1. **PERMANENT Task content** — embed essential PT content (user intent, impact map, constraints)
+1. **PERMANENT Task ID** (PT-v{N}) — coordinator reads full context via TaskGet
 2. **Phase 6 implementer outputs** — paths to L1/L2 files per component
-3. **Design spec path** — `docs/plans/{plan-file}` for acceptance criteria reference
-4. **Test scope instructions** — which components to test, which interfaces to verify
-5. **Phase 8 conditional trigger** — integrator needed if 2+ implementers in Phase 6
-6. **Worker names** — sent via follow-up message after worker pre-spawn
+3. **Predecessor L2 path** — execution-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P6.l2_path)
+4. **Design spec path** — `docs/plans/{plan-file}` for acceptance criteria reference
+5. **Test scope instructions** — which components to test, which interfaces to verify
+6. **Phase 8 conditional trigger** — integrator needed if 2+ implementers in Phase 6
+7. **Worker names** — sent via follow-up message after worker pre-spawn
 
-### Worker Pre-Spawn
+#### Worker Pre-Spawn
 
 After testing-coordinator confirms ready, pre-spawn workers:
 
@@ -216,7 +222,7 @@ Task(subagent_type="integrator", name="integrator-1",
 
 Worker directives include:
 - "Your coordinator is: test-coord. Report progress and completion to your coordinator."
-- PT content (embedded) — user intent, impact map, constraints
+- PT-ID for TaskGet — user intent, impact map, constraints
 - Phase 6 output paths for test reference
 - Design spec path for acceptance criteria
 
@@ -227,7 +233,7 @@ SendMessage to test-coord:
    Begin worker verification and test execution."
 ```
 
-### Understanding Verification (Delegated — AD-11)
+#### Understanding Verification (Delegated — AD-11)
 
 ```
 Level 1: Lead verifies testing-coordinator
@@ -242,11 +248,11 @@ Level 2: Testing-coordinator verifies workers
 
 ---
 
-## Phase 7.4: Test Execution
+### 7.4 Test Execution
 
 Testers work with: Read, Glob, Grep, Write, Bash, sequential-thinking, context7, tavily.
 
-### Test Design Protocol
+#### Test Design Protocol
 
 For each assigned component:
 
@@ -262,7 +268,7 @@ For each assigned component:
 4. **Execute** tests via Bash (language-appropriate test runner)
 5. **Analyze** failures — root cause, affected modules, fix recommendations
 
-### Expected Output
+#### Expected Output
 
 ```
 .agent/teams/{session-id}/phase-7/tester-{N}/
@@ -274,15 +280,15 @@ For each assigned component:
     └── coverage-report.md (if applicable)
 ```
 
-Tester reports completion with pass/fail summary to Lead via SendMessage.
+Tester reports completion with pass/fail summary to coordinator via SendMessage.
 
 ---
 
-## Phase 7.5: Gate 7
+### 7.5 Gate 7
 
 Use `sequential-thinking` for all gate evaluation.
 
-### Criteria
+#### Criteria
 
 | # | Criterion | Method |
 |---|-----------|--------|
@@ -292,34 +298,36 @@ Use `sequential-thinking` for all gate evaluation.
 | G7-4 | Failure analysis quality (root causes identified, fix recommendations provided) | Read L2 failure section |
 | G7-5 | Tester L1/L2/L3 artifacts exist | Check file existence |
 
-### Test Result Evaluation
+#### Test Result Evaluation
 
 Read testing-coordinator's consolidated L2-summary.md (includes tester results):
 
 **ALL PASS:**
 - Proceed to Phase 8 (or Clean Termination if single implementer)
-- Add Phase 7 status to GC
 
 **FAILURES FOUND:**
 - Present failure summary to user
 - Ask: "Accept failures and proceed to integration, or return to Phase 6 for fixes?"
-- If accepted: Document known failures in GC, proceed
+- If accepted: Document known failures, proceed
 - If rejected: Execute rollback P7→P6 per `pipeline-rollback-protocol.md` with specific fix targets
 
-### Gate Audit (STANDARD/COMPLEX)
+#### Gate Audit (STANDARD/COMPLEX)
 
 Optional for STANDARD, mandatory for COMPLEX (see `gate-evaluation-standard.md` §6).
 If audit required: spawn `gate-auditor` with G7 criteria and evidence paths.
 Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
-### On APPROVE
+#### On APPROVE
 
-1. Update GC: Add `Phase 7: COMPLETE (Gate 7 APPROVED)`
+1. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+   - Update §phase_status.P7 = COMPLETE with l2_path
+   - Add §Verification Summary (test_count, pass_rate)
 2. Write `phase-7/gate-record.yaml`
-3. If single implementer → skip to Clean Termination
-4. If multiple implementers → proceed to Phase 8.1
+3. Update GC scratch: Phase Pipeline Status (session-scoped only)
+4. If single implementer → skip to Clean Termination
+5. If multiple implementers → proceed to Phase 8.1
 
-### On ITERATE (max 3)
+#### On ITERATE (max 3)
 
 - If test quality insufficient: relay specific improvement instructions
 - Tester revises and resubmits
@@ -327,14 +335,14 @@ Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ---
 
-## Phase 8.1: Integration Phase (Coordinator-Managed)
+### 8.1 Integration Phase (Coordinator-Managed)
 
 **Conditional phase** — only runs if Phase 6 had 2+ implementers with separate file ownership
 boundaries. If Phase 6 had a single implementer, skip to Clean Termination.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Coordinator Transition
+#### Coordinator Transition
 
 Testing-coordinator is already active from Phase 7. Integrator was pre-spawned in Phase 7.3.
 No new spawning needed.
@@ -348,7 +356,7 @@ SendMessage to test-coord:
    Begin integrator management."
 ```
 
-### Coordinator Manages Integration
+#### Coordinator Manages Integration
 
 Testing-coordinator:
 1. Assigns integration scope to integrator with: Phase 6 outputs, Phase 7 test results,
@@ -360,11 +368,11 @@ Testing-coordinator:
 
 ---
 
-## Phase 8.2: Integration Execution
+### 8.2 Integration Execution
 
 Integrator works with: Read, Glob, Grep, Edit, Write, Bash, sequential-thinking, context7, tavily.
 
-### Integration Protocol
+#### Integration Protocol
 
 1. **Read** all implementer L1/L2/L3 from Phase 6
 2. **Read** tester results from Phase 7
@@ -377,7 +385,7 @@ Integrator works with: Read, Glob, Grep, Edit, Write, Bash, sequential-thinking,
 6. **Test** integration after each batch (use Bash for test runners)
 7. **Verify** against Phase 4 interface specs
 
-### Conflict Resolution Principles
+#### Conflict Resolution Principles
 
 1. Preserve both implementers' intent when possible
 2. Irreconcilable conflict → escalate to Lead
@@ -385,7 +393,7 @@ Integrator works with: Read, Glob, Grep, Edit, Write, Bash, sequential-thinking,
 4. Verify resolved code against Phase 4 interface specs
 5. Run integration tests after each resolution batch
 
-### Expected Output
+#### Expected Output
 
 ```
 .agent/teams/{session-id}/phase-8/integrator-1/
@@ -397,15 +405,15 @@ Integrator works with: Read, Glob, Grep, Edit, Write, Bash, sequential-thinking,
     └── merged-diff.patch (if applicable)
 ```
 
-Integrator reports completion to Lead via SendMessage.
+Integrator reports completion to coordinator via SendMessage.
 
 ---
 
-## Phase 8.3: Gate 8
+### 8.3 Gate 8
 
 Use `sequential-thinking` for all gate evaluation.
 
-### Criteria
+#### Criteria
 
 | # | Criterion | Method |
 |---|-----------|--------|
@@ -416,19 +424,22 @@ Use `sequential-thinking` for all gate evaluation.
 | G8-5 | Integrator L1/L2/L3 artifacts exist | Check file existence |
 | G8-6 | Testing-coordinator consolidated L2 exists | Check file existence |
 
-### Gate Audit (COMPLEX only)
+#### Gate Audit (COMPLEX only)
 
 Mandatory for COMPLEX tier (see `gate-evaluation-standard.md` §6).
 Spawn `gate-auditor` with G8 criteria and evidence paths (integrator L2, merge results).
 Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
-### On APPROVE
+#### On APPROVE
 
-1. Update GC: Add `Phase 8: COMPLETE (Gate 8 APPROVED)`
+1. Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+   - Update §phase_status.P8 = COMPLETE with l2_path
+   - Update §Verification Summary with integration results
 2. Write `phase-8/gate-record.yaml`
-3. Proceed to Clean Termination
+3. Update GC scratch: Phase Pipeline Status (session-scoped only)
+4. Proceed to Clean Termination
 
-### On ITERATE (max 3)
+#### On ITERATE (max 3)
 
 - Specific fix instructions to integrator
 - Integrator revises and resubmits
@@ -436,32 +447,11 @@ Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
 ---
 
-## Clean Termination
+### Clean Termination
 
 After final gate decision (Gate 7 for single-implementer, Gate 8 for multi-implementer):
 
-### GC Update
-
-Add to global-context.md:
-
-```markdown
-## Phase Pipeline Status
-- Phase 7: COMPLETE (Gate 7 APPROVED)
-- Phase 8: COMPLETE (Gate 8 APPROVED) / SKIPPED (single implementer)
-
-## Verification Results
-- Tests: {pass}/{total} ({pass rate}%)
-- Coverage: {summary}
-- Failures resolved: {count}
-- Integration conflicts: {count} (if Phase 8 ran)
-
-## Phase 9 Entry Conditions
-- All tests passing
-- All conflicts resolved (if applicable)
-- Known issues: {list or "none"}
-```
-
-### Output Summary
+#### Output Summary
 
 ```markdown
 ## verification-pipeline Complete (Phase 7-8)
@@ -480,13 +470,14 @@ Add to global-context.md:
 **Gate 7:** APPROVED
 **Gate 8:** APPROVED / SKIPPED
 
-**Artifacts:** .agent/teams/{session-id}/
-**Global Context:** GC-v6
+**Artifacts:**
+- PERMANENT Task (PT-v{N}) — updated with verification summary
+- Session artifacts: .agent/teams/{session-id}/
 
-**Next:** Phase 9 (Delivery) — Lead-only phase. Commit, PR, documentation.
+**Next:** Phase 9 (Delivery) — use /delivery-pipeline.
 ```
 
-### Shutdown
+#### Shutdown
 
 1. Shutdown testing-coordinator: `SendMessage type: "shutdown_request"`
    (coordinator signals workers to stop)
@@ -496,55 +487,44 @@ Add to global-context.md:
 
 ---
 
-## Cross-Cutting Requirements
+## C) Interface
 
-### RTD Index
+### Input
+- **PT-v{N}** (via TaskGet): §User Intent, §Codebase Impact Map, §Implementation Results (pointer to L3), §Constraints
+- **Predecessor L2:** execution-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P6.l2_path)
+  - Contains: Implementation Results, Interface Changes from Spec, Test Coverage Targets, Phase 7 Entry Conditions
 
-At each Decision Point in this phase, update the RTD index:
-1. Update `current-dp.txt` with the new DP number
-2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
-3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+### Output
+- **PT-v{N+1}** (via /permanent-tasks or TaskUpdate): adds §Verification Summary (test_count, pass_rate, l2_path), §phase_status.P7=COMPLETE, §phase_status.P8=COMPLETE (if Phase 8 runs)
+- **L1/L2/L3:** testing-coordinator L1/L2/L3, per-tester/integrator L1/L2/L3
+- **Gate records:** gate-record.yaml for Gate 7, Gate 8 (conditional)
+- **GC scratch:** Phase Pipeline Status updates (session-scoped only)
 
-Decision Points for this skill:
-- DP: Tester spawn
-- DP: Test evaluation
-- DP: Integrator spawn
-- DP: Integration review
-- DP: Gate 7/8 evaluation
+### Next
+Invoke `/delivery-pipeline "$ARGUMENTS"`.
+Delivery needs:
+- PT §phase_status with P7==COMPLETE (and P8==COMPLETE if applicable)
+- PT §phase_status.P7.l2_path → testing-coordinator/L2 §Downstream Handoff (contains Verification Results, Phase 9 Entry Conditions)
 
-### Sequential Thinking
+---
 
-All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, and verification.
+## D) Cross-Cutting
 
-| Agent | When |
-|-------|------|
-| Lead (7.1) | Input validation, component analysis |
-| Lead (7.3) | Understanding verification, tester count decision |
-| Lead (7.5) | Gate 7 evaluation, test result assessment |
-| Lead (8.1) | Understanding verification, plan approval |
-| Lead (8.3) | Gate 8 evaluation, conflict resolution assessment |
-| Tester | Test strategy design, failure analysis, coverage decisions |
-| Integrator | Conflict identification, resolution strategy, ripple analysis |
+Follow CLAUDE.md §6 (Agent Selection and Routing), §9 (Compact Recovery), §10 (Integrity Principles) for all protocol decisions.
+Follow `coordinator-shared-protocol.md` for coordinator management (testing-coordinator is always active).
+Follow `gate-evaluation-standard.md` §6 for gate audit requirements.
+Follow `pipeline-rollback-protocol.md` for rollback procedures.
+All agents use `sequential-thinking` for analysis, judgment, and verification.
+Task descriptions follow `task-api-guideline.md` v6.0 §3 for field requirements.
 
-### Error Handling
+### Skill-Specific Error Handling
 
 | Situation | Response |
 |-----------|----------|
-| No Phase 6 output found | Inform user, suggest /agent-teams-execution-plan |
-| GC-v5 incomplete | Abort with missing section list |
-| Spawn failure | Retry once, abort with notification |
-| Tester silent >20 min | Send status query |
+| PT not found or Phase 6 not complete | Inform user, suggest /agent-teams-execution-plan |
+| Tester silent >20 min | Send status query via coordinator |
 | All tests fail | Present to user, suggest return to Phase 6 |
 | Integrator conflict irreconcilable | Escalate to user with options |
-| Gate 7/8 3x iteration | Abort, present partial results to user |
-| Context compact | CLAUDE.md §9 recovery |
-| User cancellation | Graceful shutdown, preserve artifacts |
-
-### Compact Recovery
-
-- Lead: orchestration-plan → task list → gate records → L1 indexes → re-inject
-- Tester: receive fresh context from Lead → read own L1/L2/L3 → resume testing
-- Integrator: receive fresh context from Lead → read own L1/L2/L3 → resume integration
 
 ---
 
@@ -556,7 +536,6 @@ All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judg
 - **Conditional integration** — skip Phase 8 if single implementer (no cross-boundary merges)
 - **Conflict resolution documented** — every merge decision has rationale in L2
 - **Sequential thinking always** — structured reasoning at every decision point
-- **PT in directive** — embed essential PERMANENT Task content in directives (teammates can't access main task list)
 - **Protocol delegated** — CLAUDE.md owns verification rules, skill owns orchestration
 - **Clean termination** — no auto-chaining to Phase 9
 - **Artifacts preserved** — all outputs survive in `.agent/teams/{session-id}/`

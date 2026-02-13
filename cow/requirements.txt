@@ -1,5 +1,0 @@
-# COW Pipeline v2.0 Dependencies
-google-genai>=1.0.0      # Gemini API SDK (L1+L2)
-Pillow>=10.0.0           # Image cropping (diagram.py)
-requests>=2.31.0         # Mathpix API calls (ocr.py)
-pdf2image>=1.17.0        # PDF → PNG conversion (layout_verify.py, cli.py)

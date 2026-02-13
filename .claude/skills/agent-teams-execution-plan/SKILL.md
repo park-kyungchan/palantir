@@ -10,7 +10,7 @@ Phase 6 (Implementation) orchestrator. Transforms an implementation plan into wo
 
 **Announce at start:** "I'm using agent-teams-execution-plan to orchestrate Phase 6 (Implementation) for this feature."
 
-**Core flow:** PT Check (Lead) → Input Discovery → Team Setup → Coordinator Setup + Adaptive Spawn + Verification → Coordinator-Mediated Execution + Review → Gate 6 → Clean Termination
+**Core flow:** PT Check → Input Discovery → Team Setup → Coordinator Setup + Adaptive Spawn + Verification → Coordinator-Mediated Execution + Review → Gate 6 → Clean Termination
 
 ## When to Use
 
@@ -18,7 +18,7 @@ Phase 6 (Implementation) orchestrator. Transforms an implementation plan into wo
 Have an implementation plan from agent-teams-write-plan?
 ├── Working in Agent Teams mode? ─── no ──→ Use /executing-plans (solo)
 ├── yes
-├── GC-v4 with Phase 4 COMPLETE? ── no ──→ Run /agent-teams-write-plan first
+├── PT with Phase 4 COMPLETE? ── no ──→ Run /agent-teams-write-plan first
 ├── yes
 ├── Plan validated (Phase 5)?
 │   ├── yes ──→ Use /agent-teams-execution-plan
@@ -35,8 +35,8 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 **Implementation Plans:**
 !`ls /home/palantir/docs/plans/*-implementation.md /home/palantir/docs/plans/*-plan.md 2>/dev/null || true`
 
-**Previous Pipeline Output:**
-!`ls -d /home/palantir/.agent/teams/*/global-context.md 2>/dev/null | while read f; do dir=$(dirname "$f"); echo "---"; echo "Dir: $dir"; head -8 "$f"; echo ""; done`
+**Pipeline Session Directories:**
+!`ls -d /home/palantir/.agent/teams/*/ 2>/dev/null | while read d; do echo "$(basename "$d"): $(ls "$d"phase-*/gate-record.yaml 2>/dev/null | wc -l) gates"; done`
 
 **Git Status:**
 !`cd /home/palantir && git diff --name-only 2>/dev/null | head -20`
@@ -48,7 +48,7 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 
 ---
 
-## Phase 0: PERMANENT Task Check
+## A) Phase 0: PERMANENT Task Check
 
 Lightweight step (~500 tokens). No teammates spawned, no verification required.
 
@@ -66,57 +66,59 @@ read PT     Create one for this feature?"
 │           │
 ▼         ┌─┴─┐
 Continue  Yes   No
-to 6.1    │     │
+to B)     │     │
           ▼     ▼
-        /permanent-tasks    Continue to 6.1
+        /permanent-tasks    Continue to B)
         creates PT-v1       without PT
-        → then 6.1
+        → then B)
 ```
 
-If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
-provides additional context for Phase 6 execution. Use it alongside the Dynamic Context above.
+If a PERMANENT Task exists, read it via TaskGet. Its content (user intent, codebase impact map,
+architecture decisions, phase status, constraints) provides authoritative cross-phase context.
+Use it alongside the Dynamic Context above.
 
 If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
-the TaskCreate and return a summary. Then continue to Phase 6.1.
+the TaskCreate and return a summary. Then continue to B) Core Workflow.
 
 If a PERMANENT Task exists but `$ARGUMENTS` describes a different feature than the PT's
 User Intent, ask the user to clarify which feature to work on before proceeding.
 
 ---
 
-## Phase 6.1: Input Discovery + Validation
+## B) Phase 6: Core Workflow
+
+### 6.1 Input Discovery + Validation
 
 No teammates spawned. Lead-only step.
 
 Use `sequential-thinking` before every judgment in this phase.
 
-### Discovery
+#### Discovery (PT + L2)
 
-Parse the Dynamic Context above to find agent-teams-write-plan output:
-
-1. Look for `.agent/teams/*/global-context.md` files with `Phase 4: COMPLETE` or `Phase 5: COMPLETE`
-2. If `$ARGUMENTS` provides a session-id or path, use that directly
-3. If multiple candidates found, present options via `AskUserQuestion`
-4. If single candidate, confirm with user: "Found implementation plan output at {path}. Use this?"
-5. If no candidates, inform user: "No implementation plan found. Run /agent-teams-write-plan first."
+1. **TaskGet** on PERMANENT Task → read full PT
+2. **Verify:** PT §phase_status.P4.status == COMPLETE (and optionally P5)
+3. **Read:** PT §phase_status.P4.l2_path → planning-coordinator/L2 location
+4. **Read:** planning-coordinator/L2 §Downstream Handoff for plan context
+5. If Phase 5 ran: also read PT §phase_status.P5.l2_path → validation-coordinator/L2 for validation conditions
+6. If `$ARGUMENTS` provides a session-id or path, use that directly
+7. If multiple candidates found, present options via `AskUserQuestion`
+8. If PT not found or Phase 4 not complete: "Phase 4 not complete. Run /agent-teams-write-plan first."
 
 If a PERMANENT Task was loaded in Phase 0, use its Codebase Impact Map and user intent
 to inform validation and provide additional context to implementers.
 
-### Rollback Detection
+#### Rollback Detection
 
 Check for `rollback-record.yaml` in downstream phase directories (phase-7/, phase-8/):
 - If found: read rollback context (revision targets, prior-attempt lessons) per `pipeline-rollback-protocol.md` §3
 - Include rollback context in implementer directives (what was attempted, why rolled back, specific revision targets)
 - If not found: proceed normally
 
-### Validation
-
-After identifying the source, verify:
+#### Validation
 
 | # | Check | On Failure |
 |---|-------|------------|
-| V-1 | `global-context.md` exists with Phase 4 or 5 COMPLETE | Abort: "GC-v4 not found or Phase 4 not complete" |
+| V-1 | PT exists with §phase_status.P4.status == COMPLETE | Abort: "Phase 4 not complete. Run /agent-teams-write-plan first" |
 | V-2 | Implementation plan file exists in `docs/plans/` | Abort: "Implementation plan not found" |
 | V-3 | Plan contains File Ownership Assignment and TaskCreate Definitions (§3/§4 in 10-section template or equivalent) | Abort: "Plan missing required sections: {list}" |
 | V-4 | Plan contains §5 (Change Specifications) | Abort: "Plan missing §5 Change Specifications" |
@@ -125,14 +127,14 @@ On all checks PASS → proceed to 6.2.
 
 ---
 
-## Phase 6.2: Team Setup
+### 6.2 Team Setup
 
 ```
 TeamCreate:
   team_name: "{feature-name}-execution"
 ```
 
-Create orchestration-plan.md and copy GC-v4 to new session directory.
+Create orchestration-plan.md in new session directory.
 
 Read the implementation plan fully:
 - §1 (Orchestration Overview): understand scope and task count
@@ -142,13 +144,13 @@ Read the implementation plan fully:
 
 ---
 
-## Phase 6.3: Adaptive Spawn + Coordinator Setup + Verification
+### 6.3 Adaptive Spawn + Coordinator Setup + Verification
 
 Protocol execution follows CLAUDE.md §6 and §10.
 
 Use `sequential-thinking` for all Lead decisions in this phase.
 
-### Adaptive Spawn Algorithm
+#### Adaptive Spawn Algorithm
 
 Determine implementer count from plan structure:
 
@@ -181,7 +183,7 @@ Present spawn plan to user:
 **Reviewers:** spec-reviewer, code-reviewer (dispatched by execution-coordinator)
 ```
 
-### TaskCreate
+#### TaskCreate
 
 For each task from plan §4, create via TaskCreate with comprehensive description per task-api-guideline.md §3. Include:
 - Objective, Context in Global Pipeline, Detailed Requirements
@@ -191,7 +193,7 @@ For each task from plan §4, create via TaskCreate with comprehensive descriptio
 
 Set up dependencies via addBlockedBy/addBlocks.
 
-### Execution Coordinator Spawn
+#### Execution Coordinator Spawn
 
 ```
 Task tool:
@@ -214,7 +216,7 @@ The directive must include these context layers:
 7. **Fix loop rules** — max 3 per review stage, escalate to Lead on exhaustion
 8. **Worker names** — sent via follow-up message after worker pre-spawn (Step below)
 
-### Worker Pre-Spawn
+#### Worker Pre-Spawn
 
 After execution-coordinator confirms ready, pre-spawn all workers in parallel:
 
@@ -255,7 +257,7 @@ SendMessage to exec-coord:
    Begin worker verification and task execution."
 ```
 
-### Understanding Verification (Delegated — AD-11)
+#### Understanding Verification (Delegated — AD-11)
 
 ```
 Level 1: Lead verifies execution-coordinator
@@ -276,12 +278,12 @@ All agents use `sequential-thinking` throughout.
 
 ---
 
-## Phase 6.4: Task Execution + Review (Coordinator-Mediated)
+### 6.4 Task Execution + Review (Coordinator-Mediated)
 
 Execution-coordinator manages the full implementation-review lifecycle.
 Lead receives consolidated reports only.
 
-### Implementer Execution Flow (per task, managed by coordinator)
+#### Implementer Execution Flow (per task, managed by coordinator)
 
 ```
 1. Coordinator assigns task to implementer with plan §5 spec
@@ -302,7 +304,7 @@ Lead receives consolidated reports only.
 8. Coordinator assigns next task to implementer (if any)
 ```
 
-### Review Prompt Templates
+#### Review Prompt Templates
 
 These templates are embedded in the execution-coordinator's directive by Lead.
 The coordinator constructs actual review prompts by filling template variables
@@ -356,7 +358,7 @@ Additional context: This is part of {feature-name}. See global-context for proje
 
 Prerequisite: Spec review (Stage 1) must PASS before coordinator dispatches code review.
 
-### Consolidated Reporting (Coordinator → Lead)
+#### Consolidated Reporting (Coordinator → Lead)
 
 After each task completion, coordinator sends to Lead:
 
@@ -369,7 +371,7 @@ Task {N}: {PASS/FAIL}
   Proceeding to Task {N+1}. / All tasks complete.
 ```
 
-### Implementer Completion Report (to Coordinator)
+#### Implementer Completion Report (to Coordinator)
 
 ```
 Task {N} implementation complete: {summary}
@@ -402,7 +404,7 @@ coordinator and included in the coordinator's consolidated L2, not the implement
 
 ---
 
-## Phase 6.4.5: Mid-Execution User Update (COMPLEX only)
+### 6.4.5 Mid-Execution User Update (COMPLEX only)
 
 When 50% of tasks completed (by count from coordinator progress reports):
 
@@ -427,9 +429,9 @@ Skip for TRIVIAL and STANDARD tiers.
 
 ---
 
-## Phase 6.5: Monitoring + Issue Resolution
+### 6.5 Monitoring + Issue Resolution
 
-### Monitoring Cadence
+#### Monitoring Cadence
 
 | Method | Cost | Frequency | When |
 |--------|------|-----------|------|
@@ -439,7 +441,7 @@ Skip for TRIVIAL and STANDARD tiers.
 | SendMessage query | ~200 tokens | On silence | >30 min no update |
 | Read coordinator L2 | ~2K tokens | On demand | When coordinator reports completion |
 
-### Issue Resolution
+#### Issue Resolution
 
 | Issue | Lead Action |
 |-------|------------|
@@ -450,7 +452,7 @@ Skip for TRIVIAL and STANDARD tiers.
 | >40 min silence | Escalate: Read L1, check if stuck, consider intervention |
 | Implementer deviation from spec | Send correction with updated context → implementer acknowledges |
 
-### Cross-Boundary Issue Escalation
+#### Cross-Boundary Issue Escalation
 
 When implementer reports `BLOCKED | Need file outside ownership`:
 
@@ -458,18 +460,18 @@ When implementer reports `BLOCKED | Need file outside ownership`:
 Stage 1: Read the BLOCKED report — understand the issue
 Stage 2: Determine root cause:
   Case A (other implementer deviation) → send correction to that implementer
-  Case B (plan spec error) → update PT + GC → send context update to all affected
+  Case B (plan spec error) → update PT + relay context update to all affected
 Stage 3: Wait for acknowledgement from affected implementer(s)
 Stage 4: Verify fix → unblock original implementer
 ```
 
 ---
 
-## Phase 6.6: Gate 6
+### 6.6 Gate 6
 
 Use `sequential-thinking` for all gate evaluation.
 
-### Per-Task Evaluation
+#### Per-Task Evaluation
 
 For each task in the coordinator's consolidated report:
 
@@ -481,14 +483,14 @@ For each task in the coordinator's consolidated report:
 | G6-4 | File ownership COMPLIANT | Verify files ⊆ assigned set |
 | G6-5 | L1/L2/L3 exist | Check file existence |
 
-### Spot-Check (Risk-Proportional Sampling)
+#### Spot-Check (Risk-Proportional Sampling)
 
 Per implementer, select the highest-risk task and:
 1. Read the actual code changes (use Read/Glob)
 2. Compare to plan §5 spec
 3. Verify spec-reviewer's assessment independently
 
-### Cross-Task Evaluation
+#### Cross-Task Evaluation
 
 After ALL implementers complete:
 
@@ -497,25 +499,25 @@ After ALL implementers complete:
 | G6-6 | Inter-implementer interface consistency | Read interface files, cross-reference |
 | G6-7 | No unresolved critical issues | Verify all BLOCKED resolved |
 
-### Conditional Final Review
+#### Conditional Final Review
 
 If 2+ implementers AND (complex interfaces OR concerns found during cross-task):
 - Dispatch code-reviewer subagent with full project scope
 - Include all implementer outputs as review target
 
-### Gate Audit (STANDARD/COMPLEX)
+#### Gate Audit (STANDARD/COMPLEX)
 
 Mandatory for STANDARD and COMPLEX tiers (see `gate-evaluation-standard.md` §6).
 Spawn `gate-auditor` with G6 criteria and evidence paths (coordinator L2, implementer L1/L2, gate-record.yaml).
 Compare verdicts per §6 procedure. On disagreement → escalate to user.
 
-### Gate 6 Result
+#### Gate 6 Result
 
-- **APPROVE:** G6-1~G6-7 all PASS → proceed to GC-v5 + Clean Termination
+- **APPROVE:** G6-1~G6-7 all PASS → proceed to Clean Termination
 - **ITERATE (max 3):** Specific fix instructions to affected implementer(s)
 - **ABORT:** 3x iteration exceeded or fundamental plan flaw → report to user
 
-### Gate Record
+#### Gate Record
 
 Write `phase-6/gate-record.yaml`:
 
@@ -546,40 +548,20 @@ gate_criteria:
 
 ---
 
-## Phase 6.7: Clean Termination
+### Clean Termination
 
 After Gate 6 APPROVE:
 
-### GC-v4 → GC-v5 Update + PT Update
+#### PT Update
 
-Update PERMANENT Task (PT-v{N} → PT-v{N+1}) with implementation results and Phase 6 COMPLETE status.
+Update PERMANENT Task (PT-v{N} → PT-v{N+1}) via `/permanent-tasks`:
+- Add §Implementation Results (l3_path, summary)
+- Update §phase_status.P6 = COMPLETE with l2_path
+- Update §Codebase Impact Map if interface changes detected at Gate 6
 
-Preserve all existing GC-v4 sections, then add to global-context.md:
+Update GC scratch: Phase Pipeline Status (session-scoped only).
 
-```markdown
-## Phase Pipeline Status
-- Phase 6: COMPLETE (Gate 6 APPROVED)
-
-## Implementation Results
-- Tasks completed: {N}/{total}
-- Files created: {list}
-- Files modified: {list}
-- Implementers used: {count}
-
-## Interface Changes from Phase 4 Spec
-- {deviations, if any}
-
-## Gate 6 Record
-- Per-task: {summary}
-- Cross-task: {result}
-
-## Phase 7 Entry Conditions
-- Test targets: {files/modules}
-- Integration points: {interfaces}
-- Known risks: {observations}
-```
-
-### Output Summary
+#### Output Summary
 
 Present to user:
 
@@ -600,15 +582,13 @@ Present to user:
 - Cross-task interfaces: CONSISTENT
 
 **Artifacts:**
-- PERMANENT Task (PT-v{N}) — authoritative project context (updated with implementation results)
+- PERMANENT Task (PT-v{N}) — updated with implementation results
 - Session artifacts: .agent/teams/{session-id}/
-- Global Context: GC-v5
 
-**Next:** Phase 7 (Testing) — use the verification-pipeline skill.
-Input: GC-v5 + implementer artifacts. Update PERMANENT Task with `/permanent-tasks` if scope evolved.
+**Next:** Phase 7 (Testing) — use /verification-pipeline.
 ```
 
-### Shutdown Sequence
+#### Shutdown Sequence
 
 1. Shutdown all implementers: `SendMessage type: "shutdown_request"` to each
 2. `TeamDelete` — cleans team coordination files
@@ -616,50 +596,49 @@ Input: GC-v5 + implementer artifacts. Update PERMANENT Task with `/permanent-tas
 
 ---
 
-## Cross-Cutting Requirements
+## C) Interface
 
-### RTD Index
+### Input
+- **PT-v{N}** (via TaskGet): §User Intent, §Codebase Impact Map, §Architecture Decisions, §Implementation Plan (l3_path, file_ownership), §Constraints
+- **Predecessor L2 (dual):**
+  - planning-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P4.l2_path) — plan details
+  - validation-coordinator/L2 §Downstream Handoff (path from PT §phase_status.P5.l2_path) — validation conditions
+- **Implementation plan file:** path from PT §implementation_plan.l3_path
 
-At each Decision Point in this phase, update the RTD index:
-1. Update `current-dp.txt` with the new DP number
-2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
-3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
+### Output
+- **PT-v{N+1}** (via /permanent-tasks or TaskUpdate): adds §Implementation Results (l3_path, summary), §phase_status.P6=COMPLETE, updates §Codebase Impact Map if interface changes detected at Gate 6
+- **L1/L2/L3:** execution-coordinator L1/L2/L3, per-implementer L1/L2/L3
+- **Gate record:** gate-record.yaml for Gate 6
+- **Implemented source files:** per file_ownership assignment
+- **GC scratch:** Phase Pipeline Status, execution metrics (session-scoped only)
 
-Decision Points for this skill:
-- DP-1: Input validation and spawn algorithm
-- DP-2: Each implementer spawn
-- DP-3: Per-task completion assessment
-- DP-4: Monitoring interventions
-- DP-5: Gate 6 evaluation
+### Next
+Invoke `/verification-pipeline "$ARGUMENTS"`.
+Verification needs:
+- PT §phase_status.P6.status == COMPLETE
+- PT §phase_status.P6.l2_path → execution-coordinator/L2 §Downstream Handoff (contains Implementation Results, Interface Changes, Test Targets)
+- PT §implementation_results.l3_path → detailed implementation output
 
-### Sequential Thinking
+---
 
-All agents use `mcp__sequential-thinking__sequentialthinking` for analysis, judgment, and verification.
+## D) Cross-Cutting
 
-| Agent | When |
-|-------|------|
-| Lead | Adaptive spawn calculation, understanding verification, probing questions, Gate 6, issue resolution |
-| Implementer | Impact analysis, plan submission, complex implementation decisions, self-review |
+Follow CLAUDE.md §6 (Agent Selection and Routing), §9 (Compact Recovery), §10 (Integrity Principles) for all protocol decisions.
+Follow `coordinator-shared-protocol.md` for coordinator management (execution-coordinator is always active).
+Follow `gate-evaluation-standard.md` §6 for gate audit requirements.
+Follow `pipeline-rollback-protocol.md` for rollback procedures.
+All agents use `sequential-thinking` for analysis, judgment, and verification.
+Task descriptions follow `task-api-guideline.md` v6.0 §3 for field requirements.
 
-### Error Handling
+### Skill-Specific Error Handling
 
 | Situation | Response |
 |-----------|----------|
-| No implementation plan found | Inform user, suggest /agent-teams-write-plan |
-| GC-v4 incomplete | Abort with missing section list |
-| Spawn failure | Retry once, abort with notification |
+| PT not found or Phase 4 not complete | Inform user, suggest /agent-teams-write-plan |
 | Understanding verification 3x rejection | Abort implementer, re-spawn with enhanced context |
 | Fix loop 3x exhaustion | Implementer reports BLOCKED, Lead evaluates |
-| Gate 6 3x iteration | Abort, present partial results to user |
 | Cross-boundary issue | Follow escalation protocol (Phase 6.5) |
-| Context compact | CLAUDE.md §9 recovery |
 | Context pressure | Shutdown implementer, re-spawn with L1/L2 injection |
-| User cancellation | Graceful shutdown all implementers, preserve artifacts |
-
-### Compact Recovery
-
-- Lead: orchestration-plan → task list → gate records → L1 indexes → re-inject
-- Implementer: call TaskGet on PERMANENT Task for immediate self-recovery, then read own L1/L2/L3 and re-submit understanding
 
 ---
 

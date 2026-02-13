@@ -75,6 +75,12 @@ Tasks are read-only for you: use TaskList and TaskGet to check status, find your
 and read the PERMANENT Task for project context. Task creation and updates are Lead-only
 (enforced by tool restrictions).
 
+**Exception — Fork-context agents:** If your agent .md frontmatter does NOT include
+TaskCreate/TaskUpdate in `disallowedTools`, you have explicit Task API write access.
+This applies only to Lead-delegated fork agents (pt-manager, delivery-agent,
+rsil-agent). You are an extension of Lead's intent — use Task API only for the
+specific PT operations defined in your skill's instructions.
+
 ---
 
 ## Team Memory

@@ -1,18 +1,22 @@
 ---
 name: delivery-pipeline
-description: "Phase 9 delivery — consolidates pipeline results, creates git commits, archives session artifacts, and updates MEMORY.md. Lead-only terminal phase. Requires Agent Teams mode and CLAUDE.md v6.0+."
+description: "Fork-executed Phase 9 delivery — consolidates pipeline results, creates
+  git commits, archives session artifacts, and updates MEMORY.md. Terminal phase.
+  Executed by delivery-agent fork agent."
 argument-hint: "[feature name or session-id]"
+context: fork
+agent: "delivery-agent"
 ---
 
 # Delivery Pipeline
 
-Phase 9 (Delivery) orchestrator. Lead-only terminal phase — no teammates spawned.
-Consolidates pipeline output, commits to git, archives session artifacts, and migrates
+You execute Phase 9 (Delivery) — the terminal phase of the pipeline.
+You consolidate pipeline output, commit to git, archive session artifacts, and migrate
 durable lessons to MEMORY.md.
 
-**Announce at start:** "I'm using delivery-pipeline to orchestrate Phase 9 (Delivery) for this feature."
+**Announce at start:** "I'm executing Phase 9 (Delivery) for this feature."
 
-**Core flow:** PT Check (Lead) → 9.1 Input Discovery → 9.2 Consolidation → 9.3 Delivery → 9.4 Cleanup → Terminal Summary
+**Core flow:** Phase 0 PT Check → 9.1 Input Discovery → 9.2 Consolidation → 9.3 Delivery → 9.4 Cleanup → Terminal Summary
 
 ## When to Use
 
@@ -58,7 +62,7 @@ The following is auto-injected when this skill loads. Use it for Input Discovery
 
 ## Phase 0: PERMANENT Task Check
 
-Lightweight step (~500 tokens). No teammates spawned, no verification required.
+Lightweight step (~500 tokens).
 
 Call `TaskList` and search for a task with `[PERMANENT]` in its subject.
 
@@ -69,29 +73,28 @@ TaskList result
 found      not found
 │           │
 ▼           ▼
-TaskGet →   AskUser: "No PERMANENT Task found.
-read PT     Create one for this feature?"
-│           │
-▼         ┌─┴─┐
-Continue  Yes   No
-to 9.1    │     │
-          ▼     ▼
-        /permanent-tasks    Continue to 9.1
-        creates PT-v1       without PT
-        → then 9.1
+TaskGet →   Inform user:
+read PT     "No PERMANENT Task found.
+│           Please run /permanent-tasks
+▼           first, then re-run
+Continue    /delivery-pipeline."
+to 9.1      │
+            ▼
+            ABORT (do NOT invoke
+            /permanent-tasks — no
+            nested fork invocation)
 ```
 
 If a PERMANENT Task exists, its content (user intent, codebase impact map, prior decisions)
 provides essential context for consolidation and archival. Use it alongside the Dynamic Context above.
 
-If the user opts to create one, invoke `/permanent-tasks` with `$ARGUMENTS` — it will handle
-the TaskCreate and return a summary. Then continue to Phase 9.1.
+**RISK-8 Fallback:** If TaskList returns empty but Dynamic Context shows task list
+entries with `[PERMANENT]`, parse the rendered task ID and use TaskGet directly.
+If truly not found, abort with user guidance (no nested skill invocation).
 
 ---
 
 ## Phase 9.1: Input Discovery + Validation
-
-No teammates spawned. Lead-only step.
 
 Use `sequential-thinking` before every judgment in this phase.
 
@@ -124,7 +127,7 @@ Read gate records from each to build a complete phase history for ARCHIVE.md.
 
 | # | Check | On Failure |
 |---|-------|------------|
-| V-1 | PT exists with Phase 7 (or 8) COMPLETE — OR — GC exists with equivalent status. If both exist, PT takes precedence (PT is maintained by Lead, GC may be stale) | Abort: "No completed pipeline found" |
+| V-1 | PT exists with Phase 7 (or 8) COMPLETE (PT is the sole authority — no GC fallback) | Abort: "No completed pipeline found. Run /verification-pipeline first." |
 | V-2 | Gate 7 (or 8) record exists with APPROVED in some session directory | Abort: "Final gate not approved" |
 | V-3 | Implementation plan exists in `docs/plans/` | Warn: "Plan not found — commit will lack plan reference" |
 | V-4 | Git working tree has changes to commit | Warn: "No changes detected — skip to Phase 9.4?" |
@@ -138,7 +141,7 @@ Use `sequential-thinking` to evaluate validation results. On all checks PASS →
 
 ## Phase 9.2: Consolidation
 
-Three sequential operations. All Lead-only.
+Three sequential operations.
 
 Use `sequential-thinking` for all decisions in this phase.
 
@@ -206,7 +209,7 @@ Generate a complete pipeline record from all available sources.
 
 ## Phase 9.3: Delivery
 
-Two user-confirmed operations. Lead-only.
+Two user-confirmed operations.
 
 Use `sequential-thinking` for commit message generation and PR body drafting.
 
@@ -262,7 +265,7 @@ After MEMORY.md decision, proceed as follows:
 
 ## Phase 9.4: Cleanup
 
-Two operations. Lead-only.
+Two operations.
 
 ### Op-6: Session Artifact Cleanup
 
@@ -390,11 +393,48 @@ Use this template when generating ARCHIVE.md in Op-3:
 
 ---
 
-## Cross-Cutting Requirements
+## Interface
+
+### Input
+- **$ARGUMENTS:** Feature name, session ID, or delivery options
+- **Dynamic Context:** File tree, git log, gate record paths, ARCHIVE templates, L2 paths (pre-rendered before fork)
+- **PT** (via TaskGet): All sections — final consolidation read for delivery summary
+
+### Output
+- **PT-vFinal** (via TaskUpdate): §phase_status all phases COMPLETE, subject → "[DELIVERED] {feature}", final metrics summary
+- **ARCHIVE.md:** Consolidated session artifact archive
+- **MEMORY.md:** Updated with pipeline learnings (Read-Merge-Write)
+- **Git commit:** Staged implementation files committed
+- **PR:** Created via `gh pr create` (if user approves)
+- **Terminal summary:** Delivery status with commit hash, PR URL, archived artifact count
+
+### RISK-8 Fallback
+If fork sees isolated task list (TaskList returns empty despite PT existing):
+- Skip PT-based discovery. Use Dynamic Context (which pre-renders PT content before fork).
+- Skip TaskUpdate for PT-vFinal. Report "PT update needed" in terminal summary for Lead to apply manually.
+- All other operations (git, ARCHIVE, MEMORY) proceed normally.
+
+---
+
+## Cross-Cutting
+
+### Error Handling
+
+| Situation | Response |
+|-----------|----------|
+| No Phase 7/8 output found | Inform user via AskUserQuestion, suggest /verification-pipeline |
+| PT not found | Abort with guidance: "Run /permanent-tasks first" (no nested fork) |
+| Git working tree clean | Warn, offer to skip to Phase 9.4 (ARCHIVE + cleanup only) |
+| Commit rejected by user | Offer modification or skip, handle MEMORY.md state |
+| PR creation fails | Report error, provide manual `gh pr create` command |
+| MEMORY.md merge conflict | Present both versions via AskUserQuestion, let user choose |
+| Session directory not found | Fall back to PT for cross-session references |
+| User cancellation | Preserve all artifacts created so far, report partial completion |
+| Fork termination mid-sequence | Operations are idempotent; user can re-run safely |
 
 ### RTD Index
 
-At each Decision Point in this phase, update the RTD index:
+At each Decision Point, update the RTD index:
 1. Update `current-dp.txt` with the new DP number
 2. Write an rtd-index.md entry with WHO/WHAT/WHY/EVIDENCE/IMPACT/STATUS
 3. Update the frontmatter (current_phase, current_dp, updated, total_entries)
@@ -407,7 +447,7 @@ Decision Points for this skill:
 
 ### Sequential Thinking
 
-Lead uses `mcp__sequential-thinking__sequentialthinking` for all analysis, judgment, and
+Use `mcp__sequential-thinking__sequentialthinking` for all analysis, judgment, and
 decision-making throughout the pipeline.
 
 | Phase | When |
@@ -417,22 +457,9 @@ decision-making throughout the pipeline.
 | 9.3 Delivery | Commit message generation, staged file selection, PR body drafting |
 | 9.4 Cleanup | Preserve/delete classification, artifact importance assessment |
 
-### Error Handling
+### Fork Recovery
 
-| Situation | Response |
-|-----------|----------|
-| No Phase 7/8 output found | Inform user, suggest /verification-pipeline |
-| PT and GC both missing | Warn user, attempt discovery from gate records alone |
-| Git working tree clean | Warn, offer to skip to Phase 9.4 (ARCHIVE + cleanup only) |
-| Commit rejected by user | Offer modification or skip, handle MEMORY.md state |
-| PR creation fails | Report error, provide manual `gh pr create` command |
-| MEMORY.md merge conflict | Present both versions, let user choose |
-| Session directory not found | Fall back to PT for cross-session references |
-| User cancellation | Preserve all artifacts created so far, report partial completion |
-
-### Compact Recovery
-
-If Lead's session compacts during Phase 9:
+If fork terminates mid-sequence:
 
 1. Check `git diff --name-only` for uncommitted MEMORY.md changes (detects Op-2 completed but Op-4 not yet run)
 2. Read the most recent ARCHIVE.md (if Op-3 already ran)
@@ -440,31 +467,31 @@ If Lead's session compacts during Phase 9:
 4. Check git log for recent commits (if Op-4 already ran)
 5. Resume from the last incomplete operation
 
-Phase 9 is Lead-only with no teammates, so recovery is simpler than multi-agent phases.
+Operations are designed to be idempotent — user can safely re-run /delivery-pipeline.
 
 ---
 
 ## Key Principles
 
-- **User confirms everything external** — git, PR, MEMORY.md, cleanup all need explicit approval
-- **Consolidation before delivery** — knowledge persistence (9.1) precedes git operations (9.2)
+- **User confirms everything external** — git, PR, MEMORY.md, cleanup all need explicit approval via AskUserQuestion
+- **Consolidation before delivery** — knowledge persistence (9.2) precedes git operations (9.3)
 - **Multi-session by default** — scan across all related session directories, not just one
 - **Present, don't assume** — show discovered sessions and let user confirm the set
 - **Sequential thinking always** — structured reasoning at every decision point
 - **Terminal phase** — no auto-chaining, no "Next:" section, pipeline ends here
 - **Preserve artifacts** — L1/L2/L3 and ARCHIVE.md survive cleanup
-- **Read-Merge-Write for MEMORY** — reuse /permanent-tasks pattern for PT→MEMORY migration
-- **Conventional Commits** — follow established git message format
+- **Idempotent operations** — ARCHIVE.md write is overwrite-safe, MEMORY.md is Read-Merge-Write
+- **Fork-isolated** — no teammates, no coordinator, user is your only interaction partner
 - **PT cross-reference** — use PERMANENT Task to discover sessions that prefix matching misses
 
 ## Never
 
-- Auto-commit without user confirmation
+- Auto-commit without user confirmation (every external action needs AskUserQuestion approval)
 - Force push or skip git hooks
-- Include secrets or credentials in commits (CLAUDE.md §8)
+- Include `.env*`, `*credentials*`, `.ssh/id_*`, `**/secrets/**` in commits
 - Use `git add -A` or `git add .` (stage specific files only)
 - Add a "Next:" section to the terminal summary
-- Spawn teammates (Phase 9 is Lead-only)
+- Invoke /permanent-tasks or any other skill (no nested fork invocation)
 - Auto-chain to another skill after termination
 - Delete L1/L2/L3 directories or ARCHIVE.md during cleanup
 - Write MEMORY.md without user preview and approval

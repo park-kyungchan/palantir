@@ -1,20 +1,23 @@
 ---
 name: rsil-review
-description: "Meta-Cognition quality review — applies 8 universal research lenses and integration audit to any target. Layer 1/2 boundary analysis with AD-15 filter. Lead-only, no teammates spawned directly."
+description: "Fork-executed Meta-Cognition quality review — applies 8 universal
+  research lenses and integration audit to any target. Layer 1/2 boundary analysis
+  with AD-15 filter. Executed by rsil-agent fork agent."
 argument-hint: "[target skill/component/scope + specific concerns]"
+context: fork
+agent: "rsil-agent"
 ---
 
 # RSIL Review
 
-Meta-Cognition-Level quality review skill with ultrathink deep reasoning. Applies
-universal research lenses and integration auditing to any target within .claude/
-infrastructure. Identifies Layer 1 (NL-achievable) improvements and Layer 2
-(Ontology Framework) deferrals.
+You perform Meta-Cognition-Level quality review with ultrathink deep reasoning.
+You apply universal research lenses and integration auditing to any target within
+.claude/ infrastructure. You identify Layer 1 (NL-achievable) improvements and
+Layer 2 (Ontology Framework) deferrals.
 
-**Announce at start:** "I'm using rsil-review to run Meta-Cognition quality review
-for: $ARGUMENTS"
+**Announce at start:** "Running Meta-Cognition quality review for: $ARGUMENTS"
 
-**Core flow:** PT Check → R-0 Lead Synthesis → R-1 Parallel Research → R-2 Classification → R-3 Application → R-4 Record
+**Core flow:** Phase 0 PT Check → R-0 Synthesis → R-1 Parallel Research → R-2 Classification → R-3 Application → R-4 Record
 
 ## When to Use
 
@@ -69,17 +72,17 @@ TaskList result
 found      not found
 │           │
 ▼           ▼
-TaskGet →   AskUser: "No PERMANENT Task found.
-read PT     Create one for this feature?"
-│           │
-▼         ┌─┴─┐
-Continue  Yes   No
-to R-0    │     │
-          ▼     ▼
-        /permanent-tasks    Continue to R-0
-        creates PT-v1       without PT
-        → then R-0
+TaskGet →   Continue to R-0
+read PT     without PT
+│           (PT is optional
+▼           context)
+Continue
+to R-0
 ```
+
+**RISK-8 Fallback:** If TaskList returns empty, continue without PT. Use Dynamic
+Context for pipeline awareness. Skip R-4 PT update — report "PT update needed:
+{review results}" in terminal summary for Lead to apply manually.
 
 ---
 
@@ -221,12 +224,12 @@ Both agents produce structured findings reports.
 
 ---
 
-## Phase R-0: Lead Synthesis
+## Phase R-0: Synthesis
 
-The core phase. Lead transforms the universal framework into target-specific
+The core phase. You transform the universal framework into target-specific
 agent directives. Use sequential-thinking for every step.
 
-No agents spawned in this phase. Lead-only.
+No agents spawned in this phase.
 
 ### Step 0: Parse $ARGUMENTS
 
@@ -329,8 +332,8 @@ Present R-0 synthesis summary to user before spawning:
 
 ## Phase R-1: Parallel Research
 
-Spawn two agents concurrently. Neither is a persistent teammate — both are
-one-shot Task tool invocations.
+Spawn two agents concurrently via Task tool. Neither is a persistent teammate —
+both are one-shot Task tool invocations.
 
 ```
 [A] Task tool:
@@ -352,7 +355,7 @@ ask the user whether to re-run with adjusted scope.
 
 ## Phase R-2: Synthesis + Classification
 
-Lead merges both agents' outputs. Use sequential-thinking.
+Merge both agents' outputs. Use sequential-thinking.
 
 ### Merge
 
@@ -431,7 +434,7 @@ R-3      │    R-4 (no changes applied)
 
 ## Phase R-3: Application
 
-Lead-only. Apply user-approved items.
+Apply user-approved items.
 
 ### Step 1: Apply BREAK items (mandatory if any exist)
 
@@ -519,6 +522,28 @@ Pipeline complete. No auto-chaining.
 
 ---
 
+## Interface
+
+### Input
+- **$ARGUMENTS:** Target file(s) path, review scope description
+- **Dynamic Context:** .agent/ directory tree, recent git changes, narrow tracker, RSIL agent memory (pre-rendered before fork)
+- **PT** (via TaskGet, optional): §Phase Status (pipeline awareness)
+
+### Output
+- **Corrections applied:** FIX items applied to target files via Edit (after user approval at R-3)
+- **Tracker update:** `~/.claude/agent-memory/rsil/` narrow tracker (findings + corrections)
+- **Agent memory update:** `~/.claude/agent-memory/rsil/MEMORY.md` (universal Lens patterns)
+- **PT-v{N+1}** (via TaskUpdate): §Phase Status updated with review results (R-4)
+- **Terminal summary:** Findings by severity (FIX/WARN/INFO), corrections applied count, score
+
+### RISK-8 Fallback
+If isolated task list:
+- Skip PT read. Use Dynamic Context for pipeline awareness.
+- Skip R-4 PT update. Report "PT update needed: {review results}" in terminal summary for Lead.
+- All other operations (R-0~R-3, corrections, tracker, memory) proceed normally.
+
+---
+
 ## Error Handling
 
 | Situation | Response |
@@ -530,7 +555,9 @@ Pipeline complete. No auto-chaining.
 | [B] finds BREAK items | Present BREAKs first: "Must fix before commit." |
 | All findings PASS | Report: "Clean review. No changes needed." |
 | User cancellation | Preserve partial tracker updates. No file changes. |
-| Context compact | Read tracker for last state. Resume from incomplete phase. |
+| Fork termination | Read tracker for last state. User can re-run safely. |
+| TaskList returns empty | Continue without PT (PT is optional context) |
+| Task tool spawning fails | Fall back to sequential in-agent execution |
 
 ---
 
@@ -546,4 +573,6 @@ Pipeline complete. No auto-chaining.
 - User confirms all changes — present findings, wait for approval before modifying files
 - Use sequential-thinking at every decision point throughout the review
 - Terminal skill — user decides next step. No auto-chaining to other skills.
+- Fork-isolated — no Lead to escalate to, user is your interaction partner
 - Never embed raw findings in SKILL.md — only universal Lenses belong here
+- Never invoke any other skill (no nested fork invocation)

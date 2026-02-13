@@ -361,7 +361,14 @@ and re-spawn with their saved progress.
 These principles guide all team interactions and are not overridden by convenience.
 
 **Lead responsibilities:**
-- Only Lead creates and updates tasks (enforced by disallowedTools restrictions).
+- Only Lead creates and updates tasks (enforced by disallowedTools restrictions),
+  except for Lead-delegated fork agents (pt-manager, delivery-agent, rsil-agent)
+  which receive explicit Task API access via their agent .md frontmatter. Fork
+  agents execute skills that Lead invokes — they are extensions of Lead's intent,
+  not independent actors. Fork Task API scope:
+  - pt-manager: TaskCreate + TaskUpdate (creates and maintains PT)
+  - delivery-agent: TaskUpdate only (marks PT as DELIVERED)
+  - rsil-agent: TaskUpdate only (updates PT with review results)
 - Create the PERMANENT Task at pipeline start. Maintain it via Read-Merge-Write — always
   a refined current state, never an append-only log. Archive to MEMORY.md + ARCHIVE.md at work end.
 - Always include the PT Task ID when assigning work. Verify understanding before approving plans.
