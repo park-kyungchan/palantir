@@ -90,6 +90,7 @@
     "superpowers-developing-for-claude-code@superpowers-marketplace": true,
     "superpowers@superpowers-marketplace": true
   },
+  "promptSuggestionEnabled": false,
   "teammateMode": "auto",
-  "promptSuggestionEnabled": false
+  "skipDangerousModePermissionPrompt": true
 }
