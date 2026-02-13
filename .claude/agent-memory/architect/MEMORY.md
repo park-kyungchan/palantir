@@ -228,6 +228,15 @@
 - **Bootstrap templates ≠ live files:** When pilot files already exist, templates are documentation (reference formats for future projects), not files to create. Distinguish clearly to prevent overwrite.
 - **Cross-implementer contracts are the integration spec:** With zero file overlap, the only coordination needed is shared data format (events.jsonl schema, .current-project format, DP naming). Specify these explicitly in §6.
 
+## brainstorming-pipeline Redesign Plan — Phase 4 (2026-02-12)
+
+### Key Patterns Learned
+- **Section-ordered > AD-ordered for single-file edits:** When all changes target one file, decomposing by file section (top-to-bottom) is superior to decomposing by architecture decision. Edit tool `old_string` matching is safest top-to-bottom; AD-ordered creates scattered edits that conflict with prior line shifts.
+- **Hybrid template compression:** YAML frontmatter stays as code block (syntax-sensitive, downstream parsing), body converts to field list. Opus 4.6 generates well-formed markdown from field names — no need for full copy-pasteable templates.
+- **SKILL.md is Lead-only — teammates never read it:** This unlocks aggressive inline removal (AD-6 sequential-thinking). Teammate compliance comes from CLAUDE.md §7 + agent .md files, not from skill text. Key defense for probing questions.
+- **[Sub-skill] annotation for mid-flow skill invocations:** When a skill invokes another skill mid-sequence (Gate 1 → /permanent-tasks → resume), annotate with [Sub-skill] tag and explicit control return note. Numbered sequence makes resumption obvious.
+- **Compression options as reserve budget:** Architecture provides a menu of compression options (A-H). Plan selects a subset (A-hybrid, B-hybrid, C, G) to hit target. Remaining options (D, E, F, H) serve as reserves if line count drifts.
+
 ## Lead Architecture Redesign (2026-02-11)
 
 Details: `lead-arch-redesign.md` (Phase 3 architecture + Phase 4 detailed design)

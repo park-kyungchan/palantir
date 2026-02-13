@@ -8,6 +8,18 @@
     "ENABLE_TOOL_SEARCH": "auto:7"
   },
   "permissions": {
+    "allow": [
+      "Bash(*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Skill(orchestrate)",
+      "TaskUpdate",
+      "TaskCreate"
+    ],
     "deny": [
       "Read(.env*)",
       "Read(**/secrets/**)",
@@ -16,7 +28,8 @@
       "Bash(rm -rf *)",
       "Bash(sudo rm *)",
       "Bash(chmod 777 *)"
-    ]
+    ],
+    "defaultMode": "delegate"
   },
   "hooks": {
     "SubagentStart": [
@@ -77,7 +90,6 @@
     "superpowers-developing-for-claude-code@superpowers-marketplace": true,
     "superpowers@superpowers-marketplace": true
   },
-  "language": "Korean",
   "teammateMode": "auto",
-  "model": "claude-opus-4-6"
+  "promptSuggestionEnabled": false
 }

@@ -34,6 +34,9 @@ node_modules/
 .EasyOCR/
 .paddlex/
 
+# Claude config (contains MCP tokens)
+.claude.json
+
 # Backup files
 *.backup*
 .mcp.json.backup*
@@ -77,9 +80,11 @@ kc-palantir-*.json:Zone.Identifier
 .agent/compact-state/
 .agent/logs/
 .agent/prompts/
-.agent/teams/**/compact-events.log
-.agent/teams/**/teammate-lifecycle.log
-.agent/teams/**/pre-compact-tasks-*.json
+.agent/teams/
+.agent/observability/**/events/
+
+# Claude browser automation runtime
+.claude/chrome/
 
 # Claude session/cache files
 .claude/session-env/
