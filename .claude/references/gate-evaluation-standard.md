@@ -64,7 +64,7 @@ downstream:           # What the next phase needs to know
 | 6 | Contradictions flagged (if any) | — | — | ✅ |
 | 7 | Research gaps explicitly listed | — | — | ✅ |
 
-### G2b: Verification Gate (CONDITIONAL — skip for TRIVIAL)
+### G2b: Verification Gate (CONDITIONAL — skip for TRIVIAL and STANDARD)
 | # | Criterion | STANDARD | COMPLEX |
 |---|-----------|:---:|:---:|
 | 1 | All claims verified against source | ✅ | ✅ |

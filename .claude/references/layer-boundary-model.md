@@ -154,7 +154,7 @@ Coordinators manage multi-agent categories through NL instructions alone:
 No hooks, no scripts, no structural enforcement — coordinators follow `.md` instructions
 and use the same tools (Read, Glob, Grep, Write, TaskList, TaskGet) as any agent.
 This validates the core premise: Opus 4.6 NL strength makes formal orchestration systems
-unnecessary for this use case. Five coordinators replace what would traditionally require
+unnecessary for this use case. Eight coordinators replace what would traditionally require
 a message bus, state machine, or workflow engine.
 
 ## Agent Mapping

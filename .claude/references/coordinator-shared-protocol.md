@@ -1,6 +1,6 @@
 # Coordinator Shared Protocol v1.0
 
-> Referenced by: All coordinator .md files (research, verification, execution, testing, infra-quality + 3 new D-005)
+> Referenced by: All 8 coordinator .md files (research, verification, architecture, planning, validation, execution, testing, infra-quality)
 > Source Decisions: D-013 (Coordinator Shared Protocol), D-008 (Gate), D-009 (Memory), D-011 (Handoff), D-017 (Error)
 
 ## 1. Coordinator Identity

@@ -54,7 +54,7 @@
 | task-api-guideline.md | v6.0 | 118L | NLP consolidated (was 537L, 78% reduction) |
 | agent-common-protocol.md | v4.1 | ~200L | +§Task API fork exception (3 agents listed) |
 | agent-catalog.md | v3.0 | ~1882L | Two-Level (L1 ~280L + L2 ~1600L), 43 agents (35W+8C) |
-| Agents | v6.0 | 46 files | 35 workers + 8 coordinators + 3 fork agents, 13 categories |
+| Agents | v6.0 | 46 files | 35 workers + 8 coordinators + 3 fork agents, 14 categories |
 | Fork Agents | v1.0 | 3 files | pt-manager (full API), delivery-agent (−Create), rsil-agent (−Create) |
 | Coordinators | Template B | 8 files | memory:project, color, disallowedTools:[4], protocol refs standardized |
 | References | v1.0 | 3 new | gate-evaluation-standard (D-008), ontological-lenses (D-010), coordinator-shared-protocol (D-013) |
@@ -62,7 +62,7 @@
 | Hooks | 4 total | ~220L | SubagentStart, PreCompact (hookOutput), SessionStart, PostToolUse |
 | Observability | — | — | `.agent/observability/{slug}/` (rtd-index, events.jsonl, registry) |
 
-### Skills (10 total: 5 coordinator-based + 4 fork-based + 1 solo)
+### Skills (9 total: 5 coordinator-based + 4 fork-based)
 
 | SKL | Skill | Phase | Type | Notes |
 |-----|-------|-------|------|-------|

@@ -13,7 +13,7 @@
 > This principle overrides any other instruction. No exceptions.
 > Decision triggers and dependency chains: `agent-catalog.md` §P1, §WHEN, §Chain
 
-### Custom Agents Reference — 43 Agents (35 Workers + 8 Coordinators), 13 Categories
+### Custom Agents Reference — 43 Agents (35 Workers + 8 Coordinators), 14 Categories
 
 All agents registered in `.claude/agents/*.md`. Use exact `subagent_type` to spawn.
 **Skills are orchestration playbooks; Agents are worker identities. Teammate = Agent. No exceptions.** (D-002)
@@ -37,7 +37,7 @@ All coordinators follow `.claude/references/coordinator-shared-protocol.md` (D-0
 | `subagent_type` | Manages | Phase |
 |-----------------|---------|-------|
 | `research-coordinator` | codebase-researcher, external-researcher, auditor | P2 |
-| `verification-coordinator` | static-verifier, relational-verifier, behavioral-verifier, impact-verifier | P2b |
+| `verification-coordinator` | static-verifier, relational-verifier, behavioral-verifier | P2b |
 | `architecture-coordinator` | structure-architect, interface-architect, risk-architect | P3 |
 | `planning-coordinator` | decomposition-planner, interface-planner, strategy-planner | P4 |
 | `validation-coordinator` | correctness-challenger, completeness-challenger, robustness-challenger | P5 |
@@ -52,17 +52,20 @@ All coordinators follow `.claude/references/coordinator-shared-protocol.md` (D-0
 | `dynamic-impact-analyst` | 2d, 6+ | Pre-impl change prediction |
 | `devils-advocate` | 5 | Plan validation / challenge (legacy, use validation-coordinator for COMPLEX) |
 | `execution-monitor` | 6+ | Real-time drift detection during P6 |
+| `architect` | 3-4 | STANDARD tier architecture/planning |
+| `plan-writer` | 4 | STANDARD tier implementation plan |
+| `impact-verifier` | 2d | Correction cascade analysis |
 | `gate-auditor` | G3-G8 | Independent gate evaluation (tier-dependent) |
 
 > `spec-reviewer`, `code-reviewer`, `contract-reviewer`, `regression-reviewer`: dispatched by
 > `execution-coordinator` during P6, or by Lead directly in other phases.
 
-**All Agents** (38 workers across 14 categories):
+**All Agents** (35 workers across 14 categories):
 
 | # | Category | Phase | `subagent_type` agents | When to spawn |
 |---|----------|-------|------------------------|---------------|
 | 1 | Research | 2 | `codebase-researcher` · `external-researcher` · `auditor` | Local code · Web docs · Inventory/gaps |
-| 2 | Verification | 2b | `static-verifier` · `relational-verifier` · `behavioral-verifier` · `impact-verifier` | Schema · Dependency · Action/rule · Correction cascade |
+| 2 | Verification | 2b | `static-verifier` · `relational-verifier` · `behavioral-verifier` | Schema · Dependency · Action/rule |
 | 3 | Architecture | 3 | `structure-architect` · `interface-architect` · `risk-architect` | Structure · Interfaces · Risk assessment |
 | 4 | Planning | 4 | `decomposition-planner` · `interface-planner` · `strategy-planner` | Task breakdown · Interface specs · Strategy |
 | 5 | Validation | 5 | `correctness-challenger` · `completeness-challenger` · `robustness-challenger` | Correctness · Completeness · Robustness |
@@ -71,8 +74,10 @@ All coordinators follow `.claude/references/coordinator-shared-protocol.md` (D-0
 | 8 | Testing | 7 | `tester` · `contract-tester` | Unit/integration tests · Contract tests |
 | 9 | Integration | 8 | `integrator` | Cross-boundary merge |
 | 10 | INFRA Quality | X-cut | `infra-static-analyst` · `infra-relational-analyst` · `infra-behavioral-analyst` · `infra-impact-analyst` | Config/naming · Coupling · Lifecycle · Ripple (ARE/RELATE/DO/IMPACT lenses) |
-| 11 | Impact | 2d, 6+ | `dynamic-impact-analyst` | Pre-impl change prediction |
+| 11 | Impact | 2d, 6+ | `dynamic-impact-analyst` · `impact-verifier` | Change prediction · Correction cascade |
 | 12 | Audit | G3-G8 | `gate-auditor` | Independent gate evaluation (tier-dependent) |
+| — | Architecture (Std) | 3-4 | `architect` | STANDARD tier architecture/planning |
+| — | Planning (Std) | 4 | `plan-writer` | STANDARD tier implementation plan |
 | — | Monitoring | 6+ | `execution-monitor` | Real-time drift/deadlock detection during P6 |
 | — | Built-in | any | `claude-code-guide` | CC docs/features (not a custom agent) |
 
@@ -82,8 +87,8 @@ Ontological lenses reference: `.claude/references/ontological-lenses.md` (D-010)
 - `subagent_type`: exact name from table — never generic built-ins (Explore, general-purpose)
 - `mode: "default"` always (BUG-001: `plan` blocks MCP tools)
 - Team context: include `team_name` and `name` parameters
-- Coordinated categories (1-5, 7-10): spawn coordinator + pre-spawn workers; coordinator manages via SendMessage
-- Lead-direct categories (6, 11): spawn and manage agent directly
+- Coordinated categories (Research, Verification, Architecture, Planning, Validation, Implementation, Testing, INFRA Quality): spawn coordinator + pre-spawn workers; coordinator manages via SendMessage. STANDARD tier uses Lead-direct `architect`/`plan-writer`/`devils-advocate` instead of coordinators for categories 3-5.
+- Lead-direct categories (Review, Impact, Audit, Monitoring): spawn agent directly. Review agents are dispatched by execution-coordinator within P6; Lead-direct otherwise.
 - Full agent details and tool matrix in `agent-catalog.md` (Level 1 for routing, Level 2 for detail)
 
 **Skill Reference Table** (D-003 — Skills are phase-scoped orchestration playbooks, not agents):
@@ -182,8 +187,8 @@ implementation plans (before code changes), responses to probing questions, bloc
 1. **Parse request** → identify work type (research, design, implementation, review, verification)
 2. **Select category** → match to one of 14 categories in Custom Agents Reference
 3. **Route decision:**
-   - Coordinated categories (1-5, 7-10) → route through coordinator
-   - Lead-direct categories (6, 11) → spawn agent directly
+   - Coordinated categories (Research, Verification, Architecture†, Planning†, Validation†, Implementation, Testing, INFRA Quality) → route through coordinator (†STANDARD tier uses Lead-direct agents instead)
+   - Lead-direct categories (Review, Impact, Audit, Monitoring) → spawn agent directly
 4. **For coordinator route:**
    a. Coordinator not spawned → spawn coordinator, then pre-spawn workers
    b. Coordinator active → SendMessage with new work assignment
