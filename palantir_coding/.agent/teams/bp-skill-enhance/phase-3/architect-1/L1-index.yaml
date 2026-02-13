@@ -1,0 +1,61 @@
+agent: architect
+phase: P3
+status: complete
+timestamp: 2026-02-12T00:00:00Z
+
+design_scope: "brainstorming-pipeline P0/P1 flow redesign — 8 architecture decisions"
+
+decisions:
+  AD-1: "P0 becomes PT existence check only (no creation, no tier classification)"
+  AD-2: "Feasibility Check gate after PURPOSE category in Q&A (3-criteria soft gate)"
+  AD-3: "Checkpoint moved to 1.2.5 (post-feasibility, pre-approach)"
+  AD-4: "Scope Crystallization + Tier Classification unified at 1.4"
+  AD-5: "Gate 1 PT creation via /permanent-tasks → GC-v1 → orchestration-plan → gate-record"
+  AD-6: "Sequential-thinking consolidation (9 inline → 1 cross-cutting)"
+  AD-7: "Dynamic Context git branch capped to 10 lines"
+  AD-8: "RTD Decision Points reduced (7 → 3, gate transitions only)"
+
+line_budget:
+  current: 672
+  target: 550
+  achievable: "~570L (readability preserved) or ~550L (Phase 2/3 seq-thinking removal + template compression)"
+  savings_by_source:
+    P0_simplification: -37
+    sequential_thinking_P1: -8
+    sequential_thinking_cross_cutting: -10
+    rtd_dp_reduction: -8
+    gate1_template_compression: -17
+    dynamic_context: -3
+    sequential_thinking_P2P3: -6  # optional, violates "unchanged" softly
+  additions:
+    feasibility_check: +15
+    pt_creation_at_gate1: +10
+  net_reduction: "~64L mandatory (→608L) + ~30L optional (→578L)"
+
+issues_addressed:
+  H1: "AD-5 — PT creation deferred to Gate 1"
+  H2: "AD-2 — Feasibility Check after PURPOSE"
+  H3: "AD-4 — Tier classification moved to Scope Crystallization"
+  M1: "AD-3 — Checkpoint moved to 1.2.5 (earlier)"
+  M2: "Downgraded to LOW — GC role validated by research (D1)"
+  L1: "AD-6 — Sequential-thinking consolidated"
+  L2: "AD-7 — Git branch output capped"
+  L3: "AD-8 — RTD DPs reduced"
+
+migration_sections:
+  modified: ["Phase 0 (lines 52-106)", "Phase 1.2 (lines 125-147)", "Phase 1.3.5→1.2.5 (lines 168-192)", "Phase 1.4 (lines 194-223)", "Phase 1.5 (lines 225-306)", "Cross-Cutting (lines 599-672)"]
+  unchanged: ["Frontmatter/header (lines 1-28)", "Phase 2 (lines 309-436)", "Phase 3 (lines 438-563)", "Clean Termination (lines 565-598)"]
+  deleted: ["Tier Routing subsection (lines 93-106)", "9 inline sequential-thinking reminders"]
+
+risk_register:
+  R-1: "Target 550L may require Phase 2/3 edits — tension with 'unchanged' constraint"
+  R-2: "Feasibility Check false positives could frustrate advanced users"
+  R-3: "PT creation at Gate 1 means no PT during Phase 1 — downstream OK per research D2"
+
+evidence_count: 8
+pt_goal_links:
+  - "H1 (PT timing)"
+  - "H2 (Topic validation)"
+  - "H3 (Tier timing)"
+  - "M1 (Checkpoint timing)"
+  - "L1-L3 (Cross-cutting cleanup)"

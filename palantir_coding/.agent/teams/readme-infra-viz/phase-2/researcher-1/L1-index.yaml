@@ -1,0 +1,39 @@
+agent: codebase-researcher
+phase: P2
+status: complete
+timestamp: "2026-02-11T12:00:00Z"
+
+domains:
+  - id: D1
+    name: Agent Inventory
+    summary: "43 agents (35 workers + 8 coordinators) across 14 categories"
+    file_count: 43
+  - id: D2
+    name: Skills Inventory
+    summary: "10 skills covering P0-P9 pipeline + cross-cutting + standalone"
+    file_count: 10
+  - id: D3
+    name: Infrastructure Components
+    summary: "4 hooks, 9 references, 2 settings files, CLAUDE.md v9.0 317L"
+    file_count: 16
+  - id: D4
+    name: Relationship Map
+    summary: "Skill-agent spawning, hook-event binding, reference-consumer, pipeline flow"
+
+findings:
+  - id: F-1
+    domain: D1
+    summary: "43 agent .md files in .claude/agents/ — 35 workers + 8 coordinators, 14 categories"
+  - id: F-2
+    domain: D2
+    summary: "10 SKILL.md files in .claude/skills/ — total ~3,374 lines"
+  - id: F-3
+    domain: D3
+    summary: "4 hook scripts (416L total), 9 reference docs (2,643L total), settings 113L"
+  - id: F-4
+    domain: D4
+    summary: "6 skill-to-coordinator mappings, 4 hook-to-event bindings, 9 reference-consumer paths"
+
+evidence_count: 76
+pt_goal_links:
+  - "README.md INFRA v9.0 visualization"

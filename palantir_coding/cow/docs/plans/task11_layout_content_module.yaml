@@ -1,0 +1,2342 @@
+# =============================================================================
+# Task 11: Layout/Content Separation Module - Detailed Design
+# =============================================================================
+# Version: 1.0.0
+# Date: 2026-02-04
+# Author: Plan Agent (COW Pipeline)
+# Purpose: Comprehensive design for separating Layout and Content data from Stage B
+# =============================================================================
+
+---
+metadata:
+  task_id: "task11"
+  task_name: "Layout/Content Separation Module Design"
+  priority: "HIGH"
+  complexity: "MEDIUM"
+  estimated_effort: "3-5 days"
+  dependencies:
+    - "LAYOUT_CONTENT_SEPARATION_ANALYSIS.yaml (Agent synthesis)"
+    - "Stage B (Mathpix API integration)"
+    - "Stage C0 (word_data_parser.py)"
+  references:
+    - "/home/palantir/cow/docs/analysis/LAYOUT_CONTENT_SEPARATION_ANALYSIS.yaml"
+    - "/home/palantir/cow/pipeline/stage_b/mathpix_config.py"
+    - "/home/palantir/cow/docs/mathpix-api-reference/04_SCHEMAS.yaml"
+    - "/home/palantir/cow/pipeline/stage_c0/word_data_parser.py"
+
+# =============================================================================
+# EXECUTIVE SUMMARY
+# =============================================================================
+executive_summary:
+  objective: |
+    Design and implement a separation module that splits Stage B Mathpix output
+    into distinct Layout and Content data streams for independent processing,
+    validation, and Human-in-the-Loop (HITL) review.
+
+  key_insights:
+    - "Mathpix provides 36 line_types with clear Layout/Content boundaries"
+    - "Current Stage C0 parser already handles word_data classification"
+    - "Separation point: Stage C0 input processing (before classification)"
+    - "Storage: outputs/{image_id}/layout/ and outputs/{image_id}/content/"
+    - "Non-breaking change: Keep merged output as default, add separated outputs"
+
+  feasibility: "HIGH (9.3/10)"
+
+  architectural_decision: |
+    Introduce LayoutContentSeparator class in Stage C0 that:
+    1. Reads Stage B output (word_data, data array)
+    2. Classifies each element by Layout vs Content nature
+    3. Saves separate JSON files for Layout and Content
+    4. Passes both to downstream processing (Stage C, D)
+
+# =============================================================================
+# 1. SEPARATION LOGIC - DETAILED DESIGN
+# =============================================================================
+separation_logic:
+  approach: "Field-Based Classification with Schema Mapping"
+
+  classification_strategy:
+    principle: |
+      Classify each word_data element and top-level field based on whether it
+      describes SPATIAL/STRUCTURAL information (Layout) or SEMANTIC/TEXTUAL
+      information (Content).
+
+    layout_definition: |
+      Fields that describe WHERE elements are, HOW they are structured, and
+      WHAT visual/spatial properties they have.
+
+    content_definition: |
+      Fields that describe WHAT the elements say, mathematical/semantic meaning,
+      and multi-format representations.
+
+  # ---------------------------------------------------------------------------
+  # Field Classification Rules
+  # ---------------------------------------------------------------------------
+  field_classification_rules:
+
+    word_data_fields:
+      layout_fields:
+        - field: "cnt"
+          description: "Polygon contour coordinates [[x,y], ...]"
+          justification: "Pure spatial data - defines element boundary"
+          separability: "PERFECT"
+
+        - field: "type"
+          description: "Element type classification (text, math, diagram, etc.)"
+          justification: "Structural classification for layout organization"
+          separability: "PERFECT"
+          note: "Both Layout AND Content need this for different purposes"
+
+        - field: "subtype"
+          description: "Fine-grained variant (chemistry, triangle, etc.)"
+          justification: "Layout sub-classification"
+          separability: "PERFECT"
+
+      content_fields:
+        - field: "text"
+          description: "Mathpix Markdown text with math delimiters"
+          justification: "Semantic content - what element says"
+          separability: "PERFECT"
+
+        - field: "latex"
+          description: "Math-mode LaTeX representation"
+          justification: "Mathematical semantic content"
+          separability: "PERFECT"
+
+        - field: "confidence"
+          description: "Probability of 100% correctness [0, 1]"
+          justification: "Content quality metric"
+          separability: "PERFECT"
+
+        - field: "confidence_rate"
+          description: "Output quality estimate [0, 1]"
+          justification: "Content quality metric"
+          separability: "PERFECT"
+
+      shared_fields:
+        - field: "type"
+          reason: "Layout needs for spatial classification, Content needs for semantic grouping"
+          strategy: "Duplicate to both Layout and Content"
+
+    line_data_fields:
+      note: "COW Pipeline uses word_data only, but design is extensible"
+
+      layout_fields:
+        - "id"
+        - "parent_id"
+        - "children_ids"
+        - "region"  # {top_left_x, top_left_y, width, height}
+        - "cnt"
+        - "column"
+        - "line"
+        - "font_size"
+        - "conversion_output"
+
+      content_fields:
+        - "text"
+        - "text_display"
+        - "latex"
+        - "confidence"
+        - "confidence_rate"
+        - "is_printed"
+        - "is_handwritten"
+        - "html"
+        - "data"  # Array of DataObject (latex, asciimath, mathml, svg, etc.)
+
+    top_level_fields:
+      layout_only:
+        - "image_width"
+        - "image_height"
+        - "is_printed"
+        - "is_handwritten"
+
+      content_only:
+        - "text"  # Top-level Mathpix Markdown output
+        - "data"  # Top-level data array with multi-format outputs
+        - "html"
+        - "detected_alphabets"
+
+  # ---------------------------------------------------------------------------
+  # Separation Algorithm (Pseudocode)
+  # ---------------------------------------------------------------------------
+  separation_algorithm:
+    pseudocode: |
+      ```python
+      def separate_layout_content(stage_b_output: dict) -> tuple[LayoutData, ContentData]:
+          """
+          Separate Stage B output into Layout and Content data.
+
+          Algorithm:
+          1. Extract word_data array
+          2. For each word_data element:
+             - Create layout_element with: id, type, subtype, cnt
+             - Create content_element with: id, type, text, latex, confidence, data
+          3. Extract top-level fields:
+             - Layout: image_width, image_height, is_printed, is_handwritten
+             - Content: text, data, html, detected_alphabets
+          4. Build hierarchy mapping (parent_id/children_ids if line_data exists)
+          5. Return (LayoutData, ContentData)
+          ```
+
+    steps:
+      - step: 1
+        name: "Initialize Data Containers"
+        action: |
+          - Create empty LayoutData object with:
+            - elements: []
+            - page: {width, height}
+            - hierarchy: {parent_map, children_map}
+          - Create empty ContentData object with:
+            - elements: []
+            - text_output: ""
+            - data_formats: []
+            - quality_metrics: {}
+
+      - step: 2
+        name: "Process word_data Elements"
+        action: |
+          for element in stage_b_output["word_data"]:
+              # Generate unique ID (use index or create hash)
+              element_id = f"elem_{index:04d}"
+
+              # Extract layout fields
+              layout_element = {
+                  "id": element_id,
+                  "type": element["type"],
+                  "subtype": element.get("subtype"),
+                  "cnt": element["cnt"],
+                  "region": cnt_to_region(element["cnt"]),
+              }
+              layout_data.elements.append(layout_element)
+
+              # Extract content fields
+              content_element = {
+                  "id": element_id,
+                  "type": element["type"],  # Duplicated for semantic grouping
+                  "text": element.get("text", ""),
+                  "latex": element.get("latex"),
+                  "confidence": element.get("confidence", 0.0),
+                  "confidence_rate": element.get("confidence_rate", 0.0),
+              }
+              content_data.elements.append(content_element)
+
+      - step: 3
+        name: "Extract Top-Level Fields"
+        action: |
+          # Layout page info
+          layout_data.page = {
+              "width": stage_b_output["image_width"],
+              "height": stage_b_output["image_height"],
+          }
+
+          # Content output
+          content_data.text_output = stage_b_output.get("text", "")
+          content_data.data_formats = stage_b_output.get("data", [])
+          content_data.detected_alphabets = stage_b_output.get("detected_alphabets", {})
+
+      - step: 4
+        name: "Build Hierarchy (if line_data present)"
+        action: |
+          # For extensibility - COW currently uses word_data only
+          if "line_data" in stage_b_output:
+              for line in stage_b_output["line_data"]:
+                  layout_data.hierarchy["parent_map"][line["id"]] = line.get("parent_id")
+                  layout_data.hierarchy["children_map"][line["id"]] = line.get("children_ids", [])
+
+      - step: 5
+        name: "Validate Separation"
+        action: |
+          # Ensure element counts match
+          assert len(layout_data.elements) == len(content_data.elements)
+
+          # Ensure all IDs match
+          layout_ids = {e["id"] for e in layout_data.elements}
+          content_ids = {e["id"] for e in content_data.elements}
+          assert layout_ids == content_ids
+
+      - step: 6
+        name: "Return Separated Data"
+        action: |
+          return (layout_data, content_data)
+
+    computational_complexity:
+      time: "O(n) where n = number of word_data elements"
+      space: "O(n) for each of Layout and Content storage"
+
+  # ---------------------------------------------------------------------------
+  # Type-Specific Separation Rules
+  # ---------------------------------------------------------------------------
+  type_specific_rules:
+
+    text_elements:
+      layout_extraction:
+        - "cnt (contour polygon)"
+        - "region (bounding box)"
+        - "type: 'text'"
+      content_extraction:
+        - "text (Mathpix Markdown)"
+        - "confidence metrics"
+
+    math_elements:
+      layout_extraction:
+        - "cnt, region"
+        - "type: 'math'"
+      content_extraction:
+        - "text (with $...$ delimiters)"
+        - "latex (math-mode LaTeX)"
+        - "data array (latex, asciimath, mathml, svg)"
+
+    diagram_elements:
+      layout_extraction:
+        - "cnt (overall diagram boundary)"
+        - "region"
+        - "type: 'diagram'"
+        - "subtype: 'chemistry', 'triangle', etc."
+      content_extraction:
+        - "text (empty or description)"
+        - "No latex (diagrams are visual)"
+
+    chart_info_elements:
+      layout_extraction:
+        - "cnt (label position within chart)"
+        - "region"
+        - "type: 'chart_info'"
+      content_extraction:
+        - "text (label text: 'A', 'B', 'x', 'y', equations)"
+        - "latex (if equation label)"
+        - "confidence"
+
+# =============================================================================
+# 2. LAYOUT DATA SCHEMA - COMPLETE SPECIFICATION
+# =============================================================================
+layout_data_schema:
+  file_name: "stage_b_layout.json"
+  location: "outputs/{image_id}/layout/"
+
+  purpose: |
+    Store spatial positioning, structural hierarchy, and visual properties of
+    all detected elements. Enables bbox-based mapping, spatial validation,
+    and layout reconstruction.
+
+  schema_version: "1.0.0"
+
+  # ---------------------------------------------------------------------------
+  # Top-Level Structure
+  # ---------------------------------------------------------------------------
+  structure:
+    elements:
+      type: "array[LayoutElement]"
+      description: "Array of layout elements with spatial data"
+      required: true
+
+    page:
+      type: "PageInfo"
+      description: "Page/image dimensions"
+      required: true
+
+    hierarchy:
+      type: "HierarchyMap"
+      description: "Parent-child relationships (for line_data)"
+      required: false
+      note: "Optional - only if line_data is used"
+
+    metadata:
+      type: "LayoutMetadata"
+      description: "Processing metadata"
+      required: true
+
+  # ---------------------------------------------------------------------------
+  # LayoutElement Object
+  # ---------------------------------------------------------------------------
+  LayoutElement:
+    description: "Single element's layout information"
+
+    fields:
+      id:
+        type: "string"
+        required: true
+        description: "Unique element identifier"
+        format: "elem_{index:04d}"
+        example: "elem_0001"
+
+      type:
+        type: "string"
+        required: true
+        description: "Element type classification"
+        enum:
+          - "text"
+          - "math"
+          - "table"
+          - "diagram"
+          - "chart_info"
+          - "equation_number"
+        note: "Maps to Mathpix word_data.type"
+
+      subtype:
+        type: "string"
+        required: false
+        description: "Fine-grained variant"
+        enum:
+          - "chemistry"
+          - "triangle"
+          - "algorithm"
+          - "pseudocode"
+        note: "Optional - only for diagrams currently"
+
+      region:
+        type: "Region"
+        required: true
+        description: "Axis-aligned bounding box"
+        fields:
+          top_left_x:
+            type: "integer"
+            description: "X coordinate of top-left corner (pixels)"
+          top_left_y:
+            type: "integer"
+            description: "Y coordinate of top-left corner (pixels)"
+          width:
+            type: "integer"
+            description: "Width in pixels"
+          height:
+            type: "integer"
+            description: "Height in pixels"
+
+      cnt:
+        type: "array[[x, y]]"
+        required: true
+        description: "Polygon contour as list of [x, y] coordinate pairs"
+        note: "More precise than region - captures exact element boundary"
+        example: "[[100, 200], [150, 200], [150, 220], [100, 220]]"
+
+      column:
+        type: "integer"
+        required: false
+        description: "Column index for multi-column layouts (0-based)"
+        default: 0
+        note: "Only in line_data - not in word_data"
+
+      line:
+        type: "integer"
+        required: false
+        description: "Line number within region"
+        note: "Only in line_data - not in word_data"
+
+      font_size:
+        type: "integer"
+        required: false
+        description: "Font size in pixels"
+        note: "Only in line_data - not in word_data"
+
+      parent_id:
+        type: "string"
+        required: false
+        description: "Parent element ID in hierarchy"
+        note: "Only in line_data - not in word_data"
+
+      children_ids:
+        type: "array[string]"
+        required: false
+        description: "Child element IDs"
+        note: "Only in line_data - not in word_data"
+
+  # ---------------------------------------------------------------------------
+  # PageInfo Object
+  # ---------------------------------------------------------------------------
+  PageInfo:
+    description: "Page/image dimensions and properties"
+
+    fields:
+      width:
+        type: "integer"
+        required: true
+        description: "Image width in pixels"
+        source: "stage_b_output.image_width"
+
+      height:
+        type: "integer"
+        required: true
+        description: "Image height in pixels"
+        source: "stage_b_output.image_height"
+
+      is_printed:
+        type: "boolean"
+        required: false
+        description: "True if page contains printed text"
+        source: "stage_b_output.is_printed"
+
+      is_handwritten:
+        type: "boolean"
+        required: false
+        description: "True if page contains handwritten text"
+        source: "stage_b_output.is_handwritten"
+        note: "Can be true simultaneously with is_printed"
+
+  # ---------------------------------------------------------------------------
+  # HierarchyMap Object
+  # ---------------------------------------------------------------------------
+  HierarchyMap:
+    description: "Parent-child relationships for layout tree"
+    note: "Only populated if line_data is used (COW uses word_data only)"
+
+    fields:
+      parent_map:
+        type: "dict[string, string]"
+        description: "Mapping of element_id -> parent_id"
+        example: '{"elem_0002": "elem_0001"}'
+
+      children_map:
+        type: "dict[string, array[string]]"
+        description: "Mapping of element_id -> [child_ids]"
+        example: '{"elem_0001": ["elem_0002", "elem_0003"]}'
+
+  # ---------------------------------------------------------------------------
+  # LayoutMetadata Object
+  # ---------------------------------------------------------------------------
+  LayoutMetadata:
+    description: "Processing metadata for traceability"
+
+    fields:
+      source_file:
+        type: "string"
+        description: "Original Stage B output file path"
+
+      separator_version:
+        type: "string"
+        description: "LayoutContentSeparator version"
+        example: "1.0.0"
+
+      element_count:
+        type: "integer"
+        description: "Total number of layout elements"
+
+      created_at:
+        type: "string"
+        description: "ISO 8601 timestamp"
+        example: "2026-02-04T14:30:00Z"
+
+  # ---------------------------------------------------------------------------
+  # Complete Example
+  # ---------------------------------------------------------------------------
+  example:
+    elements:
+      - id: "elem_0001"
+        type: "text"
+        subtype: null
+        region:
+          top_left_x: 100
+          top_left_y: 200
+          width: 300
+          height: 50
+        cnt:
+          - [100, 200]
+          - [400, 200]
+          - [400, 250]
+          - [100, 250]
+
+      - id: "elem_0002"
+        type: "math"
+        subtype: null
+        region:
+          top_left_x: 150
+          top_left_y: 300
+          width: 200
+          height: 40
+        cnt:
+          - [150, 300]
+          - [350, 300]
+          - [350, 340]
+          - [150, 340]
+
+      - id: "elem_0003"
+        type: "diagram"
+        subtype: "triangle"
+        region:
+          top_left_x: 50
+          top_left_y: 400
+          width: 500
+          height: 400
+        cnt:
+          - [50, 400]
+          - [550, 400]
+          - [300, 800]
+
+      - id: "elem_0004"
+        type: "chart_info"
+        subtype: null
+        region:
+          top_left_x: 280
+          top_left_y: 750
+          width: 40
+          height: 30
+        cnt:
+          - [280, 750]
+          - [320, 750]
+          - [320, 780]
+          - [280, 780]
+
+    page:
+      width: 2480
+      height: 3508
+      is_printed: true
+      is_handwritten: false
+
+    hierarchy:
+      parent_map: {}
+      children_map: {}
+
+    metadata:
+      source_file: "outputs/image123/stage_b/stage_b.json"
+      separator_version: "1.0.0"
+      element_count: 4
+      created_at: "2026-02-04T14:30:00Z"
+
+# =============================================================================
+# 3. CONTENT DATA SCHEMA - COMPLETE SPECIFICATION
+# =============================================================================
+content_data_schema:
+  file_name: "stage_b_content.json"
+  location: "outputs/{image_id}/content/"
+
+  purpose: |
+    Store semantic text, mathematical expressions, confidence metrics, and
+    multi-format data outputs. Enables content verification, semantic analysis,
+    and quality-based filtering.
+
+  schema_version: "1.0.0"
+
+  # ---------------------------------------------------------------------------
+  # Top-Level Structure
+  # ---------------------------------------------------------------------------
+  structure:
+    elements:
+      type: "array[ContentElement]"
+      description: "Array of content elements with semantic data"
+      required: true
+
+    text_output:
+      type: "string"
+      description: "Top-level Mathpix Markdown output"
+      required: true
+      source: "stage_b_output.text"
+
+    data_formats:
+      type: "array[DataObject]"
+      description: "Multi-format data array (latex, asciimath, mathml, svg, etc.)"
+      required: true
+      source: "stage_b_output.data"
+
+    detected_alphabets:
+      type: "DetectedAlphabets"
+      description: "Detected writing systems"
+      required: true
+
+    quality_summary:
+      type: "QualitySummary"
+      description: "Aggregate quality metrics"
+      required: true
+
+    metadata:
+      type: "ContentMetadata"
+      description: "Processing metadata"
+      required: true
+
+  # ---------------------------------------------------------------------------
+  # ContentElement Object
+  # ---------------------------------------------------------------------------
+  ContentElement:
+    description: "Single element's content information"
+
+    fields:
+      id:
+        type: "string"
+        required: true
+        description: "Unique element identifier (matches LayoutElement.id)"
+        format: "elem_{index:04d}"
+
+      type:
+        type: "string"
+        required: true
+        description: "Element type (duplicated from layout for semantic grouping)"
+        enum:
+          - "text"
+          - "math"
+          - "table"
+          - "diagram"
+          - "chart_info"
+          - "equation_number"
+
+      text:
+        type: "string"
+        required: true
+        description: "Text in Mathpix Markdown format"
+        note: "May contain $...$ or $$...$$ delimiters for math"
+        example: "The area of triangle $ABC$ is"
+
+      latex:
+        type: "string"
+        required: false
+        description: "Math-mode LaTeX (only for math elements)"
+        note: "Pure LaTeX without delimiters"
+        example: "A = \\frac{1}{2}bh"
+
+      confidence:
+        type: "number"
+        required: true
+        range: "[0.0, 1.0]"
+        description: "Estimated probability of 100% correctness"
+        note: "Higher = more confident"
+
+      confidence_rate:
+        type: "number"
+        required: true
+        range: "[0.0, 1.0]"
+        description: "Estimated output quality"
+        note: "Independent of confidence - measures OCR quality"
+
+      is_printed:
+        type: "boolean"
+        required: false
+        description: "True if element is printed text"
+        note: "Only in line_data - not in word_data"
+
+      is_handwritten:
+        type: "boolean"
+        required: false
+        description: "True if element is handwritten"
+        note: "Only in line_data - not in word_data"
+
+      data:
+        type: "array[DataObject]"
+        required: false
+        description: "Multi-format outputs for this element"
+        note: "Only in line_data - not in word_data"
+
+  # ---------------------------------------------------------------------------
+  # DataObject (Multi-Format Output)
+  # ---------------------------------------------------------------------------
+  DataObject:
+    description: "Structured data in various formats"
+    source: "stage_b_output.data array"
+
+    fields:
+      type:
+        type: "string"
+        required: true
+        description: "Data format type"
+        enum:
+          - "latex"
+          - "asciimath"
+          - "mathml"
+          - "svg"
+          - "table_html"
+          - "tsv"
+
+      value:
+        type: "string"
+        required: true
+        description: "The extracted data content in specified format"
+
+    examples:
+      - type: "latex"
+        value: "\\frac{x^2 + y^2}{z}"
+
+      - type: "asciimath"
+        value: "(x^2 + y^2)/z"
+
+      - type: "mathml"
+        value: "<math><mfrac><mrow><msup><mi>x</mi><mn>2</mn></msup>...</mrow></mfrac></math>"
+
+      - type: "svg"
+        value: "<svg width=\"100\" height=\"50\">...</svg>"
+
+  # ---------------------------------------------------------------------------
+  # DetectedAlphabets Object
+  # ---------------------------------------------------------------------------
+  DetectedAlphabets:
+    description: "Writing system detection flags"
+    source: "stage_b_output.detected_alphabets"
+
+    fields:
+      en:
+        type: "boolean"
+        description: "English/Latin detected"
+      ko:
+        type: "boolean"
+        description: "Korean detected"
+      zh:
+        type: "boolean"
+        description: "Chinese detected"
+      ja:
+        type: "boolean"
+        description: "Japanese detected"
+      ru:
+        type: "boolean"
+        description: "Russian/Cyrillic detected"
+      hi:
+        type: "boolean"
+        description: "Hindi detected"
+      th:
+        type: "boolean"
+        description: "Thai detected"
+
+  # ---------------------------------------------------------------------------
+  # QualitySummary Object
+  # ---------------------------------------------------------------------------
+  QualitySummary:
+    description: "Aggregate quality metrics across all elements"
+
+    fields:
+      average_confidence:
+        type: "number"
+        description: "Mean confidence across all elements"
+
+      min_confidence:
+        type: "number"
+        description: "Lowest confidence score"
+
+      max_confidence:
+        type: "number"
+        description: "Highest confidence score"
+
+      low_confidence_count:
+        type: "integer"
+        description: "Count of elements with confidence < 0.75"
+
+      average_confidence_rate:
+        type: "number"
+        description: "Mean confidence_rate across all elements"
+
+  # ---------------------------------------------------------------------------
+  # ContentMetadata Object
+  # ---------------------------------------------------------------------------
+  ContentMetadata:
+    description: "Processing metadata for traceability"
+
+    fields:
+      source_file:
+        type: "string"
+        description: "Original Stage B output file path"
+
+      separator_version:
+        type: "string"
+        description: "LayoutContentSeparator version"
+
+      element_count:
+        type: "integer"
+        description: "Total number of content elements"
+
+      text_length:
+        type: "integer"
+        description: "Length of top-level text output"
+
+      data_format_count:
+        type: "integer"
+        description: "Number of data format objects"
+
+      created_at:
+        type: "string"
+        description: "ISO 8601 timestamp"
+
+  # ---------------------------------------------------------------------------
+  # Complete Example
+  # ---------------------------------------------------------------------------
+  example:
+    elements:
+      - id: "elem_0001"
+        type: "text"
+        text: "그림과 같이 삼각형 $ABC$에서"
+        latex: null
+        confidence: 0.98
+        confidence_rate: 0.95
+
+      - id: "elem_0002"
+        type: "math"
+        text: "$AB = 10$"
+        latex: "AB = 10"
+        confidence: 0.99
+        confidence_rate: 0.97
+
+      - id: "elem_0003"
+        type: "diagram"
+        text: ""
+        latex: null
+        confidence: 0.85
+        confidence_rate: 0.82
+
+      - id: "elem_0004"
+        type: "chart_info"
+        text: "A"
+        latex: null
+        confidence: 0.99
+        confidence_rate: 0.98
+
+    text_output: "그림과 같이 삼각형 $ABC$에서 $AB = 10$, ..."
+
+    data_formats:
+      - type: "latex"
+        value: "AB = 10"
+      - type: "asciimath"
+        value: "AB = 10"
+
+    detected_alphabets:
+      en: true
+      ko: true
+      zh: false
+      ja: false
+      ru: false
+      hi: false
+      th: false
+
+    quality_summary:
+      average_confidence: 0.9525
+      min_confidence: 0.85
+      max_confidence: 0.99
+      low_confidence_count: 0
+      average_confidence_rate: 0.93
+
+    metadata:
+      source_file: "outputs/image123/stage_b/stage_b.json"
+      separator_version: "1.0.0"
+      element_count: 4
+      text_length: 156
+      data_format_count: 2
+      created_at: "2026-02-04T14:30:00Z"
+
+# =============================================================================
+# 4. PYTHON MODULE API DESIGN
+# =============================================================================
+python_module_api:
+  module_name: "layout_content_separator.py"
+  location: "/home/palantir/cow/pipeline/stage_c0/"
+
+  purpose: |
+    Provide LayoutContentSeparator class and related utilities for separating
+    Stage B output into Layout and Content data structures.
+
+  dependencies:
+    - "json (stdlib)"
+    - "pathlib (stdlib)"
+    - "typing (stdlib)"
+    - "dataclasses (stdlib)"
+    - "datetime (stdlib)"
+
+  # ---------------------------------------------------------------------------
+  # Main Class: LayoutContentSeparator
+  # ---------------------------------------------------------------------------
+  LayoutContentSeparator:
+    description: "Main separation logic encapsulation"
+
+    class_signature: |
+      class LayoutContentSeparator:
+          """Separate Stage B Mathpix output into Layout and Content data."""
+
+          def __init__(self, version: str = "1.0.0"):
+              """Initialize separator with version tracking."""
+              self.version = version
+
+    methods:
+      # -----------------------------------------------------------------------
+      separate:
+        signature: |
+          def separate(
+              self,
+              stage_b_output: dict
+          ) -> tuple[LayoutData, ContentData]
+
+        description: "Separate Stage B output into Layout and Content"
+
+        parameters:
+          stage_b_output:
+            type: "dict"
+            description: "Parsed JSON from Stage B output file"
+            required_keys:
+              - "word_data"
+              - "image_width"
+              - "image_height"
+              - "text"
+              - "data"
+
+        returns:
+          type: "tuple[LayoutData, ContentData]"
+          description: "Separated data structures"
+
+        algorithm: |
+          1. Extract word_data array
+          2. Initialize LayoutData and ContentData containers
+          3. For each element in word_data:
+             - Generate unique ID
+             - Create LayoutElement with: id, type, subtype, region, cnt
+             - Create ContentElement with: id, type, text, latex, confidence
+          4. Extract page dimensions → LayoutData.page
+          5. Extract text/data outputs → ContentData
+          6. Calculate quality summary → ContentData.quality_summary
+          7. Validate element counts match
+          8. Return (LayoutData, ContentData)
+
+        exceptions:
+          - ValueError: "Missing required field in stage_b_output"
+          - AssertionError: "Element count mismatch between Layout and Content"
+
+      # -----------------------------------------------------------------------
+      save_layout:
+        signature: |
+          def save_layout(
+              self,
+              data: LayoutData,
+              path: Path,
+              pretty: bool = True
+          ) -> None
+
+        description: "Save LayoutData to JSON file"
+
+        parameters:
+          data:
+            type: "LayoutData"
+            description: "Layout data structure to save"
+          path:
+            type: "Path"
+            description: "Output file path"
+          pretty:
+            type: "bool"
+            description: "Use indented JSON (default: True)"
+
+        behavior: |
+          1. Convert LayoutData to dict via .to_dict()
+          2. Create parent directories if needed
+          3. Write JSON with indent=2 if pretty=True
+          4. Log file path and element count
+
+      # -----------------------------------------------------------------------
+      save_content:
+        signature: |
+          def save_content(
+              self,
+              data: ContentData,
+              path: Path,
+              pretty: bool = True
+          ) -> None
+
+        description: "Save ContentData to JSON file"
+
+        parameters:
+          data:
+            type: "ContentData"
+            description: "Content data structure to save"
+          path:
+            type: "Path"
+            description: "Output file path"
+          pretty:
+            type: "bool"
+            description: "Use indented JSON (default: True)"
+
+        behavior: |
+          1. Convert ContentData to dict via .to_dict()
+          2. Create parent directories if needed
+          3. Write JSON with indent=2 if pretty=True
+          4. Log file path and element count
+
+      # -----------------------------------------------------------------------
+      validate_separation:
+        signature: |
+          def validate_separation(
+              self,
+              layout: LayoutData,
+              content: ContentData
+          ) -> bool
+
+        description: "Validate Layout and Content separation consistency"
+
+        validation_checks:
+          - "Element counts match"
+          - "All Layout IDs present in Content"
+          - "All Content IDs present in Layout"
+          - "No duplicate IDs"
+          - "Page dimensions > 0"
+          - "Quality summary calculated correctly"
+
+        returns:
+          type: "bool"
+          description: "True if valid, raises exception otherwise"
+
+        exceptions:
+          - ValidationError: "Element count mismatch: Layout={n1}, Content={n2}"
+          - ValidationError: "Missing ID in Content: {id}"
+          - ValidationError: "Duplicate ID found: {id}"
+
+  # ---------------------------------------------------------------------------
+  # Data Classes
+  # ---------------------------------------------------------------------------
+  data_classes:
+
+    LayoutData:
+      signature: |
+        @dataclass
+        class LayoutData:
+            """Container for layout information."""
+            elements: List[LayoutElement]
+            page: PageInfo
+            hierarchy: HierarchyMap
+            metadata: LayoutMetadata
+
+            def to_dict(self) -> dict:
+                """Convert to JSON-serializable dict."""
+                ...
+
+            @classmethod
+            def from_dict(cls, data: dict) -> 'LayoutData':
+                """Deserialize from dict."""
+                ...
+
+    ContentData:
+      signature: |
+        @dataclass
+        class ContentData:
+            """Container for content information."""
+            elements: List[ContentElement]
+            text_output: str
+            data_formats: List[DataObject]
+            detected_alphabets: DetectedAlphabets
+            quality_summary: QualitySummary
+            metadata: ContentMetadata
+
+            def to_dict(self) -> dict:
+                """Convert to JSON-serializable dict."""
+                ...
+
+            @classmethod
+            def from_dict(cls, data: dict) -> 'ContentData':
+                """Deserialize from dict."""
+                ...
+
+    LayoutElement:
+      signature: |
+        @dataclass
+        class LayoutElement:
+            """Single element's layout properties."""
+            id: str
+            type: str
+            subtype: Optional[str]
+            region: Region
+            cnt: List[List[int]]
+            column: Optional[int] = None
+            line: Optional[int] = None
+            font_size: Optional[int] = None
+            parent_id: Optional[str] = None
+            children_ids: Optional[List[str]] = None
+
+            def to_dict(self) -> dict:
+                ...
+
+    ContentElement:
+      signature: |
+        @dataclass
+        class ContentElement:
+            """Single element's content properties."""
+            id: str
+            type: str
+            text: str
+            latex: Optional[str]
+            confidence: float
+            confidence_rate: float
+            is_printed: Optional[bool] = None
+            is_handwritten: Optional[bool] = None
+            data: Optional[List[DataObject]] = None
+
+            def to_dict(self) -> dict:
+                ...
+
+    Region:
+      signature: |
+        @dataclass
+        class Region:
+            """Bounding box coordinates."""
+            top_left_x: int
+            top_left_y: int
+            width: int
+            height: int
+
+            @classmethod
+            def from_cnt(cls, cnt: List[List[int]]) -> 'Region':
+                """Calculate region from contour coordinates."""
+                xs = [p[0] for p in cnt]
+                ys = [p[1] for p in cnt]
+                return cls(
+                    top_left_x=min(xs),
+                    top_left_y=min(ys),
+                    width=max(xs) - min(xs),
+                    height=max(ys) - min(ys)
+                )
+
+    PageInfo:
+      signature: |
+        @dataclass
+        class PageInfo:
+            """Page/image dimensions."""
+            width: int
+            height: int
+            is_printed: Optional[bool] = None
+            is_handwritten: Optional[bool] = None
+
+    QualitySummary:
+      signature: |
+        @dataclass
+        class QualitySummary:
+            """Aggregate quality metrics."""
+            average_confidence: float
+            min_confidence: float
+            max_confidence: float
+            low_confidence_count: int
+            average_confidence_rate: float
+
+            @classmethod
+            def from_elements(cls, elements: List[ContentElement]) -> 'QualitySummary':
+                """Calculate summary from content elements."""
+                confidences = [e.confidence for e in elements]
+                conf_rates = [e.confidence_rate for e in elements]
+
+                return cls(
+                    average_confidence=sum(confidences) / len(confidences),
+                    min_confidence=min(confidences),
+                    max_confidence=max(confidences),
+                    low_confidence_count=sum(1 for c in confidences if c < 0.75),
+                    average_confidence_rate=sum(conf_rates) / len(conf_rates)
+                )
+
+  # ---------------------------------------------------------------------------
+  # Utility Functions
+  # ---------------------------------------------------------------------------
+  utility_functions:
+
+    cnt_to_region:
+      signature: |
+        def cnt_to_region(cnt: List[List[int]]) -> Region
+
+      description: "Convert contour polygon to bounding box Region"
+
+      algorithm: |
+        1. Extract all x coordinates
+        2. Extract all y coordinates
+        3. Calculate min/max for each axis
+        4. Return Region(min_x, min_y, width, height)
+
+    generate_element_id:
+      signature: |
+        def generate_element_id(index: int) -> str
+
+      description: "Generate unique element ID from index"
+
+      format: "elem_{index:04d}"
+
+      examples:
+        - "0 → 'elem_0000'"
+        - "42 → 'elem_0042'"
+        - "1234 → 'elem_1234'"
+
+    load_stage_b_output:
+      signature: |
+        def load_stage_b_output(path: Path) -> dict
+
+      description: "Load and parse Stage B JSON output"
+
+      validation:
+        - "File exists"
+        - "Valid JSON"
+        - "Required keys present: word_data, image_width, image_height"
+
+  # ---------------------------------------------------------------------------
+  # Usage Example
+  # ---------------------------------------------------------------------------
+  usage_example: |
+    ```python
+    from pathlib import Path
+    from layout_content_separator import LayoutContentSeparator, load_stage_b_output
+
+    # Load Stage B output
+    stage_b_path = Path("outputs/image123/stage_b/stage_b.json")
+    stage_b_data = load_stage_b_output(stage_b_path)
+
+    # Separate into Layout and Content
+    separator = LayoutContentSeparator(version="1.0.0")
+    layout_data, content_data = separator.separate(stage_b_data)
+
+    # Validate separation
+    separator.validate_separation(layout_data, content_data)
+
+    # Save to separate files
+    layout_path = Path("outputs/image123/layout/stage_b_layout.json")
+    content_path = Path("outputs/image123/content/stage_b_content.json")
+
+    separator.save_layout(layout_data, layout_path)
+    separator.save_content(content_data, content_path)
+
+    print(f"Layout: {len(layout_data.elements)} elements")
+    print(f"Content: {len(content_data.elements)} elements")
+    print(f"Quality: avg={content_data.quality_summary.average_confidence:.2f}")
+    ```
+
+# =============================================================================
+# 5. STAGE C0 INTEGRATION PLAN
+# =============================================================================
+stage_c0_integration:
+  objective: |
+    Modify existing Stage C0 parser (word_data_parser.py) to incorporate
+    Layout/Content separation as a pre-processing step.
+
+  # ---------------------------------------------------------------------------
+  # Current Flow
+  # ---------------------------------------------------------------------------
+  current_flow:
+    - step: 1
+      description: "Load Stage B output (stage_b.json)"
+
+    - step: 2
+      description: "Parse word_data elements with parse_word_data_element()"
+
+    - step: 3
+      description: "Classify elements by type (text, math, header, diagram, chart_info)"
+
+    - step: 4
+      description: "Extract diagram labels from chart_info"
+
+    - step: 5
+      description: "Generate verification criteria"
+
+    - step: 6
+      description: "Output stage_c0.json with mathpix_passthrough, parsed_objects, stage_c_scope"
+
+  # ---------------------------------------------------------------------------
+  # Enhanced Flow (with Separation)
+  # ---------------------------------------------------------------------------
+  enhanced_flow:
+    - step: 1
+      description: "Load Stage B output (stage_b.json)"
+
+    - step: 2
+      name: "SEPARATION STEP (NEW)"
+      description: "Separate into Layout and Content"
+      action: |
+        separator = LayoutContentSeparator()
+        layout_data, content_data = separator.separate(stage_b_data)
+
+    - step: 3
+      name: "SAVE SEPARATED FILES (NEW)"
+      description: "Save Layout and Content to separate directories"
+      action: |
+        separator.save_layout(layout_data, layout_path)
+        separator.save_content(content_data, content_path)
+
+    - step: 4
+      description: "Parse word_data elements (UNCHANGED)"
+      note: "Can now optionally use layout_data/content_data instead of raw word_data"
+
+    - step: 5
+      description: "Classify elements by type (UNCHANGED)"
+
+    - step: 6
+      description: "Extract diagram labels from chart_info (UNCHANGED)"
+
+    - step: 7
+      description: "Generate verification criteria (UNCHANGED)"
+
+    - step: 8
+      name: "OUTPUT WITH REFERENCES (ENHANCED)"
+      description: "Output stage_c0.json with references to separated files"
+      structure: |
+        {
+          "separated_data": {
+            "layout_file": "outputs/{id}/layout/stage_b_layout.json",
+            "content_file": "outputs/{id}/content/stage_b_content.json"
+          },
+          "mathpix_passthrough": {...},
+          "parsed_objects": {...},
+          "stage_c_scope": {...}
+        }
+
+  # ---------------------------------------------------------------------------
+  # Code Modifications
+  # ---------------------------------------------------------------------------
+  code_modifications:
+
+    file_1:
+      path: "/home/palantir/cow/pipeline/stage_c0/word_data_parser.py"
+
+      changes:
+        - change: 1
+          location: "Top of file (imports)"
+          action: "ADD"
+          code: |
+            from layout_content_separator import (
+                LayoutContentSeparator,
+                LayoutData,
+                ContentData,
+            )
+
+        - change: 2
+          location: "parse_stage_b_output() function"
+          action: "INSERT after loading stage_b_data"
+          code: |
+            # NEW: Separate Layout and Content
+            separator = LayoutContentSeparator(version="1.0.0")
+            layout_data, content_data = separator.separate(stage_b_data)
+
+            # Save separated data
+            image_id = Path(input_path).parent.parent.name  # Extract image ID
+            layout_dir = Path(input_path).parent.parent / "layout"
+            content_dir = Path(input_path).parent.parent / "content"
+
+            layout_path = layout_dir / "stage_b_layout.json"
+            content_path = content_dir / "stage_b_content.json"
+
+            separator.save_layout(layout_data, layout_path)
+            separator.save_content(content_data, content_path)
+
+        - change: 3
+          location: "Output structure (build output dict)"
+          action: "ADD separated_data section"
+          code: |
+            output = {
+                "separated_data": {
+                    "layout_file": str(layout_path),
+                    "content_file": str(content_path),
+                    "element_count": len(layout_data.elements),
+                    "quality_summary": content_data.quality_summary.to_dict(),
+                },
+                "mathpix_passthrough": {...},
+                "parsed_objects": {...},
+                "stage_c_scope": {...},
+            }
+
+    file_2:
+      path: "/home/palantir/cow/pipeline/stage_c0/layout_content_separator.py"
+      action: "CREATE NEW FILE"
+      description: "Implement complete LayoutContentSeparator class and data classes"
+      estimated_lines: 500
+
+  # ---------------------------------------------------------------------------
+  # Backward Compatibility
+  # ---------------------------------------------------------------------------
+  backward_compatibility:
+    approach: "Non-Breaking Addition"
+
+    guarantees:
+      - "Existing stage_c0.json structure UNCHANGED"
+      - "mathpix_passthrough section preserved exactly"
+      - "parsed_objects section preserved exactly"
+      - "stage_c_scope section preserved exactly"
+      - "Only ADDS separated_data section"
+
+    migration_path:
+      - phase: 1
+        name: "Parallel Output"
+        description: "Generate both separated files AND merged stage_c0.json"
+        backward_compatible: true
+
+      - phase: 2
+        name: "Downstream Adaptation"
+        description: "Update Stage C, D to optionally use separated files"
+        backward_compatible: true
+        note: "Fallback to merged data if separated files not found"
+
+      - phase: 3
+        name: "Full Separation"
+        description: "Make separated files the primary data source"
+        backward_compatible: false
+        requires: "All downstream stages updated"
+
+# =============================================================================
+# 6. TEST STRATEGY
+# =============================================================================
+test_strategy:
+  objective: |
+    Comprehensive testing to ensure correct separation, data integrity,
+    and backward compatibility.
+
+  # ---------------------------------------------------------------------------
+  # Unit Tests
+  # ---------------------------------------------------------------------------
+  unit_tests:
+    file: "tests/stage_c0/test_layout_content_separator.py"
+
+    test_cases:
+      # -----------------------------------------------------------------------
+      - test_id: "UT-01"
+        name: "test_cnt_to_region_basic"
+        description: "Convert simple rectangular contour to Region"
+
+        input:
+          cnt: [[100, 200], [300, 200], [300, 250], [100, 250]]
+
+        expected_output:
+          top_left_x: 100
+          top_left_y: 200
+          width: 200
+          height: 50
+
+        assertions:
+          - "region.top_left_x == 100"
+          - "region.top_left_y == 200"
+          - "region.width == 200"
+          - "region.height == 50"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-02"
+        name: "test_cnt_to_region_irregular"
+        description: "Convert irregular polygon to bounding box"
+
+        input:
+          cnt: [[50, 100], [150, 50], [250, 150], [200, 300], [100, 250]]
+
+        expected_output:
+          top_left_x: 50
+          top_left_y: 50
+          width: 200   # 250 - 50
+          height: 250  # 300 - 50
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-03"
+        name: "test_separate_single_text_element"
+        description: "Separate single text element"
+
+        input:
+          stage_b_output:
+            word_data:
+              - type: "text"
+                text: "Hello World"
+                cnt: [[100, 100], [200, 100], [200, 120], [100, 120]]
+                confidence: 0.95
+                confidence_rate: 0.92
+            image_width: 1000
+            image_height: 1000
+            text: "Hello World"
+            data: []
+
+        validation:
+          - "len(layout_data.elements) == 1"
+          - "len(content_data.elements) == 1"
+          - "layout_data.elements[0].id == content_data.elements[0].id"
+          - "layout_data.elements[0].type == 'text'"
+          - "content_data.elements[0].text == 'Hello World'"
+          - "content_data.elements[0].confidence == 0.95"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-04"
+        name: "test_separate_math_element_with_latex"
+        description: "Separate math element with LaTeX"
+
+        input:
+          word_data:
+            - type: "math"
+              text: "$x^2 + y^2 = r^2$"
+              latex: "x^2 + y^2 = r^2"
+              cnt: [[150, 150], [300, 150], [300, 180], [150, 180]]
+              confidence: 0.98
+              confidence_rate: 0.96
+
+        validation:
+          - "layout_data.elements[0].type == 'math'"
+          - "content_data.elements[0].latex == 'x^2 + y^2 = r^2'"
+          - "content_data.elements[0].text == '$x^2 + y^2 = r^2$'"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-05"
+        name: "test_separate_diagram_with_chart_info"
+        description: "Separate diagram with internal labels"
+
+        input:
+          word_data:
+            - type: "diagram"
+              subtype: "triangle"
+              text: ""
+              cnt: [[50, 50], [550, 50], [300, 400]]
+              confidence: 0.85
+              confidence_rate: 0.80
+            - type: "chart_info"
+              text: "A"
+              cnt: [[280, 380], [320, 380], [320, 400], [280, 400]]
+              confidence: 0.99
+              confidence_rate: 0.98
+
+        validation:
+          - "len(layout_data.elements) == 2"
+          - "layout_data.elements[0].type == 'diagram'"
+          - "layout_data.elements[0].subtype == 'triangle'"
+          - "layout_data.elements[1].type == 'chart_info'"
+          - "content_data.elements[1].text == 'A'"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-06"
+        name: "test_quality_summary_calculation"
+        description: "Calculate quality summary from content elements"
+
+        input:
+          content_elements:
+            - id: "elem_0001"
+              confidence: 0.95
+              confidence_rate: 0.92
+            - id: "elem_0002"
+              confidence: 0.88
+              confidence_rate: 0.85
+            - id: "elem_0003"
+              confidence: 0.72  # Low confidence
+              confidence_rate: 0.70
+            - id: "elem_0004"
+              confidence: 0.99
+              confidence_rate: 0.98
+
+        expected_output:
+          average_confidence: 0.885  # (0.95 + 0.88 + 0.72 + 0.99) / 4
+          min_confidence: 0.72
+          max_confidence: 0.99
+          low_confidence_count: 1  # 0.72 < 0.75
+          average_confidence_rate: 0.8625
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-07"
+        name: "test_validate_separation_success"
+        description: "Validation passes for correct separation"
+
+        setup:
+          - "Create matching Layout and Content with same IDs"
+          - "Same element counts"
+
+        action: "validator.validate_separation(layout, content)"
+
+        expected: "Returns True, no exceptions"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-08"
+        name: "test_validate_separation_count_mismatch"
+        description: "Validation fails on element count mismatch"
+
+        setup:
+          - "Layout: 5 elements"
+          - "Content: 4 elements"
+
+        action: "validator.validate_separation(layout, content)"
+
+        expected: "Raises ValidationError with message 'Element count mismatch'"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-09"
+        name: "test_validate_separation_id_mismatch"
+        description: "Validation fails on ID mismatch"
+
+        setup:
+          - "Layout IDs: [elem_0001, elem_0002, elem_0003]"
+          - "Content IDs: [elem_0001, elem_0002, elem_0004]"
+
+        expected: "Raises ValidationError with message 'Missing ID in Content: elem_0003'"
+
+      # -----------------------------------------------------------------------
+      - test_id: "UT-10"
+        name: "test_save_load_roundtrip"
+        description: "Save and load Layout/Content preserves data"
+
+        steps:
+          - "Create LayoutData and ContentData"
+          - "Save to temporary files"
+          - "Load from files"
+          - "Assert loaded data equals original"
+
+  # ---------------------------------------------------------------------------
+  # Integration Tests
+  # ---------------------------------------------------------------------------
+  integration_tests:
+    file: "tests/integration/test_stage_c0_separation.py"
+
+    test_cases:
+      # -----------------------------------------------------------------------
+      - test_id: "IT-01"
+        name: "test_stage_c0_with_separation_korean_math"
+        description: "Full Stage C0 pipeline with Korean math problem"
+
+        input:
+          - "Real Stage B output from Korean geometry problem"
+          - "Contains: text, math equations, diagram, chart_info labels"
+
+        steps:
+          - "Run parse_stage_b_output() with separation enabled"
+          - "Verify layout/ and content/ directories created"
+          - "Verify stage_c0.json includes separated_data section"
+          - "Verify element counts match across all outputs"
+
+        validation:
+          - "Layout file exists and is valid JSON"
+          - "Content file exists and is valid JSON"
+          - "stage_c0.json backward compatible (existing fields preserved)"
+          - "Quality summary calculated correctly"
+
+      # -----------------------------------------------------------------------
+      - test_id: "IT-02"
+        name: "test_downstream_stage_c_reads_separated"
+        description: "Stage C can read separated Layout/Content"
+
+        setup:
+          - "Run Stage C0 with separation"
+          - "Pass separated files to Stage C"
+
+        validation:
+          - "Stage C reads layout file successfully"
+          - "Stage C reads content file successfully"
+          - "Stage C can reconstruct bbox mapping"
+          - "No data loss compared to merged approach"
+
+      # -----------------------------------------------------------------------
+      - test_id: "IT-03"
+        name: "test_backward_compatibility_without_separation"
+        description: "Disable separation, verify no breaking changes"
+
+        setup:
+          - "Run Stage C0 with separation disabled (flag or config)"
+
+        validation:
+          - "stage_c0.json identical to pre-separation version"
+          - "No layout/ or content/ directories created"
+          - "Downstream stages work unchanged"
+
+      # -----------------------------------------------------------------------
+      - test_id: "IT-04"
+        name: "test_batch_processing_multiple_images"
+        description: "Process batch of images with separation"
+
+        input:
+          - "10 images with varying complexity"
+
+        validation:
+          - "Each image has separate layout/ and content/ directories"
+          - "No cross-contamination between images"
+          - "Parallel processing safe (no shared state)"
+
+  # ---------------------------------------------------------------------------
+  # Edge Case Tests
+  # ---------------------------------------------------------------------------
+  edge_case_tests:
+
+    test_cases:
+      # -----------------------------------------------------------------------
+      - test_id: "EC-01"
+        name: "test_empty_word_data"
+        description: "Handle empty word_data array"
+
+        input:
+          word_data: []
+
+        expected:
+          - "layout_data.elements == []"
+          - "content_data.elements == []"
+          - "quality_summary with default values (0.0 avg, 0 count)"
+
+      # -----------------------------------------------------------------------
+      - test_id: "EC-02"
+        name: "test_missing_optional_fields"
+        description: "Handle elements with missing optional fields"
+
+        input:
+          word_data:
+            - type: "text"
+              text: "Hello"
+              cnt: [[0, 0], [10, 0], [10, 10], [0, 10]]
+              # Missing: latex, confidence, confidence_rate
+
+        expected:
+          - "content_data.elements[0].latex == None"
+          - "content_data.elements[0].confidence == 0.0 (default)"
+
+      # -----------------------------------------------------------------------
+      - test_id: "EC-03"
+        name: "test_malformed_cnt_coordinates"
+        description: "Handle invalid contour coordinates"
+
+        input:
+          cnt: [[100]]  # Invalid - missing y coordinate
+
+        expected: "Raises ValueError with message 'Invalid contour format'"
+
+      # -----------------------------------------------------------------------
+      - test_id: "EC-04"
+        name: "test_zero_dimension_region"
+        description: "Handle cnt with zero width or height"
+
+        input:
+          cnt: [[100, 100], [100, 100], [100, 100], [100, 100]]  # Point, not polygon
+
+        expected:
+          - "region.width == 0"
+          - "region.height == 0"
+          - "No exception raised"
+
+      # -----------------------------------------------------------------------
+      - test_id: "EC-05"
+        name: "test_unicode_korean_text"
+        description: "Handle Korean Unicode text correctly"
+
+        input:
+          text: "삼각형 ABC의 넓이를 구하시오."
+
+        validation:
+          - "content_data.elements[0].text preserved exactly"
+          - "JSON encoding/decoding preserves Unicode"
+
+      # -----------------------------------------------------------------------
+      - test_id: "EC-06"
+        name: "test_latex_with_special_characters"
+        description: "Handle LaTeX with backslashes and braces"
+
+        input:
+          latex: "\\frac{x^2 + y^2}{\\sqrt{z}}"
+
+        validation:
+          - "content_data.elements[0].latex == '\\frac{x^2 + y^2}{\\sqrt{z}}'"
+          - "No escaping issues in JSON"
+
+      # -----------------------------------------------------------------------
+      - test_id: "EC-07"
+        name: "test_very_large_cnt_array"
+        description: "Handle diagrams with 1000+ contour points"
+
+        input:
+          cnt: [[x, y] for x, y in complex_polygon_1000_points]
+
+        validation:
+          - "region calculated correctly"
+          - "JSON file size reasonable"
+          - "Performance < 100ms"
+
+  # ---------------------------------------------------------------------------
+  # Performance Tests
+  # ---------------------------------------------------------------------------
+  performance_tests:
+
+    test_cases:
+      # -----------------------------------------------------------------------
+      - test_id: "PT-01"
+        name: "test_separation_performance_small"
+        description: "Performance with small word_data (10 elements)"
+
+        input_size: "10 elements"
+        max_time: "10ms"
+
+      # -----------------------------------------------------------------------
+      - test_id: "PT-02"
+        name: "test_separation_performance_medium"
+        description: "Performance with medium word_data (100 elements)"
+
+        input_size: "100 elements"
+        max_time: "50ms"
+
+      # -----------------------------------------------------------------------
+      - test_id: "PT-03"
+        name: "test_separation_performance_large"
+        description: "Performance with large word_data (1000 elements)"
+
+        input_size: "1000 elements"
+        max_time: "500ms"
+
+      # -----------------------------------------------------------------------
+      - test_id: "PT-04"
+        name: "test_memory_usage"
+        description: "Memory usage stays reasonable"
+
+        input: "1000 elements with complex data"
+        max_memory: "50MB increase"
+
+  # ---------------------------------------------------------------------------
+  # Test Execution Plan
+  # ---------------------------------------------------------------------------
+  execution_plan:
+
+    phase_1_unit_tests:
+      duration: "1 day"
+      priority: "CRITICAL"
+      order:
+        - "UT-01 to UT-10 (all unit tests)"
+      coverage_target: "95% code coverage"
+
+    phase_2_integration_tests:
+      duration: "1 day"
+      priority: "HIGH"
+      order:
+        - "IT-01: Korean math problem"
+        - "IT-02: Downstream Stage C"
+        - "IT-03: Backward compatibility"
+        - "IT-04: Batch processing"
+
+    phase_3_edge_cases:
+      duration: "0.5 day"
+      priority: "MEDIUM"
+      order:
+        - "EC-01 to EC-07 (all edge cases)"
+
+    phase_4_performance:
+      duration: "0.5 day"
+      priority: "LOW"
+      order:
+        - "PT-01 to PT-04 (performance benchmarks)"
+
+  # ---------------------------------------------------------------------------
+  # Test Data Fixtures
+  # ---------------------------------------------------------------------------
+  test_fixtures:
+    location: "tests/fixtures/stage_b_outputs/"
+
+    fixtures:
+      - name: "simple_text.json"
+        description: "Single text element"
+        elements: 1
+
+      - name: "math_equation.json"
+        description: "Math equation with LaTeX"
+        elements: 1
+
+      - name: "korean_geometry.json"
+        description: "Korean geometry problem with diagram"
+        elements: 15
+        types: ["text", "math", "diagram", "chart_info"]
+
+      - name: "complex_chart.json"
+        description: "Chart with multiple labels and axes"
+        elements: 30
+
+      - name: "empty_output.json"
+        description: "Empty word_data array"
+        elements: 0
+
+# =============================================================================
+# 7. DIRECTORY STRUCTURE & FILE ORGANIZATION
+# =============================================================================
+directory_structure:
+
+  outputs_root: "outputs/{image_id}/"
+
+  structure:
+    stage_b:
+      path: "outputs/{image_id}/stage_b/"
+      files:
+        - "stage_b.json (Mathpix raw output)"
+
+    layout:
+      path: "outputs/{image_id}/layout/"
+      files:
+        - "stage_b_layout.json (Layout data)"
+        - "coordinate_mapping.json (Optional: advanced spatial mapping)"
+        - "page_structure.json (Optional: hierarchy visualization)"
+
+    content:
+      path: "outputs/{image_id}/content/"
+      files:
+        - "stage_b_content.json (Content data)"
+        - "extracted_text.json (Optional: plain text extraction)"
+        - "math_expressions.json (Optional: LaTeX-only export)"
+
+    stage_c0:
+      path: "outputs/{image_id}/stage_c0/"
+      files:
+        - "stage_c0.json (Unified parser output with references)"
+
+    stage_c:
+      path: "outputs/{image_id}/stage_c/"
+      files:
+        - "vision_analysis.json (Claude Vision output)"
+
+    mapping:
+      path: "outputs/{image_id}/mapping/"
+      files:
+        - "bbox_mapping.json (Stage D bbox mapping)"
+
+    final:
+      path: "outputs/{image_id}/"
+      files:
+        - "merged_v3.json (Final merged output)"
+
+  example_tree: |
+    outputs/
+    └── image_20260204_143000/
+        ├── stage_b/
+        │   └── stage_b.json
+        ├── layout/
+        │   └── stage_b_layout.json
+        ├── content/
+        │   └── stage_b_content.json
+        ├── stage_c0/
+        │   └── stage_c0.json
+        ├── stage_c/
+        │   └── vision_analysis.json
+        ├── mapping/
+        │   └── bbox_mapping.json
+        └── merged_v3.json
+
+# =============================================================================
+# 8. HITL INTEGRATION POINTS
+# =============================================================================
+hitl_integration:
+  objective: |
+    Enable Human-in-the-Loop review of separated Layout and Content data
+    at strategic pipeline checkpoints.
+
+  # ---------------------------------------------------------------------------
+  # Integration Point 1: Post-Separation Validation
+  # ---------------------------------------------------------------------------
+  integration_point_1:
+    name: "Post-Separation Validation"
+    location: "After Stage C0 separation, before Stage C"
+
+    trigger_conditions:
+      - "content_data.quality_summary.low_confidence_count > 0"
+      - "content_data.quality_summary.average_confidence < 0.85"
+      - "Manual review flag enabled"
+
+    review_interface:
+      input_files:
+        - "layout/stage_b_layout.json"
+        - "content/stage_b_content.json"
+        - "Original image"
+
+      display:
+        - "Side-by-side: Image + Layout bbox overlay"
+        - "Element list with confidence scores"
+        - "Highlighted low-confidence elements"
+
+      actions:
+        - approve: "Mark element as correct"
+        - reject: "Mark element for re-processing"
+        - edit: "Manually correct text/latex"
+        - flag: "Flag for expert review"
+
+    output:
+      - "Approved elements → proceed to Stage C"
+      - "Rejected elements → re-run Stage B with adjusted params"
+      - "Edited elements → update content data, mark as human-verified"
+
+  # ---------------------------------------------------------------------------
+  # Integration Point 2: Content Verification
+  # ---------------------------------------------------------------------------
+  integration_point_2:
+    name: "Content Verification Gate"
+    location: "Before Stage D merge"
+
+    trigger_conditions:
+      - "confidence < 0.75 for any element"
+      - "Mismatched element counts between Layout/Content"
+      - "Korean text detection confidence < 0.90"
+
+    review_data:
+      - "content/stage_b_content.json"
+      - "stage_c/vision_analysis.json"
+      - "Comparison: Mathpix text vs Claude Vision interpretation"
+
+    actions:
+      - "Approve Mathpix content"
+      - "Approve Claude Vision content"
+      - "Hybrid: Pick best from each"
+      - "Manual override: Enter correct content"
+
+  # ---------------------------------------------------------------------------
+  # Integration Point 3: Pre-Merge Approval
+  # ---------------------------------------------------------------------------
+  integration_point_3:
+    name: "Pre-Merge Approval"
+    location: "Before Stage D final merge"
+
+    review_scope:
+      - "Complete verification of all elements"
+      - "Layout accuracy check"
+      - "Content correctness check"
+      - "Diagram label validation"
+
+    approval_workflow:
+      - auto_approve: "All confidence > 0.90"
+      - review_required: "Any confidence < 0.75"
+      - expert_review: "Confidence < 0.60 or human flag set"
+
+    output:
+      - approved: "Proceed to merge → merged_v3.json"
+      - iterate: "Return to Stage B with feedback"
+      - escalate: "Send to expert annotation queue"
+
+# =============================================================================
+# 9. ERROR HANDLING & LOGGING
+# =============================================================================
+error_handling:
+
+  exceptions:
+
+    ValidationError:
+      when: "Separation validation fails"
+      examples:
+        - "Element count mismatch"
+        - "Missing IDs"
+        - "Duplicate IDs"
+      handling: "Log error, raise exception, halt processing"
+
+    FileNotFoundError:
+      when: "Stage B output file not found"
+      handling: "Log error, raise with helpful message"
+
+    JSONDecodeError:
+      when: "Stage B output is not valid JSON"
+      handling: "Log error, save problematic file to logs/, raise exception"
+
+    KeyError:
+      when: "Required field missing in Stage B output"
+      handling: "Log missing field, use default if available, else raise"
+
+    TypeError:
+      when: "Field has unexpected type (e.g., cnt is not list)"
+      handling: "Log type error with field name and value, raise exception"
+
+  logging:
+
+    log_levels:
+      DEBUG: "Detailed separation steps, element-by-element processing"
+      INFO: "Pipeline progress, file saves, element counts"
+      WARNING: "Low confidence elements, missing optional fields"
+      ERROR: "Validation failures, missing required fields"
+      CRITICAL: "Unrecoverable errors, data corruption"
+
+    log_format: |
+      [%(asctime)s] [%(levelname)s] [%(name)s] %(message)s
+
+    log_destinations:
+      - "Console (INFO and above)"
+      - "File: logs/stage_c0_separation.log (DEBUG and above)"
+      - "File: logs/errors.log (ERROR and above)"
+
+    example_logs: |
+      [2026-02-04 14:30:00] [INFO] [LayoutContentSeparator] Separating Stage B output: outputs/image123/stage_b/stage_b.json
+      [2026-02-04 14:30:00] [DEBUG] [LayoutContentSeparator] Processing element 1/15: type=text
+      [2026-02-04 14:30:00] [DEBUG] [LayoutContentSeparator] Processing element 2/15: type=math
+      [2026-02-04 14:30:00] [WARNING] [LayoutContentSeparator] Low confidence element: elem_0007 (confidence=0.72)
+      [2026-02-04 14:30:00] [INFO] [LayoutContentSeparator] Separated 15 elements: Layout=15, Content=15
+      [2026-02-04 14:30:00] [INFO] [LayoutContentSeparator] Saved layout: outputs/image123/layout/stage_b_layout.json
+      [2026-02-04 14:30:00] [INFO] [LayoutContentSeparator] Saved content: outputs/image123/content/stage_b_content.json
+      [2026-02-04 14:30:01] [INFO] [LayoutContentSeparator] Quality summary: avg=0.89, low_count=1
+
+# =============================================================================
+# 10. IMPLEMENTATION CHECKLIST
+# =============================================================================
+implementation_checklist:
+
+  phase_1_core_implementation:
+    duration: "2 days"
+    tasks:
+      - id: "IMPL-01"
+        task: "Create layout_content_separator.py with all data classes"
+        estimated_time: "4 hours"
+
+      - id: "IMPL-02"
+        task: "Implement LayoutContentSeparator.separate() method"
+        estimated_time: "3 hours"
+
+      - id: "IMPL-03"
+        task: "Implement save_layout() and save_content() methods"
+        estimated_time: "2 hours"
+
+      - id: "IMPL-04"
+        task: "Implement validate_separation() method"
+        estimated_time: "2 hours"
+
+      - id: "IMPL-05"
+        task: "Write unit tests (UT-01 to UT-10)"
+        estimated_time: "4 hours"
+
+      - id: "IMPL-06"
+        task: "Run unit tests, achieve 95% coverage"
+        estimated_time: "1 hour"
+
+  phase_2_integration:
+    duration: "1 day"
+    tasks:
+      - id: "IMPL-07"
+        task: "Modify word_data_parser.py to call separator"
+        estimated_time: "2 hours"
+
+      - id: "IMPL-08"
+        task: "Update stage_c0.json output structure with separated_data"
+        estimated_time: "1 hour"
+
+      - id: "IMPL-09"
+        task: "Write integration tests (IT-01 to IT-04)"
+        estimated_time: "3 hours"
+
+      - id: "IMPL-10"
+        task: "Run integration tests with real Stage B outputs"
+        estimated_time: "2 hours"
+
+  phase_3_testing_refinement:
+    duration: "1 day"
+    tasks:
+      - id: "IMPL-11"
+        task: "Write edge case tests (EC-01 to EC-07)"
+        estimated_time: "3 hours"
+
+      - id: "IMPL-12"
+        task: "Run edge case tests, fix bugs"
+        estimated_time: "2 hours"
+
+      - id: "IMPL-13"
+        task: "Write performance tests (PT-01 to PT-04)"
+        estimated_time: "2 hours"
+
+      - id: "IMPL-14"
+        task: "Optimize performance if needed"
+        estimated_time: "1 hour"
+
+  phase_4_documentation:
+    duration: "0.5 day"
+    tasks:
+      - id: "IMPL-15"
+        task: "Write module docstrings and inline comments"
+        estimated_time: "2 hours"
+
+      - id: "IMPL-16"
+        task: "Create usage examples in README"
+        estimated_time: "1 hour"
+
+      - id: "IMPL-17"
+        task: "Update pipeline documentation"
+        estimated_time: "1 hour"
+
+  total_estimated_effort: "4.5 days"
+
+# =============================================================================
+# 11. RISKS & MITIGATIONS
+# =============================================================================
+risks_and_mitigations:
+
+  risk_1:
+    risk: "Element ID mismatch between Layout and Content"
+    likelihood: "LOW"
+    impact: "HIGH"
+    mitigation:
+      - "Use deterministic ID generation (index-based)"
+      - "Validate ID matching in validate_separation()"
+      - "Unit test UT-09 specifically tests this"
+
+  risk_2:
+    risk: "Stage B schema changes break separator"
+    likelihood: "MEDIUM"
+    impact: "HIGH"
+    mitigation:
+      - "Use defensive coding with .get() for optional fields"
+      - "Add schema version check"
+      - "Maintain compatibility layer for old schemas"
+
+  risk_3:
+    risk: "Performance degradation with large word_data"
+    likelihood: "LOW"
+    impact: "MEDIUM"
+    mitigation:
+      - "Algorithm is O(n), inherently efficient"
+      - "Performance tests PT-01 to PT-03 validate"
+      - "Profile with real data if needed"
+
+  risk_4:
+    risk: "Unicode handling issues with Korean text"
+    likelihood: "LOW"
+    impact: "MEDIUM"
+    mitigation:
+      - "Use UTF-8 encoding consistently"
+      - "Test with Korean fixtures (EC-05)"
+      - "JSON library handles Unicode natively"
+
+  risk_5:
+    risk: "Backward compatibility break for downstream stages"
+    likelihood: "VERY LOW"
+    impact: "HIGH"
+    mitigation:
+      - "Non-breaking design: ADD separated_data, don't remove fields"
+      - "Fallback logic in downstream stages"
+      - "Integration test IT-03 validates compatibility"
+
+  risk_6:
+    risk: "Incorrect field classification (Layout vs Content)"
+    likelihood: "LOW"
+    impact: "MEDIUM"
+    mitigation:
+      - "Follow analysis in LAYOUT_CONTENT_SEPARATION_ANALYSIS.yaml"
+      - "Review classification rules with domain expert"
+      - "Add flexibility to reclassify fields if needed"
+
+# =============================================================================
+# 12. SUCCESS CRITERIA
+# =============================================================================
+success_criteria:
+
+  functional_criteria:
+    - "LayoutContentSeparator.separate() produces valid LayoutData and ContentData"
+    - "All Layout elements have matching Content elements (same IDs)"
+    - "Layout files contain ONLY spatial/structural fields"
+    - "Content files contain ONLY semantic/textual fields"
+    - "Quality summary calculated accurately"
+    - "All unit tests pass (10/10)"
+    - "All integration tests pass (4/4)"
+
+  performance_criteria:
+    - "Separation completes in < 500ms for 1000 elements"
+    - "Memory usage < 50MB for 1000 elements"
+    - "File I/O completes in < 100ms per file"
+
+  quality_criteria:
+    - "Code coverage > 95%"
+    - "No linting errors (flake8, mypy)"
+    - "Docstrings for all public classes and methods"
+    - "Type hints for all function signatures"
+
+  compatibility_criteria:
+    - "Existing stage_c0.json structure unchanged"
+    - "Downstream stages (C, D) work without modification"
+    - "Can disable separation via config (fallback to merged)"
+
+  documentation_criteria:
+    - "Module docstring explains purpose and usage"
+    - "README includes separation example"
+    - "This design document serves as comprehensive spec"
+
+# =============================================================================
+# 13. FUTURE ENHANCEMENTS
+# =============================================================================
+future_enhancements:
+
+  enhancement_1:
+    name: "Advanced Hierarchy Mapping"
+    description: |
+      Build visual tree structure from parent_id/children_ids (for line_data).
+      Export to page_structure.json for hierarchical visualization.
+    priority: "LOW"
+    effort: "1 day"
+
+  enhancement_2:
+    name: "Compression for Large Files"
+    description: |
+      Compress layout/content JSON files (gzip) to reduce disk usage.
+      Especially useful for cnt arrays with 1000+ points.
+    priority: "LOW"
+    effort: "0.5 day"
+
+  enhancement_3:
+    name: "Partial Separation (Selective Fields)"
+    description: |
+      Allow configuration to select which fields go to Layout vs Content.
+      Useful for custom downstream processing needs.
+    priority: "VERY LOW"
+    effort: "1 day"
+
+  enhancement_4:
+    name: "Real-Time Separation Streaming"
+    description: |
+      Stream separation as Stage B outputs arrive (for async API mode).
+      Reduces latency in high-throughput pipelines.
+    priority: "VERY LOW"
+    effort: "2 days"
+
+  enhancement_5:
+    name: "Separation Diff Tool"
+    description: |
+      Tool to compare Layout/Content before and after edits.
+      Useful for HITL workflow tracking and audit trails.
+    priority: "MEDIUM"
+    effort: "1 day"
+
+# =============================================================================
+# END OF DESIGN DOCUMENT
+# =============================================================================

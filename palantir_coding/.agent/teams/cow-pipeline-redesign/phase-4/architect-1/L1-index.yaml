@@ -1,0 +1,49 @@
+---
+phase: 4
+role: architect-1
+date: 2026-02-09
+feature: cow-pipeline-redesign
+status: complete
+---
+
+# L1 Index — Phase 4 Architect Output
+
+artifacts:
+  plan:
+    path: docs/plans/2026-02-09-cow-pipeline-redesign.md
+    sections: 10 (§1-§10 + Appendix A)
+    line_count: ~650
+  l3_copy:
+    path: .agent/teams/cow-pipeline-redesign/phase-4/architect-1/L3-full/implementation-plan.md
+
+design_decisions:
+  implementers: 3
+  tasks: 8 (T-1 through T-8)
+  new_files: ~33 Python files + 1 pyproject.toml + 1 .mcp.json
+  reused_modules: 6 (from cow-cli)
+  removed_modules: 4 (SDK-based)
+
+verification_levels:
+  V-HIGH: 7 files (common.py, ocr.py, vision.py, client.py, separator.py, gemini.py, latex.py)
+  V-MED: 10 files (ingest.py, verify.py, compose.py, export.py, validator.py, __main__.py x4, compiler.py, database.py)
+  V-LOW: 3 files (cache.py, filesystem.py, .mcp.json)
+
+risk_hotspots:
+  - OcrResult→VisionResult dual-source bbox merge
+  - XeLaTeX + kotex compilation
+  - Gemini API bbox accuracy
+  - separator.py cnt→region conversion
+
+phase5_targets: 5 assumptions to challenge (see plan Appendix A)
+
+source_files_read:
+  - cow-cli/mathpix/client.py (604L) — Mathpix async client
+  - cow-cli/mathpix/schemas.py (583L) — Pydantic models for Mathpix API
+  - cow-cli/semantic/separator.py (712L) — Layout/Content separator
+  - cow-cli/review/database.py (622L) — SQLite review database
+  - cow-cli/review/models.py — SQLAlchemy ORM models
+  - cow-cli/export/latex.py — LaTeX exporter (pdfLaTeX, not XeLaTeX)
+  - cow-cli/export/base.py — Base exporter abstract class
+  - cow-cli/config.py (325L) — Configuration management
+  - cow-cli/cache.py — Disk cache (diskcache)
+  - cow-cli/pyproject.toml — Package dependencies

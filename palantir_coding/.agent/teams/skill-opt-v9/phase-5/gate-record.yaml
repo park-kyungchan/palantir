@@ -1,0 +1,56 @@
+gate: G5
+phase_transition: P5 → P6
+result: CONDITIONAL_PASS (pending user acceptance)
+date: 2026-02-12
+evaluator: Lead
+note: "3 challengers unanimous CONDITIONAL_PASS. 4 mandatory conditions identified — all specification precision, not design flaws. Awaiting user decision on acceptance."
+
+verdict: CONDITIONAL_PASS
+
+criteria:
+  - item: "G5-1: Challenge report (L1/L2/L3) exists"
+    status: PASS
+    evidence: "3 challengers × L1+L2+L3 + coordinator L1+L2"
+  - item: "G5-2: All 6 challenge categories exercised"
+    status: PASS
+    evidence: "C-1/C-2 (correctness), C-3/C-4 (completeness), C-5/C-6 (robustness)"
+  - item: "G5-3: Severity ratings evidence-based"
+    status: PASS
+    evidence: "Every finding cites plan sections, L3 cross-refs, line counts"
+  - item: "G5-4: Mitigations proposed for HIGH+"
+    status: PASS
+    evidence: "CONS-1~CONS-5 all have specific actionable mitigations"
+  - item: "G5-5: Final verdict with justification"
+    status: PASS
+    evidence: "CONDITIONAL_PASS with mandatory vs recommended separation"
+  - item: "G5-6: No CRITICAL unresolved"
+    status: CONDITIONAL
+    evidence: "CONS-1 is CRITICAL but has clear resolution path"
+
+mandatory_conditions:
+  - id: CONS-1
+    severity: CRITICAL
+    summary: "RISK-8 fallback delta underspecified + L3 contradiction"
+    resolution: "Write exact old→new text for 8 files; interface-planner = authoritative"
+  - id: CONS-2
+    severity: HIGH
+    summary: "impl-b 5 files (~3,345L read) + no checkpointing"
+    resolution: "L1 checkpoint after each file; split contingency"
+  - id: CONS-3
+    severity: HIGH
+    summary: "infra-c 8 files (2x BUG-002) + no recovery protocol"
+    resolution: "L1 checkpoint every 2-3 files; execution-coordinator first"
+  - id: CONS-4
+    severity: HIGH
+    summary: "§10/protocol 3 divergent versions; APPEND vs REPLACE"
+    resolution: "interface-planner L3 = authoritative; clarify protocol text"
+
+user_decision: ACCEPTED (2026-02-12, new session)
+next_action: "User accepts conditions → resolve 4 mandatory conditions as plan amendments → Phase 6"
+
+artifacts:
+  - "phase-5/validation-coord/L1-index.yaml"
+  - "phase-5/validation-coord/L2-summary.md"
+  - "phase-5/correctness-challenger-1/{L1,L2,L3}"
+  - "phase-5/completeness-challenger-1/{L1,L2,L3}"
+  - "phase-5/robustness-challenger-1/{L1,L2,L3}"

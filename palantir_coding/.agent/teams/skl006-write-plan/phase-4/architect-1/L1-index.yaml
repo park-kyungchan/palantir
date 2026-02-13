@@ -1,0 +1,71 @@
+---
+phase: 4
+role: architect-1
+session: skl006-write-plan
+date: 2026-02-08
+status: COMPLETE
+---
+
+artifacts:
+  - id: implementation-plan
+    type: detailed-design
+    path: docs/plans/2026-02-08-skl006-delivery-pipeline.md
+    sections: 10
+    lines: ~420
+    summary: "Full 10-section implementation plan for SKL-006 + RSIL"
+
+  - id: l3-copy
+    type: plan-copy
+    path: .agent/teams/skl006-write-plan/phase-4/architect-1/L3-full/implementation-plan.md
+    summary: "Copy of implementation plan in L3 directory"
+
+tasks:
+  - id: T-1
+    subject: "Create delivery-pipeline SKILL.md"
+    owner: implementer-A
+    files_new: 1
+    est_lines: 380
+
+  - id: T-2
+    subject: "Hook reduction 8→3"
+    owner: implementer-B
+    files_deleted: 5
+    files_modified: 1
+
+  - id: T-3
+    subject: "Hook NLP conversion"
+    owner: implementer-B
+    files_modified: 2
+
+  - id: T-4
+    subject: "NL-MIGRATE L1/L2 to agent .md"
+    owner: implementer-B
+    files_modified: 6
+    blocked_by: [T-2]
+
+  - id: T-5
+    subject: "Agent MEMORY.md templates"
+    owner: implementer-B
+    files_new: 2
+
+  - id: T-6
+    subject: "Cross-workstream validation"
+    owner: Lead
+    blocked_by: [T-1, T-2, T-3, T-4, T-5]
+
+implementers: 2
+total_files_new: 3
+total_files_modified: 9
+total_files_deleted: 5
+
+feasibility_re_eval:
+  deferred:
+    - IMP-001: "task-api-guideline NLP — massive scope, separate work"
+    - H-2: "Skills preload — requires content creation per agent"
+    - H-6: "Effort parameter — not configurable in CC CLI"
+    - H-7: "Task agent_type restrictions — touches all 6 agents"
+    - IMP-011: "API key security — separate concern"
+  in_sprint_additions:
+    - HOOK-REDUCE: "Remove 5 hooks from settings.json"
+    - HOOK-DELETE: "Delete 5 .sh files"
+    - NL-MIGRATE: "L1/L2 check → NL in agent .md Constraints"

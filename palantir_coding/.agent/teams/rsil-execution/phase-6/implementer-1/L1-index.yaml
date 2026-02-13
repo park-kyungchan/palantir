@@ -1,0 +1,38 @@
+---
+task: "Task A: Create /rsil-global SKILL.md"
+role: implementer-1
+status: complete
+timestamp: "2026-02-09"
+
+files_modified:
+  - path: ".claude/skills/rsil-global/SKILL.md"
+    action: created
+    lines: 452
+    description: "Complete /rsil-global skill — auto-invoked INFRA Meta-Cognition health assessment with Three-Tier Observation Window, 8 Lenses, AD-15 filter, ~2000 token budget"
+
+verification:
+  line_count: 452  # target: 400-500
+  sections_present: 15/15  # A1-A15 all present
+  shared_foundation_verbatim:
+    lenses_table: PASS  # 8 rows character-identical to rsil-review
+    ad15_filter: PASS  # 3 rows character-identical
+    boundary_test: PASS  # full block character-identical
+    lenses_intro_diff: "G-1/observation window vs R-0/$ARGUMENTS — intentional"
+  g0_mixed_case: "Type A fallback with explicit mixed-signals note (I-2 MEDIUM addressed)"
+
+spec_coverage:
+  A1_frontmatter: VL-1 verbatim
+  A2_intro: VL-2 synthesized
+  A3_when_to_use: VL-1 verbatim
+  A4_dynamic_context: VL-1 verbatim
+  A5_phase_0: VL-2 synthesized (rsil-review pattern)
+  A6_g0_classification: VL-2 synthesized (with mixed-case addition)
+  A7_g1_tiered_reading: VL-3 creative (core section, ~98L)
+  A8_g2_discovery: VL-2 synthesized
+  A9_g3_classification: VL-2 synthesized
+  A10_g4_record: VL-2 synthesized
+  A11_error_handling: VL-1 verbatim
+  A12_lenses: VL-1 verbatim (except intro line)
+  A13_ad15: VL-1 verbatim
+  A14_boundary_test: VL-1 verbatim
+  A15_principles: VL-2 synthesized (11 principles + 9 never items)

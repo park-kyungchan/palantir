@@ -1,0 +1,39 @@
+agent: architect-1
+phase: P3
+status: complete
+timestamp: "2026-02-11T12:00:00Z"
+
+architecture_decisions:
+  - id: AD-1
+    title: Architecture-First section ordering
+    rationale: System diagram first, progressive drill-down, glossary last
+  - id: AD-2
+    title: Collapsible details for agent categories and directory tree
+    rationale: 14 agent categories + 78-file tree would overwhelm without collapse
+  - id: AD-3
+    title: Consistent 4-5 column tables
+    rationale: Prevents horizontal scroll on GitHub standard displays
+  - id: AD-4
+    title: English-primary with Korean parenthetical
+    rationale: ASCII monospace requires English labels; Korean in parentheses only
+  - id: AD-5
+    title: Hero diagram as simplified layer view (~25 lines)
+    rationale: Full detail in Section 2; hero shows overview
+  - id: AD-6
+    title: Pipeline Tiers integrated into Pipeline Flow section
+    rationale: Context-adjacent placement over separate concepts section
+  - id: AD-7
+    title: All 78 files represented with explicit coverage mapping
+    rationale: README completeness requirement
+
+section_count: 12
+estimated_lines: 950
+diagram_count: 8
+table_count: 14
+collapsible_sections: 16
+
+evidence_count: 6
+pt_goal_links:
+  - "R-1 (Exhaustive INFRA visualization)"
+  - "R-2 (Architecture-First structure)"
+  - "R-3 (GitHub-renderable)"

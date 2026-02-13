@@ -1,0 +1,56 @@
+# Gate 3 Record — RSIL System Architecture
+# Evaluated by: Lead | 2026-02-09
+
+gate: 3
+phase: Architecture
+result: APPROVED
+date: 2026-02-09
+
+criteria:
+  G3-1:
+    check: "All output artifacts exist (L1/L2/L3)"
+    result: PASS
+    evidence: "L1-index.yaml (72L), L2-summary.md (167L), L3-full/architecture-design.md (1011L)"
+  G3-2:
+    check: "6 components fully specified"
+    result: PASS
+    evidence: "C-1 /rsil-global flow, C-2 /rsil-review delta, C-3 Shared Foundation, C-4 CLAUDE.md, C-5 Agent Memory, C-6 Data Flow"
+  G3-3:
+    check: "Architecture decisions documented with rationale"
+    result: PASS
+    evidence: "AD-6~AD-11, each with rationale and rejected alternatives"
+  G3-4:
+    check: "Risks identified with mitigations"
+    result: PASS
+    evidence: "7 risks (R-1~R-7), all LOW/MED impact, no HIGH risks"
+  G3-5:
+    check: "Research evidence properly cited"
+    result: PASS
+    evidence: "8 evidence sources in L2, researcher-1 (OW-1~6, TA-1~5), researcher-2 (IMP-1~9, MEM-1~3)"
+  G3-6:
+    check: "Phase 4 entry conditions met"
+    result: PASS
+    evidence: "§10 Phase 4 Readiness with constraints and implementation split"
+  G3-7:
+    check: "Consistency with user decisions (D-1~D-5)"
+    result: PASS
+    evidence: "D-1→AD-6, D-2→AD-7, D-3→AD-6 clarification, D-4→AD-10, D-5→5 deltas"
+
+key_outputs:
+  - "/rsil-global: G-0→G-4 flow, Three-Tier Observation Window (A/B/C), ~2000 token budget"
+  - "/rsil-review: 5 deltas net -10L (561→~551), ultrathink + agent memory + merge + simplify"
+  - "Shared Foundation: 8 Lenses + AD-15 + Boundary Test (identical embed, ~85L)"
+  - "CLAUDE.md: 5-line NL discipline instruction after §2"
+  - "Agent Memory: 4-section schema with seed data from 24 findings"
+  - "Cumulative Data Flow: 7×3 trigger matrix, G-{N}/P-R{N} namespacing"
+
+architecture_decisions:
+  - "AD-6: Findings-only output (no auto-apply)"
+  - "AD-7: Three-Tier per work type (adaptive sources, fixed budget)"
+  - "AD-8: BREAK escalation via AskUserQuestion"
+  - "AD-9: Tracker section isolation + ID namespacing"
+  - "AD-10: Shared Foundation = embedded copy"
+  - "AD-11: Single shared agent memory"
+
+next_phase: 4
+next_action: "Detailed Design (agent-teams-write-plan)"

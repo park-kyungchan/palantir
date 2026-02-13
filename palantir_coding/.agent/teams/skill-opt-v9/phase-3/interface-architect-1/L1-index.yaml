@@ -1,0 +1,48 @@
+agent: interface-architect
+phase: P3
+status: complete
+timestamp: "2026-02-12T12:00:00Z"
+
+contracts:
+  - id: C-1
+    interface: PT-Centric Read/Write
+    participants: [all 9 skills, PERMANENT Task]
+    cardinality: "N:1 (all skills share one PT)"
+  - id: C-2
+    interface: L2 Downstream Handoff Chain
+    participants: [5 coordinator L2s, 5 pipeline skills]
+    cardinality: "1:1 per phase transition"
+  - id: C-3
+    interface: GC Scratch-Only
+    participants: [5 pipeline skills, GC]
+    cardinality: "5:1 (write-only, no cross-phase read)"
+  - id: C-4
+    interface: Fork-to-PT Direct
+    participants: [pt-manager, delivery-agent, rsil-agent, PT]
+    cardinality: "1:1 per invocation"
+  - id: C-5
+    interface: CLAUDE.md §10 Exception
+    participants: [3 fork agents, Lead, Task API]
+    cardinality: "3 named agents only"
+
+design_items:
+  - item: 2
+    title: "PT-Centric Interface Contract"
+    status: complete
+    artifacts:
+      - "L3-full/interface-design.md §1 (PT contract)"
+      - "L3-full/interface-design.md §3 (dependency map)"
+      - "L3-full/interface-design.md §4 (migration path)"
+  - item: 4
+    title: "CLAUDE.md §10 Modification"
+    status: complete
+    artifacts:
+      - "L3-full/interface-design.md §2 (§10 design)"
+
+evidence_count: 8
+pt_goal_links:
+  - "D-7 (PT-centric interface)"
+  - "D-10 (§10 modification)"
+  - "D-12 (Lean PT)"
+  - "D-14 (GC 14→3 reduction)"
+  - "D-8 (Big Bang deployment)"

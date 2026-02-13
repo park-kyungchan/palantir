@@ -1,0 +1,70 @@
+---
+phase: 3
+role: architect-1
+gc_version: GC-v2
+status: COMPLETE
+date: 2026-02-07
+
+artifacts:
+  - path: L3-full/ADR-001-team-memory.md
+    type: Architecture Decision Record
+    summary: "Team Memory TEAM-MEMORY.md — section-per-role, Edit-only, 7 tags, Lead curation"
+    status: complete
+
+  - path: L3-full/ADR-002-context-delta.md
+    type: Architecture Decision Record
+    summary: "Context Delta — ADDED/CHANGED/REMOVED format, 5 fallback conditions, 70-90% token savings"
+    status: complete
+
+  - path: L3-full/ADR-003-hook-enhancement.md
+    type: Architecture Decision Record
+    summary: "Hook Enhancement — TeammateIdle + TaskCompleted (new), SubagentStart (enhanced), Layer 4 Speed Bump"
+    status: complete
+
+  - path: L3-full/file-change-mapping.md
+    type: File Change Map
+    summary: "12 files affected — exact §/section changes per target file"
+    status: complete
+
+  - path: L3-full/migration-order.md
+    type: Migration Plan
+    summary: "5-step bottom-up: Scripts → settings.json → task-api-guideline → CLAUDE.md → Agent .md"
+    status: complete
+
+  - path: L3-full/risk-matrix.md
+    type: Risk Assessment
+    summary: "10 risks, all green zone (score ≤ 6), 0 mandatory mitigation"
+    status: complete
+
+decisions:
+  - id: AD-001
+    decision: "Direct Edit for implementer/integrator only; Lead relay for 4 other agent types"
+    rationale: "Tool availability constraint — only implementer/integrator have Edit tool"
+
+  - id: AD-002
+    decision: "Hook = Layer 4 Speed Bump (syntax only, LLM-independent)"
+    rationale: "Complements Layer 1-3 LLM-based enforcement; catches honest mistakes"
+
+  - id: AD-003
+    decision: "5-condition exhaustive fallback tree for Context Delta"
+    rationale: "No scenario falls through without full injection safety net"
+
+  - id: AD-004
+    decision: "REPLACED operation type in delta format"
+    rationale: "Section-level replacement needs distinct handling from field-level CHANGED"
+
+  - id: AD-005
+    decision: "devils-advocate read-only on TEAM-MEMORY (no write/relay)"
+    rationale: "Critique phase doesn't produce shareable findings"
+
+unresolved:
+  - "SubagentStart hook: exact team directory discovery implementation"
+  - "TEAM-MEMORY.md initial template content"
+  - "Hook jq dependency graceful degradation"
+
+risks_summary:
+  total: 10
+  mandatory: 0
+  recommended: 4
+  accepted: 6
+  highest_score: 6

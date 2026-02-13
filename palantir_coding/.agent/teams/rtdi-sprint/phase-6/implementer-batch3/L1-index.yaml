@@ -1,0 +1,28 @@
+phase: 6
+role: implementer-batch3
+gc_version: GC-v7
+status: in_progress
+
+files:
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_7.md
+    action: CREATE
+    description: "Function, Automation, Rules Engine, AIP Logic spec"
+    status: pending
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_8.md
+    action: CREATE
+    description: "Security & Governance spec"
+    status: pending
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_9.md
+    action: CREATE
+    description: "Ontology Decomposition Guide spec"
+    status: pending
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/gap-analysis.md
+    action: UPDATE
+    description: "Update coverage matrix for ontology_7, 8, 9"
+    status: pending
+
+decisions: []
+unresolved: []

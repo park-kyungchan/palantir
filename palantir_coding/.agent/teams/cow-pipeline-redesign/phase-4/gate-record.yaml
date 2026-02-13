@@ -1,0 +1,41 @@
+---
+gate: 4
+phase: "Detailed Design"
+date: 2026-02-09
+gc_version_in: GC-v3
+gc_version_out: GC-v4
+pt_version_in: PT-v1
+pt_version_out: PT-v2
+verdict: APPROVED
+---
+
+# Gate 4 Record
+
+## Criteria Evaluation
+| # | Criterion | Result |
+|---|-----------|--------|
+| G4-1 | Plan exists in docs/plans/ and L3-full/ | PASS |
+| G4-2 | Plan follows 10-section template | PASS |
+| G4-3 | §5 specs reference real files (spot-checked) | PASS |
+| G4-4 | §3 file ownership is non-overlapping | PASS |
+| G4-5 | §4 tasks all have AC-0 | PASS |
+| G4-6 | §7 includes V6 Code Plausibility | PASS |
+| G4-7 | §5 specs have Verification Level tags | PASS |
+| G4-8 | Plan satisfies GC-v3 Phase 4 Entry Requirements | PASS |
+
+## Artifacts
+- Implementation Plan: docs/plans/2026-02-09-cow-pipeline-redesign.md (1274 lines)
+- L1: .agent/teams/cow-pipeline-redesign/phase-4/architect-1/L1-index.yaml
+- L2: .agent/teams/cow-pipeline-redesign/phase-4/architect-1/L2-summary.md
+- L3: .agent/teams/cow-pipeline-redesign/phase-4/architect-1/L3-full/implementation-plan.md
+
+## Summary
+- 3 implementers, 8 tasks, ~33 new Python files
+- 7 V-HIGH files, 10 V-MED files, 3 V-LOW files
+- 5 Phase 5 targets identified in Appendix A
+- Dependency graph: T-1 → parallel (T-2..T-7) → T-8
+
+## Notes
+- Implementer-1 has 16 files (exceeds 4-file guideline) — justified: most are <50L boilerplate
+- §6 Interface Contracts merged into §5 (Pydantic models serve both purposes)
+- Architect read 10 existing source files before writing specs

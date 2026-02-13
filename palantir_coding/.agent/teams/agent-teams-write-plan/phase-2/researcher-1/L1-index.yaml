@@ -1,0 +1,75 @@
+# L1-index.yaml — agent-teams-write-plan Research Findings
+# Phase 2 | researcher-1 | 2026-02-07
+
+status: COMPLETE
+domains_analyzed: 3
+
+preserved_principles:
+  - DRY (Don't Repeat Yourself)
+  - YAGNI (You Aren't Gonna Need It)
+  - TDD (Test-Driven Development)
+  - Frequent commits
+  - Exact file paths always
+  - Complete code in plan (not "add validation")
+  - Exact commands with expected output
+  - Bite-sized task granularity (one action per step)
+  - Plan saved to docs/plans/YYYY-MM-DD-<feature-name>.md
+
+replaced_elements:
+  - TodoWrite → TaskCreate (Lead-only via Task API)
+  - Single-engineer target → Multi-teammate pipeline (implementer 1-4)
+  - 2-5 min steps → Phase-level tasks with acceptance criteria
+  - executing-plans/subagent-driven-dev handoff → Phase 6-8 pipeline
+  - git worktree references → shared workspace (.agent/teams/)
+  - Plan header "For Claude" → "For Lead" (orchestration target)
+  - Execution choice (subagent vs parallel) → pipeline continuation
+
+ch001_universal_sections:
+  - §1 Orchestration Overview (parameterize pipeline/teammate count)
+  - §2 global-context.md Template
+  - §3 File Ownership Assignment
+  - §4 TaskCreate Definitions (6-field structure)
+  - §7 Validation Checklist (5-category pattern)
+  - §8 Commit Strategy
+  - §9 Gate Criteria
+  - §10 Summary
+
+ch001_specific_sections:
+  - §5 Edit Specifications Task A (content-specific, structure universal)
+  - §6 Edit Specifications Task B (content-specific, structure universal)
+  - §1 "simplified pipeline" instance (P1→6→6.V→9)
+  - §1 "single implementer" instance (WHY justification)
+
+new_sections_needed:
+  - File Creation Specifications (new files with scaffold/imports)
+  - Multi-Implementer Coordination (non-overlapping assignment + dependencies)
+  - Test Strategy (Phase 7 entry conditions)
+  - Phase 5 Input (verifiable assertions for devils-advocate)
+  - External Dependencies / API Contracts
+
+gc_v3_to_v4_delta:
+  add:
+    - Implementation Plan Reference (docs/plans/ path)
+    - Task Decomposition Summary (task count, dependency graph)
+    - File Ownership Map (implementer → file set)
+    - Phase 6 Entry Conditions (from architect design)
+    - Phase 5 Validation Targets (if Phase 5 follows)
+    - Commit Strategy (single vs per-task)
+  update:
+    - Phase Pipeline Status (Phase 4 COMPLETE)
+  preserve:
+    - Architecture Decisions (from GC-v3)
+    - Component Map (from GC-v3)
+    - Interface Contracts (from GC-v3)
+
+template_structure:
+  - §1 Orchestration Overview (pipeline, teammates, execution sequence)
+  - §2 global-context.md Update Template (GC-v3→v4 delta)
+  - §3 File Ownership Assignment (per-implementer table)
+  - §4 TaskCreate Definitions (per-task 6-field blocks)
+  - §5 Change Specifications (per-task: Create/Edit/Delete specs)
+  - §6 Test Strategy (Phase 7 entry conditions)
+  - §7 Validation Checklist (cross-reference integrity)
+  - §8 Commit Strategy (single or per-task)
+  - §9 Gate Criteria (Phase 6 gate evaluation)
+  - §10 Summary (metadata table)

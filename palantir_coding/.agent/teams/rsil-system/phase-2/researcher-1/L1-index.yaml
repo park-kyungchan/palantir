@@ -1,0 +1,85 @@
+# L1 Index — /rsil-global Observation Window + Tracker Architecture
+# researcher-1 | Phase 2 | rsil-system | 2026-02-09
+
+findings:
+  # Topic 1: Global Observation Window
+  - id: OW-1
+    topic: Artifact Signal Hierarchy (Pipeline Work)
+    priority: HIGH
+    status: complete
+    summary: "Gate records (9-116L YAML) carry highest signal-per-token. L1 indexes (26-149L) second. Orchestration-plan (22-90L) third. L2/L3 are context-expensive (36-611L), reserved for Tier 2+."
+
+  - id: OW-2
+    topic: Non-Pipeline Work Detection
+    priority: HIGH
+    status: complete
+    summary: "git diff --name-only detects .claude/ file modifications. No session directory = non-pipeline. Signal from: modified file list + MEMORY.md diff + settings.json changes."
+
+  - id: OW-3
+    topic: Three-Tier Reading Strategy
+    priority: HIGH
+    status: complete
+    summary: "Tier 0 (!shell): session dirs + git diff + file counts (~10 tokens). Tier 1: L1 YAML + gate-record YAML (~200 tokens). Tier 2: selective L2 for flagged areas (~400 tokens). Tier 3: Explore subagent for systemic investigation."
+
+  - id: OW-4
+    topic: Work Type Classification
+    priority: MEDIUM
+    status: complete
+    summary: "3 types: (A) Pipeline with session dir, (B) Skill-only (rsil-review, permanent-tasks) no session, (C) Direct Lead edits. Each needs different observation window."
+
+  - id: OW-5
+    topic: INFRA Health Indicators
+    priority: HIGH
+    status: complete
+    summary: "5 indicators extractable from artifacts: (1) gate pass rates, (2) L1/L2 existence, (3) re-spawn counts, (4) TEAM-MEMORY warning density, (5) cross-session reference consistency."
+
+  - id: OW-6
+    topic: Context Budget for /rsil-global
+    priority: HIGH
+    status: complete
+    summary: "Target: <2000 tokens for observation window. Tier 0 ~100, Tier 1 ~500, Tier 2 ~1000 (selective). Exceeding = Tier 3 subagent delegation."
+
+  # Topic 2: Tracker Architecture
+  - id: TA-1
+    topic: Shared vs Separate Tracker
+    priority: HIGH
+    status: complete
+    summary: "RECOMMENDATION: Single tracker with dual-section structure (Global + Narrow). Cross-references via finding IDs. Separate trackers fragment the knowledge graph."
+
+  - id: TA-2
+    topic: Global vs Narrow Finding Taxonomy
+    priority: HIGH
+    status: complete
+    summary: "Global = systemic patterns across INFRA (e.g., 'EX-1 team scope PT access'). Narrow = component-specific improvements (e.g., 'P6-R2 probing question count'). Both use same AD-15 filter."
+
+  - id: TA-3
+    topic: Cross-Reference Flow
+    priority: MEDIUM
+    status: complete
+    summary: "Global→Narrow: Global findings become Narrow review focus areas. Narrow→Global: Recurring Narrow findings elevate to Global patterns. Bidirectional via finding-ID links."
+
+  - id: TA-4
+    topic: Tracker Scalability
+    priority: MEDIUM
+    status: complete
+    summary: "Current 252L/24 findings = ~10.5L/finding. At 100 findings ~1050L. Manageable with YAML summary table + separate detail sections. Split at ~150 findings into quarterly archives."
+
+  - id: TA-5
+    topic: Tracker Schema Extension
+    priority: MEDIUM
+    status: complete
+    summary: "Add: source_skill (rsil-global vs rsil-review), finding_type (global vs narrow), cross_refs (finding IDs), detection_tier (which tier caught it)."
+
+recommendations:
+  - id: R-1
+    priority: HIGH
+    action: "Tier 0 shell injection should extract: session dir existence, gate record count, L1 file count, git diff summary, MEMORY.md mtime"
+  - id: R-2
+    priority: HIGH
+    action: "Gate records are the single best signal source — always read in Tier 1"
+  - id: R-3
+    priority: HIGH
+    action: "Single unified tracker with source_skill field rather than separate files"
+  - id: R-4
+    priority: MEDIUM
+    action: "Tier 3 subagent threshold: >3 anomalies in Tier 1 scan, or >2 BREAK findings in Tier 2"

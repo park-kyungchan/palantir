@@ -1,0 +1,103 @@
+agent: completeness-challenger-1
+phase: P5
+status: complete
+timestamp: "2026-02-12T15:30:00Z"
+
+challenge_dimensions:
+  - "C-3: Completeness"
+  - "C-4: Feasibility"
+
+gaps:
+  - id: GAP-01
+    category: C-3
+    severity: CRITICAL
+    description: "RISK-8 fallback delta (~50L across 8 files) described conceptually, not as implementable text. If Phase A3 triggers, implementers must design during fix-loop."
+    section_ref: "§8 RISK-8, §5 RISK-8 Fallback Delta subsections"
+    mitigation: "Write exact old->new replacement text for all 8 files before Phase 6"
+
+  - id: GAP-02
+    category: C-4
+    severity: HIGH
+    description: "impl-b context budget: 5 files totaling 2,675L current content + ~670L specs. execution-plan (692L) processed last when context most strained. No intra-task checkpointing."
+    section_ref: "§3 Ownership Verification, §4 Task B"
+    mitigation: "Split impl-b into 3+2 files, or mandate L1 checkpoint after each file"
+
+  - id: GAP-03
+    category: C-3
+    severity: HIGH
+    description: "Pre-deploy tests fork skills (B->C->D) but NOT coordinator skill changes (GC removal, PT discovery, Interface Section). GC reduction correctness untested until first pipeline run."
+    section_ref: "§8 Pre-Deploy Validation Sequence"
+    mitigation: "Add Phase E: lightweight coordinator skill functional test"
+
+  - id: GAP-04
+    category: C-3
+    severity: MEDIUM
+    description: "Fork-back contingency removes frontmatter but leaves second-person voice in skill body. Plan claims 'always safe' without addressing voice mismatch for Lead-in-context."
+    section_ref: "§10 Fork-Back Contingency"
+    mitigation: "Acknowledge voice trade-off explicitly or include body reversion in fork-back procedure"
+
+  - id: GAP-05
+    category: C-3
+    severity: MEDIUM
+    description: "Contract C-3 (GC scratch-only) has no automated verification in Task V. Relies on V6b review quality only. All other contracts have automated checks."
+    section_ref: "§7 V6b, §4 Task V"
+    mitigation: "Add V6a check: grep for removed GC write patterns across 5 coordinator skills"
+
+  - id: GAP-06
+    category: C-3
+    severity: MEDIUM
+    description: "Fork edge case: PT already [DELIVERED] when /permanent-tasks invoked. pt-manager behavioral spec silent on DELIVERED status handling."
+    section_ref: "risk-architect L3 §1.1 pt-manager.md"
+    mitigation: "Add to pt-manager.md: check PT subject for [DELIVERED], warn user before modifying"
+
+  - id: GAP-07
+    category: C-4
+    severity: MEDIUM
+    description: "infra-c owns 8 files with no explicit L1/L2 save strategy between files. Compaction at file 6 loses files 7-8 work."
+    section_ref: "§3 infra-c:8 files, §4 Task C"
+    mitigation: "Add explicit checkpointing instruction: write L1 after every 2-3 files"
+
+  - id: GAP-08
+    category: C-3
+    severity: MEDIUM
+    description: "V6b criteria (voice, cross-cutting, behavioral, interface) defined but not mapped to review agent directives. execution-coordinator may not communicate V6b to spec/code reviewers."
+    section_ref: "§7 V6b, §1 Execution Sequence"
+    mitigation: "Add V6b criteria to Task description or exec-coordinator directive"
+
+  - id: GAP-09
+    category: C-4
+    severity: MEDIUM
+    description: "Template B transformation for 5 Template A coordinators gives conceptual removal lists but no exact line ranges or surgical diffs."
+    section_ref: "§5 Files #13-#20"
+    mitigation: "Acceptable if AC-0 (read-first) is enforced. Add explicit instruction to identify boilerplate by content, not line number."
+
+  - id: GAP-10
+    category: C-3
+    severity: LOW
+    description: "Task V Check 8 verifies color present but not color correctness per coordinator assignment."
+    section_ref: "§7 V5, §5 Coordinator Gap Analysis table"
+    mitigation: "Add expected color values to V5 or Check 8"
+
+  - id: GAP-11
+    category: C-4
+    severity: LOW
+    description: "Theoretical gap between pre-deploy Phase D pass and git add command. Single-session mitigates."
+    section_ref: "§9 Staging Command"
+    mitigation: "None needed — single-session execution"
+
+summary:
+  total_findings: 11
+  critical: 1
+  high: 2
+  medium: 6
+  low: 2
+  verdict: "CONDITIONAL_PASS — plan is comprehensive but GAP-01 (RISK-8 delta) must be resolved before Phase 6"
+
+evidence_count: 11
+pt_goal_links:
+  - "D-7 (PT-centric Interface)"
+  - "D-8 (Big Bang)"
+  - "D-9 (Fork)"
+  - "D-14 (GC 14->3)"
+  - "RISK-5 (Big Bang mitigation)"
+  - "RISK-8 (Task list scope)"

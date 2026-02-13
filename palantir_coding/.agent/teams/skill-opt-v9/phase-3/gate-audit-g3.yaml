@@ -1,0 +1,105 @@
+gate: G3
+phase: 3
+evaluator: gate-auditor
+timestamp: 2026-02-12T02:00:00Z
+tier: COMPLEX
+
+criteria:
+  g3_1:
+    status: PASS
+    evidence: >
+      All 4 directories contain L1-index.yaml + L2-summary.md. L3-full/ verified via
+      Glob: structure-design.md, interface-design.md, risk-design.md, progress-state.yaml.
+      arch-coord consolidated L1 (69L) + L2 (221L) present with cross-worker synthesis.
+  g3_2:
+    status: PASS
+    evidence: >
+      Scope Statement (design-doc §6 lines 109-139) requires: 9 SKILL.md redesign,
+      8 coordinator co-optimization, 3 new agent .md, 4 fork skills, §10 modification,
+      PT-centric interface, dedup removal, CC feature adoption. Architecture addresses
+      ALL items: 2 template variants cover 9 skills (ADR-S1), Template B covers 8
+      coordinators (ADR-S2, 768→402L), 3 fork agents designed (pt-manager/delivery-agent/
+      rsil-agent), 4 skills → context:fork, §10 3-layer enforcement designed, PT-centric
+      contract with GC 14→3 reduction (C-1 through C-5), cross-cutting as 1-line references
+      (coordinator) and inline (fork per ADR-S8), CC features adopted ($ARGUMENTS,
+      Dynamic Context, context:fork, agent: field).
+  g3_3:
+    status: PASS
+    evidence: >
+      P2 research-coord L2 (117 evidence points, 4 domains) reflected in architecture:
+      18.3% extractable duplication → template ~18% shared skeleton (structure-architect L2).
+      3 skill families → 2 template variants (OQ-2). GC 14→3 migration path → fully
+      designed as C-3 contract with 9 eliminate + 2 migrate + 3 keep. Fork feasibility
+      per-skill → risk register RISK-1/2/3 + phased validation A→D. 6 critical unknowns →
+      3 resolved (OQ-1/2/3), remaining tracked as RISK-1/8. Task API frontmatter enforcement
+      finding → leveraged for §10 design (no platform change). Coordinator Template B target →
+      applied to all 8 (ADR-S2). Cross-domain synthesis (families↔fork, dedup symmetry,
+      GC elimination path) all reflected in unified design.
+  g3_4:
+    status: PASS
+    evidence: >
+      5 contracts clearly defined in interface-architect-1 L1/L2: C-1 (PT Read/Write,
+      N:1 cardinality, per-skill read/write table for all 9 skills), C-2 (L2 Downstream
+      Handoff chain with flow diagram), C-3 (GC Scratch-Only, 3 concerns), C-4 (Fork-to-PT
+      Direct via TaskGet/TaskUpdate, 1:1 per invocation), C-5 (§10 Exception, 3 named
+      agents with 3-layer enforcement). Dependency map with cardinalities in L2.
+      Template §C format (Input→Output→Next) defined. RISK-8 (task list scope) acknowledged
+      as dependency with $ARGUMENTS fallback.
+  g3_5:
+    status: PASS
+    evidence: >
+      arch-coord L2 §Downstream Handoff (lines 177-220) specifies complete Phase 4 entry:
+      10 binding decisions, 5 must-track risks with IDs, 6 interface contracts with L3
+      references, 6 must-enforce constraints, 2 open questions requiring resolution,
+      and 4 artifact directory entries. Per-skill delta table (L2 lines 95-106) gives
+      Phase 4 planners exact unique/shared/new percentages for task decomposition.
+  g3_6:
+    status: PASS
+    evidence: >
+      Risk register (risk-architect-1 L2) has 9 items (RISK-1 through RISK-9). RISK-9
+      eliminated via CLC-1 resolution. 4 active HIGH+ risks all have documented mitigations
+      AND fallbacks: RISK-1 (HIGH/LOW, pre-deploy validation + general-purpose fallback),
+      RISK-2 (MED-HIGH/CERTAIN, 3-layer mitigation), RISK-5 (HIGH/MEDIUM, YAML validation +
+      atomic commit + rollback), RISK-8 (MEDIUM/MEDIUM, pre-deploy validation + $ARGUMENTS
+      fallback). Phased validation strategy A→B→C→D defined for pre-commit risk reduction.
+      OQ-1 (fork spawning, 85% confidence) has pre-deploy gate. No unresolved HIGH+ risks
+      without mitigation.
+  g3_7:
+    status: PASS
+    evidence: >
+      structure-architect-1 L1: 8 ADRs (ADR-S1 through ADR-S8) each with summary +
+      rationale fields. interface-architect-1 L1: 5 contracts (C-1 through C-5) with
+      interface type, participants, cardinality. risk-architect-1 L1: 3 OQs with verdicts +
+      rationale, 4 named risks with mitigations, CLC-1 cross-lens resolution documented.
+      arch-coord L1: consolidated architecture_decisions grouped by structural (8), interface
+      (2), risk (5). All decisions traceable to PT goals via pt_goal_links arrays in
+      every L1 file.
+
+result: PASS
+
+concerns:
+  - id: CONCERN-1
+    severity: LOW
+    description: >
+      RISK-8 (task list scope in fork) remains empirically unverified. The architecture
+      provides a fallback ($ARGUMENTS PT-ID passing) but C-4 contract viability depends
+      on this verification. Phase 4 should prioritize this as a pre-implementation validation
+      task before detailed fork agent task decomposition.
+  - id: CONCERN-2
+    severity: LOW
+    description: >
+      OQ-1 (fork agent subagent spawning) at 85% confidence — the remaining 15% uncertainty
+      affects rsil-review fork design specifically. Pre-deploy validation Phase A should
+      test this before Phase 6 implementation begins. The fallback (rsil-review stays
+      Lead-in-context) is documented but would reduce the scope of the fork revolution from
+      4 skills to 3.
+
+recommendation: >
+  PASS — Architecture is comprehensive, well-structured, and addresses all 7 COMPLEX-tier
+  G3 criteria. 149 evidence points across 3 specialized architects with coordinator
+  cross-lens synthesis. All Phase 1 scope items have corresponding architectural designs.
+  Phase 2 research (117 evidence points, 4 domains) is thoroughly reflected. Interface
+  contracts are precise with cardinality and data flow. Risk register is complete with
+  mitigations and fallbacks for all HIGH+ items. Decisions are documented with rationale
+  and traceable to PT goals. Two low-severity concerns noted for Phase 4 attention but
+  neither blocks progression. Architecture is ready for Phase 4 detailed design.

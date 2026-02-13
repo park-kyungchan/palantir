@@ -1,0 +1,68 @@
+agent: research-coordinator
+phase: P2
+status: complete
+timestamp: 2026-02-12T00:04:00Z
+
+domains:
+  domain_1_duplication:
+    worker: codebase-researcher-1
+    status: complete
+    findings_count: 10
+    key_findings:
+      - "18.3% extractable duplication (808L of 4,426L): 358L IDENTICAL + 450L SIMILAR"
+      - "3 skill families: Pipeline Core (5), Lead-Only (2), RSIL (2)"
+      - "19 section types analyzed, 60-80% of each skill is unique orchestration"
+      - "Top extraction: Phase 0 PT Check (~210L), Input Discovery (~140L)"
+  domain_2_gc_mapping:
+    worker: codebase-researcher-1
+    status: complete
+    findings_count: 10
+    key_findings:
+      - "GC version chain v1→v7, PT version chain created P1 → final P9"
+      - "6 data categories overlap PT↔GC, PT authoritative for 5 of 6"
+      - "2 migration candidates (Constraints, Interface Changes → PT)"
+      - "9 elimination candidates (Phase N Entry Reqs → L2 Downstream Handoff)"
+  domain_3_fork_prototype:
+    worker: codebase-researcher-2
+    status: complete
+    findings_count: 11
+    key_findings:
+      - "Task API restriction is frontmatter-enforced, NOT platform-level — D-10 FEASIBLE"
+      - "Fork feasibility: rsil-global (LOW) → rsil-review (MED) → permanent-tasks (MED-HIGH) → delivery (HIGH)"
+      - "3 new agents: pt-manager, delivery-agent, rsil-agent"
+      - "6 critical unknowns require CC research"
+  domain_4_coordinator_audit:
+    worker: auditor-1
+    status: complete
+    findings_count: 25
+    key_findings:
+      - "Two-Template Problem: 5 verbose (93L avg) vs 3 lean (39L avg)"
+      - "175L protocol duplication across Template A coordinators"
+      - "25 frontmatter field gaps across 8 coordinators"
+      - "0/8 have skills preload, 0/8 have agent-scoped hooks"
+
+cross_domain_synthesis:
+  - "Domain 1 ↔ Domain 3: 3 skill families map to 2 template variants (coordinator-based vs fork-based). RSIL skills are hybrid."
+  - "Domain 1 ↔ Domain 4: Two-Template Problem in coordinators mirrors duplication in skills — both need shared protocol references"
+  - "Domain 2 ↔ Domain 3: Fork skills (rsil-*, permanent-tasks) are exactly the 3 GC non-users — clean migration path"
+  - "Domain 3 ↔ Domain 4: Fork agents need new .md files; coordinator .md optimization can serve as template"
+
+workers:
+  - name: codebase-researcher-1
+    status: complete
+    findings_count: 10
+  - name: codebase-researcher-2
+    status: complete
+    findings_count: 11
+  - name: auditor-1
+    status: complete
+    findings_count: 25
+
+evidence_count: 117
+pt_goal_links:
+  - "D-6 (Precision Refocus) — 808L skill dedup + 175L coordinator dedup identified"
+  - "D-7 (PT-centric Interface) — GC→PT migration path mapped, 2 migrate + 9 eliminate"
+  - "D-9 (context:fork) — all 4 skills feasible, risk-ranked"
+  - "D-10 (CLAUDE.md §10) — frontmatter enforcement confirmed, modification path clear"
+  - "D-11 (3 new fork agents) — tool requirements mapped per agent"
+  - "D-13 (Coordinator Shared Protocol) — 5/8 coordinators missing reference"

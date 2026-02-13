@@ -1,0 +1,84 @@
+agent: strategy-planner-1
+phase: P4
+status: complete
+timestamp: 2026-02-12T00:30:00Z
+
+strategy:
+  approach: "4-wave execution: parallel implementation → verification → pre-deploy → commit"
+  implementers:
+    - id: impl-a1
+      type: implementer
+      files: 4
+      group: "fork-cluster-1 (pt-manager, permanent-tasks, delivery-agent, delivery-pipeline)"
+      internal_order: "CREATE agent .md → MODIFY SKILL.md"
+    - id: impl-a2
+      type: implementer
+      files: 3
+      group: "fork-cluster-2 (rsil-agent, rsil-global, rsil-review)"
+      internal_order: "CREATE agent .md → MODIFY SKILL.md"
+    - id: impl-b
+      type: implementer
+      files: 5
+      group: "coord-skills (5 coordinator-based SKILL.md)"
+    - id: infra-c
+      type: infra-implementer
+      files: 8
+      group: "coord-convergence (8 coordinator .md Template B)"
+    - id: infra-d
+      type: infra-implementer
+      files: 2
+      group: "protocol-pair (CLAUDE.md §10 + agent-common-protocol.md)"
+    - id: verifier
+      type: integrator
+      files: 0
+      group: "verification (reads all 22, owns none)"
+  waves:
+    - id: W1
+      name: "Implementation"
+      files: 22
+      agents: ["impl-a1", "impl-a2", "impl-b", "infra-c", "infra-d"]
+      parallel: true
+      cross_impl_deps: "NONE — co-location eliminates cross-implementer STRONG deps"
+    - id: W2
+      name: "Cross-Reference Verification"
+      agents: ["verifier"]
+      checks: 8
+      depends_on: W1
+    - id: W3
+      name: "Pre-Deploy Validation"
+      agents: ["Lead"]
+      items: ["Phase A: structural + infra", "Phase B: rsil-global", "Phase C: rsil-review + permanent-tasks", "Phase D: delivery-pipeline"]
+      depends_on: W2
+    - id: W4
+      name: "Atomic Commit"
+      agents: ["Lead"]
+      depends_on: W3
+  risk_mitigations:
+    - risk: RISK-2
+      severity: MED-HIGH
+      approach: "3-layer history loss mitigation (pipeline/rich/interactive)"
+    - risk: RISK-3
+      severity: MEDIUM
+      approach: "No nested skills, idempotent ops, fork-last, user gates"
+    - risk: RISK-5
+      severity: HIGH
+      approach: "V6a validation + atomic commit + rollback"
+    - risk: RISK-8
+      severity: MEDIUM
+      approach: "Single plan with delta branch (~50L across 8 files)"
+
+sections_owned: ["§6 Execution Sequence", "§7 Validation Checklist", "§8 Risk Mitigation", "§9 Commit Strategy", "§10 Rollback & Recovery"]
+section_status:
+  s6: "FINAL — 4-wave, 5+1 agents, co-location eliminates cross-impl deps"
+  s7: "FINAL — V1-V5 automatable + V6 split (V6a/V6b)"
+  s8: "FINAL — 4 risks + pre-deploy A→B→C→D + RISK-8 delta"
+  s9: "FINAL — Big Bang atomic, explicit 22-file git add list, commit template"
+  s10: "FINAL — 2 domains (pre/post-commit), fork-back contingency"
+
+evidence_count: 11
+pt_goal_links:
+  - "D-8 (Big Bang Deployment)"
+  - "D-10 (§10 Fork Agent Exception)"
+  - "D-11 (3 Fork Agent Designs)"
+  - "D-13 (Coordinator Template B Convergence)"
+  - "RISK-2, RISK-3, RISK-5, RISK-8"

@@ -1,0 +1,47 @@
+agent: architect-1
+phase: P4
+status: complete
+timestamp: 2026-02-12T00:00:00Z
+
+deliverable: implementation-plan
+target_file: .claude/skills/brainstorming-pipeline/SKILL.md
+operation: MODIFY (25 edit specs across 5 tasks)
+
+architecture_decisions:
+  - AD-1: P0 → PT existence check only
+  - AD-2: Feasibility Check (3-criteria soft gate)
+  - AD-3: Checkpoint relocated 1.3.5 → 1.2.5
+  - AD-4: Scope + Tier unified at 1.4
+  - AD-5: PT creation at Gate 1 via /permanent-tasks
+  - AD-6: Sequential-thinking consolidated (9 → 1)
+  - AD-7: Git branch cap (head -10)
+  - AD-8: RTD DPs reduced (7 → 3)
+
+compression_options:
+  - A-hybrid: GC-v1 YAML frontmatter + field list
+  - B-hybrid: orchestration-plan YAML frontmatter + field list
+  - C: gate-record → reference
+  - G: Gate 1 criteria → gate-evaluation-standard.md
+
+task_decomposition:
+  - Task_A: Header + Phase 0 + Phase 1.1 (S-1 to S-5)
+  - Task_B: Phase 1.2 through 1.3.5 (S-6 to S-10)
+  - Task_C: Phase 1.4 + Gate 1 (S-11 to S-17)
+  - Task_D: Phase 2/3 + Cross-Cutting (S-18 to S-25)
+  - Task_E: Verification + Line Count
+
+line_budget:
+  current: 672
+  target: "≤578"
+  estimated: "~575"
+  mandatory_savings: 55
+  compression_savings: 40
+
+risks:
+  count: 8
+  highest: R-2 (feasibility false positives, MEDIUM), R-7 (edit mismatches, MEDIUM)
+
+dual_save: [docs/plans/2026-02-12-brainstorming-pipeline-redesign.md, L3-full/implementation-plan.md]
+
+evidence_count: 5
+pt_goal_links: ["AD-1~AD-8", "GC-v3", "CH-001 template"]

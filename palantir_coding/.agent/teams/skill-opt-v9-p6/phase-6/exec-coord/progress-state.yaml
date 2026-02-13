@@ -1,0 +1,27 @@
+coordinator: execution-coordinator
+phase: P6
+last_updated: 2026-02-12T00:00:00Z
+stage: initialization
+
+workers:
+  infra-d: { status: not_assigned, task: "#1", stage: awaiting_names }
+  impl-a1: { status: not_assigned, task: "#2", stage: awaiting_names }
+  impl-a2: { status: not_assigned, task: "#3", stage: awaiting_names }
+  impl-b: { status: not_assigned, task: "#4", stage: awaiting_names }
+  infra-c: { status: not_assigned, task: "#5", stage: awaiting_names }
+  verifier: { status: blocked, task: "#6", stage: awaiting_all_complete }
+
+reviewers:
+  spec-rev: { status: awaiting_names }
+  code-rev: { status: awaiting_names }
+  contract-rev: { status: awaiting_names }
+  regression-rev: { status: awaiting_names }
+
+review_state: {}
+
+monitoring_priority:
+  - infra-c  # CONS-3: 8 files, BUG-002 risk — check FIRST
+  - impl-b   # CONS-2: 5 files, checkpointing required
+  - impl-a1  # 4 files
+  - impl-a2  # 3 files
+  - infra-d  # 2 files (smallest)

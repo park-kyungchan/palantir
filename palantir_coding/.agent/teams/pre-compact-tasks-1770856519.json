@@ -1,0 +1,10 @@
+[
+{
+  "id": "1",
+  "subject": "[PERMANENT] README.md INFRA Visualization",
+  "description": "## User Intent (PT-v1)\n\nCreate a comprehensive, detailed, unambiguous ASCII visualization of the current `.claude/` INFRA codebase state in README.md. The purpose is for the user to accurately understand the current codebase state and provide feedback to Lead.\n\n**Requirements:**\n- GitHub-friendly format (renders well on GitHub)\n- English-based with Korean annotations mixed in\n- Exhaustive coverage of all .claude/ infrastructure components\n- No ambiguity — every component clearly documented\n\n## Codebase Impact Map\n\n### Primary Target\n- `README.md` — complete rewrite to reflect INFRA v9.0 state\n\n### Source Components (read-only, inventory)\n- `.claude/CLAUDE.md` — Team Constitution v9.0 (~378L)\n- `.claude/agents/*.md` — 42 agent files (35 workers + 8 coordinators)\n- `.claude/hooks/` — 4 hook scripts (~220L total)\n- `.claude/references/` — protocol documents (agent-catalog, gate-evaluation-standard, ontological-lenses, coordinator-shared-protocol, etc.)\n- `.claude/skills/` — 10 skill directories\n- `.claude/settings.json` — MCP and tool settings (~84L)\n- `.claude/projects/` — project-specific memory\n- `.agent/observability/` — RTD system\n\n## Architecture Decisions\n(none yet — Phase 1)\n\n## Phase Status\n- Phase 0: COMPLETE\n- Phase 1: PENDING\n\n## Constraints\n- Output: single file (README.md)\n- Must be GitHub-renderable markdown\n- English primary, Korean secondary",
+  "activeForm": "Managing README INFRA Visualization pipeline",
+  "status": "pending",
+  "blocks": [],
+  "blockedBy": []
+}]

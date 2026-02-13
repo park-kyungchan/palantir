@@ -1,0 +1,85 @@
+agent: decomposition-planner-1
+phase: P4
+status: complete
+timestamp: 2026-02-12T00:00:00Z
+
+sections_complete:
+  - id: "§1"
+    name: "Orchestration Overview"
+    status: complete
+    lines: 55
+  - id: "§2"
+    name: "Architecture Summary"
+    status: complete
+    lines: 52
+  - id: "§3"
+    name: "File Ownership Map"
+    status: complete
+    lines: 78
+    note: "Reconciliation PASSED — zero coupling violations"
+  - id: "§4"
+    name: "Task Breakdown"
+    status: complete
+    lines: 280
+    note: "Enhanced with GC migration summaries per task"
+  - id: "§5"
+    name: "Per-File Specifications"
+    status: complete
+    lines: 490
+    note: "Enhanced with §C verbatim content and GC line references"
+
+output_files:
+  - "L3-full/sections-1-2-3.md"
+  - "L3-full/sections-4-5.md"
+
+tasks:
+  - id: "D"
+    description: "Protocol edits (CLAUDE.md §10 + agent-common-protocol.md)"
+    files: [".claude/CLAUDE.md", ".claude/references/agent-common-protocol.md"]
+    owner: "infra-d"
+    depends_on: []
+  - id: "A1"
+    description: "Fork cluster 1 (pt-manager + permanent-tasks + delivery-agent + delivery-pipeline)"
+    files: [".claude/agents/pt-manager.md", ".claude/skills/permanent-tasks/SKILL.md", ".claude/agents/delivery-agent.md", ".claude/skills/delivery-pipeline/SKILL.md"]
+    owner: "impl-a1"
+    depends_on: []
+  - id: "A2"
+    description: "Fork cluster 2 (rsil-agent + rsil-global + rsil-review)"
+    files: [".claude/agents/rsil-agent.md", ".claude/skills/rsil-global/SKILL.md", ".claude/skills/rsil-review/SKILL.md"]
+    owner: "impl-a2"
+    depends_on: []
+  - id: "B"
+    description: "5 coordinator-based SKILL.md restructure with GC migration"
+    files: [".claude/skills/brainstorming-pipeline/SKILL.md", ".claude/skills/agent-teams-write-plan/SKILL.md", ".claude/skills/plan-validation-pipeline/SKILL.md", ".claude/skills/agent-teams-execution-plan/SKILL.md", ".claude/skills/verification-pipeline/SKILL.md"]
+    owner: "impl-b"
+    depends_on: []
+  - id: "C"
+    description: "8 coordinator .md Template B convergence"
+    files: [".claude/agents/research-coordinator.md", ".claude/agents/verification-coordinator.md", ".claude/agents/architecture-coordinator.md", ".claude/agents/planning-coordinator.md", ".claude/agents/validation-coordinator.md", ".claude/agents/execution-coordinator.md", ".claude/agents/testing-coordinator.md", ".claude/agents/infra-quality-coordinator.md"]
+    owner: "infra-c"
+    depends_on: []
+  - id: "V"
+    description: "Cross-reference verification (8 checks across all 22 files)"
+    files: []
+    owner: "verifier"
+    depends_on: ["D", "A1", "A2", "B", "C"]
+
+ownership_summary:
+  implementers: 5
+  verification: 1
+  total_files: 22
+  coupling_groups: 5
+
+evidence_count: 24
+pt_goal_links:
+  - "D-7 (PT-centric interface)"
+  - "D-8 (Big Bang atomic commit)"
+  - "D-11 (3 fork agents)"
+  - "D-13 (Coordinator convergence)"
+  - "D-14 (GC 14→3 reduction)"
+  - "C-5 (§10 exception)"
+  - "ADR-S1 (2 template variants)"
+  - "ADR-S2 (exec-coord exemption)"
+  - "ADR-S5 (shared rsil-agent)"
+  - "ADR-S8 (inline cross-cutting)"
+  - "RISK-8 ($ARGUMENTS fallback)"

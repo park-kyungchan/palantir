@@ -1,0 +1,67 @@
+agent: risk-architect
+phase: P3
+status: complete
+timestamp: "2026-02-12T00:00:00Z"
+
+fork_agents:
+  - name: pt-manager
+    fork_for: permanent-tasks
+    task_api: full (TaskCreate + TaskUpdate)
+    max_turns: 30
+    key_risk: RISK-2 (conversation history loss)
+  - name: delivery-agent
+    fork_for: delivery-pipeline
+    task_api: TaskUpdate only
+    max_turns: 50
+    key_risk: RISK-3 (5+ user gates, git ops)
+  - name: rsil-agent
+    fork_for: rsil-global + rsil-review (shared)
+    task_api: TaskUpdate + Task (agent spawning)
+    max_turns: 50
+    key_risk: OQ-1 (agent spawning from fork)
+
+risks:
+  - id: RISK-1
+    severity: HIGH
+    likelihood: LOW
+    description: Custom agent resolution failure
+    mitigation: Pre-deploy validation + fallback (general-purpose)
+  - id: RISK-2
+    severity: MED-HIGH
+    likelihood: CERTAIN
+    description: PT fork loses conversation history
+    mitigation: 3-layer (pipeline/rich/interactive)
+  - id: RISK-3
+    severity: MEDIUM
+    likelihood: HIGH
+    description: Delivery fork complexity
+    mitigation: No nested skills, idempotent ops, fork last
+  - id: RISK-5
+    severity: HIGH
+    likelihood: MEDIUM
+    description: Big Bang 22+ files
+    mitigation: YAML validation, atomic commit, smoke test, git revert
+
+cross_lens_resolutions:
+  - id: CLR-1
+    conflict: pt-manager SendMessage vs fork-no-team-context
+    resolution: SendMessage removed, Lead relays notifications
+    eliminated: RISK-9
+
+open_questions:
+  - id: OQ-1
+    verdict: "YES (85% confidence)"
+    topic: Fork agent subagent spawning
+  - id: OQ-2
+    verdict: "2 variants (coordinator + fork)"
+    topic: Template variant count
+  - id: OQ-3
+    verdict: "Remove in v9.0"
+    topic: GC elimination timeline
+
+evidence_count: 11
+pt_goal_links:
+  - "D-9 (4 skills → fork)"
+  - "D-10 (Task API exception)"
+  - "D-11 (3 new agent .md)"
+  - "D-14 (GC reduction)"

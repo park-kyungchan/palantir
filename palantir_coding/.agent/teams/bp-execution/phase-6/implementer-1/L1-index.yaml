@@ -1,0 +1,50 @@
+file: .claude/skills/brainstorming-pipeline/SKILL.md
+operation: MODIFY (25 edit specs across 5 tasks)
+line_count:
+  original: 672
+  final: 613
+  delta: -59
+  target: 578
+  over_budget: 35
+
+specs_executed:
+  total: 25
+  successful: 25
+  failed: 0
+  tasks:
+    A: [S-1, S-2, S-3, S-4, S-5]  # Header + P0 + P1.1
+    B: [S-6, S-7, S-8, S-9, S-10]  # P1.2 through P1.3.5
+    C: [S-11, S-12, S-13, S-14, S-15, S-16, S-17]  # P1.4 + Gate 1
+    D: [S-18, S-19, S-20, S-21, S-22, S-23, S-24, S-25]  # P2/P3 + Cross-Cutting
+    E: [Verification]  # Full file read + checks
+
+ad_coverage:
+  AD-1: PASS  # P0 = PT existence check only (no creation, no tier)
+  AD-2: PASS  # Feasibility Check in Phase 1.2 (line 114)
+  AD-3: PASS  # Checkpoint at 1.2.5 (line 134), 1.3.5 deleted
+  AD-4: PASS  # Pipeline Tier in Scope Statement (line 195), Tier Routing deleted
+  AD-5: PASS  # /permanent-tasks at Gate 1 Step 1 (line 226)
+  AD-6: PASS  # 9 inline removals + 1 consolidation (2 remaining: tool ref L350, cross-cutting L571)
+  AD-7: PASS  # git branch `| head -10` (line 46)
+  AD-8: PASS  # 3 DPs (DP-1, DP-2, DP-3) at lines 565-567
+
+verification:
+  V-1: PASS   # No /permanent-tasks in Phase 0
+  V-2: PASS   # Feasibility found in Phase 1.2
+  V-3: PASS   # 1.2.5 exists, 1.3.5 absent
+  V-4: PASS   # Pipeline Tier in Scope Statement
+  V-5: PASS   # /permanent-tasks as Gate 1 Step 1
+  V-6: PASS   # 2 sequential-thinking occurrences (1 tool ref, 1 cross-cutting)
+  V-7: PASS   # head -10 found
+  V-8: PASS   # 3 DPs exactly
+  V-9: PASS   # GC body: Scope, Pipeline Status, Constraints, Decisions Log
+  V-10: PASS  # pt_version in GC-v1 frontmatter
+  V-11: PASS  # No Estimated Complexity or complexity: found
+  V-12: PASS  # P2/P3 logic unchanged (only seq-thinking lines removed)
+  V-13: PASS  # Clean Termination unchanged
+
+deviations:
+  - line_count_over: 35 lines over ≤578 target (613 vs 578)
+  - v6_note: "1 of 2 sequential-thinking occurrences is in P2.4 tool list (intentionally preserved), not Cross-Cutting"
+
+pt_goal_link: "PT-v3 — brainstorming-pipeline P0/P1 redesign"

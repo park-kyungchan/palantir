@@ -1,0 +1,103 @@
+agent: codebase-researcher-2
+phase: P2
+status: complete
+timestamp: "2026-02-12T00:00:00Z"
+
+domain: "context:fork Mechanism and Prototype Analysis"
+
+priority_1_finding:
+  question: "Can fork agents access Task API write operations?"
+  verdict: FEASIBLE
+  confidence: 85%
+  evidence:
+    - "CLAUDE.md §10:364 — enforcement via disallowedTools, not platform"
+    - "settings.json — TaskCreate/TaskUpdate in session-level permissions.allow"
+    - "sub-agents.md — tools inherited by default, restrictions are opt-in"
+    - "All 43 agents — disallowedTools convention, zero exceptions"
+  invalidation_risk: "Fork sandbox isolation (undocumented); task list scope in fork"
+  cascade_if_infeasible: "D-10 invalidated, pt-manager infeasible, delivery/rsil degraded"
+
+fork_difficulty_ranking:
+  - rank: 1
+    skill: rsil-global
+    difficulty: LOW
+    critical_dep: "Dynamic Context (filesystem-based)"
+    ask_user_count: "0-1"
+    task_api: read_only
+  - rank: 2
+    skill: rsil-review
+    difficulty: MEDIUM
+    critical_dep: "Agent spawning + target analysis"
+    ask_user_count: "2-3"
+    task_api: update
+  - rank: 3
+    skill: permanent-tasks
+    difficulty: MEDIUM-HIGH
+    critical_dep: "Conversation history loss (standalone Pattern B)"
+    ask_user_count: "0-1"
+    task_api: full_crud
+  - rank: 4
+    skill: delivery-pipeline
+    difficulty: HIGH
+    critical_dep: "5-6 user confirmation gates"
+    ask_user_count: "5-6"
+    task_api: update
+
+agent_field_resolution:
+  built_in_confirmed: true
+  custom_agent_support: "HYPOTHESIZED (70% confidence)"
+  evidence: "Task tool subagent_type resolves custom agents; agent: likely same mechanism"
+  fallback: "agent: general-purpose + allowed-tools frontmatter"
+
+fork_mechanism:
+  status: documented_but_sparse
+  evidence: "skills-reference.md pr-check example, design doc §9.1"
+  dynamic_context: "resolved pre-fork — fork sees rendered output"
+  conversation_history: "NOT inherited — fork starts clean"
+  arguments: "literal-substituted pre-fork"
+
+new_agents_needed:
+  - name: pt-manager
+    fork_for: permanent-tasks
+    task_api: full
+    special: "AskUserQuestion"
+  - name: delivery-agent
+    fork_for: delivery-pipeline
+    task_api: update_only
+    special: "Bash (git), Edit, AskUserQuestion"
+  - name: rsil-agent
+    fork_for: "rsil-global + rsil-review"
+    task_api: update_only
+    special: "Task (agent spawning), Edit, AskUserQuestion"
+
+critical_unknowns:
+  - id: U-1
+    question: "Can agent: field reference custom .claude/agents/{name}.md?"
+    priority: CRITICAL
+    impact: "D-11 architecture depends on this"
+  - id: U-2
+    question: "Can fork agent spawn subagents via Task tool?"
+    priority: HIGH
+    impact: "rsil-review R-1, rsil-global Tier 3"
+  - id: U-3
+    question: "Which task list does fork agent see?"
+    priority: HIGH
+    impact: "All 4 skills need main session task list"
+  - id: U-4
+    question: "Nested skill invocation from fork?"
+    priority: MEDIUM
+    impact: "delivery-pipeline + rsil-global invoke /permanent-tasks"
+  - id: U-5
+    question: "Fork return model (full output or summary)?"
+    priority: LOW
+    impact: "Lead monitoring after fork completes"
+  - id: U-6
+    question: "Fork lifecycle (terminate or persist)?"
+    priority: LOW
+    impact: "Resource management"
+
+evidence_count: 15
+pt_goal_links:
+  - "D-9 (4 Lead-only skills → context:fork)"
+  - "D-10 (CLAUDE.md §10 modification)"
+  - "D-11 (3 new fork-context agent .md)"

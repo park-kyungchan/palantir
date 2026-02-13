@@ -1,0 +1,65 @@
+---
+gate: 6
+phase: "Implementation"
+date: 2026-02-09
+gc_version_in: GC-v5
+gc_version_out: GC-v6
+pt_version_in: PT-v3
+pt_version_out: PT-v4
+verdict: APPROVED
+---
+
+# Gate 6 Record
+
+## Verdict: APPROVED (7/7 criteria PASS)
+
+### Criteria Results
+| ID | Criterion | Result |
+|----|-----------|--------|
+| G6-1 | All tasks T-1..T-8 complete | PASS |
+| G6-2 | File count matches plan (~33) | PASS (33 files) |
+| G6-3 | Phase 5 conditions (COND-1..4) addressed | PASS (all 4 met) |
+| G6-4 | Plan deviations documented | PASS (4 deviations logged) |
+| G6-5 | L1/L2/L3 artifacts for all implementers | PASS (3/3) |
+| G6-6 | Code quality spot-check | PASS |
+| G6-7 | Cross-implementer consistency | PASS |
+
+## Implementation Summary
+
+### Implementer-1 (Foundation + Ingest + Storage) — T-1, T-2, T-3
+- 16 files: pyproject.toml + 8 models + 3 ingest + 3 storage + __init__.py
+- Key: venv at cow/cow-mcp/.venv/, FastMCP pattern (DEV-1), all models importable
+
+### Implementer-2 (OCR + Vision) — T-4, T-5
+- 8 files: 5 ocr + 3 vision (~1090 lines)
+- Key: COND-1 (cnt_to_bbox compat, 5 tests), COND-3 (bbox normalization), COND-4 (IoU merge, 3 tests)
+
+### Implementer-3 (Review + Export + MCP config) — T-6, T-7, T-8
+- 9 files: 4 review + 4 export + .mcp.json (~997 lines)
+- Key: CH-1.2 (async database rewrite), CH-4.4 (kotex only), 16/16 self-tests
+
+### Plan Deviations
+- DEV-1: FastMCP pattern replaces low-level Server (Lead-approved)
+- DEV-2: pyproject.toml build-backend = setuptools.build_meta (plan's value doesn't exist)
+- DEV-3: Added cow_create_session tool (session lifecycle requirement)
+- DEV-4: cow_ tool name prefix for namespace collision prevention
+
+### Phase 5 Conditions Status
+| Condition | Status | Verification |
+|-----------|--------|-------------|
+| COND-1 | MET | separator.py preserves None-return, clamping, min-dim (5 tests) |
+| COND-2 | MET | MCP SDK v1.26.0 installed, FastMCP imports verified |
+| COND-3 | MET | _normalize_bbox() in gemini.py, confidence filter 0.3 |
+| COND-4 | MET | Greedy IoU matching, threshold 0.5, 3 test scenarios |
+
+## File Inventory (33 files)
+- cow/cow-mcp/pyproject.toml
+- cow/cow-mcp/cow_mcp/__init__.py
+- cow/cow-mcp/cow_mcp/models/ (8 files: __init__, common, ingest, ocr, vision, verify, compose, export)
+- cow/cow-mcp/cow_mcp/ingest/ (3 files: __init__, __main__, validator)
+- cow/cow-mcp/cow_mcp/storage/ (3 files: __init__, __main__, filesystem)
+- cow/cow-mcp/cow_mcp/ocr/ (5 files: __init__, __main__, client, separator, cache)
+- cow/cow-mcp/cow_mcp/vision/ (3 files: __init__, __main__, gemini)
+- cow/cow-mcp/cow_mcp/review/ (4 files: __init__, __main__, database, models)
+- cow/cow-mcp/cow_mcp/export/ (4 files: __init__, __main__, latex, compiler)
+- cow/.mcp.json

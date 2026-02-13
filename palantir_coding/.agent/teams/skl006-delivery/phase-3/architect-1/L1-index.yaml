@@ -1,0 +1,56 @@
+architect: architect-1
+date: 2026-02-08
+phase: 3
+status: complete
+
+components:
+  skl_006:
+    name: delivery-pipeline
+    type: new skill
+    file: .claude/skills/delivery-pipeline/SKILL.md
+    estimated_lines: 350-400
+    sub_phases: [9.1-consolidation, 9.2-delivery, 9.3-cleanup]
+    unique: lead-only, terminal, external-facing, 4 user confirmations
+    discovery: multi-session (scans all .agent/teams/*/ directories by feature prefix)
+    post_rejection: MEMORY.md revert offered if commit rejected
+  archive_template:
+    location: .agent/teams/{primary-session-id}/ARCHIVE.md
+    aggregates_from: all related session directories
+    sections: [gate-summary, key-decisions, metrics, deviations, lessons, team]
+  rsil_in_sprint:
+    count: 5
+    items: [IMP-002, IMP-003, IMP-004, H-1, IMP-010]
+  rsil_deferred:
+    count: 8+
+    items: [IMP-001, IMP-005, IMP-006, H-2, H-3, H-4, H-6, H-7]
+
+decisions:
+  AD-1: "3 sub-phases: Consolidation → Delivery → Cleanup"
+  AD-2: "User-confirmed git, never auto-commit"
+  AD-3: "ARCHIVE.md in session directory"
+  AD-4: "PT→MEMORY via Read-Merge-Write"
+  AD-5: "Preserve artifacts, clean transients"
+  AD-6: "5 RSIL in-sprint, 8+ deferred"
+  AD-7: "No skill DRY extraction this sprint"
+  AD-8: "Support both GC and PT input discovery"
+
+risks:
+  - { id: R-1, desc: "MEMORY.md merge corruption", score: 6 }
+  - { id: R-2, desc: "Secret in commit", score: 8 }
+  - { id: R-3, desc: "Cleanup deletes needed files", score: 4 }
+  - { id: R-4, desc: "PT not found", score: 3 }
+  - { id: R-5, desc: "Wrong session selected", score: 4 }
+  - { id: R-6, desc: "ARCHIVE too large", score: 2 }
+
+user_input_needed:
+  - "ARCHIVE.md location: session dir vs docs/"
+  - "RSIL scope: 5 in-sprint confirmed?"
+  - "PR behavior: always offer or conditional?"
+  - "Multi-session discovery: resolved — cross-session is default"
+
+layer_2_compatibility: "Fully domain-agnostic. No blocking issues."
+
+phase_4_entry:
+  - "This architecture approved (Gate 3)"
+  - "User decisions on 4 items above"
+  - "ARCHIVE template confirmed"

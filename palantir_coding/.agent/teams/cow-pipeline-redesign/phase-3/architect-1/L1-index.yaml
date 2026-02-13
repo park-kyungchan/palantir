@@ -1,0 +1,59 @@
+architect: architect-1
+date: 2026-02-09
+phase: 3
+status: complete
+
+components:
+  pipeline:
+    stages: [INGEST, OCR, VISION, VERIFY, COMPOSE, EXPORT]
+    mcp_servers: [cow-ingest, cow-ocr, cow-vision, cow-review, cow-export, cow-storage]
+    native_stages: [VERIFY, COMPOSE]  # Claude reasoning, no MCP tool
+  external_apis:
+    mathpix: { purpose: "OCR + bbox + diagram", pricing: "$0.002/img $0.005/page" }
+    gemini: { purpose: "bbox detection + layout", model: "gemini-3.0-pro", tier: "paid" }
+  orchestrator:
+    engine: "Claude Code CLI"
+    mode: "Agent Teams (tmux)"
+    subscription: "Claude MAX X20"
+  pdf_generation:
+    primary: "XeLaTeX + kotex + Noto CJK KR"
+    backup: "Mathpix /v3/converter"
+    automation: "Pandoc + XeLaTeX"
+
+reusable_modules:
+  - { file: "mathpix/client.py", action: "modernize" }
+  - { file: "semantic/separator.py", lines: 712, action: "reuse (bbox cnt→region)" }
+  - { file: "review/database.py", action: "reuse" }
+  - { file: "export/", action: "reuse + extend" }
+  - { file: "config.py", action: "reuse" }
+
+removable_modules:
+  - { file: "claude/orchestrator.py", lines: 585, reason: "SDK-based" }
+  - { file: "claude/stage_agents.py", lines: 500, reason: "SDK-based" }
+  - { file: "claude/mcp_servers.py", lines: 400, reason: "SDK-based" }
+
+decisions:
+  D-1: "MCP Server-centric architecture (not subprocess or SDK)"
+  D-2: "6-stage pipeline (collapsed from 9)"
+  D-3: "Gemini 3.0 Pro for bbox (Claude bbox NOT FEASIBLE)"
+  D-4: "VERIFY/COMPOSE as Claude native reasoning"
+  D-5: "XeLaTeX + kotex primary, Mathpix backup"
+  D-6: "Dual OCR verification (auto + HITL)"
+  D-7: "Reuse separator.py bbox logic"
+  D-8: "No Anthropic API dependency"
+  D-9: "~/.claude/ INFRA optimization"
+
+risks:
+  - { id: R-1, desc: "Gemini API rate limits/costs", score: 5, mitigation: "cache + fallback to Mathpix-only" }
+  - { id: R-2, desc: "Mathpix Korean accuracy gap", score: 4, mitigation: "Claude verification stage" }
+  - { id: R-3, desc: "XeLaTeX complex layout failure", score: 6, mitigation: "Mathpix converter backup" }
+  - { id: R-4, desc: "MCP Server complexity", score: 5, mitigation: "incremental development, server-per-domain" }
+  - { id: R-5, desc: "Claude vision image Read bug", score: 7, mitigation: "use MCP tool to pass image data, not Read" }
+  - { id: R-6, desc: "Stage interface contract drift", score: 4, mitigation: "Pydantic models, runtime validation" }
+
+phase_4_entry:
+  - "This architecture approved (Gate 3)"
+  - "3 feasibility reports available as reference"
+  - "Interface contracts defined for all 6 stages"
+  - "Reusable vs removable module classification complete"
+  - "Tech stack decisions finalized"

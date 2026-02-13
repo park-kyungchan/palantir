@@ -1,0 +1,123 @@
+# L1 Index — Architecture Design v2 (NLP + PERMANENT Task Integration)
+# architect-2 | Phase 3 (Revision) | GC-v4 | 2026-02-08
+
+architecture_decisions:
+  preserved_from_v1:
+    - id: AD-1
+      title: "Deduplication — state in authoritative location, reference elsewhere"
+      status: preserved
+      change: "Added PT concepts to authoritative location table"
+
+    - id: AD-2
+      title: "[PERMANENT] → §10 Integrity Principles"
+      status: enhanced
+      change: "40→20 lines; +2 for PT lifecycle principles"
+
+    - id: AD-3
+      title: "Communication table → 3 flow-direction groups"
+      status: enhanced
+      change: "PT-adapted: Directive includes PT Task ID"
+
+    - id: AD-4
+      title: "MCP tools matrix → 3 bullets"
+      status: preserved
+      change: "No change from v1"
+
+    - id: AD-5
+      title: "DIA v6.0 — open questions, Impact Map grounded"
+      status: enhanced
+      change: "Questions reference Impact Map for authoritative relationship data"
+
+    - id: AD-6
+      title: "Agent template standardization (6-section)"
+      status: preserved
+      change: "Added Impact Map references to Before Starting / If Lead Asks"
+
+  new_in_v2:
+    - id: AD-7
+      title: "GC → PERMANENT Task as context delivery"
+      rationale: "Self-serve TaskGet, Impact Map, cross-session persistence"
+      impact: "CLAUDE.md §3/§4/§6/§9/§10, common-protocol, all agent .md"
+
+    - id: AD-8
+      title: "Impact Map integration into DIA v6.0"
+      rationale: "Grounded challenges replace guesswork"
+      impact: "CLAUDE.md §6, all agent .md Before Starting / If Lead Asks"
+
+    - id: AD-9
+      title: "Recovery via TaskGet self-service"
+      rationale: "Reduces Lead bottleneck, TaskGet already in every tool list"
+      impact: "CLAUDE.md §9, common-protocol If You Lose Context"
+
+deliverables:
+  - file: "CLAUDE.md v6.0"
+    lines: 136
+    reduction: "-34% from v5.1 (207)"
+    semantic: "28/28 original + 5 new PT behaviors"
+    complete_rewritten_text: yes
+
+  - file: "agent-common-protocol.md v2.0"
+    lines: 52
+    reduction: "-34% from v5.1 (79)"
+    semantic: "13/13 original + 2 new PT behaviors"
+    complete_rewritten_text: yes
+
+  - file: "researcher.md"
+    lines: 50
+    reduction: "-37% from v5.1 (79)"
+    complete_rewritten_text: yes
+
+  - file: "architect.md"
+    lines: 57
+    reduction: "-36% from v5.1 (89)"
+    complete_rewritten_text: yes
+
+  - file: "devils-advocate.md"
+    lines: 48
+    reduction: "-34% from v5.1 (73)"
+    complete_rewritten_text: yes
+
+  - file: "implementer.md"
+    lines: 70
+    reduction: "-39% from v5.1 (114)"
+    complete_rewritten_text: yes
+
+  - file: "tester.md"
+    lines: 60
+    reduction: "-33% from v5.1 (90)"
+    complete_rewritten_text: yes
+
+  - file: "integrator.md"
+    lines: 70
+    reduction: "-40% from v5.1 (116)"
+    complete_rewritten_text: yes
+
+  - file: "DIA v6.0 specification"
+    change: "Impact Map grounds verification questions and evidence"
+
+  - file: "Implementation task breakdown"
+    change: "4-task → 12-task split (10 from PT design + 2 agent .md)"
+
+line_count:
+  current_total: 847
+  v1_design_total: 525
+  v2_design_total: 543
+  reduction_from_current: "36%"
+  delta_from_v1: "+18 lines for PT + Impact Map"
+
+implementation:
+  total_tasks: 12
+  excluded: "T3 (task-api-guideline.md, separate terminal)"
+  max_concurrent: 2
+  rounds: 6
+  critical_path: "T2 → T4 → T5/T6/T7"
+
+risks:
+  preserved: [R-1, R-2, R-3, R-4, R-5]
+  new: [R-6, R-7, R-8, R-9]
+  critical: R-1 (semantic loss during conversion)
+
+output:
+  L1: "L1-index.yaml (this file)"
+  L2: "L2-summary.md"
+  L3: "L3-full/architecture-design-v2.md"

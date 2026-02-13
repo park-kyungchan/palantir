@@ -1,0 +1,74 @@
+---
+phase: 2
+role: researcher-1
+status: COMPLETE
+gc_version: GC-v1
+created: 2026-02-07
+---
+
+findings:
+  - id: D1-TEAM-MEMORY
+    domain: Team Memory (TEAM-MEMORY.md)
+    summary: "Section-per-role Edit tool 방식이 안전. Write는 전체 덮어쓰기 위험. Lead 큐레이션은 Gate 시점."
+    severity: HIGH
+    files:
+      - L3-full/domain-1-team-memory.md
+
+  - id: D1-CONCURRENCY
+    domain: Team Memory Concurrency
+    summary: "Edit(old_string)은 원자적 교체로 동시 쓰기 안전. Write는 전체 덮어쓰기로 동시 쓰기 위험. Section ownership이 핵심."
+    severity: HIGH
+    files:
+      - L3-full/domain-1-team-memory.md
+
+  - id: D2-CONTEXT-DELTA
+    domain: Context Delta Protocol
+    summary: "기존 GC 파일 50~190줄. Full injection은 ~1K-4K tokens. Delta 전송으로 50-80% 절감 가능."
+    severity: MEDIUM
+    files:
+      - L3-full/domain-2-context-delta.md
+
+  - id: D2-GC-SIZE
+    domain: GC File Size Measurement
+    summary: "ch001-ldap: 50줄, write-plan: 190줄, execution-pipeline: 177줄. Median ~130줄 = ~2.5K tokens."
+    severity: LOW
+    files:
+      - L3-full/domain-2-context-delta.md
+
+  - id: D3-HOOK-GC-VERIFY
+    domain: Hook GC Verification
+    summary: "SubagentStart는 spawn 차단 불가(exit 2 non-blocking). 대신 additionalContext로 GC version 주입 가능."
+    severity: CRITICAL
+    files:
+      - L3-full/domain-3-hook-gc-verification.md
+
+  - id: D3-NEW-HOOKS
+    domain: New Hook Events (TeammateIdle, TaskCompleted)
+    summary: "TeammateIdle(exit 2로 idle 차단) + TaskCompleted(exit 2로 완료 차단) 활용 가능. 기존 hooks에 미반영."
+    severity: MEDIUM
+    files:
+      - L3-full/domain-3-hook-gc-verification.md
+
+decisions:
+  - id: RD-1
+    decision: "Team Memory는 Edit tool + section-per-role 방식 권장"
+    rationale: "Edit의 old_string 기반 교체는 원자적이며 다른 섹션에 영향 없음"
+
+  - id: RD-2
+    decision: "Context Delta는 inline [CONTEXT-UPDATE] 메시지 내 diff 포맷 사용"
+    rationale: "별도 파일 불필요. SendMessage로 delta 전달, full fallback 조건 명시."
+
+  - id: RD-3
+    decision: "SubagentStart hook은 차단 대신 additionalContext 주입으로 GC 검증"
+    rationale: "공식 문서 확인: SubagentStart exit 2는 non-blocking. additionalContext가 유일한 메커니즘."
+
+  - id: RD-4
+    decision: "TeammateIdle + TaskCompleted hooks를 DIA v4.0에 추가"
+    rationale: "이 두 hook은 exit 2로 차단 가능. DIA 품질 게이트로 활용."
+
+unresolved: []
+
+mcp_tools_used:
+  - tavily: 3 searches (hooks schema, exit code 2, agent teams)
+  - web_fetch: 3 fetches (hooks reference, agent teams docs, gist schemas)
+  - web_search: 2 additional searches (Edit concurrency, additionalContext)

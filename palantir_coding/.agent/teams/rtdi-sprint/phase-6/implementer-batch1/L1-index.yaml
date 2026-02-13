@@ -1,0 +1,42 @@
+---
+phase: 6
+role: implementer-batch1
+task: Enrich ontology_1, 2, 3 with palantir/docs/ content
+gc_version: GC-v7
+status: complete
+---
+
+files:
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_1.md
+    scope: ObjectType, Property, SharedProperty
+    sources:
+      - park-kyungchan/palantir/docs/Ontology.md (lines 82-107)
+    changes:
+      - "Added section 7a: code_pattern_identification for ObjectType (6 rules: @Entity, Aggregate Root, unique ID class, DB table, Value Object, Enum)"
+      - "UI Metadata already present from predecessor (lines 172-253) — no changes needed"
+    status: complete
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_2.md
+    scope: LinkType, Interface
+    sources:
+      - park-kyungchan/palantir/docs/Ontology.md (lines 478-521, 570-596)
+    changes:
+      - "Added 3 LinkType anti-patterns: LT_ANTI_006 (Cross-Ontology Links), LT_ANTI_007 (FK Without Formal LinkType), LT_ANTI_008 (M:N Without Backing Dataset)"
+      - "Added LinkType code_pattern_identification section (4 ORM annotation patterns + relationship semantics)"
+      - "Added Interface code_pattern_identification section (4 patterns + decision_matrix: when to use Interface vs direct properties)"
+    status: complete
+
+  - path: park-kyungchan/palantir/Ontology-Definition/docs/palantir_ontology_3.md
+    scope: ActionType, Function, Rule_Constraint
+    sources:
+      - park-kyungchan/palantir/docs/Ontology.md (lines 694-718, 2835-2896)
+    changes:
+      - "Added section 1.9: ActionType code_pattern_identification (6 patterns: Command/execute, CRUD, Transaction, Validation, Notifications, Webhooks)"
+      - "Added section 1.10: AIP Logic Block Types (6 blocks: Use LLM, Apply Action, Execute Function, Conditionals, Loops, Create Variable) + 4 LLM tool types (Apply Actions, Call Function, Query Objects, Calculator) + composition pattern example"
+    status: complete
+
+decisions:
+  - "ontology_1.md UI Metadata already added by predecessor — only added code_pattern_identification"
+  - "Inserted new sections between existing anti_patterns and integration_points sections to match source ordering"
+  - "Used > Source: citation format for traceability"
+unresolved: []

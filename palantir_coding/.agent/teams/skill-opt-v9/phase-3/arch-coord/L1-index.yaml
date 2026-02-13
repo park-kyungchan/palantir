@@ -1,0 +1,68 @@
+agent: architecture-coordinator
+phase: P3
+status: complete
+timestamp: 2026-02-12T01:30:00Z
+
+workers:
+  - name: "structure-architect-1"
+    status: complete
+    findings_count: 130
+    items: ["#1 (2 template variants)", "#5 (coordinator convergence)", "#6 (per-skill delta)"]
+    key_decisions: ["ADR-S1 (2 templates)", "ADR-S2 (Template B convergence)", "ADR-S3 (memory:project)", "ADR-S4 (skills preload DEFER)", "ADR-S5 (shared rsil-agent)", "ADR-S6 (Interface Section NEW)", "ADR-S7 (Phase 0 in fork)", "ADR-S8 (inline cross-cutting for fork)"]
+  - name: "interface-architect-1"
+    status: complete
+    findings_count: 8
+    items: ["#2 (PT-centric interface contract)", "#4 (CLAUDE.md §10 modification)"]
+    key_decisions: ["C-1 (PT Read/Write)", "C-2 (L2 Handoff Chain)", "C-3 (GC Scratch-Only)", "C-4 (Fork-to-PT Direct)", "C-5 (§10 Exception)"]
+  - name: "risk-architect-1"
+    status: complete
+    findings_count: 11
+    items: ["#3 (3 fork agent designs)", "Open Questions", "Risk Register"]
+    key_decisions: ["OQ-1 (fork spawning YES 85%)", "OQ-2 (2 variants)", "OQ-3 (GC eliminate v9.0)"]
+
+architecture_decisions:
+  structural:
+    - "ADR-S1: 2 skill template variants (coordinator-based + fork-based)"
+    - "ADR-S2: Template B convergence for all 8 coordinators"
+    - "ADR-S3: memory: project for all coordinators"
+    - "ADR-S4: Skills preload DEFERRED (YAGNI)"
+    - "ADR-S5: Shared rsil-agent for rsil-global + rsil-review"
+    - "ADR-S6: Interface Section (C) NEW for all 9 skills"
+    - "ADR-S7: Phase 0 PT Check retained in fork skills"
+    - "ADR-S8: Cross-cutting inline for fork (no CLAUDE.md 1-liners)"
+  interface:
+    - "C-1: PT-centric Read/Write contract (N:1, all skills share one PT)"
+    - "C-2: L2 Downstream Handoff chain (replaces 9 GC sections)"
+    - "C-3: GC scratch-only (3 concerns: metrics, gate records, version marker)"
+    - "C-4: Fork-to-PT Direct (TaskGet/TaskUpdate from fork)"
+    - "C-5: §10 exception (3 named fork agents, frontmatter-enforced)"
+  risk:
+    - "9-item risk register (RISK-1 through RISK-9)"
+    - "OQ-1: Fork spawning YES (85% confidence, pre-deploy validation)"
+    - "OQ-2: 2 template variants confirmed"
+    - "OQ-3: GC elimination in v9.0"
+    - "Phased validation: A→B→C→D within Big Bang"
+
+cross_lens_conflicts:
+  - id: CLC-1
+    description: "pt-manager SendMessage tool — interface says no team context, risk included it"
+    resolution: "REMOVE SendMessage from pt-manager. Lead relays notifications. RISK-9 eliminated."
+
+artifacts:
+  - "structure-architect-1/L1-index.yaml, L2-summary.md, L3-full/structure-design.md"
+  - "interface-architect-1/L1-index.yaml, L2-summary.md, L3-full/interface-design.md"
+  - "risk-architect-1/L1-index.yaml, L2-summary.md, L3-full/risk-design.md"
+  - "arch-coord/L2-summary.md (this consolidated report)"
+
+evidence_count: 149
+pt_goal_links:
+  - "D-6 (Precision Refocus 4-section)"
+  - "D-7 (PT-centric Interface)"
+  - "D-8 (Big Bang deployment)"
+  - "D-9 (4 skills → context:fork)"
+  - "D-10 (CLAUDE.md §10 modification)"
+  - "D-11 (3 new fork agent .md)"
+  - "D-12 (Lean PT pointers)"
+  - "D-13 (Coordinator Template B convergence)"
+  - "D-14 (GC 14→3 reduction)"
+  - "D-15 (Custom agents in fork FEASIBLE)"

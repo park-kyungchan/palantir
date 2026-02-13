@@ -1,0 +1,115 @@
+phase: 6
+result: APPROVED
+date: 2026-02-08
+feature: opus46-nlp-conversion
+
+per_task:
+  - task_id: T1
+    subject: "CREATE permanent-tasks/SKILL.md"
+    implementer: implementer-1
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 250
+
+  - task_id: T2
+    subject: "MODIFY CLAUDE.md — NLP v6.0 + C-2.2"
+    implementer: implementer-2
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 171
+
+  - task_id: T4
+    subject: "MODIFY agent-common-protocol.md — NLP v2.0"
+    implementer: implementer-1
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 82
+
+  - task_id: T8
+    subject: "MODIFY on-subagent-start.sh — GC→PT injection"
+    implementer: implementer-2
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 67
+
+  - task_id: T11
+    subject: "MODIFY researcher.md + architect.md + devils-advocate.md — NLP v2.0"
+    implementer: implementer-1
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    files: [researcher.md (62), architect.md (73), devils-advocate.md (72)]
+
+  - task_id: T12
+    subject: "MODIFY implementer.md + tester.md + integrator.md — NLP v2.0"
+    implementer: implementer-2
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    files: [implementer.md (79), tester.md (76), integrator.md (80)]
+
+  - task_id: T5
+    subject: "MODIFY brainstorming-pipeline/SKILL.md — Phase 0 + NLP"
+    implementer: implementer-1
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 509
+
+  - task_id: T6
+    subject: "MODIFY agent-teams-write-plan/SKILL.md — Phase 0 + NLP"
+    implementer: implementer-2
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 316
+
+  - task_id: T7
+    subject: "MODIFY agent-teams-execution-plan/SKILL.md — Phase 0 + NLP"
+    implementer: implementer-1
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 572
+
+  - task_id: T9
+    subject: "MODIFY MEMORY.md — v6.0 state update"
+    implementer: implementer-2
+    spec_review: PASS
+    quality_review: PASS
+    self_test: PASS
+    file_ownership: COMPLIANT
+    lines: 82
+
+cross_task:
+  interface_consistency: PASS
+  unresolved_issues: NONE
+  final_review: SKIPPED (mechanical conversion, consistent verification across all rounds)
+  protocol_marker_check: "0 matches in 13 modified files (Grep verified)"
+
+gate_criteria:
+  G6-1: PASS
+  G6-2: PASS
+  G6-3: PASS
+  G6-4: PASS
+  G6-5: PASS
+  G6-6: PASS
+  G6-7: PASS
+
+notes:
+  - "T10 (ARCHIVE.md) handled as Lead administrative task in Clean Termination"
+  - "T3 excluded per original plan (task-api-guideline.md not in NLP scope)"
+  - "Total 2,409 lines across 13 files, 0 protocol markers remaining"

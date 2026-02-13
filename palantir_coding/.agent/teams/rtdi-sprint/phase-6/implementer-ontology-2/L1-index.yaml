@@ -1,0 +1,93 @@
+---
+phase: 6
+agent: implementer-ontology-2
+status: COMPLETE
+gc_version: GC-v5
+task: "Refine Palantir docs to Ontology decomposition reference quality"
+last_updated: "2026-02-08"
+completion_date: "2026-02-08"
+
+files_to_modify:
+  - path: park-kyungchan/palantir/docs/Ontology.md
+    current_version: "3.0"
+    target_version: "4.0"
+    changes:
+      - type: ADD_SECTION
+        section: "20. Ontology Decomposition Guide"
+        description: "Step-by-step LLM-driven codebase → Ontology mapping methodology"
+        priority: 1
+      - type: ENHANCE
+        section: "Ontology Manager UI Metadata"
+        description: "Render hints, title key config, icon, search config"
+        priority: 3
+
+  - path: park-kyungchan/palantir/docs/Security_and_Governance.md
+    current_version: "2.0"
+    target_version: "3.0"
+    changes:
+      - type: ADD_SECTION
+        section: "Granular Policies"
+        description: "Property-level policies, column-level security, policy templates"
+        priority: 2
+
+  - path: park-kyungchan/palantir/docs/OSDK_Reference.md
+    current_version: "2.0"
+    target_version: "2.1"
+    changes:
+      - type: VERIFY_CURRENCY
+        description: "Check OSDK 2025-2026 updates via tavily/context7"
+        priority: 4
+      - type: UPDATE_CROSS_REFS
+        description: "Add references to new decomposition guide"
+        priority: 5
+
+  - path: park-kyungchan/palantir/docs/ObjectType_Reference.md
+    current_version: "1.0"
+    target_version: "1.1"
+    changes:
+      - type: UPDATE_CROSS_REFS
+        description: "Add references to decomposition guide"
+        priority: 5
+
+scope_correction_applied: true
+scope_correction_detail: "GC-v3/v4: Do NOT add content that already exists. searchAround, groupBy, 3D aggregations, AIP Logic, Funnel already documented."
+
+true_gaps:
+  - id: GAP-1
+    title: "Ontology Decomposition Guide"
+    priority: PRIMARY
+    target_file: Ontology.md
+  - id: GAP-2
+    title: "Granular Policies"
+    priority: SECONDARY
+    target_file: Security_and_Governance.md
+  - id: GAP-3
+    title: "Ontology Manager UI Metadata"
+    priority: TERTIARY
+    target_file: Ontology.md
+  - id: GAP-4
+    title: "OSDK 2025-2026 Currency"
+    priority: QUATERNARY
+    target_file: OSDK_Reference.md
+  - id: GAP-5
+    title: "Cross-reference Updates"
+    priority: FINAL
+    target_file: all
+
+completed_changes:
+  - "GAP-1: Section 20 Ontology Decomposition Guide added to Ontology.md (8 phases, decision trees, YAML templates)"
+  - "GAP-2: Section 10 Object/Property Security Policies added to Security_and_Governance.md (from tavily research)"
+  - "GAP-2 ENHANCED: Added 8 comparison types (Equal/Intersects/Subset/Superset/LT/GT/LTE/GTE), user attribute types, weight formula (collection=1000, total<10000)"
+  - "GAP-3: Ontology Manager UI Metadata subsection added to Section 1 of Ontology.md"
+  - "GAP-3 ENHANCED: Replaced generic render hints with official 8 types + dependency chain (Searchable→Selectable/Sortable/Low cardinality)"
+  - "GAP-4: OSDK 2025-2026 Updates section added to OSDK_Reference.md (TS v2, Python v2, MCP, Platform SDKs)"
+  - "GAP-4 ENHANCED: Added Python Functions GA (OSDK first-class, Lightweight Functions), TS v2 runtime specs (5GB/8CPU), Ontology MCP Jan 2026"
+  - "GAP-5: Cross-references updated across all 4 docs (version bumps, bidirectional links)"
+  - "NEW: AIP Logic Block Types added to Ontology.md Section 17 (6 block types, 4 LLM tool types, composition pattern)"
+decisions:
+  - "Granular Policies content sourced from tavily + researcher-ontology Phase 2 findings"
+  - "OSDK updates sourced from Palantir release notes 2025, GitHub osdk-ts, researcher-ontology findings"
+  - "Decomposition Guide structured as 8 phases matching typical software analysis workflow"
+  - "No duplicate content added per GC-v3/v4 scope correction"
+  - "GC-v5 enhancement pass: integrated researcher-ontology 12 findings into existing implementations"
+unresolved: []

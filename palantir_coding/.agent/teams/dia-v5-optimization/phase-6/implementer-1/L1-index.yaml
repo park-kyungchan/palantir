@@ -1,0 +1,51 @@
+---
+phase: 6
+role: implementer-1
+task: DIA v5.0 measured language rewrite
+status: COMPLETE
+---
+
+files_modified:
+  - path: .claude/CLAUDE.md
+    action: rewrite
+    description: Version 4.0 → 5.0 measured language transformation
+    changes:
+      - Bumped version header to 5.0
+      - Removed all inline [MANDATORY] tags, replaced with natural phrasing
+      - Removed inline [PERMANENT] from body text (kept at section header level)
+      - Replaced [FORBIDDEN] with "never" / "do not"
+      - Replaced NEVER (ALL CAPS) with "never" (lowercase)
+      - Replaced EVERY (ALL CAPS) with "every" (lowercase)
+      - Replaced BEFORE (ALL CAPS) with "before" (lowercase)
+      - Replaced "FORBIDDEN" in bold with natural prohibitions
+      - Replaced "Mandatory" in MCP table with "Required"
+      - Section title "Mandatory Usage" → "Required Usage"
+      - Converted "WHY:" labels to natural explanations
+      - Simplified verbose compliance phrases throughout
+      - Preserved all tables, code blocks, protocol formats, section numbering
+
+  - path: .claude/references/task-api-guideline.md
+    action: rewrite
+    description: Version 4.0 → 5.0 measured language transformation
+    changes:
+      - Bumped version header to 5.0, updated date to 2026-02-08
+      - Removed [PERMANENT] from title and inline text
+      - Replaced "ABSOLUTE" with natural phrasing
+      - Replaced "FORBIDDEN" with "Blocked" / "never allowed"
+      - Replaced "MUST" (ALL CAPS) with "must" (lowercase)
+      - Replaced "BEFORE" / "EVERY" / "ALWAYS" (ALL CAPS) with lowercase
+      - Replaced "[REQUIRED]" tag with natural instruction
+      - Replaced "WHY:" labels with natural explanations
+      - Replaced "OWNERSHIP NOTE" with "Ownership"
+      - Simplified §1 heading from "Mandatory Pre-Call Protocol" to "Pre-Call Protocol"
+      - Simplified §6 heading removed [PERMANENT] tag
+      - Converted ALL PASS → "All pass" in verification flow
+      - Preserved all tables, code blocks, YAML examples, protocol templates
+
+decisions:
+  - Kept [PERMANENT] only at the top-level DIA section header in CLAUDE.md (per instruction)
+  - Protocol format strings (e.g., [DIRECTIVE], [IMPACT-ANALYSIS]) left unchanged — these are identifiers, not emphasis
+  - Table cell content like "FORBIDDEN" converted to "Blocked" for consistency
+  - "Mandatory" → "Required" in MCP tools table for consistency with measured tone
+
+unresolved: []

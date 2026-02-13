@@ -1,0 +1,82 @@
+implementer: implementer-1
+assignment: Foundation + Ingest + Storage (T-1, T-2, T-3)
+status: COMPLETE
+pt_version: v3
+plan_deviations:
+  - id: DEV-1
+    description: "pyproject.toml build-backend changed from setuptools.backends._legacy:_Backend to setuptools.build_meta"
+    reason: "Original backend module does not exist in setuptools"
+  - id: DEV-2
+    description: "MCP server pattern changed from low-level Server to FastMCP"
+    reason: "Lead-approved — FastMCP is officially recommended, simpler API"
+
+files_created:
+  - path: cow/cow-mcp/pyproject.toml
+    task: T-1
+    description: "Package config with all dependencies from §9"
+  - path: cow/cow-mcp/cow_mcp/__init__.py
+    task: T-1
+    description: "Package root with version"
+  - path: cow/cow-mcp/cow_mcp/models/__init__.py
+    task: T-1
+    description: "Re-exports all 22 model classes"
+  - path: cow/cow-mcp/cow_mcp/models/common.py
+    task: T-1
+    description: "BBox, Dimensions, SessionInfo, RegionSource"
+  - path: cow/cow-mcp/cow_mcp/models/ingest.py
+    task: T-1
+    description: "IngestResult"
+  - path: cow/cow-mcp/cow_mcp/models/ocr.py
+    task: T-1
+    description: "OcrResult, MathElement, OcrRegion, Diagram"
+  - path: cow/cow-mcp/cow_mcp/models/vision.py
+    task: T-1
+    description: "VisionResult, DiagramElement, DiagramInternals, SpatialRelation, LayoutAnalysis, CombinedRegion"
+  - path: cow/cow-mcp/cow_mcp/models/verify.py
+    task: T-1
+    description: "VerificationResult, OcrCorrection, MathError, LogicIssue"
+  - path: cow/cow-mcp/cow_mcp/models/compose.py
+    task: T-1
+    description: "CompositionResult, EditAction, DocumentMetadata"
+  - path: cow/cow-mcp/cow_mcp/models/export.py
+    task: T-1
+    description: "ExportResult, LatexSource"
+  - path: cow/cow-mcp/cow_mcp/ingest/__init__.py
+    task: T-2
+    description: "Package marker"
+  - path: cow/cow-mcp/cow_mcp/ingest/__main__.py
+    task: T-2
+    description: "FastMCP server with cow_validate_image, cow_validate_pdf tools"
+  - path: cow/cow-mcp/cow_mcp/ingest/validator.py
+    task: T-2
+    description: "Image/PDF validation and normalization logic"
+  - path: cow/cow-mcp/cow_mcp/storage/__init__.py
+    task: T-3
+    description: "Package marker"
+  - path: cow/cow-mcp/cow_mcp/storage/__main__.py
+    task: T-3
+    description: "FastMCP server with cow_save_result, cow_load_result, cow_list_sessions, cow_create_session tools"
+  - path: cow/cow-mcp/cow_mcp/storage/filesystem.py
+    task: T-3
+    description: "SessionStorage class with save/load/list/create operations"
+
+self_test_results:
+  T-1:
+    - "AC-0 PASS: pip install -e . succeeded (mcp 1.26.0, pydantic 2.12.5)"
+    - "AC-1 PASS: All models importable from cow_mcp.models"
+    - "AC-2 PASS: Type annotations match plan §5.1-§5.7"
+    - "AC-3 PASS: BBox, Dimensions, SessionInfo, RegionSource exported"
+    - "AC-4 PASS: JSON round-trip for all 8 model types"
+    - "MCP SDK: FastMCP import and instantiation verified"
+  T-2:
+    - "AC-0 PASS: Server starts via python -m cow_mcp.ingest (stdio)"
+    - "AC-1 PASS: validate_image returns IngestResult for PNG"
+    - "AC-2 PASS: validate_pdf returns IngestResult, rejects 3-page PDF"
+    - "AC-3 PASS: Invalid formats and missing files produce structured errors"
+    - "AC-4 PASS: Image normalization resizes 6000x4000 to 4000x2666"
+  T-3:
+    - "AC-0 PASS: Server starts via python -m cow_mcp.storage (stdio)"
+    - "AC-1 PASS: save_result saves JSON to session directory"
+    - "AC-2 PASS: load_result returns data or None"
+    - "AC-3 PASS: list_sessions returns all sessions"
+    - "AC-4 PASS: Directory creation idempotent, overwrite works"

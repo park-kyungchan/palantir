@@ -1,0 +1,50 @@
+agent: execution-coordinator
+phase: P6
+status: in_progress
+timestamp: 2026-02-12T00:00:00Z
+
+tasks:
+  task_d:
+    id: "#1"
+    owner: infra-d
+    status: pending
+    spec_review: pending
+    code_review: pending
+    contract_review: pending
+  task_a1:
+    id: "#2"
+    owner: impl-a1
+    status: pending
+    spec_review: pending
+    code_review: pending
+    contract_review: pending
+  task_a2:
+    id: "#3"
+    owner: impl-a2
+    status: pending
+    spec_review: pending
+    code_review: pending
+    contract_review: pending
+  task_b:
+    id: "#4"
+    owner: impl-b
+    status: pending
+    spec_review: pending
+    code_review: pending
+    contract_review: pending
+  task_c:
+    id: "#5"
+    owner: infra-c
+    status: pending
+    spec_review: pending
+    code_review: pending
+    contract_review: pending
+  task_v:
+    id: "#6"
+    owner: verifier
+    status: blocked
+    blocked_by: ["#1", "#2", "#3", "#4", "#5"]
+
+evidence_count: 0
+pt_goal_links:
+  - "PT-v2 (Skill Optimization v9.0)"

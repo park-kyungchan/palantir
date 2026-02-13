@@ -1,0 +1,40 @@
+agent: codebase-researcher
+phase: P2
+status: complete
+timestamp: 2026-02-12T00:00:00Z
+
+domains:
+  D1: "GC consumed by all 5 downstream skills — primarily as phase status tracker and session discovery mechanism. 3 roles: (1) Phase completion gating, (2) Artifact index/session discovery, (3) Rich context carrier (scope, research, architecture). PT can substitute for roles 1+2 but NOT role 3."
+  D2: "/permanent-tasks is standalone, takes $ARGUMENTS + conversation context, produces TaskCreate with 5-section template. No Phase-0-specific dependency — can be invoked at Gate 1 without modification."
+  D3: "Hook reads ONLY version: frontmatter field from GC. Already has PT fallback path built in (lines 67-74). No modification needed regardless of GC simplification or removal."
+
+gc_fields_consumed:
+  - "version (frontmatter) — all skills via Dynamic Context ls, hook via grep"
+  - "Phase Pipeline Status — all 5 skills (phase completion gating)"
+  - "Scope — write-plan (V-3), validation (V-4)"
+  - "Component Map / Interface Contracts — write-plan (V-3)"
+  - "Research Findings — write-plan (GC-v3 embedding in directive)"
+  - "Architecture Summary + Decisions — write-plan (GC-v3 embedding)"
+  - "Phase 4 Entry Requirements — write-plan (GC-v3)"
+  - "Implementation task breakdown — validation (V-4)"
+  - "Constraints — execution (code-reviewer template)"
+  - "Phase 7/9 Entry Conditions — verification, delivery"
+
+gc_roles:
+  phase_gating: "All 5 skills check Phase N: COMPLETE in GC"
+  session_discovery: "4 of 5 skills use ls .agent/teams/*/global-context.md in Dynamic Context"
+  context_carrier: "write-plan embeds full GC-v3 in architect directive; validation checks GC-v4 content sections"
+
+pt_substitutable: false
+pt_substitutable_detail: "PT can replace phase gating (Phase Status section) and partial context (Impact Map, Decisions, Constraints). But PT lacks Phase 1-3 rich outputs: Scope Statement, Research Findings, Architecture Summary, Component Map, Interface Contracts, Phase 4 Entry Requirements. These are currently in GC, written by brainstorming-pipeline at Gates 1/2/3."
+
+hook_modification_needed: false
+hook_modification_detail: "Hook reads only version: frontmatter (line 55). PT fallback already exists (lines 67-74). If GC simplified to artifact index with version: field, hook works unchanged. If GC removed entirely, PT path activates automatically."
+
+hook_downstream_effect: "PURELY INFORMATIONAL — zero parsers. The injected 'Current GC: GC-v{N}' string is not referenced by any agent .md (43 files), skill .md (10 files), reference .md, or CLAUDE.md. The 'Verify your injected context version matches' instruction is an ungrounded LLM soft cue with no defined verification protocol."
+
+evidence_count: 42
+pt_goal_links:
+  - "R-1 (GC simplification feasibility)"
+  - "R-2 (PT creation timing)"
+  - "R-3 (Hook impact assessment)"

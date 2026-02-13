@@ -1,0 +1,140 @@
+---
+phase: 2
+agent: researcher-ontology
+status: COMPLETE
+gc_version: GC-v4
+impact_analysis: PRE-VERIFIED (predecessor passed, RESPAWN skip)
+last_updated: "2026-02-08T01:30:00Z"
+research_method: WebSearch + WebFetch (7 searches, 8 fetches)
+mcp_note: "tavily/context7/sequential-thinking unavailable in session; WebSearch/WebFetch used as fallback"
+
+findings:
+  - id: F-001
+    topic: "Granular Policies — Comparison Types & User Attributes"
+    priority: HIGH
+    status: COMPLETE
+    target_doc: Security_and_Governance.md
+    action: ADD_NEW_SECTION
+    summary: "8 comparison types (Equal, Intersects, Subset of, Superset of, LT, GT, LTE, GTE). User attributes: string, multivalue string, numeric. Weight limits: max 10 comparisons, collection-to-field weight 1000, total < 10000."
+
+  - id: F-002
+    topic: "Granular Policies — Object & Property Security Policies"
+    priority: HIGH
+    status: COMPLETE
+    target_doc: Security_and_Governance.md
+    action: ADD_NEW_SECTION
+    summary: "Object Security Policies = row-level filtering. Property Security Policies = column-level + cell-level. Together they provide fine-grained access control beyond markings/CBAC. Policies reference user attributes for dynamic evaluation."
+
+  - id: F-003
+    topic: "Render Hints — 8 Types with Dependency Chain"
+    priority: HIGH
+    status: COMPLETE
+    target_doc: Ontology.md
+    action: ADD_NEW_SUBSECTION
+    summary: "8 render hints: Disable formatting, Identifier, Keywords, Long text, Low cardinality, Selectable, Sortable, Searchable. Dependency: Searchable is prerequisite for Selectable, Sortable, Low cardinality."
+
+  - id: F-004
+    topic: "Ontology Manager UI Metadata — Icon, Color, Title Key, Search Config"
+    priority: MEDIUM
+    status: COMPLETE
+    target_doc: Ontology.md
+    action: ADD_NEW_SUBSECTION
+    summary: "ObjectType UI config: icon (BlueprintIcon enum), color, titleProperty, descriptionProperty, searchConfiguration (searchable properties, fuzzy match). Configured via Ontology Manager or Ontology SDK."
+
+  - id: F-005
+    topic: "Python OSDK 2.x GA (July 2025)"
+    priority: HIGH
+    status: COMPLETE
+    target_doc: OSDK_Reference.md
+    action: UPDATE_SECTION
+    summary: "Python OSDK 2.x went GA July 2025. New features: derived properties (beta), media sets (beta), new query syntax. Breaking changes from 1.x require migration."
+
+  - id: F-006
+    topic: "TypeScript SDK v2 Functions GA (July 2025)"
+    priority: HIGH
+    status: COMPLETE
+    target_doc: OSDK_Reference.md
+    action: UPDATE_SECTION
+    summary: "TS v2 Functions GA July 2025. Full Node.js runtime (not V8 isolate). 5GB memory, 8 CPUs. OSDK-native with full API access. Streaming support."
+
+  - id: F-007
+    topic: "Python Functions GA (July 2025)"
+    priority: HIGH
+    status: COMPLETE
+    target_doc: OSDK_Reference.md
+    action: ADD_NEW_SUBSECTION
+    summary: "Python Functions went GA July 2025. OSDK first-class citizen. External API access via functions.sources. Lightweight Functions for simple transforms. Resource configuration (memory, CPU)."
+
+  - id: F-008
+    topic: "AIP Logic — Block Types & LLM Tool Types"
+    priority: MEDIUM
+    status: COMPLETE
+    target_doc: Ontology.md
+    action: ENHANCE_EXISTING
+    summary: "6 block types: Use LLM, Apply Action, Execute Function, Conditionals, Loops, Create Variable. 4 LLM tool types: Apply Actions, Call Function, Query Objects, Calculator. Existing AIP section needs block type enumeration."
+
+  - id: F-009
+    topic: "Ontology MCP (January 2026)"
+    priority: MEDIUM
+    status: COMPLETE
+    target_doc: OSDK_Reference.md
+    action: ADD_NEW_SECTION
+    summary: "Model Context Protocol integration announced Jan 2026. Exposes Dev Console applications as MCP tools for external AI agents. Bridges Foundry Ontology with Claude, GPT, etc."
+
+  - id: F-010
+    topic: "Ontology Decomposition Guide"
+    priority: LOW
+    status: COMPLETE_PARTIAL
+    target_doc: Ontology.md
+    action: NO_CHANGE
+    summary: "No official Palantir methodology for mapping source code/data models to Ontology. Existing Decision Matrix in Ontology.md already covers this adequately. No content addition needed."
+
+  - id: F-011
+    topic: "Depth Enhancement — Writeback Dataset Patterns"
+    priority: LOW
+    status: COMPLETE
+    target_doc: Ontology.md
+    action: ENHANCE_EXISTING
+    summary: "Writeback dataset patterns (Writeback Dataset vs Direct Edit mode), conflict resolution strategies, and sync patterns could be enhanced in existing Writeback section."
+
+  - id: F-012
+    topic: "Depth Enhancement — Rules Engine Patterns"
+    priority: LOW
+    status: COMPLETE
+    target_doc: Ontology.md
+    action: ENHANCE_EXISTING
+    summary: "Rules Engine section could benefit from more pattern examples: cascading rules, priority ordering, rule conflict resolution, and monitoring/alerting integration."
+
+cross_impact_map:
+  Security_and_Governance.md:
+    - F-001  # Granular Policies comparison types
+    - F-002  # Object/Property Security Policies
+  Ontology.md:
+    - F-003  # Render Hints
+    - F-004  # UI Metadata
+    - F-008  # AIP Logic block types
+    - F-010  # Decomposition Guide (no change)
+    - F-011  # Writeback enhancement
+    - F-012  # Rules Engine enhancement
+  OSDK_Reference.md:
+    - F-005  # Python OSDK 2.x
+    - F-006  # TS v2 Functions
+    - F-007  # Python Functions
+    - F-009  # Ontology MCP
+  ObjectType_Reference.md: []  # No changes needed
+
+mcp_tools_usage:
+  sequential_thinking: "UNAVAILABLE — used inline reasoning instead"
+  tavily: "UNAVAILABLE — used WebSearch (7 queries) as fallback"
+  context7: "UNAVAILABLE — used WebFetch on Palantir docs directly"
+  github: "Not needed for this research"
+
+unresolved:
+  - id: U-001
+    description: "Ontology MCP (F-009) announced Jan 2026 — may have limited public documentation"
+    severity: LOW
+    recommendation: "Monitor for GA release docs; current announcement-level info is sufficient for docs"
+  - id: U-002
+    description: "Python OSDK 2.x migration guide details not fully captured"
+    severity: LOW
+    recommendation: "Architect can decide depth of migration guidance in Phase 3/4"

@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "cow-ingest": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.ingest"],
+      "cwd": "cow/cow-mcp",
+      "env": {}
+    },
+    "cow-ocr": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.ocr"],
+      "cwd": "cow/cow-mcp",
+      "env": {
+        "MATHPIX_APP_ID": "kcpark_1463bc_952829",
+        "MATHPIX_APP_KEY": "c89149d2c80f6a6a96e812da4c07d10ba7f74316f26414825ffbb3ed588c34d9"
+      }
+    },
+    "cow-vision": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.vision"],
+      "cwd": "cow/cow-mcp",
+      "env": {
+        "GEMINI_API_KEY": "AIzaSyDsCOHjKD4zf-5EMK9500d5Ld0W_fgDsjo"
+      }
+    },
+    "cow-review": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.review"],
+      "cwd": "cow/cow-mcp",
+      "env": {}
+    },
+    "cow-export": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.export"],
+      "cwd": "cow/cow-mcp",
+      "env": {
+        "MATHPIX_APP_ID": "kcpark_1463bc_952829",
+        "MATHPIX_APP_KEY": "c89149d2c80f6a6a96e812da4c07d10ba7f74316f26414825ffbb3ed588c34d9"
+      }
+    },
+    "cow-storage": {
+      "command": "python",
+      "args": ["-m", "cow_mcp.storage"],
+      "cwd": "cow/cow-mcp",
+      "env": {}
+    }
+  }
+}

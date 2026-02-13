@@ -1,0 +1,105 @@
+# L1 Index — researcher-2: /rsil-review Improvements + Agent Memory Schema
+# Session: rsil-system | Phase: 2 | Date: 2026-02-09
+
+findings:
+  # Topic 1: /rsil-review Improvement Items
+  - id: IMP-1
+    topic: ultrathink-integration
+    priority: HIGH
+    action: ADD
+    target: SKILL.md
+    summary: "Add 'ultrathink' keyword to trigger extended thinking for R-0 synthesis"
+    line_ref: "Insert near line 237 (Phase R-0 header) or in Dynamic Context section"
+
+  - id: IMP-2
+    topic: three-tier-reading
+    priority: MEDIUM
+    action: MODIFY
+    target: SKILL.md lines 251-261
+    summary: "Optimize R-0 Step 1 reading — use !`shell` for target pre-reading in Dynamic Context"
+
+  - id: IMP-3
+    topic: agent-memory-integration
+    priority: HIGH
+    action: ADD
+    target: SKILL.md lines 476-483
+    summary: "Add agent memory read/write to R-4 — read cumulative patterns at R-0, update at R-4"
+
+  - id: IMP-4
+    topic: nl-refinement
+    priority: MEDIUM
+    action: MODIFY
+    target: SKILL.md (multiple sections)
+    summary: "Remove redundant formatting — Key Principles/Never sections overlap 60%"
+
+  - id: IMP-5
+    topic: dynamic-context-optimization
+    priority: LOW
+    action: MODIFY
+    target: SKILL.md lines 38-51
+    summary: "Current 7 shell commands are appropriate — add agent memory read as 8th"
+
+  - id: IMP-6
+    topic: structural-redundancy
+    priority: HIGH
+    action: REMOVE/MERGE
+    target: SKILL.md lines 537-561
+    summary: "Key Principles (11) + Never (10) = 21 items, 60% overlap. Merge into single section"
+
+  - id: IMP-7
+    topic: output-format-simplification
+    priority: MEDIUM
+    action: MODIFY
+    target: SKILL.md lines 201-231
+    summary: "Output format templates are overly prescriptive — convert to guidance"
+
+  - id: IMP-8
+    topic: r0-sequential-thinking-emphasis
+    priority: LOW
+    action: MODIFY
+    target: SKILL.md line 237-239
+    summary: "R-0 already mentions sequential-thinking — ultrathink covers deeper reasoning need"
+
+  - id: IMP-9
+    topic: error-handling-table
+    priority: LOW
+    action: KEEP
+    target: SKILL.md lines 522-534
+    summary: "Error handling table is well-structured and not redundant — keep as-is"
+
+  # Topic 2: Agent Memory Schema
+  - id: MEM-1
+    topic: memory-schema-design
+    priority: HIGH
+    action: CREATE
+    target: "~/.claude/agent-memory/rsil/MEMORY.md"
+    summary: "4-section schema: Config, Statistics, Patterns, Evolution — within 200-line limit"
+
+  - id: MEM-2
+    topic: separation-of-concerns
+    priority: HIGH
+    action: DESIGN
+    target: "memory interaction model"
+    summary: "agent-memory/rsil = patterns+stats | tracker = raw findings | main MEMORY = summary"
+
+  - id: MEM-3
+    topic: lens-performance-tracking
+    priority: MEDIUM
+    action: CREATE
+    target: "agent-memory/rsil/MEMORY.md §2"
+    summary: "Per-lens acceptance rate, findings count, pattern discovery count"
+
+net_delta:
+  add_lines: ~15
+  modify_lines: ~30
+  remove_lines: ~25
+  net_change: ~-10 (slight reduction from 561)
+
+evidence_sources:
+  - "code.claude.com/docs/en/skills (ultrathink in skills, dynamic context)"
+  - "code.claude.com/docs/en/memory (agent memory, 200-line limit)"
+  - "code.claude.com/docs/en/common-workflows (extended thinking)"
+  - "platform.claude.com/docs/en/build-with-claude/extended-thinking (adaptive thinking)"
+  - "SKILL.md structural analysis (561 lines, section-by-section)"
+  - "narrow-rsil-tracker.md (cumulative data: 24 findings, 79% acceptance)"
+  - "Existing agent-memory/ structure (6 role directories)"

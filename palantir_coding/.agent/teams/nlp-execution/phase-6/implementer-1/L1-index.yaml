@@ -1,0 +1,97 @@
+phase: 6
+role: implementer-1
+status: complete
+round: R1-R5
+
+tasks_completed:
+  - task: "T1: CREATE permanent-tasks/SKILL.md"
+    status: complete
+    file: .claude/skills/permanent-tasks/SKILL.md
+    action: CREATE
+    lines: 251
+
+  - task: "T4: MODIFY agent-common-protocol.md — NLP v2.0"
+    status: complete
+    file: .claude/references/agent-common-protocol.md
+    action: MODIFY (full replacement)
+    lines_before: 80
+    lines_after: 83
+
+  - task: "T11: MODIFY researcher.md + architect.md + devils-advocate.md — NLP v2.0"
+    status: complete
+    files:
+      - path: .claude/agents/researcher.md
+        action: MODIFY (body replacement, frontmatter preserved)
+        lines_before: 80
+        lines_after: 63
+      - path: .claude/agents/architect.md
+        action: MODIFY (body replacement, frontmatter preserved)
+        lines_before: 90
+        lines_after: 74
+      - path: .claude/agents/devils-advocate.md
+        action: MODIFY (body replacement, frontmatter preserved)
+        lines_before: 74
+        lines_after: 73
+
+  - task: "T5: MODIFY brainstorming-pipeline/SKILL.md — Phase 0 + NLP terminology"
+    status: complete
+    file: .claude/skills/brainstorming-pipeline/SKILL.md
+    action: MODIFY (incremental edits)
+    lines_before: 510
+    lines_after: 509
+
+  - task: "T7: MODIFY agent-teams-execution-plan/SKILL.md — Phase 0 + NLP terminology"
+    status: complete
+    file: .claude/skills/agent-teams-execution-plan/SKILL.md
+    action: MODIFY (incremental edits, 21 changes)
+    lines_before: 532
+    lines_after: 572
+    changes:
+      - "Added Phase 0: PERMANENT Task Check section before Phase 6.1"
+      - "Updated description: DIA v5.0 enforcement → understanding verification"
+      - "Updated core flow: added PT Check (Lead) as first step"
+      - "Phase 6.3 title: Adaptive Spawn + DIA → Adaptive Spawn + Verification"
+      - "Directive: 4 context layers → 5 (PT-ID first, GC-v4 second)"
+      - "DIA Flow → Understanding Verification (natural language, 2 probing questions)"
+      - "Removed Semantic Integrity Check from TaskCreate description"
+      - "Phase 6.5 monitoring: protocol markers → natural language"
+      - "Cross-boundary escalation: [CONTEXT-UPDATE] → send correction"
+      - "Clean Termination: added PT update step (PT-v{N+1})"
+      - "Output summary: added PT artifact reference + /permanent-tasks suggestion"
+      - "Compact recovery: added TaskGet self-recovery for implementers"
+      - "Key Principles: DIA delegated → Protocol delegated"
+      - "Never list: added Phase 0 skip prohibition"
+      - "All DIA/LDAP/TIER/CIP/DIAVP markers eliminated (0 Grep matches)"
+
+interface_contracts:
+  permanent_tasks_skill:
+    skill_name: "permanent-tasks"
+    search_pattern: "[PERMANENT]"
+    version_format: "PT-v{N}"
+
+  agent_common_protocol:
+    title: "Shared Protocol for All Teammates"
+    sections: 8
+
+  brainstorming_pipeline:
+    phase_0: "PERMANENT Task Check via TaskList + [PERMANENT] search"
+    directive_format: "PT-ID: {PERMANENT Task ID} | PT-v{N}"
+    verification_style: "NLP v6.0 (natural language)"
+
+  execution_pipeline:
+    phase_0: "Same Phase 0 pattern as brainstorming/write-plan"
+    directive_layers: 5
+    directive_format: "PT-ID first, GC-v4 second, task-context, review, plan path"
+    verification: "2 probing questions (interconnections, failure modes, dependency risks)"
+
+self_review:
+  T1: PASS
+  T4: PASS
+  T11: PASS
+  T5: PASS
+  T7_phase_0_added: PASS
+  T7_nlp_terminology: PASS
+  T7_no_protocol_markers: PASS
+  T7_directive_pt_id: PASS
+  T7_gc_refs_preserved: PASS
+  T7_pt_update_in_termination: PASS

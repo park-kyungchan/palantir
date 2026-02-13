@@ -1,0 +1,57 @@
+agent: structure-architect-1
+phase: P3
+status: complete
+timestamp: 2026-02-12T00:00:00Z
+
+items_designed:
+  - id: item-1
+    name: "2 Skill Template Variants"
+    components:
+      - coordinator-based-template (5 Pipeline Core skills)
+      - fork-based-template (4 Lead-Only+RSIL skills)
+  - id: item-5
+    name: "Coordinator .md Convergence"
+    components:
+      - unified-frontmatter-schema (25 gaps filled)
+      - unified-body-structure (5 sections)
+      - reduction: "768L → 402L (-48%, -366L)"
+  - id: item-6
+    name: "Per-Skill Delta from Template"
+    components:
+      - 5 coordinator-based skills classified
+      - 4 fork-based skills classified
+      - per-skill unique/shared/new breakdown
+
+decisions:
+  - id: ADR-S1
+    summary: "2 templates, not 3"
+    rationale: "Fork complexity varies in content, not structure"
+  - id: ADR-S2
+    summary: "Template B convergence, execution-coordinator extended"
+    rationale: "45L unique review dispatch logic justified inline"
+  - id: ADR-S3
+    summary: "memory: project for all 8 coordinators"
+    rationale: "Project-scoped learning > user-scoped"
+  - id: ADR-S4
+    summary: "Skills preload DEFERRED"
+    rationale: "Token cost unfavorable; Dynamic Context better"
+  - id: ADR-S5
+    summary: "Shared rsil-agent for both RSIL skills"
+    rationale: "Same tools; skill body differentiates behavior"
+  - id: ADR-S6
+    summary: "Interface Section (C) NEW for all 9 skills"
+    rationale: "D-7 PT-centric interface needs structural home"
+  - id: ADR-S7
+    summary: "Phase 0 stays in fork skills"
+    rationale: "Fork agent needs PT context"
+  - id: ADR-S8
+    summary: "Cross-Cutting 1-liners for coordinator-based only"
+    rationale: "Fork keeps inline (no CLAUDE.md in fork context)"
+
+evidence_count: 130
+pt_goal_links:
+  - "D-6 (Precision Refocus 4-section)"
+  - "D-7 (PT-centric Interface)"
+  - "D-9 (4 skills → context:fork)"
+  - "D-11 (3 new fork agent .md)"
+  - "D-13 (Coordinator Template B convergence)"

@@ -1,0 +1,38 @@
+agent: ontology-docs-2
+task_id: 10
+phase: 6
+status: COMPLETE
+timestamp: 2026-02-08
+
+files_created:
+  - path: park-kyungchan/palantir/docs/OSDK_Reference.md
+    lines: 1222
+    description: "Comprehensive OSDK reference — TypeScript, Python, Java SDKs with code examples"
+    sections:
+      - "Overview and SDK support matrix"
+      - "TypeScript OSDK (queries, filters, pagination, aggregations, actions, links, subscriptions, sub-selection, derived properties, attachments)"
+      - "Python OSDK (queries, filters, aggregations, group_by, actions, links)"
+      - "Java OSDK (Maven setup, queries, actions, links)"
+      - "TypeScript v2 Functions (@Function, @Query, @OntologyEditFunction, Interfaces, Pipeline Builder)"
+      - "Unsupported types by SDK with workarounds"
+      - "Migration patterns (TS v1→v2, REST→OSDK, SQL→OSDK, Repository→OSDK)"
+
+  - path: park-kyungchan/palantir/docs/Security_and_Governance.md
+    lines: 1054
+    description: "Security and governance model — markings, RBAC, proposals, audit, OSDK auth"
+    sections:
+      - "Marking-based access control (MANDATORY vs CLASSIFICATION, property-level, row-level)"
+      - "Organizations and multi-tenancy (scoping, project isolation, cross-org)"
+      - "RBAC (Viewer, Editor, Owner, Discoverer roles at object/property/link/action level)"
+      - "Restricted views (filtered ObjectType views by marking membership)"
+      - "Ontology proposals and governance (branch, proposal, review, merge, migration)"
+      - "Audit trail (action audit, schema changes, access logging, compliance)"
+      - "Security in OSDK (OAuth2, service accounts, scoped tokens, rate limiting)"
+
+decisions:
+  - "Followed established YAML + prose format from existing Ontology.md and ObjectType_Reference.md"
+  - "Both docs exceed 500-line minimum (1222 and 1054 lines respectively)"
+  - "Included real code examples for TypeScript, Python, and Java"
+  - "Used machine-readable YAML blocks for structured data"
+
+unresolved: []

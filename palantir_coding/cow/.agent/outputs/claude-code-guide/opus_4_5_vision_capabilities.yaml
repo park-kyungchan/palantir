@@ -1,0 +1,234 @@
+# Claude Opus 4.5 Vision Capabilities Report
+# Generated: 2026-02-04
+# Source: Official Anthropic Documentation + Technical Testing Reports
+# Purpose: Machine-readable capability assessment for Mathpix + Claude PDF reconstruction
+
+---
+opus_4_5_vision_capabilities:
+  model_info:
+    model_id: "claude-opus-4-5-20251101"
+    vision_support: true
+    supported_formats:
+      - "image/jpeg"
+      - "image/png"
+      - "image/gif"
+      - "image/webp"
+    max_image_size: "8000x8000"
+    max_images_per_request: 100
+    max_file_size_api: "5MB"
+
+  # ============================================================
+  # FONT EXTRACTION CAPABILITIES
+  # ============================================================
+  font_extraction:
+    font_family_detection: false
+    font_family_accuracy: null  # Not supported
+    font_weight_detection: false
+    font_style_detection: false
+    font_size_detection: false
+    notes:
+      - "Not documented in official Anthropic vision API"
+      - "Claude understands visual text but does not extract font metadata"
+      - "Dedicated services (Google Document AI) required for font-style detection"
+
+  # ============================================================
+  # COLOR EXTRACTION CAPABILITIES
+  # ============================================================
+  color_extraction:
+    text_color_detection: "inference_based"  # Can be prompted, not guaranteed
+    background_color_detection: "inference_based"
+    hex_code_extraction: "inference_based"
+    rgb_value_extraction: "inference_based"
+    accuracy_estimate: null  # No official benchmark data
+    official_api_support: false
+    notes:
+      - "Claude CAN be prompted to extract color palettes with hex codes"
+      - "This is inference-based, not a structured API feature"
+      - "No official accuracy guarantees"
+      - "Community workarounds exist (color-palette-extractor skill)"
+
+  # ============================================================
+  # TEXT EXTRACTION / OCR CAPABILITIES
+  # ============================================================
+  text_extraction:
+    ocr_capability: true
+    ocr_quality: "high"  # For clear images
+    handwritten_text: "partial"  # "Complex handwritten or stylized fonts may present challenges"
+    structured_text_extraction: true
+    table_extraction: true
+    chart_interpretation: true
+    form_extraction: true
+    accuracy_for_clear_images: 0.9  # Approximate based on practical tests
+    limitations:
+      - "Low-quality images may cause hallucination"
+      - "Rotated images may cause errors"
+      - "Images under 200px may degrade performance"
+      - "Complex handwritten fonts are challenging"
+
+  # ============================================================
+  # TEXT STYLE DETECTION
+  # ============================================================
+  text_style_detection:
+    bold_detection: "inference_based"  # Can sometimes infer, not reliable
+    italic_detection: "inference_based"
+    underline_detection: "inference_based"
+    strikethrough_detection: "inference_based"
+    official_api_support: false
+    notes:
+      - "Claude may describe visual text styling in natural language"
+      - "No structured API for style metadata extraction"
+      - "Reliability not guaranteed"
+
+  # ============================================================
+  # LAYOUT ANALYSIS CAPABILITIES
+  # ============================================================
+  layout_analysis:
+    document_structure_detection: true
+    heading_recognition: true
+    paragraph_detection: true
+    list_detection: true
+    table_detection: true
+    figure_detection: true
+    footnote_detection: true
+
+    bbox_inference: false  # CRITICAL - Officially unreliable
+    bbox_accuracy: null  # "Inconsistent across runs, no accurate placements"
+    precise_localization: false
+    spatial_reasoning: "limited"  # Official documentation states this
+
+    hierarchy_detection: "partial"  # Document structure yes, pixel-level no
+
+    limitations:
+      - "Cannot accurately provide bounding box coordinates"
+      - "Spatial reasoning abilities are LIMITED"
+      - "Struggles with precise localization tasks"
+      - "Cannot read analog clock faces accurately"
+      - "Cannot describe exact chess piece positions"
+      - "Bounding box coordinates inconsistent across multiple runs"
+
+  # ============================================================
+  # OBJECT DETECTION CAPABILITIES
+  # ============================================================
+  object_detection:
+    can_identify_objects: true  # Descriptive identification
+    can_localize_objects: false  # Cannot provide accurate coordinates
+    bounding_box_generation: false  # Unreliable
+    object_counting: "approximate"  # Not precise
+    notes:
+      - "Claude 3/4, like most multimodal models, unable to localize objects"
+      - "Community workarounds exist but accuracy not guaranteed"
+
+  # ============================================================
+  # DOCUMENT COMPARISON
+  # ============================================================
+  comparison_capabilities:
+    multi_image_comparison: true
+    visual_difference_detection: true
+    cross_document_analysis: true
+    max_images_for_comparison: 100
+
+  # ============================================================
+  # EXPLICIT LIMITATIONS (Official Documentation)
+  # ============================================================
+  limitations:
+    - limitation: "People identification refused"
+      severity: "absolute"
+      description: "Claude cannot and will not identify named individuals in images"
+
+    - limitation: "Spatial reasoning limited"
+      severity: "high"
+      description: "Struggles with precise localization, layouts, clock reading, position description"
+
+    - limitation: "Bounding box unreliable"
+      severity: "high"
+      description: "Coordinates inconsistent across runs, no accurate placements achieved in testing"
+
+    - limitation: "Counting approximate"
+      severity: "medium"
+      description: "Cannot provide precise counts, especially for large numbers of small objects"
+
+    - limitation: "AI-generated image detection unavailable"
+      severity: "medium"
+      description: "Cannot determine if image is AI-generated"
+
+    - limitation: "No image generation"
+      severity: "absolute"
+      description: "Understand only - cannot generate, edit, or manipulate images"
+
+    - limitation: "No metadata parsing"
+      severity: "absolute"
+      description: "Does not parse or receive any metadata (EXIF, etc.) from images"
+
+    - limitation: "Hallucination risk"
+      severity: "medium"
+      description: "May hallucinate with low-quality, rotated, or very small images"
+
+  # ============================================================
+  # RECOMMENDATIONS FOR PDF RECONSTRUCTION
+  # ============================================================
+  pdf_reconstruction_recommendations:
+    use_claude_for:
+      - "Text content extraction (OCR)"
+      - "Document structure understanding"
+      - "Table content extraction"
+      - "Chart/graph interpretation"
+      - "Visual content description"
+      - "Semantic understanding of layout"
+
+    do_not_use_claude_for:
+      - "Precise bounding box coordinates"
+      - "Font family/weight/style metadata"
+      - "Pixel-accurate layout reconstruction"
+      - "Precise color value extraction (use dedicated tools)"
+      - "Object localization with coordinates"
+
+    recommended_complementary_tools:
+      - tool: "Mathpix"
+        use_for: "Math equation LaTeX extraction, structured document parsing"
+      - tool: "Google Document AI"
+        use_for: "Font-style detection, precise bounding boxes, handwriting recognition"
+      - tool: "Tesseract/EasyOCR"
+        use_for: "Bounding box coordinates for text regions"
+      - tool: "Computer Vision APIs"
+        use_for: "Precise color extraction (if needed)"
+
+  # ============================================================
+  # STRUCTURED OUTPUT SUPPORT
+  # ============================================================
+  structured_output:
+    json_output: true
+    json_schema_validation: true  # With output_config.format
+    supported_models:
+      - "claude-opus-4-5"
+      - "claude-sonnet-4-5"
+      - "claude-haiku-4-5"
+    notes:
+      - "Can output structured JSON, markdown tables, CSV"
+      - "Supports Pydantic/Zod schemas via SDK"
+
+---
+# SOURCES (Official Documentation)
+sources:
+  primary:
+    - url: "https://platform.claude.com/docs/en/build-with-claude/vision"
+      title: "Vision - Claude API Docs"
+      accessed: "2026-02-04"
+
+    - url: "https://www.anthropic.com/news/claude-opus-4-5"
+      title: "Introducing Claude Opus 4.5"
+      accessed: "2026-02-04"
+
+    - url: "https://platform.claude.com/docs/en/build-with-claude/structured-outputs"
+      title: "Structured outputs - Claude API Docs"
+      accessed: "2026-02-04"
+
+  technical_tests:
+    - url: "https://blog.roboflow.com/claude-3-opus-multimodal/"
+      title: "First Impressions with the Claude 3 Opus Vision API"
+      findings: "Bounding box coordinates inconsistent, OCR works well for clear text"
+      accessed: "2026-02-04"
+
+  community:
+    - url: "https://github.com/Doriandarko/Claude-Vision-Object-Detection"
+      title: "Claude-Vision-Object-Detection"
+      note: "Community workaround for object detection, accuracy not guaranteed"

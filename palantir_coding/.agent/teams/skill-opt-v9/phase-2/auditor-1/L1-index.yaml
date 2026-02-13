@@ -1,0 +1,81 @@
+agent: auditor-1
+phase: P2
+status: complete
+timestamp: "2026-02-12T00:00:00Z"
+
+scope: "8 coordinator agent .md files systematic audit"
+coordinators_audited: 8
+total_lines_audited: 611
+data_points_extracted: 96  # 12 fields × 8 coordinators
+
+frontmatter_gaps:
+  total: 25
+  memory_missing: 3  # architecture, planning, validation
+  color_missing: 3   # architecture, planning, validation
+  disallowedTools_incomplete: 3  # architecture, planning, validation (missing Edit + Bash)
+  skills_missing: 8  # none have preloaded skills
+  hooks_missing: 8   # none have agent-scoped hooks
+
+template_analysis:
+  template_a:
+    label: "verbose"
+    count: 5
+    coordinators: [research, verification, execution, testing, infra-quality]
+    avg_body_lines: 93
+    refs_coordinator_shared_protocol: false
+    duplication_lines_per_coordinator: 35
+    total_duplication: 175
+  template_b:
+    label: "lean"
+    count: 3
+    coordinators: [architecture, planning, validation]
+    avg_body_lines: 39
+    refs_coordinator_shared_protocol: true
+    duplication_lines_per_coordinator: 0
+
+optimization_targets:
+  - id: OPT-1
+    priority: CRITICAL
+    target: "Template Unification"
+    estimated_reduction: "~175L"
+    effort: HIGH
+  - id: OPT-2
+    priority: HIGH
+    target: "Add memory: field (3 missing + scope review)"
+    effort: LOW
+  - id: OPT-3
+    priority: HIGH
+    target: "Complete disallowedTools (3 missing Edit+Bash)"
+    effort: LOW
+  - id: OPT-4
+    priority: HIGH
+    target: "Add coordinator-shared-protocol.md reference (5 missing)"
+    effort: LOW
+  - id: OPT-5
+    priority: HIGH
+    target: "Skills preload evaluation (design decision)"
+    effort: MEDIUM
+  - id: OPT-6
+    priority: MEDIUM
+    target: "Add color: field (3 missing)"
+    effort: LOW
+  - id: OPT-7
+    priority: LOW-MEDIUM
+    target: "Agent-scoped hooks evaluation"
+    effort: MEDIUM
+  - id: OPT-8
+    priority: LOW
+    target: "Timeout threshold standardization"
+    effort: LOW
+
+cross_coordinator_patterns:
+  identical_tools: true  # all 8 have same 7 tools
+  identical_model: true  # all 8 use opus
+  identical_permissionMode: true  # all 8 use default
+  consistent_disallowedTools: false  # 5 full, 3 partial
+
+evidence_count: 96
+pt_goal_links:
+  - "D-6 (Precision Refocus) — frontmatter replacing body content"
+  - "D-13 (Coordinator Shared Protocol) — 5/8 missing reference"
+  - "CC Feature Adoption — skills, hooks, memory underutilized"

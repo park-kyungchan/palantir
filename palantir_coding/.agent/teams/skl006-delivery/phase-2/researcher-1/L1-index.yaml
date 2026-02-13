@@ -1,0 +1,148 @@
+research_area: "Opus 4.6 + Claude Code CLI v2.1.37"
+researcher: researcher-1
+date: 2026-02-08
+status: complete
+
+opus_46_capabilities:
+  model_id: claude-opus-4-6
+  context_window: "200K standard, 1M beta"
+  max_output_tokens: 128000
+  pricing: "$5/$25 per MTok (standard), $10/$37.50 (1M context)"
+  key_strengths:
+    - "1M token context with 76% 8-needle retrieval (MRCR v2)"
+    - "128K output tokens (doubled from 64K)"
+    - "Adaptive thinking replaces budget_tokens (auto-selects thinking depth)"
+    - "Effort parameter GA: low/medium/high/max for token control"
+    - "Server-side compaction API for infinite conversations"
+    - "Fast mode: 2.5x speed at premium pricing"
+    - "Agentic coding #1 on Terminal-Bench 2.0"
+    - "Plans more carefully, sustains longer agentic tasks"
+    - "Lowest over-refusal rate among Claude models"
+  optimization_techniques:
+    - "effort: low for simple tasks, max for Opus 4.6 only deep reasoning"
+    - "Adaptive thinking: type: adaptive instead of budget_tokens"
+    - "Compaction API: 150K trigger, custom instructions, pause_after"
+    - "Fast mode for latency-sensitive output"
+    - "Streaming for large max_tokens values"
+  tool_use_patterns:
+    - "Lower effort = fewer tool calls, terse output"
+    - "Higher effort = more tool calls, explained plans"
+    - "Effort affects text + tool calls + thinking"
+    - "Fine-grained tool streaming GA"
+  breaking_changes:
+    - "Prefill removal (400 error on assistant message prefill)"
+    - "budget_tokens deprecated, use adaptive thinking"
+    - "output_format moved to output_config.format"
+
+claude_code_features:
+  version: "2.1.37"
+  skill_features:
+    - "YAML frontmatter + Markdown body format"
+    - "9 frontmatter fields: name, description, argument-hint, disable-model-invocation, user-invocable, allowed-tools, model, context, agent, hooks"
+    - "Dynamic context injection: !`shell_command`"
+    - "$ARGUMENTS, $ARGUMENTS[N], $N variable substitutions"
+    - "${CLAUDE_SESSION_ID} for session tracking"
+    - "context: fork for isolated subagent execution"
+    - "Skill-level hooks in frontmatter"
+    - "ultrathink keyword enables extended thinking"
+    - "Hot reload from --add-dir"
+    - "2% context window budget for descriptions (16K fallback)"
+  hook_features:
+    - "14 hook events total (SessionStart through SessionEnd)"
+    - "3 handler types: command, prompt (LLM), agent (multi-turn)"
+    - "once field for one-shot hooks"
+    - "async: true for background non-blocking"
+    - "PreToolUse: allow/deny/ask + updatedInput + additionalContext"
+    - "PermissionRequest: allow/deny + updatedInput + updatedPermissions"
+    - "TeammateIdle: exit 2 to prevent idle (feedback loop)"
+    - "TaskCompleted: exit 2 to prevent completion (quality gate)"
+    - "PreCompact: manual/auto matcher"
+    - "Hook locations: user, project, local, managed, plugin, frontmatter"
+    - "MCP tool matching: mcp__server__tool regex"
+    - "$CLAUDE_PROJECT_DIR, ${CLAUDE_PLUGIN_ROOT}, $CLAUDE_ENV_FILE"
+  agent_teams_features:
+    - "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1"
+    - "in-process (default) or tmux/iTerm2 split panes"
+    - "Shared task list with dependencies and file locking"
+    - "SendMessage: message, broadcast, shutdown_request/response, plan_approval"
+    - "delegate mode: Shift+Tab, coordination-only"
+    - "Plan approval workflow for teammates"
+    - "Shift+Up/Down teammate navigation"
+    - "Ctrl+T task list, Ctrl+B background task"
+    - "Team config: ~/.claude/teams/{name}/config.json"
+  mcp_features:
+    - ".mcp.json per-project configuration"
+    - "mcpServers in agent frontmatter"
+    - "MCP hooks via mcp__server__tool regex matching"
+    - "PostToolUse: updatedMCPToolOutput for MCP tools"
+    - "Not available in background subagents"
+  settings_features:
+    - "4-scope hierarchy: managed > CLI > local > project > user"
+    - "Full sandbox configuration (network, domains, unix sockets)"
+    - "Plugin marketplace system"
+    - "fileSuggestion: custom @ autocomplete"
+    - "statusLine: custom status display"
+    - "attribution: customizable commit/PR messages"
+    - "outputStyle: adjust system prompt style"
+    - "spinnerVerbs: custom action verbs"
+    - "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE for early compaction"
+  task_api_features:
+    - "TaskCreate: subject, description, activeForm, metadata"
+    - "TaskUpdate: status, owner, blocks/blockedBy, description"
+    - "TaskList/TaskGet for read access"
+    - "States: pending/in_progress/completed/deleted"
+    - "File locking for concurrent claim prevention"
+  new_since_v2:
+    - "TeammateIdle hook event (v2.1.33)"
+    - "TaskCompleted hook event (v2.1.33)"
+    - "memory frontmatter for agents: user/project/local (v2.1.33)"
+    - "Task(agent_type) restriction syntax (v2.1.33)"
+    - "Prompt-based hooks (type: prompt)"
+    - "Agent-based hooks (type: agent)"
+    - "Hooks in skill/agent frontmatter"
+    - "once field for hook handlers"
+    - "delegate permission mode for team leads"
+    - "Skill hot reload from --add-dir"
+    - "context: fork for skill subagent isolation"
+    - "/teleport session to claude.ai"
+    - "Wildcard tool permissions: Bash(*-h*)"
+    - "Language configuration"
+    - "Shift+Enter for newlines"
+  lesser_known:
+    - "ultrathink keyword in skill content enables extended thinking"
+    - "SLASH_COMMAND_TOOL_CHAR_BUDGET env var override"
+    - "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE for early compaction"
+    - "CLAUDE_ENV_FILE for SessionStart environment persistence"
+    - "CLAUDE_CODE_SHELL_PREFIX for command wrapping"
+    - "fileSuggestion for custom @ autocomplete"
+    - "statusLine for dynamic status display"
+    - "Prompt hooks for LLM-based quality gates"
+    - "Agent hooks for multi-turn verification"
+    - "PreToolUse updatedInput for tool input modification"
+    - "PermissionRequest hooks for auto-approval"
+    - "--agents CLI flag for session-only agent definitions"
+
+rsil_opportunities:
+  high_priority:
+    - "H-1: Create agent MEMORY.md templates (already deferred)"
+    - "H-2: skills preload in agent frontmatter (inject conventions)"
+    - "H-3: hooks in agent/skill frontmatter (role-scoped validation)"
+    - "H-4: prompt/agent hooks for quality gates (replace shell scripts)"
+    - "H-5: delegate mode documentation and integration"
+    - "H-6: effort parameter strategy per phase"
+    - "H-7: Task(agent_type) restrictions for role boundaries"
+  medium_priority:
+    - "M-2: async hooks for non-critical logging"
+    - "M-3: statusLine for pipeline state visibility"
+    - "M-5: maxTurns optimization per agent role"
+    - "M-8: PermissionRequest hooks for auto-approval"
+  low_priority:
+    - "L-1: Sandbox configuration for implementer safety"
+    - "L-2: CLAUDE_AUTOCOMPACT_PCT_OVERRIDE tuning"
+    - "L-6: SessionEnd hooks for auto-cleanup"
+
+gaps:
+  - "Exact Claude Code v2.1.37 changelog not found (only v2.1.33 release notes)"
+  - "Effort parameter not configurable in Claude Code CLI directly (API-level)"
+  - "Fast mode not available in Claude Code CLI (API-only feature)"
+  - "Compaction API details for Claude Code vs raw API unclear"

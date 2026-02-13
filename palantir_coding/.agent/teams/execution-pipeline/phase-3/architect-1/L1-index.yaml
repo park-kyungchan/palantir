@@ -1,0 +1,62 @@
+phase: 3
+role: architect-1
+date: 2026-02-07
+gc_version: GC-v2
+gate_a: PASS (RC 7/7, LDAP 4/4 STRONG)
+gate_b: APPROVED
+
+artifacts:
+  - path: L3-full/architecture-design.md
+    type: design-document
+    lines: ~450
+    content: 13-section architecture (AD-1~AD-8, patterns, risks, diagram)
+  - path: L3-full/skill-draft.md
+    type: skill-draft
+    lines: ~380
+    content: Complete SKILL.md for .claude/skills/execution-pipeline/
+  - path: L2-summary.md
+    type: summary
+    lines: ~80
+    content: Architecture narrative and decision rationale
+  - path: L1-index.yaml
+    type: index
+    content: This file
+
+decisions:
+  - id: AD-1
+    topic: UQ Resolution (4 items)
+    summary: Fix loop=3 fixed, final review=conditional, manipulation=3-layer, context=per-task checkpoint
+  - id: AD-2
+    topic: Adaptive Spawn Algorithm
+    summary: Connected components (file+dependency), min(components,4) implementers
+  - id: AD-3
+    topic: Two-Stage Review (Option B)
+    summary: Implementer delegation, 58% Lead context savings vs Option A
+  - id: AD-4
+    topic: Cross-Boundary Escalation
+    summary: 4-stage protocol using existing CONTEXT-UPDATE/ACK-UPDATE
+  - id: AD-5
+    topic: Gate 6 Structure
+    summary: Per-task(G6-1~5) + cross-task(G6-6~7) + 3-layer defense
+  - id: AD-6
+    topic: GC-v4 to GC-v5 Delta
+    summary: Phase 6 results, interface changes, Phase 7 entry conditions
+  - id: AD-7
+    topic: Clean Termination
+    summary: No auto-chain, shutdown sequence, artifact preservation
+  - id: AD-8
+    topic: SKILL.md Design
+    summary: Follows brainstorming-pipeline + agent-teams-write-plan precedent
+
+patterns:
+  preserved: 11 (two-stage review, context curation, distrust, ordered review, fix loop, self-review, pre-work QA, stop on blocker, critical plan review, fresh context, final review)
+  replaced: 11 (TodoWrite, human checkpoint, ephemeral, sequential, same-session, finish chain, worktree, no DIA, no GC, flat tasks, no ownership)
+
+risks:
+  total: 8
+  high: 0
+  medium: 4 (manipulation, Lead context, cross-boundary, context pressure)
+  low: 4 (fix loop exhaust, component merge, final review overhead, plan spec error)
+  residual_max: LOW
+
+status: COMPLETE

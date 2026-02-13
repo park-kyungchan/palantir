@@ -1,0 +1,41 @@
+agent: codebase-researcher-1
+phase: P2
+status: complete
+timestamp: 2026-02-12T00:00:00Z
+
+domains_analyzed: 2
+skills_read: 9
+total_skill_lines: 4426
+
+domain1_duplication:
+  identical_lines: 358
+  identical_pct: 8.1
+  similar_extractable_lines: 450
+  similar_extractable_pct: 10.2
+  total_extractable_lines: 808
+  total_extractable_pct: 18.3
+  top_extraction_targets:
+    - "Phase 0 PT Check: ~210L across 7 skills (IDENTICAL)"
+    - "RTD Index instructions: ~72L across 9 skills (IDENTICAL)"
+    - "Input Discovery pattern: ~140L across 5 skills (SIMILAR)"
+    - "Clean Termination: ~75L across 5 skills (SIMILAR)"
+    - "Error Handling common entries: ~54L across 9 skills (SIMILAR)"
+  section_types_analyzed: 19
+  unique_sections_per_skill: 60-80% of each skill is unique orchestration logic
+
+domain2_gc_mapping:
+  gc_version_chain: "v1 → v2 → v3 → v4 → v5/v6 → v6/v7"
+  gc_writers: 5 skills (brainstorming, write-plan, validation, execution, verification)
+  gc_readers: 5 skills (write-plan, validation, execution, verification, delivery)
+  gc_non_users: 3 skills (rsil-global, rsil-review, permanent-tasks)
+  pt_writers: 5 skills (permanent-tasks, brainstorming-indirect, write-plan, execution, delivery)
+  pt_readers: 9 skills (all, via Phase 0)
+  gc_only_sections: 14
+  pt_gc_overlap_categories: 6
+  migration_candidates: 2 (Codebase Constraints → PT, Interface Changes → PT)
+  elimination_candidates: 9 (Phase N Entry Requirements → replaceable by L2 Downstream Handoff)
+
+evidence_count: 10
+pt_goal_links:
+  - "R-1 (Skill Structure Analysis)"
+  - "R-2 (GC Interface Mapping)"

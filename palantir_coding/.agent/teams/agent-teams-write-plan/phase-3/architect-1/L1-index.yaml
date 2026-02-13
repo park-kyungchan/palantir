@@ -1,0 +1,35 @@
+# L1-index — agent-teams-write-plan Architecture | Phase 3 | architect-1 | 2026-02-07
+status: COMPLETE
+design_id: SKL-002-AGENT-TEAMS-WRITE-PLAN
+
+skill_sections: [frontmatter, when-to-use, dynamic-context, "4.1-input-discovery",
+  "4.2-team-setup", "4.3-architect-spawn-dia", "4.4-plan-generation",
+  "4.5-gate-4", clean-termination, cross-cutting, principles-never]
+
+design_sections: ["§1 Problem Statement", "§2 Architecture Overview",
+  "§3 Phase 4 Workflow", "§4 Plan Template (10-section)",
+  "§5 GC Delta", "§6 Clean Termination", "§7 Cross-Cutting",
+  "§8 Comparison", "§9 SKILL.md Draft"]
+
+decisions:
+  AD-1: Architect as plan author (CLAUDE.md §2)
+  AD-2: 10-section template from CH-001
+  AD-3: Verification Level tags in §5 (LDAP Q2)
+  AD-4: AC-0 mandatory per task (LDAP Q2)
+  AD-5: V6 Code Plausibility in §7 (LDAP Q2)
+  AD-6: Hybrid auto-discovery input
+  AD-7: 4-layer task-context (LDAP Q1)
+  AD-8: Clean termination no auto-chain (LDAP Q3)
+  AD-9: GC-v4 delta (6 ADD, 2 UPDATE)
+  AD-10: Read-First-Write-Second workflow (LDAP Q2)
+
+risks:
+  R-1: Single precedent (CH-001) — parametric template
+  R-2: Cross-session context — 4-layer injection + CIP/DIAVP/LDAP
+  R-3: No Bash for code verify — Verification Level + AC-0 + V6
+  R-4: Post-Gate 4 rework — pipeline ordering + GC versioning
+
+template_sections: ["§1 Orchestration Overview", "§2 GC Update Template",
+  "§3 File Ownership", "§4 TaskCreate Definitions", "§5 Change Specs",
+  "§6 Test Strategy", "§7 Validation Checklist", "§8 Commit Strategy",
+  "§9 Gate Criteria", "§10 Summary"]

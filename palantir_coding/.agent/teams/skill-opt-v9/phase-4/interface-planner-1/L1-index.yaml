@@ -1,0 +1,91 @@
+agent: interface-planner-1
+phase: 4
+team: skill-opt-v9
+role: interface-planner
+status: complete
+
+deliverables:
+  - id: D1
+    name: "§C Interface Section Content"
+    scope: "All 9 skills — Input/Output/Next hybrid format"
+    location: "L3-full/interface-design.md §1"
+    status: complete
+
+  - id: D2
+    name: "PT Read/Write Mapping"
+    scope: "Per-skill PT sections read and written, version chain"
+    location: "L3-full/dependency-matrix.md §4, L3-full/interface-design.md §1"
+    status: complete
+
+  - id: D3
+    name: "Cross-File Dependency Matrix"
+    scope: "22 files, 7 reference categories, coupling assessment"
+    location: "L3-full/dependency-matrix.md"
+    status: complete
+
+  - id: D4
+    name: "§10 Modification Exact Text"
+    scope: "CLAUDE.md §10 + agent-common-protocol.md §Task API"
+    location: "L3-full/interface-design.md §2"
+    status: complete
+
+  - id: D5
+    name: "GC Migration Per-Skill Specs"
+    scope: "5 coordinator-based + 1 fork (delivery) migration instructions"
+    location: "L3-full/interface-design.md §3"
+    status: complete
+
+  - id: D6
+    name: "4-Way Naming Consistency Contract"
+    scope: "3 fork agents across 4 locations + validation checklist"
+    location: "L3-full/interface-design.md §4"
+    status: complete
+
+contracts:
+  - id: C-1
+    interface: "PT Read/Write (N:1)"
+    type: "data"
+    participants: ["all 9 skills", "PERMANENT Task"]
+
+  - id: C-2
+    interface: "L2 Downstream Handoff Chain"
+    type: "data"
+    participants: ["6 coordinator-based skills", "8 coordinators"]
+
+  - id: C-3
+    interface: "GC Scratch-Only"
+    type: "data"
+    participants: ["5 coordinator-based skills", "GC file"]
+
+  - id: C-4
+    interface: "Fork-to-PT Direct"
+    type: "data"
+    participants: ["4 fork skills", "PERMANENT Task"]
+
+  - id: C-5
+    interface: "§10 Exception"
+    type: "policy"
+    participants: ["pt-manager", "delivery-agent", "rsil-agent", "CLAUDE.md", "agent-common-protocol.md"]
+
+  - id: C-6
+    interface: "4-Way Naming"
+    type: "consistency"
+    participants: ["4 fork skills", "3 agent .md", "CLAUDE.md §10", "agent-common-protocol.md §Task API"]
+
+evidence:
+  files_read: 16
+  total_lines: 5876
+  sources:
+    - "interface-architect L3 (412L)"
+    - "structure-architect L3 (754L)"
+    - "risk-architect L3 (662L)"
+    - "arch-coord L2 (221L)"
+    - "9 SKILL.md files (4430L total)"
+    - "agent-common-protocol.md (247L)"
+    - "phase-context.md (107L)"
+
+artifacts:
+  - "L3-full/dependency-matrix.md (326L)"
+  - "L3-full/interface-design.md (~350L)"
+  - "L1-index.yaml (this file)"
+  - "L2-summary.md"
