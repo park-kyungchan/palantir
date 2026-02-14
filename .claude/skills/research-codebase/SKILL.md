@@ -13,13 +13,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML pattern inventory, L2 markdown findings with file:line references, L3 detailed code excerpts and analysis.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    focus:
-      type: string
-      description: "Specific area or question to research in codebase"
-  required: []
 ---
 
 # Research — Codebase

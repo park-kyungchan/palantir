@@ -13,7 +13,7 @@ description: |
   MAX_TEAMMATES: 4.
   OUTPUT_FORMAT: L1 YAML task list with file assignments and dependencies, L2 markdown task descriptions, L3 detailed file-level breakdown.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Plan — Decomposition

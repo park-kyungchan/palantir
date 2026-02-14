@@ -9,18 +9,11 @@ description: |
   OUTPUT_TO: delivery-pipeline (if all 5 stages PASS) or execution domain (if FAIL, fix required).
   ONTOLOGY_LENS: ARE (structural compliance) + DO (behavioral feasibility).
 
-  METHODOLOGY: (1) Read target frontmatter fields, (2) Check against allowed native fields (name, description, model, tools, disallowedTools, permissionMode, memory, color, maxTurns, hooks, mcpServers, skills, user-invocable, disable-model-invocation, confirm, input_schema, working_dir, timeout, env), (3) Flag any non-native field, (4) Spawn claude-code-guide: "Is this valid?", (5) Return verdict.
+  METHODOLOGY: (1) Read target frontmatter fields, (2) Check against allowed native fields — Skills: (name, description, argument-hint, user-invocable, disable-model-invocation, allowed-tools, model, context, agent, hooks). Agents: (name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, mcpServers, hooks, memory, color), (3) Flag any non-native field, (4) Spawn claude-code-guide: "Is this valid?", (5) Return verdict.
   CLOSED_LOOP: Verify → FAIL → Remove non-native fields → Re-verify → PASS.
   OUTPUT_FORMAT: L1 YAML native compliance per file, L2 markdown feasibility report with field-level feedback.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    target:
-      type: string
-      description: "File or directory to verify (default: .claude/)"
-  required: []
 ---
 
 # Verify — CC Feasibility
@@ -38,22 +31,28 @@ For each agent and skill file:
 - Build field inventory per file
 
 ### 2. Check Against Native Fields
-Allowed native fields:
-- `name`, `description`, `model`, `tools`, `disallowedTools`
-- `permissionMode`, `memory`, `color`, `maxTurns`
-- `hooks`, `mcpServers`, `skills`
-- `user-invocable`, `disable-model-invocation`, `confirm`
-- `input_schema`, `working_dir`, `timeout`, `env`
+Allowed native fields for **Skills** (SKILL.md):
+- `name`, `description`, `argument-hint`
+- `user-invocable`, `disable-model-invocation`
+- `allowed-tools`, `model`, `context`, `agent`, `hooks`
 
-Flag any field NOT in this list as non-native.
+Allowed native fields for **Agents** (.claude/agents/*.md):
+- `name`, `description`, `tools`, `disallowedTools`
+- `model`, `permissionMode`, `maxTurns`
+- `skills`, `mcpServers`, `hooks`, `memory`, `color`
+
+Flag any field NOT in these lists as non-native.
 
 ### 3. Validate Field Values
 For each native field, check value types:
-- `name`: string
-- `description`: string (multi-line allowed)
+- `name`: string (lowercase, hyphens, max 64 chars)
+- `description`: string (multi-line allowed, max 1024 chars)
 - `user-invocable`: boolean
-- `input_schema`: object with JSON Schema structure
-- `model`: one of known model identifiers
+- `disable-model-invocation`: boolean
+- `model`: one of (sonnet, opus, haiku, inherit)
+- `context`: one of (fork)
+- `agent`: string (must match existing agent name)
+- `argument-hint`: string (e.g., "[topic]")
 
 ### 4. Spawn Claude-Code-Guide Verification
 If any questionable fields found:

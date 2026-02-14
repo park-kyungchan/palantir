@@ -13,7 +13,7 @@ description: |
   MAX_TEAMMATES: 4.
   OUTPUT_FORMAT: L1 YAML component list with relationships, L2 markdown ADRs with diagrams, L3 detailed component specs.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Design — Architecture

@@ -11,13 +11,7 @@ description: |
   OUTPUT_FORMAT: L1 YAML resume state (last phase, resume phase, task summary), L2 markdown recovery report.
 user-invocable: true
 disable-model-invocation: true
-input_schema:
-  type: object
-  properties:
-    resume_from:
-      type: string
-      description: "Phase to resume from (default: auto-detect from task status)"
-  required: []
+argument-hint: "[resume-from-phase]"
 ---
 
 # Pipeline — Resume

@@ -44,7 +44,7 @@
 |-----------|---------|------|-------------|
 | CLAUDE.md | v10.0 | 43L | Protocol-only, no routing data |
 | Agents | v10.0 | 6 files | analyst(B), researcher(C), implementer(D), infra-implementer(E), delivery-agent(F), pt-manager(G) |
-| Skills | v10.1 | 31 dirs | Full L2 bodies (Exec Model + 5-step Methodology + Quality Gate + Output) |
+| Skills | v10.2 | 31 dirs | Full L2 + native field compliance (no non-native fields) |
 | Settings | -- | ~84L | 9 permissions, MCP Tool Search auto:7 |
 | Hooks | 3 total | ~148L | SubagentStart, PreCompact, SessionStart (RTD code removed) |
 | Agent Memory | -- | 3 dirs | implementer, infra-implementer, researcher only |
@@ -110,6 +110,15 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
+### v10.2 CC Native Compliance + Context Engineering (2026-02-14, branch: test)
+- Removed 12 non-native `input_schema` fields and 3 `confirm` fields across skills
+- Fixed 4 pipeline skills with `disable-model-invocation: true` breaking Lead routing
+- Added `argument-hint` to 4 user-invocable skills (brainstorm, delivery, resume, task-mgmt)
+- Discovered and reverted `context: fork` safety risk (replaces agent body with skill L2)
+- Fixed verify-cc-feasibility native field reference lists (was self-inconsistent)
+- Deep CC context engineering research: loading order, field semantics, budget mechanics
+- Total: 17 files changed
+
 ### v10.1 INFRA Cleanup + L2 Body Design (2026-02-14, branch: test)
 - Removed all RTD dead code from 3 hooks
 - Removed stale Skill(orchestrate) permission from settings.json
@@ -127,3 +136,4 @@ Details: `memory/meta-cognition-infra.md`
 - `memory/agent-teams-bugs.md` -- BUG-001~BUG-004 details and workarounds
 - `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
 - `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)
+- `memory/context-engineering.md` -- CC native field reference, context loading order, critical findings

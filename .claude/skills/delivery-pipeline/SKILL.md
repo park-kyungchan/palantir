@@ -14,14 +14,7 @@ description: |
   OUTPUT_FORMAT: L1 YAML delivery manifest, L2 markdown delivery summary with commit hash.
 user-invocable: true
 disable-model-invocation: true
-confirm: true
-input_schema:
-  type: object
-  properties:
-    commit_message:
-      type: string
-      description: "Optional custom commit message override"
-  required: []
+argument-hint: "[commit-message]"
 ---
 
 # Delivery Pipeline

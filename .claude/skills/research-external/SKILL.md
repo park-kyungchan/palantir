@@ -13,13 +13,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML dependency validation matrix, L2 markdown documentation summary with source URLs, L3 detailed API analysis.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    focus:
-      type: string
-      description: "Specific library, API, or topic to research externally"
-  required: []
 ---
 
 # Research — External

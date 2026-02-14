@@ -12,18 +12,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 markdown change analysis with rationale.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    target_domain:
-      type: string
-      enum: ["pre-design", "design", "research", "plan", "plan-verify", "orchestration", "execution", "verify", "all"]
-      description: "Domain to analyze (default: all)"
-    action:
-      type: string
-      enum: ["scan", "create", "update", "delete"]
-      description: "Action to perform (default: scan)"
-  required: []
 ---
 
 # Manage — Skills

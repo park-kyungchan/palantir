@@ -14,18 +14,7 @@ description: |
   OUTPUT_FORMAT: L1 YAML requirement list with categories, L2 markdown requirement document with rationale and open questions.
 user-invocable: true
 disable-model-invocation: true
-input_schema:
-  type: object
-  properties:
-    topic:
-      type: string
-      description: "Feature or task to brainstorm"
-    tier:
-      type: string
-      enum: ["trivial", "standard", "complex", "auto"]
-      description: "Pipeline tier (default: auto-detect)"
-  required:
-    - topic
+argument-hint: "[topic]"
 ---
 
 # Pre-Design — Brainstorm

@@ -15,7 +15,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML infra change manifest, L2 markdown change summary, L3 per-file change details.
 user-invocable: true
 disable-model-invocation: false
-confirm: true
 ---
 
 # Execution — Infra

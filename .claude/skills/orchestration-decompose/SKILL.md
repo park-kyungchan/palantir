@@ -13,7 +13,7 @@ description: |
   MAX_TEAMMATES: 4.
   OUTPUT_FORMAT: L1 YAML task groups with dependency edges, L2 ASCII dependency graph visualization.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Orchestration — Decompose

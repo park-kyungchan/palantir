@@ -13,13 +13,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML PASS/FAIL per file with check details, L2 markdown structural integrity report with file:line evidence.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    target:
-      type: string
-      description: "File or directory to verify (default: .claude/)"
-  required: []
 ---
 
 # Verify — Structure

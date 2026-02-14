@@ -11,17 +11,7 @@ description: |
   CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz output in Korean.
 user-invocable: true
 disable-model-invocation: true
-input_schema:
-  type: object
-  properties:
-    action:
-      type: string
-      enum: ["create-pt", "update-pt", "batch-create", "update-task", "visualize", "complete-pt"]
-      description: "Action to perform (default: auto-detect from context)"
-    content:
-      type: string
-      description: "Content for PT update, task details, or visualization scope"
-  required: []
+argument-hint: "[action] [args]"
 ---
 
 # Task Management

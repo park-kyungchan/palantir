@@ -13,8 +13,7 @@ description: |
   MAX_TEAMMATES: 4.
   OUTPUT_FORMAT: L1 YAML file change manifest, L2 markdown implementation summary, L3 per-file change details.
 user-invocable: true
-disable-model-invocation: true
-confirm: true
+disable-model-invocation: false
 ---
 
 # Execution — Code

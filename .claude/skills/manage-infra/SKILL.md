@@ -12,14 +12,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML health report (component counts, orphan list, drift items), L2 markdown INFRA health narrative with repair recommendations.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    scope:
-      type: string
-      enum: ["agents", "skills", "settings", "hooks", "all"]
-      description: "INFRA scope to monitor (default: all)"
-  required: []
 ---
 
 # Manage — INFRA
