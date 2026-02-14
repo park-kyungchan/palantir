@@ -15,6 +15,8 @@ tools:
   - Write
   - Bash
   - mcp__sequential-thinking__sequentialthinking
+memory: project
+maxTurns: 50
 ---
 
 # Implementer

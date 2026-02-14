@@ -18,6 +18,7 @@ tools:
   - TaskGet
   - TaskUpdate
   - AskUserQuestion
+maxTurns: 20
 ---
 
 # Delivery Agent

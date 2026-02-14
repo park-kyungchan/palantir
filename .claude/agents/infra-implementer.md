@@ -14,6 +14,8 @@ tools:
   - Edit
   - Write
   - mcp__sequential-thinking__sequentialthinking
+memory: project
+maxTurns: 35
 ---
 
 # Infra Implementer

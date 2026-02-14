@@ -17,6 +17,7 @@ tools:
   - TaskCreate
   - TaskUpdate
   - AskUserQuestion
+maxTurns: 20
 ---
 
 # PT Manager
