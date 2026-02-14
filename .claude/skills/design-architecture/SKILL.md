@@ -1,17 +1,16 @@
 ---
 name: design-architecture
 description: |
-  [P2·Design·Architecture] Component structure and module boundary designer. Produces architectural decisions including component hierarchy, module boundaries, data flow, and technology choices. Domain entry point for design phase.
+  [P2·Design·Architecture] Component structure and module boundary designer. Produces component hierarchy, module boundaries, data flow, and technology choices as Architecture Decision Records.
 
-  WHEN: pre-design domain complete (all 3 skills PASS). Feasibility-confirmed requirements ready for architecture.
-  DOMAIN: design (skill 1 of 3). Parallel-capable: architecture ∥ interface → risk.
-  INPUT_FROM: pre-design-feasibility (approved requirements with feasibility report).
-  OUTPUT_TO: design-interface (architecture for interface definition), design-risk (architecture for risk assessment), research domain (architecture decisions needing codebase validation).
+  WHEN: pre-design domain complete (all 3 PASS). Feasibility-confirmed requirements ready.
+  DOMAIN: design (skill 1 of 3). Parallel-capable: architecture || interface -> risk.
+  INPUT_FROM: pre-design-feasibility (approved requirements + feasibility report).
+  OUTPUT_TO: design-interface (for interface definition), design-risk (for risk assessment), research domain (for codebase validation).
 
-  METHODOLOGY: (1) Read approved requirements, (2) Identify components and responsibilities (SRP), (3) Define module boundaries and data flow, (4) Make technology/pattern choices with rationale, (5) Document as Architecture Decision Records.
+  METHODOLOGY: (1) Read approved requirements, (2) Identify components (SRP), (3) Define module boundaries and data flow, (4) Select technology/patterns with rationale, (5) Document as ADRs.
   TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=analyst, COMPLEX=2-4 analysts.
-  MAX_TEAMMATES: 4.
-  OUTPUT_FORMAT: L1 YAML component list with relationships, L2 markdown ADRs with diagrams, L3 detailed component specs.
+  OUTPUT_FORMAT: L1 YAML component list, L2 markdown ADRs, L3 detailed specs.
 user-invocable: true
 disable-model-invocation: false
 ---

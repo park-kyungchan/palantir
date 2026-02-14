@@ -1,14 +1,14 @@
 ---
 name: task-management
 description: |
-  [X-Cut·TaskMgmt·RTD] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API. Replaces RTD system (events.jsonl/rtd-index.md).
+  [X-Cut·TaskMgmt·RTD] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API.
 
-  WHEN: (1) Pipeline start: create PT (intent, tier, refs). (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with blockedBy + metadata. (4) Execution: teammates update status/progress real-time. (5) User asks status: ASCII viz per domain (problem→improvement). (6) Commit done: PT completed.
+  WHEN: (1) Pipeline start: create PT. (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with dependencies. (4) Execution: teammates update status real-time. (5) Status query: ASCII viz per domain. (6) Commit done: PT completed.
   DOMAIN: Cross-cutting, any phase.
 
-  ROLES: Heavy (PT create/update, batch tasks, ASCII viz) → pt-manager agent. Light (single TaskUpdate) → Lead direct.
-  METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement,detail_path}. PT={type:permanent,tier,current_phase,commit_status,references,user_directives}.
-  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz output in Korean.
+  ROLES: Heavy ops (PT create/update, batch tasks, ASCII viz) -> pt-manager agent. Light ops (single TaskUpdate) -> Lead direct.
+  METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement}. PT={type:permanent,tier,current_phase,commit_status,references}.
+  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz in Korean.
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[action] [args]"

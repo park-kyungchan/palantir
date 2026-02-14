@@ -1,16 +1,15 @@
 ---
 name: design-risk
 description: |
-  [P2·Design·Risk] Failure mode and mitigation strategy analyst. Examines architecture and interfaces for potential failure points, security implications, performance bottlenecks, and proposes mitigation strategies with priority ranking.
+  [P2·Design·Risk] Failure mode and mitigation strategy analyst. Examines architecture and interfaces for failure points, security issues, performance bottlenecks. Proposes mitigations with priority ranking.
 
   WHEN: After design-architecture and design-interface complete. Architecture and interfaces exist but risk unassessed.
-  DOMAIN: design (skill 3 of 3). Terminal skill in design domain. Runs after architecture and interface.
+  DOMAIN: design (skill 3 of 3). Terminal skill. Runs after architecture and interface.
   INPUT_FROM: design-architecture (component structure), design-interface (API contracts).
-  OUTPUT_TO: research domain (risk areas needing codebase validation), plan-strategy (risk mitigation for implementation strategy).
+  OUTPUT_TO: research domain (risk areas for codebase validation), plan-strategy (risk mitigation for strategy).
 
-  METHODOLOGY: (1) Read architecture and interface specs, (2) Identify failure modes per component (FMEA approach), (3) Assess security implications (OWASP categories), (4) Identify performance bottlenecks and scalability limits, (5) Propose mitigation strategy for each risk with priority ranking.
-  MAX_TEAMMATES: 4.
-  OUTPUT_FORMAT: L1 YAML risk matrix (risk ID, severity, likelihood, mitigation), L2 markdown risk assessment narrative, L3 detailed FMEA tables.
+  METHODOLOGY: (1) Read architecture and interface specs, (2) Identify failure modes per component (FMEA), (3) Assess security implications (OWASP), (4) Identify performance bottlenecks, (5) Propose mitigation per risk with priority ranking.
+  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, mitigation), L2 markdown risk narrative, L3 FMEA tables.
 user-invocable: true
 disable-model-invocation: false
 ---

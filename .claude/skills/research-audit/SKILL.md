@@ -1,17 +1,15 @@
 ---
 name: research-audit
 description: |
-  [P3·Research·Audit] Artifact inventory and gap analysis specialist. Systematically inventories all research findings, classifies by category, and identifies coverage gaps between architecture needs and available evidence.
+  [P3·Research·Audit] Artifact inventory and gap analysis specialist. Inventories all research findings, classifies by category, identifies coverage gaps between architecture needs and available evidence.
 
-  WHEN: After research-codebase and research-external complete or in parallel. Research findings need consolidation and gap analysis.
-  DOMAIN: research (skill 3 of 3). Terminal skill in research domain. Runs after codebase and external research.
+  WHEN: After research-codebase and research-external complete. Findings need consolidation and gap analysis.
+  DOMAIN: research (skill 3 of 3). Terminal skill. Runs after codebase and external research.
   INPUT_FROM: research-codebase (local findings), research-external (external findings).
-  OUTPUT_TO: plan-decomposition (consolidated research for task planning), design domain (feedback if critical gaps require architecture revision).
+  OUTPUT_TO: plan-decomposition (consolidated research for task planning), design domain (if critical gaps need architecture revision).
 
-  METHODOLOGY: (1) Inventory all findings from codebase and external research, (2) Classify by architecture decision relevance, (3) Map findings to design assumptions, (4) Identify gaps: assumptions without evidence, (5) Produce coverage metrics and gap report.
-  CLOSED_LOOP: Audit → Find gaps → Re-research specific areas → Re-audit (max 3 iterations).
-  MAX_TEAMMATES: 4.
-  OUTPUT_FORMAT: L1 YAML coverage matrix with counts, L2 markdown gap analysis narrative, L3 detailed finding inventory.
+  METHODOLOGY: (1) Inventory all findings from codebase and external research, (2) Classify by architecture decision relevance, (3) Map findings to design assumptions, (4) Identify gaps: assumptions without evidence, (5) Produce coverage metrics and gap report. Max 3 iterations.
+  OUTPUT_FORMAT: L1 YAML coverage matrix with counts, L2 markdown gap analysis, L3 finding inventory.
 user-invocable: true
 disable-model-invocation: false
 ---

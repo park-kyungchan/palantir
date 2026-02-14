@@ -1,13 +1,12 @@
 ---
 name: self-improve
 description: |
-  [Homeostasis·SelfImprove·Recursive] Autonomous INFRA self-improvement cycle. Researches CC native capabilities via claude-code-guide, diagnoses deficiencies across agents/skills/hooks/settings, implements fixes via infra-implementer, verifies full compliance, commits changes, records learnings.
+  [Homeostasis·SelfImprove·Recursive] Autonomous INFRA self-improvement cycle. Researches CC native capabilities via claude-code-guide, diagnoses deficiencies across agents/skills/hooks/settings, implements fixes, verifies compliance, commits changes.
 
-  WHEN: User invokes for periodic INFRA evolution. After CC updates, after feature changes, before releases, or for drift detection. Not auto-invoked — user decides when to run improvement cycle.
+  WHEN: User invokes for periodic INFRA evolution. After CC updates, feature changes, or before releases. Requires clean branch. Not auto-invoked.
   DOMAIN: Homeostasis (cross-cutting, self-improvement). Third homeostasis skill alongside manage-infra and manage-skills.
 
-  METHODOLOGY: (1) Spawn claude-code-guide for latest CC native feature/field research, (2) Self-diagnose all .claude/ files against native field lists + routing + budget + features, (3) Spawn infra-implementer waves for fixes (parallel by category), (4) Full compliance verify (zero non-native fields), (5) Git commit + update MEMORY.md + context-engineering.md.
-  PREREQUISITE: Clean branch or branch ready for INFRA changes.
+  METHODOLOGY: (1) Spawn claude-code-guide for CC native feature research, (2) Self-diagnose all .claude/ files against native fields + routing + budget, (3) Spawn infra-implementer waves for fixes (parallel by category), (4) Full compliance verify (zero non-native fields), (5) Git commit + update MEMORY.md + context-engineering.md.
   OUTPUT_FORMAT: L1 YAML improvement manifest, L2 markdown self-improvement report with commit hash.
 user-invocable: true
 disable-model-invocation: true

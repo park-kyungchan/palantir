@@ -1,15 +1,14 @@
 ---
 name: verify-quality
 description: |
-  [P8·Verify·Quality] Routing effectiveness and description clarity verifier. Checks WHEN conditions are specific and actionable, methodology steps are concrete with tool/agent references, output format specifies L1/L2/L3, protocol covers full flow.
+  [P8·Verify·Quality] Routing effectiveness and description clarity verifier. Checks WHEN specificity, methodology concreteness with tool/agent refs, output format L1/L2 presence, and full protocol flow coverage.
 
-  WHEN: Before committing description changes or after routing failures. Fourth of 5 verification stages. Can run independently.
+  WHEN: Before committing description changes or after routing failures. Fourth of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 4 of 5). After verify-consistency PASS.
   INPUT_FROM: verify-consistency (relationship integrity confirmed) or direct invocation.
   OUTPUT_TO: verify-cc-feasibility (if PASS) or execution domain (if FAIL, fix required).
-  ONTOLOGY_LENS: DO (behavioral quality of descriptions and protocols).
 
-  METHODOLOGY: (1) Read all WHEN conditions, check specificity (reject vague "when needed"), (2) Read METHODOLOGY steps, check numbered concrete steps with tool names, (3) Read OUTPUT_FORMAT, check L1/L2/L3 structure defined, (4) Check description utilization >88% of 1024 chars (quality target), (5) Score and rank by routing effectiveness.
+  METHODOLOGY: (1) Read WHEN conditions, check specificity (reject vague "when needed"), (2) Read METHODOLOGY steps, check numbered concrete steps with tool names, (3) Check OUTPUT_FORMAT has L1/L2 structure, (4) Check utilization >88% of 1024 chars (quality target), (5) Score and rank by routing effectiveness.
   OUTPUT_FORMAT: L1 YAML quality score per file (0-100), L2 markdown quality report with improvement suggestions.
 user-invocable: true
 disable-model-invocation: false

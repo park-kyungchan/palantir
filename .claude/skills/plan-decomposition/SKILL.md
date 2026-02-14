@@ -1,17 +1,16 @@
 ---
 name: plan-decomposition
 description: |
-  [P4·Plan·Decomposition] Task breakdown and file assignment specialist. Decomposes approved architecture into implementable tasks with file ownership, dependency chains, and estimated complexity. Domain entry point for planning phase.
+  [P4·Plan·Decomposition] Decomposes architecture into implementable tasks with file ownership, dependency chains, and complexity estimates.
 
   WHEN: research domain complete. Architecture validated against codebase. Ready for implementation planning.
-  DOMAIN: plan (skill 1 of 3). Sequential: decomposition → interface → strategy.
+  DOMAIN: plan (skill 1 of 3). Sequential: decomposition -> interface -> strategy.
   INPUT_FROM: research-audit (consolidated findings), design-architecture (component structure).
-  OUTPUT_TO: plan-interface (tasks needing interface specs), plan-strategy (tasks needing sequencing), orchestration-decompose (approved plan for task-teammate assignment).
+  OUTPUT_TO: plan-interface (interface specs), plan-strategy (sequencing), orchestration-decompose (approved plan).
 
-  METHODOLOGY: (1) Read architecture and research findings, (2) Break components into implementable tasks (max 4 files per task), (3) Assign file ownership per task (non-overlapping), (4) Identify inter-task dependencies, (5) Estimate complexity per task (TRIVIAL/STANDARD/COMPLEX).
+  METHODOLOGY: (1) Read architecture and research, (2) Break components into tasks (max 4 files each), (3) Assign file ownership (non-overlapping), (4) Identify inter-task dependencies, (5) Estimate complexity (T/S/C).
   TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=analyst, COMPLEX=2-4 analysts.
-  MAX_TEAMMATES: 4.
-  OUTPUT_FORMAT: L1 YAML task list with file assignments and dependencies, L2 markdown task descriptions, L3 detailed file-level breakdown.
+  OUTPUT_FORMAT: L1 YAML task list with assignments+deps, L2 task descriptions, L3 file-level breakdown.
 user-invocable: true
 disable-model-invocation: false
 ---

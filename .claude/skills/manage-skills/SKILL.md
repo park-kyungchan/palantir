@@ -1,14 +1,13 @@
 ---
 name: manage-skills
 description: |
-  [Homeostasis·Manager·Skills] Session-aware skill lifecycle manager. Detects codebase changes via git diff, maps changed files to domains (pre-design through verify), determines CREATE/UPDATE/DELETE actions for skills across ALL 8 domains.
+  [Homeostasis·Manager·Skills] Session-aware skill lifecycle manager. Detects codebase changes via git diff, maps changed files to domains, determines CREATE/UPDATE/DELETE actions across all 8 pipeline domains.
 
-  WHEN: After implementing features that introduce new patterns, after modifying skills, before PR, or periodically for drift detection. AI can auto-invoke after session changes.
-  DOMAIN: Homeostasis (cross-cutting, operates on .claude/skills/ directory).
+  WHEN: After implementing features with new patterns, after modifying skills, before PR, or periodic drift detection. AI can auto-invoke.
+  DOMAIN: Homeostasis (cross-cutting, operates on .claude/skills/).
 
-  DETECTION_RULES: .claude/agents/ changes → design domain, .claude/skills/ changes → self-management, docs/plans/ changes → plan domain, 3+ uncovered files in same domain → CREATE new skill.
-  METHODOLOGY: (1) Run git diff to detect changes, (2) Map changed files to domains via detection rules, (3) Check existing skill coverage per domain, (4) Propose CREATE/UPDATE/DELETE actions, (5) User approval, (6) Execute, (7) Run verify-cc-feasibility on results.
-  CLOSED_LOOP: Detect → Analyze → Propose → Approve → Execute → Verify → Done.
+  DETECTION_RULES: .claude/agents/ -> design domain, .claude/skills/ -> self-management, docs/plans/ -> plan domain, 3+ uncovered files in same domain -> CREATE.
+  METHODOLOGY: (1) Git diff to detect changes, (2) Map files to domains via detection rules, (3) Check skill coverage per domain, (4) Propose CREATE/UPDATE/DELETE actions, (5) Execute after approval, (6) Run verify-cc-feasibility on results.
   OUTPUT_FORMAT: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 markdown change analysis with rationale.
 user-invocable: true
 disable-model-invocation: false

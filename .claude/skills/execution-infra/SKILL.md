@@ -1,17 +1,16 @@
 ---
 name: execution-infra
 description: |
-  [P7·Execution·Infra] Infrastructure file implementation executor. Spawns infra-implementer agents to modify .claude/ directory files (agent .md, skill SKILL.md, references, settings). Handles .claude/ infrastructure changes exclusively.
+  [P7·Execution·Infra] Infrastructure file executor. Spawns infra-implementers to modify .claude/ files (agents, skills, settings, hooks). Handles .claude/ changes exclusively.
 
-  WHEN: orchestration domain assigns infra-related tasks. Infrastructure changes needed alongside or independent of code changes.
-  DOMAIN: execution (skill 2 of 3). Parallel-capable: code ∥ infra → review.
+  WHEN: orchestration domain assigns infra tasks. Infra changes needed alongside or independent of code.
+  DOMAIN: execution (skill 2 of 3). Parallel-capable: code ∥ infra -> review.
   INPUT_FROM: orchestration-verify (validated infra task assignments).
-  OUTPUT_TO: execution-review (infra changes for review), verify domain (completed infra for verification).
+  OUTPUT_TO: execution-review (infra changes for review), verify domain (completed infra).
 
-  METHODOLOGY: (1) Read validated infra assignments, (2) Spawn infra-implementer agents per assignment, (3) Each infra-implementer: read target → apply changes → write output, (4) Monitor progress via L1/L2, (5) Consolidate infra change results.
-  CONSTRAINT: Infra-implementers have Write but no Bash. Cannot delete files or run shell commands.
-  TIER_BEHAVIOR: TRIVIAL=single infra-implementer, STANDARD/COMPLEX=1-2 infra-implementers.
-  MAX_TEAMMATES: 4.
+  METHODOLOGY: (1) Read validated infra assignments, (2) Spawn infra-implementer agents per assignment, (3) Each: read target -> apply changes -> write output, (4) Monitor progress via L1/L2, (5) Consolidate infra change results.
+  CONSTRAINT: Infra-implementers have Write but no Bash. Cannot delete files or run commands.
+  TIER_BEHAVIOR: T=single infra-implementer, S/C=1-2 infra-implementers.
   OUTPUT_FORMAT: L1 YAML infra change manifest, L2 markdown change summary, L3 per-file change details.
 user-invocable: true
 disable-model-invocation: false

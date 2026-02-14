@@ -1,17 +1,16 @@
 ---
 name: pre-design-brainstorm
 description: |
-  [P0-1·PreDesign·Brainstorm] Initial requirement gathering through structured user interaction. Asks clarifying questions via AskUserQuestion to extract feature scope, constraints, success criteria, and edge cases. First skill invoked in any new pipeline.
+  [P0-1·PreDesign·Brainstorm] Requirement gathering through structured interaction. Extracts scope, constraints, criteria, and edge cases via AskUserQuestion. Pipeline entry point.
 
-  WHEN: Starting a new feature or task. User says "build X", "add Y", or has unclear requirements needing structured extraction. No prerequisites — pipeline entry point.
-  DOMAIN: pre-design (skill 1 of 3). Sequential: brainstorm → validate → feasibility.
+  WHEN: Starting a new feature or task. User says "build X", "add Y", or has unclear requirements. No prerequisites.
+  DOMAIN: pre-design (skill 1 of 3). Sequential: brainstorm -> validate -> feasibility.
   INPUT_FROM: User request (raw, unstructured).
   OUTPUT_TO: pre-design-validate (structured requirements document).
 
-  METHODOLOGY: (1) Parse user request for explicit and implicit requirements, (2) Categorize unknowns into scope/constraints/criteria/edge-cases, (3) Generate 3-6 clarifying questions via AskUserQuestion, (4) Synthesize answers into structured requirement document, (5) Identify remaining ambiguities for follow-up round.
+  METHODOLOGY: (1) Parse user request for requirements, (2) Categorize unknowns (scope/constraints/criteria/edge-cases), (3) Ask 3-6 questions via AskUserQuestion, (4) Synthesize into requirement document, (5) Flag remaining ambiguities.
   TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=1-2 analysts, COMPLEX=2-4 analysts.
-  MAX_TEAMMATES: 4. RETRY_LIMIT: 3 question rounds before proceeding with best-effort.
-  OUTPUT_FORMAT: L1 YAML requirement list with categories, L2 markdown requirement document with rationale and open questions.
+  OUTPUT_FORMAT: L1 YAML requirement list with categories, L2 requirement document with open questions.
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[topic]"
