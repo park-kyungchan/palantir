@@ -5,7 +5,8 @@
     "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "100000",
     "MAX_MCP_OUTPUT_TOKENS": "100000",
     "BASH_MAX_OUTPUT_LENGTH": "200000",
-    "ENABLE_TOOL_SEARCH": "auto:7"
+    "ENABLE_TOOL_SEARCH": "auto:7",
+    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "32000"
   },
   "permissions": {
     "allow": [
@@ -31,6 +32,7 @@
     ],
     "defaultMode": "delegate"
   },
+  "model": "opus",
   "hooks": {
     "SubagentStart": [
       {
@@ -71,19 +73,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-rtd-post-tool.sh",
-            "timeout": 5,
-            "async": true
-          }
-        ]
-      }
     ]
   },
   "enabledPlugins": {
@@ -91,6 +80,6 @@
     "superpowers@superpowers-marketplace": true
   },
   "promptSuggestionEnabled": false,
-  "teammateMode": "auto",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "teammateMode": "auto"
 }

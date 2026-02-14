@@ -127,6 +127,19 @@ Next: T-0 brainstorming via `/brainstorming-pipeline`.
 13 architecture decisions (AD-1~AD-13), 15 corrections applied, 10 deferred.
 Details + complete document index (30+ files): `memory/ontology-pls.md`
 
+### Meta-Cognition INFRA Update — Phase 1 In Progress (2026-02-13)
+
+brainstorming-pipeline Phase 1 Q&A complete (6 categories RESOLVED), Gate 1 pending.
+Core: tmp/ verify-implementation + manage-skills 패턴을 INFRA 전체에 Meta-Cognition 적용.
+14 decisions locked. Key architectural choices:
+- **Enhanced Frontmatter v2**: `routing` + `meta_cognition` blocks for self-describing components
+- **CLAUDE.md Protocol-Only 전환**: routing data → frontmatter, CLAUDE.md = protocol only
+- **Homeostasis System**: manage-infra (MANAGER) + verify-* (VERIFIERS) + verify-infra-implementation (RUNNER)
+- **RSIL 흡수**: 관찰 → 실행 가능한 검증으로 통합
+- **Root Exemption Zone**: 자기참조 무한루프 방지
+Resume: read design-draft.md v2 → Scope Statement approval → Gate 1 → PT → Phase 2 (7 research topics)
+Details: `memory/meta-cognition-infra.md`
+
 ### Other Deferred Work
 - Observability Dashboard: `/brainstorming-pipeline` topic (reads events.jsonl + rtd-index.md)
 
@@ -135,3 +148,4 @@ Details + complete document index (30+ files): `memory/ontology-pls.md`
 - `memory/skill-optimization-history.md` — SKL-001~SKL-005 detailed records
 - `memory/agent-teams-bugs.md` — BUG-001~BUG-003 details and workarounds
 - `memory/ontology-pls.md` — Ontology PLS full handoff (30+ connected docs, AD-1~AD-13, brainstorming chain T-0~T-4)
+- `memory/meta-cognition-infra.md` — Meta-Cognition INFRA Update handoff (14 decisions, Enhanced Frontmatter v2, Homeostasis System)
