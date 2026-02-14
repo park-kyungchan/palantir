@@ -24,12 +24,13 @@ argument-hint: "[focus-area]"
 ## Methodology
 
 ### 1. Research CC Native State
-Spawn claude-code-guide agent for ground truth:
-- Query: "What are ALL native frontmatter fields for Claude Code skills and agents?"
+First, read cached reference: `memory/cc-reference/` (4 files: native-fields, context-loading, hook-events, arguments-substitution).
+- If reference exists and is recent: use as ground truth (skip claude-code-guide spawn)
+- If reference outdated or focus-area requires new info: spawn claude-code-guide for delta only
+- Query focus: "What NEW native features exist since last verification date?"
 - Include focus-area from user arguments if provided
-- Record findings as authoritative reference for diagnosis
-- Check for NEW native features not yet used in INFRA
-- Compare against `memory/context-engineering.md` for delta
+- Update cc-reference files with any new findings
+- Compare against `memory/context-engineering.md` for decision history
 
 ### 2. Self-Diagnose INFRA
 Scan all `.claude/` files systematically:
