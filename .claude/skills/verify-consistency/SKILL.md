@@ -13,13 +13,6 @@ description: |
   OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 markdown inconsistency report with source/target evidence.
 user-invocable: true
 disable-model-invocation: false
-input_schema:
-  type: object
-  properties:
-    target:
-      type: string
-      description: "File or directory to verify (default: .claude/)"
-  required: []
 ---
 
 # Verify — Consistency
