@@ -4,7 +4,7 @@ description: |
   [P7·Execution·Infra] Infrastructure file executor. Spawns infra-implementers to modify .claude/ files (agents, skills, settings, hooks). Handles .claude/ changes exclusively.
 
   WHEN: orchestration domain assigns infra tasks. Infra changes needed alongside or independent of code.
-  DOMAIN: execution (skill 2 of 3). Parallel-capable: code ∥ infra -> review.
+  DOMAIN: execution (skill 2 of 5). Parallel-capable: code ∥ infra -> review.
   INPUT_FROM: orchestration-verify (validated infra task assignments).
   OUTPUT_TO: execution-review (infra changes for review), verify domain (completed infra).
 

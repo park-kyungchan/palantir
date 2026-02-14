@@ -38,16 +38,16 @@
 - **Rule 4: Verification & Context Engineering** -- Step-by-step verification, V1-V6 checks, context preservation, WARP.md maintenance
 - Active task rule: 장기 작업 시 Rule 5로 추가, 완료 후 삭제
 
-## Current INFRA State (v10.1, 2026-02-14)
+## Current INFRA State (v10.4 SRC, 2026-02-14)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v10.0 | 43L | Protocol-only, no routing data |
+| CLAUDE.md | v10.3 | 47L | Protocol-only + Section 2.1 (P0-P2 Lead-only rule) |
 | Agents | v10.0 | 6 files | analyst(B), researcher(C), implementer(D), infra-implementer(E), delivery-agent(F), pt-manager(G) |
-| Skills | v10.2 | 31 dirs | Full L2 + native field compliance (no non-native fields) |
-| Settings | -- | ~84L | 9 permissions, MCP Tool Search auto:7 |
-| Hooks | 3 total | ~148L | SubagentStart, PreCompact, SessionStart (RTD code removed) |
-| Agent Memory | -- | 3 dirs | implementer, infra-implementer, researcher only |
+| Skills | v10.4 | 35 dirs | +3 SRC skills, 31 auto-loaded, 93% budget |
+| Settings | -- | ~109L | 9 permissions, 5 hooks (SubagentStart, PreCompact, SessionStart, PostToolUse, SubagentStop) |
+| Hooks | 5 total | ~280L | +on-file-change.sh (SRC Stage 1), +on-implementer-done.sh (SRC Stage 2) |
+| Agent Memory | -- | 4 dirs | implementer, infra-implementer, researcher, analyst |
 
 ### Architecture (v10 Native Optimization)
 - **Routing**: Skill L1 auto-loaded in system-reminder, Agent L1 auto-loaded in Task tool definition
@@ -56,7 +56,7 @@
 - **CLAUDE.md**: Protocol-only (43L), zero routing data -- all routing via auto-loaded metadata
 - **Lead**: Pure Orchestrator, never edits files directly, routes via skills+agents
 
-### Skills (31 total: 26 pipeline + 2 homeostasis + 3 cross-cutting)
+### Skills (35 total: 28 pipeline + 4 homeostasis + 3 cross-cutting)
 
 | Domain | Skills | Phase |
 |--------|--------|-------|
@@ -66,9 +66,9 @@
 | plan | decomposition, interface, strategy | P4 |
 | plan-verify | correctness, completeness, robustness | P5 |
 | orchestration | decompose, assign, verify | P6 |
-| execution | code, infra, review | P7 |
+| execution | code, infra, **impact, cascade**, review | P7 |
 | verify | structure, content, consistency, quality, cc-feasibility | P8 |
-| homeostasis | manage-infra, manage-skills | X-cut |
+| homeostasis | manage-infra, manage-skills, **manage-codebase, self-improve** | X-cut |
 | cross-cutting | delivery-pipeline, pipeline-resume, task-management | P9/X-cut |
 
 ### Pipeline Tiers
@@ -110,6 +110,29 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
+### v10.4 SRC — Smart Reactive Codebase (2026-02-14, branch: test)
+- **SRC**: Automatic impact analysis system for code changes during pipeline execution
+- Architecture: Two-Stage Hook (PostToolUse→/tmp log, SubagentStop→Lead inject) — ADR-SRC-1
+- 3 new skills: execution-impact (P7.3), execution-cascade (P7.4), manage-codebase (homeostasis)
+- 2 new hooks: on-file-change.sh (async file logger), on-implementer-done.sh (impact injector)
+- CLAUDE.md v10.3: Section 2.1 added (P0-P2 Lead-only, P3+ Team infrastructure)
+- Execution domain renumbered: 5 skills (code→infra→impact→cascade→review)
+- self-improve: disable-model-invocation → false (user request, budget 93%)
+- RSI pass: execution-code trimmed 1071→859, bidirectionality fixes, numbering corrected
+- Design docs: src-architecture.md (1037L, 7 ADRs), src-interfaces.md, src-risk-assessment.md
+- Full COMPLEX pipeline: P0→P2 (Lead-only) → P7 (3 teammates) → P8 → P9
+- Total: 11 files changed/created
+
+### v10.3 Description Quality Optimization (2026-02-14, branch: test)
+- All 32 skill descriptions trimmed to ≤1024 chars (zero L1 truncation)
+- Canonical structure enforced: [Tag] -> WHEN -> DOMAIN -> I/O -> METHODOLOGY -> OUTPUT_FORMAT
+- Removed from L1: ONTOLOGY_LENS (5), CLOSED_LOOP (8), MAX_TEAMMATES (25)
+- Budget: 86% -> 82% (26,315 of 32,000 chars), 5,685 chars headroom
+- CC reference cache updated: semantic routing mechanics, budget analysis
+- claude-code-guide delta research: transformer-based routing, no priority mechanism
+- manage-skills audit: 32/32 skills, all domains covered, no gaps
+- Total: 35 files changed, +156 -196 lines
+
 ### v10.2 CC Native Compliance + Context Engineering (2026-02-14, branch: test)
 - Removed 12 non-native `input_schema` fields and 3 `confirm` fields across skills
 - Fixed 4 pipeline skills with `disable-model-invocation: true` breaking Lead routing
@@ -137,3 +160,8 @@ Details: `memory/meta-cognition-infra.md`
 - `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
 - `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)
 - `memory/context-engineering.md` -- CC native field reference, context loading order, critical findings
+- `memory/cc-reference/` -- Machine-readable CC native reference (4 files):
+  - `native-fields.md` -- Skill + Agent frontmatter field tables, flag combos, permissionMode details
+  - `context-loading.md` -- Session loading order, L1 budget, invocation flow, compaction, context budget
+  - `hook-events.md` -- All 14 hook events, types, input/output format, matchers, our configuration
+  - `arguments-substitution.md` -- $ARGUMENTS, dynamic context injection, env vars, argument-hint

@@ -9,7 +9,7 @@ description: |
   METHODOLOGY: (1) Spawn claude-code-guide for CC native feature research, (2) Self-diagnose all .claude/ files against native fields + routing + budget, (3) Spawn infra-implementer waves for fixes (parallel by category), (4) Full compliance verify (zero non-native fields), (5) Git commit + update MEMORY.md + context-engineering.md.
   OUTPUT_FORMAT: L1 YAML improvement manifest, L2 markdown self-improvement report with commit hash.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[focus-area]"
 ---
 
