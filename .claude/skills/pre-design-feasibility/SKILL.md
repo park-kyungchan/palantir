@@ -18,6 +18,51 @@ disable-model-invocation: false
 
 # Pre-Design — Feasibility
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick assessment against known CC capabilities.
+- **STANDARD**: Spawn researcher with claude-code-guide + web access for CC docs lookup.
+- **COMPLEX**: Spawn 2 researchers. Split: core CC features vs MCP/plugin capabilities.
+
+## Methodology
+
+### 1. Extract Technical Requirements
+From validated requirement document, list each item needing CC implementation:
+- File operations (Read, Edit, Write, Glob, Grep)
+- Shell execution (Bash)
+- Agent spawning (Task tool)
+- Web access (WebSearch, WebFetch)
+- MCP tools (sequential-thinking, context7, tavily)
+- Hooks (SubagentStart, PreCompact, SessionStart, etc.)
+- Skills (frontmatter, L2 body, input_schema)
+
+### 2. Map Requirements to CC Capabilities
+For each requirement, identify the CC native feature that implements it.
+Use claude-code-guide research for uncertain capabilities.
+
+### 3. Assess Feasibility
+
+| Verdict | Meaning |
+|---------|---------|
+| feasible | Direct CC native implementation exists |
+| partial | Possible with workarounds or limitations |
+| infeasible | Cannot be done with CC native features |
+
+### 4. Propose Alternatives for Infeasible Items
+For each infeasible/partial item:
+- Suggest scope reduction or alternative approach
+- Identify if MCP server or plugin could solve it
+- Estimate effort for workaround
+
+### 5. Gate Decision
+- All feasible → PASS, forward to design-architecture
+- Any infeasible without alternative → FAIL, return to brainstorm for scope reduction
+- Max 3 revision iterations
+
+## Quality Gate
+- Every requirement has explicit feasibility verdict
+- Infeasible items have documented alternatives or scope reduction
+- claude-code-guide consulted for uncertain items
+
 ## Output
 
 ### L1

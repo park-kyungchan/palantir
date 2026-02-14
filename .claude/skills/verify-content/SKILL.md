@@ -24,6 +24,52 @@ input_schema:
 
 # Verify — Content
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick content check on 1-2 files.
+- **STANDARD**: Spawn analyst. Systematic content completeness check.
+- **COMPLEX**: Spawn 2 analysts. One for agents, one for skills.
+
+## Methodology
+
+### 1. Read All Descriptions
+For each agent and skill file:
+- Extract the `description` field from frontmatter
+- Measure character count (target: >80% of 1024 = >819 chars)
+- Record utilization percentage
+
+### 2. Check Orchestration Map Keys
+For each skill description, verify presence of:
+- **WHEN**: Trigger condition (when to invoke this skill)
+- **DOMAIN**: Domain classification and skill position
+- **INPUT_FROM**: Upstream dependencies
+- **OUTPUT_TO**: Downstream consumers
+- **METHODOLOGY**: Numbered execution steps
+
+### 3. Verify Body Sections
+For each skill file with L2 body:
+- Execution Model section present (TRIVIAL/STANDARD/COMPLEX)
+- Methodology section with numbered steps
+- Quality Gate section with pass/fail criteria
+- Output section with L1 YAML and L2 markdown templates
+
+### 4. Check L1/L2/L3 Format
+For each Output section:
+- L1: YAML template with domain, skill, status fields
+- L2: Markdown bullet list describing content
+- L3 (optional): Detailed breakdown description
+
+### 5. Generate Content Report
+Produce utilization rankings:
+- Files below 80% threshold flagged
+- Missing orchestration keys listed per file
+- Missing body sections listed per file
+
+## Quality Gate
+- Average description utilization >80%
+- All skill descriptions have WHEN + DOMAIN + INPUT_FROM + OUTPUT_TO
+- All skills have Output section with L1/L2 templates
+- No completely empty body sections
+
 ## Output
 
 ### L1

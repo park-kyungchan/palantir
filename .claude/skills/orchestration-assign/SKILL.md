@@ -18,21 +18,68 @@ disable-model-invocation: false
 
 # Orchestration — Assign
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. 1-2 assignments.
+- **STANDARD**: Lead-direct. Uses Agent L1 WHEN conditions for matching.
+- **COMPLEX**: Lead-direct with sequential-thinking for complex assignment optimization.
+
+## Methodology
+
+### 1. Read Decomposed Groups
+Load orchestration-decompose output (task groups with agent capability).
+
+### 2. Match Groups to Agent Types
+For each group, select specific agent type:
+
+| Agent | Profile | Best For |
+|-------|---------|----------|
+| analyst | B (ReadAnalyzeWrite) | Analysis, design, verification, planning |
+| researcher | C (ReadAnalyzeWriteWeb) | External docs, library research, API validation |
+| implementer | D (CodeImpl) | Source code changes, test execution |
+| infra-implementer | E (InfraImpl) | .claude/ file changes, configuration |
+
+### 3. Balance Workload
+Within each execution phase:
+- No agent type spawned more than 4 times
+- Distribute tasks evenly across instances
+- Consider task complexity for balanced assignment
+
+### 4. Generate Assignment Matrix
+
+| Group | Agent Type | Instance | Tasks | Files |
+|-------|-----------|----------|-------|-------|
+| G1 | analyst | analyst-1 | [T1, T2] | [a.md, b.md] |
+| G2 | implementer | impl-1 | [T3] | [c.ts, d.ts] |
+
+### 5. Document Rationale
+For each assignment:
+- Why this agent type? (WHEN condition match)
+- Why this task grouping? (dependency + capability)
+- Any alternatives considered?
+
+## Quality Gate
+- Every group assigned to exactly 1 agent type
+- No agent type exceeds 4 instances
+- No file assigned to multiple agent instances
+- Rationale documented per assignment
+
 ## Output
 
 ### L1
 ```yaml
 domain: orchestration
 skill: assign
-total_teammates: 0
+assignment_count: 0
+agent_types_used: 0
 assignments:
   - group: ""
     agent_type: ""
-    teammate_count: 0
-    rationale: ""
+    instance: ""
+    tasks: []
+    files: []
 ```
 
 ### L2
-- Agent type matching rationale
-- Workload balance analysis
-- ASCII assignment matrix
+- Task-teammate assignment matrix
+- Workload balance indicators
+- Assignment rationale per group

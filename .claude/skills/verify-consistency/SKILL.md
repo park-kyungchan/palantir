@@ -1,7 +1,7 @@
 ---
 name: verify-consistency
 description: |
-  [P8·Verify·Consistency] Cross-file relationship integrity verifier. Checks coordinator-worker relationships match between CLAUDE.md and agent frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectional consistency, skills table matches directory.
+  [P8·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing relationships match between CLAUDE.md and agent frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectional consistency, skills table matches directory.
 
   WHEN: After multi-file changes or relationship modifications. Third of 5 verification stages. Can run independently.
   DOMAIN: verify (skill 3 of 5). After verify-content PASS.
@@ -23,6 +23,50 @@ input_schema:
 ---
 
 # Verify — Consistency
+
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick cross-reference check on 2-3 files.
+- **STANDARD**: Spawn analyst. Full relationship graph construction.
+- **COMPLEX**: Spawn 2 analysts. One for INPUT_FROM/OUTPUT_TO, one for phase sequence.
+
+## Methodology
+
+### 1. Extract All References
+For each skill description:
+- Parse INPUT_FROM values (upstream skill/domain references)
+- Parse OUTPUT_TO values (downstream skill/domain references)
+- Build directed graph of skill dependencies
+
+### 2. Verify Bidirectionality
+For each INPUT_FROM reference A→B:
+- Check that B's OUTPUT_TO includes A
+- Flag unidirectional references (A claims input from B, but B doesn't output to A)
+Similarly for OUTPUT_TO references.
+
+### 3. Check Phase Sequence
+Verify domain ordering follows pipeline:
+- pre-design → design → research → plan → plan-verify → orchestration → execution → verify
+- No backward phase references (e.g., verify outputting to pre-design)
+- Cross-cutting skills (manage-*, delivery, pipeline-resume) exempt from sequence
+
+### 4. Verify CLAUDE.md Consistency
+Check CLAUDE.md references match filesystem:
+- Skills count in S1 matches actual `.claude/skills/` directory count
+- Agent count matches `.claude/agents/` file count
+- Domain names consistent between CLAUDE.md and skill descriptions
+
+### 5. Generate Consistency Report
+Produce relationship matrix:
+- All skill pairs with their reference direction
+- Bidirectionality status per pair
+- Phase sequence violations if any
+- CLAUDE.md drift items if any
+
+## Quality Gate
+- All INPUT_FROM/OUTPUT_TO references are bidirectional
+- Phase sequence has no backward references
+- CLAUDE.md counts match filesystem reality
+- Zero unresolved inconsistencies
 
 ## Output
 

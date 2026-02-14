@@ -1,12 +1,12 @@
 ---
 name: manage-skills
 description: |
-  [Homeostasis·Manager·Skills] Session-aware skill lifecycle manager. Detects codebase changes via git diff, maps changed files to domains (pre-design through verify), determines CREATE/UPDATE/DELETE actions for skills across ALL 9 domains.
+  [Homeostasis·Manager·Skills] Session-aware skill lifecycle manager. Detects codebase changes via git diff, maps changed files to domains (pre-design through verify), determines CREATE/UPDATE/DELETE actions for skills across ALL 8 domains.
 
   WHEN: After implementing features that introduce new patterns, after modifying skills, before PR, or periodically for drift detection. AI can auto-invoke after session changes.
   DOMAIN: Homeostasis (cross-cutting, operates on .claude/skills/ directory).
 
-  DETECTION_RULES: .claude/agents/ changes → design domain, .claude/skills/ changes → self-management, .claude/references/ changes → research domain, docs/plans/ changes → plan domain, 3+ uncovered files in same domain → CREATE new skill.
+  DETECTION_RULES: .claude/agents/ changes → design domain, .claude/skills/ changes → self-management, docs/plans/ changes → plan domain, 3+ uncovered files in same domain → CREATE new skill.
   METHODOLOGY: (1) Run git diff to detect changes, (2) Map changed files to domains via detection rules, (3) Check existing skill coverage per domain, (4) Propose CREATE/UPDATE/DELETE actions, (5) User approval, (6) Execute, (7) Run verify-cc-feasibility on results.
   CLOSED_LOOP: Detect → Analyze → Propose → Approve → Execute → Verify → Done.
   OUTPUT_FORMAT: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 markdown change analysis with rationale.
@@ -27,6 +27,53 @@ input_schema:
 ---
 
 # Manage — Skills
+
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick scan for 1-2 domain changes.
+- **STANDARD**: Spawn analyst. Full domain coverage analysis.
+- **COMPLEX**: Spawn 2 analysts. One for change detection, one for coverage analysis.
+
+## Methodology
+
+### 1. Detect Changes
+Run git diff to identify modified files:
+- `git diff --name-only HEAD` for unstaged changes
+- `git diff --name-only --cached` for staged changes
+- Categorize each changed file by domain
+
+### 2. Map Changes to Domains
+Apply detection rules:
+- `.claude/agents/` changes → design domain skills
+- `.claude/skills/` changes → self-management (this skill)
+- `docs/plans/` changes → plan domain skills
+- Source code changes → execution domain skills
+- 3+ uncovered files in same domain → signal for CREATE new skill
+
+### 3. Check Domain Coverage
+For each of 8 pipeline domains:
+- List existing skills in that domain
+- Identify if the domain change is covered by an existing skill
+- If not covered: propose CREATE action with suggested skill name and description
+
+### 4. Propose Actions
+Generate action list:
+- **CREATE**: New skill needed (domain gap detected)
+- **UPDATE**: Existing skill needs description/body changes (methodology evolved)
+- **DELETE**: Skill no longer serves a purpose (domain removed or merged)
+Include rationale for each action.
+
+### 5. Execute and Verify
+After user approval:
+- For CREATE: generate SKILL.md with frontmatter + L2 body
+- For UPDATE: edit existing SKILL.md
+- For DELETE: remove skill directory
+- Run verify-cc-feasibility on all changed skills
+
+## Quality Gate
+- All 8 pipeline domains have ≥1 skill
+- All proposed actions have clear rationale
+- No domain left uncovered after actions applied
+- Changed skills pass CC feasibility check
 
 ## Output
 

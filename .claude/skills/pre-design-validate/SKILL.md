@@ -18,6 +18,43 @@ disable-model-invocation: false
 
 # Pre-Design — Validate
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick completeness check against 5-dimension matrix.
+- **STANDARD**: Spawn analyst. Systematic dimension-by-dimension validation.
+- **COMPLEX**: Spawn 2 analysts. Split: functional (scope+criteria) vs non-functional (constraints+errors+integration).
+
+## Methodology
+
+### 1. Read Brainstorm Output
+Load requirement document from pre-design-brainstorm output.
+Identify which dimensions were covered during brainstorm.
+
+### 2. Check Completeness Matrix
+
+| Dimension | Check | PASS Condition |
+|-----------|-------|---------------|
+| Scope | Feature boundaries defined | ≥1 inclusion AND ≥1 exclusion statement |
+| Constraints | Limits identified | Technical OR resource limits stated |
+| Criteria | Success measurable | ≥1 testable acceptance criterion |
+| Error Handling | Failure modes considered | ≥1 error scenario with recovery |
+| Integration | Touchpoints mapped | All external dependencies listed |
+
+### 3. Identify Gaps
+For each FAIL dimension:
+- State what's missing
+- Explain why it matters
+- Suggest specific questions to resolve
+
+### 4. Report or Iterate
+- If all PASS → forward to pre-design-feasibility
+- If any FAIL → report gaps to Lead for re-brainstorm
+- Max 3 iterations before proceeding with documented gaps
+
+## Quality Gate
+- Completeness matrix has explicit PASS/FAIL per dimension
+- Every FAIL has actionable gap description
+- No dimension left unchecked
+
 ## Output
 
 ### L1

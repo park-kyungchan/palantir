@@ -25,6 +25,54 @@ input_schema:
 
 # Verify — CC Feasibility
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick field check on 1-2 files.
+- **STANDARD**: Spawn analyst with claude-code-guide research.
+- **COMPLEX**: Spawn 2 analysts. One for field validation, one for claude-code-guide verification.
+
+## Methodology
+
+### 1. Read Target Frontmatter
+For each agent and skill file:
+- Extract all YAML frontmatter field names
+- Build field inventory per file
+
+### 2. Check Against Native Fields
+Allowed native fields:
+- `name`, `description`, `model`, `tools`, `disallowedTools`
+- `permissionMode`, `memory`, `color`, `maxTurns`
+- `hooks`, `mcpServers`, `skills`
+- `user-invocable`, `disable-model-invocation`, `confirm`
+- `input_schema`, `working_dir`, `timeout`, `env`
+
+Flag any field NOT in this list as non-native.
+
+### 3. Validate Field Values
+For each native field, check value types:
+- `name`: string
+- `description`: string (multi-line allowed)
+- `user-invocable`: boolean
+- `input_schema`: object with JSON Schema structure
+- `model`: one of known model identifiers
+
+### 4. Spawn Claude-Code-Guide Verification
+If any questionable fields found:
+- Spawn claude-code-guide agent: "Are these frontmatter fields valid for Claude Code skills/agents?"
+- Include the specific fields in question
+- Record feasibility verdict per field
+
+### 5. Generate Compliance Report
+Produce per-file compliance status:
+- PASS: all fields are native and valid
+- FAIL: non-native fields found (list them)
+- Recommendation: remove or replace non-native fields
+
+## Quality Gate
+- Zero non-native fields across all files
+- All field values are correct types
+- claude-code-guide confirms feasibility (if spawned)
+- No deprecated or removed fields used
+
 ## Output
 
 ### L1

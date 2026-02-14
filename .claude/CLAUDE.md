@@ -20,7 +20,7 @@
 - **Agent Teams:** Enabled (tmux split pane)
 - **Lead:** Pipeline Controller — routes skills, spawns agents
 - **Agents:** 6 custom (analyst, researcher, implementer, infra-implementer, delivery-agent, pt-manager)
-- **Skills:** 31 across 10 domains + 2 homeostasis + 3 cross-cutting
+- **Skills:** 31 across 8 pipeline domains + 2 homeostasis + 3 cross-cutting
 
 ## 2. Pipeline Tiers
 Classified at Phase 0:

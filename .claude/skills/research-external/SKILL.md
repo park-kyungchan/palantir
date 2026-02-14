@@ -24,6 +24,53 @@ input_schema:
 
 # Research — External
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick web search for one library/API.
+- **STANDARD**: Spawn researcher (has web access). Systematic documentation research.
+- **COMPLEX**: Spawn 2-4 researchers. Each covers non-overlapping external topics.
+
+## Methodology
+
+### 1. Extract External Dependencies
+From architecture decisions, list external dependencies needing research:
+- Libraries and their versions
+- API endpoints and protocols
+- Design patterns from official documentation
+- Claude Code native capabilities (via claude-code-guide or context7)
+
+### 2. Search Official Documentation
+Priority order for each dependency:
+1. **context7** (resolve-library-id → query-docs) for library docs
+2. **WebSearch** for official documentation sites
+3. **WebFetch** for specific documentation pages
+4. **tavily** for comprehensive search when others fail
+
+### 3. Validate Compatibility
+For each dependency:
+- Version compatibility with current environment
+- API availability and stability
+- License compatibility
+- Known issues or deprecations
+
+### 4. Synthesize Findings
+For each researched topic:
+- **Source**: URL or documentation reference
+- **Key Facts**: Version, API surface, limitations
+- **Impact on Architecture**: How this affects design decisions
+- **Alternatives**: If issues found, what else could work
+
+### 5. Report Confidence
+Rate each finding by source reliability:
+- Official docs → high confidence
+- Community resources → medium confidence
+- Inference/extrapolation → low confidence, flag for verification
+
+## Quality Gate
+- Every external dependency has ≥1 documented source
+- Version compatibility confirmed for all libraries
+- No undocumented assumptions about external APIs
+- Sources cited with URLs
+
 ## Output
 
 ### L1
@@ -32,15 +79,15 @@ domain: research
 skill: external
 dependency_count: 0
 validated: 0
-unvalidated: 0
+issues: 0
 dependencies:
   - name: ""
     version: ""
-    status: validated|unvalidated|incompatible
+    status: validated|issue|unknown
     source: ""
 ```
 
 ### L2
 - Dependency validation matrix with source URLs
-- Version compatibility analysis
-- API availability and limitations
+- Compatibility analysis per dependency
+- Alternatives for problematic dependencies

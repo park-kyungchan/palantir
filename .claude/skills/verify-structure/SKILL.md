@@ -24,6 +24,47 @@ input_schema:
 
 # Verify — Structure
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick check on 1-2 files.
+- **STANDARD**: Spawn analyst. Systematic structural verification.
+- **COMPLEX**: Spawn 2 analysts. One for agents, one for skills.
+
+## Methodology
+
+### 1. Inventory All Files
+Use Glob to discover:
+- `.claude/agents/*.md` — agent definition files
+- `.claude/skills/*/SKILL.md` — skill definition files
+- `.claude/settings.json`, `.claude/hooks/*`, `.claude/CLAUDE.md`
+
+### 2. Validate YAML Frontmatter
+For each agent and skill file:
+- Parse YAML between `---` markers
+- Check parsing succeeds without errors
+- Report parse failures with file:line location
+
+### 3. Check Required Fields
+For each parsed frontmatter:
+- `name` field present and non-empty
+- `description` field present and non-empty
+- Skill-specific: `user-invocable` field present
+
+### 4. Verify Naming Conventions
+- Agent files: lowercase with hyphens (e.g., `infra-implementer.md`)
+- Skill directories: lowercase with hyphens (e.g., `execution-code/`)
+- Skill files: always named `SKILL.md` (uppercase)
+
+### 5. Check Directory Structure
+- No orphan files in `.claude/skills/` (files outside skill dirs)
+- No empty skill directories (dir without SKILL.md)
+- Agent files directly under `.claude/agents/`
+
+## Quality Gate
+- All files have valid YAML frontmatter
+- All files have required fields
+- Naming conventions followed consistently
+- No structural anomalies
+
 ## Output
 
 ### L1

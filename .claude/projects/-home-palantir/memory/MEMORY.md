@@ -11,21 +11,13 @@
 - claude-code-guide agent research required for every skill optimization
 - Common improvements: Dynamic Context Injection, $ARGUMENTS, Opus 4.6 Measured Language, argument-hint frontmatter
 - Per-skill improvements derived from claude-code-guide research (different each time)
-- Process: claude-code-guide research → design doc → SKILL.md → validation → commit
+- Process: claude-code-guide research -> design doc -> SKILL.md -> validation -> commit
 
 ### claude-code-guide Output Management (2026-02-11)
-- claude-code-guide agent has NO Write tool → output stored only in volatile /tmp
-- **Lead must read output immediately after task completion** — /tmp/ files are cleaned up on a timer
+- claude-code-guide agent has NO Write tool -> output stored only in volatile /tmp
+- **Lead must read output immediately after task completion** -- /tmp/ files are cleaned up on a timer
 - If output is lost: use `resume` parameter to retrieve from agent context
-- Never substitute domain knowledge for CC research — always re-request if output is lost
-
-### Pre-Orchestration Agent Description Reading (2026-02-11)
-- Before ANY orchestration, Lead must read `.claude/references/agent-catalog.md` Level 1 (up to boundary marker, ~227L)
-- Level 2 (~1186L) read only when needing category detail or fallback evaluation
-- 43 agents (35 workers + 8 coordinators) across 13 categories
-- Purpose: understand routing model, coordinator descriptions, spawn conditions
-- This is mandatory — never orchestrate from summary tables or memory alone
-- CLAUDE.md §6 "Before Spawning" directs this read → auto-recovery after compaction
+- Never substitute domain knowledge for CC research -- always re-request if output is lost
 
 ### ASCII Status Visualization (2026-02-08)
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
@@ -33,82 +25,67 @@
 
 ### Dual Environment: Claude Code CLI vs Warp (2026-02-13)
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
-- **Warp Agent (Oz)**: Single-instance. Reads CLAUDE.md + WARP.md + Warp Manage Rules. Lead↔Teammate role switching.
+- **Warp Agent (Oz)**: Single-instance. Reads CLAUDE.md + WARP.md + Warp Manage Rules. Lead<->Teammate role switching.
 - **Bridge files** (both environments read): CLAUDE.md, MEMORY.md, WARP.md, agent .md, SKILL.md
 - **Warp-only**: 4 Manage Rules (not visible to Claude Code CLI)
 - WARP.md (`/home/palantir/WARP.md`) = compact single-instance protocol + tool mapping
 
 ### Warp Manage Rules Configuration (2026-02-13)
 4 Rules in Warp's Manage Rules (replace all prior rules):
-- **Rule 1: Session Bootstrap** — Model identity, session start reads, language, core mandates
-- **Rule 2: Warp Single-Instance Execution** — Lead↔Teammate switching, persona binding, output, pipeline tiers
-- **Rule 3: Warp Tool Mapping** — Warp native tools → INFRA pattern mapping (plan, TODO, grep, edit, shell, review, PR)
-- **Rule 4: Verification & Context Engineering** — Step-by-step verification, V1-V6 checks, context preservation, WARP.md maintenance
+- **Rule 1: Session Bootstrap** -- Model identity, session start reads, language, core mandates
+- **Rule 2: Warp Single-Instance Execution** -- Lead<->Teammate switching, persona binding, output, pipeline tiers
+- **Rule 3: Warp Tool Mapping** -- Warp native tools -> INFRA pattern mapping (plan, TODO, grep, edit, shell, review, PR)
+- **Rule 4: Verification & Context Engineering** -- Step-by-step verification, V1-V6 checks, context preservation, WARP.md maintenance
 - Active task rule: 장기 작업 시 Rule 5로 추가, 완료 후 삭제
 
-## Current INFRA State (v9.0 + Phase 6, 2026-02-13)
+## Current INFRA State (v10.1, 2026-02-14)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v9.0+ | ~394L | D-001~D-017, §10 fork exception (pt-manager, delivery-agent, rsil-agent) |
-| task-api-guideline.md | v6.0 | 118L | NLP consolidated (was 537L, 78% reduction) |
-| agent-common-protocol.md | v4.1 | ~200L | +§Task API fork exception (3 agents listed) |
-| agent-catalog.md | v3.0 | ~1882L | Two-Level (L1 ~280L + L2 ~1600L), 43 agents (35W+8C) |
-| Agents | v6.0 | 46 files | 35 workers + 8 coordinators + 3 fork agents, 14 categories |
-| Fork Agents | v1.0 | 3 files | pt-manager (full API), delivery-agent (−Create), rsil-agent (−Create) |
-| Coordinators | Template B | 8 files | memory:project, color, disallowedTools:[4], protocol refs standardized |
-| References | v1.0 | 3 new | gate-evaluation-standard (D-008), ontological-lenses (D-010), coordinator-shared-protocol (D-013) |
-| Settings | — | ~84L | MCP Tool Search auto:7 enabled |
-| Hooks | 4 total | ~220L | SubagentStart, PreCompact (hookOutput), SessionStart, PostToolUse |
-| Observability | — | — | `.agent/observability/{slug}/` (rtd-index, events.jsonl, registry) |
+| CLAUDE.md | v10.0 | 43L | Protocol-only, no routing data |
+| Agents | v10.0 | 6 files | analyst(B), researcher(C), implementer(D), infra-implementer(E), delivery-agent(F), pt-manager(G) |
+| Skills | v10.1 | 31 dirs | Full L2 bodies (Exec Model + 5-step Methodology + Quality Gate + Output) |
+| Settings | -- | ~84L | 9 permissions, MCP Tool Search auto:7 |
+| Hooks | 3 total | ~148L | SubagentStart, PreCompact, SessionStart (RTD code removed) |
+| Agent Memory | -- | 3 dirs | implementer, infra-implementer, researcher only |
 
-### Skills (9 total: 5 coordinator-based + 4 fork-based)
+### Architecture (v10 Native Optimization)
+- **Routing**: Skill L1 auto-loaded in system-reminder, Agent L1 auto-loaded in Task tool definition
+- **L1 (frontmatter)**: WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY -- routing intelligence, 1024 chars max
+- **L2 (body)**: Execution Model + Methodology (5 steps) + Quality Gate + Output -- loaded on invocation
+- **CLAUDE.md**: Protocol-only (43L), zero routing data -- all routing via auto-loaded metadata
+- **Lead**: Pure Orchestrator, never edits files directly, routes via skills+agents
 
-| SKL | Skill | Phase | Type | Notes |
-|-----|-------|-------|------|-------|
-| 001 | `/brainstorming-pipeline` | P1-3 | coord | §A/§B/§C/§D template, 612L |
-| 002 | `/agent-teams-write-plan` | P4 | coord | §A/§B/§C/§D template, 372L |
-| 003 | `/agent-teams-execution-plan` | P6 | coord | §A/§B/§C/§D template, 671L |
-| 004 | `/plan-validation-pipeline` | P5 | coord | §A/§B/§C/§D template, 436L |
-| 005 | `/verification-pipeline` | P7-8 | coord | §A/§B/§C/§D template, 553L |
-| 006 | `/delivery-pipeline` | P9 | fork | context:fork, agent:delivery-agent, 499L |
-| 007 | `/rsil-review` | — | fork | context:fork, agent:rsil-agent, 8 Lenses |
-| 008 | `/rsil-global` | — | fork | context:fork, agent:rsil-agent, Three-Tier |
-| — | `/permanent-tasks` | — | fork | context:fork, agent:pt-manager, PT lifecycle |
+### Skills (31 total: 26 pipeline + 2 homeostasis + 3 cross-cutting)
 
-### RSIL Quality Data
-- RSIL INFRA Score: 5.9→9.5/10 (+61%, 5 cycles, Baseline→C4→C5)
-- Dimensions: Static 10/10, Relational 9/10, Behavioral 9.5/10
-- Cumulative: 92 findings, 93% acceptance (11 reviews: 1 global, 4 narrow, 6 retroactive)
-- Cycle 7: 20 new (integration 7 + protocol 13), 6 FIX + 7 WARN all applied, 7 INFO noted
-- CC Optimization (Task #23): MCP Tool Search, RTD dedup, protocol expansion, PreCompact hookOutput
-- Tracker: `docs/plans/2026-02-08-narrow-rsil-tracker.md`
-- Agent memory: `~/.claude/agent-memory/rsil/MEMORY.md`
-- All audit targets COMPLETE (S-1~S-4, S-6, S-7)
+| Domain | Skills | Phase |
+|--------|--------|-------|
+| pre-design | brainstorm, validate, feasibility | P0-P1 |
+| design | architecture, interface, risk | P2 |
+| research | codebase, external, audit | P3 |
+| plan | decomposition, interface, strategy | P4 |
+| plan-verify | correctness, completeness, robustness | P5 |
+| orchestration | decompose, assign, verify | P6 |
+| execution | code, infra, review | P7 |
+| verify | structure, content, consistency, quality, cc-feasibility | P8 |
+| homeostasis | manage-infra, manage-skills | X-cut |
+| cross-cutting | delivery-pipeline, pipeline-resume, task-management | P9/X-cut |
 
-### Agents-Driven Workflow (PT #4→#5→v9.0+P6, 2026-02-13)
-- 46 agent files (35 workers + 8 coordinators + 3 fork agents), 13 categories
-- Agent catalog: `.claude/references/agent-catalog.md` (1882L Two-Level)
-- P1: One Agent = One Responsibility — WHEN/WHY/HOW framework
-- Layer 1/2 Boundary: `.claude/references/layer-boundary-model.md`
-- CLAUDE.md §6: Agent Selection and Routing (6-step), Coordinator Management (Mode 1+3)
-- CLAUDE.md §10: Fork exception — pt-manager, delivery-agent, rsil-agent get Task API access
-- 8 coordinators (Template B): memory:project, color, disallowedTools:[TaskCreate,TaskUpdate,Edit,Bash]
-- 3 fork agents: pt-manager (full API), delivery-agent (−TaskCreate), rsil-agent (−TaskCreate)
-- 5 coordinator SKILL.md: §A Phase 0 / §B Core / §C Interface / §D Cross-Cutting template
-- 4 fork SKILL.md: context:fork + agent: frontmatter → fork agent .md binding
-- D-001~D-017: Pipeline Tiers, Full Decomposition, Gate Standard, Ontological Lenses, Error Taxonomy
-- Skill Opt v9.0 Phase 6 output: `palantir_coding/.agent/teams/skill-opt-v9-p6/phase-6/`
-- Verification report: `palantir_coding/.agent/teams/skill-opt-v9-p6/phase-6/verifier/L2-verification-report.md`
+### Pipeline Tiers
+
+| Tier | Criteria | Phases |
+|------|----------|--------|
+| TRIVIAL | <=2 files, single module | P0->P7->P9 |
+| STANDARD | 3-8 files, 1-2 modules | P0->P2->P3->P4->P7->P8->P9 |
+| COMPLEX | >8 files, 3+ modules | P0->P9 (all phases) |
 
 ### Known Bugs
 
 | ID | Severity | Summary | Workaround |
 |----|----------|---------|------------|
 | BUG-001 | CRITICAL | `permissionMode: plan` blocks MCP tools | Always spawn with `mode: "default"` |
-| BUG-002 | HIGH | Large-task teammates auto-compact before L1/L2 | CLAUDE.md §6 Pre-Spawn Checklist (S-1/S-2/S-3 gates) |
-| BUG-003 | MEDIUM | $CLAUDE_SESSION_ID unavailable in hooks (GH #17188) | AD-29: SubagentStart stdin SID → session-registry.json |
-| BUG-004 | HIGH | No cross-agent compaction notification | tmux monitoring + H-3 incremental L1 + protocol self-report |
+| BUG-002 | HIGH | Large-task teammates auto-compact before L1/L2 | Keep prompts focused, avoid context bloat |
+| BUG-004 | HIGH | No cross-agent compaction notification | tmux monitoring + protocol self-report |
 
 Details: `memory/agent-teams-bugs.md`
 
@@ -117,35 +94,36 @@ Details: `memory/agent-teams-bugs.md`
 ### Ontology Communication Protocol [ALWAYS ACTIVE] (2026-02-10)
 
 Active whenever Ontology/Foundry concepts arise. User = concept-level decision-maker.
-4-step pattern: **TEACH → IMPACT ASSESS → RECOMMEND → ASK**
-Reference: `.claude/references/ontology-communication-protocol.md`
+4-step pattern: **TEACH -> IMPACT ASSESS -> RECOMMEND -> ASK**
 
-### Ontology PLS — Deferred to New Session (2026-02-10)
+### Ontology PLS -- Deferred (2026-02-10)
+All phases complete (P0-P3). Next: T-0 brainstorming. Details: `memory/ontology-pls.md`
 
-All phases complete (P0-P3), no implementation needed. Archived.
-Next: T-0 brainstorming via `/brainstorming-pipeline`.
-13 architecture decisions (AD-1~AD-13), 15 corrections applied, 10 deferred.
-Details + complete document index (30+ files): `memory/ontology-pls.md`
-
-### Meta-Cognition INFRA Update — Phase 1 In Progress (2026-02-13)
-
-brainstorming-pipeline Phase 1 Q&A complete (6 categories RESOLVED), Gate 1 pending.
-Core: tmp/ verify-implementation + manage-skills 패턴을 INFRA 전체에 Meta-Cognition 적용.
-14 decisions locked. Key architectural choices:
-- **Enhanced Frontmatter v2**: `routing` + `meta_cognition` blocks for self-describing components
-- **CLAUDE.md Protocol-Only 전환**: routing data → frontmatter, CLAUDE.md = protocol only
-- **Homeostasis System**: manage-infra (MANAGER) + verify-* (VERIFIERS) + verify-infra-implementation (RUNNER)
-- **RSIL 흡수**: 관찰 → 실행 가능한 검증으로 통합
-- **Root Exemption Zone**: 자기참조 무한루프 방지
-Resume: read design-draft.md v2 → Scope Statement approval → Gate 1 → PT → Phase 2 (7 research topics)
+### Meta-Cognition INFRA Update -- Largely Implemented (2026-02-14)
+Core ideas from meta-cognition brainstorming have been implemented in v10:
+- CLAUDE.md Protocol-Only transition: DONE (43L)
+- Homeostasis System: DONE (manage-infra + manage-skills + 5 verify-* skills)
+- Self-describing components (frontmatter routing): DONE (31 skills with full L1/L2)
+- Root Exemption Zone concept: Applied in manage-skills self-management detection
+Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -- using native fields only.
 Details: `memory/meta-cognition-infra.md`
 
-### Other Deferred Work
-- Observability Dashboard: `/brainstorming-pipeline` topic (reads events.jsonl + rtd-index.md)
+## Session History
+
+### v10.1 INFRA Cleanup + L2 Body Design (2026-02-14, branch: test)
+- Removed all RTD dead code from 3 hooks
+- Removed stale Skill(orchestrate) permission from settings.json
+- Rewrote pipeline-resume from RTD to Task API
+- Fixed TIER_BEHAVIOR in 5 skills (removed coordinator/architect references)
+- Deleted 17 orphaned agent-memory directories + rsil-review-output.md
+- Fixed domain count in CLAUDE.md and manage-skills
+- **Wrote comprehensive L2 bodies for all 30 skills** (task-management already had one)
+- Ran manage-skills: 27 UPDATE, 0 CREATE, 0 DELETE -- all domains fully covered
+- Total: 42 files changed, +1415 / -800 lines
 
 ## Topic Files Index
-- `memory/infrastructure-history.md` — Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
-- `memory/skill-optimization-history.md` — SKL-001~SKL-005 detailed records
-- `memory/agent-teams-bugs.md` — BUG-001~BUG-003 details and workarounds
-- `memory/ontology-pls.md` — Ontology PLS full handoff (30+ connected docs, AD-1~AD-13, brainstorming chain T-0~T-4)
-- `memory/meta-cognition-infra.md` — Meta-Cognition INFRA Update handoff (14 decisions, Enhanced Frontmatter v2, Homeostasis System)
+- `memory/infrastructure-history.md` -- Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
+- `memory/skill-optimization-history.md` -- SKL-001~SKL-005 detailed records
+- `memory/agent-teams-bugs.md` -- BUG-001~BUG-004 details and workarounds
+- `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
+- `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)

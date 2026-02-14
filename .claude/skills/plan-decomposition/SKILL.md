@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: plan-interface (tasks needing interface specs), plan-strategy (tasks needing sequencing), orchestration-decompose (approved plan for task-teammate assignment).
 
   METHODOLOGY: (1) Read architecture and research findings, (2) Break components into implementable tasks (max 4 files per task), (3) Assign file ownership per task (non-overlapping), (4) Identify inter-task dependencies, (5) Estimate complexity per task (TRIVIAL/STANDARD/COMPLEX).
-  TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=plan-writer agent, COMPLEX=planning-coordinator+3 workers.
+  TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=analyst, COMPLEX=2-4 analysts.
   MAX_TEAMMATES: 4.
   OUTPUT_FORMAT: L1 YAML task list with file assignments and dependencies, L2 markdown task descriptions, L3 detailed file-level breakdown.
 user-invocable: true
@@ -17,6 +17,47 @@ disable-model-invocation: true
 ---
 
 # Plan — Decomposition
+
+## Execution Model
+- **TRIVIAL**: Lead-direct. Simple 1-2 task breakdown with file assignments.
+- **STANDARD**: Spawn analyst. Systematic decomposition with dependency analysis.
+- **COMPLEX**: Spawn 2-4 analysts. Each decomposes non-overlapping architecture modules.
+
+## Methodology
+
+### 1. Read Architecture and Research
+Load design-architecture ADRs and research-audit findings.
+List all components needing implementation.
+
+### 2. Break Components into Tasks
+For each component:
+- Define 1 task per coherent unit of work
+- Max 4 files per task (non-overlapping ownership)
+- Task subject: imperative action verb + target ("Implement X handler")
+
+### 3. Assign File Ownership
+Rules:
+- Each file belongs to exactly 1 task
+- Related files (e.g., module + its tests) stay in same task
+- Config files (.claude/) go to infra tasks, source files to code tasks
+
+### 4. Map Dependencies
+For each task pair, determine:
+- **blocks**: Task A must complete before Task B can start
+- **independent**: Tasks can run in parallel
+- Identify critical path (longest dependency chain)
+
+### 5. Estimate Complexity
+Per task:
+- TRIVIAL: <=2 files, single function/section change
+- STANDARD: 3-4 files, connected changes
+- COMPLEX: Cross-module, requires integration testing
+
+## Quality Gate
+- Every architecture component has >=1 implementation task
+- No file assigned to multiple tasks
+- Dependency graph is acyclic (DAG)
+- Critical path identified
 
 ## Output
 

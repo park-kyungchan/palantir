@@ -18,6 +18,45 @@ disable-model-invocation: false
 
 # Orchestration — Verify
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick sanity check.
+- **STANDARD**: Lead-direct. Systematic verification of assignments.
+- **COMPLEX**: Spawn analyst for independent verification of complex assignment.
+
+## Methodology
+
+### 1. Read Assignment Matrix
+Load orchestration-assign output (task-teammate assignments).
+
+### 2. Verify Agent-Task Match
+For each assignment, check:
+- Agent WHEN condition matches task requirements
+- Agent has required tools for the task (Edit for code changes, Bash for testing)
+- Agent profile (B/C/D/E) is appropriate for task type
+
+### 3. Check Dependency Acyclicity
+Run topological sort on dependency graph:
+- If sort succeeds -> acyclic (PASS)
+- If sort fails -> cycle detected (FAIL, report cycle)
+
+### 4. Validate Capacity
+Per execution phase:
+- Teammate count <= 4
+- No single agent overloaded (>4 files per instance)
+- Context budget feasible (estimate tokens per task)
+
+### 5. Check File Ownership
+Verify non-overlapping file ownership:
+- No file appears in multiple agent assignments
+- All files from plan appear in assignments (nothing dropped)
+- .claude/ files assigned to infra-implementer, not implementer
+
+## Quality Gate
+- All agent-task matches verified correct
+- Dependency graph is acyclic
+- Capacity within limits
+- File ownership non-overlapping and complete
+
 ## Output
 
 ### L1
@@ -28,11 +67,12 @@ status: PASS|FAIL
 checks:
   agent_match: PASS|FAIL
   acyclicity: PASS|FAIL
-  teammate_limit: PASS|FAIL
-  file_ownership: PASS|FAIL
+  capacity: PASS|FAIL
+  ownership: PASS|FAIL
+issues: 0
 ```
 
 ### L2
-- Per-check verdict with evidence
-- Cycle detection results
-- ASCII validated dependency graph
+- Verification results per check category
+- Issues found with evidence
+- Validated dependency graph (ASCII)

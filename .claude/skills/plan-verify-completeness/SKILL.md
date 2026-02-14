@@ -18,6 +18,46 @@ disable-model-invocation: false
 
 # Plan Verify — Completeness
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick requirement coverage check.
+- **STANDARD**: Spawn analyst. Systematic traceability matrix construction.
+- **COMPLEX**: Spawn 2-4 analysts. Divide: requirement coverage vs architecture coverage.
+
+## Methodology
+
+### 1. Load Requirements and Plan
+Read pre-design-validate (original requirements) and plan-strategy (implementation plan).
+
+### 2. Build Traceability Matrix
+
+| Requirement | Task(s) | Covered? | Evidence |
+|-------------|---------|----------|----------|
+| REQ-1: scope item | task-A, task-B | yes | Files: x.md, y.md |
+| REQ-2: constraint | -- | no | No task addresses this |
+
+### 3. Check Architecture Coverage
+For each design-architecture component:
+- Does at least 1 task implement this component?
+- Are all interface contracts addressed by tasks?
+- Are all risk mitigations included in the plan?
+
+### 4. Identify Missing Scenarios
+Check for uncovered situations:
+- Error handling: Does each task have error recovery?
+- Edge cases: Are boundary conditions addressed?
+- Integration: Are cross-task integration steps planned?
+
+### 5. Report Coverage Metrics
+- Requirement coverage: tasks/requirements x 100%
+- Architecture coverage: implemented components/total components x 100%
+- Target: both >=90% for PASS
+
+## Quality Gate
+- Traceability matrix complete (every requirement checked)
+- Requirement coverage >=90%
+- Architecture coverage >=90%
+- No critical requirement uncovered
+
 ## Output
 
 ### L1
@@ -25,15 +65,13 @@ disable-model-invocation: false
 domain: plan-verify
 skill: completeness
 status: PASS|FAIL
-coverage_pct: 0
-gaps: 0
-traceability:
-  - requirement: ""
-    task: ""
-    status: covered|uncovered
+requirement_coverage: 0
+architecture_coverage: 0
+uncovered_requirements: 0
+uncovered_components: 0
 ```
 
 ### L2
-- Requirement-to-task traceability matrix
-- Uncovered requirements and scenarios
-- Coverage percentage analysis
+- Traceability matrix with coverage percentages
+- Gap report for uncovered requirements
+- Missing scenario analysis

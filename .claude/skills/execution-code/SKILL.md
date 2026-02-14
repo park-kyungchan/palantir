@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: execution-review (implementation artifacts for review), verify domain (completed code for verification).
 
   METHODOLOGY: (1) Read validated assignments, (2) Spawn implementer agents per task-teammate matrix, (3) Each implementer: TaskGet PT → explain understanding → write code → report, (4) Monitor progress via L1/L2 reads, (5) Consolidate implementation results.
-  TIER_BEHAVIOR: TRIVIAL=single implementer, STANDARD=1-2 implementers, COMPLEX=execution-coordinator+3.
+  TIER_BEHAVIOR: TRIVIAL=single implementer, STANDARD=1-2 implementers, COMPLEX=3-4 implementers.
   MAX_TEAMMATES: 4.
   OUTPUT_FORMAT: L1 YAML file change manifest, L2 markdown implementation summary, L3 per-file change details.
 user-invocable: true
@@ -18,6 +18,47 @@ confirm: true
 ---
 
 # Execution — Code
+
+## Execution Model
+- **TRIVIAL**: Lead-direct. Single implementer for 1-2 file change.
+- **STANDARD**: Spawn 1-2 implementers. Each owns non-overlapping files.
+- **COMPLEX**: Spawn 3-4 implementers. Parallel implementation with dependency awareness.
+
+## Methodology
+
+### 1. Read Validated Assignments
+Load orchestration-verify PASS report and task-teammate matrix.
+Extract file assignments, dependency order, and interface contracts per implementer.
+
+### 2. Spawn Implementers
+For each task group in the matrix:
+- Create Task with `subagent_type: implementer`
+- Include in prompt: task description, file list, interface contracts, PT context
+- Set `mode: "bypassPermissions"` for code implementation
+
+### 3. Monitor Progress
+During implementation:
+- Read implementer L1 output for completion status
+- Track files_changed count against expected
+- If implementer reports blocker: assess and provide guidance
+
+### 4. Handle Failures
+If an implementer fails or produces incorrect output:
+- Read their L2 for error details
+- Provide corrected instructions via new spawn
+- Max 3 retry iterations per implementer
+
+### 5. Consolidate Results
+After all implementers complete:
+- Collect L1 YAML from each implementer
+- Build unified file change manifest
+- Report to execution-review for validation
+
+## Quality Gate
+- All assigned files have been modified/created
+- Each implementer reports `status: complete`
+- No unresolved blockers or errors
+- File ownership non-overlapping (no conflicts)
 
 ## Output
 

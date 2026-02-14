@@ -17,6 +17,50 @@ disable-model-invocation: false
 
 # Design — Risk
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick risk scan, 2-3 top risks identified.
+- **STANDARD**: Spawn analyst. Systematic FMEA per component.
+- **COMPLEX**: Spawn 2-4 analysts. Divide: security vs performance vs reliability.
+
+## Methodology
+
+### 1. Read Architecture and Interfaces
+Load design outputs. Identify components, boundaries, and data flows.
+
+### 2. Failure Mode Analysis (FMEA)
+For each component, identify failure modes:
+
+| Component | Failure Mode | Severity (1-5) | Likelihood (1-5) | Detection (1-5) | RPN |
+|-----------|-------------|-----------------|-------------------|------------------|-----|
+| {name} | {what fails} | {impact} | {probability} | {detectability} | S×L×D |
+
+RPN (Risk Priority Number) = Severity × Likelihood × Detection.
+Focus mitigation on highest RPN items.
+
+### 3. Security Assessment
+Check against relevant OWASP categories:
+- Input validation (command injection, path traversal)
+- Access control (agent tool restrictions, file permissions)
+- Data exposure (sensitive files in commits, .env leaks)
+
+### 4. Performance Analysis
+Identify potential bottlenecks:
+- Context window consumption (large file reads, verbose outputs)
+- Agent spawn overhead (too many parallel agents)
+- API rate limits (web search, MCP tool calls)
+
+### 5. Propose Mitigations
+For each high-RPN risk:
+- **Mitigation strategy**: How to reduce severity/likelihood
+- **Detection mechanism**: How to identify when risk materializes
+- **Fallback plan**: What to do if mitigation fails
+
+## Quality Gate
+- Every component has ≥1 failure mode analyzed
+- Top 3 RPN risks have documented mitigations
+- Security assessment covers all external data flows
+- No unmitigated critical (Severity=5) risks
+
 ## Output
 
 ### L1
@@ -24,18 +68,18 @@ disable-model-invocation: false
 domain: design
 skill: risk
 risk_count: 0
-critical: 0
-high: 0
-medium: 0
-low: 0
+critical_risks: 0
+mitigated: 0
 risks:
   - id: ""
-    severity: critical|high|medium|low
-    likelihood: high|medium|low
+    component: ""
+    severity: 0
+    likelihood: 0
+    rpn: 0
     mitigation: ""
 ```
 
 ### L2
-- Risk matrix with severity and likelihood
-- Mitigation strategies per risk
-- FMEA analysis for critical risks
+- Risk matrix with RPN rankings
+- Security assessment summary
+- Mitigation strategies for top risks

@@ -24,6 +24,54 @@ input_schema:
 
 # Verify — Quality
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Quick quality check on 1-2 files.
+- **STANDARD**: Spawn analyst. Systematic routing quality assessment.
+- **COMPLEX**: Spawn 2 analysts. One for WHEN/METHODOLOGY quality, one for output format quality.
+
+## Methodology
+
+### 1. Assess WHEN Condition Specificity
+For each skill description:
+- Read the WHEN clause
+- Check it specifies a concrete trigger (not vague "when needed")
+- Good: "After design-architecture produces component structure"
+- Bad: "When the user wants to design"
+- Score specificity 0-100
+
+### 2. Evaluate METHODOLOGY Concreteness
+For each skill description:
+- Check steps are numbered (1), (2), (3)...
+- Verify each step references a concrete tool or action
+- Good: "Spawn analyst for design compliance check"
+- Bad: "Analyze the results"
+- Score concreteness 0-100
+
+### 3. Check Output Format Completeness
+For each skill:
+- L1 YAML template defined with domain, skill, status
+- L2 markdown description defined
+- Output section present in body
+- Score completeness 0-100
+
+### 4. Measure Description Utilization
+For each skill description:
+- Calculate char count / 1024
+- Target: >88% utilization (quality threshold, stricter than content's 80%)
+- Flag descriptions below threshold with improvement suggestions
+
+### 5. Generate Quality Rankings
+Produce quality score per file:
+- Combined score = (specificity + concreteness + completeness + utilization) / 4
+- Rank all skills by combined score
+- Identify bottom 5 for priority improvement
+
+## Quality Gate
+- Average quality score >75/100
+- No skill with WHEN specificity <50
+- All skills have numbered METHODOLOGY steps
+- All skills have L1/L2 output format defined
+
 ## Output
 
 ### L1

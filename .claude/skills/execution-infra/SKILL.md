@@ -20,6 +20,47 @@ confirm: true
 
 # Execution — Infra
 
+## Execution Model
+- **TRIVIAL**: Lead-direct. Single infra-implementer for 1-2 config files.
+- **STANDARD**: Spawn 1 infra-implementer. Systematic .claude/ changes.
+- **COMPLEX**: Spawn 2 infra-implementers. Each owns non-overlapping .claude/ subtrees.
+
+## Methodology
+
+### 1. Read Validated Assignments
+Load orchestration-verify PASS report for infra tasks.
+Extract .claude/ file assignments: agents, skills, settings, hooks, CLAUDE.md.
+
+### 2. Spawn Infra-Implementers
+For each infra task group:
+- Create Task with `subagent_type: infra-implementer`
+- Include in prompt: target files, change specifications, format requirements
+- Note: infra-implementers have Write but NO Bash (cannot run shell commands)
+
+### 3. Monitor Progress
+During implementation:
+- Read infra-implementer L1 output for completion status
+- Verify YAML frontmatter remains valid after changes
+- Track file count against expected changes
+
+### 4. Validate Schema Compliance
+After each infra-implementer completes:
+- Check YAML frontmatter parses correctly
+- Verify required fields preserved (name, description)
+- Confirm no non-native fields introduced
+
+### 5. Consolidate Results
+After all infra-implementers complete:
+- Collect L1 YAML from each
+- Build unified infra change manifest
+- Report to execution-review for validation
+
+## Quality Gate
+- All assigned .claude/ files modified correctly
+- YAML frontmatter valid in all modified files
+- No non-native fields introduced
+- Settings.json remains valid JSON
+
 ## Output
 
 ### L1

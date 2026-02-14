@@ -66,39 +66,6 @@ if [ -n "$TEAM_DIR" ] && [ -d "$TEAM_DIR" ]; then
   fi
 fi
 
-# RTD State Snapshot for recovery (AD-25)
-PROJECT_FILE="/home/palantir/.agent/observability/.current-project"
-if [ -f "$PROJECT_FILE" ]; then
-  RTD_SLUG=$(head -1 "$PROJECT_FILE" 2>/dev/null)
-  OBS_DIR="/home/palantir/.agent/observability/$RTD_SLUG"
-  RTD_INDEX="$OBS_DIR/rtd-index.md"
-
-  if [ -d "$OBS_DIR" ]; then
-    SNAPSHOT_DIR="$OBS_DIR/snapshots"
-    mkdir -p "$SNAPSHOT_DIR"
-    SNAPSHOT_FILE="$SNAPSHOT_DIR/$(date '+%s')-pre-compact.json"
-
-    # Extract state from rtd-index.md frontmatter
-    LAST_DP=""
-    ACTIVE_PHASE=""
-    if [ -f "$RTD_INDEX" ]; then
-      LAST_DP=$(grep -oP '### DP-\K\d+' "$RTD_INDEX" 2>/dev/null | tail -1)
-      ACTIVE_PHASE=$(grep -oP '^current_phase: \K.*' "$RTD_INDEX" 2>/dev/null | tail -1)
-    fi
-
-    jq -n \
-      --arg slug "$RTD_SLUG" \
-      --arg last_dp "DP-${LAST_DP:-0}" \
-      --arg phase "${ACTIVE_PHASE:-unknown}" \
-      --arg ts "$(date -Iseconds)" \
-      '{slug: $slug, last_dp: $last_dp, phase: $phase, ts: $ts, type: "pre-compact"}' \
-      > "$SNAPSHOT_FILE" 2>/dev/null
-
-    echo "[$TIMESTAMP] PRE_COMPACT | RTD snapshot: $SNAPSHOT_FILE (DP=$LAST_DP, Phase=$ACTIVE_PHASE)" \
-      >> "$LOG_DIR/compact-events.log"
-  fi
-fi
-
 # Output hookSpecificOutput for agent context
 COMPACT_MSG=""
 if [ -n "$MISSING_AGENTS" ]; then
