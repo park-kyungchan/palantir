@@ -74,6 +74,7 @@ For each iteration (max 3):
   - What reference pattern to look for in the dependent file
   - Evidence line (exact grep match from execution-impact L2)
   - Expected update behavior (fix the reference to match the change)
+  - Implementer includes grep verification results in completion SendMessage (confirms reference was actually updated and no other stale references remain in the file)
 
 ### 3. Check Convergence After Updates
 After all implementers in an iteration complete:
@@ -85,6 +86,7 @@ Analyst delegation prompt (DPS structure):
 - **Task**: For each file in `iteration_changed_files`, extract basename without extension. Use the CC `Grep` tool with that basename as pattern, scoped to `.claude/` directory, glob `*.{md,json,sh}`. Exclude `agent-memory/` from results. For each match, subtract: the file itself, all files in `all_updated_files`, and all files in `original_impact_files`. Report any remaining dependents as new impacts.
 - **Constraints**: Read-only analysis (Profile-B). No Bash. Use CC Grep tool only. Do NOT modify any files.
 - **Expected Output**: Return `new_impacts` as a list of `{file, dependents[]}` pairs. Empty list = converged.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
 
 ```
 # Analyst convergence check logic:

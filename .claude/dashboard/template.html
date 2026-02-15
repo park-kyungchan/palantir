@@ -1472,6 +1472,15 @@ body::before {
       </table>
     </div>
 
+    <!-- L1 Budget Gauge -->
+    <div class="section-heading" id="l1-budget-heading" style="display:none;">
+      <h2 data-ko="L1 &#50696;&#49328;" data-en="L1 Budget">L1 &#50696;&#49328;</h2>
+      <p data-ko="&#49828;&#53420; &#49444;&#47749; &#47928;&#51088; &#49324;&#50857;&#47049;" data-en="Skill description character usage">&#49828;&#53420; &#49444;&#47749; &#47928;&#51088; &#49324;&#50857;&#47049;</p>
+    </div>
+    <div class="card" id="l1-budget-card" style="margin-bottom: var(--sp-xl); display:none; padding: var(--sp-lg);">
+      <div id="l1-budget-gauge"></div>
+    </div>
+
     <!-- Two-column: Donut + Bugs -->
     <div class="grid-2">
       <!-- Donut Chart -->
@@ -1512,6 +1521,15 @@ body::before {
     <div class="section-heading">
       <h2 data-ko="&#49828;&#53420;" data-en="Skills">&#49828;&#53420;</h2>
       <p data-ko="&#47784;&#46304; &#49828;&#53420; &#47785;&#47197; &#48143; &#54596;&#53552;" data-en="All skills with filters">&#47784;&#46304; &#49828;&#53420; &#47785;&#47197; &#48143; &#54596;&#53552;</p>
+    </div>
+
+    <!-- Dependency Graph -->
+    <div class="section-heading" id="dep-graph-heading" style="display:none;">
+      <h2 data-ko="&#49828;&#53420; &#51032;&#51316;&#49457; &#44536;&#47000;&#54532;" data-en="Skill Dependency Graph">&#49828;&#53420; &#51032;&#51316;&#49457; &#44536;&#47000;&#54532;</h2>
+      <p data-ko="INPUT_FROM / OUTPUT_TO &#44288;&#44228;" data-en="INPUT_FROM / OUTPUT_TO relationships">INPUT_FROM / OUTPUT_TO &#44288;&#44228;</p>
+    </div>
+    <div class="card" id="dep-graph-card" style="margin-bottom: var(--sp-xl); display:none; overflow: auto; max-height: 500px;">
+      <svg id="dep-graph-svg" width="100%" height="400"></svg>
     </div>
 
     <!-- Filter bar -->
@@ -1880,6 +1898,29 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
       statsEl.appendChild(card);
     });
 
+    /* D/F/A/T Aggregate Cards */
+    const dfatEl = document.createElement('div');
+    dfatEl.className = 'stats-row';
+    dfatEl.style.marginTop = 'var(--sp-md)';
+    const allSkills = D.skills || [];
+    const totalSk = allSkills.length || 1;
+    const dfat = [
+      { key: 'has_decision_points', abbr: 'D', label: { ko: '\uACB0\uC815\uC810', en: 'Decision' }, cls: 'sv-indigo' },
+      { key: 'has_failure_handling', abbr: 'F', label: { ko: '\uC2E4\uD328\uCC98\uB9AC', en: 'Failure' }, cls: 'sv-rose' },
+      { key: 'has_anti_patterns', abbr: 'A', label: { ko: '\uC548\uD2F0\uD328\uD134', en: 'Anti-Pat' }, cls: 'sv-amber' },
+      { key: 'has_transitions', abbr: 'T', label: { ko: '\uC804\uD658', en: 'Transition' }, cls: 'sv-cyan' }
+    ];
+    dfat.forEach(d => {
+      const count = allSkills.filter(s => s.body_sections && s.body_sections[d.key]).length;
+      const pct = Math.round(count / totalSk * 100);
+      const card = h('div', { className: 'stat-card' },
+        h('div', { className: 'stat-value ' + d.cls }, d.abbr + ' ' + count + '/' + totalSk),
+        h('div', { className: 'stat-label', 'data-ko': d.label.ko + ' (' + pct + '%)', 'data-en': d.label.en + ' (' + pct + '%)' }, d.label[currentLang] + ' (' + pct + '%)')
+      );
+      dfatEl.appendChild(card);
+    });
+    statsEl.parentNode.insertBefore(dfatEl, statsEl.nextSibling);
+
     /* Pipeline flow */
     const flowEl = $('#pipeline-flow');
     const phases = D.pipeline && D.pipeline.phases ? D.pipeline.phases : Object.keys(PHASE_NAMES);
@@ -2004,6 +2045,34 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
         h('div', { className: 'bug-workaround' }, bug.workaround || '')
       ));
     });
+
+    /* L1 Budget Gauge */
+    const l1 = D.l1_budget;
+    if (l1 && l1.total_chars > 0) {
+      document.getElementById('l1-budget-heading').style.display = '';
+      document.getElementById('l1-budget-card').style.display = '';
+      const gaugeEl = document.getElementById('l1-budget-gauge');
+      const pct = l1.pct;
+      const color = pct < 80 ? '#10b981' : pct < 90 ? '#f59e0b' : '#ef4444';
+      const bar = h('div', { style: { display: 'flex', alignItems: 'center', gap: 'var(--sp-md)', marginBottom: 'var(--sp-sm)' } },
+        h('div', { style: { flex: '1', height: '24px', background: 'rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden' } },
+          h('div', { style: { width: pct + '%', height: '100%', background: color, borderRadius: '12px', transition: 'width 0.8s ease' } })
+        ),
+        h('span', { style: { fontFamily: 'var(--font-mono)', fontWeight: '700', color: color, minWidth: '50px', textAlign: 'right' } }, pct + '%')
+      );
+      const detail = h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' } },
+        h('span', {}, l1.total_chars.toLocaleString() + ' / ' + l1.budget_limit.toLocaleString() + ' chars'),
+        h('span', {}, l1.auto_loaded_count + ' auto-loaded, ' + l1.disabled_count + ' disabled')
+      );
+      gaugeEl.appendChild(bar);
+      gaugeEl.appendChild(detail);
+      if (l1.over_limit && l1.over_limit.length > 0) {
+        const warn = h('div', { style: { marginTop: 'var(--sp-sm)', color: '#ef4444', fontSize: '0.8rem' } },
+          'Over 1024: ' + l1.over_limit.map(s => s.name + ' (' + s.chars + ')').join(', ')
+        );
+        gaugeEl.appendChild(warn);
+      }
+    }
   })();
 
   /* ================================================================
@@ -2226,6 +2295,138 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
         row.querySelector('.db-fill').style.width = pctWidth + '%';
       }, 150 + idx * 60);
     });
+
+    /* Dependency Graph */
+    const deps = D.dependencies || [];
+    if (deps.length > 0) {
+      document.getElementById('dep-graph-heading').style.display = '';
+      document.getElementById('dep-graph-card').style.display = '';
+      const svgEl = document.getElementById('dep-graph-svg');
+      const svgNS = 'http://www.w3.org/2000/svg';
+
+      // Collect unique nodes
+      const nodeSet = new Set();
+      deps.forEach(d => { nodeSet.add(d.source); nodeSet.add(d.target); });
+      const nodes = Array.from(nodeSet).sort();
+
+      // Group by phase using PHASE_COLORS
+      const phaseGroups = {};
+      nodes.forEach(n => {
+        const skill = (D.skills || []).find(s => s.name === n);
+        const phase = skill ? (skill.phase || 'X-cut') : 'X-cut';
+        if (!phaseGroups[phase]) phaseGroups[phase] = [];
+        phaseGroups[phase].push(n);
+      });
+
+      // Layout: columns by phase
+      const depPhases = ['P0','P1','P2','P3','P4','P5','P6','P7','P8','X-cut'];
+      const colWidth = 140;
+      const rowHeight = 32;
+      const padX = 80;
+      const padY = 40;
+      const nodePositions = {};
+      let maxY = 0;
+
+      depPhases.forEach((p, ci) => {
+        const group = phaseGroups[p] || [];
+        group.forEach((n, ri) => {
+          const x = padX + ci * colWidth;
+          const y = padY + ri * rowHeight;
+          nodePositions[n] = { x, y };
+          if (y > maxY) maxY = y;
+        });
+      });
+
+      const totalWidth = padX + depPhases.length * colWidth;
+      const totalHeight = maxY + padY + 20;
+      svgEl.setAttribute('viewBox', '0 0 ' + totalWidth + ' ' + totalHeight);
+      svgEl.setAttribute('height', Math.min(totalHeight, 500));
+
+      // Draw edges
+      deps.forEach(d => {
+        const s = nodePositions[d.source];
+        const t = nodePositions[d.target];
+        if (!s || !t) return;
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', s.x + 50);
+        line.setAttribute('y1', s.y + 8);
+        line.setAttribute('x2', t.x + 50);
+        line.setAttribute('y2', t.y + 8);
+        line.setAttribute('stroke', 'rgba(99,102,241,0.25)');
+        line.setAttribute('stroke-width', '1');
+        svgEl.appendChild(line);
+      });
+
+      // Draw nodes
+      nodes.forEach(n => {
+        const pos = nodePositions[n];
+        if (!pos) return;
+        const skill = (D.skills || []).find(s => s.name === n);
+        const phase = skill ? (skill.phase || 'X-cut') : 'X-cut';
+        const color = PHASE_COLORS[phase] || '#6b7280';
+        const g = document.createElementNS(svgNS, 'g');
+        g.setAttribute('transform', 'translate(' + pos.x + ',' + pos.y + ')');
+        const rect = document.createElementNS(svgNS, 'rect');
+        rect.setAttribute('width', '100');
+        rect.setAttribute('height', '18');
+        rect.setAttribute('rx', '4');
+        rect.setAttribute('fill', color + '33');
+        rect.setAttribute('stroke', color);
+        rect.setAttribute('stroke-width', '1');
+        g.appendChild(rect);
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', '50');
+        text.setAttribute('y', '13');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', 'var(--text-heading)');
+        text.setAttribute('font-size', '8');
+        text.setAttribute('font-family', 'var(--font-mono)');
+        // Truncate long names
+        const shortName = n.length > 16 ? n.substring(0, 14) + '..' : n;
+        text.textContent = shortName;
+        g.appendChild(text);
+        // Hover: show full name and connections
+        g.style.cursor = 'pointer';
+        g.addEventListener('mouseenter', () => {
+          rect.setAttribute('fill', color + '66');
+          // Highlight connected edges
+          svgEl.querySelectorAll('line').forEach(l => {
+            l.setAttribute('stroke', 'rgba(99,102,241,0.08)');
+          });
+          deps.forEach((d, i) => {
+            if (d.source === n || d.target === n) {
+              const lines = svgEl.querySelectorAll('line');
+              if (lines[i]) {
+                lines[i].setAttribute('stroke', color);
+                lines[i].setAttribute('stroke-width', '2');
+              }
+            }
+          });
+        });
+        g.addEventListener('mouseleave', () => {
+          rect.setAttribute('fill', color + '33');
+          svgEl.querySelectorAll('line').forEach(l => {
+            l.setAttribute('stroke', 'rgba(99,102,241,0.25)');
+            l.setAttribute('stroke-width', '1');
+          });
+        });
+        svgEl.appendChild(g);
+      });
+
+      // Phase labels
+      depPhases.forEach((p, ci) => {
+        if (!phaseGroups[p] || phaseGroups[p].length === 0) return;
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', padX + ci * colWidth + 50);
+        text.setAttribute('y', 15);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', PHASE_COLORS[p] || '#6b7280');
+        text.setAttribute('font-size', '10');
+        text.setAttribute('font-weight', '700');
+        text.textContent = p;
+        svgEl.appendChild(text);
+      });
+    }
   })();
 
   /* ================================================================
@@ -2418,6 +2619,38 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
       );
       timeline.appendChild(item);
     });
+
+    /* Archived Runtime Sessions */
+    const runtimeSessions = D.sessions_runtime || [];
+    if (runtimeSessions.length > 0) {
+      const rtHeading = h('div', { className: 'section-heading', style: { marginTop: 'var(--sp-xl)' } },
+        h('h3', { 'data-ko': '\uB7F0\uD0C0\uC784 \uC138\uC158 \uC544\uCE74\uC774\uBE0C', 'data-en': 'Runtime Session Archives' }, currentLang === 'ko' ? '\uB7F0\uD0C0\uC784 \uC138\uC158 \uC544\uCE74\uC774\uBE0C' : 'Runtime Session Archives')
+      );
+      timeline.parentNode.insertBefore(rtHeading, timeline.nextSibling);
+
+      const rtList = h('div', { className: 'timeline', style: { marginTop: 'var(--sp-md)' } });
+      runtimeSessions.slice(-10).reverse().forEach(rs => {
+        const agentCount = (rs.agents_spawned || []).length;
+        const taskCount = (rs.tasks_completed || []).length;
+        const impactCount = (rs.src_impacts || []).length;
+        const item = h('div', { className: 'timeline-item' },
+          h('div', { className: 'timeline-dot', style: { background: '#6366f1' } }),
+          h('div', { className: 'timeline-card' },
+            h('div', { className: 'timeline-meta' },
+              h('span', { className: 'timeline-date' }, rs.started_at || rs._archive_file || ''),
+              h('span', { className: 'chip chip-primary' }, agentCount + ' agents'),
+              h('span', { className: 'chip chip-success' }, taskCount + ' tasks')
+            ),
+            h('div', { style: { fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 'var(--sp-xs)' } },
+              'Session: ' + (rs.session_id || 'N/A').substring(0, 8) + '...' +
+              (impactCount > 0 ? ' | ' + impactCount + ' SRC impacts' : '')
+            )
+          )
+        );
+        rtList.appendChild(item);
+      });
+      rtHeading.parentNode.insertBefore(rtList, rtHeading.nextSibling);
+    }
 
     /* INFRA State table */
     const stateBody = $('#infra-state-body');

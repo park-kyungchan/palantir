@@ -37,6 +37,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each researcher 
 - **Scope**: Explicit list of dependencies assigned to this researcher. For COMPLEX, split by technology domain (e.g., researcher-1: libraries/frameworks, researcher-2: APIs/protocols).
 - **Constraints**: Web-enabled research only (WebSearch, WebFetch, context7, tavily). No file modifications. Cite all sources with full URLs.
 - **Expected Output**: Per-dependency validation entry: name, version, status (validated/issue/unknown), source URL, key facts, impact on architecture, confidence rating (high=official docs, medium=community, low=inference).
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 Priority order for each dependency:
 1. **context7** (resolve-library-id → query-docs) for library docs

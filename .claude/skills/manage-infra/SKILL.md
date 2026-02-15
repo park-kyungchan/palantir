@@ -142,7 +142,7 @@ Different triggers warrant different scan scopes:
 - **Post-pipeline trigger**: After delivery-pipeline completes, run full scan. This is the most common trigger. The full pipeline may have added/modified/deleted agents, skills, or hooks. Full scan catches any drift introduced during the pipeline.
 - **Post-modification trigger**: After any execution-infra modifies `.claude/` files, run a targeted scan on the modified component type only. For example, if execution-infra added a new hook, scan only hooks + settings.json (for reference integrity). This avoids unnecessary full scans after minor changes.
 - **Periodic (user-invoked)**: User explicitly requests health check via `/manage-infra`. Always full scan regardless of recent activity. User may suspect drift that automated triggers missed.
-- **Post-RSI trigger**: After self-improve cycle completes, run full scan to verify RSI changes did not introduce drift. RSI modifies multiple component types simultaneously, so full scan is mandatory. Cross-reference the list of modified files from self-improve output against detected changes.
+- **Post-RSI trigger**: After self-diagnose + self-implement cycle completes, run full scan to verify RSI changes did not introduce drift. RSI modifies multiple component types simultaneously, so full scan is mandatory. Cross-reference the list of modified files from self-diagnose/self-implement output against detected changes.
 
 Decision heuristic for Lead: if the trigger source provides a list of modified files, use targeted scan. If no file list is available or the trigger is periodic/post-RSI, use full scan.
 
@@ -212,7 +212,7 @@ Invoking manage-infra as a substitute for verify-structural-content after modify
 |-------------|---------------|--------|
 | (self-triggered) | Health check request after .claude/ modification | No structured input -- scans filesystem directly |
 | delivery-pipeline | Post-delivery health check request | L1 YAML with pipeline completion status |
-| self-improve | Post-RSI verification request | L1 YAML with list of modified .claude/ files |
+| self-implement | Post-RSI implementation results | L1 YAML with list of modified .claude/ files |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

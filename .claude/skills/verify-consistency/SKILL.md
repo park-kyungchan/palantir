@@ -3,12 +3,12 @@ name: verify-consistency
 description: |
   [P7·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing matches between CLAUDE.md and frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectionality, and skills table vs directory.
 
-  WHEN: After multi-file changes or relationship modifications. Second of 4 verify stages. Can run independently.
+  WHEN: After verify-structural-content PASS, or after multi-skill INPUT_FROM/OUTPUT_TO edits. Second of 4 verify stages. Checks cross-file relationship integrity.
   DOMAIN: verify (skill 2 of 4). After verify-structural-content PASS.
   INPUT_FROM: verify-structural-content (structural+content checks confirmed) or direct invocation.
   OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL).
 
-  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO refs from descriptions, (2) Build relationship graph, (3) Verify bidirectionality (A refs B <-> B refs A), (4) Check phase sequence (domain N -> domain N+1), (5) Verify CLAUDE.md skills table matches .claude/skills/ listing.
+  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO refs, (2) Build relationship graph, (3) Verify bidirectionality (A refs B <-> B refs A), (4) Check phase sequence (N -> N+1), (5) Verify CLAUDE.md counts match filesystem.
   OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 markdown inconsistency report with source/target evidence.
 user-invocable: true
 disable-model-invocation: false
@@ -50,7 +50,7 @@ Skills exempt from forward-only phase sequence enforcement:
 
 | Category | Skills | Exemption Reason |
 |----------|--------|------------------|
-| Homeostasis | manage-infra, manage-skills, manage-codebase, self-improve | Cross-cutting, any-phase operation |
+| Homeostasis | manage-infra, manage-skills, manage-codebase, self-diagnose, self-implement | Cross-cutting, any-phase operation |
 | Cross-cutting | delivery-pipeline, pipeline-resume, task-management | Phase-independent utilities |
 | FAIL routes | Any skill routing FAIL back to earlier phase | Error recovery is always backward |
 
@@ -93,8 +93,9 @@ for each skill in .claude/skills/*/SKILL.md:
 For STANDARD/COMPLEX tiers, construct the DPS delegation prompt:
 - **Context**: All 32 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 32, domains: 8+4+3). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify.
 - **Task**: Build directed reference graph. Check bidirectionality (A->B implies B->A). Check phase sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
-- **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-improve) exempt from phase sequence.
+- **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement) exempt from phase sequence.
 - **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph + phase sequence validation.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 2. Verify Bidirectionality
 
@@ -148,7 +149,7 @@ Backward reference decision:
       └─ NO → VIOLATION (flag as MEDIUM severity)
 ```
 
-- Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-improve) exempt from sequence
+- Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement) exempt from sequence
 - No backward phase references from pipeline skills (e.g., verify outputting to pre-design)
 
 ### 4. Verify CLAUDE.md Consistency

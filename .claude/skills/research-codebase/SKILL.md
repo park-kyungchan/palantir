@@ -36,6 +36,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Scope**: Explicit directory/file glob patterns to search. For COMPLEX, assign non-overlapping areas per analyst (e.g., analyst-1: `src/`, analyst-2: `.claude/`).
 - **Constraints**: Read-only analysis. No file modifications. Use Glob → Grep → Read sequence systematically.
 - **Expected Output**: Pattern inventory as structured list: pattern name, file:line location, relevance (high/medium/low), reusability assessment. Anti-patterns with specific file:line locations.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 Use tools systematically:
 1. **Glob** for file discovery: `**/*.md`, `**/*.ts`, specific paths
@@ -55,6 +56,7 @@ Lead performs these steps inline using its own tool access. Suitable when the se
 > Task: Explore [codebase area] to validate [all architecture decisions]. For each decision, find existing patterns, conventions, and reusable components. Report all findings with file:line references.
 > Constraints: Read-only. Glob -> Grep -> Read sequence. maxTurns: 25.
 > Expected Output: Pattern inventory (name, file:line, relevance, reusability) + anti-patterns with locations.
+> Delivery: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
 
 Single analyst receives all research questions. Lead consolidates output directly into research-audit input format.
 
@@ -63,6 +65,7 @@ Single analyst receives all research questions. Lead consolidates output directl
 > Task: Explore [specific directory subtree, e.g., `src/auth/`] to validate [subset of architecture decisions]. Report findings with file:line references.
 > Constraints: Read-only. Stay within assigned directory scope. maxTurns: 25. If your findings reference files outside your scope, note the cross-reference with file path and reason -- another analyst will cover that area.
 > Expected Output: Pattern inventory for your scope + cross-reference notes for consolidation.
+> Delivery: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
 
 Lead must merge outputs from all analysts, resolving cross-references and deduplicating patterns found independently by multiple analysts. Cross-reference resolution is Lead's responsibility, not the analysts'.
 

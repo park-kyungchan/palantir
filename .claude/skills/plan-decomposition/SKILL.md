@@ -78,6 +78,7 @@ For each component:
 - **Scope**: For COMPLEX, split by architecture module — non-overlapping analyst assignments.
 - **Constraints**: Read-only. Use Glob for file system validation. No modifications.
 - **Expected Output**: L1 YAML with task_count, tasks[] (id, files, complexity, depends_on). L2 task descriptions and dependency visualization.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 3. Assign File Ownership
 Rules:

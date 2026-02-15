@@ -3,12 +3,12 @@ name: verify-quality
 description: |
   [P7·Verify·Quality] Routing effectiveness and clarity verifier. Checks WHEN specificity, methodology concreteness with tool/agent refs, output format L1/L2 presence, and full protocol flow coverage.
 
-  WHEN: Before committing description changes or after routing failures. Third of 4 verify stages. Can run independently.
+  WHEN: After verify-consistency PASS, or after routing failures requiring WHEN/METHODOLOGY investigation. Third of 4 verify stages. Checks per-skill routing effectiveness.
   DOMAIN: verify (skill 3 of 4). After verify-consistency PASS.
   INPUT_FROM: verify-consistency (relationship integrity confirmed) or direct invocation.
   OUTPUT_TO: verify-cc-feasibility (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
 
-  METHODOLOGY: (1) Read WHEN conditions, check specificity (reject vague "when needed"), (2) Read METHODOLOGY steps, check numbered concrete steps with tool names, (3) Check OUTPUT_FORMAT has L1/L2 structure, (4) Check utilization >80% of 1024 chars, (5) Score and rank by routing effectiveness.
+  METHODOLOGY: (1) Check WHEN specificity (reject vague triggers), (2) Check METHODOLOGY numbered steps with tool refs, (3) Check OUTPUT_FORMAT L1/L2 structure, (4) Check utilization >80% of 1024, (5) Score and rank by routing effectiveness.
   OUTPUT_FORMAT: L1 YAML quality score per file (0-100), L2 markdown quality report with improvement suggestions.
 user-invocable: true
 disable-model-invocation: false
@@ -115,6 +115,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Task**: "Score each skill across 4 dimensions: WHEN specificity, METHODOLOGY concreteness, OUTPUT FORMAT completeness, description utilization (>80%). Produce combined score per skill. Rank all skills. Identify bottom 5 for priority improvement."
 - **Constraints**: Read-only. No modifications. Score objectively using the rubric.
 - **Expected Output**: L1 YAML with avg_score, findings[] (file, score, issues). L2 quality rankings and improvement suggestions.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 2. Evaluate METHODOLOGY Concreteness
 

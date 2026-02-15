@@ -73,6 +73,7 @@ The hook alert may arrive before execution-code/infra L1 is fully consolidated. 
 Load execution-code L1 output (and execution-infra L1 if applicable):
 - Extract `tasks[].files` arrays for complete list of changed files
 - Cross-reference with SubagentStop hook's SRC IMPACT ALERT (preliminary dependent list)
+- Read persistent impact file at `/tmp/src-impact-{session_id}.md` if available (written by on-implementer-done.sh, persists across compaction)
 - Deduplicate file paths across all sources
 
 ### 2. Load Codebase Map (Optional)
@@ -89,6 +90,7 @@ Construct the delegation prompt with:
 - **Task**: For each changed file, run `Grep` with pattern `<basename_without_extension>` scoped to `.claude/` directory. Use glob `*.{md,json,sh}` for file filtering. For each match, record a structured evidence triple: `{dependent_file, line_number, matching_content}`. Then classify each dependent as DIRECT (hop_count: 1, literal reference to changed file) or TRANSITIVE (hop_count: 2, references an intermediate that references the changed file — run a second grep on DIRECT dependents to detect 2-hop chains).
 - **Constraints**: Read-only analysis — do NOT modify any files. Grep scope limited to `.claude/` directory. Exclude: `.git/`, `node_modules/`, `agent-memory/` (except codebase-map.md), `*.log`. Max 30 turns — if approaching limit, report partial results for files already analyzed rather than rushing remaining files.
 - **Expected Output**: Return a structured impact report: for each changed file, list its dependents with `{file, type: DIRECT|TRANSITIVE, hop_count: 1|2, reference_pattern, evidence: "file:line:content"}`. End with a summary: total dependents found, DIRECT count, TRANSITIVE count, and cascade recommendation (true if any DIRECT dependents exist).
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 4. Classify Dependents
 For each dependent file found:
@@ -175,6 +177,7 @@ After execution-cascade runs, it has its own convergence checking. Do NOT re-inv
 | execution-code | Code file change manifest | L1 YAML: `tasks[].{files[], status}` |
 | execution-infra | Infra file change manifest | L1 YAML: `files_changed[]` |
 | on-implementer-done.sh | SRC IMPACT ALERT (preliminary) | Hook additionalContext: `changed_files[]`, `preliminary_dependents[]` |
+| on-implementer-done.sh | Persistent SRC impact file (supplementary) | File: `/tmp/src-impact-{session_id}.md` with Changed Files + Dependents sections |
 | manage-codebase | Codebase dependency map (optional) | File: `.claude/agent-memory/analyst/codebase-map.md` with `refd_by` fields |
 
 ### Sends To

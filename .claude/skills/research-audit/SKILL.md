@@ -48,6 +48,7 @@ Lead performs manually without analyst spawn:
 - **Task**: "Inventory all findings from codebase and external research. For each finding, map to architecture decisions with support level (supports/contradicts/neutral). Build coverage matrix: per decision, check codebase evidence + external evidence. Classify gaps as critical (no evidence), partial (one source only), or none. Cross-reference codebase findings against external findings. For each architecture decision, determine support level and evidence strength. Note agreements and disagreements between sources explicitly."
 - **Constraints**: Read-only analysis. No file modifications. Cross-reference between input sources. maxTurns:20.
 - **Expected Output**: L1 YAML with finding_count, coverage_percent, coverage[] (decision, codebase, external, gap). L2 coverage matrix and gap recommendations.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### COMPLEX DPS (2 Analysts)
 **Analyst-1 (Consolidation):**
@@ -55,12 +56,14 @@ Lead performs manually without analyst spawn:
 - **Task**: "Merge all findings into a unified inventory. Deduplicate findings that appear in both sources. For each finding, note: source(s), file references, confidence level, and whether both sources agree. Produce a consolidated finding list with cross-source annotations."
 - **Constraints**: Read-only. Preserve original finding IDs for traceability. Do not classify gaps yet.
 - **Expected Output**: Consolidated finding inventory with deduplication notes and cross-source agreement markers.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 **Analyst-2 (Gap Analysis):**
 - **Context**: Paste Analyst-1 consolidated inventory and design-architecture L1 (ADR list).
 - **Task**: "Map every consolidated finding to architecture decisions. For each ADR, score evidence using the Evidence Scoring Rubric (0-3). Classify gaps. Produce full coverage matrix with scores, gap classifications, and recommended actions."
 - **Constraints**: Read-only. Use scoring rubric strictly. Flag all score=0 and score=1 decisions.
 - **Expected Output**: L1 YAML coverage matrix. L2 detailed gap analysis with per-ADR evidence scores.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Finding-to-ADR Mapping Table
 | Finding | Architecture Decision | Support Level | Source |

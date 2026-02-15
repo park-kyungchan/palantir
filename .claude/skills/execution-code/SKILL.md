@@ -30,7 +30,7 @@ Lead determines tier based on orchestration-verify output:
 - **COMPLEX indicators**: 4+ tasks in matrix, 7+ files across 3+ modules, circular or deep dependency chains, architectural change type (new module, refactor, migration)
 
 ### Spawn vs Lead-Direct Decision
-- **Lead-direct** (no spawn): Only for TRIVIAL tier when Lead already has the exact code change in context (e.g., from a previous implementer's output). Requires: file path known, change < 20 lines, no test required.
+- **Lead-direct** (no spawn): Only for TRIVIAL tier when Lead already has the exact code change in context (e.g., from a previous implementer's completion summary). Requires: file path known, change < 20 lines, no test required.
 - **Spawn implementer** (default): All other cases. Even simple changes benefit from implementer's Bash access for testing.
 - **Never Lead-direct**: Changes requiring `npm test`, `pytest`, compilation, or any build step — Lead has no Bash.
 
@@ -63,6 +63,7 @@ Construct each delegation prompt with:
 - **Task**: List exact file paths to create/modify. For each file, specify: what function/class/method to implement, what behavior it should exhibit, what tests to satisfy. Reference existing patterns: "Follow the pattern in `<existing_file>:<line_range>` for consistency."
 - **Constraints**: Scope limited to non-.claude/ application source files only. Do NOT modify .claude/ files, test fixtures, or unrelated modules. If a dependency file needs changes, report it — do not modify files outside your assignment.
 - **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed), and `blockers` (array, empty if none). Provide L2 markdown summarizing what was implemented, key decisions made, and any deviations from the plan.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Tier-Specific DPS Variations
 
@@ -86,7 +87,7 @@ Construct each delegation prompt with:
 
 ### 3. Monitor Progress
 During implementation:
-- Read implementer L1 output for completion status
+- Receive implementer completion summary via SendMessage
 - Track files_changed count against expected
 - If implementer reports blocker: assess and provide guidance
 

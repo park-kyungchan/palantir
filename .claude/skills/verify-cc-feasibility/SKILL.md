@@ -162,6 +162,7 @@ For STANDARD/COMPLEX tiers, construct the DPS delegation prompt for each analyst
 - **Task**: "Compare each extracted field against the native field lists. Flag any field NOT in the native list as non-native. For each native field, validate value type correctness (booleans, enums, strings, lists). If questionable fields found: read cc-reference cache at `memory/cc-reference/native-fields.md` for latest reference. Report per-file status."
 - **Constraints**: Read-only analysis. No file modifications. Use cc-reference cache as primary validation source (NOT claude-code-guide spawn -- that is Lead's decision, not the analyst's). Do not remove or rename fields. Do not check L2 body content.
 - **Expected Output**: L1 YAML with `non_native_fields` count, `findings[]` array (file, field, status, reason). L2 markdown compliance report with per-file breakdown.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 3. Validate Field Values
 
@@ -204,7 +205,7 @@ If any questionable fields are found (not clearly native or non-native):
 
 1. **Primary check**: Read `memory/cc-reference/native-fields.md` for field validity. The cc-reference cache is the most reliable and always-available source. Check both the skill and agent sections.
 2. **Cross-reference check**: If the field exists in the OTHER table (e.g., agent field used in a skill file), flag as "wrong file type" rather than "non-native." This is a different category of error.
-3. **Supplementary check**: If cc-reference cache is stale (>30 days) or field is genuinely absent from all tables, escalate to Lead for claude-code-guide spawn decision. Provide: field name, file path, and why it is ambiguous.
+3. **Supplementary check**: If cc-reference cache is stale (>30 days) or field is genuinely absent from all tables, analyst sends compliance verdict via SendMessage including the ambiguous field details. Lead escalates to claude-code-guide only if verdict includes ambiguous fields.
 4. **Record verdict**: For each questionable field, record one of: NATIVE (confirmed), NON_NATIVE (confirmed), WRONG_FILE_TYPE (agent field in skill or vice versa), UNKNOWN (could not verify).
 
 If claude-code-guide is spawned by Lead:

@@ -40,7 +40,7 @@ Heuristic: If a component's responsibility can be described in one sentence, it'
 This skill runs in the P0-P1 (PRE-DESIGN + DESIGN) phase:
 - **Lead with local agents only** — no Team infrastructure (TeamCreate/SendMessage)
 - Use `run_in_background: true` for analyst spawns
-- Communication is one-way: Lead reads agent output, no back-and-forth messaging
+- P0-P1: Lead reads local agent output. P2+: Lead receives results via SendMessage
 - Multiple analysts run as independent background tasks, not as coordinated teammates
 
 ### Feedback Loop Decision (COMPLEX Only)

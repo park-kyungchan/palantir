@@ -28,4 +28,12 @@ LOGFILE="/tmp/task-completions-${SESSION_ID}.log"
 # Append completion record
 echo "[$(date '+%H:%M:%S')] COMPLETED task=${TASK_ID} subject=\"${TASK_SUBJECT}\" by=${TEAMMATE} team=${TEAM}" >> "$LOGFILE"
 
+# Pipeline state: record task completion event
+STATE_FILE="/tmp/claude-pipeline-state.json"
+if command -v jq &>/dev/null && [[ -f "$STATE_FILE" ]]; then
+  local_tmp=$(mktemp)
+  jq --arg tid "$TASK_ID" --arg subj "$TASK_SUBJECT" --arg by "$TEAMMATE" --arg at "$(date -u +%H:%M:%S)" \
+    '.tasks_completed += [{"task_id": $tid, "subject": $subj, "by": $by, "at": $at}]' "$STATE_FILE" > "$local_tmp" && mv "$local_tmp" "$STATE_FILE"
+fi
+
 exit 0

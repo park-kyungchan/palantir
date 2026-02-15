@@ -79,6 +79,7 @@ Identify tasks that can execute simultaneously:
 - **Task**: "Identify parallelizable task groups (no dependency edges, no file conflicts). Build execution sequence table. For each high-RPN risk: insert checkpoint after risky task with verification step. Define rollback strategy per phase."
 - **Constraints**: Read-only. No modifications. Focus on sequencing, not teammate assignment.
 - **Expected Output**: L1 YAML with phase_count, phases[] (id, tasks, parallel, checkpoint). L2 execution sequence, risk checkpoints, rollback strategies.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Parallel Group Visualization
 ```
