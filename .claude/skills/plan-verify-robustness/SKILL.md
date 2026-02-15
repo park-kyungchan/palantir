@@ -1,7 +1,7 @@
 ---
 name: plan-verify-robustness
 description: |
-  [P5·PlanVerify·Robustness] Edge case and failure mode challenger. Challenges plan against edge cases, failures, security, and resource constraints to ensure robustness under adverse conditions.
+  [P4·PlanVerify·Robustness] Edge case and failure mode challenger. Challenges plan against edge cases, failures, security, and resource constraints to ensure robustness under adverse conditions.
 
   WHEN: plan domain complete. Plan ready for robustness challenge. Can run parallel with correctness and completeness.
   DOMAIN: plan-verify (skill 3 of 3). Parallel-capable: correctness ∥ completeness ∥ robustness.

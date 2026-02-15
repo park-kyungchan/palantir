@@ -1,7 +1,7 @@
 ---
 name: plan-decomposition
 description: |
-  [P4·Plan·Decomposition] Decomposes architecture into implementable tasks with file ownership, dependency chains, and complexity estimates.
+  [P3·Plan·Decomposition] Decomposes architecture into implementable tasks with file ownership, dependency chains, and complexity estimates.
 
   WHEN: research domain complete. Architecture validated against codebase. Ready for implementation planning.
   DOMAIN: plan (skill 1 of 3). Sequential: decomposition -> interface -> strategy.
@@ -9,7 +9,6 @@ description: |
   OUTPUT_TO: plan-interface (interface specs), plan-strategy (sequencing), orchestration-decompose (approved plan).
 
   METHODOLOGY: (1) Read architecture and research, (2) Break components into tasks (max 4 files each), (3) Assign file ownership (non-overlapping), (4) Identify inter-task dependencies, (5) Estimate complexity (T/S/C).
-  TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=analyst, COMPLEX=2-4 analysts.
   OUTPUT_FORMAT: L1 YAML task list with assignments+deps, L2 task descriptions.
 user-invocable: true
 disable-model-invocation: false

@@ -1,7 +1,7 @@
 ---
 name: research-audit
 description: |
-  [P3·Research·Audit] Artifact inventory and gap analysis specialist. Inventories all research findings, classifies by category, identifies coverage gaps between architecture needs and available evidence.
+  [P2·Research·Audit] Artifact inventory and gap analysis specialist. Inventories all research findings, classifies by category, identifies coverage gaps between architecture needs and available evidence.
 
   WHEN: After research-codebase and research-external complete. Findings need consolidation and gap analysis.
   DOMAIN: research (skill 3 of 3). Terminal skill. Runs after codebase and external research.

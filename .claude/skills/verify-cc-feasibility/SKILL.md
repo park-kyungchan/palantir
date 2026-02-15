@@ -1,7 +1,7 @@
 ---
 name: verify-cc-feasibility
 description: |
-  [P8·Verify·CCFeasibility] Claude Code native compliance verifier. Ensures all frontmatter uses ONLY CC native fields, no custom fields exist, and validates via claude-code-guide agent spawn.
+  [P7·Verify·CCFeasibility] Claude Code native compliance verifier. Ensures all frontmatter uses ONLY CC native fields, no custom fields exist, and validates via claude-code-guide agent spawn.
 
   WHEN: After every skill/agent creation or frontmatter modification. Fifth and final verification stage. Can run independently.
   DOMAIN: verify (skill 5 of 5). Terminal skill in verify domain. After verify-quality PASS.

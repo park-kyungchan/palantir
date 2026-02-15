@@ -108,6 +108,15 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
+### INFRA Dashboard (2026-02-15, branch: test)
+Full-pipeline dashboard build: P0 (brainstorm) → P1 (design) → P2 (research, 3 agents) → P6 (execution, 2 parallel implementers) → Chrome MCP verification.
+- **sync-dashboard.sh** (767L): Parses all .claude/ files (agents, skills, hooks, settings, CLAUDE.md, MEMORY.md) into JSON via bash+jq+python3 (no yq). Supports --json-only.
+- **template.html** (2441L): 6-tab glassmorphism dark UI (Overview, Agents, Skills, Hooks, Settings, Sessions). CSS nesting (81), container queries, @property, SVG donut, ARIA tabs. 49 bilingual KO/EN labels. Zero external deps.
+- **.gitignore**: Excludes generated index.html (~103KB).
+- **Bug fix**: Pipeline flow used `s.phase` (old numbering) instead of `pipeline.domains` (correct P0-P8).
+- Research outputs: dashboard-parsing-analysis.md (1428L), L1-index.yaml (280L), L2-summary.md (2684L).
+- Commits: 1c626f2 (dashboard), eec457e (v10.8 phase renumbering).
+
 ### v10.8 CLAUDE.md Review + Phase Renumbering (2026-02-15, branch: test)
 User-driven CLAUDE.md section-by-section review and feedback session.
 - **README.md**: Created `.claude/README.md` (936L) — comprehensive INFRA reference with ASCII visualizations, 13 sections, feedback guide

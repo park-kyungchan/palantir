@@ -1,7 +1,7 @@
 ---
 name: execution-review
 description: |
-  [P7·Execution·Review] Two-stage code and spec review executor. Spawns analyst reviewers to validate implementation against design specs and coding standards.
+  [P6·Execution·Review] Two-stage code and spec review executor. Spawns analyst reviewers to validate implementation against design specs and coding standards.
 
   WHEN: After execution-code and/or execution-infra complete. Implementation artifacts exist but unreviewed.
   DOMAIN: execution (skill 5 of 5). Terminal. After code/infra/impact/cascade.

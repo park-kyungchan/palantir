@@ -1,7 +1,7 @@
 ---
 name: plan-strategy
 description: |
-  [P4·Plan·Strategy] Implementation sequencing and risk mitigation strategist. Defines execution order, parallel work opportunities, rollback strategy, and risk mitigation approach for execution phase.
+  [P3·Plan·Strategy] Implementation sequencing and risk mitigation strategist. Defines execution order, parallel work opportunities, rollback strategy, and risk mitigation approach for execution phase.
 
   WHEN: After plan-decomposition and plan-interface complete. Tasks and interfaces defined but execution strategy undefined.
   DOMAIN: plan (skill 3 of 3). Terminal skill. Runs after decomposition and interface.

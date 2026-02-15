@@ -1,7 +1,7 @@
 ---
 name: verify-quality
 description: |
-  [P8·Verify·Quality] Routing effectiveness and description clarity verifier. Checks WHEN specificity, methodology concreteness with tool/agent refs, output format L1/L2 presence, and full protocol flow coverage.
+  [P7·Verify·Quality] Routing effectiveness and description clarity verifier. Checks WHEN specificity, methodology concreteness with tool/agent refs, output format L1/L2 presence, and full protocol flow coverage.
 
   WHEN: Before committing description changes or after routing failures. Fourth of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 4 of 5). After verify-consistency PASS.

@@ -860,6 +860,7 @@ body::before {
 .phase-bg-p7 { background: var(--phase-p7); }
 .phase-bg-p8 { background: var(--phase-p8); }
 .phase-bg-x { background: var(--text-dim); }
+.phase-bg-x-cut { background: var(--text-dim); }
 
 /* Body section indicators */
 .body-indicators {
@@ -1110,7 +1111,7 @@ body::before {
   }
 
   &.open .accordion-panel {
-    max-height: 500px;
+    max-height: 2000px;
   }
 }
 
@@ -1721,12 +1722,13 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
   const PHASE_NAMES = {
     P0: 'Pre-Design', P1: 'Design', P2: 'Research', P3: 'Plan',
     P4: 'Plan-Verify', P5: 'Orchestration', P6: 'Execution',
-    P7: 'Verify', P8: 'Delivery'
+    P7: 'Verify', P8: 'Delivery', 'X-cut': 'Homeostasis'
   };
 
   const PHASE_COLORS = {
     P0: '#a78bfa', P1: '#60a5fa', P2: '#22d3ee', P3: '#4ade80',
-    P4: '#2dd4bf', P5: '#fb923c', P6: '#f87171', P7: '#fbbf24', P8: '#818cf8'
+    P4: '#2dd4bf', P5: '#fb923c', P6: '#f87171', P7: '#fbbf24', P8: '#818cf8',
+    'X-cut': '#6b7280'
   };
 
   const DOMAIN_COLORS = [
@@ -1933,14 +1935,13 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
       circle.setAttribute('class', 'donut-ring');
       circle.setAttribute('stroke', DOMAIN_COLORS[idx % DOMAIN_COLORS.length]);
       circle.setAttribute('stroke-dasharray', (pct * circumference) + ' ' + circumference);
-      circle.setAttribute('stroke-dashoffset', -accumulated * circumference + '');
+      circle.setAttribute('stroke-dashoffset', circumference + '');
       circle.setAttribute('transform', 'rotate(-90 ' + cx + ' ' + cy + ')');
-      // Start with zero for animation
-      circle.style.strokeDashoffset = circumference + '';
       svg.appendChild(circle);
-      // Animate after a delay
+      // Capture accumulated before setTimeout to avoid closure bug
+      const currentAccumulated = accumulated;
       setTimeout(() => {
-        circle.style.strokeDashoffset = (-accumulated * circumference) + '';
+        circle.setAttribute('stroke-dashoffset', (-currentAccumulated * circumference) + '');
       }, 100 + idx * 80);
       accumulated += pct;
     });
@@ -1962,7 +1963,9 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
     centerLabel.setAttribute('font-size', '11');
     centerLabel.setAttribute('fill', '#9ca3af');
     centerLabel.setAttribute('font-family', 'var(--font-sans)');
-    centerLabel.textContent = currentLang === 'ko' ? '\uC2A4\uD0AC' : 'skills';
+    centerLabel.setAttribute('data-ko', totalSkills + ' \uC2A4\uD0AC');
+    centerLabel.setAttribute('data-en', totalSkills + ' skills');
+    centerLabel.textContent = currentLang === 'ko' ? totalSkills + ' \uC2A4\uD0AC' : totalSkills + ' skills';
     svg.appendChild(centerLabel);
 
     donutEl.appendChild(svg);
@@ -2068,6 +2071,8 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
     const domainSet = new Set();
     const phaseSet = new Set();
 
+    const maxCharCount = Math.max(...(D.skills || []).map(s => s.char_count || 0), 1);
+
     skills.forEach(s => {
       if (s.domain) domainSet.add(s.domain);
       if (s.phase) phaseSet.add(s.phase);
@@ -2075,7 +2080,7 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
       const phase = s.phase || 'X';
       const phaseCls = 'phase-bg-' + phase.toLowerCase();
       const bs = s.body_sections || {};
-      const charPct = Math.round((s.char_count || 0) / 1024 * 100);
+      const charPct = Math.round((s.char_count || 0) / maxCharCount * 100);
       const utilCls = charPct > 90 ? 'util-red' : charPct > 70 ? 'util-amber' : 'util-green';
 
       const indicators = [

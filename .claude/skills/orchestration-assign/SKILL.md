@@ -1,7 +1,7 @@
 ---
 name: orchestration-assign
 description: |
-  [P6·Orchestration·Assign] Teammate selection and task mapping specialist. Maps task groups to agent types via frontmatter WHEN conditions, tool requirements, and capabilities. Produces task-teammate matrix.
+  [P5·Orchestration·Assign] Teammate selection and task mapping specialist. Maps task groups to agent types via frontmatter WHEN conditions, tool requirements, and capabilities. Produces task-teammate matrix.
 
   WHEN: After orchestration-decompose produces task groups. Tasks decomposed but not yet assigned.
   DOMAIN: orchestration (skill 2 of 3). Sequential: decompose -> assign -> verify.

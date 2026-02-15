@@ -382,11 +382,14 @@ parse_settings() {
         model: .model,
         teammate_mode: .teammateMode,
         always_thinking: .alwaysThinkingEnabled,
-        env_var_count: (.env | keys | length),
-        hook_event_count: (.hooks | keys | length),
-        permission_allow_count: (.permissions.allow | length),
-        permission_deny_count: (.permissions.deny | length),
-        enabled_plugins: (.enabledPlugins | keys)
+        env_var_count: (.env // {} | keys | length),
+        hook_event_count: (.hooks // {} | keys | length),
+        permission_allow_count: (.permissions.allow // [] | length),
+        permission_deny_count: (.permissions.deny // [] | length),
+        enabled_plugins: ([.enabledPlugins // {} | to_entries[] | select(.value == true) | .key]),
+        env_vars: (.env // {} | keys),
+        permission_allow: (.permissions.allow // []),
+        permission_deny: (.permissions.deny // [])
     }' "$settings_file" 2>/dev/null || echo '{}'
 }
 
@@ -582,7 +585,7 @@ parse_pipeline() {
 import json, re, sys
 
 memory_path = sys.argv[1]
-phases = ['P0','P1','P2','P3','P4','P5','P6','P7','P8']
+phases = ['P0','P1','P2','P3','P4','P5','P6','P7','P8','X-cut']
 
 domain_phase = {
     'pre-design': 'P0',

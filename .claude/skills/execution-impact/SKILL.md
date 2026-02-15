@@ -1,7 +1,7 @@
 ---
 name: execution-impact
 description: |
-  [P7·Execution·Impact] Post-implementation dependency analyzer. Spawns analyst to classify dependents of changed files as DIRECT (import/reference) or TRANSITIVE (2-hop). Uses codebase-map.md when available, falls back to grep-only.
+  [P6·Execution·Impact] Post-implementation dependency analyzer. Spawns analyst to classify dependents of changed files as DIRECT (import/reference) or TRANSITIVE (2-hop). Uses codebase-map.md when available, falls back to grep-only.
 
   WHEN: After execution-code and/or execution-infra complete. File change manifest exists. SubagentStop hook injected SRC IMPACT ALERT.
   DOMAIN: execution (skill 3 of 5). After code/infra, before cascade.

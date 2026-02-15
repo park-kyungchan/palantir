@@ -1,7 +1,7 @@
 ---
 name: plan-verify-completeness
 description: |
-  [P5·PlanVerify·Completeness] Gap detection and missing element identifier. Checks plan covers all requirements, architecture components have tasks, and no scenarios left unaddressed.
+  [P4·PlanVerify·Completeness] Gap detection and missing element identifier. Checks plan covers all requirements, architecture components have tasks, and no scenarios left unaddressed.
 
   WHEN: plan domain complete. Plan ready for completeness challenge. Can run parallel with correctness and robustness.
   DOMAIN: plan-verify (skill 2 of 3). Parallel-capable: correctness ∥ completeness ∥ robustness.

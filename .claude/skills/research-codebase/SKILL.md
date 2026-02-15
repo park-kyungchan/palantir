@@ -1,7 +1,7 @@
 ---
 name: research-codebase
 description: |
-  [P3·Research·Codebase] Local codebase exploration specialist. Discovers existing patterns, structures, conventions, and artifacts using Glob, Grep, and Read tools. Read-only analysis, no file modifications.
+  [P2·Research·Codebase] Local codebase exploration specialist. Discovers existing patterns, structures, conventions, and artifacts using Glob, Grep, and Read tools. Read-only analysis, no file modifications.
 
   WHEN: design domain complete. Architecture decisions need validation against existing codebase patterns.
   DOMAIN: research (skill 1 of 3). Parallel-capable: codebase || external -> audit.

@@ -1,7 +1,7 @@
 ---
 name: delivery-pipeline
 description: |
-  [P9·Delivery·Terminal] Pipeline-end delivery executor. Consolidates all domain outputs, creates git commit with structured message, archives session learnings to MEMORY.md, updates PT to DELIVERED status.
+  [P8·Delivery·Terminal] Pipeline-end delivery executor. Consolidates all domain outputs, creates git commit with structured message, archives session learnings to MEMORY.md, updates PT to DELIVERED status.
 
   WHEN: Verify domain complete (all 5 stages PASS, no outstanding FAIL). Pipeline finished, ready for commit and archive.
   DOMAIN: Cross-cutting terminal phase (not part of 9-domain feedback loop).

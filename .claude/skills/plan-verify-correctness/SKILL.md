@@ -1,7 +1,7 @@
 ---
 name: plan-verify-correctness
 description: |
-  [P5·PlanVerify·Correctness] Logical correctness and spec compliance validator. Checks plan correctly implements architecture, respects constraints, and has no logical contradictions.
+  [P4·PlanVerify·Correctness] Logical correctness and spec compliance validator. Checks plan correctly implements architecture, respects constraints, and has no logical contradictions.
 
   WHEN: plan domain complete (all 3 skills done). Plan ready for validation challenge.
   DOMAIN: plan-verify (skill 1 of 3). Parallel-capable: correctness ∥ completeness ∥ robustness.

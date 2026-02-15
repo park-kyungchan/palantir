@@ -1,7 +1,7 @@
 ---
 name: verify-consistency
 description: |
-  [P8·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing matches between CLAUDE.md and frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectionality, and skills table vs directory.
+  [P7·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing matches between CLAUDE.md and frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectionality, and skills table vs directory.
 
   WHEN: After multi-file changes or relationship modifications. Third of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 3 of 5). After verify-content PASS.

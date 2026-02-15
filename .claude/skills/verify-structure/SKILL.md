@@ -1,7 +1,7 @@
 ---
 name: verify-structure
 description: |
-  [P8·Verify·Structure] File-level structural integrity verifier. Checks file existence, YAML frontmatter parse-ability, directory structure compliance, and naming conventions for all .claude/ components.
+  [P7·Verify·Structure] File-level structural integrity verifier. Checks file existence, YAML frontmatter parse-ability, directory structure compliance, and naming conventions for all .claude/ components.
 
   WHEN: After any INFRA file creation or modification. First of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 1 of 5). Sequential: structure -> content -> consistency -> quality -> cc-feasibility.

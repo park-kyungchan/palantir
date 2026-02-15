@@ -1,7 +1,7 @@
 ---
 name: verify-content
 description: |
-  [P8·Verify·Content] Content completeness and quality verifier. Checks description utilization (target >80% of 1024 chars), orchestration map keys (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO), body sections, and L1/L2 format standards.
+  [P7·Verify·Content] Content completeness and quality verifier. Checks description utilization (target >80% of 1024 chars), orchestration map keys (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO), body sections, and L1/L2 format standards.
 
   WHEN: After description rewrites or new agent/skill creation. Second of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 2 of 5). After verify-structure PASS.

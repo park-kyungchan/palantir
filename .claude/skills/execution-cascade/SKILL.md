@@ -1,7 +1,7 @@
 ---
 name: execution-cascade
 description: |
-  [P7·Execution·Cascade] Recursive affected-file updater. Spawns implementers to update files identified by execution-impact. Iterates until convergence (no new impacts) or max 3 iterations. Reports partial status if non-convergent.
+  [P6·Execution·Cascade] Recursive affected-file updater. Spawns implementers to update files identified by execution-impact. Iterates until convergence (no new impacts) or max 3 iterations. Reports partial status if non-convergent.
 
   WHEN: After execution-impact reports cascade_recommended: true. Affected files identified and classified.
   DOMAIN: execution (skill 4 of 5, before review). After impact, before review.
@@ -74,7 +74,6 @@ For each iteration (max 3):
   - What reference pattern to look for in the dependent file
   - Evidence line (exact grep match from execution-impact L2)
   - Expected update behavior (fix the reference to match the change)
-- Set mode: "default" for cascade implementers (agent permissions inherited from settings).
 
 ### 3. Check Convergence After Updates
 After all implementers in an iteration complete:
@@ -159,8 +158,8 @@ When max 3 iterations reached without convergence:
 2. Add unresolved files to `warnings` array
 3. Pipeline **CONTINUES** to execution-review (never blocks indefinitely)
 4. execution-review receives warnings and applies extra scrutiny
-5. verify-* phase (P8) catches remaining inconsistencies
-6. Delivery (P9) commit message notes "partial cascade convergence"
+5. verify-* phase (P7) catches remaining inconsistencies
+6. Delivery (P8) commit message notes "partial cascade convergence"
 
 ## Anti-Patterns
 

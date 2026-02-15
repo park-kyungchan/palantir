@@ -1,7 +1,7 @@
 ---
 name: research-external
 description: |
-  [P3·Research·External] External documentation researcher. Fetches and synthesizes documentation from web sources, official docs, and package registries using WebSearch, WebFetch, context7, and tavily.
+  [P2·Research·External] External documentation researcher. Fetches and synthesizes documentation from web sources, official docs, and package registries using WebSearch, WebFetch, context7, and tavily.
 
   WHEN: design domain complete. Architecture decisions reference external libraries, APIs, or patterns needing doc validation.
   DOMAIN: research (skill 2 of 3). Parallel-capable: codebase || external -> audit.

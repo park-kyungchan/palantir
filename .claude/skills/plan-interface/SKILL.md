@@ -1,7 +1,7 @@
 ---
 name: plan-interface
 description: |
-  [P4·Plan·Interface] Interface specification and dependency ordering specialist. Defines precise interface contracts between tasks and determines completion order based on interface dependencies.
+  [P3·Plan·Interface] Interface specification and dependency ordering specialist. Defines precise interface contracts between tasks and determines completion order based on interface dependencies.
 
   WHEN: After plan-decomposition produces task breakdown. Tasks exist but inter-task interfaces undefined.
   DOMAIN: plan (skill 2 of 3). Sequential: decomposition -> interface -> strategy.

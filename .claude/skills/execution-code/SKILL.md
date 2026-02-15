@@ -1,7 +1,7 @@
 ---
 name: execution-code
 description: |
-  [P7·Execution·Code] Source code implementation executor. Spawns implementers for application source code (Python, TypeScript, etc.) based on validated assignments. Handles all non-.claude/ file changes.
+  [P6·Execution·Code] Source code implementation executor. Spawns implementers for application source code (Python, TypeScript, etc.) based on validated assignments. Handles all non-.claude/ file changes.
 
   WHEN: orchestration domain complete (all 3 PASS). Validated assignments ready for code implementation.
   DOMAIN: execution (skill 1 of 5). Parallel-capable: code ∥ infra -> impact -> cascade -> review.
@@ -9,7 +9,6 @@ description: |
   OUTPUT_TO: execution-impact (file changes), execution-review (artifacts), verify domain.
 
   METHODOLOGY: (1) Read assignments, (2) Spawn implementers per matrix, (3) Each: TaskGet -> code -> report, (4) Monitor L1/L2, (5) Consolidate results.
-  TIER_BEHAVIOR: T=single implementer, S=1-2 implementers, C=3-4 implementers.
   OUTPUT_FORMAT: L1 YAML manifest, L2 summary.
 user-invocable: true
 disable-model-invocation: false
@@ -58,7 +57,6 @@ Extract file assignments, dependency order, and interface contracts per implemen
 ### 2. Spawn Implementers
 For each task group in the matrix:
 - Create Task with `subagent_type: implementer`
-- Set mode: "default" for code implementation (agent permissions inherited from settings).
 
 Construct each delegation prompt with:
 - **Context**: Paste the exact task row from orchestration-verify matrix (task_id, description, assigned files). Include interface contracts verbatim: function signatures, data types, return values, error types from plan-interface output. If PT exists, include PT subject and acceptance criteria.
