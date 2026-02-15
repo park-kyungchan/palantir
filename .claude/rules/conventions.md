@@ -33,3 +33,11 @@
 - P2+ phases: Task tool MUST include `team_name` parameter (teammate session)
 - Lead NEVER reads TaskOutput directly — results via SendMessage only
 - Teammate outputs stay in teammate context, summaries come to Lead
+
+### SendMessage Completion Protocol (P2+ phases)
+- Teammate sends L1 summary to Lead via SendMessage upon completion
+- Required: status (PASS/FAIL/partial), files changed count, key metrics
+- Optional: output file path, routing recommendation, blockers
+- L2 detail stays in teammate context (Lead does NOT request full output)
+- On failure: include failure reason, affected files, suggested route
+- Format: plain text summary (~200 tokens max), not raw YAML

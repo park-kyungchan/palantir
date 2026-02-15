@@ -100,7 +100,7 @@ Construct each delegation prompt with:
 
 ### 3. Monitor Progress
 During implementation:
-- Read infra-implementer L1 output for completion status
+- Receive infra-implementer completion summary via SendMessage
 - Verify YAML frontmatter remains valid after changes
 - Track file count against expected changes
 

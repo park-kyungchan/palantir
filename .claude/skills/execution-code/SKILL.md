@@ -30,7 +30,7 @@ Lead determines tier based on orchestration-verify output:
 - **COMPLEX indicators**: 4+ tasks in matrix, 7+ files across 3+ modules, circular or deep dependency chains, architectural change type (new module, refactor, migration)
 
 ### Spawn vs Lead-Direct Decision
-- **Lead-direct** (no spawn): Only for TRIVIAL tier when Lead already has the exact code change in context (e.g., from a previous implementer's output). Requires: file path known, change < 20 lines, no test required.
+- **Lead-direct** (no spawn): Only for TRIVIAL tier when Lead already has the exact code change in context (e.g., from a previous implementer's completion summary). Requires: file path known, change < 20 lines, no test required.
 - **Spawn implementer** (default): All other cases. Even simple changes benefit from implementer's Bash access for testing.
 - **Never Lead-direct**: Changes requiring `npm test`, `pytest`, compilation, or any build step — Lead has no Bash.
 
@@ -86,7 +86,7 @@ Construct each delegation prompt with:
 
 ### 3. Monitor Progress
 During implementation:
-- Read implementer L1 output for completion status
+- Receive implementer completion summary via SendMessage
 - Track files_changed count against expected
 - If implementer reports blocker: assess and provide guidance
 

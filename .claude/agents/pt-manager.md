@@ -34,6 +34,13 @@ Fork-context agent for /task-management. Manages full task lifecycle.
 - Set addBlockedBy for dependency chains (verify no cycles)
 - ASCII visualization always in Korean with structured box drawing
 
+## Completion Protocol
+When working as a teammate (team_name provided):
+- Upon task completion, send L1 summary to Lead via SendMessage
+- Include: status (PASS/FAIL), files changed, key metrics, routing recommendation
+- On failure: include reason, blocker details, suggested next step
+- Keep message concise (~200 tokens). Full output stays in your context.
+
 ## Safety Constraints
 - Never create duplicate [PERMANENT] tasks (TaskList check first, always)
 - [PERMANENT] subject pattern is interface contract — never change format
