@@ -30,110 +30,31 @@ argument-hint: "[image-path|ocr-output-path|latex-draft-path]"
 
 ### Source Type Detection
 Determine input type from file extension, content patterns, or explicit `$ARGUMENTS`:
-
-```
-IF $ARGUMENTS specifies source type explicitly:
-  -> Use specified type (ocr_output | latex_draft | image | manual_input)
-
-ELIF file extension is .png/.jpg/.jpeg/.tiff/.pdf:
-  -> type = "image"
-  -> ABORT: Cannot perform OCR. Inform user to run external OCR tool first.
-  -> Suggest: Doc Intelligence or Mathpix, then re-invoke with OCR output.
-
-ELIF content contains \begin, \frac, \int, or other LaTeX commands:
-  IF content also has OCR artifact markers (garbled Unicode, broken symbols):
-    -> type = "ocr_output" (OCR-derived LaTeX)
-  ELSE:
-    -> type = "latex_draft" (human-written or tool-generated LaTeX)
-
-ELIF content is plain text with math fragments (numbers, operators, no LaTeX markup):
-  -> type = "ocr_output" (raw OCR text, no LaTeX conversion yet)
-
-ELSE:
-  -> type = "manual_input" (fallback)
-  -> WARN: Source type unrecognized, defaulting to manual_input.
-```
+- **Explicit**: `$ARGUMENTS` specifies type -> use specified (ocr_output | latex_draft | image | manual_input)
+- **Image file** (.png/.jpg/.jpeg/.tiff/.pdf) -> type="image", ABORT: suggest Doc Intelligence or Mathpix first
+- **LaTeX commands** (\begin, \frac, \int) with OCR artifact markers (garbled Unicode) -> type="ocr_output"; without artifacts -> type="latex_draft"
+- **Plain text with math fragments** (no LaTeX markup) -> type="ocr_output" (raw, no conversion yet)
+- **Fallback** -> type="manual_input", WARN: source type unrecognized
 
 ### OCR Tool Detection
-Identify which OCR tool produced the output to apply tool-specific cleanup:
-
-```
-IF content contains Azure Doc Intelligence markers:
-  (e.g., :selected:, :unselected:, specific Unicode patterns, page/line metadata)
-  -> tool = "doc_intelligence"
-  -> Apply: Unicode normalization, math region extraction, line-merge heuristics
-
-ELIF content contains Mathpix-style annotations:
-  (e.g., confidence brackets [0.95], \text{} wrapping patterns, inline $...$ detection)
-  -> tool = "mathpix"
-  -> Apply: Strip confidence annotations, normalize \text{} usage, verify delimiters
-
-ELIF type == "manual_input" OR no tool markers detected:
-  -> tool = "manual" (or "other")
-  -> Apply: Basic whitespace normalization, LaTeX syntax check only
-```
+Identify OCR tool from content markers to apply tool-specific cleanup:
+- **Doc Intelligence**: markers like `:selected:`, `:unselected:`, Unicode patterns, page/line metadata -> Apply Unicode normalization, math region extraction, line-merge heuristics
+- **Mathpix**: confidence brackets `[0.95]`, `\text{}` wrapping, inline `$...$` detection -> Strip annotations, normalize `\text{}`, verify delimiters
+- **Manual/other**: no tool markers detected -> Basic whitespace normalization, LaTeX syntax check only
 
 ### Artifact Classification Strategy
-Map detected issues to the 6 artifact types defined in IC-13 `flagged_artifacts`:
+6 artifact types for IC-13 `flagged_artifacts`: `ocr_misrecognition` (char confusion, FAIL), `encoding_error` (Unicode corruption, FAIL), `structural_damage` (broken LaTeX structure, FATAL), `missing_content` (absent from output, FATAL), `extra_content` (noise/headers leaked, WARN), `formatting_loss` (style degraded, INFO).
 
-| Type | Description | Typical Source | Default Severity |
-|------|-------------|----------------|------------------|
-| `ocr_misrecognition` | Character confused by OCR | All OCR tools | FAIL |
-| `encoding_error` | Unicode/encoding corruption | Doc Intelligence | FAIL |
-| `structural_damage` | LaTeX structure broken (unclosed env, missing braces) | OCR line breaks | FATAL |
-| `missing_content` | Content present in source but absent in output | OCR region skip | FATAL |
-| `extra_content` | Noise, headers, page numbers leaked into content | OCR boundary error | WARN |
-| `formatting_loss` | Spacing, alignment, style degraded but content intact | All sources | INFO |
-
-Severity escalation rules:
-- Any artifact where content meaning changes: minimum FAIL
-- Any artifact where content is unrecoverable without source: FATAL
-- `ocr_misrecognition` with `confidence < 0.5`: escalate to FATAL (unreliable correction)
+Severity escalation: meaning-changing artifacts -> minimum FAIL; unrecoverable without source -> FATAL; `ocr_misrecognition` with confidence < 0.5 -> escalate to FATAL.
 
 ### Quality Score Calculation
-Four dimensions, weighted to reflect production QC priorities:
-
-| Dimension | Weight | Description | Scoring |
-|-----------|--------|-------------|---------|
-| `completeness` | 30% | All source content present in output | 1.0 - (missing_chars / total_chars) |
-| `accuracy` | 30% | Content correctly transcribed | 1.0 - (artifact_count * severity_weight / total_elements) |
-| `structure` | 25% | LaTeX structure valid and complete | Env matching + brace balance + command validity |
-| `cleanliness` | 15% | No noise, extra content, or formatting debris | 1.0 - (extra_artifacts / total_elements) |
-
-Severity weights for accuracy: FATAL=1.0, FAIL=0.5, WARN=0.2, INFO=0.05.
-Overall = weighted average across 4 dimensions.
+Four dimensions weighted for production QC: `completeness` (30%, 1.0 - missing_chars/total_chars), `accuracy` (30%, 1.0 - artifact_count*severity_weight/total_elements), `structure` (25%, env matching + brace balance + command validity), `cleanliness` (15%, 1.0 - extra_artifacts/total_elements). Severity weights for accuracy: FATAL=1.0, FAIL=0.5, WARN=0.2, INFO=0.05. Overall = weighted average across 4 dimensions.
 
 ### Backslash Depth Assessment
-Determine current escape depth from content analysis:
-
-```
-Depth 0 (Raw LaTeX):    \frac{a}{b}         -> source image/document
-Depth 1 (String):       \\frac{a}{b}        -> LaTeX in a string context
-Depth 2 (JSONL):        \\\\frac{a}{b}      -> LaTeX in JSONL file
-
-DETECTION:
-  Count consecutive backslashes before known LaTeX commands (\frac, \int, \sum, etc.)
-  IF mostly single-backslash: current_depth = 0
-  IF mostly double-backslash: current_depth = 1
-  IF mostly quadruple-backslash: current_depth = 2
-
-  target_depth = 2 (always, for JSONL downstream consumer)
-  needs_escaping = (current_depth < target_depth)
-
-  depth_map: per-command analysis showing current vs target escaping
-```
+Depth levels: 0 (raw `\frac{a}{b}`), 1 (string `\\frac{a}{b}`), 2 (JSONL `\\\\frac{a}{b}`). Detection: count consecutive backslashes before known commands (\frac, \int, \sum); majority pattern determines current_depth (0/1/2). Target is always depth 2 (JSONL consumer). `needs_escaping = (current_depth < target_depth)`. Build `depth_map`: per-command current vs target escaping analysis.
 
 ### HITL Trigger Decision
-```
-Set hitl_required = true when ANY of:
-  - Overall confidence < 0.7 (REQ-IP-05 threshold)
-  - Any flagged_artifact has severity == FATAL
-  - quality_score.overall < 0.6
-  - Source type detection fell back to "manual_input" unexpectedly
-
-Set hitl_reason to explain the specific trigger(s).
-Set hitl_artifacts to list artifact_ids needing human review.
-```
+Set `hitl_required = true` when ANY of: confidence < 0.7 (REQ-IP-05), any FATAL artifact, quality_score.overall < 0.6, or unexpected "manual_input" fallback. Set `hitl_reason` explaining trigger(s) and `hitl_artifacts` listing artifact_ids needing review.
 
 ## Methodology
 
@@ -147,68 +68,22 @@ Analyze input from `$ARGUMENTS` or content inspection:
 - Set `mode` based on invocation context: `production` (default for Pipeline B) or `drill` (if explicitly requested)
 
 ### 2. Clean Raw Content
-Apply tool-specific and universal cleanup transformations. Preserve `raw_content` (original) and build `latex_content` (cleaned):
+Preserve `raw_content` (original) and build `latex_content` (cleaned).
 
-**Universal cleanup (all sources):**
-- Normalize Unicode: replace look-alike characters with LaTeX equivalents (e.g., × -> \times, ÷ -> \div, − -> -)
-- Normalize whitespace: collapse multiple spaces, normalize line endings, trim trailing whitespace
-- Fix common LaTeX structural issues: balance braces, close unclosed environments (mark as WARN artifact)
+**Universal** (all sources): normalize Unicode look-alikes to LaTeX (x->\\times, etc.), collapse whitespace, fix structural issues (balance braces, close environments as WARN artifact).
 
-**Doc Intelligence specific:**
-- Remove `:selected:` / `:unselected:` checkbox markers
-- Extract math regions from mixed text/math output
-- Merge lines broken by page layout (detect continuation patterns)
-- Handle Unicode math symbols that Doc Intelligence outputs instead of LaTeX commands
-
-**Mathpix specific:**
-- Strip confidence annotations (e.g., `[0.95]` after expressions)
-- Normalize `\text{}` wrapping (Mathpix sometimes over-wraps)
-- Verify math delimiter consistency (`$...$` vs `\(...\)`)
-
-**Manual/other:**
-- Basic whitespace normalization only
-- No tool-specific cleanup (risk of removing intentional content)
+**Tool-specific**: Doc Intelligence -- remove `:selected:`/`:unselected:` markers, extract math regions, merge broken lines, convert Unicode math symbols. Mathpix -- strip confidence annotations `[0.95]`, normalize `\text{}` wrapping, verify delimiter consistency. Manual -- whitespace normalization only, no tool-specific cleanup.
 
 ### 3. Detect OCR Artifacts
-Scan cleaned content against known OCR confusion patterns and structural integrity checks:
+Scan cleaned content against known OCR confusion patterns and structural integrity checks.
 
-**Reference-build pattern matching (IC-01 ocr_confusions):**
-- Load OCR confusion patterns from `crowd_works/data/reference-cache/{domain}.yaml` if available
-- For each known confusion (e.g., theta->9, Delta->A, mu->u, Sigma->E, integral->broken):
-  - Scan `latex_content` for instances matching the source (OCR-garbled) form
-  - If found: create `flagged_artifact` entry with type `ocr_misrecognition`
-  - Set `ocr_pattern_ref` linking back to the IC-01 pattern ID
-  - Apply the correction to `latex_content` (replace garbled with correct LaTeX)
-  - Set artifact `confidence` based on pattern match certainty
+**IC-01 pattern matching**: Load from `crowd_works/data/reference-cache/{domain}.yaml`. For each confusion (theta->9, Delta->A, mu->u, Sigma->E, etc.), scan `latex_content`, create `flagged_artifact` with type `ocr_misrecognition`, link `ocr_pattern_ref` to IC-01 pattern ID, apply correction, set confidence.
 
-**Built-in minimal OCR confusion list (fallback when reference-build unavailable):**
+**Built-in fallback** (7 universal patterns): 9->\\theta, A->\\Delta, u->\\mu, E->\\Sigma, l->1, 0->O, rn->m (context-dependent matching).
 
-| OCR Output | Correct | LaTeX | Context |
-|------------|---------|-------|---------|
-| `9` (digit) | theta | `\theta` | Greek letter context |
-| `A` (capital) | Delta | `\Delta` | Change notation |
-| `u` (lowercase) | mu | `\mu` | Stats/physics constant |
-| `E` (capital) | Sigma | `\Sigma` | Summation context |
-| `l` (lowercase L) | 1 (one) | `1` | Numeric expression |
-| `0` (zero) | O (letter) | `O` | Variable name context |
-| `rn` | m | `m` | Variable name |
+**Structural checks**: unclosed environments (FATAL), unbalanced braces (FATAL), broken commands like `\fra` (FAIL), orphaned `\left`/`\right` (FAIL).
 
-**Structural integrity checks:**
-- Unclosed environments (`\begin` without `\end`): type `structural_damage`, severity FATAL
-- Unbalanced braces: type `structural_damage`, severity FATAL
-- Broken LaTeX commands (e.g., `\fra` instead of `\frac`): type `ocr_misrecognition`, severity FAIL
-- Orphaned delimiters (`\left` without `\right`): type `structural_damage`, severity FAIL
-
-**For each artifact, record:**
-- `artifact_id`: sequential (ART-001, ART-002, ...)
-- `type`: one of 6 enum values
-- `severity`: FATAL / FAIL / WARN / INFO
-- `location`: `{char_start, char_end, line}` in raw_content
-- `original_text`: text before correction
-- `cleaned_text`: text after correction (or empty if uncorrectable)
-- `confidence`: 0.0-1.0 for the correction
-- `ocr_pattern_ref`: reference to IC-01 pattern if applicable
-- `manual_review`: true if confidence < 0.7 for this artifact
+**Per artifact record**: `artifact_id` (ART-001..N), `type` (6 enums), `severity` (FATAL/FAIL/WARN/INFO), `location` ({char_start, char_end, line}), `original_text`, `cleaned_text`, `confidence` (0.0-1.0), `ocr_pattern_ref`, `manual_review` (true if confidence < 0.7).
 
 ### 4. Calculate Quality Score and Assess Backslash Depth
 **Quality score:**

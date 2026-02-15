@@ -26,27 +26,9 @@ argument-hint: "[batch|trend|worker:id]"
 ## Decision Points
 
 ### Report Type Selection (from $ARGUMENTS)
-```
-IF $ARGUMENTS contains "batch":
-  -> Current batch aggregate metrics
-  -> Reads latest batch file from crowd_works/data/qc-reports/
-  -> Outputs summary with pass/fail/hitl distribution, error categories, worker stats
-
-ELIF $ARGUMENTS contains "trend":
-  -> Multi-batch trend analysis
-  -> Reads ALL batch files from crowd_works/data/qc-reports/
-  -> Requires >= 3 batches (reject with "insufficient data" if < 3)
-  -> Outputs fidelity trend, error category trends, worker performance trends, SLA
-
-ELIF $ARGUMENTS starts with "worker:":
-  -> Extract worker_id from "worker:{id}" format
-  -> Single worker performance deep-dive across all batches
-  -> Reads ALL batch files, filters worker_stats for target worker
-  -> Outputs accuracy rate, volume, error patterns, peer comparison
-
-ELSE (no arguments or empty):
-  -> Default: Latest batch summary (same as "batch")
-```
+- **"batch"** (or empty/default): Current batch aggregate. Reads latest `batch-*.yaml` from `crowd_works/data/qc-reports/`. Outputs pass/fail/hitl distribution, error categories, worker stats.
+- **"trend"**: Multi-batch trend analysis. Reads ALL batch files. Requires >= 3 batches (reject with "insufficient data" if < 3). Outputs fidelity/error/worker/SLA trends.
+- **"worker:{id}"**: Per-worker deep-dive across all batches. Outputs accuracy, volume, error patterns, peer comparison.
 
 ### Quality Thresholds (REQ-QM-01)
 
@@ -54,279 +36,62 @@ ELSE (no arguments or empty):
 |--------|------|-----------------|----------|
 | Batch avg_fidelity | >= 85% | 70-84% | < 70% |
 | Worker accuracy | >= 90% | 75-89% | < 75% |
-| SLA compliance | >= 95% items within SLA | 85-94% | < 85% |
+| SLA compliance | >= 95% | 85-94% | < 85% |
 
-Threshold interpretation:
-- GOOD: No action needed. Green status indicator.
-- NEEDS_ATTENTION: PM review recommended. Yellow status indicator. Include specific areas for improvement.
-- CRITICAL: Immediate PM action required. Red status indicator. Include root cause analysis and remediation recommendations.
+GOOD = no action (green). NEEDS_ATTENTION = PM review (yellow), include improvement areas. CRITICAL = immediate PM action (red), include root cause + remediation.
 
 ### Trend Analysis Window (REQ-QM-03)
-When report_type == "trend":
-```
-Short-term:  Last 3 batches  -> Detect immediate quality drops
-Medium-term: Last 10 batches -> Identify sustained patterns
-Long-term:   All available   -> Establish baselines
-
-Trend classification per metric (requires >= 3 data points):
-  improving:  Last 3 values strictly increasing
-  stable:     Last 3 values within +/- 3% variance
-  declining:  Last 3 values strictly decreasing
-  critical:   Declining AND latest value in CRITICAL threshold
-```
-- Short-term trends drive immediate alerts (declining -> flag)
-- Medium-term trends drive process recommendations (sustained decline -> escalate)
-- Long-term trends provide baseline context (team average over time)
+When report_type == "trend", analyze three windows: short-term (last 3 batches, immediate drops), medium-term (last 10, sustained patterns), long-term (all, baselines). Trend classification (requires >= 3 data points): **improving** (strictly increasing), **stable** (+/- 3% variance), **declining** (strictly decreasing), **critical** (declining AND in CRITICAL threshold). Short-term drives alerts, medium-term drives process recommendations, long-term provides baseline context.
 
 ### Error Distribution Analysis (REQ-QM-04)
-Aggregate error categories across batch items:
-```yaml
-error_heatmap:
-  # category x severity matrix
-  rows: [ESCAPE, GROUPING, OPERATOR, SIZING, TEXT, ENVIRONMENT, SEMANTIC]
-  columns: [CRITICAL, MAJOR, MINOR]
-  cells: int[][]  # Count of errors per (category, severity) pair
-
-dominant_errors:
-  - category: TEXT
-    percentage: 42%  # > 40% threshold
-    action: "Route to reference-build for targeted reference refresh"
-  - category: ESCAPE
-    percentage: 28%
-    action: "Monitor -- approaching threshold"
-```
-- Heatmap data enables PM to visualize error concentration patterns
-- Dominant error (> 40% of total errors) triggers recommendation to reference-build for targeted training material refresh
-- Identify emerging error categories (new in last 3 batches vs historical baseline)
+Build error heatmap: 7 categories (ESCAPE/GROUPING/OPERATOR/SIZING/TEXT/ENVIRONMENT/SEMANTIC) x 3 severities (CRITICAL/MAJOR/MINOR) with cell counts. Dominant error (> 40% of total) triggers recommendation to reference-build for targeted refresh. Track emerging error categories (new in last 3 batches vs historical baseline).
 
 ### SLA Compliance (REQ-QM-05)
-```
-SLA Definition:
-  - Items processed within SLA window (configured per project)
-  - Default SLA window: items processed within 24 hours of assignment
-
-SLA Calculation:
-  total_items = sum of all items across batch
-  on_time_items = items where (processed_at - assigned_at) <= SLA_window
-  sla_compliance = on_time_items / total_items
-
-  COMPLIANT:     >= 95%
-  AT_RISK:       85-94%
-  NON_COMPLIANT: < 85%
-```
+Default SLA: items processed within 24 hours of assignment. `sla_compliance = on_time_items / total_items`. Thresholds: COMPLIANT >= 95%, AT_RISK 85-94%, NON_COMPLIANT < 85%.
 
 ## Methodology
 
 ### 1. Read QC Report Data
-Read QC batch reports from `crowd_works/data/qc-reports/`. Select scope based on $ARGUMENTS:
+Glob `crowd_works/data/qc-reports/batch-*.yaml`, sorted by date. Scope: "batch" reads latest only; "trend" and "worker:{id}" read all. Validate each file: YAML parse check, require batch_id/processed_at/items[]/summary/worker_stats. Skip corrupted/incomplete files with warning.
 
-**File discovery**:
-- Glob pattern: `crowd_works/data/qc-reports/batch-*.yaml`
-- Sort by date (extracted from filename `batch-{date}.yaml`)
-- For "batch" mode: read latest file only
-- For "trend" mode: read all files
-- For "worker:{id}" mode: read all files (filter in Step 3)
-
-**Per-file validation**:
-- YAML parse check (skip corrupted files with warning)
-- Required fields: batch_id, processed_at, items[], summary, worker_stats
-- Missing required field -> skip file, log warning, continue
-
-**Persistence schema consumed** (from qc-report output):
-```yaml
-batch-{date}.yaml:
-  batch_id: string
-  processed_at: string       # ISO 8601
-  items:
-    - file_id: string
-      verdict: PASS|FAIL
-      fidelity_score: float  # 0.0-1.0
-      errors: []             # Per-item error list with category and severity
-      hitl_status: string    # flagged|cleared|pending
-  summary:
-    total: int
-    pass: int
-    fail: int
-    hitl_flagged: int
-    avg_fidelity: float
-  worker_stats:
-    {worker_id}:
-      accuracy: float        # 0.0-1.0
-      items_processed: int
-```
+**Schema consumed** (from qc-report): `batch-{date}.yaml` containing batch_id, processed_at (ISO 8601), items[] (file_id, verdict PASS|FAIL, fidelity_score 0.0-1.0, errors[] with category/severity, hitl_status), summary (total, pass, fail, hitl_flagged, avg_fidelity), worker_stats ({worker_id}: accuracy float, items_processed int).
 
 ### 2. Aggregate Batch Metrics (REQ-QM-01)
-For each batch in scope, compute aggregate metrics:
+Per batch compute: batch_id, date, total_items, pass/fail/hitl counts and rates, avg_fidelity, quality_status (from thresholds), error_distribution (by_category, by_severity, heatmap per REQ-QM-04), sla_compliance and sla_status.
 
-```yaml
-batch_aggregate:
-  batch_id: string
-  date: string
-  total_items: int           # summary.total
-  pass_count: int            # summary.pass
-  fail_count: int            # summary.fail
-  hitl_flagged: int          # summary.hitl_flagged
-  pass_rate: float           # pass_count / total_items
-  fail_rate: float           # fail_count / total_items
-  hitl_rate: float           # hitl_flagged / total_items
-  avg_fidelity: float        # summary.avg_fidelity
-  quality_status: enum       # GOOD / NEEDS_ATTENTION / CRITICAL (from thresholds)
-  error_distribution:        # Aggregate from items[].errors[]
-    by_category: {}          # Category -> count
-    by_severity: {}          # Severity -> count
-    heatmap: {}              # Category x severity matrix (REQ-QM-04)
-  sla_compliance: float      # Calculated per SLA rules (REQ-QM-05)
-  sla_status: enum           # COMPLIANT / AT_RISK / NON_COMPLIANT
-```
-
-**Cross-batch aggregation** (for trend mode):
-- Compute rolling averages for avg_fidelity, pass_rate, sla_compliance
-- Identify batch-over-batch deltas for trend classification
-- Flag batches where quality dropped by > 10% from previous batch
+**Cross-batch** (trend mode): rolling averages for avg_fidelity/pass_rate/sla_compliance, batch-over-batch deltas for trend classification, flag batches with >10% quality drop.
 
 ### 3. Per-Worker Statistics (REQ-QM-02)
-For each worker appearing in worker_stats across batches:
+Per worker build profile: worker_id (anonymized), batches_active, total_items_processed, overall_accuracy (weighted avg), accuracy_status (HIGH >=90% / NORMAL 75-89% / FLAGGED <75%), accuracy_trend, top 3 dominant_errors, comparison_to_team (accuracy_delta, volume_percentile), flag_reason (advisory only).
 
-```yaml
-worker_profile:
-  worker_id: string          # Anonymized ID (never expose real names)
-  batches_active: int        # Number of batches this worker participated in
-  total_items_processed: int # Sum across all batches
-  overall_accuracy: float    # Weighted average accuracy across batches
-  accuracy_status: enum      # HIGH (>= 90%) / NORMAL (75-89%) / FLAGGED (< 75%)
-  accuracy_trend: enum       # improving / stable / declining / critical
-  dominant_errors: []        # Top 3 error categories for this worker
-  comparison_to_team:
-    accuracy_delta: float    # Worker accuracy - team average accuracy
-    volume_percentile: int   # Percentile rank by items_processed
-  flag_reason: string|null   # Reason for FLAGGED status (null if not flagged)
-```
-
-**Worker trend** (requires >= 3 batches participation):
-- Track accuracy per batch, calculate trend using same classification as batch trends
-- Flag workers with declining accuracy trend even if current accuracy is NORMAL
-- HITL principle: never auto-flag workers for action -- PM decides (flag_reason is advisory)
-
-**Privacy**: Use anonymized worker IDs in all reports. Never expose worker names in shared dashboards. Worker-specific deep-dive (via `worker:{id}` argument) still uses anonymized IDs.
+Worker trend (requires >=3 batches): track per-batch accuracy, classify trend. Flag declining workers even if current accuracy is NORMAL. HITL principle: flags are advisory -- PM decides all personnel actions. Privacy: anonymized IDs only in all reports.
 
 ### 4. Trend Analysis + SLA Compliance (REQ-QM-03, REQ-QM-05)
-Generate trend analysis when sufficient history exists (>= 3 batches):
+Requires >=3 batches. Per metric (fidelity, error categories, worker accuracy, SLA), compute three windows: short-term (last 3, with alert on decline), medium-term (last 10, baseline + direction), long-term (all, all-time baseline).
 
-**Fidelity trend**:
-```yaml
-fidelity_trend:
-  short_term:
-    window: 3                # Last 3 batches
-    values: [0.87, 0.85, 0.83]
-    direction: declining     # Strictly decreasing
-    alert: true              # Declining fidelity triggers alert
-  medium_term:
-    window: 10               # Last 10 batches (or all if < 10)
-    baseline: 0.86           # Average fidelity over window
-    direction: stable
-  long_term:
-    all_batches: int
-    baseline: 0.84           # All-time average
-    direction: improving
-```
-
-**Error category trends** (per category):
-- Track category error count as percentage of total errors per batch
-- Identify categories with increasing share (emerging problems)
-- Identify categories with decreasing share (resolved problems)
-
-**Worker performance trends**:
-- Team average accuracy per batch
-- Variance in worker accuracy (high variance = inconsistent team quality)
-- New worker onboarding curve (first 3 batches performance vs team baseline)
-
-**SLA compliance trend**:
-- Per-batch SLA compliance percentage
-- Trend classification (improving/stable/declining/critical)
-- Project against SLA target (95%) with trajectory indicator
+**Error category trends**: track per-category share of total errors per batch; flag increasing (emerging) and decreasing (resolved) categories. **Worker trends**: team avg accuracy, variance (high = inconsistent quality), new worker onboarding curve (first 3 batches vs baseline). **SLA trend**: per-batch compliance %, trend classification, trajectory vs 95% target.
 
 ### 5. Output Dashboard with Actionable Insights
-Assemble structured dashboard for PM/PL consumption:
+Assemble structured dashboard for PM/PL:
 
-**Quality status summary**:
-- Overall quality rating (GOOD / NEEDS_ATTENTION / CRITICAL) based on latest batch
-- Change indicator vs previous batch (improved / unchanged / degraded)
-- Key metric highlights: avg_fidelity, pass_rate, sla_compliance
+- **Quality status**: Overall rating (GOOD/NEEDS_ATTENTION/CRITICAL) from latest batch, change indicator vs previous (improved/unchanged/degraded), key metrics (avg_fidelity, pass_rate, sla_compliance).
+- **Worker flags** (REQ-QM-02): List FLAGGED and declining-trend workers with PM action items citing specific data (e.g., "Review W-003: accuracy 72%, declining, TEXT errors 45%").
+- **Trend indicators**: Per-metric arrows (UP/FLAT/DOWN), CRITICAL threshold breach alerts, batch-over-batch comparisons.
+- **SLA status** (REQ-QM-05): Current compliance %, trend direction, at-risk items.
+- **Recommendations**: Evidence-based, categorized by error patterns (reference-build refresh triggers), worker performance (training recommendations), and process (SLA workflow fixes).
 
-**Worker flags** (REQ-QM-02):
-- List workers with accuracy_status == FLAGGED
-- List workers with declining accuracy_trend
-- PM action items: "Review worker W-003 (accuracy 72%, declining trend, dominant errors: TEXT 45%)"
-
-**Trend indicators**:
-- Per-metric trend arrows: UP (improving), FLAT (stable), DOWN (declining)
-- Alert flags for any CRITICAL threshold breaches
-- Batch-over-batch comparison for key metrics
-
-**SLA status** (REQ-QM-05):
-- Current compliance percentage
-- Trend direction
-- At-risk items identification
-
-**Recommendations**:
-- Data-driven recommendations based on findings
-- Error pattern recommendations: "TEXT errors dominate at 42% -- trigger reference-build refresh for text handling rules"
-- Worker recommendations: "Worker W-003 accuracy declining -- recommend additional training or review"
-- Process recommendations: "SLA compliance declining -- investigate batch assignment workflow"
-
-**Persistence** (REQ-QM-06):
-Write aggregated metrics summary back to `crowd_works/data/qc-reports/metrics-summary.yaml`:
-```yaml
-last_updated: string         # ISO 8601
-report_type: string          # batch|trend|worker
-batches_analyzed: int
-latest_batch:
-  batch_id: string
-  quality_status: enum
-  avg_fidelity: float
-  pass_rate: float
-  sla_compliance: float
-team_overview:
-  active_workers: int
-  flagged_workers: int
-  team_avg_accuracy: float
-trend_summary:
-  fidelity_direction: enum
-  error_trend: string        # Brief description
-  sla_direction: enum
-```
+**Persistence** (REQ-QM-06): Write `crowd_works/data/qc-reports/metrics-summary.yaml` with: last_updated, report_type, batches_analyzed, latest_batch (batch_id, quality_status, avg_fidelity, pass_rate, sla_compliance), team_overview (active_workers, flagged_workers, team_avg_accuracy), trend_summary (fidelity_direction, error_trend, sla_direction).
 
 ## Failure Handling
 
-### No QC Reports Found
-- **Cause**: `crowd_works/data/qc-reports/` is empty or no `batch-*.yaml` files match
-- **Action**: Report "no data available" with clear instructions. Suggest running `/qc-report` first to generate production QC reports.
-- **Route**: L1 with `status: no_data`, L2 with setup instructions
-
-### Corrupted QC Report File
-- **Cause**: YAML parse failure, incomplete write, or missing required fields
-- **Action**: Skip the corrupted file with warning. Process remaining valid files. Report skipped files in L2 with file names and error details.
-- **Route**: Normal output (degraded if many files corrupted). L1 includes `skipped_files: N`
-
-### Insufficient History for Trend Analysis
-- **Cause**: Fewer than 3 batches available when `trend` mode requested
-- **Action**: Report available data as batch summary. Note "insufficient data for trend analysis (need >= 3 batches, have N)". Do not extrapolate from insufficient data.
-- **Route**: L1 with `report_type: batch_fallback`, L2 with available metrics + explanation
-
-### Worker ID Not Found
-- **Cause**: `worker:{id}` requested but no matching worker in any batch
-- **Action**: Report "unknown worker ID: {id}". List available worker IDs for reference.
-- **Route**: L1 with `status: worker_not_found`, L2 with available worker list
-
-### Persistence Directory Missing
-- **Cause**: `crowd_works/data/qc-reports/` does not exist
-- **Action**: Create the directory. Write initial empty metrics-summary.yaml. Warn that this appears to be first run.
-- **Route**: L1 with `status: initialized`, L2 with initialization confirmation
-
-### Production Mode Validation Failure
-- **Cause**: Data in QC reports contains drill-mode markers
-- **Action**: Skip drill-mode data. If ALL data is drill-mode, reject with error directing to progress-track (Pipeline A).
-- **Route**: Error signal if no production data found. Degraded output if mixed data (production data only processed).
+| Failure | Cause | Action | Route |
+|---------|-------|--------|-------|
+| No QC reports | Empty directory or no `batch-*.yaml` | Report "no data", suggest `/qc-report` first | L1 `status: no_data` |
+| Corrupted file | YAML parse fail, missing fields | Skip with warning, process remaining | Normal (degraded), L1 `skipped_files: N` |
+| Insufficient history | <3 batches for trend mode | Fallback to batch summary, no extrapolation | L1 `report_type: batch_fallback` |
+| Worker not found | No matching worker_id in any batch | Report unknown ID, list available IDs | L1 `status: worker_not_found` |
+| Directory missing | `crowd_works/data/qc-reports/` absent | Create directory + initial metrics-summary.yaml | L1 `status: initialized` |
+| Drill-mode data | QC reports contain drill markers | Skip drill data; reject if ALL drill-mode (route to progress-track) | Error or degraded |
 
 ## Anti-Patterns
 
@@ -410,54 +175,10 @@ dominant_error_percentage: 0.28
 ```
 
 ### L2
-Full metrics dashboard with:
-- **Quality Overview**: Pass/fail/hitl distribution with batch-over-batch change indicators
-```
-Quality Status: GOOD (avg fidelity 87%)
-  Pass:  460/500 (92.0%)  [+1.2% from previous]
-  Fail:   30/500 ( 6.0%)  [-0.8% from previous]
-  HITL:   10/500 ( 2.0%)  [-0.4% from previous]
-```
-- **Error Category Heatmap**: Category x severity matrix with cell counts
-```
-Error Distribution Heatmap:
-              CRITICAL  MAJOR  MINOR  Total  Share
-  ESCAPE         2       5      3      10    18%
-  GROUPING       0       3      2       5     9%
-  OPERATOR       1       2      1       4     7%
-  SIZING         0       4      3       7    13%
-  TEXT            3       8      5      16    28%  [!]
-  ENVIRONMENT    0       2      4       6    11%
-  SEMANTIC       1       3      4       8    14%
-  ─────────────────────────────────────────────
-  Total          7      27     22      56   100%
-```
-- **Worker Performance Table**: Accuracy, volume, dominant errors per worker
-```
-Worker Performance (12 active):
-  ID      Accuracy  Volume  Status   Trend     Dominant Errors
-  W-001   94.2%     52      HIGH     stable    ESCAPE (30%)
-  W-002   91.0%     48      HIGH     improving --
-  W-003   72.1%     35      FLAGGED  declining TEXT (45%), SIZING (25%)
-  ...
-  Team Avg: 88.5%   41.7    --       stable    --
-```
-- **Trend Indicators**: Per-metric direction arrows with alert flags
-```
-Trend Summary (5 batches):
-  Fidelity:   87% -> 85% -> 83% -> 85% -> 87%  [stable]
-  Pass Rate:  91% -> 90% -> 89% -> 91% -> 92%  [improving]
-  SLA:        97% -> 96% -> 95% -> 96% -> 96%  [stable]
-  Flagged:    2   -> 1   -> 2   -> 1   -> 1    [stable]
-```
+Full metrics dashboard containing:
+- **Quality Overview**: Pass/fail/hitl counts with rates and batch-over-batch change indicators (e.g., "Pass: 460/500 92.0% [+1.2%]")
+- **Error Category Heatmap**: 7-category x 3-severity matrix with cell counts, totals, and share percentages. Flag dominant categories with [!]
+- **Worker Performance Table**: Per-worker rows with accuracy, volume, status (HIGH/NORMAL/FLAGGED), trend, dominant errors. Team average row at bottom.
+- **Trend Indicators**: Per-metric (fidelity, pass rate, SLA, flagged workers) value series with direction classification [stable/improving/declining]
 - **SLA Compliance Summary**: Current status with trend and at-risk items
-- **Recommendations**: Data-driven action items for PM
-```
-Recommendations:
-  1. [WORKER] Review W-003: accuracy 72.1% (declining), TEXT errors 45%
-     -> Recommend TEXT-focused training drill via Pipeline A
-  2. [ERRORS] TEXT category at 28% of total errors (approaching 40% threshold)
-     -> Monitor next 2 batches; if > 40%, trigger reference-build refresh
-  3. [SLA] Compliance stable at 96% (above 95% target)
-     -> No action needed
-```
+- **Recommendations**: Categorized action items ([WORKER]/[ERRORS]/[SLA]) with specific data citations and recommended actions
