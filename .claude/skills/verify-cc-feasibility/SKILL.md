@@ -76,7 +76,6 @@ Produce per-file compliance status:
 ```yaml
 domain: verify
 skill: cc-feasibility
-lens: ARE+DO
 status: PASS|FAIL
 total_files: 0
 non_native_fields: 0

@@ -10,7 +10,7 @@ description: |
 
   METHODOLOGY: (1) Read architecture and research, (2) Break components into tasks (max 4 files each), (3) Assign file ownership (non-overlapping), (4) Identify inter-task dependencies, (5) Estimate complexity (T/S/C).
   TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=analyst, COMPLEX=2-4 analysts.
-  OUTPUT_FORMAT: L1 YAML task list with assignments+deps, L2 task descriptions, L3 file-level breakdown.
+  OUTPUT_FORMAT: L1 YAML task list with assignments+deps, L2 task descriptions.
 user-invocable: true
 disable-model-invocation: false
 ---

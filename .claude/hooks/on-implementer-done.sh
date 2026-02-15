@@ -27,21 +27,25 @@ fi
 
 # Read and deduplicate changed files
 CHANGED_FILES=$(cut -f3 "$LOGFILE" 2>/dev/null | sort -u)
-CHANGED_COUNT=$(echo "$CHANGED_FILES" | wc -l | tr -d ' ')
+if [[ -z "$CHANGED_FILES" ]]; then
+    CHANGED_COUNT=0
+else
+    CHANGED_COUNT=$(echo "$CHANGED_FILES" | wc -l | tr -d ' ')
+fi
 
 [[ "$CHANGED_COUNT" -eq 0 ]] && {
     echo '{"hookSpecificOutput":{"hookEventName":"SubagentStop","additionalContext":"SRC: No file changes detected by implementer."}}'
     exit 0
 }
 
-# Build changed files summary (compact basenames)
+# Build changed files summary (last 2 path components for specificity)
 CHANGED_SUMMARY=""
 while IFS= read -r f; do
-    BASENAME=$(basename "$f")
+    SHORT_NAME=$(echo "$f" | awk -F/ '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}')
     if [[ -z "$CHANGED_SUMMARY" ]]; then
-        CHANGED_SUMMARY="$BASENAME"
+        CHANGED_SUMMARY="$SHORT_NAME"
     else
-        CHANGED_SUMMARY="${CHANGED_SUMMARY}, ${BASENAME}"
+        CHANGED_SUMMARY="${CHANGED_SUMMARY}, ${SHORT_NAME}"
     fi
 done <<< "$CHANGED_FILES"
 
@@ -50,22 +54,38 @@ done <<< "$CHANGED_FILES"
 DEPENDENTS=""
 DEP_COUNT=0
 while IFS= read -r changed; do
-    BASENAME=$(basename "$changed")
-    # Search for references to this file's basename
-    REFS=$(timeout 10 grep -Frl "$BASENAME" /home/palantir/.claude/ \
+    # Use last 2 path components for specificity (e.g., "execution-code/SKILL.md")
+    SEARCH_PATTERN=$(echo "$changed" | awk -F/ '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}')
+    # Search .claude/ scope
+    REFS=$(timeout 10 grep -Frl "$SEARCH_PATTERN" "$HOME/.claude/" \
         --exclude-dir=.git \
         --exclude-dir=node_modules \
         --exclude-dir=agent-memory \
         --exclude='*.log' \
         2>/dev/null | grep -v "$changed" | head -10) || true
 
+    # Also search project root for source code dependents (broader scope)
+    PROJECT_REFS=$(timeout 10 grep -Frl "$SEARCH_PATTERN" "$HOME" \
+        --exclude-dir=.git \
+        --exclude-dir=node_modules \
+        --exclude-dir=.claude/agent-memory \
+        --exclude-dir=.claude/cache \
+        --exclude-dir=.claude/history \
+        --exclude-dir=.claude/shell-snapshots \
+        --exclude='*.log' \
+        --include='*.py' --include='*.ts' --include='*.js' --include='*.md' --include='*.json' --include='*.sh' \
+        2>/dev/null | grep -v "$changed" | head -5) || true
+
+    REFS="$REFS
+$PROJECT_REFS"
+
     while IFS= read -r ref; do
         [[ -z "$ref" ]] && continue
-        REF_BASE=$(basename "$ref")
+        REF_SHORT=$(echo "$ref" | awk -F/ '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}')
         if [[ -z "$DEPENDENTS" ]]; then
-            DEPENDENTS="${REF_BASE} (refs ${BASENAME})"
+            DEPENDENTS="${REF_SHORT} (refs ${SEARCH_PATTERN})"
         else
-            DEPENDENTS="${DEPENDENTS}, ${REF_BASE} (refs ${BASENAME})"
+            DEPENDENTS="${DEPENDENTS}, ${REF_SHORT} (refs ${SEARCH_PATTERN})"
         fi
         DEP_COUNT=$((DEP_COUNT + 1))
     done <<< "$REFS"

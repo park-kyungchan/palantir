@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: verify domain (reviewed implementation) or execution-code/infra (FAIL, fix required).
 
   METHODOLOGY: (1) Read implementation artifacts, (2) Stage 1: spawn analyst for design/spec compliance, (3) Stage 2: spawn analyst for code quality and patterns, (4) Optional: contract review for interface compliance, (5) Consolidate review findings into unified report.
-  OUTPUT_FORMAT: L1 YAML review verdict per reviewer, L2 markdown consolidated review report, L3 per-file review details.
+  OUTPUT_FORMAT: L1 YAML review verdict per reviewer, L2 markdown consolidated review report.
 user-invocable: true
 disable-model-invocation: false
 ---

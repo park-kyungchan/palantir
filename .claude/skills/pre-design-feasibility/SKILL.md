@@ -31,7 +31,7 @@ From validated requirement document, list each item needing CC implementation:
 - Web access (WebSearch, WebFetch)
 - MCP tools (sequential-thinking, context7, tavily)
 - Hooks (SubagentStart, PreCompact, SessionStart, etc.)
-- Skills (frontmatter, L2 body, input_schema)
+- Skills (frontmatter, L2 body, argument-hint)
 
 ### 2. Map Requirements to CC Capabilities
 For each requirement, identify the CC native feature that implements it.

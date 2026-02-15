@@ -1,7 +1,7 @@
 ---
 name: task-management
 description: |
-  [X-Cut·TaskMgmt·RTD] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API.
+  [X-Cut·TaskMgmt·TaskAPI] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API.
 
   WHEN: (1) Pipeline start: create PT. (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with dependencies. (4) Execution: teammates update status real-time. (5) Status query: ASCII viz per domain. (6) Commit done: PT completed.
   DOMAIN: Cross-cutting, any phase.
@@ -133,6 +133,13 @@ Key rules:
 2. If incomplete tasks remain → report blockers
 3. TaskUpdate PT: `metadata.commit_status` → `"committed"`
 4. TaskUpdate PT: `status` → `"completed"`
+
+## Quality Gate
+- Exactly 1 [PERMANENT] task exists (no duplicates)
+- PT updates use Read-Merge-Write (never blind overwrite)
+- Work tasks have complete metadata (type, phase, domain, skill, agent, files)
+- Dependency chains are acyclic (addBlockedBy creates no cycles)
+- ASCII visualization matches current TaskList state
 
 ## Output
 

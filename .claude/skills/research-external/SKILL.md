@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: research-audit (external findings for gap analysis), plan-strategy (external constraints for strategy).
 
   METHODOLOGY: (1) Extract external dependencies from architecture decisions, (2) Search official docs via WebSearch/context7, (3) Fetch key pages via WebFetch, (4) Verify version compatibility and API availability, (5) Synthesize into structured findings with source links.
-  OUTPUT_FORMAT: L1 YAML dependency validation matrix, L2 markdown doc summary with source URLs, L3 API analysis.
+  OUTPUT_FORMAT: L1 YAML dependency validation matrix, L2 markdown doc summary with source URLs.
 user-invocable: true
 disable-model-invocation: false
 ---

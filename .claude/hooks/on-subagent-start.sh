@@ -1,5 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Hook: SubagentStart — Logging + PT context injection
+
+set -euo pipefail
 
 INPUT=$(cat)
 
@@ -12,7 +14,7 @@ AGENT_NAME=$(echo "$INPUT" | jq -r '.agent_name // .tool_input.name // "unknown"
 TEAM_NAME=$(echo "$INPUT" | jq -r '.tool_input.team_name // "no-team"' 2>/dev/null)
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-LOG_DIR="/home/palantir/.agent/teams"
+LOG_DIR="/tmp/claude-hooks"
 mkdir -p "$LOG_DIR"
 
 echo "[$TIMESTAMP] SUBAGENT_START | name=$AGENT_NAME | type=$AGENT_TYPE | team=$TEAM_NAME" >> "$LOG_DIR/teammate-lifecycle.log"

@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: research domain (risk areas for codebase validation), plan-strategy (risk mitigation for strategy).
 
   METHODOLOGY: (1) Read architecture and interface specs, (2) Identify failure modes per component (FMEA), (3) Assess security implications (OWASP), (4) Identify performance bottlenecks, (5) Propose mitigation per risk with priority ranking.
-  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, mitigation), L2 markdown risk narrative, L3 FMEA tables.
+  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, mitigation), L2 markdown risk narrative.
 user-invocable: true
 disable-model-invocation: false
 ---

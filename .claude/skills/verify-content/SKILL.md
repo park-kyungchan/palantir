@@ -44,11 +44,10 @@ For each skill file with L2 body:
 - Quality Gate section with pass/fail criteria
 - Output section with L1 YAML and L2 markdown templates
 
-### 4. Check L1/L2/L3 Format
+### 4. Check L1/L2 Format
 For each Output section:
 - L1: YAML template with domain, skill, status fields
 - L2: Markdown bullet list describing content
-- L3 (optional): Detailed breakdown description
 
 ### 5. Generate Content Report
 Produce utilization rankings:
@@ -68,7 +67,6 @@ Produce utilization rankings:
 ```yaml
 domain: verify
 skill: content
-lens: ARE+DO
 status: PASS|FAIL
 total_files: 0
 avg_utilization_pct: 0

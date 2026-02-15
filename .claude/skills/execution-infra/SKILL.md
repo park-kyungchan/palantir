@@ -11,7 +11,7 @@ description: |
   METHODOLOGY: (1) Read validated infra assignments, (2) Spawn infra-implementer agents per assignment, (3) Each: read target -> apply changes -> write output, (4) Monitor progress via L1/L2, (5) Consolidate infra change results.
   CONSTRAINT: Infra-implementers have Write but no Bash. Cannot delete files or run commands.
   TIER_BEHAVIOR: T=single infra-implementer, S/C=1-2 infra-implementers.
-  OUTPUT_FORMAT: L1 YAML infra change manifest, L2 markdown change summary, L3 per-file change details.
+  OUTPUT_FORMAT: L1 YAML infra change manifest, L2 markdown change summary.
 user-invocable: true
 disable-model-invocation: false
 ---

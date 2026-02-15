@@ -59,6 +59,14 @@ With user confirmation:
 - Create git commit with structured message
 - Cleanup session artifacts (team files, temporary outputs)
 
+## Quality Gate
+- Verify domain all-PASS confirmed (no outstanding FAIL verdicts)
+- All pipeline domain outputs consolidated
+- Commit message includes: summary, key decisions, files changed
+- MEMORY.md updated with session learnings (Read-Merge-Write)
+- PT status marked DELIVERED via TaskUpdate
+- Git commit successful with specific file staging (no git add -A)
+
 ## Fork Execution
 
 Executed by `delivery-agent` (`subagent_type: delivery-agent`).

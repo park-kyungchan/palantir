@@ -66,7 +66,6 @@ Produce relationship matrix:
 ```yaml
 domain: verify
 skill: consistency
-lens: RELATE
 status: PASS|FAIL
 relationships_checked: 0
 inconsistencies: 0

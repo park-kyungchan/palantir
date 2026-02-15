@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: plan-decomposition (consolidated research for task planning), design domain (if critical gaps need architecture revision).
 
   METHODOLOGY: (1) Inventory all findings from codebase and external research, (2) Classify by architecture decision relevance, (3) Map findings to design assumptions, (4) Identify gaps: assumptions without evidence, (5) Produce coverage metrics and gap report. Max 3 iterations.
-  OUTPUT_FORMAT: L1 YAML coverage matrix with counts, L2 markdown gap analysis, L3 finding inventory.
+  OUTPUT_FORMAT: L1 YAML coverage matrix with counts, L2 markdown gap analysis.
 user-invocable: true
 disable-model-invocation: false
 ---

@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: plan-strategy (interface constraints for sequencing), orchestration-assign (interface dependencies for assignment).
 
   METHODOLOGY: (1) Read task breakdown and design interfaces, (2) For each task boundary: define input/output contract, (3) Map design interfaces to task-level interfaces, (4) Determine dependency ordering (which tasks first), (5) Identify integration points needing cross-task coordination.
-  OUTPUT_FORMAT: L1 YAML interface registry per task, L2 dependency ordering with rationale, L3 contracts.
+  OUTPUT_FORMAT: L1 YAML interface registry per task, L2 dependency ordering with rationale.
 user-invocable: true
 disable-model-invocation: false
 ---

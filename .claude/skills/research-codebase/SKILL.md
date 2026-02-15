@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: research-audit (findings for inventory), plan-decomposition (codebase patterns for task planning).
 
   METHODOLOGY: (1) Identify codebase areas relevant to architecture decisions, (2) Glob for files matching patterns, (3) Grep for conventions and existing implementations, (4) Read key files for detailed understanding, (5) Document patterns, anti-patterns, and reusable components.
-  OUTPUT_FORMAT: L1 YAML pattern inventory, L2 markdown findings with file:line references, L3 code excerpts.
+  OUTPUT_FORMAT: L1 YAML pattern inventory, L2 markdown findings with file:line references.
 user-invocable: true
 disable-model-invocation: false
 ---

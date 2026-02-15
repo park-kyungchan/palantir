@@ -9,19 +9,11 @@ set -euo pipefail
 # Read JSON from stdin
 INPUT=$(cat)
 
-# Extract fields (fallback to bash if jq unavailable)
-if command -v jq &>/dev/null; then
-    SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
-    TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
-    FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
-    SUCCESS=$(echo "$INPUT" | jq -r '.tool_response.success // "true"')
-else
-    # Bash fallback: rough extraction
-    SESSION_ID=$(echo "$INPUT" | grep -o '"session_id":"[^"]*"' | cut -d'"' -f4)
-    TOOL_NAME=$(echo "$INPUT" | grep -o '"tool_name":"[^"]*"' | cut -d'"' -f4)
-    FILE_PATH=$(echo "$INPUT" | grep -o '"file_path":"[^"]*"' | head -1 | cut -d'"' -f4)
-    SUCCESS="true"
-fi
+# Extract fields via jq
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+SUCCESS=$(echo "$INPUT" | jq -r 'if .tool_response.success == false then "false" else "true" end')
 
 # Validate required fields
 [[ -z "$SESSION_ID" || -z "$FILE_PATH" ]] && exit 0

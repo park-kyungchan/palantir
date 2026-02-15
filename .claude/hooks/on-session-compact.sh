@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Hook: SessionStart(compact) — Task API-based auto-compact recovery
 
+set -euo pipefail
+
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-LOG_DIR="/home/palantir/.agent/teams"
+LOG_DIR="/tmp/claude-hooks"
 mkdir -p "$LOG_DIR"
 
 echo "[$TIMESTAMP] SESSION_COMPACT | Context compacted — recovery active" \

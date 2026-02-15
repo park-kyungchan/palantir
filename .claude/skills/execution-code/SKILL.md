@@ -10,7 +10,7 @@ description: |
 
   METHODOLOGY: (1) Read assignments, (2) Spawn implementers per matrix, (3) Each: TaskGet -> code -> report, (4) Monitor L1/L2, (5) Consolidate results.
   TIER_BEHAVIOR: T=single implementer, S=1-2 implementers, C=3-4 implementers.
-  OUTPUT_FORMAT: L1 YAML manifest, L2 summary, L3 per-file details.
+  OUTPUT_FORMAT: L1 YAML manifest, L2 summary.
 user-invocable: true
 disable-model-invocation: false
 ---

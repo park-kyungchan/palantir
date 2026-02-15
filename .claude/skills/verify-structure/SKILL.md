@@ -63,7 +63,6 @@ For each parsed frontmatter:
 ```yaml
 domain: verify
 skill: structure
-lens: ARE
 status: PASS|FAIL
 total_files: 0
 pass: 0

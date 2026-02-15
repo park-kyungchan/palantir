@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: design-risk (interfaces for risk assessment), plan-interface (interface specs for planning).
 
   METHODOLOGY: (1) Read component structure from architecture, (2) For each boundary: define input/output types, (3) Define protocols (sync/async, message format), (4) Specify error contracts (types, propagation), (5) Document integration points with sequence diagrams.
-  OUTPUT_FORMAT: L1 YAML interface registry with types, L2 markdown interface spec with examples, L3 type definitions and diagrams.
+  OUTPUT_FORMAT: L1 YAML interface registry with types, L2 markdown interface spec with examples.
 user-invocable: true
 disable-model-invocation: false
 ---

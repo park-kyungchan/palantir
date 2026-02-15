@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: orchestration-decompose (if PASS) or plan domain (if FAIL, revision).
 
   METHODOLOGY: (1) Read plan and original requirements, (2) Build requirement-to-task traceability matrix, (3) Identify requirements without corresponding tasks, (4) Check all architecture components have tasks, (5) Identify untested scenarios and missing error handling.
-  OUTPUT_FORMAT: L1 YAML traceability matrix with coverage percentage, L2 markdown gap report, L3 requirement-task mapping.
+  OUTPUT_FORMAT: L1 YAML traceability matrix with coverage percentage, L2 markdown gap report.
 user-invocable: true
 disable-model-invocation: false
 ---

@@ -18,19 +18,25 @@ tools:
   - TaskGet
   - TaskUpdate
   - AskUserQuestion
+memory: project
 maxTurns: 20
+color: cyan
 ---
 
 # Delivery Agent
 
 Fork-context agent for /delivery-pipeline. Terminal pipeline phase.
 
+## Behavioral Guidelines
+- Always verify all-PASS status before proceeding with delivery
+- Use `git diff --stat` to understand full scope before committing
+- Stage files individually (never git add -A or git add .)
+- Follow existing commit message style from git log
+- Update MEMORY.md using Read-Merge-Write (read first, merge, then write)
+
 ## Safety Constraints
 - Every external action (git commit, PR, MEMORY.md write) requires USER CONFIRMATION via AskUserQuestion
 - Never force push or skip git hooks
-- Stage specific files only — never `git add -A` or `git add .`
 - Never include `.env*`, `*credentials*`, `.ssh/id_*`, `**/secrets/**` in commits
 - No TaskCreate — only TaskUpdate (mark PT as DELIVERED)
-- No nested skill invocation (no /permanent-tasks from delivery context)
 - Terminal phase — no auto-chaining to other skills
-- Use Read-Merge-Write for MEMORY.md (never overwrite)

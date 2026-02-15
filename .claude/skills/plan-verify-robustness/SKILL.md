@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: orchestration-decompose (if PASS) or plan domain (if FAIL, revision).
 
   METHODOLOGY: (1) Read plan and risk assessment, (2) Generate edge case scenarios per task, (3) Simulate failure modes (what if task X fails?), (4) Check security implications of approach, (5) Verify resource constraints (4-teammate limit, file count limits).
-  OUTPUT_FORMAT: L1 YAML robustness verdict with edge case list, L2 markdown challenge report, L3 failure scenario analysis.
+  OUTPUT_FORMAT: L1 YAML robustness verdict with edge case list, L2 markdown challenge report.
 user-invocable: true
 disable-model-invocation: false
 ---

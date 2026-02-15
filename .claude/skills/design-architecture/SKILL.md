@@ -10,7 +10,7 @@ description: |
 
   METHODOLOGY: (1) Read approved requirements, (2) Identify components (SRP), (3) Define module boundaries and data flow, (4) Select technology/patterns with rationale, (5) Document as ADRs.
   TIER_BEHAVIOR: TRIVIAL=Lead-only, STANDARD=analyst, COMPLEX=2-4 analysts.
-  OUTPUT_FORMAT: L1 YAML component list, L2 markdown ADRs, L3 detailed specs.
+  OUTPUT_FORMAT: L1 YAML component list, L2 markdown ADRs.
 user-invocable: true
 disable-model-invocation: false
 ---

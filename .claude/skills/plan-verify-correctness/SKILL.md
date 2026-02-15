@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: orchestration-decompose (if all plan-verify PASS) or plan domain (if FAIL, revision).
 
   METHODOLOGY: (1) Read plan and architecture spec, (2) Check each task implements correct architecture component, (3) Verify dependency chains match interface contracts, (4) Detect logical contradictions between tasks, (5) Verify constraint compliance (file limits, teammate limits).
-  OUTPUT_FORMAT: L1 YAML correctness verdict per task, L2 markdown analysis with evidence, L3 contradiction traces.
+  OUTPUT_FORMAT: L1 YAML correctness verdict per task, L2 markdown analysis with evidence.
 user-invocable: true
 disable-model-invocation: false
 ---

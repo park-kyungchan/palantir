@@ -70,7 +70,6 @@ Produce quality score per file:
 ```yaml
 domain: verify
 skill: quality
-lens: DO
 status: PASS|FAIL
 total_files: 0
 avg_score: 0

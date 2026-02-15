@@ -38,15 +38,15 @@
 - **Rule 4: Verification & Context Engineering** -- Step-by-step verification, V1-V6 checks, context preservation, WARP.md maintenance
 - Active task rule: 장기 작업 시 Rule 5로 추가, 완료 후 삭제
 
-## Current INFRA State (v10.4 SRC, 2026-02-14)
+## Current INFRA State (v10.5 RSI, 2026-02-15)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
 | CLAUDE.md | v10.3 | 47L | Protocol-only + Section 2.1 (P0-P2 Lead-only rule) |
-| Agents | v10.0 | 6 files | analyst(B), researcher(C), implementer(D), infra-implementer(E), delivery-agent(F), pt-manager(G) |
-| Skills | v10.4 | 35 dirs | +3 SRC skills, 31 auto-loaded, 93% budget |
-| Settings | -- | ~109L | 9 permissions, 5 hooks (SubagentStart, PreCompact, SessionStart, PostToolUse, SubagentStop) |
-| Hooks | 5 total | ~280L | +on-file-change.sh (SRC Stage 1), +on-implementer-done.sh (SRC Stage 2) |
+| Agents | v10.5 | 6 files | All: color, memory:project, expanded L2 bodies |
+| Skills | v10.5 | 35 dirs | L3 refs removed, L2 fixes, 31 auto-loaded |
+| Settings | -- | ~109L | 9 permissions, 5 hooks |
+| Hooks | 5 total | ~280L | Bug fixes: FC-1 jq boolean, ID-3 basename, ID-6 wc-l, CX-3 pipefail |
 | Agent Memory | -- | 4 dirs | implementer, infra-implementer, researcher, analyst |
 
 ### Architecture (v10 Native Optimization)
@@ -109,6 +109,16 @@ Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -
 Details: `memory/meta-cognition-infra.md`
 
 ## Session History
+
+### v10.5 RSI Iteration 1 — Code-Logic Self-Improvement (2026-02-15, branch: test)
+- **RSI Loop**: RESEARCH→DIAGNOSE→IMPLEMENT→VERIFY autonomous cycle on all .claude/ files
+- 7 implementation waves: W1(hook hardening), W2(skill L2), W3(agent expand), CC(audit), W1.5(hook bugs), W4(L3+colors), W5(cc-ref)
+- Hook bugs fixed: FC-1 jq `//` boolean, ID-3 basename collision→2-component awk, ID-6 wc-l empty, CX-3 pipefail×3
+- Agents: all 6 gained color field + expanded L2 bodies + memory:project (delivery-agent, pt-manager new)
+- Skills: 15 L3 OUTPUT_FORMAT refs removed, 8 L2 body fixes (verify lens, task-mgmt tag, delivery QG)
+- cc-reference cache: all 4 files updated (SRC hooks, context:fork fix, budget numbers, argument-hint)
+- CC audit findings cached for Iteration 2: haiku model for analyst/pt-manager, TaskCompleted hook, rules/ modularization
+- Total: ~35 files changed across 5 hooks + 6 agents + 16 skills + 4 cc-reference
 
 ### v10.4 SRC — Smart Reactive Codebase (2026-02-14, branch: test)
 - **SRC**: Automatic impact analysis system for code changes during pipeline execution
