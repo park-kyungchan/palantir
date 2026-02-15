@@ -18,6 +18,7 @@ tools:
   - TaskUpdate
   - AskUserQuestion
 memory: project
+model: haiku
 maxTurns: 20
 color: blue
 ---

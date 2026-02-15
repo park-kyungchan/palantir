@@ -1,6 +1,6 @@
-# Agent Teams — Team Constitution v10.0
+# Agent Teams — Team Constitution v10.5
 
-> v10.3 · Opus 4.6 native · Skill-driven routing · 6 agents · 35 skills · Protocol-only CLAUDE.md
+> v10.5 · Opus 4.6 native · Skill-driven routing · 6 agents · 35 skills · Protocol-only CLAUDE.md
 > Agent L1 auto-loaded in Task tool definition · Skill L1 auto-loaded in system-reminder
 
 > **INVIOLABLE — Skill-Driven Orchestration**

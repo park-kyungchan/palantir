@@ -67,8 +67,7 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-session-compact.sh",
             "timeout": 15,
-            "statusMessage": "Recovery after compaction",
-            "once": true
+            "statusMessage": "Recovery after compaction"
           }
         ]
       }
