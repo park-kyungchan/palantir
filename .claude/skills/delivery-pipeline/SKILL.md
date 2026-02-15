@@ -1,18 +1,18 @@
 ---
 name: delivery-pipeline
 description: |
-  [P8·Delivery·Terminal] Pipeline-end delivery executor. Consolidates all domain outputs, creates git commit with structured message, archives session learnings to MEMORY.md, updates PT to DELIVERED status.
+  [P8·Delivery·Terminal] Delivers pipeline results via structured git commit, MEMORY.md archive, and PT completion.
 
-  WHEN: Verify domain complete (all 5 stages PASS, no outstanding FAIL). Pipeline finished, ready for commit and archive.
+  WHEN: Verify domain complete (all 4 stages PASS, no outstanding FAIL). Pipeline finished, ready for commit.
   DOMAIN: Cross-cutting terminal phase (not part of 9-domain feedback loop).
-  INPUT_FROM: verify domain (all-PASS verification report).
-  OUTPUT_TO: Git repository (commit), MEMORY.md (knowledge archive).
+  INPUT_FROM: verify-cc-feasibility (all 4 verify stages PASS confirmed).
+  OUTPUT_TO: Git repository (commit), MEMORY.md (knowledge archive), PT (DELIVERED status).
 
-  METHODOLOGY: (1) Read verify all-PASS report, (2) Consolidate pipeline results, (3) Generate commit message from PT impact map and architecture decisions, (4) Archive learnings to MEMORY.md, (5) Mark PT DELIVERED via TaskUpdate, (6) Git commit, (7) Cleanup artifacts.
-  CONSTRAINT: Executed by delivery-agent. Requires user confirmation before git commit.
-  OUTPUT_FORMAT: L1 YAML delivery manifest, L2 markdown delivery summary with commit hash.
+  METHODOLOGY: (1) Verify all-PASS confirmed (Lead gates before spawn), (2) Consolidate pipeline results across all domains, (3) Generate conventional commit message from PT + architecture decisions, (4) Archive session learnings to MEMORY.md (Read-Merge-Write), (5) Stage specific files + git commit after user confirmation, (6) Mark PT DELIVERED via TaskUpdate.
+  CONSTRAINT: Executed by delivery-agent (memory:none). User confirmation required before git commit. No git add -A.
+  OUTPUT_FORMAT: L1 YAML delivery manifest with commit hash, L2 delivery summary.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[commit-message]"
 ---
 
@@ -27,11 +27,11 @@ argument-hint: "[commit-message]"
 
 ### 1. Verify All-PASS Status
 Before any delivery action:
-- Read verify domain output: all 5 stages must show PASS
+- Read verify domain output: all 4 stages must show PASS
 - If any FAIL: abort delivery, report to Lead for fix loop
 - Confirm no outstanding critical findings
 
-**Note**: delivery-agent has `memory: none` — no access to conversation history. Lead MUST include verify verdict summary (all 5 stage PASS/FAIL status) in the delivery-agent spawn prompt. The all-PASS gate is effectively verified by Lead before spawning.
+**Note**: delivery-agent has `memory: none` — no access to conversation history. Lead MUST include verify verdict summary (all 4 stage PASS/FAIL status) in the delivery-agent spawn prompt. The all-PASS gate is effectively verified by Lead before spawning.
 
 ### 2. Consolidate Pipeline Results
 Gather outputs from all pipeline domains:
@@ -112,18 +112,23 @@ With user confirmation:
 ### Delivery-Agent Spawn DPS
 Since delivery-agent has `memory: none`, Lead must provide ALL context in the spawn prompt. The agent has zero access to prior conversation history.
 
-- **Context**: Verify all-PASS summary (all 5 stage verdicts), pipeline tier classification, complete changed file list with paths, PT task ID, current branch name, key architecture decisions from the pipeline, and commit message from `$ARGUMENTS` if provided.
+- **Context**: Verify all-PASS summary (all 4 stage verdicts), pipeline tier classification, complete changed file list with paths, PT task ID, current branch name, key architecture decisions from the pipeline, and commit message from `$ARGUMENTS` if provided.
 - **Task**: "Consolidate pipeline results. Generate commit message using conventional commit format. Update MEMORY.md using Read-Merge-Write pattern. Stage files with `git add [specific files]`. Create commit after user confirmation. Mark PT DELIVERED via TaskUpdate."
 - **Constraints**: NO `git add -A` or `git add .`. Must use AskUserQuestion for confirmation before git commit. Must TaskUpdate PT only after commit succeeds (not before). Must use individual file staging. Never include sensitive files (.env, credentials, secrets).
 - **Expected Output**: L1 YAML with `commit_hash`, `files_changed`, `pt_status`. L2 delivery summary with commit message, archive entries, and any warnings.
 - **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+
+#### Delivery-Agent Tier-Specific DPS Variations
+**TRIVIAL**: Same agent. Context: minimal (1-2 files, simple commit). maxTurns: 10.
+**STANDARD**: Same agent. Context: full consolidation (3-5 files, commit body with decisions). maxTurns: 15.
+**COMPLEX**: Full DPS above. Context: extended multi-domain consolidation (6+ files). maxTurns: 20.
 
 ### Pre-Delivery Checklist
 Before spawning delivery-agent, Lead must verify:
 
 | Check | Method | Required |
 |-------|--------|----------|
-| Verify all-PASS | Read verify domain L1 output (all 5 stages) | Yes |
+| Verify all-PASS | Read verify domain L1 output (all 4 stages) | Yes |
 | PT exists | TaskGet [PERMANENT] — must have active PT | Yes |
 | Branch is clean | `git status` via pipeline context | Recommended |
 | No untracked sensitive files | Check for .env, credentials, secrets in changed files | Yes |
@@ -190,7 +195,7 @@ MEMORY.md captures session-level summaries, not implementation details. Do not i
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| verify-cc-feasibility | All-PASS verification report (5 stages) | L1 YAML: `all_pass: true`, per-stage verdicts |
+| verify-cc-feasibility | All-PASS verification report (4 stages) | L1 YAML: `all_pass: true`, per-stage verdicts |
 | (User invocation) | Direct delivery request with optional commit message | `$ARGUMENTS` text: commit message or empty |
 | self-implement | RSI cycle results ready for commit | L1 YAML: `status: complete`, `files_changed`, `commit_hash: ""` |
 

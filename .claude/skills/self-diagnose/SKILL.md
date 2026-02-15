@@ -1,15 +1,15 @@
 ---
 name: self-diagnose
 description: |
-  [Homeostasis·SelfDiagnose·Research] INFRA health diagnosis via CC native state research. Reads cc-reference cache, scans .claude/ files for deficiencies (field compliance, routing, budget, hooks), produces categorized findings by severity.
+  [Homeostasis·Diagnosis] Diagnoses INFRA health against CC native state. Reads cc-reference cache, scans .claude/ files across 8 categories (field compliance, routing, budget, hooks, memory, permissions, utilization, colors). Severity-sorted findings.
 
   WHEN: User invokes for INFRA health audit. After CC updates or before releases. Diagnosis only — does NOT implement fixes.
   DOMAIN: Homeostasis (cross-cutting, self-improvement diagnosis). Paired with self-implement.
   INPUT_FROM: User invocation, manage-infra (health findings suggesting deeper analysis).
-  OUTPUT_TO: self-implement (findings list for fix implementation).
+  OUTPUT_TO: self-implement (categorized findings with severity and evidence).
 
-  METHODOLOGY: (1) Read cc-reference cache (4 files), (2) Scan .claude/ files against 8-category diagnostic checklist, (3) Spawn analyst for parallel category scanning, (4) Categorize findings by severity (CRITICAL→LOW), (5) Produce sorted findings list with file:line evidence.
-  OUTPUT_FORMAT: L1 YAML findings list with severity counts, L2 markdown diagnostic report with evidence.
+  METHODOLOGY: (1) Read cc-reference cache (5 files) for ground truth, (2) Scan .claude/ files against 8-category diagnostic checklist, (3) Spawn analyst for parallel category scanning, (4) Categorize findings by severity (CRITICAL->LOW), (5) Produce sorted findings list with file:line evidence.
+  OUTPUT_FORMAT: L1 YAML findings list with severity counts, L2 diagnostic report with per-category evidence.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[focus-area]"
@@ -18,9 +18,13 @@ argument-hint: "[focus-area]"
 # Self-Diagnose — INFRA Health Research
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick scan of 1-2 specific categories for a focused area.
-- **STANDARD**: Spawn 1 analyst. Full diagnostic checklist across all .claude/ files. Standard invocation.
-- **COMPLEX**: Spawn 2 analysts in parallel (field compliance + routing in one, budget + hooks in another). For comprehensive audits.
+- **TRIVIAL**: Lead-direct. Quick scan of 1-2 specific categories for a focused area. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:20). Full diagnostic checklist across all .claude/ files.
+- **COMPLEX**: Spawn 2 analysts in parallel (maxTurns:15 each). Group A: field compliance + routing + utilization. Group B: budget + hooks + memory + permissions + colors.
+
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 
 ## Decision Points
 
@@ -31,7 +35,7 @@ argument-hint: "[focus-area]"
 
 ### Claude-code-guide Spawn Decision Tree
 ```
-cc-reference cache exists? (memory/cc-reference/ has 4 files)
+cc-reference cache exists? (memory/cc-reference/ has 5 files)
 |-- NO --> Spawn claude-code-guide (full research). STOP if unavailable.
 +-- YES --> Cache updated within 7 days?
     |-- YES --> Focus-area covered by cache?
@@ -49,7 +53,7 @@ cc-reference cache exists? (memory/cc-reference/ has 4 files)
 ## Methodology
 
 ### 1. Research CC Native State
-Read cached reference: `memory/cc-reference/` (4 files: native-fields, context-loading, hook-events, arguments-substitution).
+Read cached reference: `memory/cc-reference/` (5 files: native-fields, context-loading, hook-events, arguments-substitution, skill-disambiguation).
 - If reference exists and is recent: use as ground truth (skip claude-code-guide spawn)
 - If reference outdated or focus-area requires new info: spawn claude-code-guide for delta only
 - Query focus: "What NEW native features exist since last verification date?"
@@ -82,8 +86,9 @@ Scan all `.claude/` files systematically using the diagnostic category checklist
 For STANDARD/COMPLEX tiers, construct the delegation prompt:
 - **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 8 categories.
 - **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
-- **Constraints**: Read-only. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config).
+- **Constraints**: Read-only analyst agent. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config). maxTurns:20.
 - **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|findings:{N}|ref:/tmp/pipeline/homeostasis-self-diagnose.md`.
 
 ## Anti-Patterns
 

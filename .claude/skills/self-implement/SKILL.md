@@ -1,15 +1,15 @@
 ---
 name: self-implement
 description: |
-  [Homeostasis·SelfImplement·Fix] INFRA self-improvement executor. Receives diagnosis findings from self-diagnose, spawns infra-implementer waves for fixes, verifies compliance, commits changes with structured message.
+  [Homeostasis·FixExecutor] Executes INFRA improvements from diagnosis findings. Spawns infra-implementer waves grouped by category, verifies compliance post-fix, commits with structured RSI message.
 
-  WHEN: After self-diagnose produces findings list. Findings ready for implementation. Not user-invocable directly.
+  WHEN: After self-diagnose produces findings list. Findings ready for implementation.
   DOMAIN: Homeostasis (cross-cutting, self-improvement execution). Paired with self-diagnose.
   INPUT_FROM: self-diagnose (categorized findings with severity and evidence).
   OUTPUT_TO: delivery-pipeline (commit), manage-skills (inventory refresh), manage-infra (health re-check).
 
-  METHODOLOGY: (1) Receive findings from self-diagnose, (2) Spawn infra-implementer waves (parallel by category, max 2/wave), (3) Verify compliance (re-scan modified files), (4) Update MEMORY.md + context-engineering.md, (5) Commit with structured message.
-  OUTPUT_FORMAT: L1 YAML improvement manifest with iteration details, L2 markdown implementation report.
+  METHODOLOGY: (1) Receive and prioritize findings (CRITICAL first), (2) Spawn infra-implementer waves (max 2 parallel, non-overlapping files), (3) Verify compliance by re-scanning modified files, (4) Update MEMORY.md + context-engineering.md with cycle results, (5) Commit with structured message. Max 3 iterations.
+  OUTPUT_FORMAT: L1 YAML improvement manifest (fixed/deferred counts, iteration), L2 implementation report with change log.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -17,9 +17,13 @@ disable-model-invocation: false
 # Self-Implement — INFRA Fix Executor
 
 ## Execution Model
-- **TRIVIAL**: 1 infra-implementer. 5 or fewer findings in non-overlapping files.
-- **STANDARD**: 1-2 infra-implementer waves. Standard RSI fix cycle.
-- **COMPLEX**: 3-4 infra-implementer waves + extended verification. Major structural changes.
+- **TRIVIAL**: 1 infra-implementer (maxTurns:15). 5 or fewer findings in non-overlapping files.
+- **STANDARD**: 1-2 infra-implementer waves (maxTurns:20 each). Standard RSI fix cycle.
+- **COMPLEX**: 3-4 infra-implementer waves (maxTurns:25 each) + extended verification. Major structural changes.
+
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 
 ## Decision Points
 
@@ -55,8 +59,9 @@ Construct each delegation prompt with:
 - **Task**: For each file, specify exact change: "Remove field X from Y.md", "Change value A to B in Z/SKILL.md", etc. Provide target value where possible.
 - **Constraints**: Write and Edit tools only — no Bash. Files in this wave must not overlap with other concurrent infra-implementers. Only modify files listed in findings.
 - **Expected Output**: L1 YAML with files_changed, findings_fixed, status. L2 with per-file change log: finding ID, what changed, before→after.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-implement.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|fixed:{N}|deferred:{N}|ref:/tmp/pipeline/homeostasis-self-implement.md`.
 
-Monitor completion. If a wave fails, re-spawn with corrected instructions (max 1 retry per wave).
+Await infra-implementer result via SendMessage (P2+) or TaskOutput (standalone). If a wave fails, re-spawn with corrected instructions (max 1 retry per wave).
 
 ### 3. Verify Compliance
 Post-implementation verification. Re-run diagnostic categories from self-diagnose, but only for modified files.
@@ -79,6 +84,7 @@ Spawn infra-implementer for memory updates:
 - **Task**: Update memory/context-engineering.md with new findings. Update MEMORY.md session history with cycle summary.
 - **Constraints**: Edit tool only — modify existing sections, don't restructure.
 - **Expected Output**: L1 YAML with files_updated, status. L2 with change summary.
+- **Delivery**: SendMessage to Lead: `PASS|files:{N}|ref:/tmp/pipeline/homeostasis-self-implement-records.md`.
 
 ### 5. Commit
 Lead-direct via Bash tool, or route to /delivery-pipeline:

@@ -1,15 +1,15 @@
 ---
 name: verify-cc-feasibility
 description: |
-  [P7·Verify·CCFeasibility] CC native compliance verifier. Ensures all frontmatter uses ONLY CC native fields, no custom fields, and validates via claude-code-guide spawn.
+  [P7·Verify·CCFeasibility] Validates CC native field compliance via cc-guide verification.
 
-  WHEN: After every skill/agent creation or frontmatter modification. Fourth and final verify stage. Can run independently.
-  DOMAIN: verify (skill 4 of 4). Terminal skill in verify domain. After verify-quality PASS.
-  INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes) or direct invocation.
-  OUTPUT_TO: delivery-pipeline (if all 4 stages PASS) or execution-infra (if FAIL, frontmatter fix required).
+  WHEN: After verify-quality PASS. Fourth and final verify stage. Terminal P7 skill. Also after skill/agent creation or frontmatter modification.
+  DOMAIN: verify (skill 4 of 4). Terminal. Sequential: structural-content -> consistency -> quality -> cc-feasibility.
+  INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes).
+  OUTPUT_TO: delivery-pipeline (all 4 verify stages PASS) or execution-infra (FAIL: non-native field fix required).
 
-  METHODOLOGY: (1) Read target frontmatter fields, (2) Check against CC native field lists for skills and agents (see L2 for full lists), (3) Flag any non-native field, (4) Spawn claude-code-guide to validate questionable fields, (5) Return compliance verdict per file.
-  OUTPUT_FORMAT: L1 YAML native compliance per file, L2 markdown feasibility report with field-level feedback.
+  METHODOLOGY: (1) Read target frontmatter fields from modified skill/agent files, (2) Check each field against CC native field lists (skills: name/description/user-invocable/etc., agents: name/description/tools/model/etc.), (3) Flag any non-native or custom fields, (4) Spawn claude-code-guide for questionable fields, (5) Return per-file compliance verdict.
+  OUTPUT_FORMAT: L1 YAML native compliance per file, L2 feasibility report with field-level feedback.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick field check on 1-2 files. Lead reads frontmatter inline, compares against the native field lists below. No agent spawn needed.
-- **STANDARD**: Spawn analyst with cc-reference cache and all target frontmatter. Analyst performs systematic comparison. Lead escalates to claude-code-guide only if analyst flags ambiguous fields.
-- **COMPLEX**: Spawn analyst for full field validation across 10+ files. Spawn claude-code-guide in parallel if any field is not in the cc-reference cache or cache is stale. Two-pass: structural field check first, then value type validation.
+- **STANDARD**: Spawn analyst (maxTurns: 25) with cc-reference cache and all target frontmatter. Analyst performs systematic comparison. Lead escalates to claude-code-guide only if analyst flags ambiguous fields.
+- **COMPLEX**: Spawn analyst (maxTurns: 30) for full field validation across 10+ files. Spawn claude-code-guide in parallel if any field is not in the cc-reference cache or cache is stale. Two-pass: structural field check first, then value type validation.
 
 ## Decision Points
 

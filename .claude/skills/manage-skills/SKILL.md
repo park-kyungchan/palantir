@@ -1,14 +1,14 @@
 ---
 name: manage-skills
 description: |
-  [Homeostasis·Manager·Skills] Session-aware skill lifecycle manager. Detects codebase changes via git diff, maps changed files to domains, determines CREATE/UPDATE/DELETE actions across all 8 pipeline domains.
+  [Homeostasis·SkillLifecycle] Detects skill lifecycle actions from codebase changes. Maps git diff to domains, checks coverage thresholds, proposes CREATE/UPDATE/DELETE with rationale across all pipeline domains.
 
   WHEN: After implementing features with new patterns, after modifying skills, before PR, or periodic drift detection. AI can auto-invoke.
   DOMAIN: Homeostasis (cross-cutting, operates on .claude/skills/).
 
   DETECTION_RULES: .claude/agents/ -> design domain, .claude/skills/ -> self-management, docs/plans/ -> plan domain, 3+ uncovered files in same domain -> CREATE.
-  METHODOLOGY: (1) Git diff to detect changes, (2) Map files to domains via detection rules, (3) Check skill coverage per domain, (4) Propose CREATE/UPDATE/DELETE actions, (5) Execute after approval, (6) Run verify-cc-feasibility on results.
-  OUTPUT_FORMAT: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 markdown change analysis with rationale.
+  METHODOLOGY: (1) Git diff to detect changes, (2) Map files to domains via detection rules, (3) Check skill coverage per domain against minimum thresholds, (4) Propose CREATE/UPDATE/DELETE with rationale, (5) Execute after approval and run verify-cc-feasibility.
+  OUTPUT_FORMAT: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 change analysis with domain coverage.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -16,9 +16,13 @@ disable-model-invocation: false
 # Manage — Skills
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick scan for 1-2 domain changes.
-- **STANDARD**: Spawn analyst. Full domain coverage analysis.
-- **COMPLEX**: Spawn 2 analysts. One for change detection, one for coverage analysis.
+- **TRIVIAL**: Lead-direct. Quick scan for 1-2 domain changes. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:15). Full domain coverage analysis.
+- **COMPLEX**: Spawn 2 analysts (maxTurns:20 each). One for change detection, one for coverage analysis.
+
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 
 ## Methodology
 
@@ -53,6 +57,7 @@ Task: "Map changed files to domains. For each affected domain, check coverage ag
        minimum thresholds. Propose CREATE/UPDATE/DELETE with rationale for each action."
 Constraints: maxTurns:15, analyst agent, Read+Grep+Glob tools only.
 Expected Output: L1 YAML action list with severity per action.
+Delivery: Write full result to `/tmp/pipeline/homeostasis-manage-skills.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|actions:{N}|domains:{N}|ref:/tmp/pipeline/homeostasis-manage-skills.md`.
 ```
 
 **COMPLEX DPS** (8+ changed files, 3+ domains):
@@ -70,6 +75,7 @@ Analyst-2:
          Propose CREATE/UPDATE/DELETE actions. Include rationale and severity."
   Constraints: maxTurns:20, analyst agent.
   Expected Output: L1 YAML action list + L2 coverage analysis.
+  Delivery: Write full result to `/tmp/pipeline/homeostasis-manage-skills.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|actions:{N}|domains:{N}|ref:/tmp/pipeline/homeostasis-manage-skills.md`.
 ```
 
 ### 2. Map Changes to Domains
@@ -102,6 +108,13 @@ After user approval:
 - For DELETE: remove skill directory
   **Limitation**: Analysts cannot delete files (no Bash tool). DELETE actions are flagged for user manual action. Lead reports the orphaned path for user to remove.
 - Run verify-cc-feasibility on all changed skills
+
+**Execute DPS** (CREATE/UPDATE actions):
+- **Context**: Approved action list with rationale. Existing skill files for UPDATE. Domain naming conventions from Skill Naming Convention decision point.
+- **Task**: "For CREATE: generate SKILL.md with complete frontmatter (all native fields) + L2 body skeleton. For UPDATE: edit specified frontmatter fields in existing SKILL.md."
+- **Constraints**: infra-implementer agent (Write/Edit only, no Bash). maxTurns:15. Only modify files in .claude/skills/.
+- **Expected Output**: Created/updated SKILL.md files. L1 YAML with files_changed, actions_applied per action.
+- **Delivery**: SendMessage to Lead: `PASS|files:{N}|ref:/tmp/pipeline/homeostasis-manage-skills-exec.md`.
 
 ## Decision Points
 

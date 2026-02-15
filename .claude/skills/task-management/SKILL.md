@@ -1,16 +1,18 @@
 ---
 name: task-management
 description: |
-  [X-Cut·TaskMgmt·TaskAPI] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API.
+  [X-Cut·TaskMgmt·TaskAPI] Task lifecycle manager for PT and work tasks via Task API.
 
-  WHEN: (1) Pipeline start: create PT. (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with dependencies. (4) Execution: teammates update status real-time. (5) Status query: ASCII viz per domain. (6) Commit done: PT completed.
+  Use when: User says /task-management. Pipeline needs PT create/update, batch work task creation, ASCII visualization, or PT completion.
+
+  WHEN: (1) Pipeline start: create PT. (2) Requirements change: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks. (4) Execution: real-time status updates. (5) Status query: ASCII viz. (6) Commit done: PT completed.
   DOMAIN: Cross-cutting, any phase.
 
   ROLES: Heavy ops (PT create/update, batch tasks, ASCII viz) -> pt-manager agent. Light ops (single TaskUpdate) -> Lead direct.
   METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement}. PT={type:permanent,tier,current_phase,commit_status,references}.
-  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz in Korean.
+  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[action] [args]"
 ---
 
@@ -18,8 +20,17 @@ argument-hint: "[action] [args]"
 
 ## Execution Model
 
+- **TRIVIAL**: Lead-direct. Single TaskUpdate for PT status change. No agent spawn.
+- **STANDARD**: Lead-direct or pt-manager for batch operations. maxTurns: 15.
+- **COMPLEX**: pt-manager spawn for full PT lifecycle + batch task creation. maxTurns: 25.
+
+**Operation routing**:
 - **Heavy ops** → spawn `pt-manager` (`subagent_type: pt-manager`). Full Task API (TaskCreate + TaskUpdate).
 - **Light ops** → Lead executes directly. Single TaskUpdate for status/metadata changes.
+
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 
 ## Operations
 
@@ -53,6 +64,27 @@ argument-hint: "[action] [args]"
    - Update `current_phase` on phase transition
 4. TaskUpdate with merged result
 5. If description exceeds useful density → move details to file, keep index in description
+
+### 2b. PT Phase Checkpoint (Compaction Recovery)
+
+After each phase completion, Lead updates PT metadata with compact phase signal:
+1. TaskGet PT → read current metadata
+2. Add phase signal: `metadata.phase_signals.{phase} = "{STATUS}|{key_signal}"`
+3. Update `metadata.current_phase` to next phase
+4. TaskUpdate with merged metadata
+
+This enables compaction recovery: Lead calls TaskGet(PT) → reads `phase_signals` → knows entire pipeline history.
+Example metadata after P3:
+```json
+{
+  "phase_signals": {
+    "p0": "PASS|reqs:6",
+    "p1": "PASS|arch:4waves",
+    "p2": "PASS|gaps:0",
+    "p3": "PASS|tasks:12|deps:8"
+  }
+}
+```
 
 ### 3. Work Task Batch Creation
 
@@ -125,6 +157,7 @@ Key rules:
 - **문제**: `metadata.problem` — 기존 상태의 무엇이 불충분한가
 - **개선/결과/계획**: `metadata.improvement` — 이 작업이 어떻게 개선하는가
 - Status labels: 진행중, 완료, 대기, 실패
+- **Delivery**: pt-manager sends micro-signal to Lead via SendMessage: `{STATUS}|action:{type}|tasks:{N}|ref:/tmp/pipeline/task-management.md`.
 
 ### 6. PT Completion
 
@@ -138,6 +171,18 @@ Key rules:
 ### Heavy vs Light Operation Routing
 - **Heavy ops (pt-manager spawn)**: PT creation, PT update with complex merge, batch work task creation, ASCII visualization. These require multiple Task API calls and complex logic. Spawn pt-manager agent (`subagent_type: pt-manager`).
 - **Light ops (Lead-direct)**: Single TaskUpdate for status change (e.g., marking a task in_progress or completed), simple metadata field update. Lead executes inline without agent spawn to avoid overhead.
+
+### PT-Manager Spawn DPS
+- **Context**: PT task ID, current pipeline phase, operation type (create/update/batch/visualize), plan domain L1/L2 output paths if batch creation.
+- **Task**: "[Specific operation]: Create PT with structured metadata, OR update PT with phase results via Read-Merge-Write, OR batch create work tasks from plan output with dependency chains, OR generate ASCII pipeline visualization."
+- **Constraints**: pt-manager agent. Tools: Read, Glob, Grep, Write, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion. No Edit/Bash. maxTurns: 15 (STANDARD), 25 (COMPLEX).
+- **Expected Output**: L1 YAML with `action`, `pt_id`, `task_count`. L2 action summary or ASCII visualization.
+- **Delivery**: SendMessage to Lead: `PASS|action:{type}|tasks:{N}|ref:/tmp/pipeline/task-management.md`
+
+#### PT-Manager Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Single TaskUpdate inline. No pt-manager spawn.
+**STANDARD**: pt-manager spawn for batch creation or complex PT update. maxTurns: 15.
+**COMPLEX**: pt-manager spawn with full lifecycle management + visualization. maxTurns: 25.
 
 ### PT Description Density Management
 - **Keep in PT description**: Core requirements, acceptance criteria, tier classification, key architecture decisions (up to ~2000 chars). Information that every teammate needs when they TaskGet the PT.

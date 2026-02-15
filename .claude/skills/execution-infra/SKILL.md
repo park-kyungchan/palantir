@@ -1,17 +1,15 @@
 ---
 name: execution-infra
 description: |
-  [P6·Execution·Infra] Infrastructure file executor. Spawns infra-implementers to modify .claude/ files (agents, skills, settings, hooks). Handles .claude/ changes exclusively.
+  [P6·Execution·Infra] Deploys infra-implementers for .claude/ files (Write/Edit only, no Bash execution).
 
-  WHEN: orchestration domain assigns infra tasks. Infra changes needed alongside or independent of code.
-  DOMAIN: execution (skill 2 of 5). Parallel-capable: code ∥ infra -> review.
-  INPUT_FROM: orchestration-verify (validated infra task assignments).
-  OUTPUT_TO: execution-impact (SRC), execution-review (infra changes), verify domain.
+  WHEN: After orchestrate-coordinator complete (PASS). Infra tasks assigned in unified plan. .claude/ files exclusively.
+  DOMAIN: execution (skill 2 of 5). Parallel-capable: code ∥ infra -> impact -> review.
+  INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with infra task assignments and .claude/ file paths).
+  OUTPUT_TO: execution-impact (infra file change manifest), execution-review (infra change artifacts).
 
-  METHODOLOGY: (1) Read validated infra assignments, (2) Spawn infra-implementer agents per assignment, (3) Each: read target -> apply changes -> write output, (4) Monitor progress via L1/L2, (5) Consolidate infra change results.
-  CONSTRAINT: Infra-implementers have Write but no Bash. Cannot delete files or run commands.
-  TIER_BEHAVIOR: T=single infra-implementer, S/C=1-2 infra-implementers.
-  OUTPUT_FORMAT: L1 YAML infra change manifest, L2 markdown change summary.
+  METHODOLOGY: (1) Read orchestrate-coordinator L3 infra tasks, (2) Spawn infra-implementer per task (Write/Edit only, no Bash), (3) Monitor via SendMessage, validate YAML/JSON post-completion, (4) Handle failures: max 3 retries, settings.json last, (5) Consolidate infra change manifest with validation status.
+  OUTPUT_FORMAT: L1 YAML infra change manifest, L2 config change summary. No Bash — Lead validates schema post-return.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -155,7 +153,7 @@ Agent `memory` field (`project` vs `none`) affects what context the agent receiv
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| orchestration-verify | Infra task assignments with PASS verdict | L1 YAML: `tasks[].{task_id, files[], change_type}` |
+| orchestrate-coordinator | Unified execution plan with infra task assignments | L1 YAML: `tasks[].{task_id, files[], change_type}` |
 | plan-interface | Interface contracts for infra components (if applicable) | L2 markdown: field specifications, schema requirements |
 | design-architecture | Component structure for new skill/agent creation | L2 markdown: domain assignment, routing requirements |
 

@@ -1,15 +1,15 @@
 ---
 name: design-interface
 description: |
-  [P1·Design·Interface] API contracts and integration point designer. Defines precise interfaces between components: function signatures, data types, protocols, and error contracts for all boundaries.
+  [P1·Design·Contracts] Specifies inter-component API contracts and error boundaries. Defines function signatures, data types, protocols (sync/async/file/hook), and error propagation rules per boundary.
 
-  WHEN: After design-architecture produces component structure. Components exist but interfaces undefined.
+  WHEN: After design-architecture produces component structure. Components defined but interfaces unspecified.
   DOMAIN: design (skill 2 of 3). Parallel with design-risk after architecture completes.
-  INPUT_FROM: design-architecture (component structure, module boundaries).
-  OUTPUT_TO: design-risk (interfaces for risk), plan-interface (specs for planning), plan-decomposition (task decomposition).
+  INPUT_FROM: design-architecture (component structure, module boundaries, data flow).
+  OUTPUT_TO: design-risk (interface contracts for risk assessment).
 
-  METHODOLOGY: (1) Read component structure from architecture, (2) For each boundary: define input/output types, (3) Define protocols (sync/async, message format), (4) Specify error contracts (types, propagation), (5) Document integration points with sequence diagrams.
-  OUTPUT_FORMAT: L1 YAML interface registry with types, L2 markdown interface spec with examples.
+  METHODOLOGY: (1) Read component structure from architecture output, (2) Define interface contracts per boundary (input->output types), (3) Select protocol per boundary (direct_call/file_based/task_api/hook_based), (4) Specify error contracts (types, propagation, recovery), (5) Document dependency order for implementation sequencing.
+  OUTPUT_FORMAT: L1 YAML interface registry with protocols, L2 per-boundary specs with examples.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -72,8 +72,9 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Context**: Paste design-architecture L1 (components[] with names, responsibilities, dependencies) and relevant L2 ADR sections. Include existing codebase patterns for interface conventions.
 - **Task**: "For each component boundary: define function signatures (input→output), protocol (sync/async), error contracts (types, propagation), versioning approach. Map design interfaces to task contracts. Determine implementation ordering."
 - **Scope**: For COMPLEX, split by component boundary set — non-overlapping assignments.
-- **Constraints**: Read-only. Use Glob/Grep for existing interface patterns. No file modifications.
+- **Constraints**: Read-only analyst. Use Glob/Grep for existing interface patterns. No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with interface_count, contracts[] (boundary, protocol, error_contract). L2 per-boundary specs and implementation ordering.
+- **Delivery**: Lead reads output directly via TaskOutput (P0-P1 local mode, no SendMessage).
 
 #### Interface Contract Template
 ```
@@ -203,8 +204,8 @@ Interfaces should be minimal and sufficient for current requirements. Adding "ex
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | design-risk | Interface contracts for risk assessment | Always (interface → risk, or parallel) |
-| plan-interface | Interface specs for planning | After design phase complete |
-| plan-decomposition | Interface-aware component structure | After design phase complete |
+| research-codebase | Interface patterns for codebase validation | After design phase complete (P2 Wave 1) |
+| research-external | API contracts for community validation | After design phase complete (P2 Wave 1) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

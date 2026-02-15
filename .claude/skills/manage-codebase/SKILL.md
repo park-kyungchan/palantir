@@ -1,14 +1,14 @@
 ---
 name: manage-codebase
 description: |
-  [Homeostasis·Manager·Codebase] Dependency map generator and maintainer. Creates/updates .claude/agent-memory/analyst/codebase-map.md with per-file dependency data (refs, refd_by, hotspot). Full scan on first run, incremental after pipeline execution.
+  [Homeostasis·DependencyMap] Generates per-file dependency map across .claude/ scope. Creates/updates codebase-map.md with refs, refd_by, hotspot scores. Full scan on first run, incremental after pipeline execution.
 
   WHEN: After pipeline execution completes, after major codebase changes, or periodic maintenance. AI can auto-invoke.
   DOMAIN: Homeostasis (cross-cutting, operates on codebase-map.md).
 
   SCOPE: .claude/ directory (Phase 1). Max 150 entries, 300 lines.
-  METHODOLOGY: (1) Check if codebase-map.md exists, (2) If not: full scan via Glob+Grep, (3) If exists: incremental update for changed files, (4) Detect stale entries (>7 days), prune deleted files, (5) Calculate hotspot scores, write updated map.
-  OUTPUT_FORMAT: L1 YAML map health report, codebase-map.md file.
+  METHODOLOGY: (1) Check if codebase-map.md exists (auto-detect mode), (2) Full scan: Glob+Grep all .claude/ files for structural references, (3) Incremental: re-scan changed files only, (4) Detect stale entries (>7 days), prune deleted files, (5) Calculate hotspot scores and write updated map.
+  OUTPUT_FORMAT: L1 YAML map health report (entries, mode, staleness), codebase-map.md file.
 user-invocable: true
 argument-hint: "[full|incremental]"
 disable-model-invocation: false
@@ -17,9 +17,13 @@ disable-model-invocation: false
 # Manage — Codebase
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick staleness check or single-file incremental update.
-- **STANDARD**: Spawn 1 analyst. Incremental update for 3-8 changed files. Expected ~1-2 minutes.
-- **COMPLEX**: Spawn 1 analyst with extended maxTurns. Full generation scan of entire `.claude/` scope. Expected ~5 minutes.
+- **TRIVIAL**: Lead-direct. Quick staleness check or single-file incremental update. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:20). Incremental update for 3-8 changed files.
+- **COMPLEX**: Spawn 1 analyst (maxTurns:30). Full generation scan of entire `.claude/` scope.
+
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 
 ## Methodology
 
@@ -53,6 +57,13 @@ Spawn analyst agent with `subagent_type: analyst`, `maxTurns: 30`:
 5. **Calculate hotspot scores**: Based on `refd_by` count
 6. **Write complete map** to `.claude/agent-memory/analyst/codebase-map.md`
 
+**Full Generation DPS** (STANDARD/COMPLEX tiers):
+- **Context**: Scope paths from Scope Boundary section. Exclusion list. Reference detection patterns above.
+- **Task**: "Enumerate all .claude/ files within scope filters. For each file, grep for structural references to other tracked files. Build bidirectional refs and calculate hotspot scores. Write complete codebase-map.md."
+- **Constraints**: analyst agent, maxTurns:30. Write output to `.claude/agent-memory/analyst/codebase-map.md` only. Max 150 entries / 300 lines.
+- **Expected Output**: L1 YAML with entries count, mode: full-generation, hotspot distribution. Complete codebase-map.md file per map schema.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:full|ref:/tmp/pipeline/homeostasis-manage-codebase.md`.
+
 ### 3. Incremental Update
 For each changed file from pipeline execution:
 
@@ -69,6 +80,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with
 - **Task**: "For each changed file: (1) Re-scan refs by grepping content for references to other tracked files, (2) Update refd_by bidirectionally, (3) Handle new files (add entry), deleted files (remove entry), renames (old→new). Recalculate hotspot scores. Set updated date."
 - **Constraints**: Write output to `.claude/agent-memory/analyst/codebase-map.md` only. Follow the existing map schema. Stay within 150 entries / 300 lines.
 - **Expected Output**: L1 YAML with entries updated/added/removed counts, mode: incremental-update. Updated codebase-map.md file.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:{mode}|ref:/tmp/pipeline/homeostasis-manage-codebase.md`.
 
 ### 4. Staleness Detection
 For each existing entry in the map:
@@ -147,7 +159,7 @@ updated: {YYYY-MM-DD}
 - Would require: separate map file, language-specific reference detection
 - NOT part of current SRC implementation scope
 
-## Error Handling
+## Failure Handling
 - **Map corrupted**: Delete and regenerate from scratch (full scan)
 - **Map exceeds 300 lines**: Prune lowest-hotspot, oldest-updated entries
 - **Filesystem scan timeout**: Produce partial map with `status: partial`

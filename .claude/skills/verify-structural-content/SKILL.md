@@ -1,15 +1,15 @@
 ---
 name: verify-structural-content
 description: |
-  [P7·Verify·StructuralContent] Combined structural integrity and content completeness verifier. Single-pass check of YAML parseability, naming conventions, description utilization, orchestration keys, body sections, and L1/L2 format.
+  [P7·Verify·StructuralContent] Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness in single pass.
 
-  WHEN: After any INFRA file creation or modification. First of 4 verify stages. Can run independently.
+  WHEN: After execution-review PASS or any INFRA file creation/modification. First of 4 sequential verify stages.
   DOMAIN: verify (skill 1 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
-  INPUT_FROM: execution domain (implementation artifacts) or any file modification trigger.
-  OUTPUT_TO: verify-consistency (if PASS) or execution-infra (if FAIL).
+  INPUT_FROM: execution-review (PASS verdict, implementation artifacts).
+  OUTPUT_TO: verify-consistency (if PASS) or execution-infra (if FAIL with fix instructions).
 
-  METHODOLOGY: (1) Glob .claude/agents/*.md and skills/*/SKILL.md, (2) Validate YAML frontmatter + naming conventions, (3) Check required fields + description utilization (>80% of 1024), (4) Verify orchestration keys (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO) + body sections, (5) Check L1/L2 output format.
-  OUTPUT_FORMAT: L1 YAML PASS/FAIL per file with structure+content scores, L2 combined integrity report.
+  METHODOLOGY: (1) Glob agents/*.md + skills/*/SKILL.md, (2) Validate YAML frontmatter fields, (3) Check naming+directory compliance, (4) Verify description utilization (>80% of 1024) + orchestration keys, (5) Verify L2: Execution Model, Methodology, Quality Gate, Output.
+  OUTPUT_FORMAT: L1 YAML PASS/FAIL per file with structure+content scores, L2 integrity report.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -18,10 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick check on 1-3 files. Read files directly, validate frontmatter and content inline.
-- **STANDARD**: Spawn 1 analyst. Systematic structural + content check on 4-15 files. Single-pass per file.
-- **COMPLEX**: Spawn 2 analysts. One for structural checks (YAML, naming, dirs), one for content checks (utilization, keys, sections). 16+ files.
-
-Note: Previously 2 sequential skills (verify-structure then verify-content). Unified approach reads each file ONCE, performs both structural and content checks together. This eliminates re-reading files and reduces verification overhead.
+- **STANDARD**: Spawn 1 analyst (maxTurns: 25). Systematic structural + content check on 4-15 files. Single-pass per file.
+- **COMPLEX**: Spawn 2 analysts (maxTurns: 30 each). One for structural checks (YAML, naming, dirs), one for content checks (utilization, keys, sections). 16+ files.
 
 ---
 
@@ -47,15 +45,7 @@ ELIF specific file creation/modification:
 
 ### Skip Conditions
 
-Structural-content verification MAY be skipped when ALL of these hold:
-1. No `.claude/` files were created or deleted
-2. Changes are L2-body-only edits (no frontmatter modifications)
-3. No directory additions or removals
-4. No file renames
-5. Only hook `.sh` files changed (no frontmatter to verify)
-6. Only non-`.claude/` source files changed (no skill/agent content)
-
-If ANY frontmatter field changed, verification is REQUIRED.
+Structural-content verification MAY be skipped when ALL hold: no `.claude/` files created/deleted, changes are L2-body-only (no frontmatter), no directory additions/removals/renames, only hook `.sh` or non-`.claude/` source files changed. If ANY frontmatter field changed, verification is REQUIRED.
 
 ### Analyst Spawn vs Lead-Direct
 
@@ -76,23 +66,11 @@ ELIF tier == COMPLEX:
 
 ### Utilization Threshold Flexibility
 
-The 80% target (>819 chars of 1024) is a guideline. Some skills legitimately have shorter descriptions if their L1 routing information is complete.
-
-```
-Utilization Assessment
-======================
-
-File utilization < 80%?
-  |
-  +-- YES --> Check orchestration keys
-  |             |
-  |             +-- All 5 keys present and specific?
-  |             |     |
-  |             |     +-- YES --> Allow 70% minimum (WARN, not FAIL)
-  |             |     +-- NO  --> FAIL (missing keys + low utilization)
-  |             |
-  +-- NO  --> PASS (utilization acceptable)
-```
+The 80% target (>819 chars of 1024) is a guideline:
+- Utilization ≥80%: PASS
+- Utilization 70-80% AND all 5 orchestration keys present: WARN (not FAIL)
+- Utilization 70-80% AND missing keys: FAIL
+- Utilization <70%: FAIL regardless of key presence
 
 ### Body Section Requirements by Skill Type
 
@@ -105,16 +83,7 @@ File utilization < 80%?
 
 ### Known Limitation Handling
 
-Analysts perform heuristic YAML validation (no parser tool available):
-
-| Edge Case | Detection Strategy | Risk Level |
-|-----------|-------------------|------------|
-| Multi-line strings with special chars | Check `|` or `>` scalar indicator present | LOW |
-| Deeply nested YAML (3+ levels) | Count indentation levels, verify consistency | MEDIUM |
-| Pipe/block scalars (`|`, `>`, `|+`, `|-`) | Verify whitespace after scalar indicator | LOW |
-| Embedded colons in values | Check if value is quoted when containing `:` | MEDIUM |
-| Tab vs space mixing | Look for tab characters in frontmatter region | HIGH |
-| Trailing whitespace after `---` | Check line content is exactly `---` | LOW |
+Analysts perform heuristic YAML validation (no parser tool). Key edge cases: tab/space mixing (HIGH risk), embedded colons in values (MEDIUM), deeply nested YAML 3+ levels (MEDIUM). Multi-line scalars and trailing whitespace are LOW risk.
 
 ---
 
@@ -129,7 +98,7 @@ Use Glob to discover all `.claude/` components.
 | Component | Glob Pattern | Expected Count | Location |
 |-----------|-------------|----------------|----------|
 | Agent definitions | `.claude/agents/*.md` | 6 | Direct children of agents/ |
-| Skill definitions | `.claude/skills/*/SKILL.md` | 35 | One per skill directory |
+| Skill definitions | `.claude/skills/*/SKILL.md` | 40 | One per skill directory |
 | Settings | `.claude/settings.json` | 1 | .claude/ root |
 | Constitution | `.claude/CLAUDE.md` | 1 | .claude/ root |
 | Hook scripts | `.claude/hooks/*.sh` | 5 | Direct children of hooks/ |
@@ -140,20 +109,7 @@ Use Glob to discover all `.claude/` components.
 - `analyst.md`, `researcher.md`, `implementer.md`
 - `infra-implementer.md`, `delivery-agent.md`, `pt-manager.md`
 
-**Expected Skill Directories** (35 total, 8 pipeline + 4 homeostasis + 3 cross-cutting):
-
-| Domain | Skill Directories |
-|--------|-------------------|
-| pre-design | `pre-design-brainstorm`, `pre-design-validate`, `pre-design-feasibility` |
-| design | `design-architecture`, `design-interface`, `design-risk` |
-| research | `research-codebase`, `research-external`, `research-audit` |
-| plan | `plan-decomposition`, `plan-interface`, `plan-strategy` |
-| plan-verify | `plan-verify-correctness`, `plan-verify-completeness`, `plan-verify-robustness` |
-| orchestration | `orchestration-decompose`, `orchestration-assign`, `orchestration-verify` |
-| execution | `execution-code`, `execution-infra`, `execution-impact`, `execution-cascade`, `execution-review` |
-| verify | `verify-structural-content`, `verify-consistency`, `verify-quality`, `verify-cc-feasibility` |
-| homeostasis | `manage-infra`, `manage-skills`, `manage-codebase`, `self-diagnose`, `self-implement` |
-| cross-cutting | `delivery-pipeline`, `pipeline-resume`, `task-management` |
+**Expected Skill Directories**: Validate count matches CLAUDE.md §1 declarations (currently 44 INFRA across 10 domains + project skills). Cross-reference exact names with `l2-ce-pe-reference.md` Appendix.
 
 ### 2. Structural Integrity Checks (per file)
 
@@ -166,17 +122,7 @@ For each agent and skill file, perform structural validation:
 
 **Known Limitation**: Analysts perform visual/heuristic YAML validation (indentation, colons, quoting). No programmatic YAML parser available. Subtle syntax errors may pass verification.
 
-**Common YAML Errors Checklist**:
-
-| Error Type | Invalid Pattern | Valid Pattern | Detection Method |
-|------------|----------------|---------------|------------------|
-| Missing colon | `key value` | `key: value` | Grep for lines without `:` between `---` markers |
-| Bad indentation | Mixed tabs/spaces | Consistent 2-space indent | Visual inspection in Read output |
-| Unclosed quotes | `description: "text...` | `description: "text"` | Check quote pairing per line |
-| Pipe scalar without newline | `description: |text` | `description: |` + newline + indented text | Check whitespace after `|` |
-| Missing space after colon | `name:value` | `name: value` | Grep for `[a-z]:[^ \n]` pattern |
-| Boolean unquoted | `description: true` | `description: "true"` | Flag if value field contains bare boolean |
-| Trailing `---` content | `--- extra` | `---` | Check delimiter lines are exactly 3 dashes |
+**Common YAML Errors** (heuristic detection): Missing colon (`key value`), bad indentation (mixed tabs/spaces), unclosed quotes, pipe scalar without newline (`|text` vs `|` + newline), missing space after colon (`name:value`), unquoted booleans in value fields, trailing content on `---` delimiter lines.
 
 **B. Required Fields Present**
 
@@ -210,39 +156,7 @@ FOR each file:
 
 **D. Directory Structure Compliance**
 
-**Expected Directory Tree**:
-
-```
-.claude/
-  CLAUDE.md                          # Constitution (1 file)
-  settings.json                      # Settings (1 file)
-  agents/                            # Agent definitions (6 files)
-    analyst.md
-    researcher.md
-    implementer.md
-    infra-implementer.md
-    delivery-agent.md
-    pt-manager.md
-  skills/                            # Skill definitions (35 directories)
-    pre-design-brainstorm/SKILL.md
-    ...                              # (34 more skill directories)
-  hooks/                             # Hook scripts (5 files)
-    on-subagent-start.sh
-    on-session-compact.sh
-    on-implementer-done.sh
-    on-file-change.sh
-    on-pre-compact.sh
-  agent-memory/                      # Per-agent persistent memory (varies)
-  rules/                             # Optional path-scoped rules (0+ files)
-  plugins/                           # Optional plugin configs (0+ files)
-```
-
-**Structural Checks**:
-- No orphan files in `.claude/skills/` (files outside skill dirs)
-- No empty skill directories (dir without SKILL.md)
-- Agent files directly under `.claude/agents/` (no subdirectories)
-- Hook scripts directly under `.claude/hooks/` (no subdirectories)
-- No unexpected top-level files in `.claude/` (only CLAUDE.md, settings.json, and known dirs)
+**Structural Checks**: No orphan files in skills/ (outside skill dirs), no empty skill dirs (missing SKILL.md), agents/hooks as flat dirs (no subdirs), no unexpected top-level .claude/ files. Expected top-level: CLAUDE.md, settings.json, agents/, skills/, hooks/, agent-memory/, rules/, plugins/.
 
 ### 3. Content Completeness Checks (per file)
 
@@ -268,16 +182,7 @@ For each skill description, verify presence of:
 - **OUTPUT_TO**: Downstream consumers
 - **METHODOLOGY**: Numbered execution steps
 
-**Orchestration Key Extraction Patterns:**
-
-```yaml
-# Regex patterns for key extraction from description text
-WHEN: '/WHEN:.*$/m'
-DOMAIN: '/DOMAIN:.*$/m'
-INPUT_FROM: '/INPUT_FROM:.*$/m'
-OUTPUT_TO: '/OUTPUT_TO:.*$/m'
-METHODOLOGY: '/METHODOLOGY:.*$/m'
-```
+**Orchestration Key Extraction**: Grep each description for `/^(WHEN|DOMAIN|INPUT_FROM|OUTPUT_TO|METHODOLOGY):/m`. All 5 must be present.
 
 **Quality Assessment per Key:**
 
@@ -290,42 +195,14 @@ METHODOLOGY: '/METHODOLOGY:.*$/m'
 | METHODOLOGY | Numbered steps (1)-(5) with actions | "(1) Read assignments, (2) Spawn..." | "Analyze and report" |
 
 **C. Body Sections Present**
-For each skill file with L2 body:
-
-```yaml
-# Required headings (## level)
-execution_model: '/^## Execution Model/m'
-methodology: '/^## Methodology/m'
-quality_gate: '/^## Quality Gate/m'
-output: '/^## Output/m'
-
-# Required sub-headings (### level under Output)
-l1_template: '/^### L1/m'
-l2_template: '/^### L2/m'
-
-# Optional headings (## level)
-decision_points: '/^## Decision Points/m'
-anti_patterns: '/^## Anti-Patterns/m'
-transitions: '/^## Transitions/m'
-failure_handling: '/^## Failure Handling/m'
-```
+For each skill file with L2 body, check for required `##` headings: Execution Model, Methodology, Quality Gate, Output. Under Output, require `### L1` and `### L2` sub-headings. Optional `##` headings: Decision Points, Anti-Patterns, Transitions, Failure Handling.
 
 **D. L1/L2 Output Format**
 For each Output section:
 - L1: YAML template with domain, skill, status fields
 - L2: Markdown bullet list describing content
 
-**L1 YAML Required Fields Checklist:**
-
-| Field | Required | Description |
-|---|---|---|
-| `domain` | YES | Pipeline domain name |
-| `skill` | YES | Skill name within domain |
-| `status` | YES | PASS or FAIL verdict |
-| `findings` | YES (if FAIL) | Array of specific findings |
-| Domain-specific fields | RECOMMENDED | e.g., total_files, avg_utilization_pct |
-
-Note: Agent files have different requirements -- agents need only `name` and `description` fields. No METHODOLOGY key, no L2 body sections required.
+**L1 YAML Required Fields**: `domain`, `skill`, `status` (always required). `findings[]` required if FAIL. Domain-specific fields recommended (e.g., total_files, avg_utilization_pct). Agent files: only `name` + `description` required (no METHODOLOGY key, no L2 body sections).
 
 ### 4. Combined Scoring
 
@@ -379,9 +256,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt (DPS) for each analy
 
 | Source Skill | Data Expected | Format |
 |---|---|---|
-| execution domain (code, infra) | Implementation artifacts | Changed file paths list |
-| execution-infra | `.claude/` file changes | L1 YAML: `files_changed[]` |
-| Any trigger | File modification event | File paths |
+| execution-review | All PASS verdict, implementation artifacts ready | L1 YAML: `status: PASS`, changed file paths list |
 | Direct user invocation | Manual verification request | `/verify-structural-content` with optional target path |
 
 ### Sends To
@@ -426,19 +301,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt (DPS) for each analy
 
 ### Pipeline Impact Rules
 
-```
-IF any FAIL findings (structure or content):
-  overall_status = FAIL
-  Route to execution-infra with fix requests
-  Pipeline blocked at verify stage
-ELIF only WARNING findings:
-  overall_status = PASS (with warnings)
-  Proceed to verify-consistency
-  Include warnings in L2 for future cleanup
-ELIF only INFO or no findings:
-  overall_status = PASS
-  Proceed to verify-consistency
-```
+Same as Combined Scoring verdict logic (Step 4): FAIL → execution-infra (blocked), WARNING → PASS with warnings → verify-consistency, INFO → PASS → verify-consistency.
 
 ### Low Utilization File
 - Flag with improvement suggestion (which orchestration keys to add or expand)
@@ -446,17 +309,7 @@ ELIF only INFO or no findings:
 - Severity: WARN if all 5 keys present and utilization >70%, FAIL otherwise
 
 ### Missing Orchestration Keys
-- FAIL with specific missing keys listed per file
-- Route to `execution-infra` for description rewrite
-- Include which keys ARE present for context
-
-```
-Example finding:
-  file: skills/research-codebase/SKILL.md
-  utilization_pct: 72
-  missing_keys: [INPUT_FROM, OUTPUT_TO]
-  action: Route to execution-infra for description expansion
-```
+- FAIL with specific missing keys listed per file. Include which keys ARE present for context. Route to `execution-infra` for description rewrite.
 
 ---
 
@@ -486,7 +339,7 @@ Example finding:
 | Required fields present and non-empty | Field presence check per file type table | 100% of files |
 | Naming conventions match regex patterns | Regex validation per component type | 100% (FAIL-level only) |
 | No orphaned files or empty directories | Directory tree scan | 0 orphans |
-| Expected file counts match CLAUDE.md | Compare Glob results vs declared counts | agents: 6, skills: 35, hooks: 5 |
+| Expected file counts match CLAUDE.md | Compare Glob results vs declared counts | agents: 6, skills: 40, hooks: 5 |
 | Average description utilization | Char count measurement | >80% across all files |
 | No file below utilization floor | Per-file minimum check | No file <60% |
 | Orchestration keys present | Key extraction regex | All 5 keys in all skills |
@@ -495,13 +348,7 @@ Example finding:
 
 ### Overall Verdict Logic
 
-```yaml
-PASS: All criteria met. No FAIL findings. Warnings acceptable.
-FAIL: Any FAIL-level finding present. Pipeline blocked.
-      Must include: file path, error type, line number (if applicable),
-      structure score, content score, suggested remediation,
-      route target (execution-infra).
-```
+PASS: All criteria met, no FAIL findings (warnings acceptable). FAIL: Any FAIL-level finding present — pipeline blocked. FAIL output must include: file path, error type, line number, structure+content scores, suggested remediation, route target (execution-infra).
 
 ---
 

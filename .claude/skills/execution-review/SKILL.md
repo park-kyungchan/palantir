@@ -1,15 +1,15 @@
 ---
 name: execution-review
 description: |
-  [P6·Execution·Review] Two-stage code and spec review executor. Spawns analyst reviewers to validate implementation against design specs and coding standards.
+  [P6·Execution·Review] Evaluates implementation in two stages: design-spec compliance then code quality/security.
 
-  WHEN: After execution-code and/or execution-infra complete. Implementation artifacts exist but unreviewed.
+  WHEN: After execution-code and/or execution-infra complete. Terminal P6 skill. All execution outputs converge here.
   DOMAIN: execution (skill 5 of 5). Terminal. After code/infra/impact/cascade.
   INPUT_FROM: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
-  OUTPUT_TO: verify domain (PASS) or execution-code/infra (FAIL) or plan-interface (non-convergence).
+  OUTPUT_TO: verify domain (PASS), execution-code/infra (FAIL: fix loop), plan-relational (non-convergence after 3 iterations).
 
-  METHODOLOGY: (1) Read implementation artifacts, (2) Stage 1: spawn analyst for design/spec compliance, (3) Stage 2: spawn analyst for code quality and patterns, (4) Optional: contract review for interface compliance, (5) Consolidate review findings into unified report.
-  OUTPUT_FORMAT: L1 YAML review verdict per reviewer, L2 markdown consolidated review report.
+  METHODOLOGY: (1) Collect artifacts from code/infra/impact/cascade, (2) Stage 1: analyst for spec compliance, (3) Stage 2: analyst for code quality+security, (4) Classify: CRITICAL/HIGH block, MEDIUM/LOW pass, (5) Fix loop if blocking: max 3 iter, then non-convergence route.
+  OUTPUT_FORMAT: L1 YAML review verdict with severity breakdown, L2 review with file:line findings.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -147,7 +147,7 @@ If critical or high findings exist:
 ### Fix Loop Non-Convergence (3 iterations exhausted)
 - **Cause**: Fixes creating new issues, indicating architectural problem
 - **Action**: Set `status: FAIL`, include all accumulated findings across iterations
-- **Routing**: Route to plan-interface for contract revision, NOT back to execution-code
+- **Routing**: Route to plan-relational for contract revision, NOT back to execution-code
 - **Pipeline impact**: Blocks delivery until plan revision cycle completes
 
 ### Missing Design Specs
@@ -199,12 +199,12 @@ After a fix loop iteration, ALWAYS re-review. Implementers fixing review finding
 | verify domain | Reviewed + approved implementation | PASS verdict (zero critical/high remaining) |
 | execution-code | Fix requests for source files | FAIL verdict with blocking findings in non-.claude/ files |
 | execution-infra | Fix requests for .claude/ files | FAIL verdict with blocking findings in .claude/ files |
-| plan-interface | Contract revision request | Fix loop non-convergence suggesting architectural issue |
+| plan-relational | Contract revision request | Fix loop non-convergence suggesting architectural issue |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Fix loop non-convergence | plan-interface | All findings across 3 iterations, pattern analysis |
+| Fix loop non-convergence | plan-relational | All findings across 3 iterations, pattern analysis |
 | Missing design specs | Continue (degraded) | `spec_review: skipped` flag in L1 |
 | Reviewer maxTurns exhausted | Continue (partial) | Findings from completed portion + unreviewed file list |
 

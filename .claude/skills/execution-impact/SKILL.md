@@ -1,15 +1,15 @@
 ---
 name: execution-impact
 description: |
-  [P6·Execution·Impact] Post-implementation dependency analyzer. Spawns analyst to classify dependents of changed files as DIRECT (import/reference) or TRANSITIVE (2-hop). Uses codebase-map.md when available, falls back to grep-only.
+  [P6·Execution·Impact] Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation.
 
-  WHEN: After execution-code and/or execution-infra complete. File change manifest exists. SubagentStop hook injected SRC IMPACT ALERT.
-  DOMAIN: execution (skill 3 of 5). After code/infra, before cascade.
-  INPUT_FROM: execution-code, execution-infra (file change manifests), on-implementer-done.sh (impact alert).
-  OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (if no cascade needed).
+  WHEN: After execution-code and/or execution-infra complete. File change manifest exists. SubagentStop hook may inject SRC IMPACT ALERT.
+  DOMAIN: execution (skill 3 of 5). After code/infra, before cascade/review.
+  INPUT_FROM: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
+  OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (impact report always).
 
-  METHODOLOGY: (1) Read execution-code L1 file manifest, (2) Read codebase-map.md if available, (3) Spawn analyst for grep-based reverse reference analysis, (4) Classify: DIRECT (literal ref) vs TRANSITIVE (2-hop), (5) Produce impact report with cascade recommendation.
-  OUTPUT_FORMAT: L1 YAML impact report with impacts array, L2 markdown analysis with grep evidence.
+  METHODOLOGY: (1) Read file change manifests from execution-code/infra, (2) Load audit-impact L3 predicted paths (Shift-Left), (3) Verify predicted impacts via grep: predicted_confirmed count, (4) Scan for unpredicted impacts: newly_discovered count, (5) Classify DIRECT vs TRANSITIVE, output cascade_recommended flag.
+  OUTPUT_FORMAT: L1 YAML impact report with cascade_recommended flag, L2 analysis with grep evidence per dependent.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -76,29 +76,59 @@ Load execution-code L1 output (and execution-infra L1 if applicable):
 - Read persistent impact file at `/tmp/src-impact-{session_id}.md` if available (written by on-implementer-done.sh, persists across compaction)
 - Deduplicate file paths across all sources
 
-### 2. Load Codebase Map (Optional)
-Check for codebase-map.md at `.claude/agent-memory/analyst/codebase-map.md`:
-- **If available and fresh** (<30% stale entries): Use `refd_by` fields for fast dependent lookup, supplement with grep for new files not yet in map. Set `degradation_level: full`.
-- **If unavailable or stale**: Proceed with grep-only analysis. Set `degradation_level: degraded`.
-- Map availability determines `confidence` level in L1 output (high vs medium).
+### 2. Load Predicted Propagation Paths (Shift-Left)
+Load audit-impact L3 predicted propagation paths from research-coordinator output:
+- Read the audit-impact L3 file (path passed via research-coordinator or PT metadata)
+- Extract predicted DIRECT and TRANSITIVE dependents per changed file
+- These predictions were generated during P2 research phase before implementation
+- **If audit-impact L3 unavailable** (TRIVIAL/STANDARD tier, or research phase skipped): Fall back to codebase-map.md or grep-only (legacy path). Set `prediction_available: false`.
 
-### 3. Spawn Analyst for Analysis
+Also check for codebase-map.md at `.claude/agent-memory/analyst/codebase-map.md`:
+- **If available and fresh** (<30% stale entries): Use `refd_by` fields as supplementary lookup. Set `degradation_level: full`.
+- **If unavailable or stale**: Proceed with predicted paths + grep. Set `degradation_level: degraded`.
+
+### 3. Spawn Analyst for Predicted-First Analysis
 Spawn analyst agent with `subagent_type: analyst`, `maxTurns: 30`.
 
 Construct the delegation prompt with:
-- **Context**: Paste the complete file change manifest — each changed file path and a one-line summary of what changed (e.g., "renamed function X to Y", "added field Z to frontmatter"). If codebase-map.md exists and is fresh, paste its `refd_by` entries for each changed file as pre-computed dependent hints.
-- **Task**: For each changed file, run `Grep` with pattern `<basename_without_extension>` scoped to `.claude/` directory. Use glob `*.{md,json,sh}` for file filtering. For each match, record a structured evidence triple: `{dependent_file, line_number, matching_content}`. Then classify each dependent as DIRECT (hop_count: 1, literal reference to changed file) or TRANSITIVE (hop_count: 2, references an intermediate that references the changed file — run a second grep on DIRECT dependents to detect 2-hop chains).
+- **Context**: Paste the complete file change manifest — each changed file path and a one-line summary of what changed (e.g., "renamed function X to Y", "added field Z to frontmatter"). If audit-impact L3 predictions are available, paste them as the primary predicted propagation paths to verify first. If codebase-map.md exists and is fresh, paste its `refd_by` entries as supplementary hints.
+- **Task**: **Predicted-first pattern**: (1) For each changed file, first verify predicted impacts from audit-impact L3 — grep each predicted dependent to confirm the reference still exists and classify as `predicted_confirmed`. (2) Then grep for unpredicted additional impacts using pattern `<basename_without_extension>` scoped to `.claude/` directory, glob `*.{md,json,sh}`. Record newly found dependents as `newly_discovered`. (3) For each match, record a structured evidence triple: `{dependent_file, line_number, matching_content}`. (4) Classify each dependent as DIRECT (hop_count: 1) or TRANSITIVE (hop_count: 2). If no audit-impact L3 predictions available, fall back to full grep scan (legacy path).
 - **Constraints**: Read-only analysis — do NOT modify any files. Grep scope limited to `.claude/` directory. Exclude: `.git/`, `node_modules/`, `agent-memory/` (except codebase-map.md), `*.log`. Max 30 turns — if approaching limit, report partial results for files already analyzed rather than rushing remaining files.
 - **Expected Output**: Return a structured impact report: for each changed file, list its dependents with `{file, type: DIRECT|TRANSITIVE, hop_count: 1|2, reference_pattern, evidence: "file:line:content"}`. End with a summary: total dependents found, DIRECT count, TRANSITIVE count, and cascade recommendation (true if any DIRECT dependents exist).
 - **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
+#### Step 3 Tier-Specific DPS Variations
+
+**TRIVIAL**: Lead-direct quick grep. No analyst spawn. Lead greps for 1-2 changed file basenames, checks for DIRECT references. If none found: set `cascade_recommended: false`. If found: set `cascade_recommended: true`. Max 5 minutes lead-direct.
+
+**STANDARD**: Single analyst with standard scope:
+- maxTurns: 20 (reduced from 30 — fewer files to analyze)
+- Include audit-impact L3 predictions if available
+- Skip TRANSITIVE analysis if all DIRECT dependents resolved within 15 turns
+
+**COMPLEX**: Single analyst with extended scope:
+- maxTurns: 30 (full budget — many files to analyze)
+- MUST include audit-impact L3 predictions AND codebase-map.md if available
+- Prioritize DIRECT analysis over TRANSITIVE — if approaching turn limit, report DIRECT-only with `transitive_skipped: true`
+
 ### 4. Classify Dependents
-For each dependent file found:
+For each dependent file found, apply dual classification:
+
+**Hop Classification:**
 - **DIRECT** (hop_count: 1): File contains a literal reference to the changed file's name, path, or key identifiers. Grep match directly links dependent to changed file.
 - **TRANSITIVE** (hop_count: 2): File references an intermediate file, which references the changed file. Max 2-hop limit enforced.
-- Record `reference_pattern` (the grep pattern used) and `evidence` (file:line:content)
 
-**Prioritization**: Analyze DIRECT dependents first (complete all). Pursue TRANSITIVE chains only for high-hotspot files or files in critical path. If agent turn budget < 10 remaining, skip TRANSITIVE and report DIRECT-only with `transitive_skipped: true`.
+**Discovery Classification (Predicted-First Pattern):**
+- **predicted_confirmed**: Dependent was predicted by audit-impact L3 AND confirmed by grep evidence. High confidence.
+- **newly_discovered**: Dependent was NOT in audit-impact L3 predictions but found by grep scan. May indicate audit-impact missed this path, or the dependency was created during implementation.
+
+Record `reference_pattern` (the grep pattern used), `evidence` (file:line:content), and `discovery` (predicted_confirmed|newly_discovered).
+
+**Decision Point -- Predicted vs Discovered Impacts:**
+- If >30% of impacts are `newly_discovered`: audit-impact L3 may have been incomplete. Flag in L2 report for research phase improvement.
+- If a predicted impact is NOT confirmed by grep: the dependency may have been removed during implementation. Mark as `predicted_invalidated` (informational).
+
+**Prioritization**: Verify predicted impacts first (faster, targeted grep). Then scan for unpredicted impacts. Analyze DIRECT dependents before TRANSITIVE. If agent turn budget < 10 remaining, skip TRANSITIVE and report DIRECT-only with `transitive_skipped: true`.
 
 Reference patterns for `.claude/` INFRA files:
 - Skill descriptions: INPUT_FROM/OUTPUT_TO values, agent names, skill names
@@ -178,6 +208,7 @@ After execution-cascade runs, it has its own convergence checking. Do NOT re-inv
 | execution-infra | Infra file change manifest | L1 YAML: `files_changed[]` |
 | on-implementer-done.sh | SRC IMPACT ALERT (preliminary) | Hook additionalContext: `changed_files[]`, `preliminary_dependents[]` |
 | on-implementer-done.sh | Persistent SRC impact file (supplementary) | File: `/tmp/src-impact-{session_id}.md` with Changed Files + Dependents sections |
+| research-coordinator | Predicted propagation paths from audit-impact L3 | L3 file: per-file DIRECT/TRANSITIVE predicted dependents for Shift-Left verification |
 | manage-codebase | Codebase dependency map (optional) | File: `.claude/agent-memory/analyst/codebase-map.md` with `refd_by` fields |
 
 ### Sends To
@@ -213,6 +244,9 @@ impacts:
         reference_pattern: ""
         evidence: ""
     dependent_count: 0
+predicted_confirmed: 0
+newly_discovered: 0
+prediction_available: true|false
 cascade_recommended: true|false
 cascade_rationale: ""
 ```
@@ -220,5 +254,7 @@ cascade_rationale: ""
 ### L2
 - Per-file dependency analysis with grep evidence (file:line:content)
 - DIRECT vs TRANSITIVE classification rationale
+- Predicted vs Discovered impact breakdown (predicted_confirmed, newly_discovered, predicted_invalidated counts)
 - Cascade recommendation with detailed reasoning
 - Degradation notes (if map unavailable or analysis truncated)
+- Shift-Left accuracy assessment (% of predictions confirmed)

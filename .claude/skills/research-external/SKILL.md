@@ -1,15 +1,15 @@
 ---
 name: research-external
 description: |
-  [P2·Research·External] External documentation researcher. Fetches and synthesizes docs from web sources, official docs, and package registries using WebSearch, WebFetch, context7, and tavily.
+  [P2·Research·Collect] Collects community patterns from post-Opus-4.6 discussions.
 
-  WHEN: design domain complete. Architecture decisions reference external libraries, APIs, or patterns needing doc validation.
-  DOMAIN: research (skill 2 of 3). Parallel-capable: codebase || external -> audit.
-  INPUT_FROM: design-architecture, design-interface (technology choices, library references needing validation).
-  OUTPUT_TO: research-audit (external findings for gap analysis), plan-strategy (external constraints). Unvalidated deps to research-audit.
+  WHEN: Design domain complete. Architecture references external libraries, APIs, or patterns needing community validation.
+  DOMAIN: research (skill 2 of 7). Wave 1 parallel: codebase ∥ external → Wave 2 audits.
+  INPUT_FROM: design-architecture (technology choices), design-interface (API contracts), design-risk (risk areas needing validation).
+  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (community findings for all 4 dimensions).
 
-  METHODOLOGY: (1) Extract external deps from architecture, (2) Search official docs via WebSearch/context7, (3) Fetch key pages via WebFetch, (4) Verify version compatibility and API availability, (5) Synthesize into structured findings with source links.
-  OUTPUT_FORMAT: L1 YAML dependency validation matrix, L2 markdown doc summary with source URLs.
+  METHODOLOGY: (1) Extract technical decisions needing community validation, (2) Search post-Opus-4.6 community discussions via WebSearch/tavily, (3) Filter for verified/reproducible information only, (4) Cross-reference with cc-feasibility official docs, (5) Synthesize practical patterns with source URLs and verification status.
+  OUTPUT_FORMAT: L1 YAML community pattern matrix, L2 markdown pattern report with source URLs.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -23,29 +23,28 @@ disable-model-invocation: false
 
 ## Methodology
 
-### 1. Extract External Dependencies
-From architecture decisions, list external dependencies needing research:
-- Libraries and their versions
-- API endpoints and protocols
-- Design patterns from official documentation
-- Claude Code native capabilities (via claude-code-guide or context7)
+### 1. Extract Technical Decisions Needing Community Validation
+From architecture decisions, list items needing community-sourced evidence:
+- Technology choices with known community discussion activity
+- Implementation patterns where practical experience differs from official docs
+- Known constraints or workarounds not documented officially
+- Post-Opus-4.6 behavioral changes reported by community
 
-### 2. Search Official Documentation
+### 2. Search Community Discussions
 For STANDARD/COMPLEX tiers, construct the delegation prompt for each researcher with:
-- **Context**: Paste the dependency list from Step 1 with version constraints (from design-architecture L1 `technologies[]` and L2 version specifications). Include the specific documentation questions needing validation per dependency.
-- **Task**: "Research official documentation for [assigned dependency list]. For each dependency: (1) verify version compatibility with current environment, (2) confirm API availability and stability, (3) check for known issues or deprecations, (4) verify license compatibility. Use context7 first, WebSearch second, WebFetch for specific pages, tavily as fallback."
-- **Scope**: Explicit list of dependencies assigned to this researcher. For COMPLEX, split by technology domain (e.g., researcher-1: libraries/frameworks, researcher-2: APIs/protocols).
-- **Constraints**: Web-enabled research only (WebSearch, WebFetch, context7, tavily). No file modifications. Cite all sources with full URLs.
-- **Expected Output**: Per-dependency validation entry: name, version, status (validated/issue/unknown), source URL, key facts, impact on architecture, confidence rating (high=official docs, medium=community, low=inference).
+- **Context**: Paste the technical decisions list from Step 1 with specific questions needing community validation. Include design-architecture L1 `components[]` and relevant ADRs.
+- **Task**: "Search post-Opus-4.6 community discussions for [assigned topic list]. For each topic: (1) find GitHub Issues/Discussions with verified solutions, (2) search forums for practical patterns and workarounds, (3) identify known constraints not in official docs, (4) check for post-release behavioral changes. Use WebSearch first for GitHub Issues, tavily for broader forum coverage, WebFetch for specific GitHub threads."
+- **Scope**: Explicit list of topics assigned to this researcher. For COMPLEX, split by technology domain.
+- **Constraints**: Web-enabled research only (WebSearch, WebFetch, tavily). No file modifications. Cite all sources with full URLs. Prioritize verified/reproducible findings.
+- **Expected Output**: Per-topic entry: topic, pattern found, verification status (verified/anecdotal/unconfirmed), source URL, practical impact, confidence rating.
 - **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
-Priority order for each dependency:
-1. **context7** (resolve-library-id → query-docs) for library docs
-2. **WebSearch** for official documentation sites
-3. **WebFetch** for specific documentation pages
-4. **tavily** for comprehensive search when others fail
+Priority order for community research:
+1. **WebSearch** for GitHub Issues/Discussions (most targeted)
+2. **tavily** for broader forum and community search
+3. **WebFetch** for specific GitHub thread content extraction
 
-**WebFetch Restriction**: settings.json limits WebFetch to `github.com` and `raw.githubusercontent.com`. For non-GitHub documentation, use context7 or tavily instead. WebFetch is only effective for GitHub-hosted docs and READMEs.
+**WebFetch Restriction**: settings.json limits WebFetch to `github.com` and `raw.githubusercontent.com`. For non-GitHub content, use tavily instead.
 
 #### Tier-Specific Delegation
 
@@ -59,25 +58,27 @@ Priority order for each dependency:
 - **Coordination**: Researchers run in parallel by default. If set B depends on set A findings (e.g., framework version determines compatible plugin versions), serialize: researcher-1 completes set A, Lead passes results to researcher-2 for set B. This is the exception, not the norm.
 - Each researcher gets `maxTurns: 25` independently.
 
-### 3. Validate Compatibility
-For each dependency:
-- Version compatibility with current environment
-- API availability and stability
-- License compatibility
-- Known issues or deprecations
+### 3. Filter for Verified/Reproducible Information
+For each community finding, apply verification filter:
+- **Verified**: Multiple independent reports confirming the same behavior/pattern
+- **Reproducible**: Steps or conditions clearly documented, can be tested
+- **Anecdotal**: Single report without confirmation -- include with low confidence flag
+- Discard purely speculative or opinion-based content
 
-### 4. Synthesize Findings
-For each researched topic:
-- **Source**: URL or documentation reference
-- **Key Facts**: Version, API surface, limitations
-- **Impact on Architecture**: How this affects design decisions
-- **Alternatives**: If issues found, what else could work
+### 4. Cross-Reference with CC-Feasibility Findings
+Compare community findings against official documentation from pre-design-feasibility:
+- Where community contradicts official docs, flag as potential undocumented behavior
+- Where community confirms official docs, increase confidence
+- Where community adds information not in official docs, flag as community-only knowledge
+- Note the date and version context of community discussions
 
-### 5. Report Confidence
-Rate each finding by source reliability:
-- Official docs → high confidence
-- Community resources → medium confidence
-- Inference/extrapolation → low confidence, flag for verification
+### 5. Synthesize Practical Patterns
+For each validated community finding:
+- **Source**: Full URL to discussion/issue thread
+- **Pattern**: What the community discovered or recommends
+- **Verification Status**: verified/reproducible/anecdotal
+- **Practical Impact**: How this affects implementation approach
+- **Version Context**: Which version/date the finding applies to
 
 ## Decision Points
 
@@ -182,19 +183,22 @@ A library with 50K GitHub stars may still have critical issues. Researcher must 
 |-------------|---------------|--------|
 | design-architecture | Technology choices and library references | L1 YAML: `components[]` with technology dependencies, L2: ADRs with external references |
 | design-interface | API contracts referencing external services | L1 YAML: `interfaces[]` with external endpoints, L2: protocol specifications |
+| design-risk | Risk areas needing external validation | L1 YAML: `risk_areas[]` with severity, L2: external risk factors and validation priorities |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| research-audit | External findings for gap analysis | Always (external -> audit consolidation) |
-| plan-strategy | External constraints for sequencing | Via research-audit output |
+| audit-static | Community dependency constraints | Always (Wave 1 -> Wave 2 parallel audits) |
+| audit-behavioral | Community behavioral workarounds | Always (Wave 1 -> Wave 2 parallel audits) |
+| audit-relational | Community relationship patterns | Always (Wave 1 -> Wave 2 parallel audits) |
+| audit-impact | Community change propagation findings | Always (Wave 1 -> Wave 2 parallel audits) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Web tools fail | research-audit | Per-dependency `status: issue` with tool failure details |
-| All research fails | research-audit | Partial results with `status: partial` and gap list |
-| Critical dependency unvalidated | design-architecture | Dependency details requiring architecture revision |
+| Web tools fail | audit-* (all 4 audits) | Per-topic `status: issue` with tool failure details |
+| All research fails | audit-* (all 4 audits) | Partial results with `status: partial` and gap list |
+| Critical pattern unvalidated | design-architecture | Pattern details requiring architecture revision |
 
 ## Quality Gate
 - Every external dependency has >=1 documented source (official docs preferred, community acceptable with confidence downgrade)

@@ -1,15 +1,15 @@
 ---
 name: design-risk
 description: |
-  [P1·Design·Risk] Failure mode and mitigation strategy analyst. Examines architecture and interfaces for failure points, security issues, performance bottlenecks. Proposes mitigations with priority ranking.
+  [P1·Design·Terminal] Assesses failure modes and security risks per component. FMEA with calibrated RPN, OWASP check, CC boundary risks, performance bottlenecks.
 
   WHEN: After design-architecture and design-interface complete. Architecture and interfaces exist but risk unassessed.
-  DOMAIN: design (skill 3 of 3). Terminal skill. Runs after architecture and interface.
-  INPUT_FROM: design-architecture (component structure), design-interface (API contracts).
-  OUTPUT_TO: research-codebase (risk areas), plan-strategy (risk mitigation), plan-verify (plan validation challenge).
+  DOMAIN: design (skill 3 of 3). Terminal. Runs after architecture and interface.
+  INPUT_FROM: design-architecture (component structure, ADRs), design-interface (API contracts, error contracts).
+  OUTPUT_TO: research-codebase (risk-informed focus), research-external (risk areas for validation).
 
-  METHODOLOGY: (1) Read architecture and interface specs, (2) Identify failure modes per component (FMEA), (3) Assess security implications (OWASP), (4) Identify performance bottlenecks, (5) Propose mitigation per risk with priority ranking.
-  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, mitigation), L2 markdown risk narrative.
+  METHODOLOGY: (1) Read architecture+interface specs, (2) FMEA per component with CC boundary risks (hooks timeout, truncation, context isolation), (3) OWASP security + Agent Teams threat model, (4) Performance bottleneck ID, (5) Propose mitigation ranked by RPN.
+  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, RPN, mitigation), L2 risk narrative with scoring.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -59,7 +59,7 @@ Risk analysis may uncover fundamental architectural issues:
 Load design outputs. Identify components, boundaries, and data flows.
 
 ### 2. Failure Mode Analysis (FMEA)
-For each component, identify failure modes:
+For each component, identify failure modes. Include CC boundary risks such as hooks timeout, description truncation (1024-char limit), agent context isolation failures, tool unavailability per agent type, and compaction-induced data loss:
 
 | Component | Failure Mode | Severity (1-5) | Likelihood (1-5) | Detection (1-5) | RPN |
 |-----------|-------------|-----------------|-------------------|------------------|-----|
@@ -72,8 +72,9 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Context**: Paste design-architecture L1 (components) and design-interface L1 (interfaces). Include environment context: "Claude Code CLI on WSL2, tmux Agent Teams, Opus 4.6."
 - **Task**: "FMEA per component: identify failure modes, score Severity/Likelihood/Detection (1-5 each), calculate RPN. FMEA Calibration: Severity: 1=cosmetic, 2=minor, 3=significant, 4=major, 5=pipeline-blocking. Likelihood: 1=rare, 2=unlikely, 3=possible, 4=likely, 5=certain. Detection: 1=obvious, 2=easy, 3=moderate, 4=hard, 5=hidden. Then security (OWASP) and performance analysis."
 - **Scope**: For COMPLEX, split: analyst-1=failure modes+FMEA, analyst-2=security+performance.
-- **Constraints**: Read-only. Use sequential-thinking for calibrated scoring. No file modifications.
+- **Constraints**: Read-only analyst. Use sequential-thinking for calibrated scoring. No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML risk matrix with risk_count, critical_risks, risks[] (id, component, severity, likelihood, rpn, mitigation). L2 FMEA tables, security assessment, mitigations.
+- **Delivery**: Lead reads output directly via TaskOutput (P0-P1 local mode, no SendMessage).
 
 #### FMEA Scoring Calibration Guide
 Use consistent scoring across all components:
@@ -219,8 +220,7 @@ Low-RPN risks should still be documented. Conditions change -- a "rare" risk may
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | research-codebase | Risk areas needing codebase validation | Always (risk informs research focus) |
-| plan-strategy | Risk assessment for execution planning | Always (risk mitigation -> checkpoints) |
-| plan-verify | Risk data for robustness dimension of plan validation | After plan domain, for verification |
+| research-external | Risk areas for community pattern validation | After design phase complete (P2 Wave 1) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

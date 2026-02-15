@@ -6,7 +6,7 @@
     "MAX_MCP_OUTPUT_TOKENS": "100000",
     "BASH_MAX_OUTPUT_LENGTH": "200000",
     "ENABLE_TOOL_SEARCH": "auto:7",
-    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "32000",
+    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "56000",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "90"
   },
   "permissions": {
@@ -27,13 +27,11 @@
       "Read(**/secrets/**)",
       "Read(**/*credentials*)",
       "Read(**/.ssh/id_*)",
-      "Bash(rm -rf *)",
       "Bash(sudo rm *)",
       "Bash(chmod 777 *)"
     ],
     "defaultMode": "delegate"
   },
-  "model": "claude-opus-4-6",
   "hooks": {
     "SubagentStart": [
       {

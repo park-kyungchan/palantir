@@ -1,15 +1,15 @@
 ---
 name: design-architecture
 description: |
-  [P1·Design·Architecture] Component structure and module boundary designer. Produces component hierarchy, module boundaries, data flow, and technology choices as Architecture Decision Records.
+  [P1·Design·Structure] Structures component hierarchy with module boundaries and ADRs. Decomposes requirements into SRP components, defines data flow, selects technology patterns with documented rationale.
 
-  WHEN: pre-design domain complete (all 3 PASS). Feasibility-confirmed requirements ready.
-  DOMAIN: design (skill 1 of 3). Parallel-capable: architecture || interface -> risk.
-  INPUT_FROM: pre-design-feasibility (approved requirements + feasibility report), research-audit (if COMPLEX tier feedback loop).
-  OUTPUT_TO: design-interface (for interface definition), design-risk (for risk assessment), research-codebase (for codebase validation).
+  WHEN: Pre-design domain complete (all 3 PASS). Feasibility-confirmed requirements ready.
+  DOMAIN: design (skill 1 of 3). Parallel-capable: architecture ∥ interface -> risk.
+  INPUT_FROM: pre-design-feasibility (approved requirements + CC capability mappings), research-coordinator (COMPLEX feedback loop).
+  OUTPUT_TO: design-interface (component structure), design-risk (architecture for risk assessment).
 
-  METHODOLOGY: (1) Read approved requirements, (2) Identify components (SRP), (3) Define module boundaries and data flow, (4) Select technology/patterns with rationale, (5) Document as ADRs.
-  OUTPUT_FORMAT: L1 YAML component list, L2 markdown ADRs.
+  METHODOLOGY: (1) Read approved requirements with CC boundary constraints, (2) Identify SRP components (2-8 files each), (3) Define module boundaries minimizing coupling, (4) Select technology patterns with ADR rationale, (5) Document data flow from entry to output.
+  OUTPUT_FORMAT: L1 YAML component list with dependencies, L2 Architecture Decision Records.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -68,12 +68,15 @@ For each capability, define a component with:
 - Input/output data types
 - Dependencies on other components
 
+**CC Boundary Constraints**: Incorporate CC boundary constraints from the feasibility report (e.g., description 1024-char limit, hook timeout constraints, agent context isolation, tool availability per agent type) as architecture constraints. These boundaries shape component granularity and communication patterns.
+
 For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
 - **Context**: Paste pre-design-feasibility L1 (requirements + feasibility verdicts) and L2 (CC capability findings). If COMPLEX tier feedback from research-audit, include its L1 coverage matrix. Include workspace hint: "Target: /home/palantir, .claude/ for INFRA."
 - **Task**: "Decompose requirements into components (SRP). Per component: lowercase-hyphenated name, single-responsibility description, input/output types, dependencies. Group into modules minimizing coupling. Per decision: ADR (Context, Decision, Rationale, Consequences)."
 - **Scope**: For COMPLEX, split by module boundary — non-overlapping analyst assignments.
-- **Constraints**: Read-only. Use Glob/Grep/Read for existing pattern reference. No file modifications.
+- **Constraints**: Read-only analyst. Use Glob/Grep/Read for existing pattern reference. No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with component_count, decision_count, components[] (name, responsibility, dependencies). L2 ADRs and component hierarchy.
+- **Delivery**: Lead reads output directly via TaskOutput (P0-P1 local mode, no SendMessage).
 
 #### Component Definition Quality Checklist
 For each component, verify:

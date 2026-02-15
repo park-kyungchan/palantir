@@ -1,14 +1,14 @@
 ---
 name: research-codebase
 description: |
-  [P2·Research·Codebase] Local codebase exploration specialist. Discovers existing patterns, structures, conventions, and artifacts using Glob, Grep, and Read tools. Read-only analysis, no file modifications.
+  [P2·Research·Discover] Discovers local codebase patterns via Glob/Grep/Read.
 
-  WHEN: design domain complete. Architecture decisions need validation against existing codebase patterns.
-  DOMAIN: research (skill 1 of 3). Parallel-capable: codebase || external -> audit.
-  INPUT_FROM: design-architecture, design-interface (architecture decisions, interface designs needing codebase validation).
-  OUTPUT_TO: research-audit (findings for inventory), plan-decomposition (codebase patterns). Critical gaps loop to design domain.
+  WHEN: Design domain complete. Architecture decisions need validation against existing codebase.
+  DOMAIN: research (skill 1 of 7). Wave 1 parallel: codebase ∥ external → Wave 2 audits.
+  INPUT_FROM: design-architecture (component structure), design-interface (API contracts), design-risk (risk areas).
+  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (validated patterns for all 4 dimensions).
 
-  METHODOLOGY: (1) Identify codebase areas relevant to architecture decisions, (2) Glob for files matching patterns, (3) Grep for conventions and existing implementations, (4) Read key files for detailed understanding, (5) Document patterns, anti-patterns, and reusable components.
+  METHODOLOGY: (1) Extract architecture questions needing codebase evidence, (2) Glob for file structure and naming conventions, (3) Grep for imports, patterns, existing implementations, (4) Read key files for detailed understanding, (5) Document patterns + anti-patterns with file:line evidence.
   OUTPUT_FORMAT: L1 YAML pattern inventory, L2 markdown findings with file:line references.
 user-invocable: true
 disable-model-invocation: false
@@ -159,14 +159,14 @@ Normal flow: research findings go to research-audit, then to plan. But one scena
 
 | Failure | Severity | Blocking? | Route |
 |---------|----------|-----------|-------|
-| No patterns found for critical ADR | HIGH | No (increases risk) | research-audit with `novel` flag per ADR |
-| Critical ADR contradicted by codebase | HIGH | Conditional | design-architecture if contradiction is fundamental; research-audit otherwise |
-| Analyst maxTurns exhausted | MEDIUM | No | research-audit with partial findings + uncovered area list |
-| Contradictory patterns found | MEDIUM | No | research-audit with contradiction report (all variants, file:line refs) |
+| No patterns found for critical ADR | HIGH | No (increases risk) | audit-* (all 4 audits) with `novel` flag per ADR |
+| Critical ADR contradicted by codebase | HIGH | Conditional | design-architecture if fundamental; audit-* otherwise |
+| Analyst maxTurns exhausted | MEDIUM | No | audit-* (all 4 audits) with partial findings + uncovered area list |
+| Contradictory patterns found | MEDIUM | No | audit-* (all 4 audits) with contradiction report (all variants, file:line refs) |
 | File read permission error | LOW | No | Skip file, note in findings, continue search |
 
 ### Routing After Failure
-All failure types route to research-audit regardless of severity. Audit consolidates all findings including gaps and failure reports. The only exception is the conditional escalation for fundamental ADR contradictions -- see Decision Points: When to Escalate to Design.
+All failure types route to the 4 audit skills (audit-static, audit-behavioral, audit-relational, audit-impact) regardless of severity. Each audit receives the full findings and extracts its dimensional subset. The only exception is the conditional escalation for fundamental ADR contradictions -- see Decision Points: When to Escalate to Design.
 
 ### Pipeline Impact
 Research failures are non-blocking. Missing codebase evidence increases the risk rating in plan-strategy but does not halt the pipeline. The rationale: absence of evidence is not evidence of absence. A pattern may exist but be difficult to find, or the codebase area may genuinely be novel territory.
@@ -201,18 +201,21 @@ Research documents what exists in the codebase. It does not recommend what shoul
 |-------------|---------------|--------|
 | design-architecture | Architecture decisions needing codebase validation | L1 YAML: `components[]` with names and dependencies, L2: ADRs with technology choices |
 | design-interface | Interface definitions referencing existing contracts | L1 YAML: `interfaces[]`, L2: method signatures to validate against codebase |
+| design-risk | Risk areas needing focused codebase research | L1 YAML: `risk_areas[]` with severity, L2: investigation priorities |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| research-audit | Codebase findings inventory | Always (codebase -> audit consolidation) |
-| plan-decomposition | Validated codebase patterns | Via research-audit output |
+| audit-static | Codebase dependency patterns and file inventory | Always (Wave 1 → Wave 2 parallel audits) |
+| audit-behavioral | Existing behavior patterns and implementations | Always (Wave 1 → Wave 2 parallel audits) |
+| audit-relational | Cross-file relationship patterns and references | Always (Wave 1 → Wave 2 parallel audits) |
+| audit-impact | Change propagation evidence from codebase | Always (Wave 1 → Wave 2 parallel audits) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| No patterns found | research-audit | Empty inventory with "novel" flags per architecture decision |
-| Analyst exhausted | research-audit | Partial findings + uncovered area list |
+| No patterns found | audit-* (all 4 audits) | Empty inventory with "novel" flags per architecture decision |
+| Analyst exhausted | audit-* (all 4 audits) | Partial findings + uncovered area list |
 | Critical gap in architecture | design-architecture | Gap description requiring architecture revision (COMPLEX feedback loop) |
 
 ## Quality Gate

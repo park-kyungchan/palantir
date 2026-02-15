@@ -1,15 +1,15 @@
 ---
 name: verify-consistency
 description: |
-  [P7·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing matches between CLAUDE.md and frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectionality, and skills table vs directory.
+  [P7·Verify·Consistency] Cross-references INPUT_FROM/OUTPUT_TO bidirectionality and counts.
 
-  WHEN: After verify-structural-content PASS, or after multi-skill INPUT_FROM/OUTPUT_TO edits. Second of 4 verify stages. Checks cross-file relationship integrity.
-  DOMAIN: verify (skill 2 of 4). After verify-structural-content PASS.
-  INPUT_FROM: verify-structural-content (structural+content checks confirmed) or direct invocation.
-  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL).
+  WHEN: After verify-structural-content PASS. Second of 4 sequential verify stages. Also after multi-skill INPUT_FROM/OUTPUT_TO edits.
+  DOMAIN: verify (skill 2 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
+  INPUT_FROM: verify-structural-content (structural+content integrity confirmed).
+  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL with inconsistency details).
 
-  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO refs, (2) Build relationship graph, (3) Verify bidirectionality (A refs B <-> B refs A), (4) Check phase sequence (N -> N+1), (5) Verify CLAUDE.md counts match filesystem.
-  OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 markdown inconsistency report with source/target evidence.
+  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO references from every skill description, (2) Build directed reference graph, (3) Verify bidirectionality (A refs B ↔ B refs A; coordinator intermediary valid), (4) Check phase sequence P0→P8 (exempt: homeostasis, cross-cutting, FAIL routes), (5) Verify CLAUDE.md counts (agents, skills, domains) match filesystem.
+  OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 inconsistency report with source/target evidence.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick cross-reference check on 2-3 files.
-- **STANDARD**: Spawn analyst. Full relationship graph construction.
-- **COMPLEX**: Spawn 2 analysts. One for INPUT_FROM/OUTPUT_TO, one for phase sequence.
+- **STANDARD**: Spawn analyst (maxTurns: 25). Full relationship graph construction.
+- **COMPLEX**: Spawn 2 analysts (maxTurns: 30 each). One for INPUT_FROM/OUTPUT_TO, one for phase sequence.
 
 ## Decision Points
 
@@ -91,7 +91,7 @@ for each skill in .claude/skills/*/SKILL.md:
 ```
 
 For STANDARD/COMPLEX tiers, construct the DPS delegation prompt:
-- **Context**: All 32 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 32, domains: 8+4+3). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify.
+- **Context**: All 40 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 40, domains: 8+5+2). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify. Coordinator skills (research-coordinator, plan-verify-coordinator, orchestrate-coordinator) create valid indirect bidirectional links.
 - **Task**: Build directed reference graph. Check bidirectionality (A->B implies B->A). Check phase sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
 - **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement) exempt from phase sequence.
 - **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph + phase sequence validation.
@@ -121,6 +121,17 @@ Known exceptions to strict bidirectionality:
 | FAIL routes | Unidirectional by nature | Error recovery does not create a forward dependency |
 | "direct invocation" | Not a real skill reference | User-initiated, no reciprocal needed |
 | "or" alternatives | Each alternative checked independently | e.g., "execution-infra (if FAIL) or execution-code (if FAIL)" |
+
+### 2.1 Coordinator Pattern Recognition
+
+The pipeline includes coordinator skills (research-coordinator, plan-verify-coordinator, orchestrate-coordinator) that consolidate parallel dimension outputs. These create indirect data flow patterns:
+
+- Pattern: `skill-A OUTPUT_TO -> coordinator -> skill-B INPUT_FROM`
+- This is a VALID indirect bidirectional link -- the coordinator acts as intermediary
+- Do NOT flag these as broken bidirectionality when skill-A and skill-B do not directly reference each other
+- The expanded skill set (33 -> 40 skills, with 16 new and 9 deleted) relies heavily on this coordinator pattern for P2, P4, and P5 phases
+
+Example: `audit-static OUTPUT_TO -> research-coordinator -> plan-static INPUT_FROM` is valid even though audit-static does not directly reference plan-static.
 
 ### 3. Check Phase Sequence
 
@@ -206,14 +217,23 @@ Pipeline impact assessment:
 
 ## Anti-Patterns
 
-| Anti-Pattern | Why It Is Wrong |
-|--------------|-----------------|
-| Require strict bidirectionality for FAIL routes | Error recovery routes are inherently unidirectional |
-| Flag homeostasis skills for phase violations | They operate cross-cutting by design |
-| Auto-update CLAUDE.md counts | Consistency check is read-only; fixes go through execution-infra |
-| Check semantic correctness of references | Consistency checks that A->B exists in both directions, not whether A SHOULD reference B |
-| Deep-scan L2 bodies for references | Only check description-level INPUT_FROM/OUTPUT_TO, not L2 body cross-references |
-| Combine consistency with quality checks | Consistency = structural relationships; quality = routing effectiveness (separate skill) |
+### DO NOT: Require Strict Bidirectionality for FAIL Routes
+Error recovery routes are inherently unidirectional. FAIL routes from any skill back to execution-infra or Lead do not require reciprocal OUTPUT_TO declarations.
+
+### DO NOT: Flag Homeostasis Skills for Phase Violations
+Homeostasis and cross-cutting skills (manage-*, delivery-pipeline, pipeline-resume, task-management, self-diagnose, self-implement) operate across all phases by design. Phase sequence enforcement does not apply.
+
+### DO NOT: Auto-Update CLAUDE.md Counts
+Consistency check is strictly read-only. All fixes — including count corrections — route through execution-infra. Mixing verification with modification introduces bias.
+
+### DO NOT: Check Semantic Correctness of References
+Consistency verifies that if A references B, then B references A (structural bidirectionality). Whether A SHOULD reference B is verify-quality's domain.
+
+### DO NOT: Deep-Scan L2 Bodies for References
+Only check description-level INPUT_FROM/OUTPUT_TO, not L2 body cross-references. L2 bodies may contain illustrative examples that are not actual routing declarations.
+
+### DO NOT: Combine Consistency with Quality Checks
+Consistency = structural relationship integrity. Quality = routing effectiveness. These are separate verification dimensions with different scoring rubrics.
 
 ## Transitions
 
