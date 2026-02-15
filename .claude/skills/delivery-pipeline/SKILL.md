@@ -116,6 +116,7 @@ Since delivery-agent has `memory: none`, Lead must provide ALL context in the sp
 - **Task**: "Consolidate pipeline results. Generate commit message using conventional commit format. Update MEMORY.md using Read-Merge-Write pattern. Stage files with `git add [specific files]`. Create commit after user confirmation. Mark PT DELIVERED via TaskUpdate."
 - **Constraints**: NO `git add -A` or `git add .`. Must use AskUserQuestion for confirmation before git commit. Must TaskUpdate PT only after commit succeeds (not before). Must use individual file staging. Never include sensitive files (.env, credentials, secrets).
 - **Expected Output**: L1 YAML with `commit_hash`, `files_changed`, `pt_status`. L2 delivery summary with commit message, archive entries, and any warnings.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### Pre-Delivery Checklist
 Before spawning delivery-agent, Lead must verify:

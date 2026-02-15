@@ -65,6 +65,7 @@ Spawn analyst for design compliance check. Construct the delegation prompt with:
 - **Task**: "Review each changed file against the provided design specs. For each file: (1) verify it implements the correct architecture component, (2) check interface contracts match design-interface signatures exactly, (3) flag any deviations with severity classification."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). Review only the listed changed files — do not explore the entire codebase.
 - **Expected Output**: Per-file compliance verdict (PASS/FAIL) with file:line references for deviations. Severity: critical (spec violation), high (interface mismatch), medium (pattern deviation), low (style issue).
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Stage 1 Tier-Specific DPS Variations
 
@@ -82,10 +83,11 @@ Spawn analyst for design compliance check. Construct the delegation prompt with:
 
 ### 3. Stage 2 — Code Quality Review
 Spawn analyst for code quality assessment. Construct the delegation prompt with:
-- **Context**: Paste execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Include Stage 1 findings summary (so this reviewer focuses on different concerns). If research-codebase findings exist, include relevant convention patterns.
+- **Context**: Paste execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Include Stage 1 findings summary received via SendMessage (Stage 1 analyst sends review findings via SendMessage; Lead uses that summary to inform Stage 2 scope). If research-codebase findings exist, include relevant convention patterns.
 - **Task**: "Review code quality for each changed file. For each file check: (1) coding patterns match existing codebase conventions, (2) error handling covers failure modes from design-risk assessment, (3) no security vulnerabilities (OWASP top 10: injection, XSS, auth bypass), (4) no obvious performance regressions."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). Focus on implementation quality — spec compliance is already covered by Stage 1.
 - **Expected Output**: Per-file quality findings with file:line locations. Categorize each as: required fix (blocking merge) vs suggestion (non-blocking). Security findings always classified as critical severity.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Stage 2 Tier-Specific Adjustments
 

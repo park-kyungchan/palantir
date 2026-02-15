@@ -77,6 +77,7 @@ Construct each delegation prompt with:
 - **Task**: For each file, describe the precise change: "In `.claude/skills/X/SKILL.md`, update the `description` field to include INPUT_FROM/OUTPUT_TO references" or "Add `model: haiku` to `.claude/agents/Y.md` frontmatter." For description edits, provide the new text or the specific substring to replace.
 - **Constraints**: Write and Edit tools only — NO Bash (cannot run shell commands, cannot validate by execution). Cannot delete files. Skill `description` field max 1024 characters (count before writing). YAML frontmatter must remain valid. Settings.json must remain valid JSON. Do not introduce non-native frontmatter fields.
 - **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed). Provide L2 markdown listing each file modified, what changed (before→after for field values), and any issues encountered.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Tier-Specific DPS Variations
 

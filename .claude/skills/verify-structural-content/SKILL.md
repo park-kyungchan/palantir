@@ -369,6 +369,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt (DPS) for each analy
 - **Task**: "For each file: (1) Read and parse YAML between --- markers, check required fields present, (2) Verify naming conventions (lowercase-hyphen for agents/dirs, SKILL.md uppercase for files), (3) Check directory structure (no orphans, no empty dirs), (4) Measure description char count and utilization %, (5) Check for WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY keys in description, (6) Verify body has Execution Model, Methodology, Quality Gate, Output sections. Report per-file PASS/FAIL with structure+content scores."
 - **Constraints**: Read-only. Use Read to examine each file. No modifications. YAML validation is heuristic (no parser tool). Do NOT attempt to fix any issues found.
 - **Expected Output**: L1 YAML with total_files, structure_pass, content_pass, findings[]. L2 per-file combined integrity report with structure score + content score.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ---
 

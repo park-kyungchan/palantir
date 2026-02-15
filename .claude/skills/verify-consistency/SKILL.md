@@ -95,6 +95,7 @@ For STANDARD/COMPLEX tiers, construct the DPS delegation prompt:
 - **Task**: Build directed reference graph. Check bidirectionality (A->B implies B->A). Check phase sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
 - **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement) exempt from phase sequence.
 - **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph + phase sequence validation.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 2. Verify Bidirectionality
 

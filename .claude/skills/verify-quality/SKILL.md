@@ -115,6 +115,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Task**: "Score each skill across 4 dimensions: WHEN specificity, METHODOLOGY concreteness, OUTPUT FORMAT completeness, description utilization (>80%). Produce combined score per skill. Rank all skills. Identify bottom 5 for priority improvement."
 - **Constraints**: Read-only. No modifications. Score objectively using the rubric.
 - **Expected Output**: L1 YAML with avg_score, findings[] (file, score, issues). L2 quality rankings and improvement suggestions.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### 2. Evaluate METHODOLOGY Concreteness
 

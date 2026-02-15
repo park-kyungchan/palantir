@@ -72,6 +72,7 @@ For each task boundary:
 - **Task**: "For each task boundary: define producer output format (file/data structure/location), consumer expectation (required fields/types/paths), validation method. Map to design interfaces. Determine implementation ordering (no-dep tasks first)."
 - **Constraints**: Read-only. No modifications. Cross-reference plan and design artifacts.
 - **Expected Output**: L1 YAML with contract_count, contracts[] (producer, consumer, data_type, validated). L2 contracts and ordering.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 #### Contract Template
 Each interface contract should specify:

@@ -309,6 +309,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt:
 - **Task**: "Validate the plan across 3 dimensions: (A) Correctness -- verify each task correctly implements its architecture component, check dependency chains against interface contracts, detect contradictions across all task pairs, verify constraint compliance. (B) Completeness -- build requirement-to-task traceability matrix, check architecture component coverage, identify missing scenarios and error handling gaps. Calculate coverage percentages. (C) Robustness -- generate edge case scenarios per task, simulate failure modes (complete/partial/silent/resource), check security implications, verify resource constraints (4 teammates, ~200K tokens, file limits). Report per-dimension PASS/FAIL with evidence."
 - **Constraints**: Read-only analysis. No modifications. All verdicts must cite specific evidence (task IDs, requirement references). Use sequential-thinking for systematic edge case generation.
 - **Expected Output**: L1 YAML with correctness/completeness/robustness verdicts. L2 per-dimension analysis with mapping matrices, traceability matrix, and edge case scenarios.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ## Failure Handling
 
