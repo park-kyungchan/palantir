@@ -23,10 +23,14 @@ disable-model-invocation: false
 ## Methodology
 
 ### 1. Detect Changes
+**Executor: Lead-direct** (requires Bash for git commands).
+
 Run git diff to identify modified files:
 - `git diff --name-only HEAD` for unstaged changes
 - `git diff --name-only --cached` for staged changes
 - Categorize each changed file by domain
+
+Lead runs git diff and passes the output as context to analysts spawned in subsequent steps.
 
 ### 2. Map Changes to Domains
 Apply detection rules:
@@ -50,6 +54,8 @@ Generate action list:
 Include rationale for each action.
 
 ### 5. Execute and Verify
+**Executor: spawn infra-implementer** for file modifications. Lead coordinates.
+
 After user approval:
 - For CREATE: generate SKILL.md with frontmatter + L2 body
 - For UPDATE: edit existing SKILL.md

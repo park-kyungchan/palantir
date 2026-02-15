@@ -30,17 +30,18 @@ Gather outputs from execution-code and execution-infra:
 - Design specifications for comparison
 
 ### 2. Stage 1 — Spec Review
-Spawn analyst for design compliance check:
-- Compare each changed file against design-architecture decisions
-- Verify interface implementations match design-interface contracts
-- Flag deviations from approved architecture
+Spawn analyst for design compliance check. Construct the delegation prompt with:
+- **Context**: Paste execution-code/infra L1 `files_changed[]` manifest (file paths and change type). Paste design-architecture L2 (component decisions relevant to changed files) and design-interface L2 (contract specifications for affected interfaces). If cascade ran, include execution-cascade L1 `status` and `warnings[]`.
+- **Task**: "Review each changed file against the provided design specs. For each file: (1) verify it implements the correct architecture component, (2) check interface contracts match design-interface signatures exactly, (3) flag any deviations with severity classification."
+- **Constraints**: Read-only analysis (analyst agent, no Bash). Review only the listed changed files — do not explore the entire codebase.
+- **Expected Output**: Per-file compliance verdict (PASS/FAIL) with file:line references for deviations. Severity: critical (spec violation), high (interface mismatch), medium (pattern deviation), low (style issue).
 
 ### 3. Stage 2 — Code Quality Review
-Spawn analyst for code quality assessment:
-- Check coding patterns and conventions
-- Verify error handling and edge cases
-- Assess test coverage adequacy
-- Flag security concerns (OWASP top 10)
+Spawn analyst for code quality assessment. Construct the delegation prompt with:
+- **Context**: Paste execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Include Stage 1 findings summary (so this reviewer focuses on different concerns). If research-codebase findings exist, include relevant convention patterns.
+- **Task**: "Review code quality for each changed file. For each file check: (1) coding patterns match existing codebase conventions, (2) error handling covers failure modes from design-risk assessment, (3) no security vulnerabilities (OWASP top 10: injection, XSS, auth bypass), (4) no obvious performance regressions."
+- **Constraints**: Read-only analysis (analyst agent, no Bash). Focus on implementation quality — spec compliance is already covered by Stage 1.
+- **Expected Output**: Per-file quality findings with file:line locations. Categorize each as: required fix (blocking merge) vs suggestion (non-blocking). Security findings always classified as critical severity.
 
 ### 4. Consolidate Findings
 Merge findings from all review stages:

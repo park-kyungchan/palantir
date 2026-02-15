@@ -1,14 +1,14 @@
 ---
 name: execution-impact
 description: |
-  [P7·Execution·Impact] Post-implementation dependency analyzer. Spawns researcher to classify dependents of changed files as DIRECT (import/reference) or TRANSITIVE (2-hop). Uses codebase-map.md when available, falls back to grep-only.
+  [P7·Execution·Impact] Post-implementation dependency analyzer. Spawns analyst to classify dependents of changed files as DIRECT (import/reference) or TRANSITIVE (2-hop). Uses codebase-map.md when available, falls back to grep-only.
 
   WHEN: After execution-code and/or execution-infra complete. File change manifest exists. SubagentStop hook injected SRC IMPACT ALERT.
   DOMAIN: execution (skill 3 of 5). After code/infra, before cascade.
   INPUT_FROM: execution-code (file change manifest), on-implementer-done.sh (impact alert via additionalContext).
   OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (if no cascade needed).
 
-  METHODOLOGY: (1) Read execution-code L1 file manifest, (2) Read codebase-map.md if available, (3) Spawn researcher for grep-based reverse reference analysis, (4) Classify: DIRECT (literal ref) vs TRANSITIVE (2-hop), (5) Produce impact report with cascade recommendation.
+  METHODOLOGY: (1) Read execution-code L1 file manifest, (2) Read codebase-map.md if available, (3) Spawn analyst for grep-based reverse reference analysis, (4) Classify: DIRECT (literal ref) vs TRANSITIVE (2-hop), (5) Produce impact report with cascade recommendation.
   OUTPUT_FORMAT: L1 YAML impact report with impacts array, L2 markdown analysis with grep evidence.
 user-invocable: false
 disable-model-invocation: false
@@ -17,9 +17,9 @@ disable-model-invocation: false
 # Execution — Impact
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick grep check for 1-2 changed files. No researcher spawn.
-- **STANDARD**: Spawn 1 researcher. Grep-based reverse reference analysis for 3-8 changed files.
-- **COMPLEX**: Spawn 1 researcher with extended maxTurns. Comprehensive analysis for >8 changed files with map-assisted lookups.
+- **TRIVIAL**: Lead-direct. Quick grep check for 1-2 changed files. No analyst spawn.
+- **STANDARD**: Spawn 1 analyst. Grep-based reverse reference analysis for 3-8 changed files.
+- **COMPLEX**: Spawn 1 analyst with extended maxTurns. Comprehensive analysis for >8 changed files with map-assisted lookups.
 
 ## Methodology
 
@@ -35,14 +35,14 @@ Check for codebase-map.md at `.claude/agent-memory/analyst/codebase-map.md`:
 - **If unavailable or stale**: Proceed with grep-only analysis. Set `degradation_level: degraded`.
 - Map availability determines `confidence` level in L1 output (high vs medium).
 
-### 3. Spawn Researcher for Analysis
-Spawn researcher agent with `subagent_type: researcher`, `maxTurns: 30`:
-- Provide: list of changed files, codebase-map data (if available), grep scope rules
-- Researcher performs `grep -rl <basename>` for each changed file within `.claude/` scope
-- Grep scope includes: `*.md`, `*.json`, `*.sh` files in `.claude/`
-- Grep excludes: `.git/`, `node_modules/`, `agent-memory/` (except codebase-map.md), `*.log`
-- For each match: record file path, matching line number, matching content as evidence
-- For TRANSITIVE detection: follow 2-hop chains (A refs B, B refs changed file C)
+### 3. Spawn Analyst for Analysis
+Spawn analyst agent with `subagent_type: analyst`, `maxTurns: 30`.
+
+Construct the delegation prompt with:
+- **Context**: Paste the complete file change manifest — each changed file path and a one-line summary of what changed (e.g., "renamed function X to Y", "added field Z to frontmatter"). If codebase-map.md exists and is fresh, paste its `refd_by` entries for each changed file as pre-computed dependent hints.
+- **Task**: For each changed file, run `Grep` with pattern `<basename_without_extension>` scoped to `.claude/` directory. Use glob `*.{md,json,sh}` for file filtering. For each match, record a structured evidence triple: `{dependent_file, line_number, matching_content}`. Then classify each dependent as DIRECT (hop_count: 1, literal reference to changed file) or TRANSITIVE (hop_count: 2, references an intermediate that references the changed file — run a second grep on DIRECT dependents to detect 2-hop chains).
+- **Constraints**: Read-only analysis — do NOT modify any files. Grep scope limited to `.claude/` directory. Exclude: `.git/`, `node_modules/`, `agent-memory/` (except codebase-map.md), `*.log`. Max 30 turns — if approaching limit, report partial results for files already analyzed rather than rushing remaining files.
+- **Expected Output**: Return a structured impact report: for each changed file, list its dependents with `{file, type: DIRECT|TRANSITIVE, hop_count: 1|2, reference_pattern, evidence: "file:line:content"}`. End with a summary: total dependents found, DIRECT count, TRANSITIVE count, and cascade recommendation (true if any DIRECT dependents exist).
 
 ### 4. Classify Dependents
 For each dependent file found:
@@ -71,7 +71,7 @@ Generate L1 YAML and L2 markdown:
 - Every dependent has type classification (DIRECT or TRANSITIVE) with evidence
 - `cascade_recommended` decision has explicit rationale in `cascade_rationale`
 - L1 YAML is valid and parseable by downstream skills
-- Researcher completed within maxTurns (30)
+- Analyst completed within maxTurns (30)
 
 ## Degradation Handling
 
@@ -89,7 +89,7 @@ Generate L1 YAML and L2 markdown:
 - Core value (DIRECT dependency detection) fully preserved
 
 ### Partial Results
-- If researcher maxTurns reached: report analyzed files, set `status: partial`, `confidence: low`
+- If analyst maxTurns reached: report analyzed files, set `status: partial`, `confidence: low`
 - If individual grep times out: skip that file, note in warnings
 - Pipeline continues regardless — partial data is better than no data
 

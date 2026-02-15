@@ -23,6 +23,8 @@ argument-hint: "[topic]"
 - **STANDARD**: Launch 1-2 analysts (run_in_background). Each covers separate requirement dimensions.
 - **COMPLEX**: Launch 2-4 background agents (run_in_background). Divide: scope, constraints, integration, edge-cases.
 
+> Note: Step 3 (AskUserQuestion) is ALWAYS Lead-direct regardless of tier. Analysts handle analysis work in Steps 1, 2, 4, 5 only.
+
 ## Methodology
 
 ### 1. Parse User Request
@@ -40,7 +42,15 @@ Map gaps to 4 dimensions:
 | Criteria | How to measure success? | "What defines done?" |
 | Edge Cases | What could go wrong? | "What if Y fails mid-process?" |
 
+**DPS (for STANDARD/COMPLEX tiers — spawn analyst):**
+- **Context**: Parsed user request from Step 1 (explicit + implicit requirements)
+- **Task**: Categorize unknowns across all 4 dimensions, identify gaps in requirements
+- **Constraints**: Read-only analysis (analyst has no AskUserQuestion — cannot interact with user)
+- **Expected Output**: Categorized unknowns by dimension (scope/constraints/criteria/edge-cases) with suggested questions for Lead to ask
+
 ### 3. Ask Clarifying Questions
+**Executor: Lead-direct** (AskUserQuestion requires direct user interaction, not available to spawned agents).
+
 Use AskUserQuestion with 3-6 questions grouped by dimension.
 Max 3 question rounds before proceeding with best-effort synthesis.
 After each round, merge answers into evolving requirement document.

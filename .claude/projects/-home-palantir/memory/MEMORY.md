@@ -23,31 +23,20 @@
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-### Dual Environment: Claude Code CLI vs Warp (2026-02-13)
+### Environment: Claude Code CLI (2026-02-13)
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
-- **Warp Agent (Oz)**: Single-instance. Reads CLAUDE.md + WARP.md + Warp Manage Rules. Lead<->Teammate role switching.
-- **Bridge files** (both environments read): CLAUDE.md, MEMORY.md, WARP.md, agent .md, SKILL.md
-- **Warp-only**: 4 Manage Rules (not visible to Claude Code CLI)
-- WARP.md (`/home/palantir/WARP.md`) = compact single-instance protocol + tool mapping
+- teammateMode: tmux (settings.json)
 
-### Warp Manage Rules Configuration (2026-02-13)
-4 Rules in Warp's Manage Rules (replace all prior rules):
-- **Rule 1: Session Bootstrap** -- Model identity, session start reads, language, core mandates
-- **Rule 2: Warp Single-Instance Execution** -- Lead<->Teammate switching, persona binding, output, pipeline tiers
-- **Rule 3: Warp Tool Mapping** -- Warp native tools -> INFRA pattern mapping (plan, TODO, grep, edit, shell, review, PR)
-- **Rule 4: Verification & Context Engineering** -- Step-by-step verification, V1-V6 checks, context preservation, WARP.md maintenance
-- Active task rule: 장기 작업 시 Rule 5로 추가, 완료 후 삭제
-
-## Current INFRA State (v10.5 RSI, 2026-02-15)
+## Current INFRA State (v10.6 Integration, 2026-02-15)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v10.3 | 47L | Protocol-only + Section 2.1 (P0-P2 Lead-only rule) |
-| Agents | v10.5 | 6 files | All: color, memory:project, expanded L2 bodies |
-| Skills | v10.5 | 35 dirs | L3 refs removed, L2 fixes, 31 auto-loaded |
-| Settings | -- | ~109L | 9 permissions, 5 hooks |
-| Hooks | 5 total | ~280L | Bug fixes: FC-1 jq boolean, ID-3 basename, ID-6 wc-l, CX-3 pipefail |
-| Agent Memory | -- | 4 dirs | implementer, infra-implementer, researcher, analyst |
+| CLAUDE.md | v10.6 | 48L | Protocol-only + tier routing override note |
+| Agents | v10.5 | 6 files | 2 haiku+memory:none (delivery,pt-mgr), 4 memory:project, all color |
+| Skills | v10.6 | 35 dirs | Integration fixes: verify sub-routing, research FAIL paths, cascade boundary |
+| Settings | v10.6 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded |
+| Hooks | 5 total | ~285L | SRC log mv (not rm), matcher "implementer|infra-implementer" |
+| Agent Memory | -- | 6 files | +infra-integration-audit.md, +srp-analysis.md |
 
 ### Architecture (v10 Native Optimization)
 - **Routing**: Skill L1 auto-loaded in system-reminder, Agent L1 auto-loaded in Task tool definition
@@ -110,15 +99,26 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
-### v10.5 RSI Iteration 1 — Code-Logic Self-Improvement (2026-02-15, branch: test)
-- **RSI Loop**: RESEARCH→DIAGNOSE→IMPLEMENT→VERIFY autonomous cycle on all .claude/ files
-- 7 implementation waves: W1(hook hardening), W2(skill L2), W3(agent expand), CC(audit), W1.5(hook bugs), W4(L3+colors), W5(cc-ref)
-- Hook bugs fixed: FC-1 jq `//` boolean, ID-3 basename collision→2-component awk, ID-6 wc-l empty, CX-3 pipefail×3
-- Agents: all 6 gained color field + expanded L2 bodies + memory:project (delivery-agent, pt-manager new)
-- Skills: 15 L3 OUTPUT_FORMAT refs removed, 8 L2 body fixes (verify lens, task-mgmt tag, delivery QG)
-- cc-reference cache: all 4 files updated (SRC hooks, context:fork fix, budget numbers, argument-hint)
-- CC audit findings cached for Iteration 2: haiku model for analyst/pt-manager, TaskCompleted hook, rules/ modularization
-- Total: ~35 files changed across 5 hooks + 6 agents + 16 skills + 4 cc-reference
+### v10.6 Integration Deep-Dive (2026-02-15, branch: test)
+- Integration audit: 7.1/10 (vs 9.2 component health), 21 findings (2 HIGH, 7 MEDIUM)
+- SRP analysis: 35 skills graded (28 A, 4 B+, 1 B, 1 C+), no splits needed
+- INT-20 fix: SRC log mv instead of rm (parallel implementer data preservation)
+- INT-10 fix: SubagentStop matcher expanded to "implementer|infra-implementer"
+- INT-07 fix: claude-code-guide fallback standardized across 3 skills
+- INT-05 fix: CLAUDE.md tier routing override note added
+- INT-15 fix: verify-* failure sub-routing specified (5 skills)
+- INT-18 fix: research-codebase/external FAIL paths added
+- SRP fix: execution-cascade .claude/ boundary documented
+- Settings: teammateMode:tmux, alwaysThinkingEnabled:true, model explicit
+- Total: 15 files changed, commit 15cb1e8
+
+### v10.5 RSI — Recursive Self-Improvement (2026-02-15, branch: test)
+5 iterations, ~50 files changed. Health score: 9.2/10. Severity: 47→20→6 (converged).
+**Iter 1** (7 waves): Hook bugs (jq boolean, basename, wc-l, pipefail), agent L2+color+memory, L3 removal. 35 files.
+**Iter 2** (2 waves): CLAUDE.md v10.5, pt-manager model:haiku, once:true removed, cc-ref cache.
+**Iter 3** (3 waves): Hook robustness (grep scope→git root, dedup, dep-cap, cleanup), P6a→P6, P0-1→P0, delivery-agent haiku+memory:none, bidirectional I/O fixes. 13 files.
+**Iter 4** (3 waves): Hook timeout:30, P0-P2 run_in_background, manage-skills domain count, cc-guide fallback. 10 files.
+**Iter 5**: Final sweep — 0 HIGH, 0 MEDIUM remaining. statusMessage UX. RSI loop terminated.
 
 ### v10.4 SRC — Smart Reactive Codebase (2026-02-14, branch: test)
 - **SRC**: Automatic impact analysis system for code changes during pipeline execution

@@ -31,6 +31,13 @@ From architecture decisions, list external dependencies needing research:
 - Claude Code native capabilities (via claude-code-guide or context7)
 
 ### 2. Search Official Documentation
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each researcher with:
+- **Context**: Paste the dependency list from Step 1 with version constraints (from design-architecture L1 `technologies[]` and L2 version specifications). Include the specific documentation questions needing validation per dependency.
+- **Task**: "Research official documentation for [assigned dependency list]. For each dependency: (1) verify version compatibility with current environment, (2) confirm API availability and stability, (3) check for known issues or deprecations, (4) verify license compatibility. Use context7 first, WebSearch second, WebFetch for specific pages, tavily as fallback."
+- **Scope**: Explicit list of dependencies assigned to this researcher. For COMPLEX, split by technology domain (e.g., researcher-1: libraries/frameworks, researcher-2: APIs/protocols).
+- **Constraints**: Web-enabled research only (WebSearch, WebFetch, context7, tavily). No file modifications. Cite all sources with full URLs.
+- **Expected Output**: Per-dependency validation entry: name, version, status (validated/issue/unknown), source URL, key facts, impact on architecture, confidence rating (high=official docs, medium=community, low=inference).
+
 Priority order for each dependency:
 1. **context7** (resolve-library-id → query-docs) for library docs
 2. **WebSearch** for official documentation sites

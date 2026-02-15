@@ -31,8 +31,13 @@ Extract file assignments, dependency order, and interface contracts per implemen
 ### 2. Spawn Implementers
 For each task group in the matrix:
 - Create Task with `subagent_type: implementer`
-- Include in prompt: task description, file list, interface contracts, PT context
 - Set mode: "default" for code implementation (agent permissions inherited from settings).
+
+Construct each delegation prompt with:
+- **Context**: Paste the exact task row from orchestration-verify matrix (task_id, description, assigned files). Include interface contracts verbatim: function signatures, data types, return values, error types from plan-interface output. If PT exists, include PT subject and acceptance criteria.
+- **Task**: List exact file paths to create/modify. For each file, specify: what function/class/method to implement, what behavior it should exhibit, what tests to satisfy. Reference existing patterns: "Follow the pattern in `<existing_file>:<line_range>` for consistency."
+- **Constraints**: Scope limited to non-.claude/ application source files only. Do NOT modify .claude/ files, test fixtures, or unrelated modules. If a dependency file needs changes, report it — do not modify files outside your assignment.
+- **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed), and `blockers` (array, empty if none). Provide L2 markdown summarizing what was implemented, key decisions made, and any deviations from the plan.
 
 ### 3. Monitor Progress
 During implementation:

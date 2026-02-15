@@ -45,22 +45,26 @@ For each iteration (max 3):
 ### 3. Check Convergence After Updates
 After all implementers in an iteration complete:
 - Collect files changed by implementers this iteration
-- For each newly changed file, run convergence check:
+- Spawn an **analyst** agent (`subagent_type: analyst`) to perform the convergence check
+
+Analyst delegation prompt (DPS structure):
+- **Context**: Provide `iteration_changed_files` (files modified this iteration), `all_updated_files` (cumulative set across iterations), and `original_impact_files` (initial impact set from execution-impact).
+- **Task**: For each file in `iteration_changed_files`, extract basename without extension. Use the CC `Grep` tool with that basename as pattern, scoped to `.claude/` directory, glob `*.{md,json,sh}`. Exclude `agent-memory/` from results. For each match, subtract: the file itself, all files in `all_updated_files`, and all files in `original_impact_files`. Report any remaining dependents as new impacts.
+- **Constraints**: Read-only analysis (Profile-B). No Bash. Use CC Grep tool only. Do NOT modify any files.
+- **Expected Output**: Return `new_impacts` as a list of `{file, dependents[]}` pairs. Empty list = converged.
 
 ```
-function check_convergence(iteration_changed_files):
-    new_impacts = []
-    for each file in iteration_changed_files:
-        basename = strip_extension(basename(file))
-        dependents = grep -rl basename .claude/
-            --exclude-dir=.git --exclude-dir=agent-memory
-            --include='*.md' --include='*.json' --include='*.sh'
-        dependents = dependents - {file}                    # Remove self
-        dependents = dependents - all_updated_files         # Remove already handled
-        dependents = dependents - original_impact_files     # Remove already addressed
-        if dependents is not empty:
-            new_impacts.append({file, dependents})
-    return new_impacts  # empty = converged
+# Analyst convergence check logic:
+# For each file in iteration_changed_files:
+#   basename = strip_extension(basename(file))
+#   dependents = CC Grep(pattern=basename, path=".claude/", glob="*.{md,json,sh}")
+#       excluding agent-memory/ results
+#   dependents = dependents - {file}                    # Remove self
+#   dependents = dependents - all_updated_files         # Remove already handled
+#   dependents = dependents - original_impact_files     # Remove already addressed
+#   if dependents is not empty:
+#       new_impacts.append({file, dependents})
+# return new_impacts  # empty = converged
 ```
 
 - If `new_impacts` is empty: **CONVERGED** — exit loop
@@ -100,7 +104,7 @@ Generate L1 YAML and L2 markdown:
 During active cascade, Lead operates in "cascade mode":
 - SubagentStop hooks still fire for cascade-spawned implementers
 - Lead **ignores** SRC IMPACT ALERT from these hooks (prevents recursive re-entry into execution-impact)
-- Convergence is checked manually via grep, not via hook-driven analysis
+- Convergence is delegated to analyst using CC Grep, not via hook-driven analysis
 - This prevents infinite loop: cascade -> hook alert -> execution-impact -> cascade
 
 ## Error Handling

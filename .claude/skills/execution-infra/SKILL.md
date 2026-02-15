@@ -32,8 +32,12 @@ Extract .claude/ file assignments: agents, skills, settings, hooks, CLAUDE.md.
 ### 2. Spawn Infra-Implementers
 For each infra task group:
 - Create Task with `subagent_type: infra-implementer`
-- Include in prompt: target files, change specifications, format requirements
-- Note: infra-implementers have Write but NO Bash (cannot run shell commands)
+
+Construct each delegation prompt with:
+- **Context**: List exact `.claude/` file paths to modify (e.g., `.claude/skills/foo/SKILL.md`, `.claude/agents/bar.md`). For frontmatter changes, specify which YAML fields to add/modify/remove and their exact values. Reference CC native field list at `memory/cc-reference/native-fields.md` for valid fields.
+- **Task**: For each file, describe the precise change: "In `.claude/skills/X/SKILL.md`, update the `description` field to include INPUT_FROM/OUTPUT_TO references" or "Add `model: haiku` to `.claude/agents/Y.md` frontmatter." For description edits, provide the new text or the specific substring to replace.
+- **Constraints**: Write and Edit tools only — NO Bash (cannot run shell commands, cannot validate by execution). Cannot delete files. Skill `description` field max 1024 characters (count before writing). YAML frontmatter must remain valid. Settings.json must remain valid JSON. Do not introduce non-native frontmatter fields.
+- **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed). Provide L2 markdown listing each file modified, what changed (before→after for field values), and any issues encountered.
 
 ### 3. Monitor Progress
 During implementation:

@@ -45,8 +45,14 @@ Scan all `.claude/` files systematically:
 Spawn infra-implementer agents in parallel waves:
 - Group fixes by category (field removal, feature addition, routing fix, etc.)
 - Max 2 infra-implementers per wave to avoid file conflicts
-- Each implementer receives: specific file list + exact changes + verification criteria
-- Monitor completion, re-spawn if needed
+
+Construct each delegation prompt with:
+- **Context**: Paste the specific findings for this wave (from Step 2 diagnosis) with severity and category. Include the CC native field reference: list which fields are valid for the file type being modified (from `memory/cc-reference/native-fields.md`). For description edits, include current character count and the 1024-char limit.
+- **Task**: For each file in this wave, specify the exact change: "Remove field `X` from `.claude/agents/Y.md`", "Change `disable-model-invocation` from `true` to `false` in `.claude/skills/Z/SKILL.md`", or "Rewrite description to include WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO within 1024 chars." Provide the target value or replacement text where possible.
+- **Constraints**: Write and Edit tools only — no Bash. Files in this wave must not overlap with other concurrent infra-implementers. Only modify files listed in the finding — do not "fix" adjacent files not in scope. Preserve existing valid content (don't rewrite entire files for a single field change).
+- **Expected Output**: Report as L1 YAML with `files_changed` (array), `findings_fixed` (count), `status` (complete|partial|failed). Provide L2 markdown with per-file change log: finding ID, what was changed, before→after values. Flag any findings that could not be fixed with reason.
+
+Monitor completion. If a wave produces failures, re-spawn with corrected instructions (max 1 retry per wave).
 
 ### 4. Verify Full Compliance
 Post-implementation verification:
@@ -56,12 +62,25 @@ Post-implementation verification:
 - Verify field value types: correct enums, booleans, strings
 - If any FAIL: loop back to step 3 with targeted fixes
 
-### 5. Commit and Record
+### 5a. Update Records (spawn infra-implementer)
+**Executor: spawn infra-implementer** for file modifications (Lead NEVER edits files directly).
+
+Update persistent memory with improvement cycle results:
+- Update `memory/context-engineering.md` with new findings
+- Update `MEMORY.md` session history
+
+**DPS (infra-implementer spawn):**
+- **Context**: Improvement cycle findings from Steps 2-4, list of files changed, cc-reference updates
+- **Task**: Update memory/context-engineering.md with new CC native findings and decision rationale. Update MEMORY.md session history with cycle summary (findings count, files changed, commit intent).
+- **Constraints**: Edit tool only — modify existing content sections, do not restructure files. Only update sections relevant to this cycle.
+- **Expected Output**: L1 YAML with files_updated (array), status. L2 with per-file change summary.
+
+### 5b. Commit (Lead-direct or /delivery-pipeline)
+**Executor: Lead-direct** via Bash tool, or route to /delivery-pipeline skill for full delivery flow.
+
 Finalize the improvement cycle:
 - Stage changed files with `git add` (specific files, never `-A`)
 - Create structured commit message with change categories
-- Update `memory/context-engineering.md` with new findings
-- Update `MEMORY.md` session history
 - Report final ASCII status visualization
 
 ## Quality Gate

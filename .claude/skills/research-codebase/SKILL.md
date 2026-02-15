@@ -30,6 +30,13 @@ From architecture decisions, extract questions needing codebase validation:
 - "How is Z currently implemented?" → Read + analysis
 
 ### 2. Search Strategy
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: Paste the relevant architecture decisions (design-architecture L1 `components[]` list + specific L2 sections for this analyst's scope). Include the research questions from Step 1 that this analyst must answer verbatim.
+- **Task**: "Explore [specific codebase area, e.g., `src/auth/**`, `.claude/skills/`] to validate [specific architecture decisions]. For each decision, find existing patterns, conventions, and reusable components. Report all findings with file:line references."
+- **Scope**: Explicit directory/file glob patterns to search. For COMPLEX, assign non-overlapping areas per analyst (e.g., analyst-1: `src/`, analyst-2: `.claude/`).
+- **Constraints**: Read-only analysis. No file modifications. Use Glob → Grep → Read sequence systematically.
+- **Expected Output**: Pattern inventory as structured list: pattern name, file:line location, relevance (high/medium/low), reusability assessment. Anti-patterns with specific file:line locations.
+
 Use tools systematically:
 1. **Glob** for file discovery: `**/*.md`, `**/*.ts`, specific paths
 2. **Grep** for pattern matching: function names, imports, config keys
