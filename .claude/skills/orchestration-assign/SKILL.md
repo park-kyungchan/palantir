@@ -9,7 +9,6 @@ description: |
   OUTPUT_TO: orchestration-verify (assignments for validation), execution domain (after verify PASS).
 
   METHODOLOGY: (1) Read task groups from decomposition, (2) Match each group to best agent type using frontmatter WHEN/TOOLS, (3) Assign tasks respecting 4-teammate limit, (4) Balance workload across teammates, (5) Generate task-teammate matrix with rationale.
-  CONSTRAINT: Max 4 teammates per domain execution. Match agent WHEN conditions from frontmatter.
   OUTPUT_FORMAT: L1 YAML task-teammate matrix, L2 ASCII assignment visualization with workload balance.
 user-invocable: true
 disable-model-invocation: false

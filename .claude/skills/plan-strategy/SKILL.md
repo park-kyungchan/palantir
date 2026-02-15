@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: orchestration-decompose (execution strategy), plan-verify domain (complete plan for validation).
 
   METHODOLOGY: (1) Read task list, dependency order, and risk assessment, (2) Identify parallelizable task groups, (3) Define implementation sequence respecting dependencies, (4) Create rollback strategy per phase, (5) Define risk mitigation checkpoints.
-  OUTPUT_FORMAT: L1 YAML execution sequence with parallel groups, L2 markdown strategy with ordering rationale.
+  OUTPUT_FORMAT: L1 YAML execution sequence with parallel groups, L2 strategy with ordering rationale.
 user-invocable: true
 disable-model-invocation: false
 ---

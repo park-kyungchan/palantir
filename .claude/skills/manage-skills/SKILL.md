@@ -62,6 +62,7 @@ After user approval:
 - For CREATE: generate SKILL.md with frontmatter + L2 body
 - For UPDATE: edit existing SKILL.md
 - For DELETE: remove skill directory
+  **Limitation**: Analysts cannot delete files (no Bash tool). DELETE actions are flagged for user manual action. Lead reports the orphaned path for user to remove.
 - Run verify-cc-feasibility on all changed skills
 
 ## Quality Gate

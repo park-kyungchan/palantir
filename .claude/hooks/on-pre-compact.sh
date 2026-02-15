@@ -22,10 +22,7 @@ fi
 if [ -n "${CLAUDE_CODE_TASK_LIST_ID:-}" ]; then
   TASK_DIR="/home/palantir/.claude/tasks/$CLAUDE_CODE_TASK_LIST_ID/"
 else
-  TASK_DIR=""
-  for d in /home/palantir/.claude/tasks/*/; do
-    [ -d "$d" ] && TASK_DIR="$d" && break
-  done
+  TASK_DIR=$(ls -td /home/palantir/.claude/tasks/*/ 2>/dev/null | head -1)
 fi
 if [ -n "$TASK_DIR" ]; then
   SNAPSHOT_FILE="$LOG_DIR/pre-compact-tasks-$(date '+%s').json"

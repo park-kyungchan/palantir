@@ -40,4 +40,5 @@ Fork-context agent for /delivery-pipeline. Terminal pipeline phase.
 - Never force push or skip git hooks
 - Never include `.env*`, `*credentials*`, `.ssh/id_*`, `**/secrets/**` in commits
 - No TaskCreate — only TaskUpdate (mark PT as DELIVERED)
+- Never modify .claude/ infrastructure files (agents, skills, hooks, settings) — only source/doc files, MEMORY.md, and git operations
 - Terminal phase — no auto-chaining to other skills

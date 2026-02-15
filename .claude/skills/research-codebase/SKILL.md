@@ -6,7 +6,7 @@ description: |
   WHEN: design domain complete. Architecture decisions need validation against existing codebase patterns.
   DOMAIN: research (skill 1 of 3). Parallel-capable: codebase || external -> audit.
   INPUT_FROM: design domain (architecture decisions, interface designs needing codebase validation).
-  OUTPUT_TO: research-audit (findings for inventory), plan-decomposition (codebase patterns for task planning). If critical gaps found, loops back to design domain for architecture revision.
+  OUTPUT_TO: research-audit (findings for inventory), plan-decomposition (codebase patterns). Critical gaps loop to design domain.
 
   METHODOLOGY: (1) Identify codebase areas relevant to architecture decisions, (2) Glob for files matching patterns, (3) Grep for conventions and existing implementations, (4) Read key files for detailed understanding, (5) Document patterns, anti-patterns, and reusable components.
   OUTPUT_FORMAT: L1 YAML pattern inventory, L2 markdown findings with file:line references.

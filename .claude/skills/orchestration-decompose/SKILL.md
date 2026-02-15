@@ -36,6 +36,8 @@ Match tasks to agent profiles using L1 PROFILE tags:
 - **implementer** (Profile-D): Read + edit + bash. For source code changes.
 - **infra-implementer** (Profile-E): Read + edit + write. For .claude/ config changes.
 
+**Note**: delivery-agent (Profile-F) and pt-manager (Profile-G) are fork agents for specific skills (delivery-pipeline, task-management). They are not assignable for general task decomposition.
+
 ### 3. Build Task Groups
 Group tasks that:
 - Need the same agent profile

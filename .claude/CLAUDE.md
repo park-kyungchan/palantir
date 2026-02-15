@@ -36,7 +36,7 @@ Flow: PRE (P0-P5) → EXEC (P6-P8) → POST (P9). Max 3 iterations per phase.
 > Note: Skill WHEN conditions describe the COMPLEX (full) path. For TRIVIAL/STANDARD tiers, Lead overrides skill-level WHEN conditions and routes based on the tier table above.
 
 ## 2.1 Execution Mode by Phase
-- **P0-P2 (PRE-DESIGN + DESIGN)**: Lead-only. Brainstorm, validate, feasibility, architecture, interface, risk — all executed by Lead with local agents (run_in_background). No Team infrastructure needed.
+- **P0-P2 (PRE-DESIGN + DESIGN)**: Lead with local agents (run_in_background). No Team infrastructure (no TeamCreate/SendMessage). Brainstorm, validate, feasibility, architecture, interface, risk.
 - **P3+ (RESEARCH through DELIVERY)**: Team infrastructure. TeamCreate, TaskCreate/Update, SendMessage for teammate coordination. Proper tmux split pane teammates.
 
 ## 3. Lead
