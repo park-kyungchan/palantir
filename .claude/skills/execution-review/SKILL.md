@@ -6,7 +6,7 @@ description: |
   WHEN: After execution-code and/or execution-infra complete. Implementation artifacts exist but unreviewed.
   DOMAIN: execution (skill 5 of 5). Terminal. After code/infra/impact/cascade.
   INPUT_FROM: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
-  OUTPUT_TO: verify domain (reviewed implementation) or execution-code/infra (FAIL, fix required).
+  OUTPUT_TO: verify domain (PASS) or execution-code/infra (FAIL) or plan-interface (non-convergence).
 
   METHODOLOGY: (1) Read implementation artifacts, (2) Stage 1: spawn analyst for design/spec compliance, (3) Stage 2: spawn analyst for code quality and patterns, (4) Optional: contract review for interface compliance, (5) Consolidate review findings into unified report.
   OUTPUT_FORMAT: L1 YAML review verdict per reviewer, L2 markdown consolidated review report.

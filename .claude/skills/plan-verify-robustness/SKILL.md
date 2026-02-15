@@ -6,7 +6,7 @@ description: |
   WHEN: plan domain complete. Plan ready for robustness challenge. Can run parallel with correctness and completeness.
   DOMAIN: plan-verify (skill 3 of 3). Parallel-capable: correctness ∥ completeness ∥ robustness.
   INPUT_FROM: plan-strategy (complete plan), design-risk (risk assessment for focused challenge).
-  OUTPUT_TO: orchestration-decompose (if PASS) or plan domain (if FAIL, revision).
+  OUTPUT_TO: orchestration-decompose (if PASS) or plan domain (if FAIL) or design-architecture (security FAIL).
 
   METHODOLOGY: (1) Read plan and risk assessment, (2) Generate edge case scenarios per task, (3) Simulate failure modes (what if task X fails?), (4) Check security implications of approach, (5) Verify resource constraints (4-teammate limit, file count limits).
   OUTPUT_FORMAT: L1 YAML robustness verdict with edge case list, L2 markdown challenge report.

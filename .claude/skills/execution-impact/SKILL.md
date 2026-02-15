@@ -5,7 +5,7 @@ description: |
 
   WHEN: After execution-code and/or execution-infra complete. File change manifest exists. SubagentStop hook injected SRC IMPACT ALERT.
   DOMAIN: execution (skill 3 of 5). After code/infra, before cascade.
-  INPUT_FROM: execution-code (file change manifest), on-implementer-done.sh (impact alert via additionalContext).
+  INPUT_FROM: execution-code, execution-infra (file change manifests), on-implementer-done.sh (impact alert).
   OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (if no cascade needed).
 
   METHODOLOGY: (1) Read execution-code L1 file manifest, (2) Read codebase-map.md if available, (3) Spawn analyst for grep-based reverse reference analysis, (4) Classify: DIRECT (literal ref) vs TRANSITIVE (2-hop), (5) Produce impact report with cascade recommendation.

@@ -9,7 +9,7 @@ description: |
   OUTPUT_TO: orchestration-assign (decomposed tasks ready for teammate mapping).
 
   METHODOLOGY: (1) Read validated plan, (2) Group tasks by agent capability match via frontmatter descriptions, (3) Identify dependency chains between groups, (4) Ensure each group respects 4-teammate limit, (5) Output decomposition with dependency edges.
-  CONSTRAINT: Use ONLY Agent/Skill frontmatter in Lead's context. No external file reads.
+  CONSTRAINT: Use ONLY Agent/Skill frontmatter in Lead's context. No external reads.
   OUTPUT_FORMAT: L1 YAML task groups with dependency edges, L2 ASCII dependency graph.
 user-invocable: true
 disable-model-invocation: false

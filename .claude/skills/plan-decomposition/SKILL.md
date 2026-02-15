@@ -177,7 +177,7 @@ For TRIVIAL tiers (1-2 components), creating more than 2-3 tasks adds unnecessar
 |-------------|---------------|--------|
 | research-audit | Consolidated research findings | L1 YAML: `coverage_matrix`, `findings[]`, L2: pattern details |
 | design-architecture | Component structure with ADRs | L1 YAML: `components[]`, L2: module boundaries, data flow |
-| research-codebase | Existing codebase patterns | L2: file paths, conventions, existing structure |
+| research-codebase | Existing codebase patterns (via research-audit) | L2: file paths, conventions, existing structure |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

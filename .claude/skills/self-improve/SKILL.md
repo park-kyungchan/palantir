@@ -32,14 +32,26 @@ First, read cached reference: `memory/cc-reference/` (4 files: native-fields, co
 - Compare against `memory/context-engineering.md` for decision history
 
 ### 2. Self-Diagnose INFRA
-Scan all `.claude/` files systematically:
-- **Field compliance**: Extract frontmatter fields from all agents + skills, check against native lists
-- **Routing integrity**: Verify no `disable-model-invocation: true` on pipeline skills
-- **Budget analysis**: Calculate total L1 description chars vs SLASH_COMMAND_TOOL_CHAR_BUDGET
-- **Feature gaps**: Check agent memory/maxTurns/hooks configuration
-- **Hook validity**: Verify hook scripts use correct CC patterns (hookSpecificOutput, additionalContext)
-- **Settings consistency**: Check permissions, env vars, model settings
-- Produce categorized finding list with severity (CRITICAL, HIGH, LOW)
+Scan all `.claude/` files systematically using the diagnostic category checklist below. Spawn analyst agents for parallel scanning when the scope is full (no focus-area). Each category maps to specific tools and has a pre-assigned severity if failed.
+
+**Diagnostic Category Checklist:**
+
+| Category | Check | Tool | Severity if Failed |
+|---|---|---|---|
+| Field compliance | Non-native frontmatter fields present | Read + compare to `memory/cc-reference/native-fields.md` | CRITICAL |
+| Routing integrity | `disable-model-invocation: true` on pipeline skills | Grep across `.claude/skills/` | CRITICAL |
+| L1 budget | Total description chars exceed 32000 (SLASH_COMMAND_TOOL_CHAR_BUDGET) | Read all skill descriptions + sum character counts | HIGH |
+| Hook validity | Shell scripts have correct shebang, exit codes, JSON output format | Read each hook script, check structure | HIGH |
+| Agent memory config | `memory` field is valid enum for each agent | Read `.claude/agents/*.md` frontmatter | MEDIUM |
+| Settings permissions | All `allow` entries reference existing tools/skills | Read `settings.json`, cross-reference | MEDIUM |
+| Description utilization | Each description uses more than 80% of 1024 chars | Read + measure per-skill char count | LOW |
+| Color assignments | All agents have unique `color` fields | Read agents, check for duplicates | LOW |
+
+**Procedure:**
+- For focused scans (user-provided focus-area), run only the matching categories
+- For full scans, run all 8 categories and compile into a single finding list
+- Each finding includes: ID, category, severity, file path, current value, expected value
+- Produce categorized finding list sorted by severity (CRITICAL first, then HIGH, MEDIUM, LOW)
 
 ### 3. Implement Fixes
 Spawn infra-implementer agents in parallel waves:
@@ -55,12 +67,20 @@ Construct each delegation prompt with:
 Monitor completion. If a wave produces failures, re-spawn with corrected instructions (max 1 retry per wave).
 
 ### 4. Verify Full Compliance
-Post-implementation verification:
-- Re-scan all files: zero non-native fields required
-- Verify routing: all auto-loaded skills visible in system-reminder
-- Verify budget: total description chars within SLASH_COMMAND_TOOL_CHAR_BUDGET
-- Verify field value types: correct enums, booleans, strings
-- If any FAIL: loop back to step 3 with targeted fixes
+Post-implementation verification pass. Re-run the diagnostic categories from Step 2, but only for files that were modified in Step 3. This targeted re-scan is faster than a full scan and catches regressions introduced during fixes.
+
+**Verification checklist:**
+- Re-scan modified files: zero non-native fields required (CRITICAL category from Step 2)
+- Verify routing: all auto-loaded skills visible in system-reminder, no `disable-model-invocation: true` on pipeline skills
+- Verify budget: total description chars within SLASH_COMMAND_TOOL_CHAR_BUDGET (recalculate after any description edits)
+- Verify field value types: correct enums, booleans, strings (no type mismatches)
+- Cross-reference check: INPUT_FROM/OUTPUT_TO bidirectionality still intact after any skill description rewrites
+- Hook scripts: shebang line preserved, exit codes correct, JSON output format valid
+
+**Iteration logic:**
+- If zero findings remain: proceed to Step 5 (convergence achieved)
+- If findings remain but count decreased: loop back to Step 3 with targeted fixes (max 3 total iterations)
+- If findings remain and count did not decrease (plateau): evaluate severity of remaining findings. If all remaining are LOW, accept partial convergence. If MEDIUM+ remain, attempt one more targeted wave before accepting partial.
 
 ### 5a. Update Records (spawn infra-implementer)
 **Executor: spawn infra-implementer** for file modifications (Lead NEVER edits files directly).
@@ -80,8 +100,10 @@ Update persistent memory with improvement cycle results:
 
 Finalize the improvement cycle:
 - Stage changed files with `git add` (specific files, never `-A`)
-- Create structured commit message with change categories
-- Report final ASCII status visualization
+- Create structured commit message following pattern: `feat(infra): RSI [scope] -- [summary]`
+  - Include finding categories in commit body (e.g., "CRITICAL: 3 fixed, HIGH: 5 fixed, MEDIUM: 2 deferred")
+  - Reference iteration count and convergence status
+- Report final ASCII status visualization with: iteration count, findings breakdown by severity, files changed, convergence status
 
 ## Decision Points
 
@@ -101,6 +123,36 @@ Finalize the improvement cycle:
 ### Convergence Threshold
 - **Strict convergence**: Zero findings remaining after implementation. Required for pre-release cycles.
 - **Partial convergence**: Severity plateau after 3 iterations (same finding count between iterations). Acceptable for incremental improvement cycles. Defer remaining LOW findings.
+
+### Iteration Strategy
+How many RSI iterations to plan based on scope and expected finding volume:
+- **Quick fix** (1 iteration): User specifies a narrow focus-area, fewer than 5 findings expected. Single diagnose-fix-verify cycle. Example: `/self-improve hooks` targeting only hook scripts.
+- **Standard cycle** (2-3 iterations): No focus-area specified, full scan. Expect 10-20 findings in first iteration, diminishing in subsequent. Standard convergence pattern. Most common invocation pattern.
+- **Deep evolution** (3-5 iterations): Major CC version change or significant structural rework. Expect 30+ findings initially. May not fully converge -- accept partial status after 3 iterations if severity plateau reached. Example: after CC platform upgrade with new native fields.
+
+### Fix Priority Ordering
+When diagnosis produces many findings, fix in this strict priority order:
+1. **CRITICAL**: Non-native fields, routing breaks, `disable-model-invocation: true` on pipeline skills (blocks pipeline entirely)
+2. **HIGH**: Budget overflows, hook validity issues, agent memory config errors (degrades quality or causes silent failures)
+3. **MEDIUM**: Settings inconsistencies, description utilization below 80%, stale references (cleanup, not blocking)
+4. **LOW**: Color assignments, minor formatting, redundant content (cosmetic)
+
+Higher severity fixes first because they may cascade -- fixing a CRITICAL routing issue may resolve a MEDIUM description issue downstream. Within the same severity level, group by file category for wave efficiency.
+
+### Claude-code-guide Spawn Decision Tree
+Determines whether to spawn a live claude-code-guide agent or use the cached cc-reference:
+```
+cc-reference cache exists? (memory/cc-reference/ has 4 files)
+|-- NO --> Spawn claude-code-guide (full research). STOP if unavailable.
++-- YES --> Cache updated within 7 days?
+    |-- YES --> Focus-area covered by cache?
+    |   |-- YES --> Skip spawn (use cache only). Lowest cost path.
+    |   +-- NO --> Spawn claude-code-guide (delta query for focus-area only)
+    +-- NO --> CC version changed since cache?
+        |-- YES --> Spawn claude-code-guide (full research, cache is stale)
+        +-- NO --> Use cache (likely still valid, CC versions are stable)
+```
+Each claude-code-guide spawn costs significant context budget. The decision tree minimizes unnecessary spawns while ensuring ground truth accuracy. When in doubt, prefer delta query over full research.
 
 ## Anti-Patterns
 
@@ -177,18 +229,28 @@ MEMORY.md should only be updated once, at the final commit step (5a). Updating i
 ```yaml
 domain: homeostasis
 skill: self-improve
-status: complete|partial
+status: complete|partial|blocked
+iteration_count: 0
 cc_guide_spawns: 0
+cc_reference_source: cache|delta|full|none
 findings_total: 0
+findings_by_severity:
+  critical: 0
+  high: 0
+  medium: 0
+  low: 0
 findings_fixed: 0
 findings_deferred: 0
 files_changed: 0
+implementer_waves: 0
 commit_hash: ""
 ```
 
 ### L2
-- claude-code-guide research summary (delta from last run)
-- Categorized findings with severity
-- Fix implementation summary per wave
-- Compliance verification results
-- Commit details and MEMORY.md updates
+Structured markdown report with the following sections:
+- **CC Research Summary**: claude-code-guide research delta from last run, or cache-only note if no spawn was needed. Include any new native fields or features discovered.
+- **Diagnosis Report**: Categorized findings table with columns: ID, category, severity, file, description, status (fixed/deferred). Total counts per severity level.
+- **Implementation Log**: Per-wave summary showing which infra-implementer handled which findings, files changed, and any retries needed. Include before/after values for key changes.
+- **Verification Results**: Post-fix compliance scan results. Confirm zero CRITICAL, zero HIGH remaining. Note any deferred items with severity and rationale.
+- **Commit Details**: Git commit hash, structured commit message, list of staged files. Note branch name and any PR intent.
+- **MEMORY.md Update**: Summary of what was added to session history (finding counts, files changed, key decisions).

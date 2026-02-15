@@ -1859,11 +1859,17 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
     const hookCount = (D.hooks || []).length;
     const version = (D.metadata && D.metadata.infra_version) || 'N/A';
 
+    const enrichedCount = (D.skills || []).filter(s => {
+      const bs = s.body_sections || {};
+      return bs.has_decision_points && bs.has_failure_handling && bs.has_anti_patterns && bs.has_transitions;
+    }).length;
+
     const metrics = [
       { value: agentCount, label: { ko: '\uC5D0\uC774\uC804\uD2B8', en: 'Agents' }, cls: 'sv-indigo' },
       { value: skillCount, label: { ko: '\uC2A4\uD0AC', en: 'Skills' }, cls: 'sv-emerald' },
       { value: hookCount, label: { ko: '\uD6C5', en: 'Hooks' }, cls: 'sv-amber' },
-      { value: version, label: { ko: '\uBC84\uC804', en: 'Version' }, cls: 'sv-cyan' }
+      { value: version, label: { ko: '\uBC84\uC804', en: 'Version' }, cls: 'sv-cyan' },
+      { value: enrichedCount + '/' + skillCount, label: { ko: '\uAC15\uD654 \uC644\uB8CC', en: 'Enriched' }, cls: 'sv-emerald' }
     ];
 
     metrics.forEach(m => {
@@ -1884,7 +1890,7 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
         flowEl.appendChild(h('div', { className: 'pipeline-arrow' }));
       }
       const color = PHASE_COLORS[p] || '#6b7280';
-      const skillsInPhase = (domains[p] || []).length;
+      const skillsInPhase = (D.skills || []).filter(s => s.phase === p).length;
       const node = h('div', { className: 'pipeline-node' },
         h('div', { className: 'node-circle', style: { borderColor: color, background: color + '22', color: color } }, p),
         h('div', { className: 'node-label' }, PHASE_NAMES[p] || p),
@@ -2084,11 +2090,15 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
       const utilCls = charPct > 90 ? 'util-red' : charPct > 70 ? 'util-amber' : 'util-green';
 
       const indicators = [
-        { label: 'E', val: bs.has_execution_model },
-        { label: 'M', val: bs.has_methodology },
-        { label: String(bs.methodology_steps || 0), val: (bs.methodology_steps || 0) > 0 },
-        { label: 'Q', val: bs.has_quality_gate },
-        { label: 'O', val: bs.has_output }
+        { label: 'E', val: bs.has_execution_model, title: 'Execution Model' },
+        { label: 'M', val: bs.has_methodology, title: 'Methodology' },
+        { label: String(bs.methodology_steps || 0), val: (bs.methodology_steps || 0) > 0, title: 'Methodology Steps' },
+        { label: 'Q', val: bs.has_quality_gate, title: 'Quality Gate' },
+        { label: 'O', val: bs.has_output, title: 'Output' },
+        { label: 'D', val: bs.has_decision_points, title: 'Decision Points' },
+        { label: 'F', val: bs.has_failure_handling, title: 'Failure Handling' },
+        { label: 'A', val: bs.has_anti_patterns, title: 'Anti-Patterns' },
+        { label: 'T', val: bs.has_transitions, title: 'Transitions' }
       ];
 
       const row = h('tr', { 'data-name': (s.name || '').toLowerCase(), 'data-domain': s.domain || '', 'data-phase': s.phase || '', 'data-chars': String(s.char_count || 0) },
@@ -2107,7 +2117,7 @@ const DASHBOARD_DATA = /*DASHBOARD_DATA_PLACEHOLDER*/null;
         h('td', {},
           h('div', { className: 'body-indicators' },
             ...indicators.map(ind =>
-              h('span', { className: 'bi ' + (ind.val ? 'bi-yes' : 'bi-no'), title: ind.label }, ind.label)
+              h('span', { className: 'bi ' + (ind.val ? 'bi-yes' : 'bi-no'), title: ind.title || ind.label }, ind.label)
             )
           )
         ),

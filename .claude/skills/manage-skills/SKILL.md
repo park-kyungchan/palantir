@@ -214,6 +214,7 @@ A skill created in the current pipeline iteration should not be flagged for DELE
 | (self-triggered) | Drift detection request after codebase changes | No structured input -- uses git diff |
 | manage-infra | Skill-specific drift detected during health check | L1 YAML: skill count mismatch or orphan alert |
 | delivery-pipeline | Pre-commit skill validation request | L1 YAML: pipeline completion status with changed files |
+| self-improve | Post-RSI skill frontmatter refresh | L1 YAML: list of modified .claude/skills/ files |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

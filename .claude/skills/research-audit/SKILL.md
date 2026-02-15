@@ -5,8 +5,8 @@ description: |
 
   WHEN: After research-codebase and research-external complete. Findings need consolidation and gap analysis.
   DOMAIN: research (skill 3 of 3). Terminal skill. Runs after codebase and external research.
-  INPUT_FROM: research-codebase (local findings), research-external (external findings).
-  OUTPUT_TO: plan-decomposition (consolidated research for task planning), design domain (if critical gaps need architecture revision).
+  INPUT_FROM: research-codebase (local findings), research-external (external findings), design-architecture (mapping target).
+  OUTPUT_TO: plan-decomposition (consolidated research), plan-strategy (risk annotations), design domain (if critical gaps).
 
   METHODOLOGY: (1) Inventory all findings from codebase and external research, (2) Classify by architecture decision relevance, (3) Map findings to design assumptions, (4) Identify gaps: assumptions without evidence, (5) Produce coverage metrics and gap report. Max 3 iterations.
   OUTPUT_FORMAT: L1 YAML coverage matrix with counts, L2 markdown gap analysis.

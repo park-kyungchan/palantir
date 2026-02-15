@@ -166,7 +166,7 @@ for agent_path in sorted(glob.glob(os.path.join(agents_dir, '*.md'))):
     agent['tools'] = tools
 
     # Parse description (multi-line after 'description: |')
-    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^[a-z]|^---)', fm, re.DOTALL | re.MULTILINE)
+    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^\S|^---)', fm, re.DOTALL | re.MULTILINE)
     if desc_match:
         desc_text = desc_match.group(1)
         desc_lines = [l[2:] if l.startswith('  ') else l for l in desc_text.split('\n')]
@@ -230,7 +230,7 @@ for skill_path in sorted(glob.glob(os.path.join(skills_dir, '*', 'SKILL.md'))):
         skill['argument_hint'] = m.group(1)
 
     # Parse description
-    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^[a-z]|^---)', fm, re.DOTALL | re.MULTILINE)
+    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^\S|^---)', fm, re.DOTALL | re.MULTILINE)
     if desc_match:
         desc_text = desc_match.group(1)
         desc_lines = [l[2:] if l.startswith('  ') else l for l in desc_text.split('\n')]

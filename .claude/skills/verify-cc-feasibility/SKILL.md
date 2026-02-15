@@ -1,14 +1,14 @@
 ---
 name: verify-cc-feasibility
 description: |
-  [P7·Verify·CCFeasibility] Claude Code native compliance verifier. Ensures all frontmatter uses ONLY CC native fields, no custom fields exist, and validates via claude-code-guide agent spawn.
+  [P7·Verify·CCFeasibility] CC native compliance verifier. Ensures all frontmatter uses ONLY CC native fields, no custom fields, and validates via claude-code-guide spawn.
 
-  WHEN: After every skill/agent creation or frontmatter modification. Fifth and final verification stage. Can run independently.
+  WHEN: After every skill/agent creation or frontmatter modification. Fifth and final verify stage. Can run independently.
   DOMAIN: verify (skill 5 of 5). Terminal skill in verify domain. After verify-quality PASS.
-  INPUT_FROM: verify-quality (routing quality confirmed) or direct invocation.
+  INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes) or direct invocation.
   OUTPUT_TO: delivery-pipeline (if all 5 stages PASS) or execution-infra (if FAIL, frontmatter fix required).
 
-  METHODOLOGY: (1) Read target frontmatter fields, (2) Check against CC native field lists for skills and agents (see L2 body for full lists), (3) Flag any non-native field, (4) Spawn claude-code-guide to validate questionable fields, (5) Return compliance verdict with per-file status.
+  METHODOLOGY: (1) Read target frontmatter fields, (2) Check against CC native field lists for skills and agents (see L2 for full lists), (3) Flag any non-native field, (4) Spawn claude-code-guide to validate questionable fields, (5) Return compliance verdict per file.
   OUTPUT_FORMAT: L1 YAML native compliance per file, L2 markdown feasibility report with field-level feedback.
 user-invocable: true
 disable-model-invocation: false

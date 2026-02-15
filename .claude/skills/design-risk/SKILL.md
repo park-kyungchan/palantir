@@ -6,7 +6,7 @@ description: |
   WHEN: After design-architecture and design-interface complete. Architecture and interfaces exist but risk unassessed.
   DOMAIN: design (skill 3 of 3). Terminal skill. Runs after architecture and interface.
   INPUT_FROM: design-architecture (component structure), design-interface (API contracts).
-  OUTPUT_TO: research domain (risk areas for codebase validation), plan-strategy (risk mitigation for strategy).
+  OUTPUT_TO: research-codebase (risk areas), plan-strategy (risk mitigation), plan-verify-robustness (robustness challenge).
 
   METHODOLOGY: (1) Read architecture and interface specs, (2) Identify failure modes per component (FMEA), (3) Assess security implications (OWASP), (4) Identify performance bottlenecks, (5) Propose mitigation per risk with priority ranking.
   OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, mitigation), L2 markdown risk narrative.

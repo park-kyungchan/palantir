@@ -6,7 +6,7 @@ description: |
   WHEN: orchestration domain assigns infra tasks. Infra changes needed alongside or independent of code.
   DOMAIN: execution (skill 2 of 5). Parallel-capable: code ∥ infra -> review.
   INPUT_FROM: orchestration-verify (validated infra task assignments).
-  OUTPUT_TO: execution-review (infra changes for review), verify domain (completed infra).
+  OUTPUT_TO: execution-impact (SRC), execution-review (infra changes), verify domain.
 
   METHODOLOGY: (1) Read validated infra assignments, (2) Spawn infra-implementer agents per assignment, (3) Each: read target -> apply changes -> write output, (4) Monitor progress via L1/L2, (5) Consolidate infra change results.
   CONSTRAINT: Infra-implementers have Write but no Bash. Cannot delete files or run commands.

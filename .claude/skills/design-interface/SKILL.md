@@ -6,7 +6,7 @@ description: |
   WHEN: After design-architecture produces component structure. Components exist but interfaces undefined.
   DOMAIN: design (skill 2 of 3). Parallel with design-risk after architecture completes.
   INPUT_FROM: design-architecture (component structure, module boundaries).
-  OUTPUT_TO: design-risk (interfaces for risk assessment), plan-interface (interface specs for planning).
+  OUTPUT_TO: design-risk (interfaces for risk), plan-interface (specs for planning), plan-decomposition (task decomposition).
 
   METHODOLOGY: (1) Read component structure from architecture, (2) For each boundary: define input/output types, (3) Define protocols (sync/async, message format), (4) Specify error contracts (types, propagation), (5) Document integration points with sequence diagrams.
   OUTPUT_FORMAT: L1 YAML interface registry with types, L2 markdown interface spec with examples.

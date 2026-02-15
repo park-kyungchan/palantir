@@ -6,7 +6,7 @@ description: |
   WHEN: pre-design domain complete (all 3 PASS). Feasibility-confirmed requirements ready.
   DOMAIN: design (skill 1 of 3). Parallel-capable: architecture || interface -> risk.
   INPUT_FROM: pre-design-feasibility (approved requirements + feasibility report), research-audit (if COMPLEX tier feedback loop).
-  OUTPUT_TO: design-interface (for interface definition), design-risk (for risk assessment), research domain (for codebase validation).
+  OUTPUT_TO: design-interface (for interface definition), design-risk (for risk assessment), research-codebase (for codebase validation).
 
   METHODOLOGY: (1) Read approved requirements, (2) Identify components (SRP), (3) Define module boundaries and data flow, (4) Select technology/patterns with rationale, (5) Document as ADRs.
   OUTPUT_FORMAT: L1 YAML component list, L2 markdown ADRs.

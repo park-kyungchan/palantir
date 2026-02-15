@@ -6,7 +6,7 @@ description: |
   WHEN: After multi-file changes or relationship modifications. Third of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 3 of 5). After verify-content PASS.
   INPUT_FROM: verify-content (content completeness confirmed) or direct invocation.
-  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
+  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL).
 
   METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO refs from descriptions, (2) Build relationship graph, (3) Verify bidirectionality (A refs B <-> B refs A), (4) Check phase sequence (domain N -> domain N+1), (5) Verify CLAUDE.md skills table matches .claude/skills/ listing.
   OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 markdown inconsistency report with source/target evidence.

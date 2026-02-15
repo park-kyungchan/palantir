@@ -224,7 +224,19 @@ All conditions must be true for delivery to be considered successful:
 ## Fork Execution
 
 Executed by `delivery-agent` (`subagent_type: delivery-agent`).
-Agent has TaskUpdate only (no TaskCreate). Requires user confirmation before git commit.
+
+**Agent Properties**:
+- `memory: none` — no conversation history access; all context must be in spawn prompt
+- `model: haiku` — lightweight model sufficient for structured delivery tasks
+- `maxTurns: 20` — budget for commit + MEMORY.md + PT update sequence
+- `tools`: Read, Glob, Grep, Edit, Write, Bash, TaskList, TaskGet, TaskUpdate, AskUserQuestion
+- `color: cyan` — visual identification in tmux
+
+**Key Limitations**:
+- No TaskCreate — can only update existing PT, not create new ones
+- No sub-agent spawning — delivery-agent works alone
+- Requires user confirmation for all external actions (git commit, MEMORY.md write)
+- Cannot modify .claude/ infrastructure files (agents, skills, hooks, settings)
 
 ## Output
 
@@ -239,6 +251,9 @@ pt_status: DELIVERED
 ```
 
 ### L2
-- Delivery manifest (all domain outputs)
-- Commit message with impact summary
-- Archive entries (MEMORY.md)
+- Delivery manifest (all domain outputs consolidated)
+- Commit message with impact summary and conventional commit format
+- MEMORY.md archive entries (session history, INFRA state updates if applicable)
+- List of staged files with paths
+- Any residual warnings from verify domain (non-blocking MEDIUM findings)
+- PT task ID and final status confirmation

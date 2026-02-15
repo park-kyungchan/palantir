@@ -213,11 +213,36 @@ If the interrupted phase had parallel tasks (e.g., code and infra in P5, or mult
 | Unresolvable state contradictions | (User) | Contradiction report for manual resolution |
 | Phase dependency broken | (Earliest failed phase skill) | Failed task details for re-execution |
 
+## State Reconstruction Checklist
+
+Reference checklist Lead follows for every resume invocation. Execute in order:
+
+```
+Resume Checklist:
+[ ] TaskList -- retrieve all tasks in the session
+[ ] Find [PERMANENT] task by subject prefix
+[ ] TaskGet PT -- extract current_phase, tier, branch, references
+[ ] Categorize work tasks: completed / in_progress / pending / failed
+[ ] Check git branch matches PT expectations
+[ ] Check git status for uncommitted changes
+[ ] Detect compaction (check if session context was summarized)
+[ ] Identify resume point: first non-completed phase
+[ ] Check for task status contradictions and resolve
+[ ] Build resume context for agents: PT + task descriptions + any partial output
+[ ] Present reconstructed state to user before acting
+[ ] Update PT metadata: resume_count++, current_phase = resume point
+```
+
+If any checklist item fails, route to the corresponding Failure Handling scenario above. Do not skip items -- the order matters because later items depend on earlier ones (e.g., contradiction resolution requires completed task categorization).
+
 ## Quality Gate
 - PERMANENT Task found and context extracted
 - All task statuses accurately determined
 - Resume point identified with clear rationale
+- Git branch state validated
+- No task status contradictions (or contradictions explicitly resolved)
 - Agents re-spawned with sufficient context to continue
+- User informed of resume strategy before execution begins
 
 ## Output
 

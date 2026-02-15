@@ -6,7 +6,7 @@ description: |
   WHEN: After execution-impact reports cascade_recommended: true. Affected files identified and classified.
   DOMAIN: execution (skill 4 of 5, before review). After impact, before review.
   INPUT_FROM: execution-impact (impact report with dependent files and classification).
-  OUTPUT_TO: execution-review (cascade results for review), execution-impact (re-invoked per iteration for convergence check).
+  OUTPUT_TO: execution-review (cascade results for review).
 
   METHODOLOGY: (1) Read impact report, (2) Spawn implementers for affected files (max 2 per iteration), (3) After updates: re-run grep check on modified files, (4) If new impacts: iterate (max 3), (5) Report convergence status.
   CONSTRAINT: Max 3 iterations. Max 2 implementers/iteration (maxTurns:30 each).
