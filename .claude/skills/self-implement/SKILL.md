@@ -21,6 +21,10 @@ disable-model-invocation: false
 - **STANDARD**: 1-2 infra-implementer waves. Standard RSI fix cycle.
 - **COMPLEX**: 3-4 infra-implementer waves + extended verification. Major structural changes.
 
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
 ## Decision Points
 
 ### Fix Wave Parallelism
@@ -55,8 +59,9 @@ Construct each delegation prompt with:
 - **Task**: For each file, specify exact change: "Remove field X from Y.md", "Change value A to B in Z/SKILL.md", etc. Provide target value where possible.
 - **Constraints**: Write and Edit tools only — no Bash. Files in this wave must not overlap with other concurrent infra-implementers. Only modify files listed in findings.
 - **Expected Output**: L1 YAML with files_changed, findings_fixed, status. L2 with per-file change log: finding ID, what changed, before→after.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-implement.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|fixed:{N}|deferred:{N}|ref:/tmp/pipeline/homeostasis-self-implement.md`.
 
-Monitor completion. If a wave fails, re-spawn with corrected instructions (max 1 retry per wave).
+Await infra-implementer result via SendMessage (P2+) or TaskOutput (standalone). If a wave fails, re-spawn with corrected instructions (max 1 retry per wave).
 
 ### 3. Verify Compliance
 Post-implementation verification. Re-run diagnostic categories from self-diagnose, but only for modified files.

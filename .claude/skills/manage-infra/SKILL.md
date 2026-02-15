@@ -20,6 +20,10 @@ disable-model-invocation: false
 - **STANDARD**: Spawn analyst. Systematic inventory and drift detection.
 - **COMPLEX**: Spawn 2 analysts. One for agents+skills, one for settings+hooks+CLAUDE.md.
 
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
 ## Methodology
 
 ### 1. Inventory All Components
@@ -35,6 +39,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Task**: "Scan entire .claude/ directory. Count agents, skills, hooks. Read settings.json for validity. Compare filesystem counts against CLAUDE.md declarations. Find orphaned files (unreferenced agents, skills without SKILL.md, hooks not in settings). Find configuration drift (settings referencing nonexistent files, CLAUDE.md version mismatch)."
 - **Constraints**: Read-only. Use Glob for discovery, Read for content. No modifications. Report findings with severity classification.
 - **Expected Output**: L1 YAML health report with component counts, orphans, drift_items. L2 narrative with repair recommendations.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-infra.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|health:{score}|drift:{N}|ref:/tmp/pipeline/homeostasis-manage-infra.md`.
 
 ### 2. Check Count Consistency
 Compare filesystem counts against CLAUDE.md declarations:

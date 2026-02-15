@@ -20,6 +20,10 @@ disable-model-invocation: false
 - **STANDARD**: Spawn analyst. Full domain coverage analysis.
 - **COMPLEX**: Spawn 2 analysts. One for change detection, one for coverage analysis.
 
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
 ## Methodology
 
 ### 1. Detect Changes
@@ -53,6 +57,7 @@ Task: "Map changed files to domains. For each affected domain, check coverage ag
        minimum thresholds. Propose CREATE/UPDATE/DELETE with rationale for each action."
 Constraints: maxTurns:15, analyst agent, Read+Grep+Glob tools only.
 Expected Output: L1 YAML action list with severity per action.
+Delivery: Write full result to `/tmp/pipeline/homeostasis-manage-skills.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|actions:{N}|domains:{N}|ref:/tmp/pipeline/homeostasis-manage-skills.md`.
 ```
 
 **COMPLEX DPS** (8+ changed files, 3+ domains):
@@ -70,6 +75,7 @@ Analyst-2:
          Propose CREATE/UPDATE/DELETE actions. Include rationale and severity."
   Constraints: maxTurns:20, analyst agent.
   Expected Output: L1 YAML action list + L2 coverage analysis.
+  Delivery: Write full result to `/tmp/pipeline/homeostasis-manage-skills.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|actions:{N}|domains:{N}|ref:/tmp/pipeline/homeostasis-manage-skills.md`.
 ```
 
 ### 2. Map Changes to Domains

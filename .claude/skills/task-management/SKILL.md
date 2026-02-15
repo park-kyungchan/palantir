@@ -21,6 +21,10 @@ argument-hint: "[action] [args]"
 - **Heavy ops** → spawn `pt-manager` (`subagent_type: pt-manager`). Full Task API (TaskCreate + TaskUpdate).
 - **Light ops** → Lead executes directly. Single TaskUpdate for status/metadata changes.
 
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
 ## Operations
 
 ### 1. PT Creation
@@ -53,6 +57,27 @@ argument-hint: "[action] [args]"
    - Update `current_phase` on phase transition
 4. TaskUpdate with merged result
 5. If description exceeds useful density → move details to file, keep index in description
+
+### 2b. PT Phase Checkpoint (Compaction Recovery)
+
+After each phase completion, Lead updates PT metadata with compact phase signal:
+1. TaskGet PT → read current metadata
+2. Add phase signal: `metadata.phase_signals.{phase} = "{STATUS}|{key_signal}"`
+3. Update `metadata.current_phase` to next phase
+4. TaskUpdate with merged metadata
+
+This enables compaction recovery: Lead calls TaskGet(PT) → reads `phase_signals` → knows entire pipeline history.
+Example metadata after P3:
+```json
+{
+  "phase_signals": {
+    "p0": "PASS|reqs:6",
+    "p1": "PASS|arch:4waves",
+    "p2": "PASS|gaps:0",
+    "p3": "PASS|tasks:12|deps:8"
+  }
+}
+```
 
 ### 3. Work Task Batch Creation
 
@@ -125,6 +150,7 @@ Key rules:
 - **문제**: `metadata.problem` — 기존 상태의 무엇이 불충분한가
 - **개선/결과/계획**: `metadata.improvement` — 이 작업이 어떻게 개선하는가
 - Status labels: 진행중, 완료, 대기, 실패
+- **Delivery**: pt-manager sends micro-signal to Lead via SendMessage: `{STATUS}|action:{type}|tasks:{N}|ref:/tmp/pipeline/task-management.md`.
 
 ### 6. PT Completion
 

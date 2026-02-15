@@ -22,6 +22,10 @@ argument-hint: "[focus-area]"
 - **STANDARD**: Spawn 1 analyst. Full diagnostic checklist across all .claude/ files. Standard invocation.
 - **COMPLEX**: Spawn 2 analysts in parallel (field compliance + routing in one, budget + hooks in another). For comprehensive audits.
 
+## Phase-Aware Execution
+- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
 ## Decision Points
 
 ### CC Reference Cache vs Live Research
@@ -84,6 +88,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt:
 - **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
 - **Constraints**: Read-only. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config).
 - **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|findings:{N}|ref:/tmp/pipeline/homeostasis-self-diagnose.md`.
 
 ## Anti-Patterns
 

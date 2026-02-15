@@ -35,9 +35,18 @@
 - Teammate outputs stay in teammate context, summaries come to Lead
 
 ### SendMessage Completion Protocol (P2+ phases)
-- Teammate sends L1 summary to Lead via SendMessage upon completion
-- Required: status (PASS/FAIL/partial), files changed count, key metrics
-- Optional: output file path, routing recommendation, blockers
-- L2 detail stays in teammate context (Lead does NOT request full output)
-- On failure: include failure reason, affected files, suggested route
-- Format: plain text summary (~200 tokens max), not raw YAML
+- Teammate writes full L1/L2 result to `/tmp/pipeline/{phase}-{skill}.md`
+- Teammate sends micro-signal to Lead via SendMessage:
+  `{STATUS}|files:{N}|ref:/tmp/pipeline/{phase}-{skill}.md`
+- Required signal fields: status (PASS/FAIL/partial), files count, ref path
+- Optional: `route:{next-skill}`, `blocker:{summary}`
+- Lead reads ref file ONLY when routing decision needs detail
+- On failure: `FAIL|reason:{brief}|ref:/tmp/pipeline/{path}`
+- Max signal size: ~50 tokens (keep minimal for Lead context budget)
+
+### Pipeline State Checkpoint (Compaction Recovery)
+- Lead writes `/tmp/pipeline-state.md` after each major phase boundary
+- Contents: tier, current_phase, completed phases with key routing signals
+- PT metadata stores compact phase signals via TaskUpdate (survives session loss)
+- On compaction recovery: Read `/tmp/pipeline-state.md` + TaskGet(PT) to restore context
+- Checkpoint format: one line per completed phase: `{phase}: {STATUS}|{key_signal}`

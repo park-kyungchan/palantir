@@ -46,21 +46,6 @@
 - **CLAUDE.md**: Protocol-only (43L), zero routing data -- all routing via auto-loaded metadata
 - **Lead**: Pure Orchestrator, never edits files directly, routes via skills+agents
 
-### Skills (33 total: 25 pipeline + 5 homeostasis + 3 cross-cutting)
-
-| Domain | Skills | Phase |
-|--------|--------|-------|
-| pre-design | brainstorm, validate, feasibility | P0 |
-| design | architecture, interface, risk | P1 |
-| research | codebase, external, audit | P2 |
-| plan | decomposition, interface, strategy | P3 |
-| plan-verify | (unified: correctness+completeness+robustness) | P4 |
-| orchestration | decompose, assign, verify | P5 |
-| execution | code, infra, **impact, cascade**, review | P6 |
-| verify | structural-content, consistency, quality, cc-feasibility | P7 |
-| homeostasis | manage-infra, manage-skills, manage-codebase, **self-diagnose, self-implement** | X-cut |
-| cross-cutting | delivery-pipeline, pipeline-resume, task-management | P8/X-cut |
-
 ### Pipeline Tiers
 
 | Tier | Criteria | Phases |
@@ -89,13 +74,13 @@ Active whenever Ontology/Foundry concepts arise. User = concept-level decision-m
 ### Ontology PLS -- Deferred (2026-02-10)
 All phases complete (P0-P3). Next: T-0 brainstorming. Details: `memory/ontology-pls.md`
 
-### RSI CE Iter 3 -- Pending (2026-02-15)
-Context Engineering RSI Loop: Iter 1+2 DONE (034e925, 7c13807). Iter 3 NOT started.
+### RSI CE Iter 3 -- IN PROGRESS (2026-02-15)
+Context Engineering RSI Loop: Iter 1+2 DONE (034e925, 7c13807). Iter 3 IN PROGRESS.
 - **Remaining**: 6 homeostasis skills need phase-awareness + Delivery lines
-- **Residual**: verify-cc-feasibility missing Delivery line (Iter 2 miss)
-- **Residual**: self-implement "Monitor completion" implicit TaskOutput (CE-TO-04)
+- **Residual**: verify-cc-feasibility Delivery line, self-implement implicit TaskOutput (CE-TO-04)
+- **CE Optimization integrated**: Strategy A (checkpoint), B (micro-signal), D (MEMORY cleanup), F (PT state)
 - **Scope**: ~8 files. After Iter 3: re-diagnose to confirm convergence.
-- Diagnosis report: `agent-memory/analyst/rsi-ce-diagnosis.md` (342L, 22 findings)
+- Diagnosis report: `agent-memory/analyst/rsi-ce-diagnosis.md`
 
 ### Phase Efficiency Optimization -- Pending (2026-02-15)
 Deferred from v10.8 session. Candidates identified by efficiency analysis:
@@ -117,21 +102,10 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
-### SRP Optimization Pipeline + RSI CE (2026-02-15, branch: test)
-Full COMPLEX pipeline (P0→P8) for SRP Optimization (6 targets, 20+ files).
-- **SRP Pipeline** (9830714): P0-P5 complete, P6 4 waves (conventions.md, verify WHEN, SRC persistence, dashboard+self-improve split, hook pipeline state, sync-dashboard 3 new functions, template.html 4 enrichments), P7 verify, P8 delivery. 26 files, +1807/-307.
-- **RSI CE Iter 1** (034e925): Completion Protocol added to all 6 agents, conventions.md SendMessage spec, 3 explicit TaskOutput refs fixed. 12 files.
-- **RSI CE Iter 2** (7c13807): Delivery lines in 16 P2-P8 skill DPS templates (11 standard + COMPLEX variants), cascade/review implicit TaskOutput fixes. 16 files.
-- **RSI CE Iter 3**: NOT STARTED. 8 files remaining (6 homeostasis + verify-cc-feasibility residual + self-implement fix). See Next Topics.
-- Key architectural decision: §2.1 CE protocol — P2+ must use team_name, Lead uses SendMessage (not TaskOutput), 3-channel orchestration.
-
-### Earlier Sessions (2026-02-14~15, branch: test)
-Consolidated to `memory/infrastructure-history.md`. Summary:
-- v10.1: L2 bodies for 30 skills. v10.2: CC native compliance. v10.3: Description quality.
-- v10.4: SRC (impact/cascade). v10.5: RSI 5 iters (9.2/10). v10.6: Integration deep-dive.
-- RSI L3-L6: Progressive deep-dive (structure→integration→logic→CE/PE→dashboard→transitions).
-- v10.8: Phase renumbering P0-P8. Dashboard build. v10.9: CC native optimization 4 phases.
-- Total: ~300 files changed across ~20 commits on test branch.
+Branch: `test`. Commits: 9830714..a153d18 (~20 commits, ~300 files).
+- SRP Pipeline (9830714) + RSI CE Iter 1-2 (034e925, 7c13807) + crowd_works drills (a153d18).
+- Key decision: CE protocol (CLAUDE.md S2.1) -- P2+ teammate-only, SendMessage-only.
+- Full history: `memory/infrastructure-history.md`
 
 ## Topic Files Index
 - `memory/infrastructure-history.md` -- Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
