@@ -32,7 +32,7 @@ Extract file assignments, dependency order, and interface contracts per implemen
 For each task group in the matrix:
 - Create Task with `subagent_type: implementer`
 - Include in prompt: task description, file list, interface contracts, PT context
-- Set `mode: "bypassPermissions"` for code implementation
+- Set mode: "default" for code implementation (agent permissions inherited from settings).
 
 ### 3. Monitor Progress
 During implementation:

@@ -1,7 +1,7 @@
 ---
 name: orchestration-decompose
 description: |
-  [P6a·Orchestration·Decompose] Task-to-teammate decomposition specialist. Breaks validated plan into teammate-assignable work units with dependency awareness using Agent/Skill frontmatter in Lead's context.
+  [P6·Orchestration·Decompose] Task-to-teammate decomposition specialist. Breaks validated plan into teammate-assignable work units with dependency awareness using Agent/Skill frontmatter in Lead's context.
 
   WHEN: plan-verify domain complete (all 3 PASS). Validated plan ready for teammate assignment. Orchestration entry point.
   DOMAIN: orchestration (skill 1 of 3). Sequential: decompose -> assign -> verify.

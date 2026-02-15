@@ -18,7 +18,8 @@ tools:
   - TaskGet
   - TaskUpdate
   - AskUserQuestion
-memory: project
+memory: none
+model: haiku
 maxTurns: 20
 color: cyan
 ---

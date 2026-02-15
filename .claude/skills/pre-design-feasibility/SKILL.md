@@ -1,7 +1,7 @@
 ---
 name: pre-design-feasibility
 description: |
-  [P0-1·PreDesign·Feasibility] Claude Code native capabilities verification. Spawns claude-code-guide to check whether requirements can be implemented using CC native features (tools, skills, agents, hooks, MCP).
+  [P0·PreDesign·Feasibility] Claude Code native capabilities verification. Spawns claude-code-guide to check whether requirements can be implemented using CC native features (tools, skills, agents, hooks, MCP).
 
   WHEN: After pre-design-validate PASS. Requirements complete but CC feasibility unconfirmed.
   DOMAIN: pre-design (skill 3 of 3). Sequential: brainstorm -> validate -> feasibility. Terminal skill.

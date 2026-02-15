@@ -1,7 +1,7 @@
 ---
 name: pre-design-validate
 description: |
-  [P0-1·PreDesign·Validate] Requirement completeness checker. Validates requirements cover all dimensions: functional scope, non-functional constraints, acceptance criteria, error handling, and integration points.
+  [P0·PreDesign·Validate] Requirement completeness checker. Validates requirements cover all dimensions: functional scope, non-functional constraints, acceptance criteria, error handling, and integration points.
 
   WHEN: After pre-design-brainstorm completes. Requirements document exists but completeness unverified.
   DOMAIN: pre-design (skill 2 of 3). Sequential: brainstorm -> validate -> feasibility.

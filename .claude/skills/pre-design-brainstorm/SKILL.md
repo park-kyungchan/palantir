@@ -1,7 +1,7 @@
 ---
 name: pre-design-brainstorm
 description: |
-  [P0-1·PreDesign·Brainstorm] Requirement gathering through structured interaction. Extracts scope, constraints, criteria, and edge cases via AskUserQuestion. Pipeline entry point.
+  [P0·PreDesign·Brainstorm] Requirement gathering through structured interaction. Extracts scope, constraints, criteria, and edge cases via AskUserQuestion. Pipeline entry point.
 
   WHEN: Starting a new feature or task. User says "build X", "add Y", or has unclear requirements. No prerequisites.
   DOMAIN: pre-design (skill 1 of 3). Sequential: brainstorm -> validate -> feasibility.

@@ -1,7 +1,7 @@
 ---
 name: orchestration-verify
 description: |
-  [P6a·Orchestration·Verify] Orchestration decision validator. Checks assignments for correctness (right agent for right task), dependency acyclicity, and 4-teammate capacity enforcement before execution.
+  [P6·Orchestration·Verify] Orchestration decision validator. Checks assignments for correctness (right agent for right task), dependency acyclicity, and 4-teammate capacity enforcement before execution.
 
   WHEN: After orchestration-assign produces task-teammate matrix. Assignments exist but validity unconfirmed.
   DOMAIN: orchestration (skill 3 of 3). Terminal skill in orchestration domain.

@@ -5,7 +5,7 @@ description: |
 
   WHEN: After plan-decomposition and plan-interface complete. Tasks and interfaces defined but execution strategy undefined.
   DOMAIN: plan (skill 3 of 3). Terminal skill. Runs after decomposition and interface.
-  INPUT_FROM: plan-decomposition (task list), plan-interface (dependency ordering), design-risk (risk assessment).
+  INPUT_FROM: plan-decomposition (task list), plan-interface (dependency ordering), design-risk (risk assessment), research-audit (external constraints).
   OUTPUT_TO: orchestration-decompose (execution strategy), plan-verify domain (complete plan for validation).
 
   METHODOLOGY: (1) Read task list, dependency order, and risk assessment, (2) Identify parallelizable task groups, (3) Define implementation sequence respecting dependencies, (4) Create rollback strategy per phase, (5) Define risk mitigation checkpoints.

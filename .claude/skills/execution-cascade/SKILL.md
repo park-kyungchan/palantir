@@ -40,7 +40,7 @@ For each iteration (max 3):
   - What reference pattern to look for in the dependent file
   - Evidence line (exact grep match from execution-impact L2)
   - Expected update behavior (fix the reference to match the change)
-- Set `mode: "bypassPermissions"` for cascade implementers
+- Set mode: "default" for cascade implementers (agent permissions inherited from settings).
 
 ### 3. Check Convergence After Updates
 After all implementers in an iteration complete:

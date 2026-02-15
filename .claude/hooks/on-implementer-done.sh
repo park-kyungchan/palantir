@@ -2,7 +2,7 @@
 # SRC Stage 2: Impact summary injector
 # Event: SubagentStop (matcher: implementer)
 # Purpose: Read accumulated changes, grep reverse refs, inject to Lead
-# Output: additionalContext JSON (max 500 chars)
+# Output: additionalContext JSON (max 800 chars)
 
 set -euo pipefail
 
@@ -53,6 +53,7 @@ done <<< "$CHANGED_FILES"
 # Exclude: .git, node_modules, /tmp, *.log, the changed files themselves
 DEPENDENTS=""
 DEP_COUNT=0
+MAX_DEPS=8
 while IFS= read -r changed; do
     # Use last 2 path components for specificity (e.g., "execution-code/SKILL.md")
     SEARCH_PATTERN=$(echo "$changed" | awk -F/ '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}')
@@ -65,22 +66,20 @@ while IFS= read -r changed; do
         2>/dev/null | grep -v "$changed" | head -10) || true
 
     # Also search project root for source code dependents (broader scope)
-    PROJECT_REFS=$(timeout 10 grep -Frl "$SEARCH_PATTERN" "$HOME" \
+    GIT_ROOT=$(git -C "$HOME" rev-parse --show-toplevel 2>/dev/null || echo "$HOME")
+    PROJECT_REFS=$(timeout 10 grep -Frl "$SEARCH_PATTERN" "$GIT_ROOT" \
         --exclude-dir=.git \
         --exclude-dir=node_modules \
-        --exclude-dir=.claude/agent-memory \
-        --exclude-dir=.claude/cache \
-        --exclude-dir=.claude/history \
-        --exclude-dir=.claude/shell-snapshots \
+        --exclude-dir=.claude \
         --exclude='*.log' \
         --include='*.py' --include='*.ts' --include='*.js' --include='*.md' --include='*.json' --include='*.sh' \
         2>/dev/null | grep -v "$changed" | head -5) || true
 
-    REFS="$REFS
-$PROJECT_REFS"
+    REFS=$(printf '%s\n%s' "$REFS" "$PROJECT_REFS" | sort -u | grep -v '^$')
 
     while IFS= read -r ref; do
         [[ -z "$ref" ]] && continue
+        [[ "$DEP_COUNT" -ge "$MAX_DEPS" ]] && break
         REF_SHORT=$(echo "$ref" | awk -F/ '{if(NF>=2) print $(NF-1)"/"$NF; else print $NF}')
         if [[ -z "$DEPENDENTS" ]]; then
             DEPENDENTS="${REF_SHORT} (refs ${SEARCH_PATTERN})"
@@ -91,16 +90,24 @@ $PROJECT_REFS"
     done <<< "$REFS"
 done <<< "$CHANGED_FILES"
 
-# Build output message (max 500 chars)
+# Append truncation notice if capped
+if [[ "$DEP_COUNT" -ge "$MAX_DEPS" ]]; then
+    DEPENDENTS="${DEPENDENTS} (truncated)"
+fi
+
+# Cleanup processed log file
+rm -f "$LOGFILE" 2>/dev/null
+
+# Build output message (max 800 chars)
 if [[ "$DEP_COUNT" -eq 0 ]]; then
     MSG="SRC: ${CHANGED_COUNT} files changed. 0 dependents detected. Changed: ${CHANGED_SUMMARY}."
 else
     MSG="SRC IMPACT ALERT: ${CHANGED_COUNT} files changed, ${DEP_COUNT} potential dependents. Changed: ${CHANGED_SUMMARY}. Dependents: ${DEPENDENTS}."
 fi
 
-# Truncate to 500 chars
-if [[ ${#MSG} -gt 500 ]]; then
-    MSG="${MSG:0:470}... Run /execution-impact for full list."
+# Truncate to 800 chars (safety net — dependent limiting controls typical length)
+if [[ ${#MSG} -gt 800 ]]; then
+    MSG="${MSG:0:770}... Run /execution-impact for full list."
 fi
 
 # Escape for JSON
