@@ -99,6 +99,17 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
+### RSI L3 — Context Engineering + Delegation Prompt Engineering (2026-02-15, branch: test)
+Progressive Deep-Dive RSI: L1(structure)→L2(integration)→**L3(logic)** — first logic-level self-improvement.
+- **L3 Diagnosis**: 3 parallel analysts, 59 findings (3C/12H/21M/23L) across hooks/agents/skills
+- **Iter 1**: Delegation Prompt Standard (DPS) — 8 agent-spawning skills, avg quality 2.1→4.2/5
+- **Iter 2**: Tool-Agent Mismatch — C-01 cascade grep→analyst, AGT-01 impact researcher→analyst, H-01~H-04 executor annotations
+- **Iter 3**: Hook Logic Bugs — CRITICAL-01 parallel SRC log collision (mv removed), HIGH-01 jq fallback
+- Key insight: Skill L2 says WHAT to do, not HOW to delegate. DPS (Context/Task/Constraints/Output) bridges the Lead→Agent isolation boundary.
+- Diagnostic reports: `agent-memory/analyst/{hooks-deep-analysis,agent-definition-audit,skill-l2-logic-audit}.md`
+- Remaining queue: Iter 4 (FAIL paths, 10 skills), Iter 5 (data persistence C-02)
+- Total: 13 files changed + 3 diagnostic reports, commits 4eac475 + f6c4813
+
 ### v10.6 Integration Deep-Dive (2026-02-15, branch: test)
 - Integration audit: 7.1/10 (vs 9.2 component health), 21 findings (2 HIGH, 7 MEDIUM)
 - SRP analysis: 35 skills graded (28 A, 4 B+, 1 B, 1 C+), no splits needed

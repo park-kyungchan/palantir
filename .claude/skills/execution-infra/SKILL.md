@@ -57,6 +57,12 @@ After all infra-implementers complete:
 - Build unified infra change manifest
 - Report to execution-review for validation
 
+## Failure Handling
+- **Retries exhausted**: Set skill `status: failed`, report failed files and error details in `blockers` array
+- **Partial changes applied**: Route to execution-review for assessment of partial infra state
+- **No changes possible** (e.g., schema conflict, invalid target): Report to Lead for alternative approach or manual intervention
+- **Pipeline impact**: Non-blocking for code pipeline. If infra changes are prerequisites for code, Lead re-sequences
+
 ## Quality Gate
 - All assigned .claude/ files modified correctly
 - YAML frontmatter valid in all modified files

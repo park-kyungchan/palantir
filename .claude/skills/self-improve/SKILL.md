@@ -83,6 +83,12 @@ Finalize the improvement cycle:
 - Create structured commit message with change categories
 - Report final ASCII status visualization
 
+## Failure Handling
+- **RSI non-convergence** (severity plateau after 3 iterations): Terminate with `status: partial`, report remaining findings with deferred rationale
+- **cc-reference cache unavailable AND claude-code-guide fails**: Abort with `status: blocked` -- no ground truth available for compliance checks
+- **Infra-implementer wave failure**: Retry once per wave; if still failing, defer those findings and continue with remaining waves
+- **Pipeline impact**: Non-blocking (homeostasis is user-invoked). Partial improvements are committed; deferred items documented for next cycle
+
 ## Quality Gate
 - claude-code-guide research completed (ground truth established)
 - All findings addressed or explicitly deferred with rationale

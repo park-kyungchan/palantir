@@ -93,6 +93,12 @@ Generate L1 YAML and L2 markdown:
 - If individual grep times out: skip that file, note in warnings
 - Pipeline continues regardless — partial data is better than no data
 
+## Failure Handling
+- **Analyst maxTurns exhausted / all greps fail**: Set `status: partial`, `confidence: low` in L1 output
+- **Cascade default on failure**: `cascade_recommended: false` (conservative -- no cascade without evidence)
+- **Routing**: Pipeline continues to execution-review regardless; impact analysis is informational, not blocking
+- **Pipeline impact**: Non-blocking. Partial or missing impact data does not halt the pipeline
+
 ## Output
 
 ### L1

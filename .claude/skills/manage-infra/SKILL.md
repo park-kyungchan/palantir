@@ -55,6 +55,12 @@ For each detected issue:
 - Propose specific fix action
 - Await user approval before applying
 
+## Failure Handling
+- **Unfixable issues detected**: Report findings with severity classification but do NOT auto-fix; await user approval
+- **Scan cannot complete** (e.g., file read errors): Report partial results with coverage percentage in L1
+- **Safety**: Never auto-delete or auto-fix without explicit rationale per finding
+- **Pipeline impact**: Non-blocking (homeostasis is on-demand). Partial health report is still actionable
+
 ## Quality Gate
 - All component counts consistent between CLAUDE.md and filesystem
 - Zero orphaned files

@@ -61,6 +61,12 @@ Map findings to architecture components:
 - Components with strong codebase evidence → validated
 - Components with no codebase evidence → novel, higher risk
 
+## Failure Handling
+- **No patterns found**: Report `pattern_count: 0` with explicit "novel" flags per architecture decision
+- **Analyst maxTurns exhausted**: Report partial findings, flag uncovered codebase areas in L2
+- **Routing**: Route to research-audit regardless -- audit consolidates all findings including gaps
+- **Pipeline impact**: Non-blocking. Missing codebase evidence increases risk rating but does not halt pipeline
+
 ## Quality Gate
 - Every architecture decision has ≥1 codebase finding or explicit "novel" flag
 - All findings have file:line references

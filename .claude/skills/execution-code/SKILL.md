@@ -59,6 +59,12 @@ After all implementers complete:
 
 **SRC Integration**: After consolidation, Lead should route to execution-impact for dependency analysis before proceeding to execution-review. SubagentStop hook will inject SRC IMPACT ALERT into Lead's context when implementers finish.
 
+## Failure Handling
+- **Retries exhausted (3 per implementer)**: Set task `status: failed`, include `blockers` array with error details and last attempt output
+- **Partial completion**: Set skill `status: partial`, include completed tasks in manifest alongside failed ones
+- **Routing**: Route to execution-review with FAIL status -- review assesses if partial results are usable
+- **Pipeline impact**: Non-blocking. Pipeline continues with partial results; review decides if rework needed
+
 ## Quality Gate
 - All assigned files have been modified/created
 - Each implementer reports `status: complete`

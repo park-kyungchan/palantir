@@ -64,6 +64,12 @@ Rate each finding by source reliability:
 - Community resources → medium confidence
 - Inference/extrapolation → low confidence, flag for verification
 
+## Failure Handling
+- **Web tools fail** (WebSearch/WebFetch/context7/tavily): Set per-dependency `status: issue`, note tool failure in L2
+- **All research fails**: Set skill status to `partial`, forward gaps to research-audit for consolidation
+- **Routing**: research-audit receives gaps and may recommend design revision if critical dependencies unvalidated
+- **Pipeline impact**: Non-blocking. Unvalidated dependencies increase risk rating in research-audit
+
 ## Quality Gate
 - Every external dependency has ≥1 documented source
 - Version compatibility confirmed for all libraries
