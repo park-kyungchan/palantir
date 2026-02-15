@@ -9,7 +9,7 @@ description: |
   METHODOLOGY: (1) TaskList to get all tasks, (2) TaskGet PT for project context and current_phase, (3) Identify completed vs in-progress vs pending from status, (4) Determine resume point (last completed + first incomplete), (5) Re-spawn agents with context from PT metadata, (6) Resume from interrupted phase.
   OUTPUT_FORMAT: L1 YAML resume state (last phase, resume phase, task summary), L2 markdown recovery report.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[resume-from-phase]"
 ---
 

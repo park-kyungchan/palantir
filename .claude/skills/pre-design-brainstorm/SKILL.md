@@ -11,7 +11,7 @@ description: |
   METHODOLOGY: (1) Parse user request for requirements, (2) Categorize unknowns (scope/constraints/criteria/edge-cases), (3) Ask 3-6 questions via AskUserQuestion, (4) Synthesize into requirement document, (5) Flag remaining ambiguities.
   OUTPUT_FORMAT: L1 YAML requirement list with categories, L2 requirement document with open questions.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[topic]"
 ---
 

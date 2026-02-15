@@ -12,7 +12,7 @@ description: |
   CONSTRAINT: Executed by delivery-agent. Requires user confirmation before git commit.
   OUTPUT_FORMAT: L1 YAML delivery manifest, L2 markdown delivery summary with commit hash.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[commit-message]"
 ---
 

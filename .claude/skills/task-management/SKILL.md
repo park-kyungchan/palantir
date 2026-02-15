@@ -10,7 +10,7 @@ description: |
   METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement}. PT={type:permanent,tier,current_phase,commit_status,references}.
   CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz in Korean.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[action] [args]"
 ---
 
