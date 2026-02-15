@@ -44,6 +44,7 @@ Flow: PRE (P0-P4) → EXEC (P5-P7) → POST (P8). Max 3 iterations per phase.
 - Routes via Skill L1 WHEN conditions + Agent L1 PROFILE tags (both auto-loaded)
 - Spawns agents via Task tool (`subagent_type` = agent name)
 - Executes Lead-direct skills inline (no agent spawn needed)
+- **CC-Reference Cache-First**: Before verify-cc-feasibility or any CC native field validation, Read relevant cc-reference files (`.claude/projects/-home-palantir/memory/cc-reference/`) first. Only spawn claude-code-guide agent for gaps not covered by cache. Minimizes context waste.
 
 ## 4. PERMANENT Task (PT)
 Single source of truth for active pipeline. Exactly 1 per pipeline.
