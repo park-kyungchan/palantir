@@ -1,15 +1,15 @@
 ---
 name: execution-code
 description: |
-  [P6·Execution·Code] Source code implementation executor. Spawns implementers for application source code (Python, TypeScript, etc.) based on validated assignments. Handles all non-.claude/ file changes.
+  [P6·Execution·Code] Spawns implementers for non-.claude/ source files via DPS delegation prompts.
 
-  WHEN: orchestration domain complete (all 3 PASS). Validated assignments ready for code implementation.
+  WHEN: After orchestrate-coordinator complete (PASS). Code tasks assigned in unified plan. Non-.claude/ files only.
   DOMAIN: execution (skill 1 of 5). Parallel-capable: code ∥ infra -> impact -> cascade -> review.
-  INPUT_FROM: orchestration-verify (validated task-teammate matrix).
-  OUTPUT_TO: execution-impact (file changes), execution-review (artifacts), verify domain.
+  INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with code task assignments and DPS prompts).
+  OUTPUT_TO: execution-impact (file change manifest), execution-review (implementation artifacts).
 
-  METHODOLOGY: (1) Read assignments, (2) Spawn implementers per matrix, (3) Each: TaskGet -> code -> report, (4) Monitor L1/L2, (5) Consolidate results.
-  OUTPUT_FORMAT: L1 YAML manifest, L2 summary.
+  METHODOLOGY: (1) Read orchestrate-coordinator L3 code task assignments, (2) Spawn implementer per task with DPS: Context/Task/Constraints/Output/Delivery, (3) Monitor via SendMessage completion signals (PASS/FAIL + files), (4) Handle failures: max 3 retries per implementer, (5) Consolidate file change manifest with per-file status for downstream.
+  OUTPUT_FORMAT: L1 YAML file change manifest with per-implementer status, L2 implementation summary.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -143,7 +143,7 @@ Background implementers can't receive mid-task guidance. Use background only for
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| orchestration-verify | Task-teammate matrix with PASS verdict | L1 YAML: `tasks[].{task_id, implementer, files[], dependencies[]}` |
+| orchestrate-coordinator | Unified execution plan with code task assignments | L1 YAML: `tasks[].{task_id, implementer, files[], dependencies[]}` |
 | plan-interface | Interface contracts for cross-task boundaries | L2 markdown: function signatures, data types, error contracts |
 | plan-strategy | Execution sequence and parallel groups | L2 markdown: dependency graph, parallel opportunities |
 | design-architecture | Component structure (for COMPLEX DPS context) | L2 markdown: module boundaries, data flow |

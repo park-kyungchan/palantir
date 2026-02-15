@@ -27,16 +27,16 @@
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
 - teammateMode: tmux (settings.json)
 
-## Current INFRA State (v10.9+CE, 2026-02-15)
+## Current INFRA State (v11.0-pilot+L1opt, 2026-02-15)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v10.9+CE | 54L | Protocol-only + §2.1 CE context isolation (P2+ teammate-only, SendMessage-only) |
+| CLAUDE.md | v11.0-pilot | 55L | Protocol-only + §2.1 CE + 44 skills (8 pipeline + 5 homeostasis + 3 cross-cutting) |
 | Agents | v10.9+CE | 6 files | All 6 have Completion Protocol section (SendMessage on task completion) |
-| Skills | v10.9+CE | 33 dirs | 32→33 (self-improve split → self-diagnose+self-implement) + 16 skills with Delivery lines |
-| Settings | v10.9 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded + tavily permission |
+| Skills | v11.0+L1opt | 51 dirs | 44 INFRA + 7 crowd_works. All 44 L1 CE/PE optimized. Budget: 44,138/48,000 (8% headroom) |
+| Settings | v11.0-pilot | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 48000 |
 | Hooks | 8 scripts | ~380L | 6 global events + 5 agent-scoped hooks (SRC moved to agent scope) |
-| Conventions | v10.9+CE | 44L | Context Isolation + SendMessage Completion Protocol (P2+ phases) |
+| Conventions | v11.0+L1opt | ~60L | +SendMessage signal format + error taxonomy + checkpoint micro-format |
 | Agent Memory | -- | 7 files | +rsi-ce-diagnosis.md (342L, CE health 3/10→~7/10) |
 
 ### Architecture (v10 Native Optimization)
@@ -81,14 +81,17 @@ Context Engineering RSI Loop: 3 iterations, 22/22 findings resolved. Health 3/10
 - Iter 3 (729157d): 6 homeostasis Phase-Aware + Delivery + CE optimization (A/B/D/F)
 - 10/10 gap: micro-signal format runtime validation pending (next COMPLEX pipeline)
 
-### Phase Efficiency Optimization -- Pending (2026-02-15)
-Deferred from v10.8 session. Candidates identified by efficiency analysis:
-- **P4 Plan-Verify (4/10)**: 3 parallel analysts = redundant with P7. Consider merge to 1 skill or make optional.
-- **P7 Verify (5/10)**: 5 sequential stages, mainly .claude/ only. Consider conditional execution or consolidation.
-- **P2 Research audit (6/10)**: Consider COMPLEX-only.
-- **P1 Design interface+risk (7/10)**: Consider STANDARD running architecture-only.
-- **P3 Plan strategy (7/10)**: Consider STANDARD running decomposition-only.
-Scope: Structural pipeline change — skill deletion/merging, tier path optimization.
+### Phase Efficiency Optimization -- COMPLETE (2026-02-15)
+4-dimension pattern + L1 CE/PE bulk optimization. Two phases:
+- **Pilot** (6 agents): +19 new, -8 deleted, +11 net. 44 INFRA + 7 crowd_works = 51 total.
+- **L1 CE/PE** (4 teammates T1-T4): All 44 INFRA L1 descriptions optimized.
+  - Canonical structure: `[Phase·Domain·Role] UniqueVerb` → WHEN → DOMAIN → INPUT_FROM → OUTPUT_TO → METHODOLOGY
+  - 44 unique verbs, zero within-domain collisions
+  - conventions.md: +SendMessage signal format, +error taxonomy (4 types), +checkpoint micro-format
+  - 3 stale refs fixed (design-architecture, design-interface, design-risk)
+  - 4 DMI:true flags (brainstorm, task-management, pipeline-resume, self-diagnose)
+  - Budget: 47 auto-loaded skills = 44,138 chars / 48,000 budget (8% headroom)
+  - 10 over-1024 skills trimmed → 0 INFRA violations
 
 ### Meta-Cognition INFRA Update -- Largely Implemented (2026-02-14)
 Core ideas from meta-cognition brainstorming have been implemented in v10:
@@ -113,8 +116,9 @@ Branch: `test`. Commits: 9830714..a153d18 (~20 commits, ~300 files).
 - `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
 - `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)
 - `memory/context-engineering.md` -- CC native field reference, context loading order, critical findings
-- `memory/cc-reference/` -- Machine-readable CC native reference (4 files):
+- `memory/cc-reference/` -- Machine-readable CC native reference (5 files):
   - `native-fields.md` -- Skill + Agent frontmatter field tables, flag combos, permissionMode details
   - `context-loading.md` -- Session loading order, L1 budget, invocation flow, compaction, context budget
   - `hook-events.md` -- All 14 hook events, types, input/output format, matchers, our configuration
   - `arguments-substitution.md` -- $ARGUMENTS, dynamic context injection, env vars, argument-hint
+  - `skill-disambiguation.md` -- Sub-skill naming (flat only, 64 chars), semantic disambiguation, incremental cache, L1 budget impact

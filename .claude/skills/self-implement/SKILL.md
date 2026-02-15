@@ -1,15 +1,15 @@
 ---
 name: self-implement
 description: |
-  [Homeostasis·SelfImplement·Fix] INFRA self-improvement executor. Receives diagnosis findings from self-diagnose, spawns infra-implementer waves for fixes, verifies compliance, commits changes with structured message.
+  [Homeostasis·FixExecutor] Executes INFRA improvements from diagnosis findings. Spawns infra-implementer waves grouped by category, verifies compliance post-fix, commits with structured RSI message.
 
-  WHEN: After self-diagnose produces findings list. Findings ready for implementation. Not user-invocable directly.
+  WHEN: After self-diagnose produces findings list. Findings ready for implementation.
   DOMAIN: Homeostasis (cross-cutting, self-improvement execution). Paired with self-diagnose.
   INPUT_FROM: self-diagnose (categorized findings with severity and evidence).
   OUTPUT_TO: delivery-pipeline (commit), manage-skills (inventory refresh), manage-infra (health re-check).
 
-  METHODOLOGY: (1) Receive findings from self-diagnose, (2) Spawn infra-implementer waves (parallel by category, max 2/wave), (3) Verify compliance (re-scan modified files), (4) Update MEMORY.md + context-engineering.md, (5) Commit with structured message.
-  OUTPUT_FORMAT: L1 YAML improvement manifest with iteration details, L2 markdown implementation report.
+  METHODOLOGY: (1) Receive and prioritize findings (CRITICAL first), (2) Spawn infra-implementer waves (max 2 parallel, non-overlapping files), (3) Verify compliance by re-scanning modified files, (4) Update MEMORY.md + context-engineering.md with cycle results, (5) Commit with structured message. Max 3 iterations.
+  OUTPUT_FORMAT: L1 YAML improvement manifest (fixed/deferred counts, iteration), L2 implementation report with change log.
 user-invocable: false
 disable-model-invocation: false
 ---

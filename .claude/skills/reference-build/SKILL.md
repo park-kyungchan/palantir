@@ -4,7 +4,7 @@ description: |
   [D0·Foundation·Reference] LaTeX/JSONL command reference builder. Generates tiered command tables (Tier1: daily, Tier2: frequent, Tier3: rare) with syntax, common errors, JSONL escape patterns.
 
   WHEN: First session start or reference refresh request. No prerequisites. Foundation skill.
-  DOMAIN: foundation (skill 1 of 1). Independent. Feeds all D1 drill skills.
+  DOMAIN: foundation (skill 1 of 1). Independent. Feeds challenge-generate (command pool), latex-parse (command allowlist), golden-correct (rule reference).
   INPUT_FROM: User request (topic scope), progress-track (weak areas for targeted reference).
   OUTPUT_TO: challenge-generate (command pool), latex-parse (command allowlist), golden-correct (canonical syntax).
 

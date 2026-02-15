@@ -1,6 +1,6 @@
 # Agent Teams — Team Constitution v10.9
 
-> v10.9 · Opus 4.6 native · Skill-driven routing · 6 agents · 33 skills · Protocol-only CLAUDE.md
+> v10.9 · Opus 4.6 native · Skill-driven routing · 6 agents · 44 skills · Protocol-only CLAUDE.md
 > Agent L1 auto-loaded in Task tool definition · Skill L1 auto-loaded in system-reminder
 
 > **INVIOLABLE — Skill-Driven Orchestration**
@@ -20,7 +20,7 @@
 - **Agent Teams:** Enabled (tmux split pane)
 - **Lead:** Pipeline Controller — routes skills, spawns agents
 - **Agents:** 6 custom (analyst, researcher, implementer, infra-implementer, delivery-agent, pt-manager)
-- **Skills:** 33 across 8 pipeline domains + 5 homeostasis + 3 cross-cutting
+- **Skills:** 44 across 8 pipeline domains + 5 homeostasis + 3 cross-cutting
 - **Project Skills (DO NOT EDIT during INFRA):** 7 crowd_works drill skills (D0·foundation, D1·drill, D2·eval) — separate project, excluded from manage-skills/RSI/homeostasis
 
 ## 2. Pipeline Tiers

@@ -1,15 +1,15 @@
 ---
 name: design-interface
 description: |
-  [P1·Design·Interface] API contracts and integration point designer. Defines precise interfaces between components: function signatures, data types, protocols, and error contracts for all boundaries.
+  [P1·Design·Contracts] Specifies inter-component API contracts and error boundaries. Defines function signatures, data types, protocols (sync/async/file/hook), and error propagation rules per boundary.
 
-  WHEN: After design-architecture produces component structure. Components exist but interfaces undefined.
+  WHEN: After design-architecture produces component structure. Components defined but interfaces unspecified.
   DOMAIN: design (skill 2 of 3). Parallel with design-risk after architecture completes.
-  INPUT_FROM: design-architecture (component structure, module boundaries).
-  OUTPUT_TO: design-risk (interfaces for risk), plan-interface (specs for planning), plan-decomposition (task decomposition).
+  INPUT_FROM: design-architecture (component structure, module boundaries, data flow).
+  OUTPUT_TO: design-risk (interface contracts for risk assessment).
 
-  METHODOLOGY: (1) Read component structure from architecture, (2) For each boundary: define input/output types, (3) Define protocols (sync/async, message format), (4) Specify error contracts (types, propagation), (5) Document integration points with sequence diagrams.
-  OUTPUT_FORMAT: L1 YAML interface registry with types, L2 markdown interface spec with examples.
+  METHODOLOGY: (1) Read component structure from architecture output, (2) Define interface contracts per boundary (input->output types), (3) Select protocol per boundary (direct_call/file_based/task_api/hook_based), (4) Specify error contracts (types, propagation, recovery), (5) Document dependency order for implementation sequencing.
+  OUTPUT_FORMAT: L1 YAML interface registry with protocols, L2 per-boundary specs with examples.
 user-invocable: true
 disable-model-invocation: false
 ---

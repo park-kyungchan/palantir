@@ -1,15 +1,15 @@
 ---
 name: design-risk
 description: |
-  [P1·Design·Risk] Failure mode and mitigation strategy analyst. Examines architecture and interfaces for failure points, security issues, performance bottlenecks. Proposes mitigations with priority ranking.
+  [P1·Design·Terminal] Assesses failure modes and security risks per component. FMEA with calibrated RPN, OWASP check, CC boundary risks, performance bottlenecks.
 
   WHEN: After design-architecture and design-interface complete. Architecture and interfaces exist but risk unassessed.
-  DOMAIN: design (skill 3 of 3). Terminal skill. Runs after architecture and interface.
-  INPUT_FROM: design-architecture (component structure), design-interface (API contracts).
-  OUTPUT_TO: research-codebase (risk areas), plan-strategy (risk mitigation), plan-verify (plan validation challenge).
+  DOMAIN: design (skill 3 of 3). Terminal. Runs after architecture and interface.
+  INPUT_FROM: design-architecture (component structure, ADRs), design-interface (API contracts, error contracts).
+  OUTPUT_TO: research-codebase (risk-informed focus), research-external (risk areas for validation).
 
-  METHODOLOGY: (1) Read architecture and interface specs, (2) Identify failure modes per component (FMEA), (3) Assess security implications (OWASP), (4) Identify performance bottlenecks, (5) Propose mitigation per risk with priority ranking.
-  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, mitigation), L2 markdown risk narrative.
+  METHODOLOGY: (1) Read architecture+interface specs, (2) FMEA per component with CC boundary risks (hooks timeout, truncation, context isolation), (3) OWASP security + Agent Teams threat model, (4) Performance bottleneck ID, (5) Propose mitigation ranked by RPN.
+  OUTPUT_FORMAT: L1 YAML risk matrix (ID, severity, likelihood, RPN, mitigation), L2 risk narrative with scoring.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -59,7 +59,7 @@ Risk analysis may uncover fundamental architectural issues:
 Load design outputs. Identify components, boundaries, and data flows.
 
 ### 2. Failure Mode Analysis (FMEA)
-For each component, identify failure modes:
+For each component, identify failure modes. Include CC boundary risks such as hooks timeout, description truncation (1024-char limit), agent context isolation failures, tool unavailability per agent type, and compaction-induced data loss:
 
 | Component | Failure Mode | Severity (1-5) | Likelihood (1-5) | Detection (1-5) | RPN |
 |-----------|-------------|-----------------|-------------------|------------------|-----|

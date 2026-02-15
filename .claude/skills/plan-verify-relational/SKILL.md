@@ -1,0 +1,204 @@
+---
+name: plan-verify-relational
+description: |
+  [P4·PlanVerify·RelationalIntegrity] Validates contract integrity against relationship graph for asymmetric or missing contracts.
+
+  WHEN: After plan-relational complete. Wave 4 parallel with pv-static/behavioral/impact.
+  DOMAIN: plan-verify (skill 3 of 5). Parallel with pv-static/behavioral/impact.
+  INPUT_FROM: plan-relational (interface contracts), research-coordinator (audit-relational L3 relationship graph).
+  OUTPUT_TO: plan-verify-coordinator (integrity verdict with asymmetric/missing contract evidence).
+
+  METHODOLOGY: (1) Build contract inventory from plan-relational (directed edges), (2) Build relationship inventory from audit-relational L3, (3) Cross-reference bidirectional consistency (type, field, naming, timing), (4) Classify gaps: asymmetric (one-direction only), missing (no contract), orphan (no relationship), (5) Verdict: PASS (zero HIGH gaps), FAIL (HIGH-severity asymmetric or >5 total gaps).
+  OUTPUT_FORMAT: L1 YAML integrity verdict, L2 consistency matrix with contract gap analysis.
+user-invocable: false
+disable-model-invocation: false
+---
+
+# Plan Verify — Relational Integrity
+
+## Execution Model
+- **STANDARD**: Spawn analyst (maxTurns:20). Systematic cross-reference of interface contracts against relationship graph edges.
+- **COMPLEX**: Spawn analyst (maxTurns:30). Deep bidirectional consistency check with asymmetry detection across all module boundaries.
+
+Note: P4 validates PLANS (pre-execution). This skill verifies that interface contracts fully and symmetrically cover the relationship graph. It does NOT verify contract implementation correctness.
+
+## Phase-Aware Execution
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
+- **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-relational.md`, sends micro-signal: `PASS|contracts:{N}|asymmetric:{N}|ref:/tmp/pipeline/p4-pv-relational.md`.
+
+## Methodology
+
+### 1. Read Plan-Relational Interface Contracts
+Load plan-relational output to extract:
+- Interface contracts: each contract with producer, consumer, data type, and format
+- Contract direction: which side defines the contract, which side consumes
+- Boundary specifications: module boundaries where contracts apply
+
+Build a **contract inventory**: every contract as a directed edge (producer -> consumer) with data type.
+
+### 2. Read Audit-Relational L3 Relationship Graph
+Load audit-relational L3 output from research-coordinator:
+- Relationship graph: nodes (files/components) and edges (cross-file references)
+- Bidirectional chains: pairs where A references B AND B references A
+- Relationship types: import, callback, event, config, shared-type
+
+Build a **relationship inventory**: every relationship as a directed edge with type.
+
+### 3. Cross-Reference Bidirectional Consistency
+For each relationship edge in the audit graph, check:
+- Does a contract exist for this relationship?
+- If the relationship is bidirectional (A<->B), do contracts exist in BOTH directions?
+- Does the contract data type match the relationship type?
+
+Build a consistency matrix:
+
+| Relationship Edge | Direction | Contract Exists? | Data Type Match? | Status |
+|------------------|-----------|-----------------|-----------------|--------|
+| auth -> db | A->B | Yes (auth reads db) | Yes (query interface) | COVERED |
+| db -> auth | B->A | No | -- | ASYMMETRIC |
+| api -> cache | A->B | Yes (api invalidates) | Yes (cache key type) | COVERED |
+| cache -> api | B->A | Yes (cache returns) | Yes (response type) | COVERED |
+| config -> logger | A->B | No | -- | MISSING |
+
+**COVERED**: Contract exists and data type matches.
+**ASYMMETRIC**: Bidirectional relationship but contract only covers one direction.
+**MISSING**: Relationship exists but no contract at all.
+
+### 4. Identify Asymmetric and Missing Contracts
+Two categories of integrity gaps:
+
+**Asymmetric contracts**: Bidirectional relationships where only one direction has a contract.
+- Risk: The uncovered direction may have implicit assumptions that break during implementation.
+- Severity: HIGH if the uncovered direction involves data mutation, MEDIUM if read-only.
+
+**Missing contracts**: Relationships in the audit graph with no contract at all.
+- Risk: No interface specification means the implementer defines the contract ad-hoc.
+- Severity: HIGH if the relationship crosses module boundaries, MEDIUM if within a module.
+
+**Orphan contracts**: Contracts that do not correspond to any relationship in the audit graph.
+- Risk: Contract specifies an interface for a relationship that does not exist (phantom contract).
+- Severity: MEDIUM (indicates plan-audit misalignment, not necessarily a plan defect).
+
+For each gap, record:
+- Relationship edge (source -> target)
+- Gap type (ASYMMETRIC, MISSING, ORPHAN)
+- Evidence: specific relationship from audit-relational L3
+- Severity classification with rationale
+
+### 5. Report Integrity Verdict
+Produce final verdict with evidence:
+
+**PASS criteria**:
+- All bidirectional relationships have contracts in both directions
+- All cross-boundary relationships have contracts
+- Zero HIGH-severity gaps
+
+**Conditional PASS criteria**:
+- Asymmetric gaps exist but only for read-only directions (MEDIUM severity)
+- Missing contracts exist but only for intra-module relationships (MEDIUM severity)
+- Total gap count <= 2
+
+**FAIL criteria**:
+- Any HIGH-severity asymmetric contract (mutation direction uncovered), OR
+- Any HIGH-severity missing contract (cross-boundary relationship without interface), OR
+- Total gap count > 5 (systematic contract coverage failure)
+
+## Failure Handling
+
+### Audit-Relational L3 Not Available
+- **Cause**: research-coordinator did not produce audit-relational L3 output.
+- **Action**: FAIL with `reason: missing_upstream`. Cannot verify integrity without relationship graph.
+- **Route**: Lead for re-routing to research-coordinator.
+
+### Plan-Relational Output Incomplete
+- **Cause**: plan-relational produced partial contracts (missing producer/consumer or data types).
+- **Action**: FAIL with `reason: incomplete_plan`. Report which contracts lack required fields.
+- **Route**: plan-relational for completion.
+
+### No Relationships in Audit Graph
+- **Cause**: audit-relational found zero cross-file relationships (fully decoupled components).
+- **Action**: PASS with `contracts: 0`, `asymmetric: 0`. No relational verification needed.
+- **Route**: plan-verify-coordinator with trivial confirmation.
+
+### Relationship Graph and Contract Set Diverge Significantly
+- **Cause**: >50% of relationships have no contracts, or >50% of contracts are orphans.
+- **Action**: FAIL with `reason: plan_audit_misalignment`. The plan and audit describe different system structures.
+- **Route**: Lead for investigation. May indicate stale audit data or plan based on outdated architecture.
+
+### Analyst Exhausted Turns
+- **Cause**: Large relationship graph exceeds analyst budget.
+- **Action**: Report partial integrity check with percentage verified. Set `status: PARTIAL`.
+- **Route**: plan-verify-coordinator with partial flag and unverified relationship list.
+
+## Anti-Patterns
+
+### DO NOT: Verify Contract Implementation
+P4 verifies PLANS, not code. Check that contracts exist for relationships. Do not assess whether contracts are implementable, performant, or correctly typed beyond matching the audit relationship type.
+
+### DO NOT: Assume Unidirectional Relationships
+Many relationships that appear one-way in import structure are bidirectional at runtime (callbacks, events, shared state). Trust the audit-relational L3 classification of direction.
+
+### DO NOT: Ignore Orphan Contracts
+A contract without a corresponding audit relationship may indicate plan-audit misalignment. Report orphan contracts even though they are lower severity than missing contracts.
+
+### DO NOT: Treat All Asymmetries Equally
+An asymmetric contract on a read-only direction is less severe than one on a mutation direction. Classify severity based on the uncovered direction's data flow characteristics.
+
+### DO NOT: Create or Modify Contracts
+If integrity gaps exist, REPORT them with evidence. Do not propose new contracts or modify existing ones. Contract revision is the plan domain's responsibility.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| plan-relational | Interface contracts with producer/consumer/type | L1 YAML: contracts[] with producer, consumer, data_type, direction |
+| research-coordinator | Audit-relational L3 relationship graph | L3: edges[] with source, target, type, bidirectional flag |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| plan-verify-coordinator | Integrity verdict with evidence | Always (Wave 4 -> Wave 4.5 consolidation) |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Missing audit-relational L3 | Lead | Which upstream missing |
+| Incomplete plan-relational | plan-relational | Contracts lacking required fields |
+| Plan-audit misalignment | Lead | Divergence statistics and evidence |
+| Analyst exhausted | plan-verify-coordinator | Partial check + unverified relationships |
+
+## Quality Gate
+- Every relationship edge in the audit graph checked for contract existence
+- Bidirectional relationships verified for contracts in both directions
+- All gaps classified by type (ASYMMETRIC/MISSING/ORPHAN) and severity (HIGH/MEDIUM)
+- Orphan contracts identified and reported
+- Every finding has evidence citing specific relationship edges and contract IDs
+- Verdict (PASS/FAIL) with explicit gap counts and severity thresholds
+
+## Output
+
+### L1
+```yaml
+domain: plan-verify
+skill: plan-verify-relational
+contract_count: 0
+relationship_count: 0
+asymmetric_count: 0
+missing_count: 0
+orphan_count: 0
+verdict: PASS|CONDITIONAL_PASS|FAIL
+findings:
+  - type: asymmetric|missing|orphan
+    edge: ""
+    severity: HIGH|MEDIUM
+    evidence: ""
+```
+
+### L2
+- Consistency matrix: relationship edge vs contract mapping
+- Asymmetric contract analysis with direction and mutation details
+- Missing contract list with module boundary classification
+- Orphan contract list with plan-audit alignment notes
+- Coverage statistics: covered/asymmetric/missing/orphan counts
+- Verdict justification with severity threshold comparisons

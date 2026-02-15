@@ -1,15 +1,15 @@
 ---
 name: pre-design-validate
 description: |
-  [P0·PreDesign·Validate] Requirement completeness checker. Validates requirements cover all dimensions: functional scope, non-functional constraints, acceptance criteria, error handling, and integration points.
+  [P0·PreDesign·Gate] Validates requirement completeness across 5 dimensions. Checks scope/constraints/criteria/errors/integration against PASS/FAIL matrix. Returns to brainstorm on critical gaps.
 
-  WHEN: After pre-design-brainstorm completes. Requirements document exists but completeness unverified.
+  WHEN: After pre-design-brainstorm completes. Requirements exist but completeness unverified.
   DOMAIN: pre-design (skill 2 of 3). Sequential: brainstorm -> validate -> feasibility.
-  INPUT_FROM: pre-design-brainstorm (structured requirements document).
-  OUTPUT_TO: pre-design-feasibility (validated requirements) or pre-design-brainstorm (if gaps found).
+  INPUT_FROM: pre-design-brainstorm (structured requirements).
+  OUTPUT_TO: pre-design-feasibility (validated requirements) | pre-design-brainstorm (gap report for re-questioning).
 
-  METHODOLOGY: (1) Read requirements from brainstorm output, (2) Check against completeness matrix (scope, constraints, criteria, errors, integration), (3) Identify gaps and missing dimensions, (4) If gaps: report to Lead for re-brainstorm, (5) If complete: pass to feasibility. Max 3 iterations.
-  OUTPUT_FORMAT: L1 YAML completeness matrix with PASS/FAIL per dimension, L2 markdown gap analysis with missing items.
+  METHODOLOGY: (1) Read brainstorm requirements, (2) Check 5-dim completeness (scope/constraints/criteria/errors/integration), (3) Classify gaps (critical/recommended/nice-to-have), (4) Critical FAIL: route to brainstorm with questions, (5) All PASS or max 3 iter: forward to feasibility.
+  OUTPUT_FORMAT: L1 YAML completeness matrix PASS/FAIL per dimension, L2 gap analysis with questions.
 user-invocable: true
 disable-model-invocation: false
 ---

@@ -1,15 +1,15 @@
 ---
 name: pre-design-feasibility
 description: |
-  [P0·PreDesign·Feasibility] Claude Code native capabilities verification. Spawns claude-code-guide to check whether requirements can be implemented using CC native features (tools, skills, agents, hooks, MCP).
+  [P0·PreDesign·Terminal] Verifies CC native implementability per requirement. Checks cc-reference cache or spawns claude-code-guide to confirm tools/hooks/MCP/agents support.
 
   WHEN: After pre-design-validate PASS. Requirements complete but CC feasibility unconfirmed.
-  DOMAIN: pre-design (skill 3 of 3). Sequential: brainstorm -> validate -> feasibility. Terminal skill.
+  DOMAIN: pre-design (skill 3 of 3). Sequential: brainstorm -> validate -> feasibility. Terminal.
   INPUT_FROM: pre-design-validate (validated, complete requirements).
-  OUTPUT_TO: design-architecture (feasibility-confirmed requirements ready for architecture).
+  OUTPUT_TO: design-architecture (PASS: feasibility-confirmed) | pre-design-brainstorm (FAIL: scope re-negotiation).
 
-  METHODOLOGY: (1) Extract technical requirements from validated document, (2) Spawn claude-code-guide to verify CC native implementability, (3) Analyze response for blockers, (4) If infeasible: identify alternatives or scope reduction, (5) If feasible: approve and pass to design. Max 3 iterations.
-  OUTPUT_FORMAT: L1 YAML feasibility verdict per requirement, L2 markdown feasibility report with alternatives for infeasible items.
+  METHODOLOGY: (1) Extract requirements needing CC verification, (2) Check cc-reference cache or spawn claude-code-guide for capability mapping, (3) Score each (feasible/partial/infeasible), (4) Propose alternatives for infeasible items, (5) Gate: all feasible->design, any critical infeasible->brainstorm. Max 3 iterations.
+  OUTPUT_FORMAT: L1 YAML feasibility verdict per requirement, L2 report with CC capability mappings and alternatives.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -255,6 +255,7 @@ All infeasible
 |---|---|---|
 | All requirements infeasible after 3 iterations | User (AskUserQuestion) | Full infeasible list with attempted alternatives, iteration history |
 | cc-reference + claude-code-guide both unavailable | self-diagnose (refresh cc-reference) | Stale cache details, missing file paths |
+| CC Feasibility FAIL (critical infeasible, no alternatives) | pre-design-brainstorm | Infeasible items list with scope reduction request, iteration count |
 | Partial verdicts with low confidence | design-architecture (proceed with risk flags) | Partial report with risk markers, `poc_recommended: true` items |
 
 ## Quality Gate

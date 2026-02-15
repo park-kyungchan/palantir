@@ -1,7 +1,7 @@
 ---
 name: jsonl-validate
 description: |
-  [D1·Drill·JSONLValidate] Validates JSONL structural integrity. Checks JSON parseability, escape correctness (backslash double-escape, quote escape, newline handling), string boundary. Parallel with latex-parse.
+  [D1·Drill·JSONLValidate] Validates JSONL structural integrity. Checks JSON parseability, escape correctness (R1-R5: backslash, quote, newline, row-break, brace), string boundary. Parallel with latex-parse.
 
   WHEN: After trainee submits JSONL string. Parallel with latex-parse. Second in D1 drill cycle.
   DOMAIN: drill (skill 2 of 5). Parallel: jsonl-validate ∥ latex-parse -> render-evaluate.

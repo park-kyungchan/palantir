@@ -1,17 +1,17 @@
 ---
 name: pre-design-brainstorm
 description: |
-  [P0·PreDesign·Brainstorm] Requirement gathering through structured interaction. Extracts scope, constraints, criteria, and edge cases via AskUserQuestion. Pipeline entry point.
+  [P0·PreDesign·Entry] Gathers requirements through structured user questioning. Extracts scope, constraints, criteria, edge cases via AskUserQuestion. Pipeline entry point.
 
-  WHEN: Starting a new feature or task. User says "build X", "add Y", or has unclear requirements. No prerequisites.
+  Use when: Starting a new feature or task. User says "build X", "add Y", or requirements need clarification. No prerequisites.
   DOMAIN: pre-design (skill 1 of 3). Sequential: brainstorm -> validate -> feasibility.
   INPUT_FROM: User request (raw, unstructured).
   OUTPUT_TO: pre-design-validate (structured requirements document).
 
-  METHODOLOGY: (1) Parse user request for requirements, (2) Categorize unknowns (scope/constraints/criteria/edge-cases), (3) Ask 3-6 questions via AskUserQuestion, (4) Synthesize into requirement document, (5) Flag remaining ambiguities.
-  OUTPUT_FORMAT: L1 YAML requirement list with categories, L2 requirement document with open questions.
+  METHODOLOGY: (1) Parse user request for explicit/implicit requirements, (2) Categorize unknowns across 4 dimensions (scope/constraints/criteria/edge-cases), (3) Ask 3-6 questions via AskUserQuestion, (4) Synthesize into structured requirement document with tier estimate, (5) Flag remaining ambiguities as open questions.
+  OUTPUT_FORMAT: L1 YAML requirement list with categories and tier, L2 requirement document with open questions.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[topic]"
 ---
 

@@ -1,14 +1,14 @@
 ---
 name: manage-infra
 description: |
-  [Homeostasis·Manager·Infra] INFRA-wide health monitor and self-repair. Monitors .claude/ directory integrity -- agents, skills, references, CLAUDE.md, settings, hooks. Detects configuration drift, stale references, structural decay.
+  [Homeostasis·InfraMonitor] Monitors .claude/ directory integrity with weighted health scoring. Inventories agents, skills, settings, hooks, CLAUDE.md — detects configuration drift, orphaned files, cross-component inconsistencies.
 
   WHEN: After .claude/ modification, after pipeline completion, or periodic health check. AI can auto-invoke.
   DOMAIN: Homeostasis (cross-cutting, entire .claude/ directory).
 
   SCOPE: agents/, skills/, settings.json, hooks/, CLAUDE.md.
-  METHODOLOGY: (1) Inventory all .claude/ files, (2) Check counts match CLAUDE.md tables, (3) Validate settings.json schema, (4) Detect orphaned/unreferenced files, (5) Propose cleanup actions.
-  OUTPUT_FORMAT: L1 YAML health report (component counts, orphans, drift items), L2 markdown narrative with repair recommendations.
+  METHODOLOGY: (1) Inventory all .claude/ files with Glob, (2) Check counts match CLAUDE.md declarations, (3) Validate settings.json schema and references, (4) Detect orphaned files and cross-component drift, (5) Calculate weighted health score and propose repair actions.
+  OUTPUT_FORMAT: L1 YAML health report (scores, orphans, drift, health_score %), L2 repair recommendations.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -35,7 +35,7 @@ Scan entire `.claude/` directory:
 - Read CLAUDE.md for declared counts
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
-- **Context**: Expected component layout: agents in `.claude/agents/`, skills in `.claude/skills/*/SKILL.md`, hooks in `.claude/hooks/`, settings at `.claude/settings.json`, CLAUDE.md at `.claude/CLAUDE.md`. Include current declared counts from CLAUDE.md (agents: 6, skills: 35).
+- **Context**: Expected component layout: agents in `.claude/agents/`, skills in `.claude/skills/*/SKILL.md`, hooks in `.claude/hooks/`, settings at `.claude/settings.json`, CLAUDE.md at `.claude/CLAUDE.md`. Include current declared counts from CLAUDE.md (agents: 6, skills: 40).
 - **Task**: "Scan entire .claude/ directory. Count agents, skills, hooks. Read settings.json for validity. Compare filesystem counts against CLAUDE.md declarations. Find orphaned files (unreferenced agents, skills without SKILL.md, hooks not in settings). Find configuration drift (settings referencing nonexistent files, CLAUDE.md version mismatch)."
 - **Constraints**: Read-only. Use Glob for discovery, Read for content. No modifications. Report findings with severity classification.
 - **Expected Output**: L1 YAML health report with component counts, orphans, drift_items. L2 narrative with repair recommendations.
@@ -253,14 +253,14 @@ health_score: 87          # percentage, see Health Score Calculation
 trigger: post-pipeline|post-modification|periodic|post-rsi
 components:
   agents: {count: 6, expected: 6, orphans: 0, score: 3}
-  skills: {count: 35, expected: 35, orphans: 0, score: 3}
+  skills: {count: 40, expected: 40, orphans: 0, score: 3}
   settings: {valid: true, broken_refs: 0, score: 3}
   hooks: {count: 5, referenced: 5, score: 3}
   claude_md: {version: "v10.7", counts_match: true, score: 3}
 drift_items: 0
 cross_component_drift: 0
 findings:               # list of individual findings
-  - {component: skills, severity: WARNING, detail: "count mismatch: 36 vs 35"}
+  - {component: skills, severity: WARNING, detail: "count mismatch: 41 vs 40"}
 ```
 
 ### L2

@@ -1,15 +1,15 @@
 ---
 name: verify-structural-content
 description: |
-  [P7·Verify·StructuralContent] Combined structural integrity and content completeness verifier. Single-pass check of YAML parseability, naming conventions, description utilization, orchestration keys, body sections, and L1/L2 format.
+  [P7·Verify·StructuralContent] Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness in single pass.
 
-  WHEN: After any INFRA file creation or modification. First of 4 verify stages. Can run independently.
+  WHEN: After execution-review PASS or any INFRA file creation/modification. First of 4 sequential verify stages.
   DOMAIN: verify (skill 1 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
-  INPUT_FROM: execution domain (implementation artifacts) or any file modification trigger.
-  OUTPUT_TO: verify-consistency (if PASS) or execution-infra (if FAIL).
+  INPUT_FROM: execution-review (PASS verdict, implementation artifacts).
+  OUTPUT_TO: verify-consistency (if PASS) or execution-infra (if FAIL with fix instructions).
 
-  METHODOLOGY: (1) Glob .claude/agents/*.md and skills/*/SKILL.md, (2) Validate YAML frontmatter + naming conventions, (3) Check required fields + description utilization (>80% of 1024), (4) Verify orchestration keys (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO) + body sections, (5) Check L1/L2 output format.
-  OUTPUT_FORMAT: L1 YAML PASS/FAIL per file with structure+content scores, L2 combined integrity report.
+  METHODOLOGY: (1) Glob agents/*.md + skills/*/SKILL.md, (2) Validate YAML frontmatter fields, (3) Check naming+directory compliance, (4) Verify description utilization (>80% of 1024) + orchestration keys, (5) Verify L2: Execution Model, Methodology, Quality Gate, Output.
+  OUTPUT_FORMAT: L1 YAML PASS/FAIL per file with structure+content scores, L2 integrity report.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -129,7 +129,7 @@ Use Glob to discover all `.claude/` components.
 | Component | Glob Pattern | Expected Count | Location |
 |-----------|-------------|----------------|----------|
 | Agent definitions | `.claude/agents/*.md` | 6 | Direct children of agents/ |
-| Skill definitions | `.claude/skills/*/SKILL.md` | 35 | One per skill directory |
+| Skill definitions | `.claude/skills/*/SKILL.md` | 40 | One per skill directory |
 | Settings | `.claude/settings.json` | 1 | .claude/ root |
 | Constitution | `.claude/CLAUDE.md` | 1 | .claude/ root |
 | Hook scripts | `.claude/hooks/*.sh` | 5 | Direct children of hooks/ |
@@ -140,7 +140,7 @@ Use Glob to discover all `.claude/` components.
 - `analyst.md`, `researcher.md`, `implementer.md`
 - `infra-implementer.md`, `delivery-agent.md`, `pt-manager.md`
 
-**Expected Skill Directories** (35 total, 8 pipeline + 4 homeostasis + 3 cross-cutting):
+**Expected Skill Directories** (40 total, 8 pipeline + 5 homeostasis + 2 cross-cutting):
 
 | Domain | Skill Directories |
 |--------|-------------------|
@@ -223,7 +223,7 @@ FOR each file:
     infra-implementer.md
     delivery-agent.md
     pt-manager.md
-  skills/                            # Skill definitions (35 directories)
+  skills/                            # Skill definitions (40 directories)
     pre-design-brainstorm/SKILL.md
     ...                              # (34 more skill directories)
   hooks/                             # Hook scripts (5 files)
@@ -379,9 +379,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt (DPS) for each analy
 
 | Source Skill | Data Expected | Format |
 |---|---|---|
-| execution domain (code, infra) | Implementation artifacts | Changed file paths list |
-| execution-infra | `.claude/` file changes | L1 YAML: `files_changed[]` |
-| Any trigger | File modification event | File paths |
+| execution-review | All PASS verdict, implementation artifacts ready | L1 YAML: `status: PASS`, changed file paths list |
 | Direct user invocation | Manual verification request | `/verify-structural-content` with optional target path |
 
 ### Sends To
@@ -486,7 +484,7 @@ Example finding:
 | Required fields present and non-empty | Field presence check per file type table | 100% of files |
 | Naming conventions match regex patterns | Regex validation per component type | 100% (FAIL-level only) |
 | No orphaned files or empty directories | Directory tree scan | 0 orphans |
-| Expected file counts match CLAUDE.md | Compare Glob results vs declared counts | agents: 6, skills: 35, hooks: 5 |
+| Expected file counts match CLAUDE.md | Compare Glob results vs declared counts | agents: 6, skills: 40, hooks: 5 |
 | Average description utilization | Char count measurement | >80% across all files |
 | No file below utilization floor | Per-file minimum check | No file <60% |
 | Orchestration keys present | Key extraction regex | All 5 keys in all skills |

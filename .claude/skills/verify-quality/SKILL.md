@@ -1,15 +1,15 @@
 ---
 name: verify-quality
 description: |
-  [P7·Verify·Quality] Routing effectiveness and clarity verifier. Checks WHEN specificity, methodology concreteness with tool/agent refs, output format L1/L2 presence, and full protocol flow coverage.
+  [P7·Verify·Quality] Audits routing effectiveness via WHEN specificity and methodology concreteness.
 
-  WHEN: After verify-consistency PASS, or after routing failures requiring WHEN/METHODOLOGY investigation. Third of 4 verify stages. Checks per-skill routing effectiveness.
-  DOMAIN: verify (skill 3 of 4). After verify-consistency PASS.
-  INPUT_FROM: verify-consistency (relationship integrity confirmed) or direct invocation.
-  OUTPUT_TO: verify-cc-feasibility (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
+  WHEN: After verify-consistency PASS. Third of 4 sequential verify stages. Also after routing failures requiring investigation.
+  DOMAIN: verify (skill 3 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
+  INPUT_FROM: verify-consistency (relationship integrity confirmed).
+  OUTPUT_TO: verify-cc-feasibility (if PASS) or execution-infra (if FAIL on .claude/ files).
 
-  METHODOLOGY: (1) Check WHEN specificity (reject vague triggers), (2) Check METHODOLOGY numbered steps with tool refs, (3) Check OUTPUT_FORMAT L1/L2 structure, (4) Check utilization >80% of 1024, (5) Score and rank by routing effectiveness.
-  OUTPUT_FORMAT: L1 YAML quality score per file (0-100), L2 markdown quality report with improvement suggestions.
+  METHODOLOGY: (1) Score WHEN specificity per skill (reject vague triggers, 30% weight), (2) Score METHODOLOGY concreteness (numbered steps + tool/agent refs, 30%), (3) Score OUTPUT FORMAT completeness (L1 YAML + L2 markdown, 20%), (4) Score utilization (>80% of 1024 chars, 20%), (5) Rank all skills, identify bottom-5 for priority improvement.
+  OUTPUT_FORMAT: L1 YAML quality score per file (0-100) with dimension breakdown, L2 quality report with improvement suggestions.
 user-invocable: true
 disable-model-invocation: false
 ---

@@ -1,16 +1,18 @@
 ---
 name: task-management
 description: |
-  [X-Cut·TaskMgmt·TaskAPI] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API.
+  [X-Cut·TaskMgmt·TaskAPI] Task lifecycle manager for PT and work tasks via Task API.
 
-  WHEN: (1) Pipeline start: create PT. (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with dependencies. (4) Execution: teammates update status real-time. (5) Status query: ASCII viz per domain. (6) Commit done: PT completed.
+  Use when: User says /task-management. Pipeline needs PT create/update, batch work task creation, ASCII visualization, or PT completion.
+
+  WHEN: (1) Pipeline start: create PT. (2) Requirements change: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks. (4) Execution: real-time status updates. (5) Status query: ASCII viz. (6) Commit done: PT completed.
   DOMAIN: Cross-cutting, any phase.
 
   ROLES: Heavy ops (PT create/update, batch tasks, ASCII viz) -> pt-manager agent. Light ops (single TaskUpdate) -> Lead direct.
   METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement}. PT={type:permanent,tier,current_phase,commit_status,references}.
-  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz in Korean.
+  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[action] [args]"
 ---
 

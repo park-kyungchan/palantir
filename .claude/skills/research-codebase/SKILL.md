@@ -1,14 +1,14 @@
 ---
 name: research-codebase
 description: |
-  [P2·Research·Codebase] Local codebase exploration specialist. Discovers existing patterns, structures, conventions, and artifacts using Glob, Grep, and Read tools. Read-only analysis, no file modifications.
+  [P2·Research·Discover] Discovers local codebase patterns via Glob/Grep/Read.
 
-  WHEN: design domain complete. Architecture decisions need validation against existing codebase patterns.
-  DOMAIN: research (skill 1 of 3). Parallel-capable: codebase || external -> audit.
-  INPUT_FROM: design-architecture, design-interface (architecture decisions, interface designs needing codebase validation).
-  OUTPUT_TO: research-audit (findings for inventory), plan-decomposition (codebase patterns). Critical gaps loop to design domain.
+  WHEN: Design domain complete. Architecture decisions need validation against existing codebase.
+  DOMAIN: research (skill 1 of 7). Wave 1 parallel: codebase ∥ external → Wave 2 audits.
+  INPUT_FROM: design-architecture (component structure), design-interface (API contracts), design-risk (risk areas).
+  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (validated patterns for all 4 dimensions).
 
-  METHODOLOGY: (1) Identify codebase areas relevant to architecture decisions, (2) Glob for files matching patterns, (3) Grep for conventions and existing implementations, (4) Read key files for detailed understanding, (5) Document patterns, anti-patterns, and reusable components.
+  METHODOLOGY: (1) Extract architecture questions needing codebase evidence, (2) Glob for file structure and naming conventions, (3) Grep for imports, patterns, existing implementations, (4) Read key files for detailed understanding, (5) Document patterns + anti-patterns with file:line evidence.
   OUTPUT_FORMAT: L1 YAML pattern inventory, L2 markdown findings with file:line references.
 user-invocable: true
 disable-model-invocation: false

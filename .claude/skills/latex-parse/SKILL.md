@@ -1,7 +1,7 @@
 ---
 name: latex-parse
 description: |
-  [D1·Drill·LaTeXParse] Parses and validates LaTeX syntax within extracted JSONL text. Checks grouping scope, operator commands, auto-sizing delimiters, text-mode spacing, environment matching, semantics. Parallel with jsonl-validate.
+  [D1·Drill·LaTeXParse] Parses and validates LaTeX syntax within extracted JSONL text. Checks grouping scope, operator commands, auto-sizing delimiters, text-mode spacing, environment matching, semantic conventions (dx spacing, set builder notation). Parallel with jsonl-validate.
 
   WHEN: After trainee submits JSONL string. Parallel with jsonl-validate. Second in D1 drill cycle.
   DOMAIN: drill (skill 3 of 5). Parallel: jsonl-validate ∥ latex-parse -> render-evaluate.

@@ -1,16 +1,16 @@
 ---
 name: execution-cascade
 description: |
-  [P6·Execution·Cascade] Recursive affected-file updater. Spawns implementers to update files identified by execution-impact. Iterates until convergence (no new impacts) or max 3 iterations. Reports partial status if non-convergent.
+  [P6·Execution·Cascade] Iterates DIRECT-dependent updates in max 3 rounds with convergence tracking.
 
-  WHEN: After execution-impact reports cascade_recommended: true. Affected files identified and classified.
-  DOMAIN: execution (skill 4 of 5, before review). After impact, before review.
-  INPUT_FROM: execution-impact (impact report with dependent files and classification).
-  OUTPUT_TO: execution-review (cascade results for review).
+  WHEN: After execution-impact reports cascade_recommended: true. DIRECT dependents identified. Never invoked if cascade_recommended: false.
+  DOMAIN: execution (skill 4 of 5). After impact, before review.
+  INPUT_FROM: execution-impact (DIRECT dependent files with classification).
+  OUTPUT_TO: execution-review (cascade convergence results with iteration details).
 
-  METHODOLOGY: (1) Read impact report, (2) Spawn implementers for affected files (max 2 per iteration), (3) After updates: re-run grep check on modified files, (4) If new impacts: iterate (max 3), (5) Report convergence status.
-  CONSTRAINT: Max 3 iterations. Max 2 implementers/iteration (maxTurns:30 each).
-  OUTPUT_FORMAT: L1 YAML cascade result with iteration_details, L2 markdown update log.
+  METHODOLOGY: (1) Read impact report DIRECT dependents, (2) Spawn implementers for affected files: max 2 per iteration, maxTurns:30, (3) After updates: re-grep modified files for new impacts, (4) If new impacts: iterate (max 3 total rounds), (5) Report convergence: converged (no new)/partial (under limit)/non-convergent (exceeds 3).
+  CONSTRAINT: Max 3 iterations. Max 2 implementers per iteration. Non-convergence routes to execution-review.
+  OUTPUT_FORMAT: L1 YAML cascade result with iteration_details array, L2 update log with convergence evidence.
 user-invocable: false
 disable-model-invocation: false
 ---

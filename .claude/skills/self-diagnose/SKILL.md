@@ -1,15 +1,15 @@
 ---
 name: self-diagnose
 description: |
-  [Homeostasis·SelfDiagnose·Research] INFRA health diagnosis via CC native state research. Reads cc-reference cache, scans .claude/ files for deficiencies (field compliance, routing, budget, hooks), produces categorized findings by severity.
+  [Homeostasis·Diagnosis] Diagnoses INFRA health against CC native state. Reads cc-reference cache, scans .claude/ files across 8 categories (field compliance, routing, budget, hooks, memory, permissions, utilization, colors). Severity-sorted findings.
 
   WHEN: User invokes for INFRA health audit. After CC updates or before releases. Diagnosis only — does NOT implement fixes.
   DOMAIN: Homeostasis (cross-cutting, self-improvement diagnosis). Paired with self-implement.
   INPUT_FROM: User invocation, manage-infra (health findings suggesting deeper analysis).
-  OUTPUT_TO: self-implement (findings list for fix implementation).
+  OUTPUT_TO: self-implement (categorized findings with severity and evidence).
 
-  METHODOLOGY: (1) Read cc-reference cache (4 files), (2) Scan .claude/ files against 8-category diagnostic checklist, (3) Spawn analyst for parallel category scanning, (4) Categorize findings by severity (CRITICAL→LOW), (5) Produce sorted findings list with file:line evidence.
-  OUTPUT_FORMAT: L1 YAML findings list with severity counts, L2 markdown diagnostic report with evidence.
+  METHODOLOGY: (1) Read cc-reference cache (5 files) for ground truth, (2) Scan .claude/ files against 8-category diagnostic checklist, (3) Spawn analyst for parallel category scanning, (4) Categorize findings by severity (CRITICAL->LOW), (5) Produce sorted findings list with file:line evidence.
+  OUTPUT_FORMAT: L1 YAML findings list with severity counts, L2 diagnostic report with per-category evidence.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[focus-area]"
@@ -35,7 +35,7 @@ argument-hint: "[focus-area]"
 
 ### Claude-code-guide Spawn Decision Tree
 ```
-cc-reference cache exists? (memory/cc-reference/ has 4 files)
+cc-reference cache exists? (memory/cc-reference/ has 5 files)
 |-- NO --> Spawn claude-code-guide (full research). STOP if unavailable.
 +-- YES --> Cache updated within 7 days?
     |-- YES --> Focus-area covered by cache?
@@ -53,7 +53,7 @@ cc-reference cache exists? (memory/cc-reference/ has 4 files)
 ## Methodology
 
 ### 1. Research CC Native State
-Read cached reference: `memory/cc-reference/` (4 files: native-fields, context-loading, hook-events, arguments-substitution).
+Read cached reference: `memory/cc-reference/` (5 files: native-fields, context-loading, hook-events, arguments-substitution, skill-disambiguation).
 - If reference exists and is recent: use as ground truth (skip claude-code-guide spawn)
 - If reference outdated or focus-area requires new info: spawn claude-code-guide for delta only
 - Query focus: "What NEW native features exist since last verification date?"

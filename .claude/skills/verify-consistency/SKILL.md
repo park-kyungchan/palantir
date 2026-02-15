@@ -1,15 +1,15 @@
 ---
 name: verify-consistency
 description: |
-  [P7·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing matches between CLAUDE.md and frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectionality, and skills table vs directory.
+  [P7·Verify·Consistency] Cross-references INPUT_FROM/OUTPUT_TO bidirectionality and counts.
 
-  WHEN: After verify-structural-content PASS, or after multi-skill INPUT_FROM/OUTPUT_TO edits. Second of 4 verify stages. Checks cross-file relationship integrity.
-  DOMAIN: verify (skill 2 of 4). After verify-structural-content PASS.
-  INPUT_FROM: verify-structural-content (structural+content checks confirmed) or direct invocation.
-  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL).
+  WHEN: After verify-structural-content PASS. Second of 4 sequential verify stages. Also after multi-skill INPUT_FROM/OUTPUT_TO edits.
+  DOMAIN: verify (skill 2 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
+  INPUT_FROM: verify-structural-content (structural+content integrity confirmed).
+  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL with inconsistency details).
 
-  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO refs, (2) Build relationship graph, (3) Verify bidirectionality (A refs B <-> B refs A), (4) Check phase sequence (N -> N+1), (5) Verify CLAUDE.md counts match filesystem.
-  OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 markdown inconsistency report with source/target evidence.
+  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO references from every skill description, (2) Build directed reference graph, (3) Verify bidirectionality (A refs B ↔ B refs A; coordinator intermediary valid), (4) Check phase sequence P0→P8 (exempt: homeostasis, cross-cutting, FAIL routes), (5) Verify CLAUDE.md counts (agents, skills, domains) match filesystem.
+  OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 inconsistency report with source/target evidence.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -91,7 +91,7 @@ for each skill in .claude/skills/*/SKILL.md:
 ```
 
 For STANDARD/COMPLEX tiers, construct the DPS delegation prompt:
-- **Context**: All 32 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 32, domains: 8+4+3). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify.
+- **Context**: All 40 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 40, domains: 8+5+2). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify. Coordinator skills (research-coordinator, plan-verify-coordinator, orchestrate-coordinator) create valid indirect bidirectional links.
 - **Task**: Build directed reference graph. Check bidirectionality (A->B implies B->A). Check phase sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
 - **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement) exempt from phase sequence.
 - **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph + phase sequence validation.
@@ -121,6 +121,17 @@ Known exceptions to strict bidirectionality:
 | FAIL routes | Unidirectional by nature | Error recovery does not create a forward dependency |
 | "direct invocation" | Not a real skill reference | User-initiated, no reciprocal needed |
 | "or" alternatives | Each alternative checked independently | e.g., "execution-infra (if FAIL) or execution-code (if FAIL)" |
+
+### 2.1 Coordinator Pattern Recognition
+
+The pipeline includes coordinator skills (research-coordinator, plan-verify-coordinator, orchestrate-coordinator) that consolidate parallel dimension outputs. These create indirect data flow patterns:
+
+- Pattern: `skill-A OUTPUT_TO -> coordinator -> skill-B INPUT_FROM`
+- This is a VALID indirect bidirectional link -- the coordinator acts as intermediary
+- Do NOT flag these as broken bidirectionality when skill-A and skill-B do not directly reference each other
+- The expanded skill set (33 -> 40 skills, with 16 new and 9 deleted) relies heavily on this coordinator pattern for P2, P4, and P5 phases
+
+Example: `audit-static OUTPUT_TO -> research-coordinator -> plan-static INPUT_FROM` is valid even though audit-static does not directly reference plan-static.
 
 ### 3. Check Phase Sequence
 

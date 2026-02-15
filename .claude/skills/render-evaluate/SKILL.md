@@ -1,7 +1,7 @@
 ---
 name: render-evaluate
 description: |
-  [D1·Drill·RenderEval] Simulates rendering of trainee's JSONL/LaTeX submission and compares against target. Visual diff of correct vs incorrect elements, crash scenarios for FATAL errors.
+  [D1·Drill·RenderEval] Evaluates rendering fidelity of trainee's JSONL/LaTeX submission and compares against target. Visual diff of correct vs incorrect elements, crash scenarios for FATAL errors.
 
   WHEN: After jsonl-validate AND latex-parse complete. Fourth in D1 drill cycle.
   DOMAIN: drill (skill 4 of 5). Sequential: jsonl-validate ∥ latex-parse -> render-evaluate -> golden-correct.

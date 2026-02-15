@@ -1,14 +1,14 @@
 ---
 name: manage-codebase
 description: |
-  [Homeostasis·Manager·Codebase] Dependency map generator and maintainer. Creates/updates .claude/agent-memory/analyst/codebase-map.md with per-file dependency data (refs, refd_by, hotspot). Full scan on first run, incremental after pipeline execution.
+  [Homeostasis·DependencyMap] Generates per-file dependency map across .claude/ scope. Creates/updates codebase-map.md with refs, refd_by, hotspot scores. Full scan on first run, incremental after pipeline execution.
 
   WHEN: After pipeline execution completes, after major codebase changes, or periodic maintenance. AI can auto-invoke.
   DOMAIN: Homeostasis (cross-cutting, operates on codebase-map.md).
 
   SCOPE: .claude/ directory (Phase 1). Max 150 entries, 300 lines.
-  METHODOLOGY: (1) Check if codebase-map.md exists, (2) If not: full scan via Glob+Grep, (3) If exists: incremental update for changed files, (4) Detect stale entries (>7 days), prune deleted files, (5) Calculate hotspot scores, write updated map.
-  OUTPUT_FORMAT: L1 YAML map health report, codebase-map.md file.
+  METHODOLOGY: (1) Check if codebase-map.md exists (auto-detect mode), (2) Full scan: Glob+Grep all .claude/ files for structural references, (3) Incremental: re-scan changed files only, (4) Detect stale entries (>7 days), prune deleted files, (5) Calculate hotspot scores and write updated map.
+  OUTPUT_FORMAT: L1 YAML map health report (entries, mode, staleness), codebase-map.md file.
 user-invocable: true
 argument-hint: "[full|incremental]"
 disable-model-invocation: false
