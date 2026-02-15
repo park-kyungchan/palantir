@@ -31,7 +31,7 @@
     ],
     "defaultMode": "delegate"
   },
-  "model": "opus",
+  "model": "claude-opus-4-6",
   "hooks": {
     "SubagentStart": [
       {
@@ -105,5 +105,6 @@
   },
   "promptSuggestionEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "teammateMode": "auto"
+  "teammateMode": "tmux",
+  "alwaysThinkingEnabled": true
 }
