@@ -1,15 +1,11 @@
 ---
 name: plan-static
 description: |
-  [P3·Plan·StaticDecompose] Decomposes tasks by structural dependency clusters into SRP-bounded units.
+  Decomposes tasks by structural dependency clusters into SRP-bounded units. Identifies tight/loose/isolated clusters, defines task boundaries (1-4 files per task), builds acyclic task DAG with critical path.
 
-  WHEN: After research-coordinator complete. Wave 3 parallel with plan-behavioral/relational/impact.
-  DOMAIN: plan (skill 1 of 4). Wave 3 parallel execution.
-  INPUT_FROM: research-coordinator (audit-static L3 dependency graph via $ARGUMENTS).
-  OUTPUT_TO: plan-verify-static (task breakdown with file assignments and dependency edges).
-
-  METHODOLOGY: (1) Read audit-static L3 dependency graph, (2) Identify tight/loose/isolated dependency clusters, (3) Define task boundaries (1-4 files per task, SRP-compliant), (4) Assign exclusive file ownership and estimate complexity (T/S/C), (5) Output acyclic task DAG with critical path and parallelism potential.
-  OUTPUT_FORMAT: L1 YAML task list with dependency edges and complexity, L2 cluster rationale with critical path visualization.
+  WHEN: After research-coordinator complete. Parallel with plan-behavioral/relational/impact.
+  CONSUMES: research-coordinator (audit-static L3 dependency graph via $ARGUMENTS).
+  PRODUCES: L1 YAML task list with dependency edges and complexity, L2 cluster rationale with critical path → plan-verify-static.
 user-invocable: false
 disable-model-invocation: false
 ---

@@ -1,15 +1,11 @@
 ---
 name: orchestrate-relational
 description: |
-  [P5·Orchestration·HOW] Specifies DPS contracts per producer-consumer handoff with path, format, and validation rules.
+  Specifies DPS contracts per producer-consumer handoff with path, format, and validation rules. Validates chain completeness: no dangling inputs, no circular chains.
 
-  WHEN: After plan-verify-coordinator complete (all PASS). Wave 5 parallel with orchestrate-static/behavioral/impact.
-  DOMAIN: orchestration (skill 3 of 5). Parallel: static ∥ behavioral ∥ relational ∥ impact -> coordinator.
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (DPS handoff specs with chain completeness verdict).
-
-  METHODOLOGY: (1) Read pv-coordinator L3 task list and dependency graph, (2) Identify all producer-consumer data dependencies, (3) Define DPS per handoff: file path, format (YAML/JSON/md), required fields, validation rules, (4) Validate chain completeness: no dangling inputs, no circular chains, (5) Output DPS specification with path registry and chain_complete flag.
-  OUTPUT_FORMAT: L1 YAML DPS specs with chain_complete flag, L2 data flow chain with gap report.
+  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/behavioral/impact.
+  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  PRODUCES: L1 YAML DPS specs with chain_complete flag, L2 data flow chain with gap report → orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

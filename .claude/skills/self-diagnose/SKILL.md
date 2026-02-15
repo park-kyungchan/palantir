@@ -1,15 +1,12 @@
 ---
 name: self-diagnose
 description: |
-  [Homeostasis·Diagnosis] Diagnoses INFRA health against CC native state. Reads cc-reference cache, scans .claude/ files across 8 categories (field compliance, routing, budget, hooks, memory, permissions, utilization, colors). Severity-sorted findings.
+  Diagnoses INFRA health against CC native state. Reads cc-reference cache, scans .claude/ files across 8 categories (field compliance, routing, budget, hooks, memory, permissions, utilization, colors). Diagnosis only — does NOT implement fixes. Paired with self-implement.
 
-  WHEN: User invokes for INFRA health audit. After CC updates or before releases. Diagnosis only — does NOT implement fixes.
-  DOMAIN: Homeostasis (cross-cutting, self-improvement diagnosis). Paired with self-implement.
-  INPUT_FROM: User invocation, manage-infra (health findings suggesting deeper analysis).
-  OUTPUT_TO: self-implement (categorized findings with severity and evidence).
-
-  METHODOLOGY: (1) Read cc-reference cache (5 files) for ground truth, (2) Scan .claude/ files against 8-category diagnostic checklist, (3) Spawn analyst for parallel category scanning, (4) Categorize findings by severity (CRITICAL->LOW), (5) Produce sorted findings list with file:line evidence.
-  OUTPUT_FORMAT: L1 YAML findings list with severity counts, L2 diagnostic report with per-category evidence.
+  Use when: INFRA health audit needed. After CC updates or before releases.
+  WHEN: User invokes for INFRA health audit. After CC updates or before releases.
+  CONSUMES: cc-reference cache (5 files for ground truth), manage-infra (health findings suggesting deeper analysis).
+  PRODUCES: L1 YAML findings list with severity counts, L2 diagnostic report with per-category file:line evidence → self-implement.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[focus-area]"

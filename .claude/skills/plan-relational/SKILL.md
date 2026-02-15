@@ -1,15 +1,11 @@
 ---
 name: plan-relational
 description: |
-  [P3·Plan·RelationalContracts] Defines per-task interface contracts bidirectionally across task boundaries.
+  Defines per-task interface contracts bidirectionally across task boundaries. Verifies type/field/naming/timing consistency between producer and consumer, outputs contract registry with gap analysis.
 
-  WHEN: After research-coordinator complete. Wave 3 parallel with plan-static/behavioral/impact.
-  DOMAIN: plan (skill 3 of 4). Wave 3 parallel execution.
-  INPUT_FROM: research-coordinator (audit-relational L3 relationship graph via $ARGUMENTS), design-interface (API contracts from P1).
-  OUTPUT_TO: plan-verify-relational (interface contracts for verification).
-
-  METHODOLOGY: (1) Read audit-relational L3 relationship graph + design-interface contracts, (2) Define per-task INPUT/OUTPUT contracts (producer + consumer), (3) Verify bidirectional type/field/naming/timing consistency, (4) Specify validation rules per cross-task contract, (5) Output contract registry with gap analysis.
-  OUTPUT_FORMAT: L1 YAML contract registry with gap counts and consistency score, L2 per-task contracts with validation rules.
+  WHEN: After research-coordinator complete. Parallel with plan-static/behavioral/impact.
+  CONSUMES: research-coordinator (audit-relational L3 relationship graph via $ARGUMENTS), design-interface (API contracts from P1).
+  PRODUCES: L1 YAML contract registry with gap counts and consistency score, L2 per-task contracts → plan-verify-relational.
 user-invocable: false
 disable-model-invocation: false
 ---

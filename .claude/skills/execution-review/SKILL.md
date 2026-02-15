@@ -1,15 +1,12 @@
 ---
 name: execution-review
 description: |
-  [P6·Execution·Review] Evaluates implementation in two stages: design-spec compliance then code quality/security.
+  Evaluates implementation in two stages: design-spec compliance then code quality/security. Classifies findings: CRITICAL/HIGH block, MEDIUM/LOW pass. Fix loop max 3 iterations. Terminal execution skill.
 
-  WHEN: After execution-code and/or execution-infra complete. Terminal P6 skill. All execution outputs converge here.
-  DOMAIN: execution (skill 5 of 5). Terminal. After code/infra/impact/cascade.
-  INPUT_FROM: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
-  OUTPUT_TO: verify domain (PASS), execution-code/infra (FAIL: fix loop), plan-relational (non-convergence after 3 iterations).
-
-  METHODOLOGY: (1) Collect artifacts from code/infra/impact/cascade, (2) Stage 1: analyst for spec compliance, (3) Stage 2: analyst for code quality+security, (4) Classify: CRITICAL/HIGH block, MEDIUM/LOW pass, (5) Fix loop if blocking: max 3 iter, then non-convergence route.
-  OUTPUT_FORMAT: L1 YAML review verdict with severity breakdown, L2 review with file:line findings.
+  Use when: After code/infra implementation complete, need quality review before verification.
+  WHEN: After execution-code and/or execution-infra complete. All execution outputs converge here.
+  CONSUMES: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
+  PRODUCES: L1 YAML review verdict with severity breakdown, L2 file:line findings → verify domain (PASS) | execution-code/infra (FAIL: fix loop).
 user-invocable: true
 disable-model-invocation: false
 ---

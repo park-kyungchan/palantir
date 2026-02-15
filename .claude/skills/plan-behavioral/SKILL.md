@@ -1,15 +1,11 @@
 ---
 name: plan-behavioral
 description: |
-  [P3·Plan·BehavioralStrategy] Prescribes test and rollback strategy per predicted behavior change.
+  Prescribes test and rollback strategy per predicted behavior change. Defines test cases with priority P0-P3, designs rollback triggers (atomic/selective/forward-fix) for high-risk changes.
 
-  WHEN: After research-coordinator complete. Wave 3 parallel with plan-static/relational/impact.
-  DOMAIN: plan (skill 2 of 4). Wave 3 parallel execution.
-  INPUT_FROM: research-coordinator (audit-behavioral L3 behavior predictions via $ARGUMENTS).
-  OUTPUT_TO: plan-verify-behavioral (test/rollback strategy for verification).
-
-  METHODOLOGY: (1) Read audit-behavioral L3 behavior predictions, (2) Define test cases per change (subject, pre/post condition, type, priority P0-P3), (3) Design rollback triggers for P0/P1 risks (atomic/selective/forward-fix), (4) Map checkpoints to task dependency chain, (5) Output test/rollback strategy with coverage metrics.
-  OUTPUT_FORMAT: L1 YAML test/rollback inventory with counts, L2 per-change test cases and rollback procedures.
+  WHEN: After research-coordinator complete. Parallel with plan-static/relational/impact.
+  CONSUMES: research-coordinator (audit-behavioral L3 behavior predictions via $ARGUMENTS).
+  PRODUCES: L1 YAML test/rollback inventory with counts, L2 per-change test cases and rollback procedures → plan-verify-behavioral.
 user-invocable: false
 disable-model-invocation: false
 ---

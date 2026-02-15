@@ -1,15 +1,11 @@
 ---
 name: orchestrate-coordinator
 description: |
-  [P5·Orchestration·Coordinator] Unifies WHO+WHERE+HOW+WHEN into per-task spawn instructions with cross-validation.
+  Unifies WHO+WHERE+HOW+WHEN into per-task spawn instructions with cross-validation. Terminal orchestration skill — merges agent assignments, checkpoints, DPS specs, and wave schedules into unified execution plan.
 
-  WHEN: After all 4 orchestrate-* skills complete. Wave 5.5 terminal.
-  DOMAIN: orchestration (skill 5 of 5). Terminal. Produces unified plan for P6.
-  INPUT_FROM: orchestrate-static (WHO: task-agent matrix), orchestrate-behavioral (WHERE: checkpoints), orchestrate-relational (HOW: DPS specs), orchestrate-impact (WHEN: wave schedule).
-  OUTPUT_TO: execution-code + execution-infra (L3 unified execution plan). Lead reads L1 index + L2 summary.
-
-  METHODOLOGY: (1) Read 4 dimension outputs from p5-orch-*.md, (2) Merge per-task: agent, wave, DPS, checkpoint, (3) Cross-validate: agent-wave fit, handoff order, checkpoint alignment, coverage, (4) L1 index + L2 summary for Lead, (5) L3 execution-plan with spawn DPS per wave.
-  OUTPUT_FORMAT: Tiered: L1 index.md, L2 summary.md, L3 execution-plan.md at /tmp/pipeline/p5-coordinator/.
+  WHEN: After ALL 4 orchestrate dimension skills complete (orchestrate-static/behavioral/relational/impact).
+  CONSUMES: orchestrate-static (WHO: task-agent matrix), orchestrate-behavioral (WHERE: checkpoints), orchestrate-relational (HOW: DPS specs), orchestrate-impact (WHEN: wave schedule).
+  PRODUCES: L1 index.md + L2 summary.md → Lead, L3 execution-plan.md → execution-code, execution-infra.
 user-invocable: false
 disable-model-invocation: false
 ---

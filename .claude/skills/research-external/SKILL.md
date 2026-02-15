@@ -1,15 +1,12 @@
 ---
 name: research-external
 description: |
-  [P2·Research·Collect] Collects community patterns from post-Opus-4.6 discussions.
+  Collects community patterns from post-Opus-4.6 discussions via WebSearch/tavily. Filters for verified/reproducible information, cross-references with cc-feasibility official docs.
 
-  WHEN: Design domain complete. Architecture references external libraries, APIs, or patterns needing community validation.
-  DOMAIN: research (skill 2 of 7). Wave 1 parallel: codebase ∥ external → Wave 2 audits.
-  INPUT_FROM: design-architecture (technology choices), design-interface (API contracts), design-risk (risk areas needing validation).
-  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (community findings for all 4 dimensions).
-
-  METHODOLOGY: (1) Extract technical decisions needing community validation, (2) Search post-Opus-4.6 community discussions via WebSearch/tavily, (3) Filter for verified/reproducible information only, (4) Cross-reference with cc-feasibility official docs, (5) Synthesize practical patterns with source URLs and verification status.
-  OUTPUT_FORMAT: L1 YAML community pattern matrix, L2 markdown pattern report with source URLs.
+  Use when: Architecture references external libraries or patterns needing community validation.
+  WHEN: Design domain complete. Parallel with research-codebase.
+  CONSUMES: design-architecture (technology choices), design-interface (API contracts), design-risk (risk areas needing validation).
+  PRODUCES: L1 YAML community pattern matrix, L2 pattern report with source URLs → audit-static, audit-behavioral, audit-relational, audit-impact.
 user-invocable: true
 disable-model-invocation: false
 ---

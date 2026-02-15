@@ -1,15 +1,11 @@
 ---
 name: orchestrate-impact
 description: |
-  [P5·Orchestration·WHEN] Schedules execution waves via topological sort with capacity balancing (max 4 parallel per wave).
+  Schedules execution waves via topological sort with capacity balancing (max 4 parallel per wave). Verifies DAG acyclicity, balances wave load, calculates critical path and parallel efficiency.
 
-  WHEN: After plan-verify-coordinator complete (all PASS). Wave 5 parallel with orchestrate-static/behavioral/relational.
-  DOMAIN: orchestration (skill 4 of 5). Parallel: static ∥ behavioral ∥ relational ∥ impact -> coordinator.
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (wave capacity schedule with critical path).
-
-  METHODOLOGY: (1) Read pv-coordinator L3 task list and build execution DAG, (2) Verify acyclicity via topological sort (FAIL if cycle detected), (3) Group tasks into waves: max 4 parallel, critical-path priority, (4) Balance wave load: avoid single-task waves, cap file count per wave, (5) Output wave schedule with critical path length and parallel efficiency metric.
-  OUTPUT_FORMAT: L1 YAML wave schedule with critical path length, L2 wave visualization with DAG.
+  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/behavioral/relational.
+  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  PRODUCES: L1 YAML wave schedule with critical path length, L2 wave visualization with DAG → orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

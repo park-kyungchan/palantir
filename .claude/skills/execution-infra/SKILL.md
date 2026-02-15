@@ -1,15 +1,12 @@
 ---
 name: execution-infra
 description: |
-  [P6·Execution·Infra] Deploys infra-implementers for .claude/ files (Write/Edit only, no Bash execution).
+  Deploys infra-implementers for .claude/ files (Write/Edit only, no Bash execution). Validates YAML/JSON post-completion, handles failures with max 3 retries. Parallel with execution-code.
 
+  Use when: Infra configuration tasks ready after orchestration planning.
   WHEN: After orchestrate-coordinator complete (PASS). Infra tasks assigned in unified plan. .claude/ files exclusively.
-  DOMAIN: execution (skill 2 of 5). Parallel-capable: code ∥ infra -> impact -> review.
-  INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with infra task assignments and .claude/ file paths).
-  OUTPUT_TO: execution-impact (infra file change manifest), execution-review (infra change artifacts).
-
-  METHODOLOGY: (1) Read orchestrate-coordinator L3 infra tasks, (2) Spawn infra-implementer per task (Write/Edit only, no Bash), (3) Monitor via SendMessage, validate YAML/JSON post-completion, (4) Handle failures: max 3 retries, settings.json last, (5) Consolidate infra change manifest with validation status.
-  OUTPUT_FORMAT: L1 YAML infra change manifest, L2 config change summary. No Bash — Lead validates schema post-return.
+  CONSUMES: orchestrate-coordinator (unified execution plan L3 with infra task assignments and .claude/ file paths).
+  PRODUCES: L1 YAML infra change manifest, L2 config change summary → execution-impact, execution-review.
 user-invocable: true
 disable-model-invocation: false
 ---

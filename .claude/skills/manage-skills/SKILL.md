@@ -1,14 +1,12 @@
 ---
 name: manage-skills
 description: |
-  [Homeostasis·SkillLifecycle] Detects skill lifecycle actions from codebase changes. Maps git diff to domains, checks coverage thresholds, proposes CREATE/UPDATE/DELETE with rationale across all pipeline domains.
+  Detects skill lifecycle actions from codebase changes. Maps git diff to domains, checks coverage thresholds, proposes CREATE/UPDATE/DELETE with rationale across all pipeline domains.
 
-  WHEN: After implementing features with new patterns, after modifying skills, before PR, or periodic drift detection. AI can auto-invoke.
-  DOMAIN: Homeostasis (cross-cutting, operates on .claude/skills/).
-
-  DETECTION_RULES: .claude/agents/ -> design domain, .claude/skills/ -> self-management, docs/plans/ -> plan domain, 3+ uncovered files in same domain -> CREATE.
-  METHODOLOGY: (1) Git diff to detect changes, (2) Map files to domains via detection rules, (3) Check skill coverage per domain against minimum thresholds, (4) Propose CREATE/UPDATE/DELETE with rationale, (5) Execute after approval and run verify-cc-feasibility.
-  OUTPUT_FORMAT: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 change analysis with domain coverage.
+  Use when: After implementing features with new patterns, before PR, or periodic drift detection.
+  WHEN: After skill modifications, feature implementation, or periodic maintenance. AI can auto-invoke.
+  CONSUMES: Git diff (codebase changes), .claude/skills/ directory (current skill inventory).
+  PRODUCES: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 change analysis with domain coverage.
 user-invocable: true
 disable-model-invocation: false
 ---

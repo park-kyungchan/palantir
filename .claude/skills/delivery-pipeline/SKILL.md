@@ -1,16 +1,12 @@
 ---
 name: delivery-pipeline
 description: |
-  [P8·Delivery·Terminal] Delivers pipeline results via structured git commit, MEMORY.md archive, and PT completion.
+  Delivers pipeline results via structured git commit, MEMORY.md archive, and PT completion. User confirmation required before git commit. No git add -A. Executed by delivery-agent.
 
-  WHEN: Verify domain complete (all 4 stages PASS, no outstanding FAIL). Pipeline finished, ready for commit.
-  DOMAIN: Cross-cutting terminal phase (not part of 9-domain feedback loop).
-  INPUT_FROM: verify-cc-feasibility (all 4 verify stages PASS confirmed).
-  OUTPUT_TO: Git repository (commit), MEMORY.md (knowledge archive), PT (DELIVERED status).
-
-  METHODOLOGY: (1) Verify all-PASS confirmed (Lead gates before spawn), (2) Consolidate pipeline results across all domains, (3) Generate conventional commit message from PT + architecture decisions, (4) Archive session learnings to MEMORY.md (Read-Merge-Write), (5) Stage specific files + git commit after user confirmation, (6) Mark PT DELIVERED via TaskUpdate.
-  CONSTRAINT: Executed by delivery-agent (memory:none). User confirmation required before git commit. No git add -A.
-  OUTPUT_FORMAT: L1 YAML delivery manifest with commit hash, L2 delivery summary.
+  Use when: All verification stages PASS, pipeline ready for commit and archive.
+  WHEN: Verify domain complete (all 4 stages PASS, no outstanding FAIL). Pipeline terminal.
+  CONSUMES: verify-cc-feasibility (all 4 verify stages PASS confirmed).
+  PRODUCES: Git commit (conventional message from PT), MEMORY.md archive (session learnings), PT status → DELIVERED.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[commit-message]"
