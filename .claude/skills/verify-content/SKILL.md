@@ -6,7 +6,7 @@ description: |
   WHEN: After description rewrites or new agent/skill creation. Second of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 2 of 5). After verify-structure PASS.
   INPUT_FROM: verify-structure (structural integrity confirmed) or direct invocation.
-  OUTPUT_TO: verify-consistency (if PASS) or execution domain (if FAIL, fix required).
+  OUTPUT_TO: verify-consistency (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
 
   METHODOLOGY: (1) Read all frontmatter descriptions, (2) Measure char utilization (target >80% of 1024), (3) Check orchestration map keys present (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO, METHODOLOGY), (4) Verify body sections present, (5) Check L1/L2 output format defined.
   OUTPUT_FORMAT: L1 YAML utilization percentage per file, L2 markdown content completeness report with missing items.

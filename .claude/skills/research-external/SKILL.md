@@ -6,7 +6,7 @@ description: |
   WHEN: design domain complete. Architecture decisions reference external libraries, APIs, or patterns needing doc validation.
   DOMAIN: research (skill 2 of 3). Parallel-capable: codebase || external -> audit.
   INPUT_FROM: design domain (technology choices, library references needing doc validation).
-  OUTPUT_TO: research-audit (external findings for gap analysis), plan-strategy (external constraints for strategy).
+  OUTPUT_TO: research-audit (external findings for gap analysis), plan-strategy (external constraints for strategy). If external dependencies unvalidated, reports gaps to research-audit for consolidation.
 
   METHODOLOGY: (1) Extract external dependencies from architecture decisions, (2) Search official docs via WebSearch/context7, (3) Fetch key pages via WebFetch, (4) Verify version compatibility and API availability, (5) Synthesize into structured findings with source links.
   OUTPUT_FORMAT: L1 YAML dependency validation matrix, L2 markdown doc summary with source URLs.

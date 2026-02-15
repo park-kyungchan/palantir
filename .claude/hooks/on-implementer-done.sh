@@ -95,8 +95,8 @@ if [[ "$DEP_COUNT" -ge "$MAX_DEPS" ]]; then
     DEPENDENTS="${DEPENDENTS} (truncated)"
 fi
 
-# Cleanup processed log file
-rm -f "$LOGFILE" 2>/dev/null
+# Mark as processed instead of deleting (preserves data for parallel/sequential implementers)
+mv -f "$LOGFILE" "${LOGFILE}.processed" 2>/dev/null || true
 
 # Build output message (max 800 chars)
 if [[ "$DEP_COUNT" -eq 0 ]]; then

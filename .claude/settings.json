@@ -88,7 +88,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "implementer",
+        "matcher": "implementer|infra-implementer",
         "hooks": [
           {
             "type": "command",

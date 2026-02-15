@@ -6,7 +6,7 @@ description: |
   WHEN: After any INFRA file creation or modification. First of 5 verify stages. Can run independently.
   DOMAIN: verify (skill 1 of 5). Sequential: structure -> content -> consistency -> quality -> cc-feasibility.
   INPUT_FROM: execution domain (implementation artifacts) or any file modification trigger.
-  OUTPUT_TO: verify-content (if PASS) or execution domain (if FAIL, fix required).
+  OUTPUT_TO: verify-content (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
 
   METHODOLOGY: (1) Glob .claude/agents/*.md and .claude/skills/*/SKILL.md, (2) Validate YAML frontmatter parses without errors, (3) Check required fields present (name, description), (4) Verify naming conventions (lowercase-hyphen, correct prefixes), (5) Check directory structure matches expected layout.
   OUTPUT_FORMAT: L1 YAML PASS/FAIL per file, L2 markdown structural integrity report with file:line evidence.

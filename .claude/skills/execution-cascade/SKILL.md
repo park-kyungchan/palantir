@@ -34,7 +34,7 @@ Load execution-impact L1 and L2 output:
 ### 2. Spawn Implementers for Affected Files
 For each iteration (max 3):
 - Group dependent files by proximity (max 2 implementer groups)
-- Spawn implementers with `subagent_type: implementer`, `maxTurns: 30`
+- Spawn implementers with `subagent_type: implementer`, `maxTurns: 30`. For affected files in `.claude/` scope, spawn `infra-implementer` (subagent_type: infra-implementer) instead of `implementer` to maintain security boundary.
 - Each implementer prompt includes:
   - What changed (root cause file and what was modified)
   - What reference pattern to look for in the dependent file

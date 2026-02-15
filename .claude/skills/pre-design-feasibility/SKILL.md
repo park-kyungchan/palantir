@@ -18,7 +18,7 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick assessment against known CC capabilities.
-- **STANDARD**: Launch researcher (run_in_background) with claude-code-guide (if unavailable, use cc-reference cache in agent-memory) + web access for CC docs lookup.
+- **STANDARD**: Launch researcher (run_in_background) with claude-code-guide (if unavailable, use cc-reference cache in `memory/cc-reference/`) + web access for CC docs lookup.
 - **COMPLEX**: Launch 2 background agents (run_in_background). Split: core CC features vs MCP/plugin capabilities.
 
 ## Methodology
@@ -35,7 +35,7 @@ From validated requirement document, list each item needing CC implementation:
 
 ### 2. Map Requirements to CC Capabilities
 For each requirement, identify the CC native feature that implements it.
-Use claude-code-guide research for uncertain capabilities.
+Spawn claude-code-guide (if unavailable, use cc-reference cache in `memory/cc-reference/`) for uncertain capabilities.
 
 ### 3. Assess Feasibility
 
