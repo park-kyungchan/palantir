@@ -646,6 +646,150 @@ PYEOF
     python3 "$TMPDIR_DASH/parse_pipeline.py" "$memory_md"
 }
 
+# --- Section 9: L1 Budget Analysis ----------------------------------------
+
+parse_l1_budget() {
+    cat > "$TMPDIR_DASH/parse_l1_budget.py" << 'PYEOF'
+import json, sys, os, re
+
+claude_dir = sys.argv[1]
+skills_dir = os.path.join(claude_dir, 'skills')
+budget_limit = 32000
+total_chars = 0
+auto_loaded = 0
+disabled = 0
+over_limit = []
+per_skill = []
+
+if os.path.isdir(skills_dir):
+    for skill_name in sorted(os.listdir(skills_dir)):
+        skill_file = os.path.join(skills_dir, skill_name, 'SKILL.md')
+        if not os.path.isfile(skill_file):
+            continue
+        with open(skill_file, 'r') as f:
+            content = f.read()
+        # Parse frontmatter
+        if not content.startswith('---'):
+            continue
+        end = content.find('---', 3)
+        if end == -1:
+            continue
+        fm = content[3:end]
+        # Check disable-model-invocation
+        if re.search(r'disable-model-invocation:\s*true', fm):
+            disabled += 1
+            continue
+        # Extract description
+        desc_match = re.search(r'description:\s*\|?\s*\n(.*?)(?=\n\w|\n---)', fm, re.DOTALL)
+        if not desc_match:
+            desc_match = re.search(r'description:\s*["\']?(.*?)(?:["\']?\s*$)', fm, re.MULTILINE)
+        if desc_match:
+            desc = desc_match.group(1).strip()
+            char_count = len(desc)
+            total_chars += char_count
+            auto_loaded += 1
+            per_skill.append({"name": skill_name, "chars": char_count})
+            if char_count > 1024:
+                over_limit.append({"name": skill_name, "chars": char_count})
+
+pct = round(total_chars / budget_limit * 100) if budget_limit > 0 else 0
+
+result = {
+    "total_chars": total_chars,
+    "budget_limit": budget_limit,
+    "pct": pct,
+    "auto_loaded_count": auto_loaded,
+    "disabled_count": disabled,
+    "over_limit": over_limit,
+    "per_skill": per_skill
+}
+
+print(json.dumps(result, indent=2))
+PYEOF
+
+    python3 "$TMPDIR_DASH/parse_l1_budget.py" "$CLAUDE_DIR"
+}
+
+# --- Section 10: Skill Dependencies ----------------------------------------
+
+parse_dependencies() {
+    cat > "$TMPDIR_DASH/parse_dependencies.py" << 'PYEOF'
+import json, sys, os, re
+
+claude_dir = sys.argv[1]
+skills_dir = os.path.join(claude_dir, 'skills')
+edges = []
+
+if os.path.isdir(skills_dir):
+    for skill_name in sorted(os.listdir(skills_dir)):
+        skill_file = os.path.join(skills_dir, skill_name, 'SKILL.md')
+        if not os.path.isfile(skill_file):
+            continue
+        with open(skill_file, 'r') as f:
+            content = f.read()
+        if not content.startswith('---'):
+            continue
+        end = content.find('---', 3)
+        if end == -1:
+            continue
+        fm = content[3:end]
+        # Extract INPUT_FROM references
+        input_match = re.search(r'INPUT_FROM:\s*(.*?)(?:\n\s*\w|\n---)', fm, re.DOTALL)
+        if input_match:
+            refs = re.findall(r'[\w-]+(?=-[\w])', input_match.group(1))
+            # Better: extract skill-like names (hyphenated words)
+            refs = re.findall(r'\b([\w]+-[\w]+(?:-[\w]+)*)\b', input_match.group(1))
+            for ref in refs:
+                if ref != skill_name and not ref.startswith('on-'):
+                    edges.append({"source": ref, "target": skill_name, "type": "INPUT_FROM"})
+        # Extract OUTPUT_TO references
+        output_match = re.search(r'OUTPUT_TO:\s*(.*?)(?:\n\s*\w|\n---)', fm, re.DOTALL)
+        if output_match:
+            refs = re.findall(r'\b([\w]+-[\w]+(?:-[\w]+)*)\b', output_match.group(1))
+            for ref in refs:
+                if ref != skill_name and not ref.startswith('on-'):
+                    edges.append({"source": skill_name, "target": ref, "type": "OUTPUT_TO"})
+
+# Deduplicate
+seen = set()
+unique_edges = []
+for e in edges:
+    key = f"{e['source']}>{e['target']}>{e['type']}"
+    if key not in seen:
+        seen.add(key)
+        unique_edges.append(e)
+
+print(json.dumps(unique_edges, indent=2))
+PYEOF
+
+    python3 "$TMPDIR_DASH/parse_dependencies.py" "$CLAUDE_DIR"
+}
+
+# --- Section 11: Archived Sessions ----------------------------------------
+
+parse_sessions() {
+    local sessions_dir="$CLAUDE_DIR/dashboard/sessions"
+    if [[ ! -d "$sessions_dir" ]]; then
+        echo '[]'
+        return
+    fi
+
+    local sessions_json='[]'
+    for session_file in "$sessions_dir"/session-*.json; do
+        [[ -f "$session_file" ]] || continue
+        local content
+        content=$(cat "$session_file" 2>/dev/null) || continue
+        # Validate JSON
+        echo "$content" | jq . >/dev/null 2>&1 || continue
+        # Add filename as metadata
+        local fname
+        fname=$(basename "$session_file")
+        sessions_json=$(echo "$sessions_json" | jq --argjson sess "$content" --arg file "$fname" '. + [$sess + {"_archive_file": $file}]')
+    done
+
+    echo "$sessions_json"
+}
+
 # =============================================================================
 # MAIN: Assemble all data
 # =============================================================================
@@ -653,37 +797,49 @@ PYEOF
 main() {
     echo "Parsing .claude/ infrastructure..." >&2
 
-    echo "  [1/8] metadata..." >&2
+    echo "  [1/11] metadata..." >&2
     local metadata_json
     metadata_json=$(parse_with_fallback "metadata" '{}' parse_metadata)
 
-    echo "  [2/8] agents..." >&2
+    echo "  [2/11] agents..." >&2
     local agents_json
     agents_json=$(parse_with_fallback "agents" '[]' parse_agents)
 
-    echo "  [3/8] skills..." >&2
+    echo "  [3/11] skills..." >&2
     local skills_json
     skills_json=$(parse_with_fallback "skills" '[]' parse_skills)
 
-    echo "  [4/8] hooks..." >&2
+    echo "  [4/11] hooks..." >&2
     local hooks_json
     hooks_json=$(parse_with_fallback "hooks" '[]' parse_hooks)
 
-    echo "  [5/8] settings..." >&2
+    echo "  [5/11] settings..." >&2
     local settings_json
     settings_json=$(parse_with_fallback "settings" '{}' parse_settings)
 
-    echo "  [6/8] CLAUDE.md..." >&2
+    echo "  [6/11] CLAUDE.md..." >&2
     local claude_md_json
     claude_md_json=$(parse_with_fallback "claude_md" '{}' parse_claude_md)
 
-    echo "  [7/8] MEMORY.md..." >&2
+    echo "  [7/11] MEMORY.md..." >&2
     local memory_md_json
     memory_md_json=$(parse_with_fallback "memory_md" '{}' parse_memory_md)
 
-    echo "  [8/8] pipeline..." >&2
+    echo "  [8/11] pipeline..." >&2
     local pipeline_json
     pipeline_json=$(parse_with_fallback "pipeline" '{"phases":[],"domains":{}}' parse_pipeline)
+
+    echo "  [9/11] l1_budget..." >&2
+    local l1_budget_json
+    l1_budget_json=$(parse_with_fallback "l1_budget" '{"total_chars":0,"budget_limit":32000,"pct":0}' parse_l1_budget)
+
+    echo "  [10/11] dependencies..." >&2
+    local dependencies_json
+    dependencies_json=$(parse_with_fallback "dependencies" '[]' parse_dependencies)
+
+    echo "  [11/11] sessions_runtime..." >&2
+    local sessions_runtime_json
+    sessions_runtime_json=$(parse_with_fallback "sessions_runtime" '[]' parse_sessions)
 
     # Assemble final JSON
     local full_json
@@ -696,6 +852,9 @@ main() {
         --argjson claude_md "$claude_md_json" \
         --argjson memory_md "$memory_md_json" \
         --argjson pipeline "$pipeline_json" \
+        --argjson l1_budget "$l1_budget_json" \
+        --argjson dependencies "$dependencies_json" \
+        --argjson sessions_runtime "$sessions_runtime_json" \
         '{
             metadata: $metadata,
             agents: $agents,
@@ -704,7 +863,10 @@ main() {
             settings: $settings,
             claude_md: $claude_md,
             memory_md: $memory_md,
-            pipeline: $pipeline
+            pipeline: $pipeline,
+            l1_budget: $l1_budget,
+            dependencies: $dependencies,
+            sessions_runtime: $sessions_runtime
         }')
 
     # --json-only: just print and exit

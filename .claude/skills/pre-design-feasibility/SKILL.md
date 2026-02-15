@@ -197,9 +197,9 @@ claude-code-guide unavailable
 
 | Situation | Action |
 |-----------|--------|
-| Cache files exist but outdated (>30 days since last refresh) | Trigger self-improve skill to refresh cc-reference, then retry feasibility |
-| Cache files missing entirely | Trigger self-improve skill to create cc-reference, then retry feasibility |
-| Self-improve also fails | Fall back to claude-code-guide + WebSearch (document cache gap) |
+| Cache files exist but outdated (>30 days since last refresh) | Trigger self-diagnose skill to refresh cc-reference, then retry feasibility |
+| Cache files missing entirely | Trigger self-diagnose skill to create cc-reference, then retry feasibility |
+| Self-diagnose also fails | Fall back to claude-code-guide + WebSearch (document cache gap) |
 
 ### Ambiguous Verdicts
 
@@ -254,7 +254,7 @@ All infeasible
 | Failure Type | Route To | Data Passed |
 |---|---|---|
 | All requirements infeasible after 3 iterations | User (AskUserQuestion) | Full infeasible list with attempted alternatives, iteration history |
-| cc-reference + claude-code-guide both unavailable | self-improve (refresh cc-reference) | Stale cache details, missing file paths |
+| cc-reference + claude-code-guide both unavailable | self-diagnose (refresh cc-reference) | Stale cache details, missing file paths |
 | Partial verdicts with low confidence | design-architecture (proceed with risk flags) | Partial report with risk markers, `poc_recommended: true` items |
 
 ## Quality Gate

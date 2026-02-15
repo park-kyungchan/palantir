@@ -152,7 +152,7 @@ Use Glob to discover all `.claude/` components.
 | orchestration | `orchestration-decompose`, `orchestration-assign`, `orchestration-verify` |
 | execution | `execution-code`, `execution-infra`, `execution-impact`, `execution-cascade`, `execution-review` |
 | verify | `verify-structural-content`, `verify-consistency`, `verify-quality`, `verify-cc-feasibility` |
-| homeostasis | `manage-infra`, `manage-skills`, `manage-codebase`, `self-improve` |
+| homeostasis | `manage-infra`, `manage-skills`, `manage-codebase`, `self-diagnose`, `self-implement` |
 | cross-cutting | `delivery-pipeline`, `pipeline-resume`, `task-management` |
 
 ### 2. Structural Integrity Checks (per file)

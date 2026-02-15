@@ -191,7 +191,7 @@ MEMORY.md captures session-level summaries, not implementation details. Do not i
 |-------------|---------------|--------|
 | verify-cc-feasibility | All-PASS verification report (5 stages) | L1 YAML: `all_pass: true`, per-stage verdicts |
 | (User invocation) | Direct delivery request with optional commit message | `$ARGUMENTS` text: commit message or empty |
-| self-improve | RSI cycle results ready for commit | L1 YAML: `status: complete`, `files_changed`, `commit_hash: ""` |
+| self-implement | RSI cycle results ready for commit | L1 YAML: `status: complete`, `files_changed`, `commit_hash: ""` |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

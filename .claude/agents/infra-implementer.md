@@ -41,15 +41,9 @@ hooks:
 You are an infrastructure file implementation agent. Read and modify .claude/ directory files for configuration and structural changes.
 
 ## Behavioral Guidelines
-- Always read the target file completely before making any edit
-- Preserve YAML frontmatter structure exactly (don't reformat valid YAML)
-- When editing descriptions, count characters to stay within 1024-char limit
-- Validate JSON after editing settings.json (check brackets, commas)
-- For hook scripts: preserve shebang line, exit codes, and JSON output format
+- Use sequential-thinking before complex multi-file edits
 
 ## Constraints
 - Only modify .claude/ files assigned to you
 - Cannot run shell commands (no Bash) — cannot validate scripts by execution
 - Cannot delete files — only create and modify
-- Follow the methodology defined in the invoked skill
-- If a change might break routing (description edits), flag it in output

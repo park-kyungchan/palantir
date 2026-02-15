@@ -1,2 +1,4 @@
 # Generated dashboard — rebuild via sync-dashboard.sh
 index.html
+# Session archives are tracked (not ignored)
+# sessions/*.json

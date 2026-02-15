@@ -200,7 +200,7 @@ Analysts have no Bash tool. Lead must run `git diff` and pass the output as cont
 Merging two skills into one may leave a domain gap. Always verify post-merge domain coverage -- every domain must retain at least 1 skill.
 
 ### DO NOT: Use manage-skills to Modify Skill L2 Bodies
-This skill manages skill LIFECYCLE: create frontmatter, update descriptions, delete orphaned skills. It does NOT rewrite L2 methodology bodies. L2 body improvements go through the self-improve skill or manual editing. manage-skills only touches the YAML frontmatter and top-level structural metadata. If an analyst proposes "UPDATE: rewrite the methodology section," reject it and redirect to self-improve.
+This skill manages skill LIFECYCLE: create frontmatter, update descriptions, delete orphaned skills. It does NOT rewrite L2 methodology bodies. L2 body improvements go through the self-implement skill or manual editing. manage-skills only touches the YAML frontmatter and top-level structural metadata. If an analyst proposes "UPDATE: rewrite the methodology section," reject it and redirect to self-implement.
 
 ### DO NOT: Propose DELETE for Recently Created Skills
 A skill created in the current pipeline iteration should not be flagged for DELETE in the same cycle. Wait at least one full pipeline completion before proposing removal. New skills need time to prove or disprove their value through actual routing and execution. If a brand-new skill seems redundant immediately after creation, that indicates a CREATE decision error -- route to Lead for root cause analysis, not a DELETE action.
@@ -213,7 +213,7 @@ A skill created in the current pipeline iteration should not be flagged for DELE
 | (self-triggered) | Drift detection request after codebase changes | No structured input -- uses git diff |
 | manage-infra | Skill-specific drift detected during health check | L1 YAML: skill count mismatch or orphan alert |
 | delivery-pipeline | Pre-commit skill validation request | L1 YAML: pipeline completion status with changed files |
-| self-improve | Post-RSI skill frontmatter refresh | L1 YAML: list of modified .claude/skills/ files |
+| self-implement | Post-RSI skill inventory refresh | L1 YAML: list of modified .claude/skills/ files |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

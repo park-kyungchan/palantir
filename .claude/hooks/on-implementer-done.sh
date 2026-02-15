@@ -116,5 +116,23 @@ fi
 # Escape for JSON
 MSG=$(echo "$MSG" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\n/\\n/g')
 
+# SRC Dual-Write: Persist impact data to file (ADR-SRC-01)
+IMPACT_FILE="/tmp/src-impact-${SESSION_ID}.md"
+cat > "$IMPACT_FILE" <<IMPACT_EOF
+# SRC Impact Report
+- Session: ${SESSION_ID}
+- Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+- Agent Type: implementer
+
+## Changed Files (${CHANGED_COUNT})
+$(echo "$CHANGED_FILES" | while IFS= read -r f; do echo "- $f"; done)
+
+## Dependents (${DEP_COUNT})
+$(if [[ -n "$DEPENDENTS" ]]; then echo "$DEPENDENTS" | tr ',' '\n' | while IFS= read -r d; do echo "- ${d# }"; done; else echo "- (none detected)"; fi)
+
+## Summary
+${MSG}
+IMPACT_EOF
+
 echo "{\"hookSpecificOutput\":{\"hookEventName\":\"SubagentStop\",\"additionalContext\":\"${MSG}\"}}"
 exit 0

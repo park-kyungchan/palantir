@@ -73,6 +73,7 @@ The hook alert may arrive before execution-code/infra L1 is fully consolidated. 
 Load execution-code L1 output (and execution-infra L1 if applicable):
 - Extract `tasks[].files` arrays for complete list of changed files
 - Cross-reference with SubagentStop hook's SRC IMPACT ALERT (preliminary dependent list)
+- Read persistent impact file at `/tmp/src-impact-{session_id}.md` if available (written by on-implementer-done.sh, persists across compaction)
 - Deduplicate file paths across all sources
 
 ### 2. Load Codebase Map (Optional)
@@ -175,6 +176,7 @@ After execution-cascade runs, it has its own convergence checking. Do NOT re-inv
 | execution-code | Code file change manifest | L1 YAML: `tasks[].{files[], status}` |
 | execution-infra | Infra file change manifest | L1 YAML: `files_changed[]` |
 | on-implementer-done.sh | SRC IMPACT ALERT (preliminary) | Hook additionalContext: `changed_files[]`, `preliminary_dependents[]` |
+| on-implementer-done.sh | Persistent SRC impact file (supplementary) | File: `/tmp/src-impact-{session_id}.md` with Changed Files + Dependents sections |
 | manage-codebase | Codebase dependency map (optional) | File: `.claude/agent-memory/analyst/codebase-map.md` with `refd_by` fields |
 
 ### Sends To
