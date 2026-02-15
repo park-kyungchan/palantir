@@ -21,7 +21,7 @@
 - **Lead:** Pipeline Controller — routes skills, spawns agents
 - **Agents:** 6 custom (analyst, researcher, implementer, infra-implementer, delivery-agent, pt-manager)
 - **Skills:** 44 across 8 pipeline domains + 5 homeostasis + 3 cross-cutting
-- **Project Skills (DO NOT EDIT during INFRA):** 7 crowd_works drill skills (D0·foundation, D1·drill, D2·eval) — separate project, excluded from manage-skills/RSI/homeostasis
+- **Project Skills (DO NOT EDIT during INFRA):** 10 crowd_works project skills (D0·foundation, D1·drill+production, D2·eval) — separate project, excluded from manage-skills/RSI/homeostasis
 
 ## 2. Pipeline Tiers
 Classified at Phase 0:
