@@ -1,15 +1,12 @@
 ---
 name: image-preprocess
 description: |
-  [D0·Foundation·Preprocess] CleanOCROutput for Pipeline B entry: OCR artifact detection, LaTeX cleanup, confidence scoring, backslash depth assessment. Multi-source (Doc Intelligence, Mathpix, manual). HITL when confidence < 0.7.
+  Cleans OCR output for Pipeline B entry: artifact detection, LaTeX cleanup, confidence scoring, backslash depth assessment. Multi-source (Doc Intelligence, Mathpix, manual). HITL when confidence < 0.7.
 
+  Use when: OCR output arrives for production QC, or image-derived LaTeX needs cleanup.
   WHEN: OCR output arrives for production QC, or image-derived LaTeX needs cleanup before validation. Pipeline B entry point.
-  DOMAIN: foundation (D0 shared, skill 2 of 2). Peer: reference-build. Independent entry point for Pipeline B.
-  INPUT_FROM: User (OCR output/image path via $ARGUMENTS), reference-build (OCR confusion patterns via IC-01 ocr_confusions).
-  OUTPUT_TO: jsonl-validate IC-13 preprocessed_input (latex_content, confidence, flagged_artifacts, backslash_depth, quality_score, hitl_required).
-
-  METHODOLOGY: (1) Detect source type + OCR tool from input, (2) Clean raw content (Unicode, whitespace, broken LaTeX), (3) Detect OCR artifacts via reference-build patterns, (4) Score quality across 4 dimensions + assess backslash depth, (5) Emit IC-13 preprocessed_input with full schema.
-  OUTPUT_FORMAT: L1 YAML quality summary, L2 with IC-13 preprocessed_input section.
+  CONSUMES: User (OCR output/image path via $ARGUMENTS), reference-build (OCR confusion patterns via IC-01 ocr_confusions).
+  PRODUCES: IC-13 preprocessed_input (latex_content, confidence, flagged_artifacts, backslash_depth, quality_score, hitl_required) → jsonl-validate.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[image-path|ocr-output-path|latex-draft-path]"

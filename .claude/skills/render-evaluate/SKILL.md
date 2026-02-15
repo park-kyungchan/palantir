@@ -1,15 +1,11 @@
 ---
 name: render-evaluate
 description: |
-  [D1·Shared·RenderEval] Dual-mode merge point: evaluates rendering fidelity across 6 execution paths (3 render states x 2 modes).
+  Dual-mode merge point: evaluates rendering fidelity across 6 execution paths (3 render states × 2 modes). Scores drill (N/M + traps) and production (fidelity 0-1).
 
-  WHEN: After jsonl-validate AND latex-parse complete. Merge point in D1 shared validation core.
-  DOMAIN: drill/production shared (skill 4 of 5). Merge: jsonl-validate + latex-parse -> render-evaluate -> mode-specific terminals.
-  INPUT_FROM: IC-06 golden_answer (challenge-generate, drill only), IC-07 validation_result (jsonl-validate), IC-08 parse_result (latex-parse).
-  OUTPUT_TO: Drill: IC-09 rendering_diff (golden-correct) + IC-10 trap_results (progress-track). Production: IC-12 qc_rendering (qc-report).
-
-  METHODOLOGY: (1) Mode select + merge IC-07+IC-08, (2) Render status (CRASH/PARTIAL/FULL), (3) Element compare (drill: vs IC-06, prod: vs source), (4) Score (drill: N/M + traps, prod: fidelity 0-1), (5) Route per mode.
-  OUTPUT_FORMAT: L1 YAML dual-template (drill N/M+traps OR prod fidelity+errors), L2 visual rendering simulation.
+  WHEN: After jsonl-validate AND latex-parse complete. Merge point in D1 validation core.
+  CONSUMES: IC-06 golden_answer (challenge-generate, drill only), IC-07 validation_result (jsonl-validate), IC-08 parse_result (latex-parse).
+  PRODUCES: Drill: IC-09 rendering_diff + IC-10 trap_results → golden-correct, progress-track. Production: IC-12 qc_rendering → qc-report.
 user-invocable: false
 disable-model-invocation: false
 ---

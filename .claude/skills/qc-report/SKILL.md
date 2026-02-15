@@ -1,15 +1,12 @@
 ---
 name: qc-report
 description: |
-  [D1·PipelineB·QCReport] ProduceQCVerdict: production pass/fail report with HITL routing, batch aggregation, auto-fix suggestions. Pipeline B terminal.
+  Produces QC verdict: production pass/fail report with HITL routing, batch aggregation, auto-fix suggestions. Terminal Pipeline B skill. PM/PL-facing output.
 
-  WHEN: After render-evaluate completes in production mode (IC-12 qc_rendering available). Pipeline B terminal skill.
-  DOMAIN: production QC (D1 terminal). Pipeline B ONLY. PM/PL-facing output.
-  INPUT_FROM: IC-12 qc_rendering (render-evaluate: fidelity_score, fidelity_breakdown, error_taxonomy, element_verdicts, hitl_required, source_comparison).
-  OUTPUT_TO: qc-metrics (QC report data for aggregation at crowd_works/data/qc-reports/), PM/PL (HITL review items).
-
-  METHODOLOGY: (1) Receive IC-12 qc_rendering, (2) Determine verdict (PASS/CONDITIONAL_PASS/FAIL/HITL_REQUIRED), (3) Filter auto-fix suggestions (confidence>95%), (4) Generate QC report with CrowdWorks format, (5) Persist + batch summary.
-  OUTPUT_FORMAT: L1 YAML verdict+fidelity+error_count, L2 full QC report with error details+fix suggestions+HITL items.
+  Use when: Production rendering complete, need QC verdict and report.
+  WHEN: After render-evaluate completes in production mode (IC-12 qc_rendering available). Pipeline B only.
+  CONSUMES: IC-12 qc_rendering (render-evaluate: fidelity_score, fidelity_breakdown, error_taxonomy, element_verdicts, hitl_required).
+  PRODUCES: L1 YAML verdict+fidelity+error_count, L2 QC report with fix suggestions → qc-metrics (aggregation), PM/PL (HITL items).
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[file-or-directory]"

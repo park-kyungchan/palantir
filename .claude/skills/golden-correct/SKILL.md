@@ -1,15 +1,11 @@
 ---
 name: golden-correct
 description: |
-  [D1·Drill·Correction] Generates IC-11 correction_report with 7-category taxonomy, 3-stage verification badge, and per-correction confidence scoring. Terminal skill in Pipeline A drill cycle.
+  Generates IC-11 correction_report with 7-category taxonomy, 3-stage verification badge, and per-correction confidence scoring. Terminal Pipeline A drill skill.
 
-  WHEN: After render-evaluate completes (IC-09 rendering_diff available). Terminal skill in D1 drill cycle.
-  DOMAIN: drill (skill 5 of 5). Terminal: golden-correct -> progress-track (D2). Pipeline A ONLY (drill mode).
-  INPUT_FROM: IC-09 rendering_diff (render-evaluate: render_status, score, element_verdicts, trap_results, crash_report), IC-06 golden_answer (challenge-generate: element_list, trap_annotations, rendered_description), jsonl-validate (JSONL errors), latex-parse (LaTeX errors).
-  OUTPUT_TO: IC-11 correction_report (progress-track: corrections[] FATAL-first, verification badge, golden_jsonl, summary by_category/by_severity/correction_density/learning_value).
-
-  METHODOLOGY: (1) Retrieve IC-06 golden_answer + 3-stage verify, (2) Align trainee vs golden via IC-09 element_verdicts, (3) Generate corrections with category/severity/rule/backslash_depth/confidence, (4) Assemble golden_jsonl with COR-001..COR-N markers, (5) Produce IC-11 with VERIFIED_3STAGE badge + summary.
-  OUTPUT_FORMAT: L1 YAML with verification_badge + hitl_count + contracts_produced, L2 correction table + IC-11 example.
+  WHEN: After render-evaluate completes (IC-09 rendering_diff available). Pipeline A only.
+  CONSUMES: IC-09 rendering_diff (render-evaluate), IC-06 golden_answer (challenge-generate), jsonl-validate (JSONL errors), latex-parse (LaTeX errors).
+  PRODUCES: IC-11 correction_report (corrections[] FATAL-first, verification badge, golden_jsonl, summary) → progress-track.
 user-invocable: false
 disable-model-invocation: false
 ---

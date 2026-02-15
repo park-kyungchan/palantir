@@ -1,15 +1,12 @@
 ---
 name: challenge-generate
 description: |
-  [D1·Drill·Challenge] GenerateAdaptiveChallenge: 4 types (OCR-correction/pure-escape/domain-switch/composite), 80/20 weak-area trap allocation, adaptive difficulty. Pipeline A entry.
+  Generates adaptive challenge: 4 types (OCR-correction/pure-escape/domain-switch/composite), 80/20 weak-area trap allocation, adaptive difficulty. Pipeline A entry point.
 
-  WHEN: Drill loop start. After reference-build (IC-01) or progress-track (IC-03). User-invocable [topic] [difficulty:1-5].
-  DOMAIN: drill (1/5). Entry: challenge -> user -> jsonl-validate || latex-parse -> render-evaluate -> golden-correct.
-  INPUT_FROM: IC-01 command_pool (commands[], escape_rules[], ocr_confusions[], trap_catalog[]), IC-03 recommendation (next_difficulty, focus_rules[], weak_patterns[]).
-  OUTPUT_TO: IC-04 challenge_spec (trap_list, escape_rules_tested), IC-05 expected_constructs (constructs[], parse_depth), IC-06 golden_answer (jsonl_string, trap_annotations, hidden).
-
-  METHODOLOGY: (1) Load IC-01+IC-03 or defaults, (2) Select type from weak_patterns, (3) Allocate traps 80/20, (4) Domain-adaptive template, (5) Hidden golden answer per IC-06.
-  OUTPUT_FORMAT: L1 YAML challenge_spec + contracts_produced, L2 target rendering + hidden annotations.
+  Use when: Drill loop start or user-invocable [topic] [difficulty:1-5].
+  WHEN: After reference-build (IC-01) or progress-track (IC-03). Drill loop entry.
+  CONSUMES: IC-01 command_pool (commands[], escape_rules[], ocr_confusions[], trap_catalog[]), IC-03 recommendation (next_difficulty, focus_rules[], weak_patterns[]).
+  PRODUCES: IC-04 challenge_spec → jsonl-validate, IC-05 expected_constructs → latex-parse, IC-06 golden_answer (hidden) → render-evaluate.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[topic] [difficulty:1-5]"

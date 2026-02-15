@@ -1,14 +1,12 @@
 ---
 name: qc-metrics
 description: |
-  [D2·PipelineB·QCMetrics] AggregateProductionQuality from qc-report batch data. Per-worker accuracy, batch trends, error distribution, SLA compliance. Terminal D2 Pipeline B analytics.
+  Aggregates production quality from qc-report batch data. Per-worker accuracy, batch trends, error distribution, SLA compliance. Terminal Pipeline B analytics — no downstream consumers.
 
-  WHEN: After qc-report persists production QC reports. User-invocable for dashboard, trends, or worker review.
-  DOMAIN: production eval (D2 Pipeline B). Terminal. No downstream consumers. Analogous to progress-track (Pipeline A).
-  INPUT_FROM: qc-report (batch QC reports: batch_id, items[], summary, worker_stats), user invocation (batch|trend|worker:id).
-  OUTPUT_TO: PM/PL (metrics dashboard, SLA reports), reference-build (dominant error patterns for targeted refresh).
-
-  METHODOLOGY: (1) Read QC reports, scope by $ARGUMENTS, (2) Aggregate totals/pass-fail/hitl/fidelity/error distribution, (3) Per-worker: accuracy, volume, dominant errors, (4) Trend analysis (>=3 batches): fidelity+error trends, SLA, (5) Dashboard output with status, flags, trends, recommendations.
+  Use when: Dashboard, trends, or worker review needed from production QC data.
+  WHEN: After qc-report persists production QC reports. User-invocable for dashboard/trends/worker review.
+  CONSUMES: qc-report (batch QC reports: batch_id, items[], summary, worker_stats), user invocation ($ARGUMENTS scope).
+  PRODUCES: L1 YAML metrics dashboard, L2 per-worker accuracy + trend analysis → PM/PL (SLA reports), reference-build (dominant error patterns).
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[batch|trend|worker:id]"

@@ -1,15 +1,12 @@
 ---
 name: progress-track
 description: |
-  [D2·Eval·Progress] Terminal Pipeline A evaluator + feedback loop. Aggregates multi-drill results, identifies weak patterns, calculates 4-level mastery, persists to progress.yaml, generates IC-03 recommendation.
+  Terminal Pipeline A evaluator + feedback loop. Aggregates multi-drill results, identifies weak patterns, calculates 4-level mastery, persists to progress.yaml. Generates IC-03 recommendation for next drill cycle.
 
-  WHEN: After golden-correct (IC-11). Terminal D2. User-invocable: report/reset.
-  DOMAIN: eval (1/1). Terminal + loop: progress-track->IC-03->challenge-generate. Pipeline A only.
-  INPUT_FROM: IC-10 trap_results (score, category_breakdown, render_status), IC-11 correction_report (corrections[], severity, rule_violated, badge).
-  OUTPUT_TO: IC-03 recommendation (next_difficulty, difficulty_delta+/-1, focus_rules R1-R5, weak_patterns[], focus_weight, domain_performance[]).
-  PERSISTENCE: crowd_works/data/progress.yaml. Cross-cutting C: Optimization Loop.
-
-  METHODOLOGY: (1) Load IC-10+IC-11+progress.yaml, (2) Merge category_breakdown+corrections, (3) Domain-separated+per-category mastery, (4) Pattern ID: failures+errors+trend, (5) IC-03: delta+/-1, focus, persist.
+  Use when: After drill correction, or user-invocable report/reset.
+  WHEN: After golden-correct (IC-11). Pipeline A terminal + loop back to challenge-generate.
+  CONSUMES: IC-10 trap_results (score, category_breakdown), IC-11 correction_report (corrections[], severity, badge).
+  PRODUCES: IC-03 recommendation (next_difficulty, focus_rules R1-R5, weak_patterns[]) → challenge-generate. Persists progress.yaml.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[report|reset]"
