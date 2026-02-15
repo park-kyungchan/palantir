@@ -37,7 +37,7 @@ Apply detection rules:
 - 3+ uncovered files in same domain → signal for CREATE new skill
 
 ### 3. Check Domain Coverage
-For each of 8 pipeline domains:
+For all domains (8 pipeline + homeostasis + cross-cutting = 35 skills):
 - List existing skills in that domain
 - Identify if the domain change is covered by an existing skill
 - If not covered: propose CREATE action with suggested skill name and description
@@ -57,7 +57,7 @@ After user approval:
 - Run verify-cc-feasibility on all changed skills
 
 ## Quality Gate
-- All 8 pipeline domains have ≥1 skill
+- All domains (8 pipeline + homeostasis + cross-cutting) have ≥1 skill
 - All proposed actions have clear rationale
 - No domain left uncovered after actions applied
 - Changed skills pass CC feasibility check

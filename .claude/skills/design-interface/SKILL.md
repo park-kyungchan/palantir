@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Simple interface listing between 2-3 components.
-- **STANDARD**: Spawn analyst. Formal interface specification per component boundary.
-- **COMPLEX**: Spawn 2-4 analysts. Each covers non-overlapping component boundaries.
+- **STANDARD**: Launch analyst (run_in_background). Formal interface specification per component boundary.
+- **COMPLEX**: Launch 2-4 background agents (run_in_background). Each covers non-overlapping component boundaries.
 
 ## Methodology
 

@@ -20,8 +20,8 @@ argument-hint: "[topic]"
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Parse request, ask 2-3 questions via AskUserQuestion, synthesize.
-- **STANDARD**: Spawn 1-2 analysts. Each covers separate requirement dimensions.
-- **COMPLEX**: Spawn 2-4 analysts. Divide: scope, constraints, integration, edge-cases.
+- **STANDARD**: Launch 1-2 analysts (run_in_background). Each covers separate requirement dimensions.
+- **COMPLEX**: Launch 2-4 background agents (run_in_background). Divide: scope, constraints, integration, edge-cases.
 
 ## Methodology
 

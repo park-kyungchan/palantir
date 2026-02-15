@@ -25,7 +25,7 @@ argument-hint: "[focus-area]"
 ### 1. Research CC Native State
 First, read cached reference: `memory/cc-reference/` (4 files: native-fields, context-loading, hook-events, arguments-substitution).
 - If reference exists and is recent: use as ground truth (skip claude-code-guide spawn)
-- If reference outdated or focus-area requires new info: spawn claude-code-guide for delta only
+- If reference outdated or focus-area requires new info: spawn claude-code-guide (if unavailable, use cc-reference cache in agent-memory) for delta only
 - Query focus: "What NEW native features exist since last verification date?"
 - Include focus-area from user arguments if provided
 - Update cc-reference files with any new findings

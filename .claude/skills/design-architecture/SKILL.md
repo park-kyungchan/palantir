@@ -19,8 +19,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Simple component identification, no formal ADR.
-- **STANDARD**: Spawn analyst. Formal component decomposition with ADRs.
-- **COMPLEX**: Spawn 2-4 analysts. Divide by module boundary or architectural concern.
+- **STANDARD**: Launch analyst (run_in_background). Formal component decomposition with ADRs.
+- **COMPLEX**: Launch 2-4 background agents (run_in_background). Divide by module boundary or architectural concern.
 
 ## Methodology
 

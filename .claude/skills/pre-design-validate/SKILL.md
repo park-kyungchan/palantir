@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick completeness check against 5-dimension matrix.
-- **STANDARD**: Spawn analyst. Systematic dimension-by-dimension validation.
-- **COMPLEX**: Spawn 2 analysts. Split: functional (scope+criteria) vs non-functional (constraints+errors+integration).
+- **STANDARD**: Launch analyst (run_in_background). Systematic dimension-by-dimension validation.
+- **COMPLEX**: Launch 2 background agents (run_in_background). Split: functional (scope+criteria) vs non-functional (constraints+errors+integration).
 
 ## Methodology
 

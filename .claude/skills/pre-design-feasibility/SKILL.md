@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick assessment against known CC capabilities.
-- **STANDARD**: Spawn researcher with claude-code-guide + web access for CC docs lookup.
-- **COMPLEX**: Spawn 2 researchers. Split: core CC features vs MCP/plugin capabilities.
+- **STANDARD**: Launch researcher (run_in_background) with claude-code-guide (if unavailable, use cc-reference cache in agent-memory) + web access for CC docs lookup.
+- **COMPLEX**: Launch 2 background agents (run_in_background). Split: core CC features vs MCP/plugin capabilities.
 
 ## Methodology
 

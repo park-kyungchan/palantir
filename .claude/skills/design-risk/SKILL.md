@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick risk scan, 2-3 top risks identified.
-- **STANDARD**: Spawn analyst. Systematic FMEA per component.
-- **COMPLEX**: Spawn 2-4 analysts. Divide: security vs performance vs reliability.
+- **STANDARD**: Launch analyst (run_in_background). Systematic FMEA per component.
+- **COMPLEX**: Launch 2-4 background agents (run_in_background). Divide: security vs performance vs reliability.
 
 ## Methodology
 

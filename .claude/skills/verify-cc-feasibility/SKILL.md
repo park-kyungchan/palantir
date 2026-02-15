@@ -54,7 +54,7 @@ For each native field, check value types:
 
 ### 4. Spawn Claude-Code-Guide Verification
 If any questionable fields found:
-- Spawn claude-code-guide agent: "Are these frontmatter fields valid for Claude Code skills/agents?"
+- Spawn claude-code-guide agent (if unavailable, use cc-reference cache in agent-memory): "Are these frontmatter fields valid for Claude Code skills/agents?"
 - Include the specific fields in question
 - Record feasibility verdict per field
 

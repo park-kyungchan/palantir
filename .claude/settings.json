@@ -92,7 +92,7 @@
           {
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-implementer-done.sh",
-            "timeout": 15
+            "timeout": 30
           }
         ]
       }
