@@ -21,6 +21,52 @@ disable-model-invocation: false
 - **STANDARD**: Spawn 1 analyst. Grep-based reverse reference analysis for 3-8 changed files.
 - **COMPLEX**: Spawn 1 analyst with extended maxTurns. Comprehensive analysis for >8 changed files with map-assisted lookups.
 
+## Decision Points
+
+### Tier Classification for Impact Analysis
+- **TRIVIAL indicators**: 1-2 changed files, all in the same module, no cross-module references expected. Lead can do a quick grep check directly without spawning an analyst.
+- **STANDARD indicators**: 3-8 changed files, spanning 1-2 modules. Spawn 1 analyst for systematic grep-based analysis.
+- **COMPLEX indicators**: 8+ changed files across 3+ modules, or files that are high-hotspot in codebase-map.md. Spawn 1 analyst with extended maxTurns and map-assisted analysis.
+
+### When to Skip Impact Analysis
+Impact analysis can be skipped (set `status: skipped`, `cascade_recommended: false`) when:
+- Changes are documentation-only (README, comments, non-functional text)
+- Changes are in test files only (no production code impact)
+- Changes are in isolated leaf files with zero known dependents
+- TRIVIAL tier AND Lead has manually verified no references exist via quick grep
+
+Impact analysis should NEVER be skipped when:
+- Any `.claude/` INFRA file was changed (always check for cross-references)
+- Any interface file was changed (function signatures, type definitions, API contracts)
+- Any high-hotspot file was changed (codebase-map.md `hotspot: high`)
+
+### Codebase Map Decision
+- **Map available AND fresh** (>70% entries updated within 7 days): Use map's `refd_by` fields as pre-computed hints. Supplement with grep for files not in map. Set `degradation_level: full`.
+- **Map available BUT stale** (>30% entries outdated): Use map as hints only, do NOT trust as complete. Grep-verify all map suggestions. Set `degradation_level: degraded`.
+- **Map unavailable**: Pure grep-based analysis. Set `degradation_level: degraded`. Analysis is slower but functionally complete for DIRECT dependencies. TRANSITIVE detection may be incomplete.
+- **Recommendation**: If map is unavailable, include a note in L2 recommending `manage-codebase full` run before next pipeline execution.
+
+### Cascade Recommendation Logic
+The cascade decision is the primary output of this skill:
+- **cascade_recommended: true** when:
+  - At least 1 DIRECT dependent exists (literal reference to changed file)
+  - OR analysis is partial/incomplete (safety: err on side of checking)
+  - AND dependent files are NOT already in the pipeline's current change set
+- **cascade_recommended: false** when:
+  - Zero DIRECT dependents found
+  - OR all dependents are already being handled by current pipeline execution
+  - OR all dependents are TRANSITIVE-only (informational, no action needed)
+- **Edge case**: If a DIRECT dependent is a hook script (.sh file), cascade is recommended but Lead should note that hook changes require special handling (hooks run in shell context, not agent context).
+
+### SRC Hook Integration
+The SubagentStop hook (`on-implementer-done.sh`) injects an SRC IMPACT ALERT into Lead's context when implementers complete. This alert contains:
+- Preliminary dependent file list (from the hook's quick grep)
+- Changed file paths
+- This alert is a TRIGGER to invoke execution-impact, not a complete analysis
+- Lead should pass the hook's preliminary data as additional context to the analyst, but the analyst performs the authoritative analysis
+
+The hook alert may arrive before execution-code/infra L1 is fully consolidated. Wait for consolidation before spawning the impact analyst to avoid analyzing an incomplete change set.
+
 ## Methodology
 
 ### 1. Read File Change Manifest
@@ -100,6 +146,49 @@ Generate L1 YAML and L2 markdown:
 - **Cascade default on failure**: `cascade_recommended: false` (conservative -- no cascade without evidence)
 - **Routing**: Pipeline continues to execution-review regardless; impact analysis is informational, not blocking
 - **Pipeline impact**: Non-blocking. Partial or missing impact data does not halt the pipeline
+
+## Anti-Patterns
+
+### DO NOT: Cascade on TRANSITIVE-Only Dependencies
+TRANSITIVE dependencies (2-hop) are informational. They indicate potential future impact but do not require immediate code changes. Only DIRECT dependencies (1-hop, literal reference) should trigger cascade. Cascading on TRANSITIVE deps causes unnecessary file modifications.
+
+### DO NOT: Trust Hook Alert as Authoritative
+The SubagentStop hook performs a quick grep for preliminary impact detection. This is a trigger signal, not a complete analysis. The hook may miss references that use different naming patterns (e.g., hook greps for filename but the reference uses a function name from that file). Always perform full analyst-driven analysis.
+
+### DO NOT: Analyze Files Outside Changed Set
+The analyst should ONLY analyze dependents of files in the change manifest. Do not explore the entire codebase for general dependency issues — that is manage-codebase's job.
+
+### DO NOT: Skip TRANSITIVE When Time-Budgeted
+If analyst turns are running low, skip TRANSITIVE analysis (it is optional) but NEVER skip DIRECT analysis. Report `transitive_skipped: true` rather than rushing through an incomplete TRANSITIVE scan.
+
+### DO NOT: Cascade When Dependents Are Already Being Changed
+If a dependent file is already in the current pipeline's change set (assigned to an implementer), it does not need cascade updates — it is already being handled. Check the execution-code/infra manifests before recommending cascade.
+
+### DO NOT: Re-Invoke Impact After Cascade
+After execution-cascade runs, it has its own convergence checking. Do NOT re-invoke execution-impact after cascade completion — this creates a circular loop. The cascade's analyst-driven convergence check serves the same purpose.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| execution-code | Code file change manifest | L1 YAML: `tasks[].{files[], status}` |
+| execution-infra | Infra file change manifest | L1 YAML: `files_changed[]` |
+| on-implementer-done.sh | SRC IMPACT ALERT (preliminary) | Hook additionalContext: `changed_files[]`, `preliminary_dependents[]` |
+| manage-codebase | Codebase dependency map (optional) | File: `.claude/agent-memory/analyst/codebase-map.md` with `refd_by` fields |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| execution-cascade | Impact report with DIRECT dependents | `cascade_recommended: true` |
+| execution-review | Impact report (informational) | Always — review uses impact data for context |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Analyst maxTurns exhausted | execution-review (continue) | Partial impact report, `confidence: low` |
+| All greps fail | execution-review (continue) | `status: partial`, `cascade_recommended: false` (conservative) |
+| No changed files in manifest | Skip (no-op) | `status: skipped`, empty impacts array |
 
 ## Output
 

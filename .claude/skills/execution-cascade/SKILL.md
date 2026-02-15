@@ -22,6 +22,40 @@ disable-model-invocation: false
 - **STANDARD**: Spawn 1-2 implementers per iteration. Update 3-8 affected files. Expected 1-2 iterations.
 - **COMPLEX**: Spawn 2 implementers per iteration. Update >8 affected files. May reach max 3 iterations.
 
+## Decision Points
+
+### Tier Classification for Cascade
+Lead determines cascade depth based on execution-impact report:
+- **TRIVIAL indicators**: 1-2 DIRECT dependents, all in the same directory, simple reference pattern (e.g., filename mention in description). Single implementer, expect convergence in 1 iteration.
+- **STANDARD indicators**: 3-6 DIRECT dependents across 1-2 directories, mixed reference types (filename + function name). 1-2 implementers per iteration, expect convergence in 1-2 iterations.
+- **COMPLEX indicators**: 7+ DIRECT dependents across 3+ directories, deep reference chains, high-hotspot files affected. 2 implementers per iteration, may reach max 3 iterations.
+
+### When to Skip Cascade
+Cascade can be skipped (set `status: skipped`) when:
+- execution-impact reports `cascade_recommended: false`
+- All dependents are TRANSITIVE-only (no DIRECT dependents)
+- All DIRECT dependents are already in the current pipeline's change set (being handled by execution-code/infra)
+- execution-impact reports `status: skipped` (no analysis was performed)
+
+### Implementer Type Selection
+Critical decision: which implementer type for each dependent file:
+- **implementer** (`subagent_type: implementer`): For application source files (Python, TypeScript, etc.). Has Bash for testing.
+- **infra-implementer** (`subagent_type: infra-implementer`): For `.claude/` directory files (skills, agents, settings, hooks). Has Edit/Write but NO Bash.
+- **Decision rule**: Check file path prefix. If path starts with `.claude/` → infra-implementer. Otherwise → implementer.
+- **Mixed cascade**: When dependents span both source and .claude/ files, spawn BOTH types in parallel (each owns its domain).
+
+### Convergence vs Max-Iteration Tradeoff
+- **Aggressive convergence** (default): Run convergence check after every iteration. Stop as soon as no new impacts detected. Minimizes unnecessary file touches.
+- **Conservative convergence**: Run all 3 iterations regardless, accumulating changes. Use when: high-hotspot files are affected, or execution-impact confidence was `low`.
+- **Early termination**: If iteration 1 produces 0 new impacts AND all implementers reported `status: complete`, skip remaining iterations entirely. This is the common case for well-structured codebases.
+
+### Cascade Mode Activation
+When cascade begins, Lead enters "cascade mode":
+- SRC IMPACT ALERTs from cascade-spawned implementers are IGNORED (prevents recursive loop)
+- Lead tracks state internally (iteration_count, all_updated_files, etc.)
+- Convergence checking is done by analyst agent with CC Grep, not by hooks
+- Cascade mode exits when: convergence reached OR max iterations hit OR all implementers failed
+
 ## Methodology
 
 ### 1. Read Impact Report
@@ -127,6 +161,72 @@ When max 3 iterations reached without convergence:
 4. execution-review receives warnings and applies extra scrutiny
 5. verify-* phase (P8) catches remaining inconsistencies
 6. Delivery (P9) commit message notes "partial cascade convergence"
+
+## Anti-Patterns
+
+### DO NOT: Process TRANSITIVE Dependents in Cascade
+Cascade updates ONLY DIRECT dependents (hop_count: 1). TRANSITIVE dependents (hop_count: 2) are informational from execution-impact. Updating transitive dependents causes unnecessary file churn and may create new cascading impacts.
+
+### DO NOT: Assign Same File to Multiple Implementers
+Within each iteration, file ownership must be non-overlapping. If two dependent files are in the same module and changes are interdependent, assign them to the SAME implementer. Parallel implementers modifying related files create race conditions.
+
+### DO NOT: Re-Invoke execution-impact After Cascade
+The cascade has its own convergence mechanism (analyst with CC Grep). Re-invoking execution-impact after cascade creates a circular loop: impact → cascade → impact → cascade. The analyst convergence check serves the same purpose.
+
+### DO NOT: Ignore Hook Alerts During Cascade
+While cascade-spawned implementer hook alerts should not trigger execution-impact, the alerts themselves contain useful data. Lead should READ the alerts for monitoring but NOT ACT on them (no re-routing to execution-impact).
+
+### DO NOT: Block Pipeline on Non-Convergence
+Max 3 iterations is a hard limit. If cascade doesn't converge in 3 iterations, the pipeline MUST continue. Non-convergence is reported as warnings to execution-review and verify domain, which apply extra scrutiny. Blocking indefinitely is worse than incomplete cascade.
+
+### DO NOT: Cascade When Root Cause File Is Wrong
+If the implementer reports that the dependent file doesn't actually reference the changed file (false positive from grep), do NOT force the update. Mark the dependent as `status: false_positive` and exclude from further iterations. The grep match may be in comments, strings, or unrelated context.
+
+### DO NOT: Use Background Agents for Cascade Implementers
+Cascade implementers need monitoring between iterations. Background agents (`run_in_background: true`) can't receive mid-task corrections. Always use foreground spawning for cascade work.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| execution-impact | Impact report with DIRECT dependents | L1 YAML: `impacts[].{changed_file, dependents[].{file, type, hop_count, reference_pattern, evidence}}` |
+| execution-impact | Cascade recommendation | L1 field: `cascade_recommended: true` with `cascade_rationale` |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| execution-review | Cascade results + warnings | Always after cascade completes (converged or partial) |
+| execution-impact | Re-invocation for convergence check | NEVER — convergence handled internally by analyst |
+| verify domain | Cascade-modified files for validation | Via execution-review routing |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Non-convergence (3 iterations) | execution-review (with warnings) | All iteration details, unresolved file list |
+| All implementers failed in iteration | execution-review (FAIL) | Failed file list, error details per implementer |
+| Circular dependency detected | execution-review (with warnings) | Cycle details, files marked as updated to break cycle |
+| No DIRECT dependents (false cascade trigger) | execution-review (skipped) | `status: skipped`, empty iteration_details |
+
+### State Flow Between Iterations
+```
+Iteration 0 (init):
+  → Read impact report
+  → Initialize: iteration_count=0, all_updated_files={}, original_impact_files=set(dependents)
+
+Iteration N (1-3):
+  → Group dependents → Spawn implementers → Collect results
+  → Update: all_updated_files += iteration_changed_files
+  → Spawn analyst convergence check
+  → If new_impacts empty: CONVERGED → exit
+  → If new_impacts non-empty AND N < 3: → Iteration N+1
+  → If N >= 3: MAX_ITERATIONS → exit with partial status
+
+Post-cascade:
+  → Build L1/L2 with all iteration details
+  → Route to execution-review
+  → Exit cascade mode (re-enable SRC hook processing)
+```
 
 ## Quality Gate
 - All DIRECT dependents from execution-impact have been processed (updated or skipped with reason)

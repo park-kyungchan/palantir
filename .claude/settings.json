@@ -104,7 +104,7 @@
     "superpowers-developing-for-claude-code@superpowers-marketplace": true,
     "superpowers@superpowers-marketplace": true
   },
-  "promptSuggestionEnabled": false,
+  "promptSuggestionEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "teammateMode": "tmux",
   "alwaysThinkingEnabled": true
