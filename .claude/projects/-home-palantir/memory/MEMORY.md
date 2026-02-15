@@ -27,16 +27,16 @@
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
 - teammateMode: tmux (settings.json)
 
-## Current INFRA State (v11.0-pilot+L1opt, 2026-02-15)
+## Current INFRA State (v11.0-L2opt, 2026-02-15)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v11.0-pilot | 55L | Protocol-only + §2.1 CE + 44 skills (8 pipeline + 5 homeostasis + 3 cross-cutting) |
+| CLAUDE.md | v11.0 | 55L | Protocol-only + §2.1 CE + 44 skills (8 pipeline + 5 homeostasis + 3 cross-cutting) |
 | Agents | v10.9+CE | 6 files | All 6 have Completion Protocol section (SendMessage on task completion) |
-| Skills | v11.0+L1opt | 54 dirs | 44 INFRA + 10 crowd_works. All 44 L1 CE/PE optimized. Budget: 44,138/48,000 (8% headroom) |
-| Settings | v11.0-pilot | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 48000 |
+| Skills | v11.0+L2opt | 54 dirs | 44 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized. Budget: ~47,000/56,000 (16% headroom) |
+| Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
 | Hooks | 8 scripts | ~380L | 6 global events + 5 agent-scoped hooks (SRC moved to agent scope) |
-| Conventions | v11.0+L1opt | ~60L | +SendMessage signal format + error taxonomy + checkpoint micro-format |
+| Conventions | v11.0 | ~60L | +SendMessage signal format + error taxonomy + checkpoint micro-format |
 | Agent Memory | -- | 7 files | +rsi-ce-diagnosis.md (342L, CE health 3/10→~7/10) |
 
 ### Architecture (v10 Native Optimization)
@@ -102,20 +102,18 @@ Core ideas from meta-cognition brainstorming have been implemented in v10:
 Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -- using native fields only.
 Details: `memory/meta-cognition-infra.md`
 
-### L2 Body Design -- IN PROGRESS (2026-02-15)
-P0+P1 complete. P2-P5 compressed to reference template. P6 execution next.
-- L1 (frontmatter descriptions) = DONE (f24b294 on `infra` branch)
-- L2 (body) = IN PROGRESS. All 44/44 have FULL L2 bodies (8/8 sections, avg 228 lines). Task = optimization, not creation.
-- DMI:true→false: 3 skills (brainstorm, task-management, pipeline-resume). self-diagnose already false.
-- Budget: 48,000→56,000 after DMI change (+2,995 chars auto-load).
-- 11 batches (B1-B9+B10a+B10b), 3 priority tiers (P-HIGH:17, P-MEDIUM:8, P-LOW:19)
-- Key gap: 26/44 lack DPS templates in Methodology
-- Brainstorm files: `/home/palantir/.claude/brainstorm/p0-l2-body-*.md` and `p1-l2-*.md`
-- Gold-standard: execution-review/SKILL.md
+### L2 Body Design -- COMPLETE (2026-02-15)
+All 44 INFRA skills L2 bodies CE/PE optimized. Commit 798b9dc on `infra` branch. PR #53.
+- 11 batches (B1-B9+B10a+B10b), 3 waves, 50 files, +2930/-1110
+- DMI:true→false: brainstorm, task-management, pipeline-resume
+- Budget: 48,000→56,000 (SLASH_COMMAND_TOOL_CHAR_BUDGET)
+- All 44: DPS 5-field, tier DPS, Decision Points, maxTurns, Anti-Patterns >=3, Transitions 3 tables
 
 ## Session History
 
-Branch: `infra` (was `test`). Latest commit: f24b294.
+Branch: `infra`. Latest commit: 798b9dc. PR #53.
+- 798b9dc: L2 Body CE/PE Optimization (50 files, +2930/-1110, 44 skills L2 optimized)
+- c768d37: crowd_works Pipeline B skills (3 new, 7→10 total)
 - f24b294: Phase Efficiency Optimization + L1 CE/PE bulk (61 files, +19/-8 skills, 44 L1 optimized)
 - Previous on `test`: 9830714..a153d18 (~20 commits, ~300 files)
 - Full history: `memory/infrastructure-history.md`
