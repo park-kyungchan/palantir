@@ -1,0 +1,279 @@
+# Research Index: Modern Web Dashboard Design Patterns (2026-02-15)
+
+metadata:
+  research_date: 2026-02-15
+  research_topic: "2026 Web Dashboard Design Patterns - CSS-only visualization, single-file dashboards, library-free data viz, dark theme glassmorphism, bilingual UI, vanilla JS interactions"
+  mcp_tools_available: false
+  fallback_tools: "WebSearch, WebFetch"
+  status: COMPLETE
+
+findings:
+  - id: CSS-01
+    topic: "CSS Container Queries for Dashboard Cards"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#css-container-queries"
+    action: "USE"
+    summary: "Container queries (98% support) enable true component reusability. Use @container with inline-size, named containers, and cq* units (cqw/cqh/cqi). Dashboard cards adapt to container, not viewport. Progressive enhancement via @supports."
+    confidence: 9/10
+    browser_support: "Chrome 105+, Firefox 110+, Safari 16+, Edge 105+"
+
+  - id: CSS-02
+    topic: "CSS Nesting for Dashboard Styling"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#css-nesting"
+    action: "USE"
+    summary: "Native CSS nesting (90% support) with & selector. No build tools required. Nest @media, @supports, @layer inside style rules. Reduces selector repetition, co-locates related styles."
+    confidence: 9/10
+    browser_support: "Chrome 120+, Firefox 117+, Safari 17.2+, Edge 120+"
+
+  - id: CSS-03
+    topic: "@property for Animatable Custom Properties"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#property-animations"
+    action: "USE"
+    summary: "@property enables smooth CSS animations on custom properties. Register with syntax (e.g., <percentage>, <color>, <angle>), inherits flag, initial-value. Critical for progress bars, chart animations. Baseline 2024."
+    confidence: 10/10
+    browser_support: "All modern browsers (July 2024+)"
+
+  - id: CSS-04
+    topic: "Scroll-Driven Animations"
+    priority: MEDIUM
+    status: VALIDATED
+    target_doc: "L2-summary.md#scroll-driven-animations"
+    action: "USE_WITH_FALLBACK"
+    summary: "scroll-timeline and view-timeline enable animation tied to scroll position. Use scroll() for container-based, view() for viewport-relative. Perfect for dashboard card entrance, progress indicators. Requires @supports fallback."
+    confidence: 8/10
+    browser_support: "Chrome 115+, Safari 17.4+, Opera 101+ | Firefox experimental"
+
+  - id: CSS-05
+    topic: "View Transitions API"
+    priority: MEDIUM
+    status: VALIDATED
+    target_doc: "L2-summary.md#view-transitions"
+    action: "USE_WITH_FALLBACK"
+    summary: "View Transitions animate between DOM states with smooth crossfade. Interop 2025 focus area. Firefox 144 adding same-document transitions. Use for tab switches, drill-down navigation. Graceful degradation required."
+    confidence: 7/10
+    browser_support: "Chrome 111+, Edge 111+ | Firefox 144+ (upcoming) | Safari partial"
+
+  - id: VIZ-01
+    topic: "Pure CSS Bar Charts"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#css-bar-charts"
+    action: "USE"
+    summary: "CSS-only bar charts using background-color, width percentage, repeating-linear-gradient for gridlines. Use <dl>/<dd> for semantic markup or table-based approach. Add -webkit-print-color-adjust: exact for print support."
+    confidence: 9/10
+    implementation: "Definition list OR table with inline width styles"
+
+  - id: VIZ-02
+    topic: "SVG Donut/Pie Charts (stroke-dasharray)"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#svg-donut-charts"
+    action: "USE"
+    summary: "SVG circle with stroke-dasharray = perimeter (2πr), stroke-dashoffset controls fill. Formula: offset = perimeter - perimeter × amount / 100. Rotate -90° for top start. Animate via CSS transition on dashoffset."
+    confidence: 10/10
+    implementation: "Pure CSS animation + JS for dynamic values"
+
+  - id: VIZ-03
+    topic: "CSS Conic-Gradient Pie Charts"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#conic-gradient-pies"
+    action: "USE"
+    summary: "conic-gradient() creates pie charts without SVG. Syntax: conic-gradient(color1 0% X%, color2 X% Y%, ...). Percentage × 3.6 = degrees. Border-radius: 50% for circle. Lightweight, no JS for static data."
+    confidence: 9/10
+    browser_support: "Chrome 69+, Firefox 83+, Safari 12.1+, Edge 79+"
+
+  - id: VIZ-04
+    topic: "Radial Progress Indicators (Pure CSS)"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#radial-progress"
+    action: "USE"
+    summary: "Two methods: (1) SVG circle with stroke-dasharray + CSS animation, (2) radial-gradient/conic-gradient masks. Use CSS variables with @property for smooth percentage transitions. Stacked circles for multi-ring gauges."
+    confidence: 9/10
+    implementation: "SVG preferred for precision, CSS gradient for simplicity"
+
+  - id: VIZ-05
+    topic: "CSS Sparklines"
+    priority: MEDIUM
+    status: VALIDATED
+    target_doc: "L2-summary.md#sparklines"
+    action: "USE"
+    summary: "Inline mini-charts using nested spans with height percentages. CSS Paint API (sparklines worklet) offers advanced approach. Vanilla JS libraries available (zero dependencies). Ideal for dashboard tables."
+    confidence: 7/10
+    implementation: "Nested span heights OR CSS Paint Worklet"
+
+  - id: GLASS-01
+    topic: "Glassmorphism Dark Theme Pattern"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#glassmorphism-dark"
+    action: "USE"
+    summary: "backdrop-filter: blur(10-20px) + rgba background (10-40% opacity). Dark theme: rgba(17, 25, 40, 0.75) with saturate filter. Add subtle colored borders (navy, violet, teal). Text: white/gray-100 with fallback bg for Firefox."
+    confidence: 9/10
+    browser_support: "88%+ (Firefox requires manual enable)"
+
+  - id: GLASS-02
+    topic: "Design Tokens for Dark Dashboard"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#design-tokens-dark"
+    action: "USE"
+    summary: "Semantic tokens auto-adjust between themes. Use HSL for mathematical control. 2026 palette: soft darks (charcoal, navy, off-black) not pure black. Neon accents (micro-glow on focus, badges). WCAG 4.5:1 contrast minimum."
+    confidence: 9/10
+    trend: "Pantone Cloud Dancer 11-4201, neon micro-accents"
+
+  - id: LANG-01
+    topic: "Bilingual UI with :lang() Selector"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#bilingual-lang-selector"
+    action: "USE"
+    summary: ":lang() pseudo-class matches lang attribute (recognizes inheritance). Use for KR/EN font families, spacing. CSS attr() function (typed) reads data-* attributes for dynamic content. data-lang attribute pattern for toggles."
+    confidence: 9/10
+    implementation: ":lang(ko) / :lang(en) + data-lang toggles"
+
+  - id: JS-01
+    topic: "Vanilla JS Table Filtering Pattern"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#vanilla-filtering"
+    action: "USE"
+    summary: "querySelectorAll + innerText.toLowerCase().includes(). Add debounce (500ms typingTimer). Toggle .is-hidden class. Use textContent for keyword search. For <10k rows, client-side is instant. Accessibility: role=status for results."
+    confidence: 10/10
+    implementation: "Complete code example in L2"
+
+  - id: JS-02
+    topic: "Accessible Tab Navigation (ARIA)"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#accessible-tabs"
+    action: "USE"
+    summary: "role=tablist/tab/tabpanel, aria-selected, aria-controls, tabindex management. Keyboard: Arrow keys navigate, Enter/Space activate, Home/End jump. Progressive enhancement from semantic HTML. W3C APG pattern authoritative."
+    confidence: 10/10
+    spec: "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/"
+
+  - id: JS-03
+    topic: "Accessible Accordion Pattern"
+    priority: HIGH
+    status: VALIDATED
+    target_doc: "L2-summary.md#accessible-accordion"
+    action: "USE"
+    summary: "Two approaches: (1) Native <details>/<summary> (less code, good support), (2) Custom button + aria-expanded + aria-controls. Custom approach more accessible currently. JS toggles aria-expanded state, manages focus."
+    confidence: 9/10
+    recommendation: "Custom ARIA for accessibility, native for simplicity"
+
+  - id: JS-04
+    topic: "Vanilla JS Drill-Down Pattern"
+    priority: MEDIUM
+    status: RESEARCHED
+    target_doc: "L2-summary.md#drill-down-pattern"
+    action: "USE"
+    summary: "Event listeners for click → show/hide child elements. Store state in data attributes. Use CSS classes for visibility. For complex drill-downs, consider D3.js or Highcharts. Vanilla JS viable for simple hierarchies."
+    confidence: 7/10
+    implementation: "Event delegation + CSS class toggles"
+
+  - id: SINGLE-01
+    topic: "Self-Contained Single-File Dashboard"
+    priority: MEDIUM
+    status: RESEARCHED
+    target_doc: "L2-summary.md#single-file-pattern"
+    action: "USE"
+    summary: "Inline <style> and <script> tags, data URIs for images (base64). Tools: HTMLArk embeds assets. Most templates use CDNs — build custom for true no-dependency. Quarto: self-contained: true. Trade-off: file size vs network requests."
+    confidence: 8/10
+    tools: "HTMLArk for asset embedding"
+
+cross_impact:
+  - finding: CSS-01
+    affects: [VIZ-01, VIZ-04, GLASS-01]
+    reason: "Container queries enable responsive charts/cards without media queries"
+
+  - finding: CSS-03
+    affects: [VIZ-02, VIZ-04]
+    reason: "@property enables smooth animation of chart percentages"
+
+  - finding: CSS-04
+    affects: [VIZ-02, VIZ-04]
+    reason: "Scroll-driven animations can trigger chart entrance effects"
+
+  - finding: GLASS-01
+    affects: [CSS-01, LANG-01]
+    reason: "Glassmorphism cards use container queries and may need lang-specific styles"
+
+  - finding: LANG-01
+    affects: [JS-01, JS-02, JS-03]
+    reason: "Bilingual UI needs ARIA labels in both languages"
+
+  - finding: JS-01
+    affects: [JS-02, JS-04]
+    reason: "Filtering pattern combines with tabs/drill-down for dashboard interactivity"
+
+recommendations:
+  - category: "CSS Foundation"
+    priority: HIGH
+    items:
+      - "Use CSS Container Queries for all dashboard cards (98% support)"
+      - "Adopt native CSS nesting (no build tools, 90% support)"
+      - "Register all animatable properties with @property"
+
+  - category: "Data Visualization"
+    priority: HIGH
+    items:
+      - "SVG stroke-dasharray for donut/radial progress (best precision)"
+      - "conic-gradient for static pie charts (lightest weight)"
+      - "Pure CSS bar charts for simple comparisons"
+      - "Avoid external chart libraries — use native techniques"
+
+  - category: "Dark Theme Glassmorphism"
+    priority: HIGH
+    items:
+      - "backdrop-filter: blur(10-20px) + rgba(17, 25, 40, 0.75)"
+      - "Use semantic design tokens (HSL-based for theme switching)"
+      - "Maintain WCAG 4.5:1 contrast with fallback backgrounds"
+      - "Soft darks (charcoal, navy) over pure black"
+
+  - category: "Bilingual UI"
+    priority: HIGH
+    items:
+      - "Use :lang(ko) / :lang(en) for font-family, letter-spacing"
+      - "data-lang attributes for JavaScript-driven content toggle"
+      - "CSS attr() for reading data attributes (typed version in 2026)"
+
+  - category: "Vanilla JS Interactions"
+    priority: HIGH
+    items:
+      - "Implement debounced filtering (500ms) for tables"
+      - "Follow W3C ARIA APG for tabs (role, aria-*, keyboard nav)"
+      - "Use custom ARIA accordion over <details> for better a11y"
+      - "Event delegation pattern for drill-down hierarchies"
+
+  - category: "Progressive Enhancement"
+    priority: MEDIUM
+    items:
+      - "@supports for scroll-driven animations and view transitions"
+      - "Fallback backgrounds for backdrop-filter (Firefox)"
+      - "CSS-only base styles before JS enhancement"
+
+unresolved:
+  - item: "View Transitions API Firefox support"
+    severity: MEDIUM
+    note: "Firefox 144+ will add same-document transitions (Interop 2025). Use @supports detection until widespread."
+
+  - item: "backdrop-filter Firefox default disabled"
+    severity: MEDIUM
+    note: "88% support, but Firefox requires manual enable. Always provide fallback background with higher opacity."
+
+  - item: "Complex drill-down without libraries"
+    severity: LOW
+    note: "Vanilla JS viable for simple hierarchies. For complex multi-level drill-downs, D3.js or Highcharts may be justified."
+
+next_steps:
+  - "Create full single-file dashboard template combining all patterns"
+  - "Build reusable CSS component library (cards, charts, progress indicators)"
+  - "Document browser support matrix with fallback strategies"
+  - "Develop bilingual ARIA label pattern for KR/EN"

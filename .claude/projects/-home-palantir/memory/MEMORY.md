@@ -27,14 +27,14 @@
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
 - teammateMode: tmux (settings.json)
 
-## Current INFRA State (v10.6 Integration, 2026-02-15)
+## Current INFRA State (v10.8, 2026-02-15)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v10.7 | 48L | Protocol-only + tier routing override note + P0-P2 local agent clarification |
-| Agents | v10.7 | 6 files | 2 haiku+memory:none (delivery,pt-mgr), 4 memory:project, all color + analyst wording fix, delivery-agent constraint |
-| Skills | v10.7 | 35 dirs | DPS 19 skills + cross-report fixes + L1 budget compliance |
-| Settings | v10.7 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded + tavily permission |
+| CLAUDE.md | v10.8 | 54L | Protocol-only + sequential phase numbering P0-P8 + expanded PT section |
+| Agents | v10.8 | 6 files | 2 haiku+memory:none (delivery,pt-mgr), 4 memory:project, all color + analyst wording fix, delivery-agent constraint |
+| Skills | v10.8 | 35 dirs | DPS 19 skills + cross-report fixes + L1 budget compliance |
+| Settings | v10.8 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded + tavily permission |
 | Hooks | 5 total | ~285L | SRC log preserved (no mv), + pre-compact mtime selection |
 | Agent Memory | -- | 6 files | +infra-integration-audit.md, +srp-analysis.md |
 
@@ -49,24 +49,24 @@
 
 | Domain | Skills | Phase |
 |--------|--------|-------|
-| pre-design | brainstorm, validate, feasibility | P0-P1 |
-| design | architecture, interface, risk | P2 |
-| research | codebase, external, audit | P3 |
-| plan | decomposition, interface, strategy | P4 |
-| plan-verify | correctness, completeness, robustness | P5 |
-| orchestration | decompose, assign, verify | P6 |
-| execution | code, infra, **impact, cascade**, review | P7 |
-| verify | structure, content, consistency, quality, cc-feasibility | P8 |
+| pre-design | brainstorm, validate, feasibility | P0 |
+| design | architecture, interface, risk | P1 |
+| research | codebase, external, audit | P2 |
+| plan | decomposition, interface, strategy | P3 |
+| plan-verify | correctness, completeness, robustness | P4 |
+| orchestration | decompose, assign, verify | P5 |
+| execution | code, infra, **impact, cascade**, review | P6 |
+| verify | structure, content, consistency, quality, cc-feasibility | P7 |
 | homeostasis | manage-infra, manage-skills, **manage-codebase, self-improve** | X-cut |
-| cross-cutting | delivery-pipeline, pipeline-resume, task-management | P9/X-cut |
+| cross-cutting | delivery-pipeline, pipeline-resume, task-management | P8/X-cut |
 
 ### Pipeline Tiers
 
 | Tier | Criteria | Phases |
 |------|----------|--------|
-| TRIVIAL | <=2 files, single module | P0->P7->P9 |
-| STANDARD | 3-8 files, 1-2 modules | P0->P2->P3->P4->P7->P8->P9 |
-| COMPLEX | >8 files, 3+ modules | P0->P9 (all phases) |
+| TRIVIAL | <=2 files, single module | P0->P6->P8 |
+| STANDARD | 3 files, 1-2 modules | P0->P1->P2->P3->P6->P7->P8 |
+| COMPLEX | >=4 files, 2+ modules | P0->P8 (all phases) |
 
 ### Known Bugs
 
@@ -88,6 +88,15 @@ Active whenever Ontology/Foundry concepts arise. User = concept-level decision-m
 ### Ontology PLS -- Deferred (2026-02-10)
 All phases complete (P0-P3). Next: T-0 brainstorming. Details: `memory/ontology-pls.md`
 
+### Phase Efficiency Optimization -- Pending (2026-02-15)
+Deferred from v10.8 session. Candidates identified by efficiency analysis:
+- **P4 Plan-Verify (4/10)**: 3 parallel analysts = redundant with P7. Consider merge to 1 skill or make optional.
+- **P7 Verify (5/10)**: 5 sequential stages, mainly .claude/ only. Consider conditional execution or consolidation.
+- **P2 Research audit (6/10)**: Consider COMPLEX-only.
+- **P1 Design interface+risk (7/10)**: Consider STANDARD running architecture-only.
+- **P3 Plan strategy (7/10)**: Consider STANDARD running decomposition-only.
+Scope: Structural pipeline change — skill deletion/merging, tier path optimization.
+
 ### Meta-Cognition INFRA Update -- Largely Implemented (2026-02-14)
 Core ideas from meta-cognition brainstorming have been implemented in v10:
 - CLAUDE.md Protocol-Only transition: DONE (43L)
@@ -98,6 +107,20 @@ Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -
 Details: `memory/meta-cognition-infra.md`
 
 ## Session History
+
+### v10.8 CLAUDE.md Review + Phase Renumbering (2026-02-15, branch: test)
+User-driven CLAUDE.md section-by-section review and feedback session.
+- **README.md**: Created `.claude/README.md` (936L) — comprehensive INFRA reference with ASCII visualizations, 13 sections, feedback guide
+- **PR #51**: https://github.com/park-kyungchan/palantir/pull/51 — bilingual (KR+EN) detailed description
+- **CLAUDE.md v10.8 changes**:
+  - STANDARD tier: "3 files" (was "3-8"), COMPLEX: ">=4 files" (was ">8")
+  - Full sequential phase renumbering: P0,P2,P3..P9 → P0,P1,P2..P8 (gap P1 filled)
+  - §4 PT expanded: 1 line → 6 lines (Create/Read/Update/Complete lifecycle)
+- **26 skill tags renumbered**: All `[P{N}·Domain·Skill]` tags updated to sequential P0-P8
+- **Phase efficiency analysis**: P4 Plan-Verify (4/10), P7 Verify (5/10), P6 Execution (10/10)
+- Parallel execution: 4 infra-implementers (CLAUDE.md, skills-batch-1, skills-batch-2, README)
+- Files changed: CLAUDE.md + README.md + MEMORY.md + 26 skill files = ~30 files. Uncommitted.
+- **Deferred**: Phase efficiency optimization (Task #3) → separate session
 
 ### RSI L4 — Context Engineering + Prompt Engineering (2026-02-15, branch: test)
 Progressive Deep-Dive RSI: L1(structure)→L2(integration)→L3(logic)→**L4(context+prompt)** — CE+PE focused refinement.
