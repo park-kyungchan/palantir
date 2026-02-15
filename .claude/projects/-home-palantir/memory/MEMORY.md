@@ -108,6 +108,13 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
+### RSI L5 — Dashboard + Skill Quality (2026-02-15, branch: test)
+Progressive Deep-Dive RSI: L1→L2→L3→L4→**L5(dashboard+skills)** — dashboard bug fixes + skill consistency.
+- **Diagnosis**: 3 parallel analysts, 62 findings (1C/10H/21M/19L/10A) across skills/dashboard/integration
+- **Iter 1**: Dashboard 10 bugs fixed (C-01 enabledPlugins, H-04 donut closure, H-06 x-cut CSS, M-03 settings arrays, M-10 X-cut pipeline). Skill phase tags unified P2-P9→P1-P8 (26 skills). TIER_BEHAVIOR removed (4). mode:default removed (2). 5 skills enriched with Decision Points/Anti-Patterns/Transitions/Failure Handling.
+- **Convergence**: CRITICAL 1/1, HIGH 7/10, MEDIUM 9/21. Remaining HIGH all latent (regex edge cases, current data works). Commit: 7e13dca.
+- Diagnostic reports: `agent-memory/analyst/{rsi-l5-skills-audit,rsi-l5-dashboard-audit,rsi-l5-integration-audit}.md`
+
 ### INFRA Dashboard (2026-02-15, branch: test)
 Full-pipeline dashboard build: P0 (brainstorm) → P1 (design) → P2 (research, 3 agents) → P6 (execution, 2 parallel implementers) → Chrome MCP verification.
 - **sync-dashboard.sh** (767L): Parses all .claude/ files (agents, skills, hooks, settings, CLAUDE.md, MEMORY.md) into JSON via bash+jq+python3 (no yq). Supports --json-only.

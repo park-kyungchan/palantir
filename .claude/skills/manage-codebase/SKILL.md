@@ -105,6 +105,25 @@ updated: {YYYY-MM-DD}
 
 **Size limits**: Max 150 entries (~300 lines, ~15KB). If exceeding: prune `hotspot: low` entries with oldest `updated` dates first.
 
+## Decision Points
+
+### Mode Selection
+- **Auto-detect** (default, no argument): If `codebase-map.md` exists and is valid, use incremental mode. If it doesn't exist or is corrupted, switch to full generation. Safest option for routine invocations.
+- **Force full** (`full` argument): Regenerate from scratch regardless of existing map state. Use after major structural changes (e.g., skill domain reorganization, agent renames) where incremental updates would miss cascading reference changes.
+- **Force incremental** (`incremental` argument): Update only changed files. Fails if no map exists. Use when Lead provides a specific changed-file list from pipeline execution and full scan is unnecessary.
+
+### Staleness Threshold
+- **30% stale triggers full regeneration** (default): When more than 30% of map entries have `updated` dates older than their git modification dates, an incremental update would touch so many entries that full regeneration is more efficient.
+- **Accept higher staleness**: For very large maps approaching the 150-entry limit, tolerate up to 50% staleness to avoid costly full scans. Only use when map health is otherwise good (no orphans, no broken refs).
+
+### Pruning Strategy When Exceeding Limits
+- **Prune by hotspot+age** (default): Remove `hotspot: low` entries with oldest `updated` dates first. Preserves high-traffic files that are most useful for impact analysis.
+- **Prune by scope relevance**: Remove entries outside the current pipeline's scope. Use when the map has grown to include Phase 2 (application source) entries that are no longer actively tracked.
+
+### Bidirectional Inconsistency Handling
+- **Full re-scan of affected entries** (default): When A refs B but B doesn't refd_by A, re-scan both files completely. Most accurate but slower.
+- **Patch the missing direction**: Simply add the missing reverse reference without re-scanning. Faster but may miss other inconsistencies in those files.
+
 ## Scope Boundary
 
 ### Phase 1 (Current): `.claude/` Directory Only
@@ -135,6 +154,47 @@ updated: {YYYY-MM-DD}
 - **Missing entry detected**: Flag for addition on next update
 - **Orphaned entry found**: Remove immediately, clean `refd_by` references
 - **Bidirectional inconsistency**: Full re-scan of affected entries to fix
+
+## Anti-Patterns
+
+### DO NOT: Track Agent-Memory Files as INFRA Components
+Agent-memory directories are volatile runtime data, not structural INFRA components. Including them inflates the map with entries that change constantly, consuming the 150-entry budget with low-value data. Only track the declared scope paths.
+
+### DO NOT: Skip Bidirectional Consistency Checks
+Writing `refs` without updating the target's `refd_by` (or vice versa) creates silent inconsistencies that compound over time. Every reference must be written bidirectionally in the same operation.
+
+### DO NOT: Run Full Scan When Incremental Suffices
+Full scans of `.claude/` consume 20-30 analyst turns. If only 2-3 files changed, incremental mode completes in 5-10 turns. Always check the changed-file count before selecting mode.
+
+### DO NOT: Include Non-Structural References in refs
+Only track structural references (imports, INPUT_FROM/OUTPUT_TO, settings.json paths, hook script references). Content mentions (e.g., a skill's L2 body mentioning another skill as an example) are not structural dependencies and should not appear in refs.
+
+### DO NOT: Allow Map to Exceed 300 Lines Without Pruning
+The 300-line limit exists to keep the map readable as context for analysts during impact analysis. Exceeding it degrades the map's utility. Prune proactively when approaching 250 lines.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| (self-triggered) | Periodic maintenance or post-pipeline invocation | User argument: `full` or `incremental`, or auto-detect |
+| execution-impact | Changed file list from pipeline execution | L1 YAML: file change manifest with paths |
+| delivery-pipeline | Post-delivery map update request | L1 YAML: pipeline completion status with changed files |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| (filesystem) | Updated codebase-map.md | Always (writes to `.claude/agent-memory/analyst/codebase-map.md`) |
+| execution-impact | Fresh dependency data for impact analysis | When impact analysis requests codebase-map data |
+| (user) | Map health report | Always (terminal -- L1/L2 health summary) |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Map corrupted | Self (full mode) | Deletes corrupt map, triggers full regeneration |
+| Map exceeds 300 lines | Self (prune) | Prune lowest-hotspot, oldest-updated entries |
+| Filesystem scan timeout | (user) | Partial map with `status: partial` |
+| Incremental fails (no map exists) | Self (full mode) | Switches to full generation automatically |
 
 ## Quality Gate
 - All entries point to files that exist on filesystem

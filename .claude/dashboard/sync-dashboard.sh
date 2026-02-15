@@ -166,7 +166,7 @@ for agent_path in sorted(glob.glob(os.path.join(agents_dir, '*.md'))):
     agent['tools'] = tools
 
     # Parse description (multi-line after 'description: |')
-    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^[a-z])', fm, re.DOTALL | re.MULTILINE)
+    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^[a-z]|^---)', fm, re.DOTALL | re.MULTILINE)
     if desc_match:
         desc_text = desc_match.group(1)
         desc_lines = [l[2:] if l.startswith('  ') else l for l in desc_text.split('\n')]
@@ -230,7 +230,7 @@ for skill_path in sorted(glob.glob(os.path.join(skills_dir, '*', 'SKILL.md'))):
         skill['argument_hint'] = m.group(1)
 
     # Parse description
-    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^[a-z])', fm, re.DOTALL | re.MULTILINE)
+    desc_match = re.search(r'^description:\s*\|\n(.*?)(?=^[a-z]|^---)', fm, re.DOTALL | re.MULTILINE)
     if desc_match:
         desc_text = desc_match.group(1)
         desc_lines = [l[2:] if l.startswith('  ') else l for l in desc_text.split('\n')]
@@ -267,6 +267,10 @@ for skill_path in sorted(glob.glob(os.path.join(skills_dir, '*', 'SKILL.md'))):
     body_sections['has_methodology'] = bool(re.search(r'^## Methodology', body, re.MULTILINE))
     body_sections['has_quality_gate'] = bool(re.search(r'^## Quality Gate', body, re.MULTILINE))
     body_sections['has_output'] = bool(re.search(r'^## Output', body, re.MULTILINE))
+    body_sections['has_decision_points'] = bool(re.search(r'^## Decision Points', body, re.MULTILINE))
+    body_sections['has_failure_handling'] = bool(re.search(r'^## (Failure|Error) Handling', body, re.MULTILINE))
+    body_sections['has_anti_patterns'] = bool(re.search(r'^## Anti-Patterns', body, re.MULTILINE))
+    body_sections['has_transitions'] = bool(re.search(r'^## Transitions', body, re.MULTILINE))
 
     # Count methodology steps (### N. Title)
     steps = re.findall(r'^### \d+\.', body, re.MULTILINE)

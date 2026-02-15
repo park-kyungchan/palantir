@@ -161,6 +161,31 @@ When max 3 iterations reached without convergence:
 5. verify-* phase (P7) catches remaining inconsistencies
 6. Delivery (P8) commit message notes "partial cascade convergence"
 
+## Failure Handling
+
+### Impact Report Missing or Empty
+- **Cause**: execution-impact did not produce an impact report, or report contains no dependents
+- **Action**: Set `status: skipped` in L1. Route to execution-review with empty cascade results. Do not spawn any implementers.
+- **Never proceed**: with cascade when there is no impact data to act on. "No data" is not the same as "no impacts."
+
+### All Implementers Failed in an Iteration
+- **Cause**: Every implementer in an iteration returned failure (file locked, tool error, context exhaustion)
+- **Action**: FAIL the cascade. Set L1 `status: partial`, `convergence: false`. Include failed file list and error details per implementer. Route to execution-review with FAIL status.
+- **Note**: Single-implementer failure is retried once (see Error Handling). ALL-implementer failure is a cascade-level failure.
+
+### Convergence Check Analyst Failed
+- **Cause**: Analyst spawned for convergence checking failed to complete (context exhaustion, tool error)
+- **Action**: Treat as non-convergence. If `iteration_count < 3`: retry convergence check with fresh analyst. If retry also fails: terminate cascade with `status: partial` and route to execution-review.
+- **Never proceed**: to next iteration without a convergence verdict. Skipping convergence checks risks infinite cascade.
+
+### Cascade Triggered But No DIRECT Dependents
+- **Cause**: execution-impact reported `cascade_recommended: true` but all dependents are TRANSITIVE (hop_count > 1)
+- **Action**: Set `status: skipped` with explanation. Route to execution-review. This is a false trigger, not a failure.
+
+### Files Changed Outside Cascade Scope
+- **Cause**: During cascade iteration, files outside the dependent set were modified (implementer scope creep)
+- **Action**: Log unexpected files in `warnings`. Include in convergence check (they may create new impacts). Report scope violations in L2.
+
 ## Anti-Patterns
 
 ### DO NOT: Process TRANSITIVE Dependents in Cascade

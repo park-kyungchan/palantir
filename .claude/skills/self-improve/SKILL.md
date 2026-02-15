@@ -83,19 +83,93 @@ Finalize the improvement cycle:
 - Create structured commit message with change categories
 - Report final ASCII status visualization
 
+## Decision Points
+
+### CC Reference Cache vs Live Research
+- **Use cache only**: cc-reference files exist and were updated within the last RSI cycle. No focus-area requiring new CC features. Skip claude-code-guide spawn entirely (saves budget).
+- **Delta research**: Cache exists but user-specified focus-area targets features not covered in cache, or CC platform has announced updates since last cycle. Spawn claude-code-guide with narrow query for delta only, merge into cache.
+- **Full research**: No cc-reference cache exists, or cache is fundamentally stale (e.g., major CC version change). Spawn claude-code-guide for comprehensive feature inventory.
+
+### Diagnosis Scope
+- **Focused**: User provides `[focus-area]` argument (e.g., "hooks", "agent-fields"). Scan only the specified category. Faster cycle, fewer implementer waves.
+- **Full scan**: No focus-area specified. Diagnose all .claude/ files: agents, skills, hooks, settings, CLAUDE.md. Comprehensive but heavier (3-4 implementer waves typical).
+
+### Fix Wave Parallelism
+- **Single wave**: 5 or fewer findings, all in non-overlapping files. One infra-implementer handles everything.
+- **Parallel waves**: 6+ findings spanning multiple file categories. Group by category (field fixes, routing fixes, budget fixes) with max 2 concurrent infra-implementers per wave to avoid file conflicts.
+
+### Convergence Threshold
+- **Strict convergence**: Zero findings remaining after implementation. Required for pre-release cycles.
+- **Partial convergence**: Severity plateau after 3 iterations (same finding count between iterations). Acceptable for incremental improvement cycles. Defer remaining LOW findings.
+
+## Anti-Patterns
+
+### DO NOT: Skip Self-Diagnosis and Fix Blindly
+Never apply fixes based on assumptions or memory of past issues without running the full diagnosis step. The INFRA state changes between cycles, and stale assumptions cause regressions (e.g., re-adding a field that was intentionally removed).
+
+### DO NOT: Spawn claude-code-guide When Cache Is Sufficient
+Each claude-code-guide spawn consumes significant context budget. If cc-reference cache is current and the focus-area is well-covered, use the cache. Reserve live research for genuine unknowns.
+
+### DO NOT: Modify Files Outside .claude/ Directory
+Self-improve scope is strictly .claude/ infrastructure. Application source code, documentation outside .claude/, and user project files are never in scope. If diagnosis reveals source code issues, document them as findings for a separate pipeline.
+
+### DO NOT: Commit Partial Fixes Without Documenting Deferred Items
+If convergence is not reached (partial status), every deferred finding must be recorded in MEMORY.md with severity and rationale. Silent deferral creates invisible tech debt that compounds across cycles.
+
+### DO NOT: Run Multiple RSI Cycles Without Verifying Previous Cycle
+Each cycle must verify the previous cycle's fixes are still intact before adding new changes. Running back-to-back cycles without verification can create oscillating fixes (cycle N fixes X, cycle N+1 breaks X while fixing Y).
+
+### DO NOT: Fix Issues in Order of Discovery
+Issues found first are not necessarily most important. Always sort findings by severity before creating implementer waves. A CRITICAL routing break found last in the scan should be fixed before a LOW color assignment found first. Discovery order is arbitrary (file scan order); severity order is principled.
+
+### DO NOT: Update MEMORY.md With Every Iteration
+MEMORY.md should only be updated once, at the final commit step (5a). Updating it mid-cycle creates noise and risks conflicts if the cycle is interrupted or aborted. Only the final converged state goes into MEMORY.md. Intermediate iteration results live only in Lead's working context.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| (User invocation) | Focus area or general improvement request | `$ARGUMENTS` text: focus-area string or empty |
+| manage-infra | Health check findings suggesting deeper improvement | L1 YAML: `health_score`, `findings[]` with severity |
+| manage-skills | Skill inventory gaps or compliance issues | L1 YAML: `actions[]` with CREATE/UPDATE/DELETE |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| delivery-pipeline | Committed improvement cycle (git commit) | Step 5b routes to delivery for formal commit flow |
+| manage-skills | Updated skills needing inventory refresh | After skill frontmatter modifications in Step 3 |
+| manage-infra | Updated INFRA needing health re-check | After any structural changes to .claude/ |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| cc-reference cache unavailable AND claude-code-guide fails | (Abort) | `status: blocked`, reason: no ground truth |
+| Non-convergence after 3 iterations | (Terminate partial) | `status: partial`, remaining findings with severity |
+| Infra-implementer wave failure (after 1 retry) | Self (continue with remaining waves) | Failed findings deferred, successful waves committed |
+
 ## Failure Handling
-- **RSI non-convergence** (severity plateau after 3 iterations): Terminate with `status: partial`, report remaining findings with deferred rationale
-- **cc-reference cache unavailable AND claude-code-guide fails**: Abort with `status: blocked` -- no ground truth available for compliance checks
-- **Infra-implementer wave failure**: Retry once per wave; if still failing, defer those findings and continue with remaining waves
-- **Pipeline impact**: Non-blocking (homeostasis is user-invoked). Partial improvements are committed; deferred items documented for next cycle
+
+| Failure Type | Severity | Route To | Blocking? | Resolution |
+|---|---|---|---|---|
+| cc-reference cache missing + guide fails | CRITICAL | Abort | Yes | No ground truth. Cannot proceed without reference. Report `status: blocked`. |
+| Budget overflow detected | HIGH | Fix | Yes | Must resolve before commit -- oversize descriptions truncate routing. Prioritize in next wave. |
+| Non-convergence after 3 iterations | HIGH | Terminate partial | No | Commit successful fixes. Defer remaining in MEMORY.md with severity. Report `status: partial`. |
+| Infra-implementer wave failure (all files) | HIGH | Retry once | Conditional | Re-spawn with corrected prompt. If retry fails, defer all findings from that wave. |
+| Infra-implementer partial failure | MEDIUM | Continue | No | Some files fixed, others deferred. Continue with remaining waves. Log partial results. |
+| Diagnosis finds 0 issues | INFO | Complete | N/A | INFRA is healthy. Report clean bill of health with `findings_total: 0`. |
+
+**Pipeline impact**: Non-blocking (homeostasis is user-invoked). Partial improvements are committed; deferred items documented for next cycle.
 
 ## Quality Gate
-- claude-code-guide research completed (ground truth established)
-- All findings addressed or explicitly deferred with rationale
-- Zero non-native fields across all agents and skills
-- No routing breaks (all pipeline skills auto-loaded)
+- claude-code-guide research completed or cc-reference cache used (ground truth established)
+- All findings addressed or explicitly deferred with severity and rationale
+- Zero CRITICAL findings remaining (non-native fields, routing breaks)
+- Zero HIGH findings remaining (budget overflow, hook validity)
+- No routing breaks (all pipeline skills auto-loaded correctly)
 - Budget usage under 90% of SLASH_COMMAND_TOOL_CHAR_BUDGET
-- Changes committed with structured message
+- Changes committed with structured message including finding categories
+- MEMORY.md updated with session history entry
 
 ## Output
 

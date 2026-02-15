@@ -42,6 +42,30 @@ Use tools systematically:
 2. **Grep** for pattern matching: function names, imports, config keys
 3. **Read** for detailed analysis: understand implementation, not just find it
 
+#### Tier-Specific DPS Templates
+
+**TRIVIAL DPS** -- Lead executes directly, no analyst spawn:
+> Glob for `[pattern]`. Grep in results for `[convention]`. Read top 3 matches.
+> Report: file:line + relevance to `[architecture decision]`.
+
+Lead performs these steps inline using its own tool access. Suitable when the search scope is 1-2 directories and 1-2 architecture decisions. Total effort: 3-5 tool calls.
+
+**STANDARD DPS** -- Single analyst with full delegation:
+> Context: [Paste architecture decisions verbatim from design-architecture L1/L2]
+> Task: Explore [codebase area] to validate [all architecture decisions]. For each decision, find existing patterns, conventions, and reusable components. Report all findings with file:line references.
+> Constraints: Read-only. Glob -> Grep -> Read sequence. maxTurns: 25.
+> Expected Output: Pattern inventory (name, file:line, relevance, reusability) + anti-patterns with locations.
+
+Single analyst receives all research questions. Lead consolidates output directly into research-audit input format.
+
+**COMPLEX DPS** -- 2-4 analysts with partitioned scope:
+> Context: [Paste ONLY the architecture decisions relevant to THIS analyst's scope]
+> Task: Explore [specific directory subtree, e.g., `src/auth/`] to validate [subset of architecture decisions]. Report findings with file:line references.
+> Constraints: Read-only. Stay within assigned directory scope. maxTurns: 25. If your findings reference files outside your scope, note the cross-reference with file path and reason -- another analyst will cover that area.
+> Expected Output: Pattern inventory for your scope + cross-reference notes for consolidation.
+
+Lead must merge outputs from all analysts, resolving cross-references and deduplicating patterns found independently by multiple analysts. Cross-reference resolution is Lead's responsibility, not the analysts'.
+
 ### 3. Document Findings
 For each finding:
 - **Pattern**: What was found (name, description)
@@ -61,16 +85,141 @@ Map findings to architecture components:
 - Components with strong codebase evidence → validated
 - Components with no codebase evidence → novel, higher risk
 
+## Common Codebase Patterns Reference
+
+When constructing analyst DPS prompts, include relevant search patterns from this table. Lead selects patterns based on architecture decision types -- not all patterns apply to every research task.
+
+| Pattern Type | Search Method | What It Reveals | Example |
+|---|---|---|---|
+| File structure | Glob `**/*.{ts,py,md}` | Directory layout, naming conventions, module boundaries | `src/auth/`, `lib/utils/` |
+| Import/dependency | Grep `import.*from\|require\(` | Module dependency graph, coupling between components | Circular imports, shared utilities |
+| Config conventions | Glob `*.{json,yaml,toml,env}` | Configuration patterns, environment handling | `.env` vs `config.yaml` vs hardcoded |
+| Error handling | Grep `try.*catch\|except\|\.catch\|Error` | Error handling style consistency | Centralized vs per-function error handling |
+| Test structure | Glob `**/*.test.*\|**/*.spec.*\|**/test_*` | Test file conventions, coverage patterns | Co-located vs separate test directories |
+| Hook/plugin patterns | Glob `.claude/hooks/*\|plugins/*` | Extension points, lifecycle hooks | Hook naming, event handling conventions |
+| Type definitions | Grep `interface\|type\|class\|struct` | Type system usage, data modeling style | DTO patterns, domain models |
+| Logging | Grep `console\.\|logger\.\|log\.` | Logging conventions, observability | Structured vs unstructured logging |
+| API patterns | Grep `app\.(get\|post\|put)\|@(Get\|Post)` | API design style, routing conventions | REST vs RPC, middleware patterns |
+| State management | Grep `useState\|createStore\|redux\|zustand` | State management approach | Global vs local state patterns |
+
+**Usage guidance**: For a typical STANDARD DPS, include 3-5 relevant pattern types. For COMPLEX with multiple analysts, assign pattern types per analyst to avoid overlapping searches. Always include "file structure" as the first search -- it scopes all subsequent patterns.
+
+## Decision Points
+
+### Search Depth vs Breadth
+- **Breadth-first** (default): Glob across all relevant directories first, then Grep for key patterns. Use when architecture decisions span multiple modules or when codebase structure is unfamiliar.
+- **Depth-first**: Focus on specific directories with targeted Grep+Read. Use when architecture decisions target a narrow, well-known area (e.g., "how does the existing hook system work?").
+
+### Analyst Scope Division (COMPLEX)
+- **By directory boundary**: Each analyst owns a non-overlapping directory subtree (e.g., `src/` vs `.claude/`). Preferred when architecture decisions naturally map to filesystem boundaries.
+- **By architecture question**: Each analyst investigates a specific set of architecture questions across the entire codebase. Use when questions are cross-cutting (e.g., "find all error handling patterns" spans multiple directories).
+
+### Pattern Conflict Resolution
+- **Report all variants**: When conflicting patterns exist (e.g., two different error handling styles), document all with file:line refs and flag as "inconsistent convention."
+- **Recommend canonical**: When one pattern dominates (>70% usage), recommend it as canonical and flag the minority as potential cleanup targets.
+
+### Codebase Size Estimation
+Lead estimates search scope before choosing tier and analyst configuration:
+- **Small (<100 files)**: TRIVIAL treatment. Lead can handle directly with Glob+Grep. No analyst spawn needed. Typical for micro-services, single-module projects, or scoped searches within a known subdirectory.
+- **Medium (100-1000 files)**: STANDARD treatment. Single analyst with full DPS. Broad enough to benefit from systematic exploration but manageable within one analyst's turn budget.
+- **Large (>1000 files)**: COMPLEX treatment with directory partitioning. Assign each analyst a non-overlapping directory subtree. Use `find -type f | wc -l` equivalent (Glob `**/*` count) to confirm size before spawning.
+
+When in doubt, bias toward STANDARD. Over-partitioning a medium codebase wastes coordination overhead. Under-partitioning a large codebase wastes analyst turns on irrelevant files.
+
+### Pre-existing Knowledge Check
+Before spawning analysts, Lead checks whether research-codebase was already executed in this pipeline run. This applies in two scenarios:
+- **Pipeline-resume**: If the pipeline was interrupted and resumed, previous research findings may exist in the PERMANENT task metadata. Read PT before spawning to avoid duplicate work. Spawn targeted follow-up for gaps only.
+- **Design feedback loop**: In COMPLEX pipelines, design-architecture may loop back through research after revision. The second research pass should focus only on the revised architecture decisions, not repeat the full scan.
+
+Detection method: Check PT metadata for `research.codebase.pattern_count > 0` or existence of prior research-codebase output. If found, extract the list of already-answered questions and exclude them from the new analyst DPS.
+
+### Architecture Decision Priority
+When architecture has many decisions (>5 ADRs), not all can receive equal research depth within analyst turn budgets. Prioritize:
+1. **Critical-path ADRs**: Decisions that block the most downstream tasks. These get deep research (Glob + Grep + Read).
+2. **High-risk ADRs**: Decisions flagged by design-risk as having high uncertainty or high impact. Cross-reference with risk assessment output.
+3. **Technology-choice ADRs**: Decisions involving library/framework selection benefit most from codebase evidence (existing usage patterns, version compatibility).
+4. **Nice-to-have ADRs**: Cosmetic or low-impact decisions. These get shallow research (Glob count only) or are deferred to plan phase.
+
+For time-constrained scenarios (analyst turns running low), stop after category 2 and report remaining ADRs as "not researched -- low priority" in the output.
+
+### When to Escalate to Design
+Normal flow: research findings go to research-audit, then to plan. But one scenario requires escalation back to design-architecture:
+- **Condition**: Codebase evidence strongly contradicts an architecture decision. Not merely "the pattern is novel" (which is expected) but "the existing codebase does the exact opposite of what the ADR prescribes, and the existing approach is deeply embedded."
+- **Example**: ADR says "use event-driven architecture" but codebase has synchronous request-response patterns in 90%+ of modules with no event infrastructure.
+- **Threshold**: Contradiction must be (a) fundamental (not surface-level naming differences), (b) widespread (>70% of relevant codebase), and (c) costly to overcome (not a simple refactor).
+- **Action**: Add `escalate_to_design: true` in L1 output with `escalation_reason` in L2. Route to design-architecture for ADR revision before continuing to plan.
+- **Non-escalation**: If the contradiction is localized (<30% of codebase) or easily overridden, report it as a finding but do not escalate. Let plan-strategy handle the migration approach.
+
 ## Failure Handling
-- **No patterns found**: Report `pattern_count: 0` with explicit "novel" flags per architecture decision
-- **Analyst maxTurns exhausted**: Report partial findings, flag uncovered codebase areas in L2
-- **Routing**: Route to research-audit regardless -- audit consolidates all findings including gaps
-- **Pipeline impact**: Non-blocking. Missing codebase evidence increases risk rating but does not halt pipeline
+
+### Severity Classification
+
+| Failure | Severity | Blocking? | Route |
+|---------|----------|-----------|-------|
+| No patterns found for critical ADR | HIGH | No (increases risk) | research-audit with `novel` flag per ADR |
+| Critical ADR contradicted by codebase | HIGH | Conditional | design-architecture if contradiction is fundamental; research-audit otherwise |
+| Analyst maxTurns exhausted | MEDIUM | No | research-audit with partial findings + uncovered area list |
+| Contradictory patterns found | MEDIUM | No | research-audit with contradiction report (all variants, file:line refs) |
+| File read permission error | LOW | No | Skip file, note in findings, continue search |
+
+### Routing After Failure
+All failure types route to research-audit regardless of severity. Audit consolidates all findings including gaps and failure reports. The only exception is the conditional escalation for fundamental ADR contradictions -- see Decision Points: When to Escalate to Design.
+
+### Pipeline Impact
+Research failures are non-blocking. Missing codebase evidence increases the risk rating in plan-strategy but does not halt the pipeline. The rationale: absence of evidence is not evidence of absence. A pattern may exist but be difficult to find, or the codebase area may genuinely be novel territory.
+
+## Anti-Patterns
+
+### DO NOT: Grep Without Glob First
+Jumping straight to Grep without understanding directory structure leads to irrelevant matches and missed files. Always Glob first to establish the search scope, then Grep within that scope.
+
+### DO NOT: Report Patterns Without File:Line References
+Abstract findings like "the codebase uses factory pattern" are not actionable. Every pattern must have at least one concrete file:line reference that downstream skills can validate.
+
+### DO NOT: Modify Files During Research
+This is a read-only skill. Even if you discover a bug or typo, do NOT fix it. Document it as a finding and let execution-code handle the fix through the proper pipeline.
+
+### DO NOT: Duplicate Research Already Done in Pre-Design
+Pre-design-feasibility may have done basic codebase checks. Read its output before spawning analysts to avoid re-discovering the same patterns. Focus on architecture-specific questions not answered in P0.
+
+### DO NOT: Search Entire Repository Without Scope Limits
+For large codebases, searching everything wastes analyst turns. Use architecture decisions to scope searches to relevant directories. Exclude `node_modules/`, `.git/`, build artifacts.
+
+### DO NOT: Treat File Count as Pattern Count
+Finding 20 files matching a glob is not the same as finding 20 patterns. A pattern is a reusable convention confirmed by consistent usage across multiple locations. Multiple files may exhibit the same single pattern. When reporting `pattern_count`, count unique conventions -- not raw file matches. Example: 15 files all using `try/catch` with the same error shape is 1 error-handling pattern, not 15.
+
+### DO NOT: Confuse Codebase Evidence with Recommendation
+Research documents what exists in the codebase. It does not recommend what should be built. Statements like "the codebase should adopt pattern X" belong to the design domain. Research provides evidence for or against design decisions -- e.g., "pattern X exists in 8/12 modules (67% adoption)" is research; "adopt pattern X for the new module" is design. Keep findings descriptive, not prescriptive.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| design-architecture | Architecture decisions needing codebase validation | L1 YAML: `components[]` with names and dependencies, L2: ADRs with technology choices |
+| design-interface | Interface definitions referencing existing contracts | L1 YAML: `interfaces[]`, L2: method signatures to validate against codebase |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| research-audit | Codebase findings inventory | Always (codebase -> audit consolidation) |
+| plan-decomposition | Validated codebase patterns | Via research-audit output |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| No patterns found | research-audit | Empty inventory with "novel" flags per architecture decision |
+| Analyst exhausted | research-audit | Partial findings + uncovered area list |
+| Critical gap in architecture | design-architecture | Gap description requiring architecture revision (COMPLEX feedback loop) |
 
 ## Quality Gate
-- Every architecture decision has ≥1 codebase finding or explicit "novel" flag
+- Every architecture decision has >=1 codebase finding or explicit "novel" flag
 - All findings have file:line references
 - Anti-patterns documented with specific locations
+- Pattern count reflects unique conventions, not raw file matches
+- No prescriptive recommendations in findings (evidence only)
+- COMPLEX: All analyst scopes covered, cross-references resolved
+- If `escalate_to_design: true`, escalation_reason is detailed and threshold criteria documented
 
 ## Output
 
@@ -80,13 +229,26 @@ domain: research
 skill: codebase
 pattern_count: 0
 file_count: 0
+escalate_to_design: false
+escalation_reason: ""
 patterns:
   - name: ""
     files: []
     relevance: high|medium|low
+    reusability: reuse|modify|replace
+novel_decisions:
+  - adr: ""
+    reason: "no existing pattern found"
+uncovered_areas:
+  - area: ""
+    reason: "analyst maxTurns exhausted"
 ```
 
 ### L2
-- Pattern inventory with file:line references
-- Convention analysis and reusable components
-- Anti-patterns and technical debt noted
+- Pattern inventory with file:line references per architecture decision
+- Convention analysis: dominant patterns, minority variants, inconsistencies
+- Anti-patterns and technical debt noted with severity and location
+- Reusable components identified with modification requirements
+- Cross-reference notes (COMPLEX only): inter-analyst findings resolved
+- Novel decision rationale: why no codebase evidence was found
+- Escalation details (if applicable): contradiction evidence with file:line proof
