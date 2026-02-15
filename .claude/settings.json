@@ -80,7 +80,8 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-file-change.sh",
             "timeout": 5,
-            "async": true
+            "async": true,
+            "statusMessage": "Tracking file changes for impact analysis"
           }
         ]
       }
