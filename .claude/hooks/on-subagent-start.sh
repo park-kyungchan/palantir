@@ -1,7 +1,7 @@
-#!/bin/bash
-# Hook: SubagentStart — Logging + context injection (PT-first, GC legacy fallback)
-# Cannot block spawn (exit 2 is non-blocking for SubagentStart).
-# Injects PERMANENT Task guidance or legacy GC version as additionalContext.
+#!/usr/bin/env bash
+# Hook: SubagentStart — Logging + PT context injection
+
+set -euo pipefail
 
 INPUT=$(cat)
 
@@ -14,57 +14,13 @@ AGENT_NAME=$(echo "$INPUT" | jq -r '.agent_name // .tool_input.name // "unknown"
 TEAM_NAME=$(echo "$INPUT" | jq -r '.tool_input.team_name // "no-team"' 2>/dev/null)
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-LOG_DIR="/home/palantir/.agent/teams"
+LOG_DIR="/tmp/claude-hooks"
 mkdir -p "$LOG_DIR"
 
 echo "[$TIMESTAMP] SUBAGENT_START | name=$AGENT_NAME | type=$AGENT_TYPE | team=$TEAM_NAME" >> "$LOG_DIR/teammate-lifecycle.log"
 
-# RTD Session Registry — map session_id → agent for PostToolUse identification (AD-23)
-# AD-29: $CLAUDE_SESSION_ID env var does NOT exist in hook contexts.
-# Using stdin session_id instead (parent's/Lead's SID). Known limitation: maps Lead's
-# session to spawned agent name. Still useful for PostToolUse agent resolution since
-# Lead's session is the one triggering SubagentStart.
-RTD_SID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
-if [ -n "$RTD_SID" ] && [ -n "$AGENT_NAME" ] && [ "$AGENT_NAME" != "unknown" ]; then
-  PROJECT_FILE="/home/palantir/.agent/observability/.current-project"
-  if [ -f "$PROJECT_FILE" ]; then
-    RTD_SLUG=$(head -1 "$PROJECT_FILE" 2>/dev/null)
-    if [ -n "$RTD_SLUG" ]; then
-      REGISTRY="/home/palantir/.agent/observability/$RTD_SLUG/session-registry.json"
-      if [ -f "$REGISTRY" ]; then
-        TMP=$(mktemp)
-        jq --arg sid "$RTD_SID" --arg name "$AGENT_NAME" --arg type "$AGENT_TYPE" \
-          '. + {($sid): {name: $name, type: $type}}' "$REGISTRY" > "$TMP" && mv "$TMP" "$REGISTRY"
-      elif command -v jq &>/dev/null; then
-        mkdir -p "$(dirname "$REGISTRY")"
-        jq -n --arg sid "$RTD_SID" --arg name "$AGENT_NAME" --arg type "$AGENT_TYPE" \
-          '{($sid): {name: $name, type: $type}}' > "$REGISTRY"
-      fi
-    fi
-  fi
-fi
-
-# Context injection via additionalContext
-# Strategy: check team-specific global-context.md (legacy) → PT message → cross-team fallback
-
+# Context injection via additionalContext — PT-based
 if [ "$TEAM_NAME" != "no-team" ] && [ -n "$TEAM_NAME" ]; then
-  GC_FILE="$LOG_DIR/$TEAM_NAME/global-context.md"
-
-  # Legacy path: team has global-context.md → inject GC version
-  if [ -f "$GC_FILE" ]; then
-    GC_VERSION=$(grep -m1 '^version:' "$GC_FILE" 2>/dev/null | awk '{print $2}')
-    if [ -n "$GC_VERSION" ]; then
-      jq -n --arg ver "$GC_VERSION" --arg team "$TEAM_NAME" '{
-        "hookSpecificOutput": {
-          "hookEventName": "SubagentStart",
-          "additionalContext": ("Active team: " + $team + ". Current GC: " + $ver + ". Verify your injected context version matches.")
-        }
-      }'
-      exit 0
-    fi
-  fi
-
-  # PT path: team has no global-context.md → inject PERMANENT Task guidance
   jq -n --arg team "$TEAM_NAME" '{
     "hookSpecificOutput": {
       "hookEventName": "SubagentStart",
@@ -72,21 +28,6 @@ if [ "$TEAM_NAME" != "no-team" ] && [ -n "$TEAM_NAME" ]; then
     }
   }'
   exit 0
-fi
-
-# No team specified: fallback to most recent global-context.md across all teams
-LATEST_GC=$(ls -td "$LOG_DIR"/*/global-context.md 2>/dev/null | head -1)
-if [ -n "$LATEST_GC" ] && [ -f "$LATEST_GC" ]; then
-  GC_VERSION=$(grep -m1 '^version:' "$LATEST_GC" 2>/dev/null | awk '{print $2}')
-  if [ -n "$GC_VERSION" ]; then
-    jq -n --arg ver "$GC_VERSION" --arg team "$TEAM_NAME" '{
-      "hookSpecificOutput": {
-        "hookEventName": "SubagentStart",
-        "additionalContext": ("Active team: " + $team + ". Current GC: " + $ver + ". Verify your injected context version matches.")
-      }
-    }'
-    exit 0
-  fi
 fi
 
 exit 0

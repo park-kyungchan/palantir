@@ -1,27 +1,17 @@
 ---
 name: task-management
 description: |
-  [X-Cut·TaskMgmt·RTD] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API. Replaces RTD system (events.jsonl/rtd-index.md).
+  [X-Cut·TaskMgmt·TaskAPI] Task lifecycle manager + real-time dynamic references. Manages PT, work tasks, dependencies, progress via Task API.
 
-  WHEN: (1) Pipeline start: create PT (intent, tier, refs). (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with blockedBy + metadata. (4) Execution: teammates update status/progress real-time. (5) User asks status: ASCII viz per domain (problem→improvement). (6) Commit done: PT completed.
+  WHEN: (1) Pipeline start: create PT. (2) User adds requirements: update PT (Read-Merge-Write). (3) Plan ready: batch create work tasks with dependencies. (4) Execution: teammates update status real-time. (5) Status query: ASCII viz per domain. (6) Commit done: PT completed.
   DOMAIN: Cross-cutting, any phase.
 
-  ROLES: Heavy (PT create/update, batch tasks, ASCII viz) → pt-manager agent. Light (single TaskUpdate) → Lead direct.
-  METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement,detail_path}. PT={type:permanent,tier,current_phase,commit_status,references,user_directives}.
-  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz output in Korean.
+  ROLES: Heavy ops (PT create/update, batch tasks, ASCII viz) -> pt-manager agent. Light ops (single TaskUpdate) -> Lead direct.
+  METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement}. PT={type:permanent,tier,current_phase,commit_status,references}.
+  CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit. ASCII viz in Korean.
 user-invocable: true
 disable-model-invocation: true
-input_schema:
-  type: object
-  properties:
-    action:
-      type: string
-      enum: ["create-pt", "update-pt", "batch-create", "update-task", "visualize", "complete-pt"]
-      description: "Action to perform (default: auto-detect from context)"
-    content:
-      type: string
-      description: "Content for PT update, task details, or visualization scope"
-  required: []
+argument-hint: "[action] [args]"
 ---
 
 # Task Management
@@ -81,8 +71,7 @@ input_schema:
        "priority": "high",
        "parent": "{PT-task-id}",
        "problem": "기존 문제 상세 설명",
-       "improvement": "이 작업이 문제를 어떻게 개선하는지",
-       "detail_path": ".agent/tasks/{id}/detail.md"
+       "improvement": "이 작업이 문제를 어떻게 개선하는지"
      }
      ```
    - Set `addBlockedBy` for dependency chain
@@ -143,6 +132,91 @@ Key rules:
 2. If incomplete tasks remain → report blockers
 3. TaskUpdate PT: `metadata.commit_status` → `"committed"`
 4. TaskUpdate PT: `status` → `"completed"`
+
+## Decision Points
+
+### Heavy vs Light Operation Routing
+- **Heavy ops (pt-manager spawn)**: PT creation, PT update with complex merge, batch work task creation, ASCII visualization. These require multiple Task API calls and complex logic. Spawn pt-manager agent (`subagent_type: pt-manager`).
+- **Light ops (Lead-direct)**: Single TaskUpdate for status change (e.g., marking a task in_progress or completed), simple metadata field update. Lead executes inline without agent spawn to avoid overhead.
+
+### PT Description Density Management
+- **Keep in PT description**: Core requirements, acceptance criteria, tier classification, key architecture decisions (up to ~2000 chars). Information that every teammate needs when they TaskGet the PT.
+- **Move to file reference**: Extended design docs, full task breakdowns, detailed analysis reports. Store in workspace files and add file paths to PT `references[]` array. Prevents PT description from becoming unwieldy.
+
+### Work Task Granularity
+- **Fine-grained tasks** (1-2 files each): Use when tasks are highly parallelizable and independent. Each task maps to a single implementer assignment. Typical for execution phase.
+- **Coarse-grained tasks** (3-4 files each): Use when files are tightly coupled and must be modified atomically. Fewer tasks mean simpler dependency management. Max 4 files per task to maintain single-responsibility.
+
+### Dependency Chain Strategy
+- **Linear chain**: Tasks must execute in strict sequence (T1 -> T2 -> T3). Use `addBlockedBy` to enforce ordering. Simple but limits parallelism.
+- **Diamond pattern**: Tasks T2 and T3 both depend on T1, and T4 depends on both T2 and T3. Maximizes parallelism while respecting dependencies. Common for code + infra parallel execution converging at review.
+- **No dependencies**: Tasks are fully independent. No `addBlockedBy` needed. Used for parallel analysis tasks in P0-P1 phases.
+
+## Failure Handling
+
+### Duplicate PT Detection
+- **Cause**: PT creation attempted when one already exists (e.g., pipeline-resume created a new PT without checking, or two pipeline starts raced).
+- **Action**: TaskList to find all `[PERMANENT]` tasks. If multiple exist, compare metadata to determine which is authoritative (most recent, most complete metadata). Complete the duplicate with a note. Never delete -- mark completed with `metadata.reason: "duplicate"`.
+
+### Circular Dependency in Work Tasks
+- **Cause**: `addBlockedBy` creates a cycle (T1 blocks T2, T2 blocks T3, T3 blocks T1). Pipeline deadlocks -- no task can start.
+- **Action**: Detect cycle by traversing blockedBy chains. Break the cycle at the weakest dependency (the one where the blocking relationship is least essential). Document the decision in PT metadata.
+
+### PT Metadata Corruption (Partial or Malformed)
+- **Cause**: A TaskUpdate wrote partial or malformed metadata (e.g., JSON parse error, missing required fields like `type` or `current_phase`).
+- **Action**: Read current PT state. Reconstruct missing fields from task history and pipeline context. Update with corrected metadata. Log the corruption event in PT metadata for audit trail.
+
+### Work Task Status Stuck in_progress
+- **Cause**: Agent assigned to the task crashed, exhausted turns, or was interrupted without updating status.
+- **Action**: Lead detects via TaskList monitoring. If agent is confirmed terminated, update task status to `failed` with `metadata.error: "agent_interrupted"`. Route to the appropriate execution skill for re-assignment.
+
+## Anti-Patterns
+
+### DO NOT: Overwrite PT Without Reading First
+Every PT update must follow Read-Merge-Write: TaskGet current state, merge new information, TaskUpdate with merged result. Blind overwrites lose information from other phases or concurrent updates.
+
+### DO NOT: Create Work Tasks Without Complete Metadata
+Every work task must have all metadata fields: type, phase, domain, skill, agent, files, priority, parent. Missing fields break ASCII visualization, Lead routing, and dependency tracking. Incomplete tasks are worse than no tasks.
+
+### DO NOT: Use PT for Ephemeral Communication
+PT is the persistent pipeline record, not a messaging system. Do not add temporary status messages, debug notes, or agent-to-agent communication to PT metadata. Use Task descriptions or dedicated work tasks for transient information.
+
+### DO NOT: Create Cyclic Dependencies
+Always verify the dependency graph is acyclic before adding `addBlockedBy` relationships. A single cycle deadlocks all tasks in the chain. When in doubt, draw the dependency graph explicitly.
+
+### DO NOT: Complete PT Before All Work Tasks Finish
+PT completion signals "pipeline done." If any child work task is still in_progress, pending, or failed, completing the PT creates a false signal. Always verify all `parent: {PT-id}` tasks are completed first.
+
+## Transitions
+
+### Receives From
+| Source Skill | Data Expected | Format |
+|-------------|---------------|--------|
+| (User invocation) | Task management action request | `$ARGUMENTS` text: action + args (e.g., "create-pt SRC", "visualize") |
+| (Any pipeline phase) | Phase completion requiring PT update | Lead routes with phase results for PT metadata merge |
+| plan-decomposition | Task breakdown requiring batch creation | L1 YAML: task list with files, dependencies, priorities |
+| delivery-pipeline | Pipeline completion requiring PT close | L1 YAML: `commit_hash`, `status: delivered` |
+
+### Sends To
+| Target Skill | Data Produced | Trigger Condition |
+|-------------|---------------|-------------------|
+| (Lead context) | PT task ID and pipeline state | After PT creation or update (Lead uses for routing) |
+| (Lead context) | ASCII visualization | After visualize action (Lead displays to user) |
+| (Lead context) | Dependency graph summary | After batch work task creation |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Duplicate PT detected | (Self - resolve) | Both PT task IDs for deduplication |
+| Circular dependency | (Self - break cycle) | Cycle path details |
+| PT metadata corruption | (Self - reconstruct) | Current PT state + reconstruction context |
+
+## Quality Gate
+- Exactly 1 [PERMANENT] task exists (no duplicates)
+- PT updates use Read-Merge-Write (never blind overwrite)
+- Work tasks have complete metadata (type, phase, domain, skill, agent, files)
+- Dependency chains are acyclic (addBlockedBy creates no cycles)
+- ASCII visualization matches current TaskList state
 
 ## Output
 

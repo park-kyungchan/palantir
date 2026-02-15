@@ -2,7 +2,7 @@
 
 ## Cross-File Editing Patterns
 
-### Cross-Reference Integrity (CH-001 LDAP, 2026-02-07)
+### Cross-Reference Integrity
 - When format strings must be identical across N files, copy-paste from a single source of truth (implementation plan), NEVER retype
 - Use Grep validation after all edits to verify character-level identity across files
 - Anchor edits by surrounding text patterns, not line numbers (line numbers shift after earlier edits)
@@ -11,26 +11,14 @@
 ### Edit Ordering Strategy
 - Version headers FIRST (single-line replacements, no line shift)
 - Then insertions from top of file to bottom
-- Separate Task A (foundation files) from Task B (consumer files) — foundation defines what consumers reference
+- Separate Task A (foundation files) from Task B (consumer files) -- foundation defines what consumers reference
 
-## DIA Protocol Learnings
-
-### LDAP Bootstrap
-- When implementing the protocol that defines your OWN Phase 1.5, Lead provides [BOOTSTRAP] section in the directive
-- Bootstrap contains the rules for the session even though the agent .md file doesn't have them yet
-- This is a chicken-and-egg pattern: you follow bootstrap LDAP rules while implementing permanent LDAP rules
-
-### Impact Analysis Quality
-- Map 3-tier consumption chains: definition (Lead reads to generate) → procedure (Lead reads to execute) → instruction (teammate reads to parse/respond)
-- Trace format mismatch propagation: parser failure → gate stall → pipeline halt (3 hops)
-- Two-Gate Flow as abstract interface contract: input→output boundaries, not internal substeps
-
-## Structural Optimization Patterns (INFRA E2E, 2026-02-08)
+## Structural Optimization Patterns
 
 ### Full-File Rewrite vs Incremental Edit
 - When reducing a file by >30%, full rewrite (Write tool) is cleaner than 15+ incremental Edits
 - Reduces risk of line-shift confusion and missed edits
-- Requires careful semantic audit against original — checklist every section header
+- Requires careful semantic audit against original -- checklist every section header
 
 ### Deduplication Strategy
 - Identify RULES (behavioral: what to do) vs PROCEDURES (operational: how to do it)
@@ -46,12 +34,22 @@
 ## Infrastructure File Patterns
 
 ### Agent .md Structure
-- Phase sections are numbered: Phase 0, Phase 1, Phase 1.5 (new), Phase 2, Phase 3
-- implementer/integrator have Two-Gate System section between Phase 1 and Phase 2
-- architect/tester/researcher go directly from Phase 1 to Phase 2
-- devils-advocate has TIER 0 exemption — goes Phase 0 → Phase 1: Execution (no impact analysis)
+- Agents use YAML frontmatter for L1 metadata (model, tools, permissions, description)
+- Agent body = role identity, loaded in isolated context on spawn
+- Pipeline phases: P0-P8 (sequential numbering, see CLAUDE.md tier table)
 
-### CLAUDE.md [PERMANENT] Section
-- Lead duties: numbered 1-7 (items 1-6 original, 7 added for LDAP)
-- Teammate duties: numbered 1-6 with 2a inserted (Challenge Response between 2 and 3)
-- WHY paragraph: describes all 3 DIA layers with cost estimate
+### Skill SKILL.md Structure
+- Frontmatter L1: description with WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY (max 1024 chars)
+- Body L2: Execution Model + Methodology (5 steps) + Quality Gate + Output
+- Enrichment sections: Decision Points, Anti-Patterns, Transitions, Failure Handling
+
+## Git Workflow Patterns
+- Commit after each logical unit of work, not after every file edit
+- Use conventional commit format: type(scope): description
+- Stage only the files relevant to the current change
+
+## Error Handling Patterns
+- Edit tool fails if old_string is not unique -- add more surrounding context to disambiguate
+- Edit tool fails if file has not been read first -- always Read before Edit
+- When editing YAML frontmatter, preserve exact indentation (spaces, not tabs)
+- Validate JSON mentally after editing settings.json (check brackets, commas, trailing commas)
