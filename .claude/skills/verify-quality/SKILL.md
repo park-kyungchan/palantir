@@ -3,8 +3,8 @@ name: verify-quality
 description: |
   [P7·Verify·Quality] Routing effectiveness and clarity verifier. Checks WHEN specificity, methodology concreteness with tool/agent refs, output format L1/L2 presence, and full protocol flow coverage.
 
-  WHEN: Before committing description changes or after routing failures. Fourth of 5 verify stages. Can run independently.
-  DOMAIN: verify (skill 4 of 5). After verify-consistency PASS.
+  WHEN: Before committing description changes or after routing failures. Third of 4 verify stages. Can run independently.
+  DOMAIN: verify (skill 3 of 4). After verify-consistency PASS.
   INPUT_FROM: verify-consistency (relationship integrity confirmed) or direct invocation.
   OUTPUT_TO: verify-cc-feasibility (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
 
@@ -82,7 +82,7 @@ For each skill description:
 | Domain | Good WHEN Example | Bad WHEN Example |
 |--------|-------------------|------------------|
 | execution | "After orchestration-verify PASS. Validated assignments ready." | "When code needs implementing" |
-| verify | "After verify-content PASS. Third of 5 stages." | "When verification needed" |
+| verify | "After verify-structural-content PASS. Second of 4 stages." | "When verification needed" |
 | homeostasis | "After pipeline completion, periodic health check." | "When infrastructure changes" |
 | pre-design | "User invokes /brainstorm with topic. First pipeline phase." | "When brainstorming" |
 | design | "After feasibility PASS. Requirements validated." | "When design is needed" |
@@ -188,10 +188,10 @@ findings: []
 
 For each skill description:
 - Calculate char count / 1024
-- Target: >80% utilization (aligned with verify-content threshold)
+- Target: >80% utilization (aligned with verify-structural-content threshold)
 - Flag descriptions below threshold with improvement suggestions
 
-**Cross-Reference with verify-content**: Quality adds semantic assessment on top of content's structural assessment. verify-content checks char count and key presence; verify-quality checks whether those chars carry routing intelligence.
+**Cross-Reference with verify-structural-content**: Quality adds semantic assessment on top of structural-content's combined assessment. verify-structural-content checks char count, key presence, and structural integrity; verify-quality checks whether those chars carry routing intelligence.
 
 **Utilization vs Quality Trade-off:**
 - A 700-char description (68%) with all 5 orchestration keys and high specificity scores HIGHER than a 1020-char (99%) description with vague, padded content
@@ -264,7 +264,7 @@ route_to: execution-infra
 | Anti-Pattern | Why It Is Wrong | Correct Approach |
 |-------------|-----------------|------------------|
 | Conflate Quality with Consistency | Quality measures individual skill routing effectiveness; consistency measures cross-skill relationship integrity | Keep verify-quality focused on per-skill scoring; leave cross-skill checks to verify-consistency |
-| Score Based on L2 Body Quality | L2 is loaded on-demand, not part of routing intelligence | Score only L1 (description/frontmatter). L2 body quality is verify-content's domain |
+| Score Based on L2 Body Quality | L2 is loaded on-demand, not part of routing intelligence | Score only L1 (description/frontmatter). L2 body quality is verify-structural-content's domain |
 | Penalize Cross-Cutting Skills for Generic WHEN | Homeostasis and cross-cutting skills legitimately have broader WHEN conditions | Apply domain-adjusted expectations: cross-cutting WHEN scores start at 50 baseline |
 | Require DPS in Non-Spawning Skills | Lead-direct skills (no agent spawn) do not need DPS templates | Check execution model: only score DPS presence for STANDARD/COMPLEX tiers with agent spawning |
 | Over-Weight Utilization | A concise, specific description outperforms a padded, vague one | Utilization is weighted at 20%. Never let high utilization compensate for low specificity |

@@ -19,7 +19,7 @@ tools:
   - mcp__context7__query-docs
   - mcp__tavily__search
 memory: project
-maxTurns: 30
+maxTurns: 20
 color: yellow
 ---
 

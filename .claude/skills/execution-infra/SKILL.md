@@ -163,8 +163,7 @@ Agent `memory` field (`project` vs `none`) affects what context the agent receiv
 |-------------|---------------|-------------------|
 | execution-impact | Infra file change manifest | Always (even if partial). SRC hook auto-triggers for .claude/ changes. |
 | execution-review | Infra change artifacts + L1/L2 per implementer | After all infra-implementers complete |
-| verify-structure | Modified .claude/ files for structural validation | Via execution-review routing |
-| verify-content | Modified descriptions for content validation | Via execution-review routing |
+| verify-structural-content | Modified .claude/ files for structural+content validation | Via execution-review routing |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

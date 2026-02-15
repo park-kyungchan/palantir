@@ -199,11 +199,11 @@ Agent-memory directories (`agent-memory/`, `agent-memory-local/`) are volatile r
 manage-infra reads the same files that execution-infra writes. Running a health check while a pipeline is actively modifying `.claude/` files produces false positives (mid-write state detected as drift). Always wait for pipeline completion before running manage-infra. The post-pipeline trigger exists precisely for this reason.
 
 ### DO NOT: Confuse Homeostasis with Verification
-manage-infra is proactive health monitoring -- it detects drift before it causes problems. The verify-structure through verify-cc-feasibility skills are reactive verification -- they validate correctness after specific changes. Different triggers, different scopes:
+manage-infra is proactive health monitoring -- it detects drift before it causes problems. The verify-structural-content through verify-cc-feasibility skills are reactive verification -- they validate correctness after specific changes. Different triggers, different scopes:
 - **manage-infra**: Broad scan, all component types, detects drift and decay over time
 - **verify-* skills**: Narrow scope, specific files just modified, validates conformance to standards
 
-Invoking manage-infra as a substitute for verify-structure after modifying a single skill file is wasteful. Invoking verify-structure as a substitute for manage-infra to check overall health misses cross-component drift.
+Invoking manage-infra as a substitute for verify-structural-content after modifying a single skill file is wasteful. Invoking verify-structural-content as a substitute for manage-infra to check overall health misses cross-component drift.
 
 ## Transitions
 

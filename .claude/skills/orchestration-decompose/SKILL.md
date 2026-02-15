@@ -3,9 +3,9 @@ name: orchestration-decompose
 description: |
   [P5·Orchestration·Decompose] Task-to-teammate decomposition specialist. Breaks validated plan into teammate-assignable work units with dependency awareness using Agent/Skill frontmatter in Lead's context.
 
-  WHEN: plan-verify domain complete (all 3 PASS). Validated plan ready for teammate assignment. Orchestration entry point.
+  WHEN: plan-verify complete (PASS). Validated plan ready for teammate assignment. Orchestration entry point.
   DOMAIN: orchestration (skill 1 of 3). Sequential: decompose -> assign -> verify.
-  INPUT_FROM: plan-verify domain (PASS verdict), plan-decomposition (task list with dependencies).
+  INPUT_FROM: plan-verify (PASS verdict), plan-decomposition (task list with dependencies).
   OUTPUT_TO: orchestration-assign (decomposed tasks ready for teammate mapping).
 
   METHODOLOGY: (1) Read validated plan, (2) Group tasks by agent capability match via frontmatter descriptions, (3) Identify dependency chains between groups, (4) Ensure each group respects 4-teammate limit, (5) Output decomposition with dependency edges.
@@ -142,7 +142,7 @@ Produce task-group list with:
 ## Failure Handling
 
 ### Plan-Verify Data Missing or Incomplete
-- **Cause**: plan-verify domain didn't produce clean PASS or data is malformed
+- **Cause**: plan-verify didn't produce clean PASS or data is malformed
 - **Action**: Route back to plan-verify with specific missing data request
 - **Never proceed**: without verified plan data — decomposition on unvalidated plans creates cascading errors in orchestration-assign and execution
 
@@ -187,7 +187,7 @@ For TRIVIAL tiers (1-3 tasks), the overhead of multi-group decomposition exceeds
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| plan-verify domain | PASS verdict for all 3 checks | L1 YAML: correctness, completeness, robustness all PASS |
+| plan-verify | PASS verdict for all checks | L1 YAML: correctness, completeness, robustness all PASS |
 | plan-decomposition | Task list with file assignments | L1 YAML: `tasks[].{id, description, files[], complexity}` |
 | plan-interface | Interface contracts between tasks | L2 markdown: function signatures, data flow |
 | plan-strategy | Execution sequence and risk mitigations | L2 markdown: critical path, parallel opportunities |
@@ -200,7 +200,7 @@ For TRIVIAL tiers (1-3 tasks), the overhead of multi-group decomposition exceeds
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Plan data missing | plan-verify domain | Specific missing data request |
+| Plan data missing | plan-verify | Specific missing data request |
 | Unassignable task | plan-decomposition | Task that can't be matched to agent profile |
 | Dependency cycle | Self (re-decompose) | Cycle details and merge recommendation |
 | Capacity overflow | Self (re-phase) | Current count, proposed phase split |

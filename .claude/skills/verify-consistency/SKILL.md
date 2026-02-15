@@ -3,9 +3,9 @@ name: verify-consistency
 description: |
   [P7·Verify·Consistency] Cross-file relationship integrity verifier. Checks skill-agent routing matches between CLAUDE.md and frontmatter, phase sequence logic, INPUT_FROM/OUTPUT_TO bidirectionality, and skills table vs directory.
 
-  WHEN: After multi-file changes or relationship modifications. Third of 5 verify stages. Can run independently.
-  DOMAIN: verify (skill 3 of 5). After verify-content PASS.
-  INPUT_FROM: verify-content (content completeness confirmed) or direct invocation.
+  WHEN: After multi-file changes or relationship modifications. Second of 4 verify stages. Can run independently.
+  DOMAIN: verify (skill 2 of 4). After verify-structural-content PASS.
+  INPUT_FROM: verify-structural-content (structural+content checks confirmed) or direct invocation.
   OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL).
 
   METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO refs from descriptions, (2) Build relationship graph, (3) Verify bidirectionality (A refs B <-> B refs A), (4) Check phase sequence (domain N -> domain N+1), (5) Verify CLAUDE.md skills table matches .claude/skills/ listing.
@@ -91,7 +91,7 @@ for each skill in .claude/skills/*/SKILL.md:
 ```
 
 For STANDARD/COMPLEX tiers, construct the DPS delegation prompt:
-- **Context**: All 35 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 35, domains: 8+4+3). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify.
+- **Context**: All 32 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 32, domains: 8+4+3). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify.
 - **Task**: Build directed reference graph. Check bidirectionality (A->B implies B->A). Check phase sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
 - **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-improve) exempt from phase sequence.
 - **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph + phase sequence validation.
@@ -109,7 +109,7 @@ Bidirectionality check example:
 |--------|-----------|--------|------------------|--------|
 | execution-code | OUTPUT_TO: execution-impact | execution-impact | INPUT_FROM: execution-code | consistent |
 | design-risk | OUTPUT_TO: research-codebase | research-codebase | INPUT_FROM: design-risk | ? (verify) |
-| verify-content | OUTPUT_TO: verify-consistency | verify-consistency | INPUT_FROM: verify-content | consistent |
+| verify-structural-content | OUTPUT_TO: verify-consistency | verify-consistency | INPUT_FROM: verify-structural-content | consistent |
 | verify-consistency | OUTPUT_TO: verify-quality | verify-quality | INPUT_FROM: verify-consistency | consistent |
 
 Known exceptions to strict bidirectionality:
@@ -130,10 +130,10 @@ P0: pre-design   (brainstorm → validate → feasibility)
 P1: design        (architecture → interface, risk)
 P2: research      (codebase ∥ external → audit)
 P3: plan          (decomposition → interface → strategy)
-P4: plan-verify   (correctness ∥ completeness ∥ robustness)
+P4: plan-verify   (unified verification)
 P5: orchestration (decompose → assign → verify)
 P6: execution     (code ∥ infra → impact → cascade → review)
-P7: verify        (structure → content → consistency → quality → cc-feasibility)
+P7: verify        (structural-content → consistency → quality → cc-feasibility)
 P8: delivery      (delivery-pipeline)
 ```
 
@@ -220,7 +220,7 @@ Pipeline impact assessment:
 
 | Source Skill | Data Expected | Format |
 |--------------|---------------|--------|
-| verify-content | Content completeness confirmed | L1 YAML: PASS verdict with utilization metrics |
+| verify-structural-content | Structural+content checks confirmed | L1 YAML: PASS verdict with utilization metrics |
 | Direct invocation | Specific files or full INFRA check | File paths or "full" flag via $ARGUMENTS |
 
 ### Sends To

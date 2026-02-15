@@ -3,10 +3,10 @@ name: verify-cc-feasibility
 description: |
   [P7·Verify·CCFeasibility] CC native compliance verifier. Ensures all frontmatter uses ONLY CC native fields, no custom fields, and validates via claude-code-guide spawn.
 
-  WHEN: After every skill/agent creation or frontmatter modification. Fifth and final verify stage. Can run independently.
-  DOMAIN: verify (skill 5 of 5). Terminal skill in verify domain. After verify-quality PASS.
+  WHEN: After every skill/agent creation or frontmatter modification. Fourth and final verify stage. Can run independently.
+  DOMAIN: verify (skill 4 of 4). Terminal skill in verify domain. After verify-quality PASS.
   INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes) or direct invocation.
-  OUTPUT_TO: delivery-pipeline (if all 5 stages PASS) or execution-infra (if FAIL, frontmatter fix required).
+  OUTPUT_TO: delivery-pipeline (if all 4 stages PASS) or execution-infra (if FAIL, frontmatter fix required).
 
   METHODOLOGY: (1) Read target frontmatter fields, (2) Check against CC native field lists for skills and agents (see L2 for full lists), (3) Flag any non-native field, (4) Spawn claude-code-guide to validate questionable fields, (5) Return compliance verdict per file.
   OUTPUT_FORMAT: L1 YAML native compliance per file, L2 markdown feasibility report with field-level feedback.
@@ -86,7 +86,7 @@ CC feasibility verification can be skipped entirely when ALL of the following ar
 
 When skip conditions are met, Lead records `status: SKIP` with rationale in L1 output.
 
-Note: Even if skip conditions are met, Lead MAY still invoke cc-feasibility if routing through the full verify domain (all 5 stages). In that case, a quick re-confirmation is cheaper than debugging a false-positive later.
+Note: Even if skip conditions are met, Lead MAY still invoke cc-feasibility if routing through the full verify domain (all 4 stages). In that case, a quick re-confirmation is cheaper than debugging a false-positive later.
 
 ### Value Type Strictness
 
@@ -282,7 +282,7 @@ Checking field names alone is insufficient. A native field with the wrong value 
 CC feasibility is a read-only verification skill. Removing fields during verification mixes assessment with modification and risks unintended side effects. The analyst must only report findings. Actual removal is routed to execution-infra with specific removal instructions.
 
 ### DO NOT: Check L2 Body Content for CC Compliance
-L2 body is free-form markdown. Only frontmatter (YAML between `---` markers) needs CC native field validation. Checking L2 content for CC compliance is verify-content's domain, not cc-feasibility's.
+L2 body is free-form markdown. Only frontmatter (YAML between `---` markers) needs CC native field validation. Checking L2 content for CC compliance is verify-structural-content's domain, not cc-feasibility's.
 
 ### DO NOT: Confuse Skill Frontmatter Fields with Agent Frontmatter Fields
 Skills and agents have DIFFERENT native field lists. A field like `tools` is native for agents but non-native for skills. A field like `argument-hint` is native for skills but non-native for agents. Always check against the correct table for the file type. Misidentifying which table to use is a common source of false positives and false negatives.
@@ -301,7 +301,7 @@ Skills and agents have DIFFERENT native field lists. A field like `tools` is nat
 
 | Target Skill | Trigger Condition | Data Produced | Format |
 |-------------|-------------------|---------------|--------|
-| delivery-pipeline | PASS verdict AND all 5 verify stages complete | Full verify domain PASS confirmation | L1 YAML: `status: PASS`, zero findings |
+| delivery-pipeline | PASS verdict AND all 4 verify stages complete | Full verify domain PASS confirmation | L1 YAML: `status: PASS`, zero findings |
 | execution-infra | FAIL verdict with blocking findings | Non-native field removal or value fix requests | L1 YAML: findings[] with file/field/action |
 
 ### Failure Routes
@@ -318,7 +318,7 @@ Skills and agents have DIFFERENT native field lists. A field like `tools` is nat
 
 After execution-infra completes fixes routed from cc-feasibility:
 - Lead re-invokes cc-feasibility on the specific fixed files (not full scan)
-- If PASS on re-check: proceed to delivery-pipeline (if all 5 verify stages done)
+- If PASS on re-check: proceed to delivery-pipeline (if all 4 verify stages done)
 - If FAIL on re-check: route back to execution-infra (max 3 iterations per pipeline rules)
 - After 3 failed iterations: escalate to Lead for manual intervention
 

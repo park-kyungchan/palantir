@@ -147,15 +147,14 @@ New skills must follow the naming pattern: `{domain}-{action}`. Examples: `execu
 - The action suffix must be a concrete verb or noun describing the skill's purpose.
 - Never use generic names like `utility`, `helper`, `misc`, or `general`.
 - The full name must be unique across all 35 skills. Check existing names before proposing CREATE.
-- Naming violations are caught by verify-structure and block the pipeline.
+- Naming violations are caught by verify-structural-content and block the pipeline.
 
 ### Post-Action Verification Chain
 After every CREATE, UPDATE, or DELETE action is executed, run the following verification sequence in order:
-1. **verify-structure**: Confirms YAML frontmatter parses correctly, directory exists, file naming is valid.
-2. **verify-content**: Confirms description utilization >80% of 1024 chars, all orchestration map keys present (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO).
-3. **verify-cc-feasibility**: Confirms only CC native fields used, no custom fields that would be silently ignored.
+1. **verify-structural-content**: Confirms YAML frontmatter parses correctly, directory exists, file naming is valid, description utilization >80% of 1024 chars, all orchestration map keys present (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO).
+2. **verify-cc-feasibility**: Confirms only CC native fields used, no custom fields that would be silently ignored.
 
-If any verification step fails: route to execution-infra for correction. Do NOT mark manage-skills as complete until all three verifications pass for every affected skill. This chain is non-negotiable -- it prevents invisible routing failures caused by non-native frontmatter.
+If any verification step fails: route to execution-infra for correction. Do NOT mark manage-skills as complete until both verifications pass for every affected skill. This chain is non-negotiable -- it prevents invisible routing failures caused by non-native frontmatter.
 
 ## Failure Handling
 
@@ -238,7 +237,7 @@ A skill created in the current pipeline iteration should not be flagged for DELE
 - Changed skills pass CC feasibility check (native fields only, description ≤1024 chars)
 - Skill naming follows `{domain}-{action}` convention -- no generic names like `utility` or `helper`
 - No duplicate skill names across all domains (35 unique names required)
-- Post-action verification chain completed: verify-structure -> verify-content -> verify-cc-feasibility (all three must pass before marking complete)
+- Post-action verification chain completed: verify-structural-content -> verify-cc-feasibility (both must pass before marking complete)
 
 ## Output
 

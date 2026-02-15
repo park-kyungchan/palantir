@@ -27,15 +27,15 @@
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
 - teammateMode: tmux (settings.json)
 
-## Current INFRA State (v10.8, 2026-02-15)
+## Current INFRA State (v10.9, 2026-02-15)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v10.8 | 54L | Protocol-only + sequential phase numbering P0-P8 + expanded PT section |
-| Agents | v10.8 | 6 files | 2 haiku+memory:none (delivery,pt-mgr), 4 memory:project, all color + analyst wording fix, delivery-agent constraint |
-| Skills | v10.8 | 35 dirs | DPS 19 skills + cross-report fixes + L1 budget compliance |
-| Settings | v10.8 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded + tavily permission |
-| Hooks | 5 total | ~285L | SRC log preserved (no mv), + pre-compact mtime selection |
+| CLAUDE.md | v10.9 | 54L | Protocol-only + sequential phase numbering P0-P8 + expanded PT section |
+| Agents | v10.9 | 6 files | 2 haiku+memory:none (delivery,pt-mgr), 4 memory:project, all color + analyst wording fix, delivery-agent constraint |
+| Skills | v10.9 | 32 dirs | 35→32 merged (plan-verify 3→1, verify 2→1) + agent-scoped SRC hooks |
+| Settings | v10.9 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded + tavily permission |
+| Hooks | 8 scripts | ~380L | 6 global events + 5 agent-scoped hooks (SRC moved to agent scope) |
 | Agent Memory | -- | 6 files | +infra-integration-audit.md, +srp-analysis.md |
 
 ### Architecture (v10 Native Optimization)
@@ -45,7 +45,7 @@
 - **CLAUDE.md**: Protocol-only (43L), zero routing data -- all routing via auto-loaded metadata
 - **Lead**: Pure Orchestrator, never edits files directly, routes via skills+agents
 
-### Skills (35 total: 28 pipeline + 4 homeostasis + 3 cross-cutting)
+### Skills (32 total: 25 pipeline + 4 homeostasis + 3 cross-cutting)
 
 | Domain | Skills | Phase |
 |--------|--------|-------|
@@ -53,10 +53,10 @@
 | design | architecture, interface, risk | P1 |
 | research | codebase, external, audit | P2 |
 | plan | decomposition, interface, strategy | P3 |
-| plan-verify | correctness, completeness, robustness | P4 |
+| plan-verify | (unified: correctness+completeness+robustness) | P4 |
 | orchestration | decompose, assign, verify | P5 |
 | execution | code, infra, **impact, cascade**, review | P6 |
-| verify | structure, content, consistency, quality, cc-feasibility | P7 |
+| verify | structural-content, consistency, quality, cc-feasibility | P7 |
 | homeostasis | manage-infra, manage-skills, **manage-codebase, self-improve** | X-cut |
 | cross-cutting | delivery-pipeline, pipeline-resume, task-management | P8/X-cut |
 
@@ -108,12 +108,40 @@ Details: `memory/meta-cognition-infra.md`
 
 ## Session History
 
+### CC Native Optimization — 4-Phase Direct Implementation (2026-02-15, branch: test)
+Brainstorm-driven INFRA optimization: 28 findings analyzed, 4-phase direct implementation.
+- **Phase 1**: Agent memory cleanup (3 files: analyst 128→54L, implementer 58→56L, researcher 111→70L). Config tweaks: SRC race fix (sleep 0.5), researcher maxTurns 30→20, research-audit disable-model-invocation.
+- **Phase 2**: Hook enhancements: AUTOCOMPACT_PCT=90, SessionEnd cleanup hook, PostToolUseFailure logger, delivery-agent prompt hook (Haiku quality gate).
+- **Phase 3**: Pipeline consolidation: plan-verify 3→1 (496L), verify-structural-content 2→1 (545L). 5 old dirs deleted. Cross-references updated (13 files). Skills 35→32.
+- **Phase 4**: Agent-scoped SRC hooks (PostToolUse/PostToolUseFailure moved from global to implementer+infra-implementer). TaskCompleted logging hook. Stale references fixed (5 files).
+- Total: ~30 files changed, 3 new scripts, 2 new skills, 5 skills deleted, L1 budget recovered ~4900 chars.
+
+### RSI L6 — Transition Integrity + Dashboard Enrichment Viz (2026-02-15, branch: test)
+Progressive Deep-Dive RSI: L1→L2→L3→L4→L5→**L6(transition+dashboard viz)** — final RSI level.
+- **Diagnosis**: 2 parallel analysts: Transition Audit (38 findings, 7.6/10), Dashboard Audit (13 findings, 6.8/10)
+- **Iter 1** (4 parallel infra-implementers):
+  - TI-01 CRITICAL: execution-cascade L1 OUTPUT_TO contradiction resolved
+  - 8 HIGH: L1 INPUT_FROM/OUTPUT_TO aligned with L2 Transitions across 8 execution/design/research skills
+  - 10 MEDIUM: generic domain refs → specific skill names (design domain→design-architecture etc.)
+  - DASH-L6-01+03 HIGH: 4 enrichment indicators (D/F/A/T) + description regex (?=^\S) robustness
+  - DASH-L6-02+05 MEDIUM: enrichment summary stat + cross-cutting phase mapping from skill tags
+  - 7 L1 budget trims: all 31 auto-loaded descriptions ≤1024 chars (was 7 over)
+  - 3 L5 carryover skills enriched (delivery-pipeline, pipeline-resume, self-improve)
+- **Convergence**: CRITICAL 1/1 (100%), HIGH 10/10 (100%), MEDIUM 13/16 (81%). L1 budget 29,630/32,000 (92%).
+- **RSI TERMINATED**: Diminishing returns. Remaining items are accepted conventions or cosmetic.
+- Diagnostic reports: `agent-memory/analyst/{rsi-l6-transition-audit,rsi-l6-dashboard-audit}.md`
+- Convention established: L1 INPUT_FROM = routing triggers only. L2 Receives From = all data sources.
+- Commit: be8bc9c. 24 files changed, +174/-61.
+- Total RSI (L1→L6): 6 levels, ~150 files changed, 8 commits on test branch.
+
 ### RSI L5 — Dashboard + Skill Quality (2026-02-15, branch: test)
 Progressive Deep-Dive RSI: L1→L2→L3→L4→**L5(dashboard+skills)** — dashboard bug fixes + skill consistency.
 - **Diagnosis**: 3 parallel analysts, 62 findings (1C/10H/21M/19L/10A) across skills/dashboard/integration
-- **Iter 1**: Dashboard 10 bugs fixed (C-01 enabledPlugins, H-04 donut closure, H-06 x-cut CSS, M-03 settings arrays, M-10 X-cut pipeline). Skill phase tags unified P2-P9→P1-P8 (26 skills). TIER_BEHAVIOR removed (4). mode:default removed (2). 5 skills enriched with Decision Points/Anti-Patterns/Transitions/Failure Handling.
-- **Convergence**: CRITICAL 1/1, HIGH 7/10, MEDIUM 9/21. Remaining HIGH all latent (regex edge cases, current data works). Commit: 7e13dca.
+- **Iter 1**: Dashboard 10 bugs fixed (C-01 enabledPlugins, H-04 donut closure, H-06 x-cut CSS, M-03 settings arrays, M-10 X-cut pipeline). Skill phase tags unified P2-P9→P1-P8 (26 skills). TIER_BEHAVIOR removed (4). mode:default removed (2). 5 skills enriched. Commit: 7e13dca.
+- **Iter 2**: 17 more skills enriched (35/35 complete with Decision Points/Failure Handling/Anti-Patterns/Transitions). Dashboard H-02 regex fix (description terminator). Body section parser detects 8 sections. Commit: 75593f0.
+- **Convergence**: CRITICAL 1/1, HIGH 9/10 (90%), MEDIUM 18/21 (86%). Skill enrichment 35/35 (100%). Remaining: latent dashboard edge cases + LOW items.
 - Diagnostic reports: `agent-memory/analyst/{rsi-l5-skills-audit,rsi-l5-dashboard-audit,rsi-l5-integration-audit}.md`
+- Total: 54 files changed across 2 commits (+5600/-244)
 
 ### INFRA Dashboard (2026-02-15, branch: test)
 Full-pipeline dashboard build: P0 (brainstorm) → P1 (design) → P2 (research, 3 agents) → P6 (execution, 2 parallel implementers) → Chrome MCP verification.

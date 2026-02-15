@@ -6,7 +6,8 @@
     "MAX_MCP_OUTPUT_TOKENS": "100000",
     "BASH_MAX_OUTPUT_LENGTH": "200000",
     "ENABLE_TOOL_SEARCH": "auto:7",
-    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "32000"
+    "SLASH_COMMAND_TOOL_CHAR_BUDGET": "32000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "90"
   },
   "permissions": {
     "allow": [
@@ -73,20 +74,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-file-change.sh",
-            "timeout": 5,
-            "async": true,
-            "statusMessage": "Tracking file changes for impact analysis"
-          }
-        ]
-      }
-    ],
     "SubagentStop": [
       {
         "matcher": "implementer|infra-implementer",
@@ -95,6 +82,32 @@
             "type": "command",
             "command": "/home/palantir/.claude/hooks/on-implementer-done.sh",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-session-end.sh",
+            "timeout": 10,
+            "statusMessage": "Cleaning up session temp files"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/on-task-completed.sh",
+            "timeout": 10,
+            "statusMessage": "Logging task completion"
           }
         ]
       }

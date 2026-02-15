@@ -22,6 +22,13 @@ memory: none
 model: haiku
 maxTurns: 20
 color: cyan
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: "Review the agent's conversation. Check ALL of these were completed: (1) git commit was created successfully, (2) MEMORY.md was updated via Read-then-Edit/Write, (3) PT task was marked DELIVERED via TaskUpdate. If ANY step is missing, reply {\"ok\": false, \"reason\": \"Missing: [list missing steps]\"}. If all complete, reply {\"ok\": true}."
+          model: haiku
+          timeout: 15
 ---
 
 # Delivery Agent

@@ -17,6 +17,23 @@ tools:
 memory: project
 maxTurns: 35
 color: red
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "/home/palantir/.claude/hooks/on-file-change.sh"
+          timeout: 5
+          async: true
+          statusMessage: "Tracking file changes for impact analysis"
+  PostToolUseFailure:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "/home/palantir/.claude/hooks/on-file-change-fail.sh"
+          timeout: 5
+          async: true
+          statusMessage: "Logging failed file operation"
 ---
 
 # Infra Implementer

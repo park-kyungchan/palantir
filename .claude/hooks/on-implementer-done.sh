@@ -19,6 +19,9 @@ fi
 
 LOGFILE="/tmp/src-changes-${SESSION_ID}.log"
 
+# OPT-09: Allow last async PostToolUse hook to flush before reading log
+sleep 0.5
+
 # No change log = no changes detected
 if [[ ! -f "$LOGFILE" || ! -s "$LOGFILE" ]]; then
     echo '{"hookSpecificOutput":{"hookEventName":"SubagentStop","additionalContext":"SRC: No file changes detected by implementer."}}'
