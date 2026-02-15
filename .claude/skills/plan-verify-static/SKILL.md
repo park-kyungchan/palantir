@@ -17,6 +17,7 @@ disable-model-invocation: false
 # Plan Verify — Static Coverage
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline count of plan files vs dependency files. If all present, PASS. No agent spawn.
 - **STANDARD**: Spawn analyst (maxTurns:20). Systematic cross-reference of task files against dependency graph nodes.
 - **COMPLEX**: Spawn analyst (maxTurns:30). Deep node-by-node verification with edge coverage analysis across all modules.
 
@@ -26,7 +27,34 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the task deco
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-static.md`, sends micro-signal: `PASS|coverage:{pct}|orphans:{N}|ref:/tmp/pipeline/p4-pv-static.md`.
 
+## Decision Points
+
+### Coverage Threshold Interpretation
+Coverage percentage determines verdict routing.
+- **>= 95% with zero HIGH orphans**: PASS. Route to plan-verify-coordinator.
+- **85-94% with only LOW/MEDIUM gaps**: CONDITIONAL_PASS. Route with risk annotation.
+- **< 85% or any HIGH orphan/edge**: FAIL. Route failing dimension to plan-static for fix.
+- **Default**: If threshold is borderline (84-86%), include explicit evidence justifying the call.
+
+### Dependency Graph Scale
+Graph size determines spawn parameters.
+- **< 20 nodes**: STANDARD analyst (maxTurns:20). Full node-by-node check feasible.
+- **20-50 nodes**: COMPLEX analyst (maxTurns:30). Prioritize HIGH fan-in nodes first.
+- **> 50 nodes**: COMPLEX analyst (maxTurns:30). Sample-based verification with full HIGH-node coverage. Flag PARTIAL if < 100% verified.
+
 ## Methodology
+
+### Analyst Delegation DPS
+- **Context**: Paste plan-static L1 task breakdown (task IDs, file assignments, depends_on[]). Paste research-coordinator audit-static L3 dependency graph (DAG nodes, edges, hotspot metrics).
+- **Task**: "Cross-reference plan file set against dependency file set. Identify orphan files (unassigned), missing dependency edges (unsequenced), and partial coverage. Compute coverage percentage and classify all gaps by severity."
+- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed dependency graph nodes.
+- **Expected Output**: L1 YAML: coverage_percent, orphan_count, missing_edge_count, verdict, findings[]. L2: coverage matrix with file:line evidence.
+- **Delivery**: SendMessage to Lead: `PASS|coverage:{pct}|orphans:{N}|ref:/tmp/pipeline/p4-pv-static.md`
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Count plan files vs dependency files inline. If all dependency files present, PASS. No matrix needed.
+**STANDARD**: Single analyst, maxTurns:20. Full coverage matrix. All orphans listed with fan-in.
+**COMPLEX**: Single analyst, maxTurns:30. Full coverage matrix + edge coverage analysis across all module boundaries.
 
 ### 1. Read Plan-Static Task Breakdown
 Load plan-static output to extract the complete task list:

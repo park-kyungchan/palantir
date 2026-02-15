@@ -26,6 +26,20 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-relational.md`, sends micro-signal: `{STATUS}|contracts:{N}|gaps:{N}|ref:/tmp/pipeline/p3-plan-relational.md`
 
+## Decision Points
+
+### Contract Formality Level
+When deciding contract specification depth per task boundary.
+- **Path-only**: If TRIVIAL tier (≤ 2 files). Simple file-level references sufficient.
+- **Typed**: If STANDARD tier (3-8 files). Include type definitions and required fields.
+- **Full schema**: If COMPLEX tier (9+ files). Complete interface with validation rules and edge cases.
+
+### Design-Interface Gap Handling
+When audit relationships have no matching design-interface contract.
+- **Design available**: Cross-reference and refine. Use design contract as authority, audit as ground truth.
+- **Design missing**: Define minimal contract from audit relationship alone. Flag as `unverified: true`.
+- **Design contradicts audit**: Flag inconsistency. Route to design-interface for reconciliation.
+
 ## Methodology
 
 ### 1. Read Audit-Relational L3 and Design-Interface Contracts
@@ -104,12 +118,17 @@ Produce the complete contract registry:
 - Gap analysis: relationships without contracts, contracts without relationships
 - Coverage metrics: (relationships with contracts / total relationships) * 100
 
-**DPS -- Analyst Spawn Template:**
-- **Context**: Paste audit-relational L3 content (relationship graph, shared types, data flows). Paste design-interface L1 (API contracts). Include pipeline tier.
-- **Task**: "For each relationship in the audit graph: define producer OUTPUT contract and consumer INPUT contract. Verify bidirectional consistency (type, field, naming, timing). Specify validation rules. Flag gaps where audit relationships have no design contract. Calculate coverage metric."
-- **Constraints**: Read-only analysis. No file modifications. Cross-reference audit and design artifacts.
-- **Expected Output**: L1 YAML with contract_count, gap_count, consistency_score, contracts[]. L2 per-task contracts with validation rules.
+**DPS -- Analyst Spawn Template (COMPLEX):**
+- **Context**: Paste audit-relational L3 content (relationship graph, shared types, data flows). Paste design-interface L1 (API contracts). Include pipeline tier and total relationship count.
+- **Task**: "For each relationship in the audit graph: define producer OUTPUT contract and consumer INPUT contract. Verify bidirectional consistency (type, field, naming, timing). Specify validation rules per contract. Flag gaps where audit relationships have no design contract. Calculate coverage metric."
+- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Cross-reference audit and design artifacts.
+- **Expected Output**: L1 YAML with contract_count, gap_count, consistency_score, coverage_percent, contracts[]. L2 per-task contracts with validation rules and gap analysis.
 - **Delivery**: Write full result to `/tmp/pipeline/p3-plan-relational.md`. Send micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:/tmp/pipeline/p3-plan-relational.md`.
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. 1-2 task boundaries. Path-only contracts (file references). No formal validation rules needed.
+**STANDARD**: Spawn analyst (maxTurns: 15). Typed contracts for 3-8 boundaries. Type + field consistency checks. Skip edge-case validation.
+**COMPLEX**: Full DPS above. Full schema contracts across 9+ boundaries with bidirectional verification and validation rules.
 
 ## Failure Handling
 | Failure Type | Severity | Route To | Blocking? | Resolution |

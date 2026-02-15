@@ -17,9 +17,9 @@ disable-model-invocation: false
 # Self-Implement — INFRA Fix Executor
 
 ## Execution Model
-- **TRIVIAL**: 1 infra-implementer. 5 or fewer findings in non-overlapping files.
-- **STANDARD**: 1-2 infra-implementer waves. Standard RSI fix cycle.
-- **COMPLEX**: 3-4 infra-implementer waves + extended verification. Major structural changes.
+- **TRIVIAL**: 1 infra-implementer (maxTurns:15). 5 or fewer findings in non-overlapping files.
+- **STANDARD**: 1-2 infra-implementer waves (maxTurns:20 each). Standard RSI fix cycle.
+- **COMPLEX**: 3-4 infra-implementer waves (maxTurns:25 each) + extended verification. Major structural changes.
 
 ## Phase-Aware Execution
 - **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
@@ -84,6 +84,7 @@ Spawn infra-implementer for memory updates:
 - **Task**: Update memory/context-engineering.md with new findings. Update MEMORY.md session history with cycle summary.
 - **Constraints**: Edit tool only — modify existing sections, don't restructure.
 - **Expected Output**: L1 YAML with files_updated, status. L2 with change summary.
+- **Delivery**: SendMessage to Lead: `PASS|files:{N}|ref:/tmp/pipeline/homeostasis-self-implement-records.md`.
 
 ### 5. Commit
 Lead-direct via Bash tool, or route to /delivery-pipeline:

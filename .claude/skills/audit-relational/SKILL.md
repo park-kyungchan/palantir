@@ -17,12 +17,27 @@ disable-model-invocation: false
 # Audit — Relational (Cross-File Relationship Integrity)
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline check of 1-2 file relationship declarations. No agent spawn. maxTurns: 0.
 - **STANDARD**: Spawn analyst (maxTurns:25). Systematic chain mapping across all files with declared relationships.
-- **COMPLEX**: Spawn 2 analysts. Analyst-1 maps all declared relationships. Analyst-2 validates bidirectionality and identifies orphans.
+- **COMPLEX**: Spawn 2 analysts (maxTurns:25 each). Analyst-1 maps all declared relationships. Analyst-2 validates bidirectionality and identifies orphans.
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-relational.md`, sends micro-signal: `PASS|relations:{N}|broken:{N}|ref:/tmp/pipeline/p2-audit-relational.md`.
+
+## Decision Points
+
+### Relationship Scan Scope
+Based on file inventory from research-codebase L1.
+- **≤20 files with declarations**: Single analyst, full scan. maxTurns: 20.
+- **21-60 files**: Single analyst, prioritize skill files and API contracts. maxTurns: 25.
+- **>60 files**: Spawn 2 analysts: Analyst-1 maps, Analyst-2 validates. maxTurns: 25 each.
+- **Default**: Single analyst (STANDARD tier).
+
+### Integrity Issue Severity
+- **HIGH**: Breaks routing or data flow (skill OUTPUT_TO points to deleted skill).
+- **MEDIUM**: Inconsistency that may cause confusion but does not break execution.
+- **LOW**: Cosmetic asymmetry with no functional impact.
 
 ## Methodology
 
@@ -94,6 +109,22 @@ Produce final output with:
 - Integrity issues table sorted by severity (HIGH first)
 - Chain analysis: longest chain, average chain length, chain break count
 - Summary: total relations, consistent count, broken count, integrity percentage
+
+### Delegation Prompt Specification
+
+#### COMPLEX Tier (2 analysts: map + validate)
+- **Context**: Paste research-codebase L1 file inventory + naming conventions. Paste research-external L2 relationship constraints. Paste design-interface L1 `interfaces[]`.
+- **Task (Analyst-1 Mapper)**: "Map all INPUT_FROM/OUTPUT_TO, Receives From/Sends To, import, and API contract relationships across all files. Record each as source->target with type and file:line evidence."
+- **Task (Analyst-2 Validator)**: "Read Analyst-1 relationship map. Verify bidirectional consistency for every edge. Classify issues: consistent/asymmetric/orphan/stale. Report integrity percentage."
+- **Constraints**: Read-only analysis (analyst agent, no Bash). No inferred relationships. maxTurns: 25 each.
+- **Expected Output**: L1 YAML: total_relations, consistent/asymmetric/orphan/broken counts, integrity_percent. L2: relationship graph, consistency matrix, issues table.
+- **Delivery**: SendMessage to Lead: `PASS|relations:{N}|broken:{N}|ref:/tmp/pipeline/p2-audit-relational.md`
+
+#### STANDARD Tier (single analyst)
+Single analyst performs both mapping and validation in one pass. maxTurns: 25.
+
+#### TRIVIAL Tier
+Lead-direct inline. Check 1-2 files for declared relationships. No formal DPS.
 
 ## Failure Handling
 

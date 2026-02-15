@@ -17,8 +17,9 @@ disable-model-invocation: false
 # Audit — Impact (Change Propagation Analysis)
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline trace of 1-2 file change impacts. No agent spawn. maxTurns: 0.
 - **STANDARD**: Spawn analyst (maxTurns:25). Trace propagation paths from design change points through the codebase.
-- **COMPLEX**: Spawn 2 analysts. Analyst-1 traces DIRECT impacts. Analyst-2 traces TRANSITIVE impacts using Analyst-1's edge list. Sequential.
+- **COMPLEX**: Spawn 2 analysts (maxTurns:25 each). Analyst-1 traces DIRECT impacts. Analyst-2 traces TRANSITIVE impacts using Analyst-1's edge list. Sequential.
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
@@ -28,6 +29,19 @@ disable-model-invocation: false
 This skill produces L3 output that is reused by execution-impact in P6. The predicted propagation paths from P2 become the baseline for P6's actual impact verification. This avoids redundant analysis: P2 predicts, P6 validates predictions against real changes.
 
 The L3 output is stored at `/tmp/pipeline/p2-audit-impact.md` and passed to execution-impact via `$ARGUMENTS` in the plan phase.
+
+## Decision Points
+
+### Propagation Depth Strategy
+Based on design change scope and dependency density.
+- **Isolated changes (≤3 change points, ≤2 direct dependents each)**: DIRECT only. Skip transitive. maxTurns: 20.
+- **Moderate changes (4-8 change points)**: DIRECT + TRANSITIVE up to 2 hops. maxTurns: 25.
+- **Broad changes (>8 change points or hub-touching)**: Full 3-hop TRANSITIVE. Spawn 2 analysts. maxTurns: 25 each.
+- **Default**: DIRECT + 2-hop TRANSITIVE (STANDARD tier).
+
+### Risk Matrix Availability
+- **design-risk available**: Use risk matrix for severity calibration and change point identification.
+- **design-risk missing (TRIVIAL/STANDARD tier)**: Fall back to design-architecture component scope. Note reduced confidence.
 
 ## Methodology
 
@@ -103,6 +117,22 @@ Produce final output with:
 - Maintenance risk assessment per affected module
 - Scalability risk assessment per architecture decision
 - Shift-Left handoff: structured propagation data for execution-impact (P6)
+
+### Delegation Prompt Specification
+
+#### COMPLEX Tier (2 sequential analysts)
+- **Context**: Paste research-codebase L1 file inventory + dependency patterns. Paste research-external L2 change propagation constraints. Paste design-risk L1 risk matrix with change points.
+- **Task (Analyst-1 DIRECT)**: "From each design change point, trace all 1-hop DIRECT impacts: files that import, reference, or configure the changed component. Record each path with file:line evidence."
+- **Task (Analyst-2 TRANSITIVE)**: "Read Analyst-1 DIRECT edge list. Trace 2-3 hop TRANSITIVE chains from each directly impacted file. Cap at 3 hops. Record full chain with per-hop evidence."
+- **Constraints**: Read-only analysis (analyst agent, no Bash). No recommendations. Cap transitive at 3 hops. maxTurns: 25 each.
+- **Expected Output**: L1 YAML: direct_count, transitive_count, severity distribution, maintenance/scalability risk. L2: propagation path table, risk matrix, Shift-Left handoff data.
+- **Delivery**: SendMessage to Lead: `PASS|direct:{N}|transitive:{N}|ref:/tmp/pipeline/p2-audit-impact.md`
+
+#### STANDARD Tier (single analyst)
+Single analyst traces both DIRECT and TRANSITIVE in one pass. maxTurns: 25.
+
+#### TRIVIAL Tier
+Lead-direct inline. Check 1-2 change points for obvious dependents. No formal DPS.
 
 ## Failure Handling
 

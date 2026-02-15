@@ -25,6 +25,27 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-behavioral.md`. Send micro-signal to Lead via SendMessage: `PASS|checkpoints:{N}|ref:/tmp/pipeline/p5-orch-behavioral.md`.
 
+## Decision Points
+
+### Checkpoint Type Selection
+When placing a checkpoint at a transition point:
+- **Wave boundary with downstream blockers** (fan-out >= 2): Use gate checkpoint. Blocks until all tasks PASS.
+- **Wave boundary with independent downstream**: Use aggregate checkpoint. Requires N-of-M tasks PASS.
+- **Non-boundary transition** (mid-wave handoff): Use monitor checkpoint. Logs only, does not block.
+- **Domain boundary** (P5->P6, P6->P7): Always gate checkpoint regardless of other factors.
+
+### Checkpoint Density Control
+When checkpoint count exceeds 2 per wave boundary:
+- **If priority scores differ by >= 3**: Keep highest-priority only at that boundary. Merge others into monitor.
+- **If priority scores within 2**: Consolidate into single aggregate checkpoint covering both criteria.
+- **Maximum**: 1 gate + 1 monitor per wave boundary. Consolidate further if exceeded.
+
+### Failure Escalation Depth
+When defining fail_action per checkpoint:
+- **Gate checkpoint FAIL**: Retry failed task (max 2 retries), then route to Lead for re-planning.
+- **Monitor checkpoint FAIL**: Log warning + continue. Flag in L2 for post-execution review.
+- **Aggregate checkpoint partial FAIL** (< N-of-M): Retry failed subset (max 1 retry), then escalate.
+
 ## Methodology
 
 ### 1. Read Verified Plan
@@ -40,6 +61,11 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with
 - **Constraints**: Read-only analysis. No modifications. Every checkpoint must have measurable criteria. Map each checkpoint to a specific wave boundary.
 - **Expected Output**: L1 YAML checkpoint schedule. L2 rationale per checkpoint with wave mapping.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-behavioral.md`. Send micro-signal to Lead via SendMessage: `PASS|checkpoints:{N}|ref:/tmp/pipeline/p5-orch-behavioral.md`.
+
+#### Step 1 Tier-Specific DPS Variations
+**TRIVIAL**: Skip — Lead places 1 implicit gate checkpoint between P6 execution and P7 verify.
+**STANDARD**: Single DPS to analyst. maxTurns:15. Place checkpoints at domain boundaries only (P5->P6, P6->P7). Omit priority scoring.
+**COMPLEX**: Full DPS as above. maxTurns:25. Deep checkpoint analysis with priority scoring and failure propagation awareness across all wave boundaries.
 
 ### 2. Identify Critical Transition Points
 Scan the execution flow for points where verification adds the most value:

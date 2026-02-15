@@ -17,6 +17,7 @@ disable-model-invocation: false
 # Plan Verify — Impact Containment
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline check that each propagation path has an intercepting checkpoint. No agent spawn.
 - **STANDARD**: Spawn analyst (maxTurns:20). Systematic cross-reference of checkpoints against propagation paths.
 - **COMPLEX**: Spawn analyst (maxTurns:30). Deep path-by-path containment analysis with cascade simulation across all propagation chains.
 
@@ -26,7 +27,34 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-impact.md`, sends micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:/tmp/pipeline/p4-pv-impact.md`.
 
+## Decision Points
+
+### Containment Threshold Interpretation
+Path containment status determines verdict routing.
+- **All HIGH paths CONTAINED AND zero UNMITIGATED**: PASS. Route to plan-verify-coordinator.
+- **All HIGH paths CONTAINED AND UNMITIGATED are LOW-only (count <= 3)**: CONDITIONAL_PASS. Route with risk annotation.
+- **Any HIGH path UNMITIGATED or LATE**: FAIL. Route to plan-impact for fix.
+- **Default**: If > 50% of paths lack containment, always FAIL (systematic checkpoint gap).
+
+### Propagation Graph Scale
+Path count determines spawn parameters.
+- **< 10 paths**: STANDARD analyst (maxTurns:20). Full path-by-path containment check.
+- **10-25 paths**: COMPLEX analyst (maxTurns:30). Prioritize HIGH-severity and deep (depth >= 3) paths first.
+- **> 25 paths**: COMPLEX analyst (maxTurns:30). Full HIGH path check, sample MEDIUM/LOW. Flag PARTIAL if < 100% verified.
+
 ## Methodology
+
+### Analyst Delegation DPS
+- **Context**: Paste plan-impact L1 execution sequence (phases[], checkpoints[], rollback_boundaries[]). Paste research-coordinator audit-impact L3 propagation paths (paths[], origin, chain[], severity, depth).
+- **Task**: "Map each propagation path to intercepting checkpoints. Verify checkpoint position (before terminal node) and criteria match (tests for specific propagation type). Classify gaps as UNMITIGATED, LATE, or INSUFFICIENT. Flag circular paths requiring dual checkpoints."
+- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed propagation paths.
+- **Expected Output**: L1 YAML: total_paths, contained_count, unmitigated_count, late_checkpoint_count, verdict, findings[]. L2: containment matrix with path evidence.
+- **Delivery**: SendMessage to Lead: `PASS|paths:{N}|unmitigated:{N}|ref:/tmp/pipeline/p4-pv-impact.md`
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Verify each propagation path has an intercepting checkpoint inline. No criteria validation.
+**STANDARD**: Single analyst, maxTurns:20. Full containment matrix with position and criteria validation.
+**COMPLEX**: Single analyst, maxTurns:30. Full matrix + cascade simulation + circular path detection.
 
 ### 1. Read Plan-Impact Execution Sequence
 Load plan-impact output to extract:

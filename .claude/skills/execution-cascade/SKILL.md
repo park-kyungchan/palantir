@@ -68,13 +68,22 @@ Load execution-impact L1 and L2 output:
 ### 2. Spawn Implementers for Affected Files
 For each iteration (max 3):
 - Group dependent files by proximity (max 2 implementer groups)
-- Spawn implementers with `subagent_type: implementer`, `maxTurns: 30`. For affected files in `.claude/` scope, spawn `infra-implementer` (subagent_type: infra-implementer) instead of `implementer` to maintain security boundary.
-- Each implementer prompt includes:
-  - What changed (root cause file and what was modified)
-  - What reference pattern to look for in the dependent file
-  - Evidence line (exact grep match from execution-impact L2)
-  - Expected update behavior (fix the reference to match the change)
-  - Implementer includes grep verification results in completion SendMessage (confirms reference was actually updated and no other stale references remain in the file)
+- Select agent type: `implementer` for source files, `infra-implementer` for `.claude/` files
+
+Construct each delegation prompt with:
+- **Context**: Paste the root cause: which file changed and what was modified (e.g., "renamed function X to Y in `src/auth.ts`"). Include the evidence line from execution-impact L2: exact grep match `{dependent_file:line_number:matching_content}`. For `.claude/` files, include relevant cc-reference field specifications.
+- **Task**: "Update references in `<dependent_file>` to match the change in `<root_cause_file>`. Look for pattern `<reference_pattern>` and update to reflect `<new_value>`. After updating, grep the file to verify no stale references to the old pattern remain."
+- **Constraints**: Scope limited to assigned dependent files only — do NOT modify root cause file or other dependents. implementer has Bash (can test); infra-implementer has Edit/Write only (no Bash). maxTurns: 30.
+- **Expected Output**: Report as L1 YAML: `files_changed` (array), `status` (complete|failed), `verification` (grep confirms no stale references). L2: before/after for each updated reference.
+- **Delivery**: Upon completion, send summary to Lead via SendMessage: status (PASS/FAIL), files changed, grep verification result.
+
+#### Step 2 Tier-Specific DPS Variations
+
+**TRIVIAL**: Single implementer for 1-2 dependent files. Include full file content in Context (small files). Expect convergence in 1 iteration. maxTurns: 15.
+
+**STANDARD**: 1-2 implementers per iteration. Include relevant file sections in Context. Group related dependents to same implementer. maxTurns: 25.
+
+**COMPLEX**: 2 implementers per iteration (max). Include architecture context for cross-module references. May require all 3 iterations. maxTurns: 30.
 
 ### 3. Check Convergence After Updates
 After all implementers in an iteration complete:

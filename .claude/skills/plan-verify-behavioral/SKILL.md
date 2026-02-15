@@ -17,6 +17,7 @@ disable-model-invocation: false
 # Plan Verify — Behavioral Coverage
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline check that each predicted change has a test entry. No agent spawn.
 - **STANDARD**: Spawn analyst (maxTurns:20). Systematic cross-reference of test cases against predicted behavior changes.
 - **COMPLEX**: Spawn analyst (maxTurns:30). Deep verification of test adequacy per predicted change plus rollback trigger completeness analysis.
 
@@ -26,7 +27,34 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the test stra
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-behavioral.md`, sends micro-signal: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:/tmp/pipeline/p4-pv-behavioral.md`.
 
+## Decision Points
+
+### Coverage Threshold Interpretation
+Weighted test coverage determines verdict routing.
+- **Weighted >= 90% AND rollback >= 90%**: PASS. Route to plan-verify-coordinator.
+- **Weighted 75-89% with untested items LOW-risk only**: CONDITIONAL_PASS. Route with risk annotation.
+- **Weighted < 75% or any HIGH-risk untested**: FAIL. Route to plan-behavioral for fix.
+- **Default**: If any HIGH-risk change has neither test NOR rollback, always FAIL regardless of aggregate coverage.
+
+### Prediction Set Scale
+Prediction count determines spawn parameters.
+- **< 10 predictions**: STANDARD analyst (maxTurns:20). Full prediction-by-prediction check.
+- **10-30 predictions**: COMPLEX analyst (maxTurns:30). Prioritize HIGH-risk predictions first, then MEDIUM.
+- **> 30 predictions**: COMPLEX analyst (maxTurns:30). Cover all HIGH-risk first, sample MEDIUM/LOW. Flag PARTIAL if < 100% verified.
+
 ## Methodology
+
+### Analyst Delegation DPS
+- **Context**: Paste plan-behavioral L1 test strategy (tests[], rollbacks[], risk classifications). Paste research-coordinator audit-behavioral L3 behavior predictions (predictions[], change types, risk levels).
+- **Task**: "Cross-reference test inventory against prediction inventory. Verify assertion type match, scope match, and rollback trigger completeness for all HIGH-risk changes. Compute weighted coverage using risk weights HIGH=3, MEDIUM=2, LOW=1."
+- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed predictions.
+- **Expected Output**: L1 YAML: test_coverage_percent, weighted_coverage_percent, rollback_coverage_percent, verdict, findings[]. L2: test/rollback coverage matrices.
+- **Delivery**: SendMessage to Lead: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:/tmp/pipeline/p4-pv-behavioral.md`
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Verify each predicted change has a test entry inline. No rollback check needed.
+**STANDARD**: Single analyst, maxTurns:20. Full test + rollback coverage matrices.
+**COMPLEX**: Single analyst, maxTurns:30. Full matrices + scope mismatch analysis + over-testing observation.
 
 ### 1. Read Plan-Behavioral Test Strategy
 Load plan-behavioral output to extract:

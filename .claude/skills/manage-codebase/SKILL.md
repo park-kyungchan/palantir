@@ -17,9 +17,9 @@ disable-model-invocation: false
 # Manage — Codebase
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick staleness check or single-file incremental update.
-- **STANDARD**: Spawn 1 analyst. Incremental update for 3-8 changed files. Expected ~1-2 minutes.
-- **COMPLEX**: Spawn 1 analyst with extended maxTurns. Full generation scan of entire `.claude/` scope. Expected ~5 minutes.
+- **TRIVIAL**: Lead-direct. Quick staleness check or single-file incremental update. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:20). Incremental update for 3-8 changed files.
+- **COMPLEX**: Spawn 1 analyst (maxTurns:30). Full generation scan of entire `.claude/` scope.
 
 ## Phase-Aware Execution
 - **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
@@ -56,6 +56,13 @@ Spawn analyst agent with `subagent_type: analyst`, `maxTurns: 30`:
 4. **Build bidirectional refs**: If file A references file B, then A's `refs` includes B and B's `refd_by` includes A
 5. **Calculate hotspot scores**: Based on `refd_by` count
 6. **Write complete map** to `.claude/agent-memory/analyst/codebase-map.md`
+
+**Full Generation DPS** (STANDARD/COMPLEX tiers):
+- **Context**: Scope paths from Scope Boundary section. Exclusion list. Reference detection patterns above.
+- **Task**: "Enumerate all .claude/ files within scope filters. For each file, grep for structural references to other tracked files. Build bidirectional refs and calculate hotspot scores. Write complete codebase-map.md."
+- **Constraints**: analyst agent, maxTurns:30. Write output to `.claude/agent-memory/analyst/codebase-map.md` only. Max 150 entries / 300 lines.
+- **Expected Output**: L1 YAML with entries count, mode: full-generation, hotspot distribution. Complete codebase-map.md file per map schema.
+- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:full|ref:/tmp/pipeline/homeostasis-manage-codebase.md`.
 
 ### 3. Incremental Update
 For each changed file from pipeline execution:
@@ -152,7 +159,7 @@ updated: {YYYY-MM-DD}
 - Would require: separate map file, language-specific reference detection
 - NOT part of current SRC implementation scope
 
-## Error Handling
+## Failure Handling
 - **Map corrupted**: Delete and regenerate from scratch (full scan)
 - **Map exceeds 300 lines**: Prune lowest-hotspot, oldest-updated entries
 - **Filesystem scan timeout**: Produce partial map with `status: partial`

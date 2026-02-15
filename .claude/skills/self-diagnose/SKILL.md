@@ -18,9 +18,9 @@ argument-hint: "[focus-area]"
 # Self-Diagnose — INFRA Health Research
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick scan of 1-2 specific categories for a focused area.
-- **STANDARD**: Spawn 1 analyst. Full diagnostic checklist across all .claude/ files. Standard invocation.
-- **COMPLEX**: Spawn 2 analysts in parallel (field compliance + routing in one, budget + hooks in another). For comprehensive audits.
+- **TRIVIAL**: Lead-direct. Quick scan of 1-2 specific categories for a focused area. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:20). Full diagnostic checklist across all .claude/ files.
+- **COMPLEX**: Spawn 2 analysts in parallel (maxTurns:15 each). Group A: field compliance + routing + utilization. Group B: budget + hooks + memory + permissions + colors.
 
 ## Phase-Aware Execution
 - **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
@@ -86,7 +86,7 @@ Scan all `.claude/` files systematically using the diagnostic category checklist
 For STANDARD/COMPLEX tiers, construct the delegation prompt:
 - **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 8 categories.
 - **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
-- **Constraints**: Read-only. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config).
+- **Constraints**: Read-only analyst agent. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config). maxTurns:20.
 - **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
 - **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|findings:{N}|ref:/tmp/pipeline/homeostasis-self-diagnose.md`.
 

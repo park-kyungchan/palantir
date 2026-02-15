@@ -26,6 +26,20 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-impact.md`, sends micro-signal: `{STATUS}|groups:{N}|checkpoints:{N}|ref:/tmp/pipeline/p3-plan-impact.md`
 
+## Decision Points
+
+### Wave Grouping Strategy
+When tasks exceed single-wave capacity or have complex propagation.
+- **Single wave**: If all tasks are propagation-independent (0 cross-task paths). Group all (max 4) in Wave 1.
+- **Multi-wave sequential**: If linear propagation chain exists. Sequence producer before consumer, 1-2 tasks per wave.
+- **Multi-wave parallel**: If independent clusters exist. Maximize parallel grouping (max 4 per wave), minimize total waves.
+
+### Checkpoint Density
+When deciding checkpoint frequency between waves.
+- **Minimal (TRIVIAL)**: After final wave only. Low propagation risk justifies speed.
+- **Moderate (STANDARD)**: After waves containing DIRECT propagation sources. Balance speed and safety.
+- **Maximum (COMPLEX)**: After every wave with high-risk sources (DIRECT to 3+ targets or TRANSITIVE). Safety over speed.
+
 ## Methodology
 
 ### 1. Read Audit-Impact L3 (Propagation Paths)
@@ -115,12 +129,17 @@ Produce the complete execution sequence:
 - Parallel time: Sum of max-task-duration per wave
 - Efficiency: 1 - (parallel_time / sequential_time)
 
-**DPS -- Analyst Spawn Template:**
-- **Context**: Paste audit-impact L3 content (propagation paths, impact classification, blast radius estimates). Include pipeline tier and task list from plan-static if available.
-- **Task**: "Group tasks into parallel execution waves (max 4 per wave) based on propagation containment. Insert checkpoints between waves with gate conditions. Define containment strategy per propagation path. Calculate parallel efficiency metric."
-- **Constraints**: Read-only analysis. No file modifications. Focus on sequencing and containment, not teammate assignment.
-- **Expected Output**: L1 YAML with wave_count, checkpoint_count, groups[] and checkpoints[]. L2 sequencing rationale with containment strategy.
+**DPS -- Analyst Spawn Template (COMPLEX):**
+- **Context**: Paste audit-impact L3 content (propagation paths, impact classification, blast radius estimates). Include pipeline tier, total task count, and task list from plan-static if available.
+- **Task**: "Group tasks into parallel execution waves (max 4 per wave) based on propagation containment. Insert checkpoints between waves with gate conditions. Define containment strategy per propagation path (isolation/ordered/blast-limit/rollback). Calculate parallel efficiency metric."
+- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on sequencing and containment, not teammate assignment.
+- **Expected Output**: L1 YAML with wave_count, checkpoint_count, parallel_efficiency, groups[] and checkpoints[]. L2 sequencing rationale with containment strategy per path.
 - **Delivery**: Write full result to `/tmp/pipeline/p3-plan-impact.md`. Send micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:/tmp/pipeline/p3-plan-impact.md`.
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Linear sequence (1-2 groups). No propagation risk. Single final checkpoint only. Output inline.
+**STANDARD**: Spawn analyst (maxTurns: 15). Systematic grouping across 3-8 tasks. Checkpoints after DIRECT propagation waves only. Skip efficiency metric if ≤ 3 waves.
+**COMPLEX**: Full DPS above. Deep multi-wave analysis across 9+ tasks with comprehensive containment and checkpoint boundaries.
 
 ## Failure Handling
 | Failure Type | Severity | Route To | Blocking? | Resolution |

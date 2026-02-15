@@ -1,203 +1,308 @@
 ---
 name: latex-parse
 description: |
-  [D1·Drill·LaTeXParse] Parses and validates LaTeX syntax within extracted JSONL text. Checks grouping scope, operator commands, auto-sizing delimiters, text-mode spacing, environment matching, semantic conventions (dx spacing, set builder notation). Parallel with jsonl-validate.
+  [D1·Shared·LaTeXParse] Dual-mode LaTeX validation. Drill: FAIL/WARN/PASS against expected_constructs. Production QC: CRITICAL/MAJOR/MINOR against command_allowlist + OCR artifact detection.
 
-  WHEN: After trainee submits JSONL string. Parallel with jsonl-validate. Second in D1 drill cycle.
-  DOMAIN: drill (skill 3 of 5). Parallel: jsonl-validate ∥ latex-parse -> render-evaluate.
-  INPUT_FROM: jsonl-validate (extracted text), challenge-generate (expected constructs), reference-build (command allowlist).
-  OUTPUT_TO: render-evaluate (syntax verdicts per construct), golden-correct (LaTeX error list).
+  WHEN: After JSONL submit (drill) or OCR/worker LaTeX extracted (production). Parallel with jsonl-validate. D1 shared validation core.
+  DOMAIN: drill+production (D1 shared). Parallel: jsonl-validate || latex-parse -> render-evaluate.
+  INPUT_FROM: jsonl-validate (extracted text), challenge-generate (expected_constructs IC-05), reference-build (command_allowlist + domain_semantics IC-02), image-preprocess (flagged_artifacts).
+  OUTPUT_TO: render-evaluate (parse_result IC-08 mode-tagged), golden-correct (drill errors), qc-report (production findings).
 
-  METHODOLOGY: (1) Tokenize into segments (text, inline/display math, environments), (2) Check grouping/scope rules, (3) Validate operator commands vs italic text, (4) Check delimiter sizing (\left/\right), (5) Verify environment matching and semantics.
-  OUTPUT_FORMAT: L1 YAML syntax verdict per category, L2 parsing analysis with segment-level evidence.
+  METHODOLOGY: (1) Detect mode from $ARGUMENTS/upstream, (2) Tokenize segments, (3) Apply mode rules + domain semantics, (4) OCR artifact cross-ref if production, (5) Emit parse_result with tentative + HITL flags.
+  OUTPUT_FORMAT: L1 YAML verdict with mode/tentative/confidence, L2 segment-level analysis with per-finding evidence.
 user-invocable: false
 disable-model-invocation: false
 ---
 
-# Drill — LaTeX Parse
+# Shared Validation Core — LaTeX Parse (Dual-Mode)
 
 ## Execution Model
-- **All levels**: Lead-direct. LaTeX parsing is rule-based analysis.
-- Operates on the text content AFTER JSONL unescaping (receives from jsonl-validate).
-- Parallel with jsonl-validate — each validates its own layer.
+- **All tiers**: Lead-direct. LaTeX parsing is deterministic rule-based analysis.
+- Operates on text content AFTER JSONL unescaping (receives from jsonl-validate).
+- Parallel with jsonl-validate — each validates its own layer independently.
+- **Mode** determined at invocation: `$ARGUMENTS` context or upstream skill origin.
+  - **Drill mode**: Trainee-submitted LaTeX. Educational severity (FAIL/WARN/PASS). Parse depth varies by difficulty.
+  - **Production QC mode**: Worker or OCR-derived LaTeX. Production severity (CRITICAL/MAJOR/MINOR). Always full parse depth.
 
 ## Decision Points
 
-### Input Source
+### Mode Selection
 ```
-IF jsonl-validate PASS:
-  -> Use extracted text content (post-JSON-unescape)
-ELIF jsonl-validate FAIL (parse error):
-  -> Attempt best-effort LaTeX analysis on raw input
-  -> Flag all findings as "tentative" (JSONL layer broken)
-  -> Still useful for trainee learning
+IF $ARGUMENTS contains mode="drill" OR upstream is challenge-generate:
+  -> Drill mode. Load expected_constructs (IC-05). Educational severity.
+ELIF $ARGUMENTS contains mode="production" OR upstream is image-preprocess:
+  -> Production QC mode. Load command_allowlist (IC-02). Production severity.
+ELSE:
+  -> ERROR: Mode undetermined. Halt and report mode-propagation-error.
+```
+
+### Tentative Mode Trigger
+```
+DRILL:
+  IF jsonl-validate status == FAIL:
+    -> Set tentative=true, confidence cap at 0.6
+    -> Best-effort parse on raw input, all findings marked tentative
+    -> Still useful for trainee learning
+
+PRODUCTION:
+  IF ocr_confidence < 0.7 (from image-preprocess):
+    -> Set tentative=true, confidence cap at 0.5
+    -> Cross-reference ALL findings with ocr_confusions list
+    -> Set hitl_required=true with reason "low OCR confidence"
+  IF jsonl-validate status == FAIL:
+    -> Set tentative=true, confidence cap at 0.4
+    -> Both structural and content layers unreliable
+```
+
+### Parse Depth Selection
+```
+DRILL (from IC-05 parse_depth or difficulty):
+  difficulty 1-2 -> "basic":  commands + grouping only
+  difficulty 3   -> "standard": + environments + text-mode checks
+  difficulty 4-5 -> "full":  + semantics + nesting + domain rules
+
+PRODUCTION:
+  Always "full" — all categories checked, no depth shortcut.
+```
+
+### OCR Artifact Detection Threshold
+```
+PRODUCTION ONLY:
+  Load ocr_confusions from reference-build (IC-02 domain):
+    e.g., "l" <-> "1", "O" <-> "0", "\ell" <-> "l"
+  Load flagged_artifacts from image-preprocess (if available):
+    e.g., broken ligatures, partial symbols, noise patterns
+
+  FOR each finding:
+    IF finding matches known ocr_confusion pattern:
+      -> Reclassify as OCR_ARTIFACT (not author error)
+      -> Set severity to MAJOR (not CRITICAL)
+      -> Add ocr_confusion_ref to finding
+    IF confidence < 0.8 AND finding is ambiguous:
+      -> Set hitl_required=true
+      -> Add hitl_reason: "ambiguous OCR artifact vs author error"
 ```
 
 ### Severity Classification
-| Category | Verdict | Description |
-|----------|---------|-------------|
-| ❌ FAIL | Critical | Renders incorrectly or not at all |
-| ⚠️ WARN | Style violation | Renders but violates conventions |
-| ✅ PASS | Correct | Matches expected syntax and style |
 
-### Parse Depth by Challenge Level
-- **Level 1-2**: Check commands and basic grouping only
-- **Level 3**: Add environment matching and text-mode checks
-- **Level 4-5**: Full analysis including semantic conventions and nested structure validation
+**Drill Mode** (educational):
+| Verdict | Description | Example |
+|---------|-------------|---------|
+| FAIL | Renders incorrectly or not at all | Unclosed `\left(` |
+| WARN | Renders but violates conventions | `sin x` instead of `\sin x` |
+| PASS | Matches expected syntax and style | Correct grouping and commands |
+
+**Production QC Mode** (production):
+| Severity | Description | Example |
+|----------|-------------|---------|
+| CRITICAL | Content loss or corruption | Missing environment `\end{}` |
+| MAJOR | Significant rendering error | Wrong operator, OCR artifact |
+| MINOR | Style deviation, no content loss | Missing `\,` before `dx` |
+
+### HITL Flag Decision (REQ-LP-07)
+```
+Set hitl_required=true when ANY of:
+  - confidence < 0.7 (tentative parse unreliable)
+  - OCR artifact ambiguity (cannot distinguish OCR vs author error)
+  - Domain semantic rule produces conflicting signals
+  - Nesting depth >= 4 with unresolved grouping
+Include hitl_reason string explaining the trigger.
+```
 
 ## Methodology
 
-### 1. Tokenize Content into Segments
-Split the text content into analyzable segments:
+### 1. Detect Mode and Load Context
+Determine operating mode from invocation context:
+- **Drill**: Load `expected_constructs` from challenge-generate (IC-05). Extract `parse_depth`, `constructs[]`, `domain_rules[]`.
+- **Production**: Load `command_allowlist` from reference-build (IC-02). Extract `valid_commands[]`, `operators[]`, `environments[]`, `domain_semantics[]`. Load `flagged_artifacts` from image-preprocess if available.
+- Validate mode field consistency. If IC-02 `mode` mismatches current mode, override and log warning.
+
+### 2. Tokenize Content into Segments
+Split text content into analyzable segments:
 
 | Segment Type | Delimiter | Example |
 |-------------|-----------|---------|
-| Plain text | Outside `$...$` | "함수 f를 다음과 같이 정의하자." |
-| Inline math | `$...$` | `$f(x) = x^2$` |
-| Display math | `$$...$$` | `$$\int_0^1 f(x)\,dx$$` |
-| Environment | `\begin{}...\end{}` | `\begin{aligned}...\end{aligned}` |
+| plain_text | Outside `$...$` | "f(x)를 다음과 같이 정의하자." |
+| inline_math | `$...$` | `$f(x) = x^2$` |
+| display_math | `$$...$$` | `$$\int_0^1 f(x)\,dx$$` |
+| environment | `\begin{}...\end{}` | `\begin{aligned}...\end{aligned}` |
 
-Track nesting depth. Flag unclosed delimiters.
+Track nesting depth. Flag unclosed delimiters immediately. Assign each segment a `segment_id` (SEG-001, SEG-002, ...) with `start_pos` and `end_pos` for IC-08 output.
 
-### 2. Check Grouping/Scope Rules
-For every `^` (superscript) and `_` (subscript):
-```
-Rule: Multi-token arguments MUST be grouped in braces
-  x^2      → PASS (single token)
-  x^{13}   → PASS (grouped)
-  x^13     → FAIL (13 = two tokens, only 1 captured)
-  e^{-x^2} → PASS (nested grouping)
-  e^-x^2   → FAIL (ambiguous scope)
-```
+### 3. Apply Rule Checks Per Segment
+For each segment, apply checks based on parse depth. Each finding records: `finding_id`, `category`, `severity` (mode-appropriate), `position`, `input_fragment`, `expected`, and optional `rule_reference`.
 
-For `\frac`, `\sqrt`, `\binom` and similar 2-argument commands:
-```
-Rule: Both arguments must be brace-grouped
-  \frac{a}{b}   → PASS
-  \frac{a}b     → FAIL (second arg not grouped)
-  \frac ab      → FAIL (neither arg grouped)
-  \sqrt{x}      → PASS
-  \sqrt[3]{x}   → PASS (optional arg in brackets)
-```
+**Grouping/Scope** (all depths):
+- Multi-token `^`/`_` arguments must be braced: `x^{13}` not `x^13` (REQ-LP-03)
+- `\frac`, `\sqrt`, `\binom` arguments must be brace-grouped
+- Vector notation consistency: if `\vec{F}` used, all vectors must use `\vec{}` (REQ-LP-02)
 
-### 3. Validate Operator Commands
-Check that mathematical operators use proper LaTeX commands:
+**Operator Commands** (all depths):
+- Math operators must use commands: `\sin`, `\ln`, `\lim`, `\det`, `\min`, `\max`, `\mod`
+- Non-math text in math mode must use `\text{}` with proper spacing
 
-| Check | Wrong (italic) | Right (upright) | Rule |
-|-------|----------------|-----------------|------|
-| Trig | `sin x` | `\sin x` | Standard operators |
-| Log | `ln x` | `\ln x` | Standard operators |
-| Limits | `lim` | `\lim` | Standard operators |
-| Det | `det A` | `\det A` | Standard operators |
-| Min/Max | `min` | `\min` | Standard operators |
-| Mod | `mod` | `\mod` or `\bmod` | Standard operators |
-| Text | `if` | `\text{ if }` | Non-math words |
+**Delimiter Sizing** (standard+ depth):
+- `\left`/`\right` for auto-sizing around tall expressions
+- All `\left` must pair with `\right` (or `\right.`)
+- Curly braces need escape: `\left\{` not `\left{`
 
-### 4. Check Delimiter Sizing
-For parentheses, brackets, and braces around tall expressions:
+**Environment Matching** (standard+ depth):
+- Every `\begin{X}` has matching `\end{X}`
+- Alignment `&` count consistent per row in `aligned`, `cases`, `matrix`
+- `\\` row breaks present where expected
 
-```
-Rule: Use \left and \right for auto-sizing when content is taller than one line
-  (\frac{a}{b})         → WARN (should auto-size)
-  \left(\frac{a}{b}\right) → PASS
+**Semantic Conventions** (full depth only):
+- `\,` thin space before `dx` in integrals
+- `\middle|` for set builder notation
+- `\mathbb{}` for number sets
+- Domain-specific rules from IC-02 `domain_semantics[]` or IC-05 `domain_rules[]` (REQ-LP-04)
 
-Rule: \left must pair with \right (or \right.)
-  \left( ... \right)    → PASS
-  \left( ...            → FAIL (unpaired)
-  \left\{ ... \right\}  → PASS (curly braces)
-  \left\{ ... \right.   → PASS (invisible right delimiter)
+### 4. OCR Artifact Cross-Reference (Production Only)
+For production mode, cross-reference findings against OCR artifact sources (REQ-LP-06):
+- Match each finding against `ocr_confusions` from reference-build (IC-02)
+- Match against `flagged_artifacts` from image-preprocess
+- If a finding matches a known OCR confusion pattern:
+  - Tag finding with `ocr_artifact: true` and `ocr_confusion_ref`
+  - Downgrade severity from CRITICAL to MAJOR (OCR error, not author error)
+  - If ambiguous (could be either): set `hitl_required=true`
 
-Rule: Curly braces need escape
-  \left{ → FAIL (bare { is grouping, not delimiter)
-  \left\{ → PASS (escaped { is delimiter)
-```
-
-### 5. Verify Environment Matching and Semantics
-For `\begin{env}...\end{env}` blocks:
-
-**Matching**: Every `\begin{X}` has a `\end{X}` with same environment name.
-
-**Alignment**: In `aligned`, `cases`, `matrix`:
-- `&` marks alignment points
-- `\\` marks row breaks
-- Each row should have consistent `&` count
-
-**Semantic conventions**:
-- `\,` thin space before `dx` in integrals: `\int f(x)\,dx`
-- `\middle|` for set builder: `\{x \middle| x > 0\}`
-- `\mathbb{}` for number sets: `\mathbb{R}`, not `R` or `\textbf{R}`
+### 5. Assemble parse_result Output
+Build IC-08 compliant `parse_result`:
+- Set `tentative` flag based on Decision Points logic (REQ-LP-05)
+- Populate `segments[]` with all tokenized segments and their findings
+- Calculate `summary`: `total_segments`, `status`, `finding_counts`, `categories_checked`, `worst_severity`
+- Set `confidence` (0.0-1.0): reduce for tentative, low OCR confidence, deep nesting
+- Set `hitl_required` and `hitl_reason` per HITL decision logic (REQ-LP-07)
+- Tag output with `mode` for downstream routing differentiation
 
 ## Failure Handling
 
+### Tentative Mode Degradation
+- **Cause**: jsonl-validate FAIL (drill) or OCR confidence < threshold (production)
+- **Action**: Best-effort parse, all findings marked tentative, confidence capped
+- **Route**: render-evaluate (with tentative flag — merges tentative verdicts accordingly)
+
+### OCR Artifact Ambiguity
+- **Cause**: Finding matches OCR confusion pattern but could also be author error
+- **Action**: Tag as ambiguous, set `hitl_required=true`, include both interpretations in L2
+- **Route**: render-evaluate (HITL flag propagates to qc-report for human review)
+
+### Domain Rule Missing
+- **Cause**: IC-02 `domain_semantics` empty or IC-05 `domain_rules` all inactive
+- **Action**: Skip semantic checks, proceed with structural-only parse. Log warning.
+- **Route**: render-evaluate (structural parse only, `categories_checked` excludes "semantics")
+
 ### Content Has No Math
-- **Cause**: Input is pure text, no `$` delimiters
-- **Action**: Report as ⚠️ WARN "No math delimiters found"
+- **Cause**: Input is pure text, no `$` delimiters found
+- **Action**: Report as WARN (drill) or MINOR (production) "No math delimiters found"
 - **Route**: render-evaluate (text-only rendering check)
 
 ### Deeply Nested Structures
-- **Cause**: 4+ nesting levels make analysis complex
+- **Cause**: 4+ nesting levels
 - **Action**: Analyze outer 3 levels fully, flag inner levels as "deep nesting — verify manually"
-- **Route**: render-evaluate (with partial analysis flag)
+- **Route**: render-evaluate (with partial analysis flag, `hitl_required=true` if nesting >= 4)
 
-### jsonl-validate Returned FAIL
-- **Cause**: JSON structure broken, extracted content unreliable
-- **Action**: Best-effort parse on raw input, all verdicts marked "tentative"
-- **Route**: render-evaluate (tentative verdicts)
+### Mode Propagation Error
+- **Cause**: Neither $ARGUMENTS nor upstream context provides mode
+- **Action**: HALT. Cannot proceed without mode — severity system is mode-dependent.
+- **Route**: Report error to Lead. Do not guess mode.
 
 ## Anti-Patterns
 
+### DO NOT: Apply Drill Severity in Production Mode
+Production uses CRITICAL/MAJOR/MINOR, not FAIL/WARN/PASS. Mixing severity vocabularies corrupts downstream qc-report aggregation and metric tracking.
+
+### DO NOT: Skip Tentative Flag When Upstream FAIL
+If jsonl-validate reports FAIL or OCR confidence is below threshold, tentative MUST be set. Omitting it causes render-evaluate to treat unreliable findings as definitive.
+
+### DO NOT: Parse Without Domain Context
+Always load IC-02 (production) or IC-05 (drill) domain rules before semantic analysis. Parsing without domain context produces generic findings that miss domain-specific conventions.
+
 ### DO NOT: Validate JSONL Escaping Here
-LaTeX-parse operates on the UNESCAPED content (after JSON parsing). `\\frac` in JSON becomes `\frac` in LaTeX — this skill sees `\frac` and validates it as LaTeX. Escape validation is jsonl-validate's job.
+latex-parse operates on UNESCAPED content (after JSON parsing). `\\frac` in JSON becomes `\frac` in LaTeX. Escape validation is jsonl-validate's responsibility.
 
 ### DO NOT: Judge Mathematical Correctness
 `\frac{0}{0}` is valid LaTeX syntax. Mathematical accuracy is out of scope for this skill.
 
 ### DO NOT: Enforce Personal Style Preferences
-Only check rules that affect rendering or violate established conventions. `\frac{1}{2}` and `\tfrac{1}{2}` are both valid choices.
+Only check rules that affect rendering or violate established conventions. `\frac{1}{2}` and `\tfrac{1}{2}` are both valid choices unless domain rules specify otherwise.
 
-### DO NOT: Skip WARN-Level Findings
-Style violations (`\sin` vs `sin`) are critical learning points even if they render "close enough."
+### DO NOT: Skip WARN/MINOR-Level Findings
+Style violations are critical learning points (drill) or fidelity concerns (production). Report all findings regardless of severity.
 
 ## Transitions
 
-### Receives From
-| Source | Data | Format |
-|--------|------|--------|
-| jsonl-validate | Extracted text content | Raw string (post-JSON-unescape) |
-| challenge-generate | Expected construct list | YAML construct categories |
-| reference-build | Valid command allowlist | YAML command inventory |
+### Receives From (Interface Contracts)
+| Source Skill | Data Expected | Interface | Format |
+|-------------|---------------|-----------|--------|
+| jsonl-validate | Extracted text content | parallel | Raw string (post-JSON-unescape) |
+| challenge-generate | Expected construct list + parse depth + domain rules | IC-05 | YAML `expected_constructs` schema |
+| reference-build | Command allowlist + domain semantics + OCR confusions | IC-02 | YAML `command_allowlist` schema |
+| image-preprocess | Flagged OCR artifacts | production | YAML `flagged_artifacts` list |
 
 ### Sends To
-| Target | Data | Trigger |
-|--------|------|---------|
-| render-evaluate | Syntax verdicts per construct | Always |
-| golden-correct | LaTeX error list with positions | Always |
+| Target Skill | Data Produced | Interface | Trigger |
+|-------------|---------------|-----------|---------|
+| render-evaluate | parse_result (segments + findings + summary) | IC-08 | Always (both modes) |
+| golden-correct | LaTeX error list with positions | drill | Drill mode only |
+| qc-report | Production findings with severity | production | Production mode only |
+
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Mode undetermined | Lead (error) | mode-propagation-error flag |
+| Domain rules missing | render-evaluate (degraded) | structural-only parse, semantics excluded |
+| Content unparseable | render-evaluate | empty segments, tentative=true, confidence=0.0 |
 
 ## Quality Gate
-- Every math segment tokenized and analyzed
-- Grouping rules checked for all `^`, `_`, `\frac`, `\sqrt`
-- Operator commands checked against allowlist
+- Every math segment tokenized and assigned segment_id with positions
+- Grouping rules checked for all `^`, `_`, `\frac`, `\sqrt` (REQ-LP-03)
+- Vector notation consistency verified across all segments (REQ-LP-02)
+- Operator commands checked against allowlist (IC-02 or built-in)
 - Delimiter pairs all matched (`\left`/`\right` count equal)
 - Environment `\begin`/`\end` pairs all matched
+- Domain semantic rules applied per IC-02/IC-05 when available (REQ-LP-04)
+- Mode-appropriate severity vocabulary used (drill vs production) (REQ-LP-01)
+- Tentative flag set when upstream FAIL or OCR confidence low (REQ-LP-05)
+- OCR artifacts cross-referenced in production mode (REQ-LP-06)
+- HITL flag set for uncertain parses with reason string (REQ-LP-07)
+- `summary` counts match actual segment finding counts
 - Zero false positives on valid LaTeX
 
 ## Output
 
 ### L1
 ```yaml
-domain: drill
+domain: drill|production
 skill: latex-parse
-status: PASS|FAIL|WARN
+mode: drill|production
+status: PASS|FAIL|WARN          # drill
+# OR
+status: PASS|CRITICAL|MAJOR     # production
+tentative: false
+confidence: 0.92
+hitl_required: false
 segment_count: 0
 findings:
-  FAIL: 0
+  FAIL: 0                       # drill severity
   WARN: 0
   PASS: 0
-categories_checked: [grouping, operators, delimiters, environments, semantics]
+  # OR
+  CRITICAL: 0                   # production severity
+  MAJOR: 0
+  MINOR: 0
+categories_checked: [grouping, operators, delimiters, environments, semantics, text_mode]
+ocr_artifacts_detected: 0       # production only
 ```
 
 ### L2
-- Segment-by-segment parsing analysis table
-- Per-category verdict with evidence (input fragment → expected → actual)
-- Environment nesting diagram (for Level 4-5)
-- Tentative flag if jsonl-validate failed
+- Mode declaration (drill or production) with input source identification
+- Segment-by-segment parsing analysis table with segment_id, type, position range
+- Per-finding detail: category, severity, input_fragment, expected, rule_reference
+- Domain semantic rule application results (which rules checked, which triggered)
+- OCR artifact cross-reference results (production: which findings reclassified)
+- Vector notation consistency report across segments (REQ-LP-02)
+- Environment nesting diagram (for full parse depth)
+- Tentative flag explanation if set (upstream cause and confidence impact)
+- HITL recommendation with reason if hitl_required=true
+- Summary: total segments, finding counts by severity, confidence score

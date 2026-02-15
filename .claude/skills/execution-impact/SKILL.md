@@ -97,6 +97,20 @@ Construct the delegation prompt with:
 - **Expected Output**: Return a structured impact report: for each changed file, list its dependents with `{file, type: DIRECT|TRANSITIVE, hop_count: 1|2, reference_pattern, evidence: "file:line:content"}`. End with a summary: total dependents found, DIRECT count, TRANSITIVE count, and cascade recommendation (true if any DIRECT dependents exist).
 - **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
+#### Step 3 Tier-Specific DPS Variations
+
+**TRIVIAL**: Lead-direct quick grep. No analyst spawn. Lead greps for 1-2 changed file basenames, checks for DIRECT references. If none found: set `cascade_recommended: false`. If found: set `cascade_recommended: true`. Max 5 minutes lead-direct.
+
+**STANDARD**: Single analyst with standard scope:
+- maxTurns: 20 (reduced from 30 — fewer files to analyze)
+- Include audit-impact L3 predictions if available
+- Skip TRANSITIVE analysis if all DIRECT dependents resolved within 15 turns
+
+**COMPLEX**: Single analyst with extended scope:
+- maxTurns: 30 (full budget — many files to analyze)
+- MUST include audit-impact L3 predictions AND codebase-map.md if available
+- Prioritize DIRECT analysis over TRANSITIVE — if approaching turn limit, report DIRECT-only with `transitive_skipped: true`
+
 ### 4. Classify Dependents
 For each dependent file found, apply dual classification:
 

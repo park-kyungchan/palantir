@@ -12,7 +12,7 @@ description: |
   METADATA: Work={type,phase,domain,skill,agent,files,priority,parent,problem,improvement}. PT={type:permanent,tier,current_phase,commit_status,references}.
   CONSTRAINT: Exactly 1 PT ([PERMANENT] subject). PT completed only at final commit.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[action] [args]"
 ---
 
@@ -20,6 +20,11 @@ argument-hint: "[action] [args]"
 
 ## Execution Model
 
+- **TRIVIAL**: Lead-direct. Single TaskUpdate for PT status change. No agent spawn.
+- **STANDARD**: Lead-direct or pt-manager for batch operations. maxTurns: 15.
+- **COMPLEX**: pt-manager spawn for full PT lifecycle + batch task creation. maxTurns: 25.
+
+**Operation routing**:
 - **Heavy ops** → spawn `pt-manager` (`subagent_type: pt-manager`). Full Task API (TaskCreate + TaskUpdate).
 - **Light ops** → Lead executes directly. Single TaskUpdate for status/metadata changes.
 
@@ -166,6 +171,18 @@ Key rules:
 ### Heavy vs Light Operation Routing
 - **Heavy ops (pt-manager spawn)**: PT creation, PT update with complex merge, batch work task creation, ASCII visualization. These require multiple Task API calls and complex logic. Spawn pt-manager agent (`subagent_type: pt-manager`).
 - **Light ops (Lead-direct)**: Single TaskUpdate for status change (e.g., marking a task in_progress or completed), simple metadata field update. Lead executes inline without agent spawn to avoid overhead.
+
+### PT-Manager Spawn DPS
+- **Context**: PT task ID, current pipeline phase, operation type (create/update/batch/visualize), plan domain L1/L2 output paths if batch creation.
+- **Task**: "[Specific operation]: Create PT with structured metadata, OR update PT with phase results via Read-Merge-Write, OR batch create work tasks from plan output with dependency chains, OR generate ASCII pipeline visualization."
+- **Constraints**: pt-manager agent. Tools: Read, Glob, Grep, Write, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion. No Edit/Bash. maxTurns: 15 (STANDARD), 25 (COMPLEX).
+- **Expected Output**: L1 YAML with `action`, `pt_id`, `task_count`. L2 action summary or ASCII visualization.
+- **Delivery**: SendMessage to Lead: `PASS|action:{type}|tasks:{N}|ref:/tmp/pipeline/task-management.md`
+
+#### PT-Manager Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Single TaskUpdate inline. No pt-manager spawn.
+**STANDARD**: pt-manager spawn for batch creation or complex PT update. maxTurns: 15.
+**COMPLEX**: pt-manager spawn with full lifecycle management + visualization. maxTurns: 25.
 
 ### PT Description Density Management
 - **Keep in PT description**: Core requirements, acceptance criteria, tier classification, key architecture decisions (up to ~2000 chars). Information that every teammate needs when they TaskGet the PT.

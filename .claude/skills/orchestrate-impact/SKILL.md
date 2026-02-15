@@ -25,6 +25,26 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-impact.md`. Send micro-signal to Lead via SendMessage: `PASS|waves:{N}|max_parallel:{N}|ref:/tmp/pipeline/p5-orch-impact.md`.
 
+## Decision Points
+
+### Wave Priority Selection
+When more than 4 tasks are eligible for the same wave:
+- **Critical path tasks present** (longest dependency chain): Prioritize critical path tasks first. Fill remaining slots by fan-out descending.
+- **No critical path contention**: Sort by fan-out (most dependents first), then complexity descending.
+- **Tie** (equal priority scores): Use task ID order for deterministic scheduling.
+
+### Single-Task Wave Treatment
+When a wave contains only 1 task:
+- **If wave N-1 has < 4 tasks AND dependency allows merge**: Merge task into wave N-1. Reduces total wave count.
+- **If dependency prevents merge** (task depends on all N-1 outputs): Accept single-task wave. Flag as scheduling bottleneck in L2.
+- **If task is final wave** (integration/aggregation): Always acceptable. Solo final waves are normal.
+
+### Load Balance Threshold
+When wave file count exceeds targets:
+- **Total files > 12 per wave**: Split highest-file-count task to next wave (if dependencies allow). Agent context pressure risk.
+- **Total files <= 12**: Accept current distribution. No rebalancing needed.
+- **Single task has > 6 files**: Flag as agent complexity warning regardless of wave total.
+
 ## Methodology
 
 ### 1. Read Verified Plan
@@ -40,6 +60,11 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with
 - **Constraints**: Read-only analysis. No modifications. Hard limit: max 4 parallel tasks per wave. Soft goal: minimize total wave count. Never violate dependency ordering.
 - **Expected Output**: L1 YAML wave schedule. L2 wave visualization with load metrics and critical path.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-impact.md`. Send micro-signal to Lead via SendMessage: `PASS|waves:{N}|max_parallel:{N}|ref:/tmp/pipeline/p5-orch-impact.md`.
+
+#### Step 1 Tier-Specific DPS Variations
+**TRIVIAL**: Skip — Lead assigns sequential execution (1-2 tasks, no wave scheduling needed).
+**STANDARD**: Single DPS to analyst. maxTurns:15. Simple wave grouping without critical path analysis. Omit load balance optimization.
+**COMPLEX**: Full DPS as above. maxTurns:25. Deep DAG analysis with load balancing, critical path optimization, and parallel efficiency metrics.
 
 ### 2. Build Execution DAG
 Construct directed acyclic graph from task dependencies:

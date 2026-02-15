@@ -17,6 +17,7 @@ disable-model-invocation: false
 # Plan Verify — Relational Integrity
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline check that each relationship edge has a contract entry. No agent spawn.
 - **STANDARD**: Spawn analyst (maxTurns:20). Systematic cross-reference of interface contracts against relationship graph edges.
 - **COMPLEX**: Spawn analyst (maxTurns:30). Deep bidirectional consistency check with asymmetry detection across all module boundaries.
 
@@ -26,7 +27,34 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that interface con
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-relational.md`, sends micro-signal: `PASS|contracts:{N}|asymmetric:{N}|ref:/tmp/pipeline/p4-pv-relational.md`.
 
+## Decision Points
+
+### Integrity Threshold Interpretation
+Gap severity determines verdict routing.
+- **Zero HIGH-severity gaps AND total gaps <= 2**: PASS. Route to plan-verify-coordinator.
+- **Only MEDIUM-severity gaps AND total <= 5**: CONDITIONAL_PASS. Route with risk annotation.
+- **Any HIGH-severity gap OR total > 5**: FAIL. Route to plan-relational for fix.
+- **Default**: If > 50% relationships lack contracts (plan-audit misalignment), always FAIL regardless of severity.
+
+### Relationship Graph Scale
+Graph size determines spawn parameters.
+- **< 15 edges**: STANDARD analyst (maxTurns:20). Full edge-by-edge consistency check.
+- **15-40 edges**: COMPLEX analyst (maxTurns:30). Prioritize cross-boundary and bidirectional edges first.
+- **> 40 edges**: COMPLEX analyst (maxTurns:30). Full cross-boundary check, sample intra-module. Flag PARTIAL if < 100% verified.
+
 ## Methodology
+
+### Analyst Delegation DPS
+- **Context**: Paste plan-relational L1 interface contracts (contracts[], producer, consumer, data_type, direction). Paste research-coordinator audit-relational L3 relationship graph (edges[], source, target, type, bidirectional flag).
+- **Task**: "Cross-reference contract inventory against relationship inventory. Verify bidirectional consistency for each edge. Identify asymmetric contracts (one-direction only), missing contracts (no coverage), and orphan contracts (no matching relationship). Classify gaps by severity."
+- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed relationship edges.
+- **Expected Output**: L1 YAML: contract_count, relationship_count, asymmetric_count, missing_count, orphan_count, verdict, findings[]. L2: consistency matrix with gap analysis.
+- **Delivery**: SendMessage to Lead: `PASS|contracts:{N}|asymmetric:{N}|ref:/tmp/pipeline/p4-pv-relational.md`
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Verify each relationship edge has a contract entry inline. No bidirectional check needed.
+**STANDARD**: Single analyst, maxTurns:20. Full consistency matrix with gap classification.
+**COMPLEX**: Single analyst, maxTurns:30. Full matrix + bidirectional asymmetry analysis across all module boundaries.
 
 ### 1. Read Plan-Relational Interface Contracts
 Load plan-relational output to extract:

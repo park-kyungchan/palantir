@@ -183,6 +183,7 @@ A library with 50K GitHub stars may still have critical issues. Researcher must 
 |-------------|---------------|--------|
 | design-architecture | Technology choices and library references | L1 YAML: `components[]` with technology dependencies, L2: ADRs with external references |
 | design-interface | API contracts referencing external services | L1 YAML: `interfaces[]` with external endpoints, L2: protocol specifications |
+| design-risk | Risk areas needing external validation | L1 YAML: `risk_areas[]` with severity, L2: external risk factors and validation priorities |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

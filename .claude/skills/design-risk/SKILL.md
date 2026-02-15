@@ -72,8 +72,9 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Context**: Paste design-architecture L1 (components) and design-interface L1 (interfaces). Include environment context: "Claude Code CLI on WSL2, tmux Agent Teams, Opus 4.6."
 - **Task**: "FMEA per component: identify failure modes, score Severity/Likelihood/Detection (1-5 each), calculate RPN. FMEA Calibration: Severity: 1=cosmetic, 2=minor, 3=significant, 4=major, 5=pipeline-blocking. Likelihood: 1=rare, 2=unlikely, 3=possible, 4=likely, 5=certain. Detection: 1=obvious, 2=easy, 3=moderate, 4=hard, 5=hidden. Then security (OWASP) and performance analysis."
 - **Scope**: For COMPLEX, split: analyst-1=failure modes+FMEA, analyst-2=security+performance.
-- **Constraints**: Read-only. Use sequential-thinking for calibrated scoring. No file modifications.
+- **Constraints**: Read-only analyst. Use sequential-thinking for calibrated scoring. No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML risk matrix with risk_count, critical_risks, risks[] (id, component, severity, likelihood, rpn, mitigation). L2 FMEA tables, security assessment, mitigations.
+- **Delivery**: Lead reads output directly via TaskOutput (P0-P1 local mode, no SendMessage).
 
 #### FMEA Scoring Calibration Guide
 Use consistent scoring across all components:
@@ -219,8 +220,7 @@ Low-RPN risks should still be documented. Conditions change -- a "rare" risk may
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | research-codebase | Risk areas needing codebase validation | Always (risk informs research focus) |
-| plan-strategy | Risk assessment for execution planning | Always (risk mitigation -> checkpoints) |
-| plan-verify | Risk data for robustness dimension of plan validation | After plan domain, for verification |
+| research-external | Risk areas for community pattern validation | After design phase complete (P2 Wave 1) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

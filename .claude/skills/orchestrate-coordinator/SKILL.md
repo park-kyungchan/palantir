@@ -25,6 +25,28 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Write tiered output to `/tmp/pipeline/p5-coordinator/`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|waves:{N}|handoffs:{N}|ref:/tmp/pipeline/p5-coordinator/index.md`.
 
+## Decision Points
+
+### Merge Conflict Resolution Strategy
+When dimension outputs disagree on task attributes:
+- **Task in WHO but not WHEN** (static has it, impact doesn't): Add to earliest eligible wave. Impact adjusts.
+- **Task in WHEN but not WHO** (impact has it, static doesn't): Flag as unassigned. Route back to orchestrate-static.
+- **Handoff references non-existent task**: Flag as dangling DPS. Route back to orchestrate-relational.
+- **Checkpoint at non-wave boundary**: Remap to nearest wave boundary. Behavioral adjusts.
+
+### Cross-Validation Failure Severity
+When a cross-validation check fails:
+- **Check A FAIL (agent-wave fit)**: BLOCKING. Cannot produce L3. Route to orchestrate-static + orchestrate-impact for resolution.
+- **Check B FAIL (handoff order)**: BLOCKING. Cannot produce L3. Route to orchestrate-relational + orchestrate-impact for resolution.
+- **Check C WARN (checkpoint alignment)**: NON-BLOCKING. Remap checkpoint, document in L2. Produce L3 with warning.
+- **Check D FAIL (task coverage)**: BLOCKING. Cannot produce L3. Identify missing dimension and route back.
+
+### L3 Output Completeness
+When producing L3 execution plan:
+- **All 4 checks PASS**: Produce full L3 with spawn DPS per task. Normal flow.
+- **Any BLOCKING check FAIL**: Do NOT produce L3. Report failure details in L1/L2 only.
+- **Only WARN checks (no FAIL)**: Produce L3 with warnings flagged. Include remediation notes in L2.
+
 ## Methodology
 
 ### 1. Read All 4 Dimension Outputs
@@ -43,6 +65,11 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with
 - **Constraints**: Read-only analysis on inputs. Write tiered output to `/tmp/pipeline/p5-coordinator/`. Every task must appear in unified plan. Every cross-validation check must have explicit PASS/FAIL.
 - **Expected Output**: Three files in `/tmp/pipeline/p5-coordinator/`: index.md (L1), summary.md (L2), execution-plan.md (L3).
 - **Delivery**: Write tiered output to `/tmp/pipeline/p5-coordinator/`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|waves:{N}|handoffs:{N}|ref:/tmp/pipeline/p5-coordinator/index.md`.
+
+#### Step 1 Tier-Specific DPS Variations
+**TRIVIAL**: Skip — Lead produces inline execution plan (1-2 tasks, no cross-validation needed).
+**STANDARD**: Single DPS to analyst. maxTurns:20. Merge 4 dimensions with simplified cross-validation (Check A + D only). Produce L1+L2+L3.
+**COMPLEX**: Full DPS as above. maxTurns:35. Deep cross-validation with all 4 checks, conflict resolution, and optimization recommendations.
 
 ### 2. Merge Into Unified Plan
 For each task, create a unified record combining all 4 dimensions:

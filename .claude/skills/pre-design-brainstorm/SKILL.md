@@ -11,7 +11,7 @@ description: |
   METHODOLOGY: (1) Parse user request for explicit/implicit requirements, (2) Categorize unknowns across 4 dimensions (scope/constraints/criteria/edge-cases), (3) Ask 3-6 questions via AskUserQuestion, (4) Synthesize into structured requirement document with tier estimate, (5) Flag remaining ambiguities as open questions.
   OUTPUT_FORMAT: L1 YAML requirement list with categories and tier, L2 requirement document with open questions.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[topic]"
 ---
 
@@ -19,8 +19,8 @@ argument-hint: "[topic]"
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Parse request, ask 2-3 questions via AskUserQuestion, synthesize.
-- **STANDARD**: Launch 1-2 analysts (run_in_background). Each covers separate requirement dimensions.
-- **COMPLEX**: Launch 2-4 background agents (run_in_background). Divide: scope, constraints, integration, edge-cases.
+- **STANDARD**: Launch 1-2 analysts (run_in_background, maxTurns: 10). Each covers separate requirement dimensions.
+- **COMPLEX**: Launch 2-4 background agents (run_in_background, maxTurns: 10). Divide: scope, constraints, integration, edge-cases.
 
 > Note: Step 3 (AskUserQuestion) is ALWAYS Lead-direct regardless of tier. Analysts handle analysis work in Steps 1, 2, 4, 5 only.
 
@@ -102,6 +102,12 @@ Map gaps to 4 dimensions:
 - **Task**: Categorize unknowns across all 4 dimensions, identify gaps in requirements
 - **Constraints**: Read-only analysis (analyst has no AskUserQuestion — cannot interact with user)
 - **Expected Output**: Categorized unknowns by dimension (scope/constraints/criteria/edge-cases) with suggested questions for Lead to ask
+- **Delivery**: Lead reads background agent output directly (P0-P1 mode, no SendMessage)
+
+#### Step 2 Tier-Specific DPS Variations
+**TRIVIAL**: Lead categorizes unknowns directly — no analyst spawn. Quick inline assessment.
+**STANDARD**: Single analyst with DPS above. maxTurns: 10.
+**COMPLEX**: 2-4 analysts split by dimension (scope, constraints, integration, edge-cases). Each uses DPS above scoped to assigned dimensions. maxTurns: 10 per analyst.
 
 ### 3. Ask Clarifying Questions
 **Executor: Lead-direct** (AskUserQuestion requires direct user interaction, not available to spawned agents).

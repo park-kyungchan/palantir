@@ -11,16 +11,16 @@ description: |
   METHODOLOGY: (1) TaskList to find all tasks including [PERMANENT], (2) TaskGet PT for project context, tier, and current_phase, (3) Categorize work tasks: completed/in-progress/pending/failed, (4) Determine resume point (first non-completed phase), (5) Validate git branch state matches PT expectations, (6) Re-spawn agents with PT context + task descriptions.
   OUTPUT_FORMAT: L1 YAML resume state (phases, task counts), L2 recovery report with resume rationale.
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 argument-hint: "[resume-from-phase]"
 ---
 
 # Pipeline — Resume
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Simple resume from clear interruption point.
-- **STANDARD**: Lead-direct with analyst. Complex state reconstruction needed.
-- **COMPLEX**: Lead-direct with 2 analysts. Multi-domain recovery with dependency resolution.
+- **TRIVIAL**: Lead-direct. Simple resume from clear interruption point. maxTurns: N/A (Lead inline).
+- **STANDARD**: Lead-direct with analyst spawn for state reconstruction. maxTurns: 15.
+- **COMPLEX**: Lead-direct with 2 parallel analysts for multi-domain recovery. maxTurns: 20 each.
 
 ## Methodology
 
@@ -85,6 +85,18 @@ Execute recovery:
 - Resume pipeline flow from the interrupted phase
 
 ## Decision Points
+
+### State Reconstruction Analyst DPS
+- **Context**: TaskList output (all tasks with statuses), PT metadata (current_phase, tier, phase_signals), git branch name and status.
+- **Task**: "Reconstruct pipeline state: categorize all work tasks by phase and status, identify contradictions, determine resume point, validate git branch matches PT expectations."
+- **Constraints**: analyst agent (read-only, no Bash). maxTurns: 15 (STANDARD), 20 (COMPLEX). Do not modify any tasks or files.
+- **Expected Output**: L1 YAML with `resume_phase`, `completed_tasks`, `failed_tasks`, `contradictions`. L2 recovery report with phase-by-phase status matrix.
+- **Delivery**: SendMessage to Lead: `PASS|resume:{phase}|tasks:{completed}/{total}|ref:/tmp/pipeline/pipeline-resume.md`
+
+#### Analyst Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. No analyst spawn — just TaskList + TaskGet inline.
+**STANDARD**: 1 analyst for state reconstruction. maxTurns: 15.
+**COMPLEX**: 2 parallel analysts (task state + git state). maxTurns: 20 each.
 
 ### Resume Granularity
 - **Phase-level resume**: Resume from the beginning of the interrupted phase. Simpler, more reliable. Use when in-progress tasks have no recoverable partial output (typical case after session interruption).

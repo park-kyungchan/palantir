@@ -74,8 +74,9 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Context**: Paste pre-design-feasibility L1 (requirements + feasibility verdicts) and L2 (CC capability findings). If COMPLEX tier feedback from research-audit, include its L1 coverage matrix. Include workspace hint: "Target: /home/palantir, .claude/ for INFRA."
 - **Task**: "Decompose requirements into components (SRP). Per component: lowercase-hyphenated name, single-responsibility description, input/output types, dependencies. Group into modules minimizing coupling. Per decision: ADR (Context, Decision, Rationale, Consequences)."
 - **Scope**: For COMPLEX, split by module boundary — non-overlapping analyst assignments.
-- **Constraints**: Read-only. Use Glob/Grep/Read for existing pattern reference. No file modifications.
+- **Constraints**: Read-only analyst. Use Glob/Grep/Read for existing pattern reference. No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with component_count, decision_count, components[] (name, responsibility, dependencies). L2 ADRs and component hierarchy.
+- **Delivery**: Lead reads output directly via TaskOutput (P0-P1 local mode, no SendMessage).
 
 #### Component Definition Quality Checklist
 For each component, verify:

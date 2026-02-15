@@ -16,9 +16,9 @@ disable-model-invocation: false
 # Manage — INFRA
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick health check on single component.
-- **STANDARD**: Spawn analyst. Systematic inventory and drift detection.
-- **COMPLEX**: Spawn 2 analysts. One for agents+skills, one for settings+hooks+CLAUDE.md.
+- **TRIVIAL**: Lead-direct. Quick health check on single component. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:20). Systematic inventory and drift detection.
+- **COMPLEX**: Spawn 2 analysts (maxTurns:15 each). One for agents+skills, one for settings+hooks+CLAUDE.md.
 
 ## Phase-Aware Execution
 - **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.

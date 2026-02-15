@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick quality check on 1-3 files. Spot check only.
-- **STANDARD**: Spawn analyst. Systematic routing quality assessment on 4-15 files. Full scoring audit.
-- **COMPLEX**: Spawn 2 analysts. One for WHEN/METHODOLOGY quality, one for output format quality. 16+ files or post-routing-failure investigation.
+- **STANDARD**: Spawn analyst (maxTurns: 25). Systematic routing quality assessment on 4-15 files. Full scoring audit.
+- **COMPLEX**: Spawn 2 analysts (maxTurns: 30 each). One for WHEN/METHODOLOGY quality, one for output format quality. 16+ files or post-routing-failure investigation.
 
 ## Decision Points
 
@@ -262,14 +262,23 @@ route_to: execution-infra
 
 ## Anti-Patterns
 
-| Anti-Pattern | Why It Is Wrong | Correct Approach |
-|-------------|-----------------|------------------|
-| Conflate Quality with Consistency | Quality measures individual skill routing effectiveness; consistency measures cross-skill relationship integrity | Keep verify-quality focused on per-skill scoring; leave cross-skill checks to verify-consistency |
-| Score Based on L2 Body Quality | L2 is loaded on-demand, not part of routing intelligence | Score only L1 (description/frontmatter). L2 body quality is verify-structural-content's domain |
-| Penalize Cross-Cutting Skills for Generic WHEN | Homeostasis and cross-cutting skills legitimately have broader WHEN conditions | Apply domain-adjusted expectations: cross-cutting WHEN scores start at 50 baseline |
-| Require DPS in Non-Spawning Skills | Lead-direct skills (no agent spawn) do not need DPS templates | Check execution model: only score DPS presence for STANDARD/COMPLEX tiers with agent spawning |
-| Over-Weight Utilization | A concise, specific description outperforms a padded, vague one | Utilization is weighted at 20%. Never let high utilization compensate for low specificity |
-| Auto-Fix Low Scores | Quality check is read-only; mixing assessment and modification introduces bias | Produce improvement instructions only. Fixes go through execution-infra with specific data |
+### DO NOT: Conflate Quality with Consistency
+Quality measures individual skill routing effectiveness (per-skill scoring). Consistency measures cross-skill relationship integrity (bidirectionality). Keep them separate — leave cross-skill checks to verify-consistency.
+
+### DO NOT: Score Based on L2 Body Quality
+L2 is loaded on-demand, not part of routing intelligence. Score only L1 (description/frontmatter). L2 body quality is verify-structural-content's domain.
+
+### DO NOT: Penalize Cross-Cutting Skills for Generic WHEN
+Homeostasis and cross-cutting skills legitimately have broader WHEN conditions. Apply domain-adjusted expectations: cross-cutting WHEN scores start at 50 baseline.
+
+### DO NOT: Require DPS in Non-Spawning Skills
+Lead-direct skills (no agent spawn) do not need DPS templates. Check execution model: only score DPS presence for STANDARD/COMPLEX tiers with agent spawning.
+
+### DO NOT: Over-Weight Utilization
+A concise, specific description outperforms a padded, vague one. Utilization is weighted at 20%. Never let high utilization compensate for low specificity.
+
+### DO NOT: Auto-Fix Low Scores
+Quality check is read-only. Mixing assessment and modification introduces bias. Produce improvement instructions only. Fixes go through execution-infra with specific data.
 
 ## Transitions
 

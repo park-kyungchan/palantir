@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick completeness check against 5-dimension matrix.
-- **STANDARD**: Launch analyst (run_in_background). Systematic dimension-by-dimension validation.
-- **COMPLEX**: Launch 2 background agents (run_in_background). Split: functional (scope+criteria) vs non-functional (constraints+errors+integration).
+- **STANDARD**: Launch analyst (run_in_background, maxTurns: 15). Systematic dimension-by-dimension validation.
+- **COMPLEX**: Launch 2 background agents (run_in_background, maxTurns: 15). Split: functional (scope+criteria) vs non-functional (constraints+errors+integration).
 
 ## Decision Points
 
@@ -66,6 +66,12 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Task**: "Evaluate each requirement against the 5-dimension completeness matrix. For each dimension: extract evidence from requirements, compare against PASS condition, report PASS or FAIL with evidence. For FAIL dimensions: actionable gap description with suggested clarifying questions."
 - **Constraints**: Read-only analysis. No file modifications. Use sequential-thinking for nuanced gap reasoning. Do not invent requirements.
 - **Expected Output**: L1 YAML completeness matrix with status per dimension and gaps count. L2 markdown per-dimension evidence and gap descriptions.
+- **Delivery**: Lead reads background agent output directly (P0-P1 mode, no SendMessage)
+
+#### Step 2 Tier-Specific DPS Variations
+**TRIVIAL**: Lead checks completeness matrix directly — no analyst spawn. Quick inline 5-dimension check.
+**STANDARD**: Single analyst per DPS above. maxTurns: 15. Full dimension-by-dimension validation.
+**COMPLEX**: 2 analysts split: functional (scope+criteria) vs non-functional (constraints+errors+integration). maxTurns: 15 per analyst.
 
 #### Completeness Matrix Scoring Guide
 

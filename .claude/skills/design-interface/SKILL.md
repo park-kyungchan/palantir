@@ -72,8 +72,9 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Context**: Paste design-architecture L1 (components[] with names, responsibilities, dependencies) and relevant L2 ADR sections. Include existing codebase patterns for interface conventions.
 - **Task**: "For each component boundary: define function signatures (input→output), protocol (sync/async), error contracts (types, propagation), versioning approach. Map design interfaces to task contracts. Determine implementation ordering."
 - **Scope**: For COMPLEX, split by component boundary set — non-overlapping assignments.
-- **Constraints**: Read-only. Use Glob/Grep for existing interface patterns. No file modifications.
+- **Constraints**: Read-only analyst. Use Glob/Grep for existing interface patterns. No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with interface_count, contracts[] (boundary, protocol, error_contract). L2 per-boundary specs and implementation ordering.
+- **Delivery**: Lead reads output directly via TaskOutput (P0-P1 local mode, no SendMessage).
 
 #### Interface Contract Template
 ```
@@ -203,8 +204,8 @@ Interfaces should be minimal and sufficient for current requirements. Adding "ex
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | design-risk | Interface contracts for risk assessment | Always (interface → risk, or parallel) |
-| plan-interface | Interface specs for planning | After design phase complete |
-| plan-decomposition | Interface-aware component structure | After design phase complete |
+| research-codebase | Interface patterns for codebase validation | After design phase complete (P2 Wave 1) |
+| research-external | API contracts for community validation | After design phase complete (P2 Wave 1) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

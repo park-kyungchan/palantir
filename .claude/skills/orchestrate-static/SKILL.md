@@ -25,6 +25,24 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-static.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|agents:{N}|ref:/tmp/pipeline/p5-orch-static.md`.
 
+## Decision Points
+
+### Agent Profile Selection
+When task tool requirements match multiple agent profiles:
+- **Single exact match** (1 profile has all required tools): Assign directly. Confidence: HIGH.
+- **Multiple matches** (2+ profiles satisfy requirements): Prefer MORE CAPABLE profile (D > C > B). Confidence: MEDIUM.
+- **No single match** (task needs tools from 2+ profiles): Split into sub-tasks. If unsplittable (< 2 logical units), escalate to orchestrate-coordinator as architectural blocker.
+
+### Task Split Threshold
+When task spans `.claude/` and source files simultaneously:
+- **If >= 2 independent file groups**: Split into infra-implementer (E) + implementer (D) sub-tasks with dependency edge.
+- **If files are tightly coupled** (< 2 separable units): Flag as architectural blocker — single agent cannot safely cross the boundary.
+
+### Confidence Classification
+- **HIGH**: Exactly 1 matching profile, all tools covered, clear .claude/ vs source boundary.
+- **MEDIUM**: Multiple profiles could work, selected by priority rule, OR task description ambiguous.
+- **LOW**: Required split, OR agent has > 2 unused capabilities (over-provisioned).
+
 ## Methodology
 
 ### 1. Read Verified Plan
@@ -39,6 +57,11 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with
 - **Constraints**: Read-only analysis. No modifications. Use Agent L1 PROFILE tags for matching. Flag ambiguous matches.
 - **Expected Output**: L1 YAML task-agent matrix. L2 rationale per assignment with capability evidence.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-static.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|agents:{N}|ref:/tmp/pipeline/p5-orch-static.md`.
+
+#### Step 1 Tier-Specific DPS Variations
+**TRIVIAL**: Skip — Lead assigns agent inline from task description (typically 1 implementer or 1 infra-implementer).
+**STANDARD**: Single DPS to analyst. maxTurns:15. Simplified matching without multi-capability splitting. Omit confidence scoring.
+**COMPLEX**: Full DPS as above. maxTurns:25. Deep capability analysis with multi-capability task splitting and per-assignment confidence.
 
 ### 2. Extract Tool Requirements Per Task
 For each task, identify required capabilities:

@@ -17,12 +17,26 @@ disable-model-invocation: false
 # Audit — Behavioral (Runtime Behavior Prediction)
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline assessment of 1-2 behavior-bearing files. No agent spawn. maxTurns: 0.
 - **STANDARD**: Spawn analyst (maxTurns:25). Map design changes to existing behaviors. Predict side effects.
-- **COMPLEX**: Spawn 2 analysts scoped by subsystem. Each predicts behavior changes within assigned component boundaries.
+- **COMPLEX**: Spawn 2 analysts scoped by subsystem (maxTurns:25 each). Each predicts behavior changes within assigned component boundaries.
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-behavioral.md`, sends micro-signal: `PASS|changes:{N}|risks:{N}|ref:/tmp/pipeline/p2-audit-behavioral.md`.
+
+## Decision Points
+
+### Component Scope Strategy
+Based on design-architecture change scope breadth.
+- **≤5 behavior-bearing components**: Single analyst covers all. maxTurns: 20.
+- **6-15 components**: Single analyst, prioritize by risk. maxTurns: 25.
+- **>15 components**: Spawn 2 analysts scoped by subsystem. maxTurns: 25 each.
+- **Default**: Single analyst (STANDARD tier).
+
+### Risk Escalation Threshold
+- **Conservative (escalate at MEDIUM)**: When design changes affect error handling or fallback paths.
+- **Standard (escalate at HIGH only)**: Default for most changes.
 
 ## Methodology
 
@@ -89,6 +103,21 @@ Produce final output with:
 - Regression risk matrix sorted by risk level (HIGH first)
 - Cross-component interaction warnings (when multiple predictions affect the same downstream)
 - Summary: total changes predicted, risk distribution (HIGH/MEDIUM/LOW counts)
+
+### Delegation Prompt Specification
+
+#### COMPLEX Tier (2 parallel analysts)
+- **Context**: Paste research-codebase L1/L2 behavior patterns. Paste research-external L2 known issues. Paste design-architecture L1 `components[]` with change scope. Assign subsystem: `{subsystem_name}`.
+- **Task**: "Identify all behavior-bearing components within assigned subsystem. For each: document current behavior (file:line), predict side effects and regressions from design changes, classify risk (HIGH/MEDIUM/LOW) with evidence from both current code and design decisions."
+- **Constraints**: Read-only analysis (analyst agent, no Bash). Scope to assigned subsystem only. No prescriptive recommendations. maxTurns: 25.
+- **Expected Output**: L1 YAML: total_changes, risk_high/medium/low, conflicts. L2: per-component behavior change table, side effect inventory, regression risk matrix.
+- **Delivery**: SendMessage to Lead: `PASS|changes:{N}|risks:{N}|ref:/tmp/pipeline/p2-audit-behavioral.md`
+
+#### STANDARD Tier (single analyst)
+Same as COMPLEX but single analyst covering all components. No subsystem partitioning.
+
+#### TRIVIAL Tier
+Lead-direct inline. Read 1-2 behavior-bearing files, note obvious risk. No formal DPS.
 
 ## Failure Handling
 

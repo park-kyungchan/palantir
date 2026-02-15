@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick field check on 1-2 files. Lead reads frontmatter inline, compares against the native field lists below. No agent spawn needed.
-- **STANDARD**: Spawn analyst with cc-reference cache and all target frontmatter. Analyst performs systematic comparison. Lead escalates to claude-code-guide only if analyst flags ambiguous fields.
-- **COMPLEX**: Spawn analyst for full field validation across 10+ files. Spawn claude-code-guide in parallel if any field is not in the cc-reference cache or cache is stale. Two-pass: structural field check first, then value type validation.
+- **STANDARD**: Spawn analyst (maxTurns: 25) with cc-reference cache and all target frontmatter. Analyst performs systematic comparison. Lead escalates to claude-code-guide only if analyst flags ambiguous fields.
+- **COMPLEX**: Spawn analyst (maxTurns: 30) for full field validation across 10+ files. Spawn claude-code-guide in parallel if any field is not in the cc-reference cache or cache is stale. Two-pass: structural field check first, then value type validation.
 
 ## Decision Points
 

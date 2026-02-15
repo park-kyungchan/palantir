@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick cross-reference check on 2-3 files.
-- **STANDARD**: Spawn analyst. Full relationship graph construction.
-- **COMPLEX**: Spawn 2 analysts. One for INPUT_FROM/OUTPUT_TO, one for phase sequence.
+- **STANDARD**: Spawn analyst (maxTurns: 25). Full relationship graph construction.
+- **COMPLEX**: Spawn 2 analysts (maxTurns: 30 each). One for INPUT_FROM/OUTPUT_TO, one for phase sequence.
 
 ## Decision Points
 
@@ -217,14 +217,23 @@ Pipeline impact assessment:
 
 ## Anti-Patterns
 
-| Anti-Pattern | Why It Is Wrong |
-|--------------|-----------------|
-| Require strict bidirectionality for FAIL routes | Error recovery routes are inherently unidirectional |
-| Flag homeostasis skills for phase violations | They operate cross-cutting by design |
-| Auto-update CLAUDE.md counts | Consistency check is read-only; fixes go through execution-infra |
-| Check semantic correctness of references | Consistency checks that A->B exists in both directions, not whether A SHOULD reference B |
-| Deep-scan L2 bodies for references | Only check description-level INPUT_FROM/OUTPUT_TO, not L2 body cross-references |
-| Combine consistency with quality checks | Consistency = structural relationships; quality = routing effectiveness (separate skill) |
+### DO NOT: Require Strict Bidirectionality for FAIL Routes
+Error recovery routes are inherently unidirectional. FAIL routes from any skill back to execution-infra or Lead do not require reciprocal OUTPUT_TO declarations.
+
+### DO NOT: Flag Homeostasis Skills for Phase Violations
+Homeostasis and cross-cutting skills (manage-*, delivery-pipeline, pipeline-resume, task-management, self-diagnose, self-implement) operate across all phases by design. Phase sequence enforcement does not apply.
+
+### DO NOT: Auto-Update CLAUDE.md Counts
+Consistency check is strictly read-only. All fixes — including count corrections — route through execution-infra. Mixing verification with modification introduces bias.
+
+### DO NOT: Check Semantic Correctness of References
+Consistency verifies that if A references B, then B references A (structural bidirectionality). Whether A SHOULD reference B is verify-quality's domain.
+
+### DO NOT: Deep-Scan L2 Bodies for References
+Only check description-level INPUT_FROM/OUTPUT_TO, not L2 body cross-references. L2 bodies may contain illustrative examples that are not actual routing declarations.
+
+### DO NOT: Combine Consistency with Quality Checks
+Consistency = structural relationship integrity. Quality = routing effectiveness. These are separate verification dimensions with different scoring rubrics.
 
 ## Transitions
 

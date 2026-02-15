@@ -17,6 +17,7 @@ disable-model-invocation: false
 # Research — Coordinator (Cross-Audit Consolidation)
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline consolidation of minimal audit outputs (≤2 dimensions with ≤5 findings each). No agent spawn. maxTurns: 0.
 - **STANDARD**: Spawn analyst (maxTurns:30). Read all 4 audit outputs, cross-reference, produce tiered output.
 - **COMPLEX**: Spawn analyst (maxTurns:35). Larger audit outputs require more turns for cross-referencing. Single analyst to maintain cross-dimensional coherence.
 
@@ -39,6 +40,19 @@ The coordinator produces three tiers of output with different consumers:
 | L3 | `audit-impact.md` | plan-strategy, execution-impact | Via $ARGUMENTS, Lead never reads |
 
 This tiered design prevents Lead context bloat: Lead only reads L1 (compact index) and L2 (summary) while plan-phase skills receive detailed L3 data directly via `$ARGUMENTS` injection.
+
+## Decision Points
+
+### Consolidation Depth
+Based on audit dimension count and total findings.
+- **≤2 dimensions, ≤5 findings each**: Lead-direct inline consolidation (TRIVIAL). No agent spawn.
+- **3-4 dimensions, ≤20 total findings**: Single analyst, standard cross-reference. maxTurns: 30.
+- **4 dimensions, >20 total findings**: Single analyst, extended cross-reference. maxTurns: 35.
+- **Default**: Single analyst, maxTurns: 30 (STANDARD tier).
+
+### Partial Dimension Handling
+- **1-2 dimensions missing**: Proceed with available data. Mark gaps in L1 index. Compound patterns limited.
+- **3-4 dimensions missing**: FAIL. Insufficient data for meaningful consolidation. Route to Lead.
 
 ## Methodology
 
@@ -142,6 +156,24 @@ Four L3 files, each containing the full detail for one audit dimension plus rele
 - Shift-Left data for execution-impact (P6)
 - Compound patterns involving impact dimension
 - Recommended sequencing constraints based on propagation paths
+
+### Delegation Prompt Specification (Coordinator Pattern)
+
+#### COMPLEX Tier (single analyst, extended turns)
+- **Context**: Provide paths to all 4 audit outputs: `/tmp/pipeline/p2-audit-static.md`, `p2-audit-behavioral.md`, `p2-audit-relational.md`, `p2-audit-impact.md`. Note any missing/partial dimensions.
+- **Task**: "Read all available audit dimension outputs. Extract key metrics and top findings from each. Cross-reference dimensions for compound patterns (dependency+behavior, relationship+impact, static+relational, behavioral+impact intersections). Produce 6 files in `/tmp/pipeline/p2-coordinator/`: L1 index.md (compact YAML routing), L2 summary.md (<200 lines, executive overview + routing guidance), 4x L3 per-dimension files with full data + compound patterns."
+- **Constraints**: Read-only consolidation (analyst agent, no Bash). No new Grep/Glob research. L1 index ≤30 YAML lines. L2 ≤200 lines. maxTurns: 35.
+- **Expected Output**: 6 files in `/tmp/pipeline/p2-coordinator/`. L1: status, dimensions, compound patterns, overall risk, routing recommendation. L2: executive summary, highlights, risk distribution, gap report. L3: complete per-dimension data with cross-referenced compound patterns.
+- **Delivery**: SendMessage to Lead: `PASS|dimensions:4|patterns:{N}|ref:/tmp/pipeline/p2-coordinator/index.md`
+
+#### STANDARD Tier (single analyst, standard turns)
+Same structure as COMPLEX. maxTurns: 30. Fewer compound pattern intersections expected.
+
+#### TRIVIAL Tier
+Lead-direct inline consolidation. Merge ≤2 dimension summaries into single output file. No tiered output hierarchy.
+
+#### Partial Dimension Failure
+If 1-2 audit dimensions are missing: proceed with available data. L1 marks missing dimensions. L3 files only created for available dimensions. Compound patterns involving missing dimensions noted as gaps in L2.
 
 ## Failure Handling
 

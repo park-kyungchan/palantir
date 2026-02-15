@@ -18,8 +18,8 @@ disable-model-invocation: false
 
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick assessment against known CC capabilities.
-- **STANDARD**: Launch researcher (run_in_background) with claude-code-guide (if unavailable, use cc-reference cache in `memory/cc-reference/`) + web access for CC docs lookup.
-- **COMPLEX**: Launch 2 background agents (run_in_background). Split: core CC features vs MCP/plugin capabilities.
+- **STANDARD**: Launch researcher (run_in_background, maxTurns: 20) with claude-code-guide (if unavailable, use cc-reference cache in `memory/cc-reference/`) + web access for CC docs lookup.
+- **COMPLEX**: Launch 2 background agents (run_in_background, maxTurns: 15-20). Split: core CC features vs MCP/plugin capabilities.
 
 ## Decision Points
 
@@ -106,6 +106,7 @@ Lead check sequence (cc-reference cache at memory/cc-reference/):
 - **Task**: "For each requirement, verify whether Claude Code natively supports it. Read the cc-reference cache files at the provided path first for CC-specific capability questions. If cc-reference is stale or ambiguous, use claude-code-guide agent for supplementary verification. For each requirement: provide feasibility verdict, the specific CC feature that enables it, and any limitations or workarounds needed."
 - **Constraints**: Research-only (researcher agent with web access). Prioritize cc-reference cache for CC internals. Use claude-code-guide for supplementary verification when cc-reference is stale or ambiguous. Fall back to WebSearch for CC documentation if both unavailable.
 - **Expected Output**: Per-requirement feasibility entry: requirement text, verdict (feasible/partial/infeasible), CC feature mapping (exact tool or API name), limitations if partial, alternative approach if infeasible, source of verdict (claude-code-guide / cc-reference / web docs).
+- **Delivery**: Lead reads background agent output directly (P0-P1 mode, no SendMessage)
 
 **Priority chain for STANDARD**: cc-reference cache (fastest, most reliable) → claude-code-guide agent (authoritative but slow) → WebSearch for CC docs (last resort, set confidence: low).
 

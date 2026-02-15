@@ -17,12 +17,26 @@ disable-model-invocation: false
 # Audit — Static (Structural Dependencies)
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Inline check of 1-2 file imports via Grep. No agent spawn. maxTurns: 0.
 - **STANDARD**: Spawn analyst (maxTurns:25). Systematic import chain mapping across all files identified by Wave 1.
-- **COMPLEX**: Spawn 2 analysts with non-overlapping directory scopes. Merge dependency graphs at Lead level.
+- **COMPLEX**: Spawn 2 analysts with non-overlapping directory scopes (maxTurns:25 each). Merge dependency graphs at Lead level.
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-static.md`, sends micro-signal: `PASS|deps:{N}|hotspots:{N}|ref:/tmp/pipeline/p2-audit-static.md`.
+
+## Decision Points
+
+### Analyst Scope Strategy
+Based on file inventory size from research-codebase L1.
+- **≤15 files**: Single analyst, full codebase scope. maxTurns: 20.
+- **16-50 files**: Single analyst, directory-scoped passes. maxTurns: 25.
+- **>50 files**: Spawn 2 analysts with non-overlapping directory partitions. maxTurns: 25 each.
+- **Default**: Single analyst (STANDARD tier).
+
+### Hotspot Sensitivity
+- **Standard threshold (>3 connections)**: Default for most codebases.
+- **Lowered threshold (>2 connections)**: When design changes touch core infrastructure where moderate coupling is risky.
 
 ## Methodology
 
@@ -78,6 +92,21 @@ Produce final output with:
 - Cycle report (if any detected)
 - Summary statistics: total nodes, total edges, average fan-out, max fan-in
 - All findings with file:line evidence for every edge
+
+### Delegation Prompt Specification
+
+#### COMPLEX Tier (2 parallel analysts)
+- **Context**: Paste research-codebase L1 `pattern_inventory` + file list. Paste research-external L2 dependency constraints. Paste design-architecture L1 `components[]` for scoping. Assign directory scope: `{scope_dirs}`.
+- **Task**: "Map all file-to-file import/reference chains within assigned directory scope. Build dependency DAG with edge weights. Identify hotspot files (>3 connections). Report complete edge list with file:line evidence for every edge."
+- **Constraints**: Read-only analysis (analyst agent, no Bash). Scope to assigned directories only. Exclude node_modules/, .git/, build artifacts. maxTurns: 25.
+- **Expected Output**: L1 YAML: total_nodes, total_edges, hotspot_count, cycle_count, coverage_percent. L2: full DAG edges, hotspot table sorted by connections, cycle report.
+- **Delivery**: SendMessage to Lead: `PASS|deps:{N}|hotspots:{N}|ref:/tmp/pipeline/p2-audit-static.md`
+
+#### STANDARD Tier (single analyst)
+Same as COMPLEX but single analyst with full codebase scope. No directory partitioning.
+
+#### TRIVIAL Tier
+Lead-direct inline. Grep 1-2 files for imports, note edges. No formal DPS.
 
 ## Failure Handling
 

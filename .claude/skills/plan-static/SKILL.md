@@ -26,6 +26,20 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-static.md`, sends micro-signal: `{STATUS}|tasks:{N}|deps:{N}|ref:/tmp/pipeline/p3-plan-static.md`
 
+## Decision Points
+
+### Cluster Split vs Merge
+When dependency cluster boundaries are ambiguous.
+- **Split**: If cluster > 4 files AND a weak internal edge exists (≤ 2 coupling edges). Split along weakest edge.
+- **Merge**: If two adjacent clusters share > 3 bidirectional edges. Merge into single task (accept larger scope).
+- **Default**: Keep cluster intact when 1-4 files with clear internal cohesion.
+
+### Task Granularity Selection
+When assigning files to tasks after clustering.
+- **Single-file**: If file has 0 dependencies (isolated node). Create minimal 1-file task.
+- **Multi-file**: If files form tight cluster (mutual deps). Group 2-4 files per SRP-bounded task.
+- **Default**: Prefer 2-3 files per task for balanced parallelism and manageability.
+
 ## Methodology
 
 ### 1. Read Audit-Static L3 (Dependency Graph)
@@ -79,12 +93,17 @@ Build the final task graph:
 - Identify critical path (longest chain of blocking dependencies)
 - Calculate parallelism potential (tasks per wave)
 
-**DPS -- Analyst Spawn Template:**
-- **Context**: Paste audit-static L3 content (dependency graph, module boundaries, coupling metrics). Include pipeline tier.
+**DPS -- Analyst Spawn Template (COMPLEX):**
+- **Context**: Paste audit-static L3 content (dependency graph, module boundaries, coupling metrics). Include pipeline tier and total file count.
 - **Task**: "Identify dependency clusters in the file graph. Group files into tasks (1-4 files each, SRP). Assign file ownership (non-overlapping). Map inter-task dependency edges. Identify critical path. Estimate per-task complexity (T/S/C)."
-- **Constraints**: Read-only analysis. Use Glob/Grep for file validation. No modifications.
+- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with task_count, tasks[] (id, files, complexity, depends_on, cluster). L2 task descriptions with cluster rationale and critical path visualization.
 - **Delivery**: Write full result to `/tmp/pipeline/p3-plan-static.md`. Send micro-signal to Lead: `PASS|tasks:{N}|deps:{N}|ref:/tmp/pipeline/p3-plan-static.md`.
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. Flat file list (1-2 files), assign each to single task. No cluster analysis needed. Output inline.
+**STANDARD**: Spawn analyst (maxTurns: 15). Simplified cluster identification across 3-8 files. Single-pass grouping. Skip critical path if ≤ 3 tasks.
+**COMPLEX**: Full DPS above. Deep multi-cluster analysis, cross-module boundaries, full critical path.
 
 ## Failure Handling
 | Failure Type | Severity | Route To | Blocking? | Resolution |

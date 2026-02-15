@@ -16,9 +16,9 @@ disable-model-invocation: false
 # Manage — Skills
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick scan for 1-2 domain changes.
-- **STANDARD**: Spawn analyst. Full domain coverage analysis.
-- **COMPLEX**: Spawn 2 analysts. One for change detection, one for coverage analysis.
+- **TRIVIAL**: Lead-direct. Quick scan for 1-2 domain changes. No agent spawn.
+- **STANDARD**: Spawn 1 analyst (maxTurns:15). Full domain coverage analysis.
+- **COMPLEX**: Spawn 2 analysts (maxTurns:20 each). One for change detection, one for coverage analysis.
 
 ## Phase-Aware Execution
 - **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
@@ -108,6 +108,13 @@ After user approval:
 - For DELETE: remove skill directory
   **Limitation**: Analysts cannot delete files (no Bash tool). DELETE actions are flagged for user manual action. Lead reports the orphaned path for user to remove.
 - Run verify-cc-feasibility on all changed skills
+
+**Execute DPS** (CREATE/UPDATE actions):
+- **Context**: Approved action list with rationale. Existing skill files for UPDATE. Domain naming conventions from Skill Naming Convention decision point.
+- **Task**: "For CREATE: generate SKILL.md with complete frontmatter (all native fields) + L2 body skeleton. For UPDATE: edit specified frontmatter fields in existing SKILL.md."
+- **Constraints**: infra-implementer agent (Write/Edit only, no Bash). maxTurns:15. Only modify files in .claude/skills/.
+- **Expected Output**: Created/updated SKILL.md files. L1 YAML with files_changed, actions_applied per action.
+- **Delivery**: SendMessage to Lead: `PASS|files:{N}|ref:/tmp/pipeline/homeostasis-manage-skills-exec.md`.
 
 ## Decision Points
 

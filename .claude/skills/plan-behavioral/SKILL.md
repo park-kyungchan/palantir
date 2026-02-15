@@ -26,6 +26,20 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-behavioral.md`, sends micro-signal: `{STATUS}|tests:{N}|rollbacks:{N}|ref:/tmp/pipeline/p3-plan-behavioral.md`
 
+## Decision Points
+
+### Risk Level Escalation
+When predicted behavior changes show concentrated risk.
+- **High-risk pipeline**: If > 3 P0 behavior changes predicted. Flag to Lead, recommend staged execution.
+- **Moderate-risk**: If 1-3 P0 changes OR > 5 P1 changes. Standard rollback planning with checkpoints.
+- **Low-risk**: If 0 P0 and ≤ 2 P1 changes. Lightweight strategy, minimal checkpoints.
+
+### Rollback Strategy Selection
+When choosing between rollback approaches for P0/P1 changes.
+- **Atomic revert**: If changes within task are tightly coupled (shared state). Always for P0 risks.
+- **Selective revert**: If changes are isolated within task (no shared state). P1 risks with clear boundaries.
+- **Forward fix**: If change is additive and partial success is acceptable. P2-P3 only.
+
 ## Methodology
 
 ### 1. Read Audit-Behavioral L3 (Behavior Predictions)
@@ -96,12 +110,17 @@ Produce the complete behavioral strategy:
 - Checkpoint placement mapped to task chain
 - Coverage metrics: behavior changes covered / total predicted
 
-**DPS -- Analyst Spawn Template:**
-- **Context**: Paste audit-behavioral L3 content (behavior predictions, side effects, dependency chains). Include pipeline tier and task list from plan-static if available.
-- **Task**: "For each predicted behavior change: define test case (subject, pre/post condition, type, priority). For P0/P1 changes: define rollback trigger (condition, detection, blast radius, scope). Map checkpoints to task chain. Calculate coverage metrics."
-- **Constraints**: Read-only analysis. No file modifications. Focus on prescriptive strategy, not implementation.
-- **Expected Output**: L1 YAML with test_count, rollback_count, tests[] and rollbacks[]. L2 per-change test cases and rollback procedures.
+**DPS -- Analyst Spawn Template (COMPLEX):**
+- **Context**: Paste audit-behavioral L3 content (behavior predictions, side effects, dependency chains). Include pipeline tier, total predicted changes count, and task list from plan-static if available.
+- **Task**: "For each predicted behavior change: define test case (subject, pre/post condition, type, priority P0-P3). For P0/P1 changes: define rollback trigger (condition, detection, blast radius, scope). Map checkpoints to task chain. Calculate coverage metrics."
+- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on prescriptive strategy, not test implementation.
+- **Expected Output**: L1 YAML with test_count, rollback_count, checkpoint_count, coverage_percent, tests[] and rollbacks[]. L2 per-change test cases and rollback procedures.
 - **Delivery**: Write full result to `/tmp/pipeline/p3-plan-behavioral.md`. Send micro-signal to Lead: `PASS|tests:{N}|rollbacks:{N}|ref:/tmp/pipeline/p3-plan-behavioral.md`.
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. 1-2 obvious behavior changes. Inline test specification, skip rollback if no P0/P1 changes.
+**STANDARD**: Spawn analyst (maxTurns: 15). Systematic test cases for 3-8 changes. Rollback for P0/P1 only. Skip checkpoint mapping if ≤ 3 tasks.
+**COMPLEX**: Full DPS above. Deep chain analysis, cascading rollback design, full checkpoint mapping across 9+ changes.
 
 ## Failure Handling
 | Failure Type | Severity | Route To | Blocking? | Resolution |

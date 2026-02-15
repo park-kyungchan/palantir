@@ -17,6 +17,7 @@ disable-model-invocation: false
 # Plan Verify — Coordinator
 
 ## Execution Model
+- **TRIVIAL**: Lead-direct. Merge 4 dimension verdicts inline. Skip cross-checks if all PASS with zero findings. No agent spawn.
 - **STANDARD**: Spawn analyst (maxTurns:25). Merge 4 verdicts, perform cross-dimension checks, produce tiered output.
 - **COMPLEX**: Spawn analyst (maxTurns:35). Deep cross-dimension analysis with consistency matrix and comprehensive L3 production.
 
@@ -26,7 +27,35 @@ Note: P4 validates PLANS (pre-execution). This coordinator merges dimension-spec
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes tiered output to `/tmp/pipeline/p4-coordinator/`, sends micro-signal: `PASS|dimensions:4|cross_issues:{N}|ref:/tmp/pipeline/p4-coordinator/index.md`.
 
+## Decision Points
+
+### Overall Verdict Computation
+Combined dimension results determine routing.
+- **All 4 PASS (or CONDITIONAL_PASS) AND cross-check issues = 0**: PASS. Route to orchestration domain.
+- **All 4 PASS AND cross-check issues exist (MEDIUM severity)**: CONDITIONAL_PASS. Route with annotations.
+- **Any dimension FAIL OR cross-check HIGH severity**: FAIL. Route to specific plan-X skill per finding.
+- **Default**: If 2+ dimensions FAIL, prioritize static first (foundation for others).
+
+### Partial Dimension Handling
+Incomplete verifier output determines coordinator behavior.
+- **1 dimension missing**: Produce partial output with 3 dimensions. Set status: PARTIAL. Route to Lead.
+- **2+ dimensions missing**: FAIL with `reason: insufficient_data`. Cannot perform meaningful cross-checks.
+- **Partial coverage (> 70% per dimension)**: Proceed with risk annotation on unverified portions.
+- **Partial coverage (< 70% any dimension)**: Route that dimension for re-verification with focused scope.
+
 ## Methodology
+
+### Coordinator Delegation DPS
+- **Context**: Paste 4 dimension verifier outputs: pv-static (coverage verdict, orphans), pv-behavioral (test coverage, rollback coverage), pv-relational (contract integrity, asymmetric/missing counts), pv-impact (containment verdict, unmitigated paths). Include L1 YAML metrics and L2 evidence summaries.
+- **Task**: "Consolidate 4 dimension verdicts. Perform 4 cross-dimension checks: (a) dependency-sequence, (b) contract-boundary, (c) rollback-checkpoint, (d) requirement traceability. Produce tiered output: L1 index.md, L2 summary.md, L3 per-dimension annotated files."
+- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:25 (STANDARD) or 35 (COMPLEX). Do NOT re-evaluate individual dimensions.
+- **Expected Output**: L1: `/tmp/pipeline/p4-coordinator/index.md` (verdict, routing). L2: `/tmp/pipeline/p4-coordinator/summary.md` (cross-dim findings). L3: 4 files `verify-{dim}.md` with cross-dimension annotations.
+- **Delivery**: SendMessage to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:/tmp/pipeline/p4-coordinator/index.md`
+
+#### Tier-Specific DPS Variations
+**TRIVIAL**: Lead-direct. If all 4 PASS with zero findings, merge verdicts inline. Write minimal L1 index only.
+**STANDARD**: Single analyst, maxTurns:25. Full 4 cross-checks + tiered L1/L2/L3 output.
+**COMPLEX**: Single analyst, maxTurns:35. Deep cross-dimension consistency matrix + comprehensive L3 with adjusted severity annotations.
 
 ### 1. Read All 4 Dimension Verdicts
 Load each verifier's output:

@@ -118,6 +118,11 @@ Since delivery-agent has `memory: none`, Lead must provide ALL context in the sp
 - **Expected Output**: L1 YAML with `commit_hash`, `files_changed`, `pt_status`. L2 delivery summary with commit message, archive entries, and any warnings.
 - **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
+#### Delivery-Agent Tier-Specific DPS Variations
+**TRIVIAL**: Same agent. Context: minimal (1-2 files, simple commit). maxTurns: 10.
+**STANDARD**: Same agent. Context: full consolidation (3-5 files, commit body with decisions). maxTurns: 15.
+**COMPLEX**: Full DPS above. Context: extended multi-domain consolidation (6+ files). maxTurns: 20.
+
 ### Pre-Delivery Checklist
 Before spawning delivery-agent, Lead must verify:
 

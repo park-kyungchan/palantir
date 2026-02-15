@@ -25,6 +25,27 @@ disable-model-invocation: false
 - **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-relational.md`. Send micro-signal to Lead via SendMessage: `PASS|handoffs:{N}|ref:/tmp/pipeline/p5-orch-relational.md`.
 
+## Decision Points
+
+### DPS Granularity
+When deciding handoff specification depth:
+- **Independent tasks** (no shared data): No DPS needed between them. Skip.
+- **File-based handoff** (producer writes file, consumer reads): Define path + format + required fields.
+- **Status-signal handoff** (producer reports PASS/FAIL): Define signal format per conventions.md. No file DPS needed.
+- **Shared-state handoff** (both read/write same file): REJECT. Redesign as file-based with single producer.
+
+### Format Selection
+When producer output format is ambiguous from plan description:
+- **Structured data** (task lists, assignments, metrics): Default to YAML. Machine-parseable for L1.
+- **Narrative analysis** (rationale, evidence, summaries): Default to markdown. Human-readable for L2.
+- **Mixed** (structured + narrative): Use markdown with YAML frontmatter. Standard L1+L2 pattern.
+
+### Chain Completeness Verdict
+When evaluating handoff chain integrity:
+- **0 dangling inputs AND 0 orphaned outputs**: chain_complete: true. PASS.
+- **0 dangling inputs BUT >= 1 orphaned output**: chain_complete: true. WARN (wasted computation, non-blocking).
+- **>= 1 dangling input**: chain_complete: false. FAIL. Consumer tasks will break at execution.
+
 ## Methodology
 
 ### 1. Read Verified Plan
@@ -40,6 +61,11 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with
 - **Constraints**: Read-only analysis. No modifications. Use `/tmp/pipeline/` as base path for handoff files. Every DPS must be fully specified.
 - **Expected Output**: L1 YAML DPS specs. L2 handoff chain visualization with data flow.
 - **Delivery**: Write full result to `/tmp/pipeline/p5-orch-relational.md`. Send micro-signal to Lead via SendMessage: `PASS|handoffs:{N}|ref:/tmp/pipeline/p5-orch-relational.md`.
+
+#### Step 1 Tier-Specific DPS Variations
+**TRIVIAL**: Skip — Lead defines handoffs inline (typically 0-1 handoffs for single-module tasks).
+**STANDARD**: Single DPS to analyst. maxTurns:15. Define handoffs for file-based dependencies only. Omit validation rules.
+**COMPLEX**: Full DPS as above. maxTurns:25. Deep handoff analysis with validation rules, format verification, and chain completeness proofs.
 
 ### 2. Identify Inter-Task Data Dependencies
 Scan dependency graph for all producer-consumer relationships:
