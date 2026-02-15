@@ -34,6 +34,13 @@ For each component boundary:
 - **Error contract**: Error types, propagation rules, recovery expectations
 - **Versioning**: How the interface evolves without breaking consumers
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: Paste design-architecture L1 (components[] with names, responsibilities, dependencies) and relevant L2 ADR sections. Include existing codebase patterns for interface conventions.
+- **Task**: "For each component boundary: define function signatures (input→output), protocol (sync/async), error contracts (types, propagation), versioning approach. Map design interfaces to task contracts. Determine implementation ordering."
+- **Scope**: For COMPLEX, split by component boundary set — non-overlapping assignments.
+- **Constraints**: Read-only. Use Glob/Grep for existing interface patterns. No file modifications.
+- **Expected Output**: L1 YAML with interface_count, contracts[] (boundary, protocol, error_contract). L2 per-boundary specs and implementation ordering.
+
 ### 3. Specify Data Types
 For shared data structures:
 - Field names, types, constraints

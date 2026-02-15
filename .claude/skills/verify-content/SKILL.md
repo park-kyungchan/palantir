@@ -29,6 +29,12 @@ For each agent and skill file:
 - Measure character count (target: >80% of 1024 = >819 chars)
 - Record utilization percentage
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: List of all skill and agent files to verify (from verify-structure PASS results or Glob). Include the target thresholds: description >80% of 1024 chars (>819 chars), required orchestration keys (WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO, METHODOLOGY).
+- **Task**: "For each file: (1) Extract description field, measure char count and utilization %, (2) Check for WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO, METHODOLOGY keys in description, (3) Verify body has Execution Model, Methodology (numbered steps), Quality Gate, and Output (L1/L2) sections. Flag files below 80% utilization or missing required keys."
+- **Constraints**: Read-only. No modifications.
+- **Expected Output**: L1 YAML with avg_utilization_pct, findings[] (file, utilization_pct, missing_keys). L2 utilization rankings and missing content report.
+
 ### 2. Check Orchestration Map Keys
 For each skill description, verify presence of:
 - **WHEN**: Trigger condition (when to invoke this skill)

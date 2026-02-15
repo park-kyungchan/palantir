@@ -44,6 +44,8 @@ Priority order for each dependency:
 3. **WebFetch** for specific documentation pages
 4. **tavily** for comprehensive search when others fail
 
+**WebFetch Restriction**: settings.json limits WebFetch to `github.com` and `raw.githubusercontent.com`. For non-GitHub documentation, use context7 or tavily instead. WebFetch is only effective for GitHub-hosted docs and READMEs.
+
 ### 3. Validate Compatibility
 For each dependency:
 - Version compatibility with current environment

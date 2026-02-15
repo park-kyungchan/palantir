@@ -33,7 +33,7 @@
 |-----------|---------|------|-------------|
 | CLAUDE.md | v10.6 | 48L | Protocol-only + tier routing override note |
 | Agents | v10.5 | 6 files | 2 haiku+memory:none (delivery,pt-mgr), 4 memory:project, all color |
-| Skills | v10.6 | 35 dirs | Integration fixes: verify sub-routing, research FAIL paths, cascade boundary |
+| Skills | v10.7 | 35 dirs | DPS templates + logic fixes across 30 skills |
 | Settings | v10.6 | ~110L | teammateMode:tmux, alwaysThinkingEnabled, matcher expanded |
 | Hooks | 5 total | ~285L | SRC log mv (not rm), matcher "implementer|infra-implementer" |
 | Agent Memory | -- | 6 files | +infra-integration-audit.md, +srp-analysis.md |
@@ -98,6 +98,18 @@ Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -
 Details: `memory/meta-cognition-infra.md`
 
 ## Session History
+
+### RSI L4 — Context Engineering + Prompt Engineering Deep-Dive (2026-02-15, branch: test)
+Progressive Deep-Dive RSI: L1(structure)→L2(integration)→L3(logic)→**L4(context+prompt)** — first CE+PE focused improvement.
+- **Scope**: 29 skill files + 5 CC reference cache files
+- **DPS Coverage**: Added Delegation Prompt Standard templates to 19 agent-spawning skills (Waves 1-3)
+- **HIGH fixes (5)**: H-03 self-improve executor, H-04 manage-skills git-diff-in-prompt, H-05 research-external WebFetch restriction, H-06 delivery-pipeline memory:none data, H-07 orchestration-verify topological sort
+- **MEDIUM fixes (8)**: M-02 execution-review context bloat, M-03 verify-structure YAML limitation, M-04 cc-feasibility priority swap, M-05 pre-design-feasibility terminal FAIL, M-06 manage-codebase hotspot simplification, M-07 execution-impact TRANSITIVE prioritization, M-08 pipeline-resume recovery limitation, M-11 task-management path fix
+- **Carryover fixes**: C-02 context persistence, M-01 INPUT_FROM, M-09 FMEA calibration, M-10 teammate limit wording, M-12 threshold alignment
+- **LOW fixes (2)**: L-05 execution-code TRIVIAL wording, L-07 manage-codebase plugins exclusion
+- **CC Cache**: Updated 5 reference files (prompt-based hooks, agent-based hooks, shell preprocessing, effort parameter, 128K output, context budget env vars)
+- Key insight: DPS (Context/Task/Constraints/Expected Output) bridges Lead→Agent isolation boundary. All 19 skills now have explicit delegation templates.
+- Total: ~30 files changed
 
 ### RSI L3 — Context Engineering + Delegation Prompt Engineering (2026-02-15, branch: test)
 Progressive Deep-Dive RSI: L1(structure)→L2(integration)→**L3(logic)** — first logic-level self-improvement.

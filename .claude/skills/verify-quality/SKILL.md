@@ -8,7 +8,7 @@ description: |
   INPUT_FROM: verify-consistency (relationship integrity confirmed) or direct invocation.
   OUTPUT_TO: verify-cc-feasibility (if PASS) or execution-infra (if FAIL on .claude/ files) or execution-code (if FAIL on source files).
 
-  METHODOLOGY: (1) Read WHEN conditions, check specificity (reject vague "when needed"), (2) Read METHODOLOGY steps, check numbered concrete steps with tool names, (3) Check OUTPUT_FORMAT has L1/L2 structure, (4) Check utilization >88% of 1024 chars (quality target), (5) Score and rank by routing effectiveness.
+  METHODOLOGY: (1) Read WHEN conditions, check specificity (reject vague "when needed"), (2) Read METHODOLOGY steps, check numbered concrete steps with tool names, (3) Check OUTPUT_FORMAT has L1/L2 structure, (4) Check utilization >80% of 1024 chars (aligned with verify-content), (5) Score and rank by routing effectiveness.
   OUTPUT_FORMAT: L1 YAML quality score per file (0-100), L2 markdown quality report with improvement suggestions.
 user-invocable: true
 disable-model-invocation: false
@@ -31,6 +31,12 @@ For each skill description:
 - Bad: "When the user wants to design"
 - Score specificity 0-100
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: All skill descriptions (paste each description text). Include scoring rubric: Specificity (0-100): 100=exact trigger with upstream skill name, 50=vague condition, 0=missing. Concreteness (0-100): 100=numbered steps with tool/agent refs, 50=generic steps, 0=no methodology. Completeness (0-100): 100=L1+L2 defined, 50=partial, 0=missing.
+- **Task**: "Score each skill across 4 dimensions: WHEN specificity, METHODOLOGY concreteness, OUTPUT FORMAT completeness, description utilization (>80%). Produce combined score per skill. Rank all skills. Identify bottom 5 for priority improvement."
+- **Constraints**: Read-only. No modifications. Score objectively using the rubric.
+- **Expected Output**: L1 YAML with avg_score, findings[] (file, score, issues). L2 quality rankings and improvement suggestions.
+
 ### 2. Evaluate METHODOLOGY Concreteness
 For each skill description:
 - Check steps are numbered (1), (2), (3)...
@@ -49,7 +55,7 @@ For each skill:
 ### 4. Measure Description Utilization
 For each skill description:
 - Calculate char count / 1024
-- Target: >88% utilization (quality threshold, stricter than content's 80%)
+- Target: >80% utilization (aligned with verify-content threshold)
 - Flag descriptions below threshold with improvement suggestions
 
 ### 5. Generate Quality Rankings

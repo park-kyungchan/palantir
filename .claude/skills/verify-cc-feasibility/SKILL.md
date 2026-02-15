@@ -41,6 +41,12 @@ Allowed native fields for **Agents** (.claude/agents/*.md):
 
 Flag any field NOT in these lists as non-native.
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: All frontmatter fields extracted from target files. Include the CC native field reference lists (Skills: name, description, argument-hint, user-invocable, disable-model-invocation, allowed-tools, model, context, agent, hooks. Agents: name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, mcpServers, hooks, memory, color).
+- **Task**: "Compare each extracted field against the native field lists. Flag any field NOT in the native list as non-native. For each native field, validate value type correctness (booleans, enums, strings). If questionable fields found: check cc-reference cache at `memory/cc-reference/native-fields.md` for latest reference."
+- **Constraints**: Read-only. No modifications. Use cc-reference cache as primary validation source (NOT claude-code-guide spawn — that's Lead's decision).
+- **Expected Output**: L1 YAML with non_native_fields count, findings[] (file, field, status). L2 compliance report.
+
 ### 3. Validate Field Values
 For each native field, check value types:
 - `name`: string (lowercase, hyphens, max 64 chars)
@@ -52,9 +58,10 @@ For each native field, check value types:
 - `agent`: string (must match existing agent name)
 - `argument-hint`: string (e.g., "[topic]")
 
-### 4. Spawn Claude-Code-Guide Verification
+### 4. Validate Questionable Fields
 If any questionable fields found:
-- Spawn claude-code-guide (if unavailable, use cc-reference cache in `memory/cc-reference/`): "Are these frontmatter fields valid for Claude Code skills/agents?"
+- Primary: check `memory/cc-reference/native-fields.md` for field validity. The cc-reference cache is the most reliable and always-available source.
+- Supplementary: if cc-reference cache is stale or field is ambiguous, spawn claude-code-guide for confirmation: "Are these frontmatter fields valid for Claude Code skills/agents?" (if unavailable, rely on cc-reference verdict).
 - Include the specific fields in question
 - Record feasibility verdict per field
 

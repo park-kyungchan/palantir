@@ -18,7 +18,7 @@ disable-model-invocation: false
 # Execution — Code
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Single implementer for 1-2 file change.
+- **TRIVIAL**: Single implementer spawn for 1-2 file changes.
 - **STANDARD**: Spawn 1-2 implementers. Each owns non-overlapping files.
 - **COMPLEX**: Spawn 3-4 implementers. Parallel implementation with dependency awareness.
 

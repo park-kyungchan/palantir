@@ -31,6 +31,8 @@ Before any delivery action:
 - If any FAIL: abort delivery, report to Lead for fix loop
 - Confirm no outstanding critical findings
 
+**Note**: delivery-agent has `memory: none` — no access to conversation history. Lead MUST include verify verdict summary (all 5 stage PASS/FAIL status) in the delivery-agent spawn prompt. The all-PASS gate is effectively verified by Lead before spawning.
+
 ### 2. Consolidate Pipeline Results
 Gather outputs from all pipeline domains:
 - Pre-design: requirements and feasibility results

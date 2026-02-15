@@ -30,7 +30,12 @@ Load plan-decomposition tasks, plan-interface ordering, and design-risk assessme
 Identify tasks that can execute simultaneously:
 - No dependency edges between them
 - No file ownership conflicts
-- Within 4-teammate limit per group
+
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste plan-decomposition L1 (tasks with dependencies), plan-interface L1 (ordering), and design-risk L1 (risk matrix with RPN scores). Include pipeline tier (TRIVIAL/STANDARD/COMPLEX).
+- **Task**: "Identify parallelizable task groups (no dependency edges, no file conflicts). Build execution sequence table. For each high-RPN risk: insert checkpoint after risky task with verification step. Define rollback strategy per phase."
+- **Constraints**: Read-only. No modifications. Focus on sequencing, not teammate assignment.
+- **Expected Output**: L1 YAML with phase_count, phases[] (id, tasks, parallel, checkpoint). L2 execution sequence, risk checkpoints, rollback strategies.
 
 ### 3. Build Execution Sequence
 

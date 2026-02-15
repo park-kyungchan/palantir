@@ -64,6 +64,12 @@ For each changed file from pipeline execution:
 6. **Recalculate hotspot** for all affected entries
 7. **Set `updated` date** to today for all modified entries
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
+- **Context**: Paste the list of changed files from pipeline execution (from Lead's context or SRC log). Include the current codebase-map.md content (or relevant entries for changed files). Include scope filters and exclusion list.
+- **Task**: "For each changed file: (1) Re-scan refs by grepping content for references to other tracked files, (2) Update refd_by bidirectionally, (3) Handle new files (add entry), deleted files (remove entry), renames (old→new). Recalculate hotspot scores. Set updated date."
+- **Constraints**: Write output to `.claude/agent-memory/analyst/codebase-map.md` only. Follow the existing map schema. Stay within 150 entries / 300 lines.
+- **Expected Output**: L1 YAML with entries updated/added/removed counts, mode: incremental-update. Updated codebase-map.md file.
+
 ### 4. Staleness Detection
 For each existing entry in the map:
 - Compare `updated` date against file's last git modification: `git log --format=%cd --date=short -1 -- {file_path}`
@@ -93,9 +99,9 @@ updated: {YYYY-MM-DD}
 
 | Score | Condition |
 |-------|-----------|
-| `high` | `refd_by` count >= 10, OR file changed in last 3 pipeline runs |
-| `medium` | `refd_by` count 4-9 |
-| `low` | `refd_by` count 0-3 |
+| `high` | `refd_by` count >= 5 |
+| `medium` | `refd_by` count 3-4 |
+| `low` | `refd_by` count 0-2 |
 
 **Size limits**: Max 150 entries (~300 lines, ~15KB). If exceeding: prune `hotspot: low` entries with oldest `updated` dates first.
 
@@ -114,6 +120,7 @@ updated: {YYYY-MM-DD}
 - `.claude/agent-memory/` (except codebase-map.md itself — but map does not track itself)
 - `.claude/agent-memory-local/`
 - `.claude/projects/*/memory/cc-reference/*` (reference docs, not INFRA components)
+- `.claude/plugins/`
 - Binary files, `.git/`, `node_modules/`
 
 ### Phase 2 (Future, Deferred): Application Source Code

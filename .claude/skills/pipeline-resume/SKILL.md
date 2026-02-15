@@ -47,6 +47,8 @@ For each in-progress task:
 - Check if agents produced partial L1/L2 output
 - Determine if task can continue or needs restart
 
+**Recovery Limitation**: In-progress tasks at interruption typically need full restart, not continuation. Partial output is only recoverable if written to files or Task metadata before interruption. For completed tasks, L1/L2 may be in Lead's compacted context or PT metadata.
+
 ### 5. Resume Pipeline
 Execute recovery:
 - Update PT metadata with resume information

@@ -32,6 +32,8 @@ Run git diff to identify modified files:
 
 Lead runs git diff and passes the output as context to analysts spawned in subsequent steps.
 
+**Note**: Analysts have no Bash tool. Lead runs `git diff --name-only HEAD` before spawning and pastes the output into the analyst's Context block.
+
 ### 2. Map Changes to Domains
 Apply detection rules:
 - `.claude/agents/` changes → design domain skills

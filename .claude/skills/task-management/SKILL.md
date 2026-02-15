@@ -71,8 +71,7 @@ argument-hint: "[action] [args]"
        "priority": "high",
        "parent": "{PT-task-id}",
        "problem": "기존 문제 상세 설명",
-       "improvement": "이 작업이 문제를 어떻게 개선하는지",
-       "detail_path": ".agent/tasks/{id}/detail.md"
+       "improvement": "이 작업이 문제를 어떻게 개선하는지"
      }
      ```
    - Set `addBlockedBy` for dependency chain

@@ -32,10 +32,18 @@ For each assignment, check:
 - Agent has required tools for the task (Edit for code changes, Bash for testing)
 - Agent profile (B/C/D/E) is appropriate for task type
 
+For COMPLEX tier, construct the delegation prompt for the analyst with:
+- **Context**: Paste orchestration-assign L1 (task-teammate matrix with assignments). Include Agent profile reference: analyst=B(Read,Glob,Grep,Write), researcher=C(+WebSearch,WebFetch,context7,tavily), implementer=D(+Edit,Bash), infra-implementer=E(+Edit,Write for .claude/).
+- **Task**: "For each assignment: verify agent WHEN condition matches task type, verify agent has required tools for the task. Check dependency acyclicity (approximate reasoning for small graphs, systematic for large). Confirm <=4 teammate instances per execution phase. Verify non-overlapping file ownership."
+- **Constraints**: Read-only. No modifications. For topological sort: use systematic reasoning, not algorithmic execution. Acknowledge this is approximate for large graphs.
+- **Expected Output**: L1 YAML with checks (agent_match, acyclicity, capacity, ownership) each PASS/FAIL. L2 verification details.
+
 ### 3. Check Dependency Acyclicity
 Run topological sort on dependency graph:
 - If sort succeeds -> acyclic (PASS)
 - If sort fails -> cycle detected (FAIL, report cycle)
+
+**Note**: For TRIVIAL/STANDARD (Lead-direct), Lead performs approximate cycle detection via reasoning — suitable for small dependency graphs (≤8 tasks). For COMPLEX tier, the spawned analyst performs systematic cycle detection using exhaustive path tracing.
 
 ### 4. Validate Capacity
 Per execution phase:

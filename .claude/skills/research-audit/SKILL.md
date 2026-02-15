@@ -32,6 +32,12 @@ Collect outputs from research-codebase and research-external:
 ### 2. Classify by Architecture Relevance
 Map each finding to architecture decisions:
 
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste research-codebase L1 (pattern inventory: names, file locations, relevance) and research-external L1 (dependency validation: names, versions, status). Paste design-architecture L1 (components, ADR list) as the mapping target.
+- **Task**: "Inventory all findings from codebase and external research. For each finding, map to architecture decisions with support level (supports/contradicts/neutral). Build coverage matrix: per decision, check codebase evidence + external evidence. Classify gaps as critical (no evidence), partial (one source only), or none."
+- **Constraints**: Read-only analysis. No file modifications. Cross-reference between input sources.
+- **Expected Output**: L1 YAML with finding_count, coverage_percent, coverage[] (decision, codebase, external, gap). L2 coverage matrix and gap recommendations.
+
 | Finding | Architecture Decision | Support Level |
 |---------|----------------------|--------------|
 | {finding} | {ADR-N} | supports/contradicts/neutral |

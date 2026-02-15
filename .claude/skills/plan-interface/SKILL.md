@@ -33,6 +33,12 @@ For each task boundary:
 - **Consumer task**: What it expects (required fields, types, paths)
 - **Validation**: How consumer verifies producer's output
 
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste plan-decomposition L1 (tasks[] with files, dependencies) and design-interface L1 (interface registry, contracts). For each task boundary, include the producer task's files and the consumer task's expected inputs.
+- **Task**: "For each task boundary: define producer output format (file/data structure/location), consumer expectation (required fields/types/paths), validation method. Map to design interfaces. Determine implementation ordering (no-dep tasks first)."
+- **Constraints**: Read-only. No modifications. Cross-reference plan and design artifacts.
+- **Expected Output**: L1 YAML with contract_count, contracts[] (producer, consumer, data_type, validated). L2 contracts and ordering.
+
 ### 3. Map to Design Interfaces
 Connect task-level contracts to design-interface specifications:
 - Each design interface should map to >=1 task boundary

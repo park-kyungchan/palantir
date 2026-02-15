@@ -35,6 +35,14 @@ For each agent and skill file:
 - Check parsing succeeds without errors
 - Report parse failures with file:line location
 
+**Known Limitation**: Analysts perform visual/heuristic YAML validation (indentation, colons, quoting). No programmatic YAML parser available. Subtle syntax errors may pass verification.
+
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: List of all discovered files from Step 1 (Glob results). Include expected directory structure: agents in `.claude/agents/*.md`, skills in `.claude/skills/*/SKILL.md`.
+- **Task**: "For each file: (1) Read and parse YAML between --- markers, (2) Check required fields (name, description present and non-empty; skills: user-invocable present), (3) Verify naming (lowercase-hyphen for agents/dirs, SKILL.md uppercase for files), (4) Check directory structure (no orphans, no empty dirs). Report per-file PASS/FAIL with file:line evidence."
+- **Constraints**: Read-only. Use Read to examine each file. No modifications. Note: YAML validation is heuristic (no parser tool) — check for common errors (missing colons, bad indentation, unclosed quotes).
+- **Expected Output**: L1 YAML with total_files, pass, fail, findings[] (file, check, status). L2 per-file structural integrity report.
+
 ### 3. Check Required Fields
 For each parsed frontmatter:
 - `name` field present and non-empty

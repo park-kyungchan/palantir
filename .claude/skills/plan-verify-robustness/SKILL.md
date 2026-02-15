@@ -33,6 +33,12 @@ For each task, brainstorm:
 - What if the file system is in unexpected state?
 - What if context window runs out mid-task?
 
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste plan-strategy L1 (execution plan) and design-risk L1 (risk matrix with top RPN items). Include relevant environment constraints: "Opus 4.6 ~200K context, max 4 teammates, tmux Agent Teams."
+- **Task**: "Per task: generate edge case scenarios (empty/malformed input, silent dependency failure, unexpected filesystem state, context window exhaustion). Simulate failure modes (complete failure, partial output, resource exceeded). Security check (data exposure, permission escalation, injection). Verify resource constraints (4 teammates, ~200K tokens, file limits)."
+- **Constraints**: Read-only. Use sequential-thinking for systematic edge case generation. No modifications.
+- **Expected Output**: L1 YAML robustness verdict with edge_cases, failure_modes, findings[]. L2 per-task scenarios, failure analysis, security assessment.
+
 ### 3. Simulate Failure Modes
 For each task:
 - **Task fails completely**: What breaks downstream? Is rollback possible?

@@ -29,6 +29,12 @@ For each skill description:
 - Parse OUTPUT_TO values (downstream skill/domain references)
 - Build directed graph of skill dependencies
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: All skill descriptions (paste the description field for each of the 35 skills with their INPUT_FROM/OUTPUT_TO values extracted). Include CLAUDE.md counts (agents: 6, skills: 35, domains: 8+4+3). Include expected phase sequence: pre-design→design→research→plan→plan-verify→orchestration→execution→verify.
+- **Task**: "Build directed reference graph from INPUT_FROM/OUTPUT_TO values. For each reference pair: check bidirectionality (A→B implies B→A). Check phase sequence: no backward references except cross-cutting skills. Compare CLAUDE.md declared counts against actual filesystem counts."
+- **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-improve) are exempt from phase sequence rules.
+- **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[] (source, target, type, status). L2 relationship graph and phase sequence validation.
+
 ### 2. Verify Bidirectionality
 For each INPUT_FROM reference A→B:
 - Check that B's OUTPUT_TO includes A

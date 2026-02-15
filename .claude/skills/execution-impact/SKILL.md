@@ -50,6 +50,8 @@ For each dependent file found:
 - **TRANSITIVE** (hop_count: 2): File references an intermediate file, which references the changed file. Max 2-hop limit enforced.
 - Record `reference_pattern` (the grep pattern used) and `evidence` (file:line:content)
 
+**Prioritization**: Analyze DIRECT dependents first (complete all). Pursue TRANSITIVE chains only for high-hotspot files or files in critical path. If agent turn budget < 10 remaining, skip TRANSITIVE and report DIRECT-only with `transitive_skipped: true`.
+
 Reference patterns for `.claude/` INFRA files:
 - Skill descriptions: INPUT_FROM/OUTPUT_TO values, agent names, skill names
 - Agent files: skill names, tool names, path references

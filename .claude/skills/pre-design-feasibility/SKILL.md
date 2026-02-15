@@ -60,6 +60,8 @@ For each infeasible/partial item:
 - Any infeasible without alternative → FAIL, return to brainstorm for scope reduction
 - Max 3 revision iterations
 
+**Terminal FAIL**: After 3 brainstorm→validate→feasibility iterations without resolution, report FAIL to Lead with all infeasible items listed. Lead escalates to user via AskUserQuestion: "proceed with known limitations" or "abandon task".
+
 ## Quality Gate
 - Every requirement has explicit feasibility verdict
 - Infeasible items have documented alternatives or scope reduction

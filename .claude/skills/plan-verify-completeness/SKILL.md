@@ -26,6 +26,14 @@ disable-model-invocation: false
 ### 1. Load Requirements and Plan
 Read pre-design-validate (original requirements) and plan-strategy (implementation plan).
 
+**Context Persistence Note (C-02)**: In COMPLEX pipelines, P0 output may be compacted by the time P5 runs. Lead MUST extract the original requirements from P0 into the analyst's spawn prompt. If PT (Permanent Task) exists, Lead reads requirements from PT metadata. Otherwise, Lead re-reads pre-design-validate L1 from its context.
+
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste the ORIGINAL requirements from pre-design-validate L1 (completeness matrix) and L2 (requirements document). If available, paste from PT metadata. Also paste plan-strategy L1 (complete plan with all tasks). Paste design-architecture L1 (components).
+- **Task**: "Build requirement-to-task traceability matrix. For each requirement: identify which task(s) implement it. For each architecture component: verify at least 1 task implements it. Identify untested scenarios and missing error handling. Calculate coverage percentages."
+- **Constraints**: Read-only. No modifications.
+- **Expected Output**: L1 YAML with requirement_coverage, architecture_coverage, uncovered counts. L2 traceability matrix and gap report.
+
 ### 2. Build Traceability Matrix
 
 | Requirement | Task(s) | Covered? | Evidence |

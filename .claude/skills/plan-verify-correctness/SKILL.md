@@ -5,7 +5,7 @@ description: |
 
   WHEN: plan domain complete (all 3 skills done). Plan ready for validation challenge.
   DOMAIN: plan-verify (skill 1 of 3). Parallel-capable: correctness ∥ completeness ∥ robustness.
-  INPUT_FROM: plan-strategy (complete plan), design-architecture (architecture to verify against).
+  INPUT_FROM: plan-strategy (complete plan), design-architecture (architecture to verify against), plan-interface (interface contracts).
   OUTPUT_TO: orchestration-decompose (if all plan-verify PASS) or plan domain (if FAIL, revision).
 
   METHODOLOGY: (1) Read plan and architecture spec, (2) Check each task implements correct architecture component, (3) Verify dependency chains match interface contracts, (4) Detect logical contradictions between tasks, (5) Verify constraint compliance (file limits, teammate limits).
@@ -31,6 +31,12 @@ For each implementation task, verify:
 - Maps to exactly 1 architecture component
 - Implements the correct responsibility (not a different component's job)
 - Uses the correct interface contracts
+
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste plan-strategy L1 (complete execution plan with phases/tasks), design-architecture L1 (components with responsibilities), and plan-interface L1 (interface contracts — needed for dependency chain verification per Step 3).
+- **Task**: "Verify each task maps to correct architecture component. Check dependency chains: producer tasks produce what consumers expect (using interface contracts). Detect contradictions: file ownership conflicts, type mismatches, agent capability mismatches. Verify constraint compliance."
+- **Constraints**: Read-only. No modifications.
+- **Expected Output**: L1 YAML correctness verdict per task with findings[]. L2 mapping verification and contradiction report.
 
 ### 3. Dependency Chain Verification
 Compare plan dependency chains against interface contracts:

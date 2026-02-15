@@ -55,6 +55,8 @@ If critical or high findings exist:
 - Re-review after fixes applied
 - Max 3 review-fix iterations
 
+**Context Budget Note**: Re-review spawns should be minimal: 1 analyst focused on previously-found issues only. Implementer fixes should be consolidated into a single spawn per iteration. Avoid spawning new full-review analysts in retry iterations.
+
 ## Quality Gate
 - Zero critical findings remaining
 - All high findings addressed or explicitly deferred with rationale

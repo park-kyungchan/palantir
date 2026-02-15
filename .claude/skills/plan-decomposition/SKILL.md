@@ -34,6 +34,13 @@ For each component:
 - Max 4 files per task (non-overlapping ownership)
 - Task subject: imperative action verb + target ("Implement X handler")
 
+**DPS — Analyst Spawn Template:**
+- **Context**: Paste design-architecture L1 (components[] with names, responsibilities, dependencies) and research-audit L1 (coverage matrix, validated patterns). Include file system structure hints from research-codebase L2 (existing file paths and patterns).
+- **Task**: "Decompose each component into implementation tasks. Per task: imperative subject, max 4 files (non-overlapping), complexity estimate (T/S/C). Map dependencies: blocks/independent per task pair. Identify critical path."
+- **Scope**: For COMPLEX, split by architecture module — non-overlapping analyst assignments.
+- **Constraints**: Read-only. Use Glob for file system validation. No modifications.
+- **Expected Output**: L1 YAML with task_count, tasks[] (id, files, complexity, depends_on). L2 task descriptions and dependency visualization.
+
 ### 3. Assign File Ownership
 Rules:
 - Each file belongs to exactly 1 task

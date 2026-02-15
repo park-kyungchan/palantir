@@ -37,6 +37,12 @@ Identify which dimensions were covered during brainstorm.
 | Error Handling | Failure modes considered | ≥1 error scenario with recovery |
 | Integration | Touchpoints mapped | All external dependencies listed |
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: Paste the full requirements document from pre-design-brainstorm L1/L2 output. Include the 5-dimension completeness matrix with PASS conditions from Step 2. If re-validation, include previous L1 showing which dimensions failed.
+- **Task**: "Evaluate each requirement against the 5-dimension completeness matrix. For each dimension: extract evidence from requirements, compare against PASS condition, report PASS or FAIL with evidence. For FAIL dimensions: actionable gap description with suggested clarifying questions."
+- **Constraints**: Read-only analysis. No file modifications. Use sequential-thinking for nuanced gap reasoning. Do not invent requirements.
+- **Expected Output**: L1 YAML completeness matrix with status per dimension and gaps count. L2 markdown per-dimension evidence and gap descriptions.
+
 ### 3. Identify Gaps
 For each FAIL dimension:
 - State what's missing

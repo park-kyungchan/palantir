@@ -30,6 +30,12 @@ Scan entire `.claude/` directory:
 - List hooks: `Glob .claude/hooks/*`
 - Read CLAUDE.md for declared counts
 
+For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
+- **Context**: Expected component layout: agents in `.claude/agents/`, skills in `.claude/skills/*/SKILL.md`, hooks in `.claude/hooks/`, settings at `.claude/settings.json`, CLAUDE.md at `.claude/CLAUDE.md`. Include current declared counts from CLAUDE.md (agents: 6, skills: 35).
+- **Task**: "Scan entire .claude/ directory. Count agents, skills, hooks. Read settings.json for validity. Compare filesystem counts against CLAUDE.md declarations. Find orphaned files (unreferenced agents, skills without SKILL.md, hooks not in settings). Find configuration drift (settings referencing nonexistent files, CLAUDE.md version mismatch)."
+- **Constraints**: Read-only. Use Glob for discovery, Read for content. No modifications. Report findings with severity classification.
+- **Expected Output**: L1 YAML health report with component counts, orphans, drift_items. L2 narrative with repair recommendations.
+
 ### 2. Check Count Consistency
 Compare filesystem counts against CLAUDE.md declarations:
 - Agent count in `§1 Team Identity` matches `.claude/agents/` file count

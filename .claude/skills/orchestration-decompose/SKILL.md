@@ -58,7 +58,7 @@ Produce task-group list with:
 - Every task assigned to exactly 1 group
 - Agent capability matches task requirements
 - Dependency graph is acyclic
-- Each group <=4 tasks (teammate limit)
+- Each execution phase uses <=4 teammate instances total
 
 ## Output
 
