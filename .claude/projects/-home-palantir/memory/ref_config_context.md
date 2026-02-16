@@ -1,6 +1,6 @@
 # Configuration, Context & Session
 
-> Verified: 2026-02-16 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide + researcher agent, cross-referenced with code.claude.com
 
 ---
 
@@ -68,15 +68,44 @@ Full chain: managed policy → user → project → local → subdirectory (on-d
 - `--add-dir` requires `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1`
 - Max recommended: keep total under 2000 tokens for efficiency
 - Progressive disclosure: keep CLAUDE.md lean, move details to reference files
+- Progressive disclosure equation: CLAUDE.md (always loaded) + Skills (on-demand) + Supporting files (on-demand from skills)
+
+### @import Syntax
+
+CLAUDE.md files can import additional files:
+- Syntax: `@path/to/file` on its own line
+- Relative paths resolve relative to the containing file (not CWD)
+- Absolute paths and home directory (`@~/.claude/...`) supported
+- Recursive imports supported (max depth 5)
+- Imports inside code spans/blocks are NOT evaluated
+- First-time external imports show approval dialog (one-time per project)
+
+### Official Best Practices
+
+| Include in CLAUDE.md | Exclude from CLAUDE.md |
+|---------------------|----------------------|
+| Bash commands Claude can't guess | Anything Claude can figure out by reading code |
+| Code style rules differing from defaults | Standard language conventions Claude already knows |
+| Testing instructions, preferred test runners | Detailed API documentation (link instead) |
+| Repository etiquette (branch naming, PR conventions) | Information that changes frequently |
+| Architectural decisions specific to project | Long explanations or tutorials |
+| Developer environment quirks (required env vars) | File-by-file descriptions of the codebase |
+| Common gotchas or non-obvious behaviors | Self-evident practices like "write clean code" |
+
+Pruning test: "Would removing this cause Claude to make mistakes?" If not, cut it.
 
 ### Rules Directory (.claude/rules/)
 
 - Supplements CLAUDE.md (does NOT replace it)
 - All `.md` files auto-discovered recursively
 - Loading order: User-level (`~/.claude/rules/`) then Project-level (`./.claude/rules/`)
+- Project rules have higher priority than user rules
+- Same priority as `.claude/CLAUDE.md`
 - Frontmatter field: `paths` (array of glob patterns for conditional loading)
 - Example: `paths: ["src/api/**/*.ts"]` only loads when working with those files
-- Rules without `paths` frontmatter are loaded globally
+- Brace expansion supported: `src/**/*.{ts,tsx}`
+- Symlinks supported (circular links handled gracefully)
+- Rules without `paths` frontmatter are loaded globally (unconditionally)
 - Survives compaction (re-injected automatically)
 
 ### System Reminders
@@ -124,6 +153,11 @@ System Prompt (internal, unpublished)
 - ~30-50% capacity recovered
 - Compaction buffer: ~33K tokens reserved (not configurable)
 - Active teammates NOT notified of parent compaction (BUG-004)
+- Customization via CLAUDE.md: "When compacting, always preserve the full list of modified files"
+- `/compact <instructions>` for targeted compaction (e.g., `/compact Focus on API changes`)
+- `/rewind` + "Summarize from here" — condenses messages from a point forward
+- Subagent transcripts survive main conversation compaction (separate files)
+- Practical heuristic: after 2 failed corrections, `/clear` and start fresh
 
 ### Hook Context Injection
 
@@ -156,6 +190,7 @@ Every connected MCP server adds tool definitions to context. Tool Search mitigat
 | MAX_MCP_OUTPUT_TOKENS | 25000 | number | MCP tool output limit |
 | SLASH_COMMAND_TOOL_CHAR_BUDGET | dynamic | number | Skill L1 total char budget |
 | ENABLE_TOOL_SEARCH | auto | auto/auto:N/true/false | MCP tool search threshold |
+| CLAUDE_CODE_DISABLE_AUTO_MEMORY | (enabled) | 0/1 | Disable auto memory feature |
 
 ### Critical Constraints
 
@@ -203,6 +238,21 @@ Every connected MCP server adds tool definitions to context. Tool Search mitigat
 ### Session Storage
 
 Claude Code saves conversations locally. Each message, tool use, and result stored. Enables: rewinding (`/rewind`), resuming (`--resume`), forking sessions. File snapshots taken before code changes. Sessions tied to current directory.
+
+### Auto Memory System
+
+Three distinct memory mechanisms:
+1. **Auto memory** (Claude-written): `~/.claude/projects/<project>/memory/` — Claude auto-saves useful context
+2. **CLAUDE.md** (user-written): User instructions, conventions, architecture
+3. **Agent memory** (agent-scoped): `{scope}/agent-memory/{agent-name}/` — per-agent persistent knowledge
+
+Auto memory details:
+- MEMORY.md entrypoint (first 200 lines auto-loaded)
+- Topic files (e.g., `debugging.md`) loaded on-demand
+- Project path derived from git repo root (shared across subdirectories)
+- Git worktrees get separate memory directories
+- `/memory` command opens file selector
+- Tell Claude: "remember that we use pnpm" to explicitly save
 
 ### Configuration Backups
 

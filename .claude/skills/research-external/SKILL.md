@@ -1,12 +1,15 @@
 ---
 name: research-external
 description: |
-  Collects community patterns from post-Opus-4.6 discussions via WebSearch/tavily. Filters for verified/reproducible information, cross-references with cc-feasibility official docs.
+  [P2·Research·External] Collects community patterns via WebSearch/tavily. Filters for verified/reproducible information, cross-references with official docs. Parallel with research-codebase.
 
-  Use when: Architecture references external libraries or patterns needing community validation.
   WHEN: Design domain complete. Parallel with research-codebase.
-  CONSUMES: design-architecture (technology choices), design-interface (API contracts), design-risk (risk areas needing validation).
-  PRODUCES: L1 YAML community pattern matrix, L2 pattern report with source URLs → audit-static, audit-behavioral, audit-relational, audit-impact.
+  DOMAIN: research (skill 2 of 3).
+  INPUT_FROM: design-architecture (technology choices), design-interface (API contracts), design-risk (risk areas needing validation).
+  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (community pattern matrix, report with source URLs).
+
+  METHODOLOGY: (1) Identify external validation needs, (2) Search official docs + community, (3) Filter for verified/reproducible info, (4) Cross-reference with cc-feasibility, (5) Produce sourced pattern matrix.
+  OUTPUT_FORMAT: L1 YAML (community pattern matrix), L2 pattern report with source URLs.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -172,6 +175,14 @@ A library with 50K GitHub stars may still have critical issues. Researcher must 
 - Cloud API/service dependency -> WebSearch first (official service docs not in context7)
 - GitHub-hosted project -> WebFetch for README.md, CHANGELOG.md directly
 - "Which library is best for X?" comparative query -> tavily first (AI-enhanced comparison)
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

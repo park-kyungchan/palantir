@@ -1,12 +1,15 @@
 ---
 name: manage-skills
 description: |
-  Detects skill lifecycle actions from codebase changes. Maps git diff to domains, checks coverage thresholds, proposes CREATE/UPDATE/DELETE with rationale across all pipeline domains.
+  [H·Homeostasis·Skills] Detects skill lifecycle actions from codebase changes. Maps git diff to domains, checks coverage thresholds, proposes CREATE/UPDATE/DELETE with rationale.
 
-  Use when: After implementing features with new patterns, before PR, or periodic drift detection.
   WHEN: After skill modifications, feature implementation, or periodic maintenance. AI can auto-invoke.
-  CONSUMES: Git diff (codebase changes), .claude/skills/ directory (current skill inventory).
-  PRODUCES: L1 YAML action list (CREATE/UPDATE/DELETE per skill), L2 change analysis with domain coverage.
+  DOMAIN: homeostasis (skill 2 of 5).
+  INPUT_FROM: Git diff (codebase changes), .claude/skills/ directory (current skill inventory).
+  OUTPUT_TO: L1 action list (CREATE/UPDATE/DELETE per skill), L2 change analysis with domain coverage.
+
+  METHODOLOGY: (1) Parse git diff for .claude/ changes, (2) Map changes to pipeline domains, (3) Check coverage thresholds, (4) Propose lifecycle actions, (5) Document rationale per action.
+  OUTPUT_FORMAT: L1 YAML (action list per skill), L2 change analysis with domain coverage.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -19,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 2 analysts (maxTurns:20 each). One for change detection, one for coverage analysis.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Methodology
 

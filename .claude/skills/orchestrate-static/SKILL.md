@@ -1,11 +1,15 @@
 ---
 name: orchestrate-static
 description: |
-  Assigns task-agent pairs by matching tool requirements to agent profiles (B=analyst, C=researcher, D=implementer, E=infra-impl). Splits multi-capability tasks into single-profile sub-tasks.
+  [P4·Orchestrate·Static] Assigns task-agent pairs by matching tool requirements to agent profiles. Splits multi-capability tasks into single-profile sub-tasks. Parallel with 3 other orchestrate skills.
 
   WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-behavioral/relational/impact.
-  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  PRODUCES: L1 YAML task-agent matrix with splits count, L2 rationale per assignment → orchestrate-coordinator.
+  DOMAIN: orchestrate (skill 1 of 5).
+  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  OUTPUT_TO: orchestrate-coordinator (task-agent matrix with splits count, rationale per assignment).
+
+  METHODOLOGY: (1) Profile-match tasks to agents (B/C/D/E), (2) Identify multi-capability tasks, (3) Split into single-profile sub-tasks, (4) Verify no agent overload, (5) Document assignment rationale.
+  OUTPUT_FORMAT: L1 YAML (task-agent matrix with splits count), L2 rationale per assignment.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep capability analysis with multi-capability task splitting.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-static.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|agents:{N}|ref:/tmp/pipeline/p5-orch-static.md`.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

@@ -1,12 +1,15 @@
 ---
 name: execution-infra
 description: |
-  Deploys infra-implementers for .claude/ files (Write/Edit only, no Bash execution). Validates YAML/JSON post-completion, handles failures with max 3 retries. Parallel with execution-code.
+  [P5·Execution·Infra] Deploys infra-implementers for .claude/ files (Write/Edit only, no Bash). Validates YAML/JSON post-completion, handles failures with max 3 retries. Parallel with execution-code.
 
-  Use when: Infra configuration tasks ready after orchestration planning.
   WHEN: After orchestrate-coordinator complete (PASS). Infra tasks assigned in unified plan. .claude/ files exclusively.
-  CONSUMES: orchestrate-coordinator (unified execution plan L3 with infra task assignments and .claude/ file paths).
-  PRODUCES: L1 YAML infra change manifest, L2 config change summary → execution-impact, execution-review.
+  DOMAIN: execution (skill 2 of 6).
+  INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with infra task assignments and .claude/ file paths).
+  OUTPUT_TO: execution-impact, execution-review (infra change manifest, config change summary).
+
+  METHODOLOGY: (1) Parse infra DPS from execution plan, (2) Spawn infra-implementers, (3) Monitor completion via SendMessage, (4) Validate YAML/JSON post-edit, (5) Handle failures (max 3 retries).
+  OUTPUT_FORMAT: L1 YAML (infra change manifest), L2 config change summary.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -144,6 +147,14 @@ Hook .sh files execute in specific contexts (PreToolUse, PostToolUse, SubagentSt
 
 ### DO NOT: Change Agent Memory Settings Casually
 Agent `memory` field (`project` vs `none`) affects what context the agent receives. Changing from `project` to `none` removes access to MEMORY.md and cc-reference. Only change memory settings with explicit architectural reasoning.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

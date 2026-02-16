@@ -1,6 +1,6 @@
 # Agent Teams — Architecture, Coordination & Task Sharing
 
-> Verified: 2026-02-16 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide, cross-referenced with code.claude.com
 
 ---
 
@@ -52,6 +52,24 @@ Or set `teammateMode` in settings.json: `"in-process"`, `"tmux"`, or `"auto"` (d
 | `updateTask` | Lead or assigned teammate | Change task status/details |
 | `claimTask` | Teammate | Take ownership of a pending task |
 
+### Mailbox System
+
+The official docs refer to the messaging infrastructure as the **"Mailbox"** system. Each message in the inbox JSON follows this structure:
+
+```json
+{
+  "from": "sender-name",
+  "text": "full content",
+  "summary": "5-10 word preview",
+  "timestamp": "2026-02-05T18:56:10.615Z",
+  "read": false
+}
+```
+
+- `text`: Full message content delivered to recipient
+- `summary`: Brief preview used for UI display (not the full message)
+- `read`: Toggled to `true` once the recipient processes the message
+
 ### Display Modes
 
 - **Split panes**: Each teammate gets own pane. Requires tmux or iTerm2 with `it2` CLI
@@ -81,9 +99,15 @@ Each task is an independent JSON file. State machine: `pending → in_progress �
 
 **Location**: `~/.claude/tasks/{team-name}/{n}.json`
 
-### Channel 2: Inbox (SendMessage)
+### Channel 2: Inbox / Mailbox (SendMessage)
+
+The official docs call this the **"Mailbox"** system.
 
 **Location**: `~/.claude/teams/{team-name}/inboxes/{agent-id}.json`
+
+**Tool availability**: SendMessage is part of TeammateTool -- automatically available to ALL teammates. It is NOT subject to the agent's `tools` allowlist. This is infrastructure-level tooling.
+
+**Team discovery**: Teammates can read `~/.claude/teams/{team-name}/config.json` to discover other team members. The config contains a `members` array with `name`, `agentId`, and `agentType` for each teammate.
 
 **Communication constraints**:
 - Lead can message anyone
@@ -149,6 +173,10 @@ When Teammate A develops an insight, that insight exists ONLY in A's context. Fo
 
 No manual task_id needed. `spawnTeam` creates infrastructure automatically.
 
+**Task sizing guideline**: Having 5-6 tasks per teammate keeps everyone productive and lets the lead reassign work if someone gets stuck.
+
+**Self-claim after completion**: After finishing a task, a teammate reads the task directory, finds the next unblocked pending task, and claims it autonomously. No lead intervention required for task flow.
+
 ### Mechanism B: `CLAUDE_CODE_TASK_LIST_ID` (Independent Sessions)
 
 Enables task sharing between independent sessions NOT part of a team:
@@ -168,11 +196,28 @@ A teammate may complete a task but fail to update JSON, blocking downstream task
 
 5-minute timeout. If teammate crashes mid-task, timeout releases tasks back to pool.
 
+### Plan Approval Workflow
+
+Official pattern for requiring teammates to plan before implementing:
+
+1. Spawn teammate with plan approval requirement (mode: `plan`)
+2. Teammate works in read-only plan mode until lead approves
+3. On plan completion, teammate sends `plan_approval_request` to lead
+4. Lead reviews and approves or rejects with feedback
+5. If rejected, teammate revises and resubmits
+6. Once approved, teammate exits plan mode and implements
+
+Lead makes approval decisions autonomously. Influence via prompt (e.g., "only approve plans that include test coverage").
+
 ---
 
 ## 6. Cost Model
 
 Each teammate is a separate Claude instance. Solo: ~200K tokens. Team of 3: ~800K. Team of 5: ~1.2M+. Agent Teams use ~7x tokens when teammates run in plan mode.
+
+### Delegate Mode (Shift+Tab)
+
+Delegate mode restricts the lead to coordination-only tools: spawning, messaging, shutting down teammates, and managing tasks. The lead CANNOT write code, run tests, or do implementation work. This is the CC native way to enforce "Lead NEVER edits files directly." Activated via Shift+Tab after team creation.
 
 ---
 
@@ -184,3 +229,5 @@ Each teammate is a separate Claude instance. Solo: ~200K tokens. Team of 3: ~800
 - **Lead is fixed**: No leadership transfer mechanism
 - **Split panes require tmux or iTerm2**: In-process mode works everywhere
 - **Token cost**: ~7x in plan mode. Use Sonnet for teammates
+- **Delegate mode bug ([#25037](https://github.com/anthropics/claude-code/issues/25037))**: When lead enables delegate mode, teammates inherit restricted tool access -- they lose Read, Write, Edit, Bash, Glob, Grep. Workaround: Do NOT use delegate permissionMode. Enforce "Lead NEVER edits" via CLAUDE.md convention instead.
+- **Inbox delivery bug ([#23415](https://github.com/anthropics/claude-code/issues/23415), tmux)**: On macOS tmux backend, teammates may fail to establish messaging layer. Messages sit unread indefinitely. Workaround: Export `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in shell init (`.zshrc`) instead of only in `settings.json`.

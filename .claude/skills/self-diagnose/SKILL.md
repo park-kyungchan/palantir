@@ -1,12 +1,15 @@
 ---
 name: self-diagnose
 description: |
-  Diagnoses INFRA health against CC native state. Reads cc-reference cache, scans .claude/ files across 8 categories (field compliance, routing, budget, hooks, memory, permissions, utilization, colors). Diagnosis only — does NOT implement fixes. Paired with self-implement.
+  [H·Homeostasis·Diagnose] Diagnoses INFRA health against CC native state across 8 categories. Reads cc-reference cache, scans .claude/ files. Diagnosis only — does NOT fix. Paired with self-implement.
 
-  Use when: INFRA health audit needed. After CC updates or before releases.
   WHEN: User invokes for INFRA health audit. After CC updates or before releases.
-  CONSUMES: cc-reference cache (5 files for ground truth), manage-infra (health findings suggesting deeper analysis).
-  PRODUCES: L1 YAML findings list with severity counts, L2 diagnostic report with per-category file:line evidence → self-implement.
+  DOMAIN: homeostasis (skill 4 of 5).
+  INPUT_FROM: cc-reference cache (ref_*.md files for ground truth), manage-infra (health findings).
+  OUTPUT_TO: self-implement (findings list with severity counts, diagnostic report with file:line evidence).
+
+  METHODOLOGY: (1) Load cc-reference cache, (2) Scan .claude/ files across 8 categories, (3) Compare against CC native state, (4) Classify findings by severity, (5) Produce diagnostic report.
+  OUTPUT_FORMAT: L1 YAML (findings list with severity counts), L2 diagnostic report with per-category evidence.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[focus-area]"
@@ -20,8 +23,12 @@ argument-hint: "[focus-area]"
 - **COMPLEX**: Spawn 2 analysts in parallel (maxTurns:15 each). Group A: field compliance + routing + utilization. Group B: budget + hooks + memory + permissions + colors.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

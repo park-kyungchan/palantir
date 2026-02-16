@@ -1,12 +1,15 @@
 ---
 name: verify-consistency
 description: |
-  Cross-references CONSUMES/PRODUCES bidirectionality and counts across all skill descriptions. Verifies phase sequence P0→P8, checks CLAUDE.md counts match filesystem. Second of 4 sequential verify stages.
+  [P6·Verify·Consistency] Cross-references INPUT_FROM/OUTPUT_TO bidirectionality and counts across all skill descriptions. Verifies phase sequence P0→P8. Second of 4 sequential verify stages.
 
-  Use when: After structural verification, need cross-reference consistency check.
-  WHEN: After verify-structural-content PASS. Also after multi-skill CONSUMES/PRODUCES edits.
-  CONSUMES: verify-structural-content (structural+content integrity confirmed).
-  PRODUCES: L1 YAML relationship matrix with consistency status, L2 inconsistency report → verify-quality (PASS) | execution-infra (FAIL).
+  WHEN: After verify-structural-content PASS. Also after multi-skill INPUT_FROM/OUTPUT_TO edits.
+  DOMAIN: verify (skill 2 of 4, sequential).
+  INPUT_FROM: verify-structural-content (structural+content integrity confirmed).
+  OUTPUT_TO: verify-quality (PASS) | execution-infra (FAIL). Relationship matrix with consistency status.
+
+  METHODOLOGY: (1) Map all INPUT_FROM/OUTPUT_TO references, (2) Check bidirectional consistency (A→B implies B←A), (3) Verify phase sequence, (4) Cross-check CLAUDE.md counts vs filesystem, (5) Produce consistency matrix.
+  OUTPUT_FORMAT: L1 YAML (relationship matrix with consistency status), L2 inconsistency report.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -231,6 +234,14 @@ Only check description-level INPUT_FROM/OUTPUT_TO, not L2 body cross-references.
 
 ### DO NOT: Combine Consistency with Quality Checks
 Consistency = structural relationship integrity. Quality = routing effectiveness. These are separate verification dimensions with different scoring rubrics.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

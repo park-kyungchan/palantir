@@ -1,11 +1,15 @@
 ---
 name: plan-relational
 description: |
-  Defines per-task interface contracts bidirectionally across task boundaries. Verifies type/field/naming/timing consistency between producer and consumer, outputs contract registry with gap analysis.
+  [P3·Plan·Relational] Defines per-task interface contracts bidirectionally across task boundaries. Verifies producer-consumer consistency. Parallel with plan-static/behavioral/impact.
 
-  WHEN: After research-coordinator complete. Parallel with plan-static/behavioral/impact.
-  CONSUMES: research-coordinator (audit-relational L3 relationship graph via $ARGUMENTS), design-interface (API contracts from P1).
-  PRODUCES: L1 YAML contract registry with gap counts and consistency score, L2 per-task contracts → plan-verify-relational.
+  WHEN: After research-coordinator complete. Parallel with 3 other plan skills.
+  DOMAIN: plan (skill 3 of 4).
+  INPUT_FROM: research-coordinator (audit-relational L3 relationship graph via $ARGUMENTS), design-interface (API contracts from P1).
+  OUTPUT_TO: plan-verify-relational (contract registry with gap counts, per-task contracts).
+
+  METHODOLOGY: (1) Extract task boundary interfaces, (2) Define bidirectional contracts, (3) Verify type/field/naming/timing consistency, (4) Identify gaps and asymmetries, (5) Produce contract registry.
+  OUTPUT_FORMAT: L1 YAML (contract registry with gap counts and consistency score), L2 per-task contracts.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,9 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn analyst (maxTurns:25). Deep cross-module contract analysis across 9+ boundaries with bidirectional verification.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-relational.md`, sends micro-signal: `{STATUS}|contracts:{N}|gaps:{N}|ref:/tmp/pipeline/p3-plan-relational.md`
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

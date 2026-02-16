@@ -1,11 +1,15 @@
 ---
 name: orchestrate-coordinator
 description: |
-  Unifies WHO+WHERE+HOW+WHEN into per-task spawn instructions with cross-validation. Terminal orchestration skill — merges agent assignments, checkpoints, DPS specs, and wave schedules into unified execution plan.
+  [P4·Orchestrate·Coordinator] Unifies WHO+WHERE+HOW+WHEN into per-task spawn instructions with cross-validation. Terminal orchestration skill — merges 4 dimension outputs into unified execution plan.
 
-  WHEN: After ALL 4 orchestrate dimension skills complete (orchestrate-static/behavioral/relational/impact).
-  CONSUMES: orchestrate-static (WHO: task-agent matrix), orchestrate-behavioral (WHERE: checkpoints), orchestrate-relational (HOW: DPS specs), orchestrate-impact (WHEN: wave schedule).
-  PRODUCES: L1 index.md + L2 summary.md → Lead, L3 execution-plan.md → execution-code, execution-infra.
+  WHEN: After ALL 4 orchestrate dimension skills complete.
+  DOMAIN: orchestrate (skill 5 of 5).
+  INPUT_FROM: orchestrate-static (WHO: task-agent matrix), orchestrate-behavioral (WHERE: checkpoints), orchestrate-relational (HOW: DPS specs), orchestrate-impact (WHEN: wave schedule).
+  OUTPUT_TO: execution-code, execution-infra (L1 index + L2 summary → Lead, L3 execution-plan.md → execution skills).
+
+  METHODOLOGY: (1) Merge 4 dimension outputs, (2) Cross-validate assignments, (3) Generate per-task spawn instructions, (4) Resolve conflicts, (5) Produce unified execution plan.
+  OUTPUT_FORMAT: L1 index.md, L2 summary.md → Lead, L3 execution-plan.md → execution skills.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 1 analyst with maxTurns:35. Deep cross-validation with conflict resolution and optimization.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Write tiered output to `/tmp/pipeline/p5-coordinator/`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|waves:{N}|handoffs:{N}|ref:/tmp/pipeline/p5-coordinator/index.md`.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

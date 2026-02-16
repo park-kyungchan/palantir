@@ -1,12 +1,15 @@
 ---
 name: verify-cc-feasibility
 description: |
-  Validates CC native field compliance via cc-reference cache and cc-guide verification. Checks each frontmatter field against CC native field lists. Terminal verify stage — gates delivery pipeline.
+  [P7·Verify·CCFeasibility] Validates CC native field compliance via cc-reference cache. Checks frontmatter fields against CC native field lists. Terminal verify stage — gates delivery pipeline.
 
-  Use when: After quality verification, need CC native compliance check before delivery.
   WHEN: After verify-quality PASS. Also after skill/agent creation or frontmatter modification.
-  CONSUMES: verify-quality (routing quality confirmed), execution-infra (frontmatter changes).
-  PRODUCES: L1 YAML native compliance per file, L2 field-level feedback → delivery-pipeline (all PASS) | execution-infra (FAIL: fix required).
+  DOMAIN: verify (skill 4 of 4, sequential).
+  INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes).
+  OUTPUT_TO: delivery-pipeline (all PASS) | execution-infra (FAIL: fix required). Native compliance per file.
+
+  METHODOLOGY: (1) Load cc-reference cache, (2) Check each frontmatter field vs CC native list, (3) Flag non-native fields, (4) Verify tool names match CC built-ins, (5) Produce compliance verdict.
+  OUTPUT_FORMAT: L1 YAML (native compliance per file), L2 field-level feedback.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -284,6 +287,14 @@ L2 body is free-form markdown. Only frontmatter (YAML between `---` markers) nee
 
 ### DO NOT: Confuse Skill Frontmatter Fields with Agent Frontmatter Fields
 Skills and agents have DIFFERENT native field lists. A field like `tools` is native for agents but non-native for skills. A field like `argument-hint` is native for skills but non-native for agents. Always check against the correct table for the file type. Misidentifying which table to use is a common source of false positives and false negatives.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

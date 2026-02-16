@@ -43,11 +43,15 @@ Fork-context agent for /delivery-pipeline. Terminal pipeline phase.
 - Update MEMORY.md using Read-Merge-Write (read first, merge, then write)
 
 ## Completion Protocol
-When working as a teammate (team_name provided):
-- Upon task completion, send L1 summary to Lead via SendMessage
-- Include: status (PASS/FAIL), files changed, key metrics, routing recommendation
-- On failure: include reason, blocker details, suggested next step
-- Keep message concise (~200 tokens). Full output stays in your context.
+
+**This agent always runs in Team mode (P2+).** SendMessage is always available.
+
+- Mark task as completed via TaskUpdate (status → completed)
+- Send result to Lead via SendMessage:
+  - `text`: Delivery status — commit hash, files committed, MEMORY.md updated (yes/no), PT status
+  - `summary`: 5-10 word preview (e.g., "Commit created, PT delivered")
+- On failure: send FAIL status with error type (git error, verification failure, etc.) and blocker details
+- Lead receives automatic idle notification when you finish
 
 ## Safety Constraints
 - Every external action (git commit, PR, MEMORY.md write) requires USER CONFIRMATION via AskUserQuestion

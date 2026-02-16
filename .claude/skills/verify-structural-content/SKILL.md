@@ -1,12 +1,15 @@
 ---
 name: verify-structural-content
 description: |
-  Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness in single pass. First of 4 sequential verify stages: structural-content → consistency → quality → cc-feasibility.
+  [P6·Verify·Structure] Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness. First of 4 sequential verify stages: structure → consistency → quality → cc-feasibility.
 
-  Use when: After implementation, need structural integrity check on modified files.
   WHEN: After execution-review PASS or any INFRA file creation/modification.
-  CONSUMES: execution-review (PASS verdict, implementation artifacts).
-  PRODUCES: L1 YAML PASS/FAIL per file with structure+content scores, L2 integrity report → verify-consistency (PASS) | execution-infra (FAIL).
+  DOMAIN: verify (skill 1 of 4, sequential).
+  INPUT_FROM: execution-review (PASS verdict, implementation artifacts).
+  OUTPUT_TO: verify-consistency (PASS) | execution-infra (FAIL). Structure+content scores per file.
+
+  METHODOLOGY: (1) Parse YAML frontmatter fields, (2) Check naming conventions, (3) Validate L2 body section structure, (4) Score completeness per file, (5) Produce PASS/FAIL verdict.
+  OUTPUT_FORMAT: L1 YAML (PASS/FAIL per file with structure+content scores), L2 integrity report.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -246,6 +249,14 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt (DPS) for each analy
 - **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ---
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

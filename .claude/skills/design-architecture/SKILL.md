@@ -1,12 +1,15 @@
 ---
 name: design-architecture
 description: |
-  Structures component hierarchy with module boundaries and ADRs. Decomposes requirements into SRP components (2-8 files each), defines data flow, selects technology patterns with documented rationale.
+  [P1·Design·Architect] Structures component hierarchy with module boundaries and ADRs. Decomposes requirements into SRP components, defines data flow, selects technology patterns.
 
-  Use when: Pre-design complete, starting architecture design for a new feature.
   WHEN: Pre-design domain complete (all 3 PASS). Feasibility-confirmed requirements ready.
-  CONSUMES: pre-design-feasibility (approved requirements + CC capability mappings), research-coordinator (COMPLEX feedback loop).
-  PRODUCES: L1 YAML component list with dependencies, L2 Architecture Decision Records → design-interface, design-risk.
+  DOMAIN: design (skill 1 of 3).
+  INPUT_FROM: pre-design-feasibility (approved requirements + CC capability mappings), research-coordinator (COMPLEX feedback loop).
+  OUTPUT_TO: design-interface, design-risk (component list with dependencies, ADRs).
+
+  METHODOLOGY: (1) Decompose into SRP components, (2) Define module boundaries, (3) Map data flow, (4) Select technology patterns, (5) Document decisions as ADRs.
+  OUTPUT_FORMAT: L1 YAML (component list with dependencies), L2 Architecture Decision Records.
 user-invocable: true
 disable-model-invocation: false
 ---

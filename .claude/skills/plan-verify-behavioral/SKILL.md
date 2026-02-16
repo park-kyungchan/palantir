@@ -1,11 +1,15 @@
 ---
 name: plan-verify-behavioral
 description: |
-  Cross-checks test coverage against behavior predictions with risk-weighted scoring. Verdict: PASS (weighted ≥90%, rollback ≥90%), FAIL (HIGH-risk untested or <75%).
+  [P3·PlanVerify·Behavioral] Cross-checks test coverage against behavior predictions with risk-weighted scoring. Verdict: PASS (weighted ≥90%, rollback ≥90%), FAIL (HIGH untested or <75%). Parallel with 3 other verify skills.
 
   WHEN: After plan-behavioral complete. Parallel with plan-verify-static/relational/impact.
-  CONSUMES: plan-behavioral (test/rollback strategy), research-coordinator (audit-behavioral L3 behavior predictions).
-  PRODUCES: L1 YAML test coverage verdict with weighted metrics, L2 test/rollback coverage matrices → plan-verify-coordinator.
+  DOMAIN: plan-verify (skill 2 of 5).
+  INPUT_FROM: plan-behavioral (test/rollback strategy), research-coordinator (audit-behavioral L3 behavior predictions).
+  OUTPUT_TO: plan-verify-coordinator (test coverage verdict with weighted metrics, coverage matrices).
+
+  METHODOLOGY: (1) Map test cases to behavior predictions, (2) Apply risk weights, (3) Calculate weighted coverage %, (4) Verify rollback coverage, (5) Flag HIGH-risk untested behaviors.
+  OUTPUT_FORMAT: L1 YAML (test coverage verdict with weighted metrics), L2 test/rollback coverage matrices.
 user-invocable: false
 disable-model-invocation: false
 ---

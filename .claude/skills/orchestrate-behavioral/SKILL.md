@@ -1,11 +1,15 @@
 ---
 name: orchestrate-behavioral
 description: |
-  Plans gate/monitor/aggregate checkpoints at wave boundaries with measurable pass/fail criteria. Assigns checkpoint types: gate (blocks), monitor (warns), aggregate (collects) with failure escalation paths.
+  [P4·Orchestrate·Behavioral] Plans gate/monitor/aggregate checkpoints at wave boundaries with pass/fail criteria. Assigns checkpoint types and failure escalation paths. Parallel with 3 other orchestrate skills.
 
   WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/relational/impact.
-  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  PRODUCES: L1 YAML checkpoint schedule with type counts, L2 rationale per checkpoint → orchestrate-coordinator.
+  DOMAIN: orchestrate (skill 2 of 5).
+  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  OUTPUT_TO: orchestrate-coordinator (checkpoint schedule with type counts, rationale per checkpoint).
+
+  METHODOLOGY: (1) Identify wave boundaries needing checkpoints, (2) Assign type: gate/monitor/aggregate, (3) Define measurable pass/fail criteria, (4) Map failure escalation paths, (5) Validate checkpoint coverage.
+  OUTPUT_FORMAT: L1 YAML (checkpoint schedule with type counts), L2 rationale per checkpoint.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep checkpoint analysis with failure propagation awareness.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-behavioral.md`. Send micro-signal to Lead via SendMessage: `PASS|checkpoints:{N}|ref:/tmp/pipeline/p5-orch-behavioral.md`.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

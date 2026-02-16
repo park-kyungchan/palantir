@@ -1,11 +1,15 @@
 ---
 name: execution-impact
 description: |
-  Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation against audit-impact predictions. Outputs cascade_recommended flag for downstream routing.
+  [P5·Execution·Impact] Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation. Outputs cascade_recommended flag for downstream routing.
 
   WHEN: After execution-code and/or execution-infra complete. File change manifest exists.
-  CONSUMES: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
-  PRODUCES: L1 YAML impact report with cascade_recommended flag, L2 grep evidence per dependent → execution-cascade (if cascade_recommended), execution-review (always).
+  DOMAIN: execution (skill 3 of 6).
+  INPUT_FROM: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
+  OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (always). Impact report with cascade flag.
+
+  METHODOLOGY: (1) Map changed files to dependency graph, (2) Classify as DIRECT/TRANSITIVE, (3) Shift-Left validate vs audit-impact predictions, (4) Grep evidence per dependent, (5) Set cascade_recommended flag.
+  OUTPUT_FORMAT: L1 YAML (impact report with cascade_recommended flag), L2 grep evidence per dependent.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -194,6 +198,14 @@ If a dependent file is already in the current pipeline's change set (assigned to
 
 ### DO NOT: Re-Invoke Impact After Cascade
 After execution-cascade runs, it has its own convergence checking. Do NOT re-invoke execution-impact after cascade completion — this creates a circular loop. The cascade's analyst-driven convergence check serves the same purpose.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

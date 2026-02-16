@@ -1,11 +1,15 @@
 ---
 name: plan-static
 description: |
-  Decomposes tasks by structural dependency clusters into SRP-bounded units. Identifies tight/loose/isolated clusters, defines task boundaries (1-4 files per task), builds acyclic task DAG with critical path.
+  [P3·Plan·Static] Decomposes tasks by structural dependency clusters into SRP-bounded units. Builds acyclic task DAG with critical path. Parallel with plan-behavioral/relational/impact.
 
-  WHEN: After research-coordinator complete. Parallel with plan-behavioral/relational/impact.
-  CONSUMES: research-coordinator (audit-static L3 dependency graph via $ARGUMENTS).
-  PRODUCES: L1 YAML task list with dependency edges and complexity, L2 cluster rationale with critical path → plan-verify-static.
+  WHEN: After research-coordinator complete. Parallel with 3 other plan skills.
+  DOMAIN: plan (skill 1 of 4).
+  INPUT_FROM: research-coordinator (audit-static L3 dependency graph via $ARGUMENTS).
+  OUTPUT_TO: plan-verify-static (task list with dependency edges and complexity, cluster rationale).
+
+  METHODOLOGY: (1) Identify tight/loose/isolated dependency clusters, (2) Define SRP task boundaries (1-4 files each), (3) Build acyclic task DAG, (4) Calculate critical path, (5) Assign complexity estimates.
+  OUTPUT_FORMAT: L1 YAML (task list with dependency edges and complexity), L2 cluster rationale with critical path.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,9 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn analyst (maxTurns:25). Deep dependency graph analysis across 9+ files, multiple clusters, cross-module boundaries.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-static.md`, sends micro-signal: `{STATUS}|tasks:{N}|deps:{N}|ref:/tmp/pipeline/p3-plan-static.md`
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

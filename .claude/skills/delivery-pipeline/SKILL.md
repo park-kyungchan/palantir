@@ -1,12 +1,15 @@
 ---
 name: delivery-pipeline
 description: |
-  Delivers pipeline results via structured git commit, MEMORY.md archive, and PT completion. User confirmation required before git commit. No git add -A. Executed by delivery-agent.
+  [P8·Delivery·Pipeline] Delivers pipeline results via structured git commit, MEMORY.md archive, and PT completion. User confirmation required before git commit. Pipeline terminal skill.
 
-  Use when: All verification stages PASS, pipeline ready for commit and archive.
   WHEN: Verify domain complete (all 4 stages PASS, no outstanding FAIL). Pipeline terminal.
-  CONSUMES: verify-cc-feasibility (all 4 verify stages PASS confirmed).
-  PRODUCES: Git commit (conventional message from PT), MEMORY.md archive (session learnings), PT status → DELIVERED.
+  DOMAIN: delivery (skill 1 of 2).
+  INPUT_FROM: verify-cc-feasibility (all 4 verify stages PASS confirmed).
+  OUTPUT_TO: Git commit, MEMORY.md archive, PT status → DELIVERED.
+
+  METHODOLOGY: (1) Verify all-PASS status, (2) Stage files individually, (3) Create conventional commit, (4) Archive learnings to MEMORY.md, (5) Mark PT as DELIVERED.
+  OUTPUT_FORMAT: L1 YAML (commit hash, files count, PT status), L2 delivery report.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[commit-message]"
@@ -185,6 +188,14 @@ If the verify domain had warnings (non-blocking MEDIUM findings that did not pre
 
 ### DO NOT: Archive Implementation Details in MEMORY.md
 MEMORY.md captures session-level summaries, not implementation details. Do not include code snippets, full file diffs, agent conversation logs, or step-by-step execution traces. Keep session entries to 3-5 lines maximum. Detailed implementation notes belong in topic files (e.g., `memory/infrastructure-history.md`) linked from the topic file index, not in the session entry itself.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

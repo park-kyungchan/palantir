@@ -1,12 +1,15 @@
 ---
 name: research-codebase
 description: |
-  Discovers local codebase patterns via Glob/Grep/Read. Extracts architecture questions needing codebase evidence, documents patterns and anti-patterns with file:line references.
+  [P2·Research·Codebase] Discovers local codebase patterns via Glob/Grep/Read. Documents patterns and anti-patterns with file:line references. Parallel with research-external.
 
-  Use when: Design complete, need to validate architecture against existing codebase.
   WHEN: Design domain complete. Parallel with research-external.
-  CONSUMES: design-architecture (component structure), design-interface (API contracts), design-risk (risk areas).
-  PRODUCES: L1 YAML pattern inventory, L2 findings with file:line references → audit-static, audit-behavioral, audit-relational, audit-impact.
+  DOMAIN: research (skill 1 of 3).
+  INPUT_FROM: design-architecture (component structure), design-interface (API contracts), design-risk (risk areas).
+  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (pattern inventory, findings with evidence).
+
+  METHODOLOGY: (1) Extract architecture questions needing evidence, (2) Glob/Grep for structural patterns, (3) Read key files for behavioral patterns, (4) Document with file:line refs, (5) Classify as pattern or anti-pattern.
+  OUTPUT_FORMAT: L1 YAML (pattern inventory), L2 findings with file:line references.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -190,6 +193,14 @@ Finding 20 files matching a glob is not the same as finding 20 patterns. A patte
 
 ### DO NOT: Confuse Codebase Evidence with Recommendation
 Research documents what exists in the codebase. It does not recommend what should be built. Statements like "the codebase should adopt pattern X" belong to the design domain. Research provides evidence for or against design decisions -- e.g., "pattern X exists in 8/12 modules (67% adoption)" is research; "adopt pattern X for the new module" is design. Keep findings descriptive, not prescriptive.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

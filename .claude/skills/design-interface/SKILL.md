@@ -1,12 +1,15 @@
 ---
 name: design-interface
 description: |
-  Specifies inter-component API contracts and error boundaries. Defines function signatures, data types, protocols (sync/async/file/hook), and error propagation rules per component boundary.
+  [P1·Design·Interface] Specifies inter-component API contracts and error boundaries. Defines function signatures, data types, protocols, and error propagation rules per boundary.
 
-  Use when: Architecture defined but interfaces unspecified between components.
   WHEN: After design-architecture produces component structure. Parallel with design-risk.
-  CONSUMES: design-architecture (component structure, module boundaries, data flow).
-  PRODUCES: L1 YAML interface registry with protocols, L2 per-boundary specs with examples → design-risk.
+  DOMAIN: design (skill 2 of 3).
+  INPUT_FROM: design-architecture (component structure, module boundaries, data flow).
+  OUTPUT_TO: design-risk (interface registry with protocols, per-boundary specs).
+
+  METHODOLOGY: (1) Identify component boundaries, (2) Define function signatures and data types, (3) Specify protocols per boundary, (4) Define error propagation rules, (5) Document with examples.
+  OUTPUT_FORMAT: L1 YAML (interface registry with protocols), L2 per-boundary specs with examples.
 user-invocable: true
 disable-model-invocation: false
 ---

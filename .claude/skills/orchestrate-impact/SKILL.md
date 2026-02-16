@@ -1,11 +1,15 @@
 ---
 name: orchestrate-impact
 description: |
-  Schedules execution waves via topological sort with capacity balancing (max 4 parallel per wave). Verifies DAG acyclicity, balances wave load, calculates critical path and parallel efficiency.
+  [P4·Orchestrate·Impact] Schedules execution waves via topological sort with capacity balancing (max 4 parallel/wave). Calculates critical path and parallel efficiency. Parallel with 3 other orchestrate skills.
 
   WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/behavioral/relational.
-  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  PRODUCES: L1 YAML wave schedule with critical path length, L2 wave visualization with DAG → orchestrate-coordinator.
+  DOMAIN: orchestrate (skill 4 of 5).
+  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  OUTPUT_TO: orchestrate-coordinator (wave schedule with critical path length, wave visualization with DAG).
+
+  METHODOLOGY: (1) Topological sort of task DAG, (2) Group into waves (max 4 parallel), (3) Balance wave load, (4) Verify acyclicity, (5) Calculate critical path and efficiency metrics.
+  OUTPUT_FORMAT: L1 YAML (wave schedule with critical path length), L2 wave visualization with DAG.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep DAG analysis with load balancing and critical path optimization.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-impact.md`. Send micro-signal to Lead via SendMessage: `PASS|waves:{N}|max_parallel:{N}|ref:/tmp/pipeline/p5-orch-impact.md`.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

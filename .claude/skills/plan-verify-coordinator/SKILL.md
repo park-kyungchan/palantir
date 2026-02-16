@@ -1,11 +1,15 @@
 ---
 name: plan-verify-coordinator
 description: |
-  Consolidates 4 dimension verdicts with cross-dimension consistency checks into tiered output. Terminal plan-verify skill — cross-checks dependency↔sequence, contract↔boundary, rollback↔checkpoint traceability.
+  [P3·PlanVerify·Coordinator] Consolidates 4 dimension verdicts with cross-dimension consistency checks. Terminal plan-verify skill — cross-checks dependency↔sequence, contract↔boundary, rollback↔checkpoint.
 
-  WHEN: After ALL 4 plan-verify dimension skills complete (plan-verify-static/behavioral/relational/impact).
-  CONSUMES: plan-verify-static (coverage verdict), plan-verify-behavioral (test coverage verdict), plan-verify-relational (integrity verdict), plan-verify-impact (containment verdict).
-  PRODUCES: L1 index.md + L2 summary.md → Lead, L3 per-dimension files → orchestrate-static/behavioral/relational/impact (all PASS) | plan domain (FAIL: route back).
+  WHEN: After ALL 4 plan-verify dimension skills complete.
+  DOMAIN: plan-verify (skill 5 of 5).
+  INPUT_FROM: plan-verify-static (coverage verdict), plan-verify-behavioral (test coverage verdict), plan-verify-relational (integrity verdict), plan-verify-impact (containment verdict).
+  OUTPUT_TO: orchestrate domain (all PASS) | plan domain (FAIL: route back). L1 index + L2 summary → Lead, L3 per-dimension → orchestrate skills.
+
+  METHODOLOGY: (1) Aggregate 4 verdicts, (2) Cross-check dependency↔sequence traceability, (3) Verify contract↔boundary alignment, (4) Check rollback↔checkpoint coverage, (5) Produce tiered output.
+  OUTPUT_FORMAT: L1 index.md, L2 summary.md → Lead, L3 per-dimension files → orchestrate skills.
 user-invocable: false
 disable-model-invocation: false
 ---

@@ -1,12 +1,15 @@
 ---
 name: execution-review
 description: |
-  Evaluates implementation in two stages: design-spec compliance then code quality/security. Classifies findings: CRITICAL/HIGH block, MEDIUM/LOW pass. Fix loop max 3 iterations. Terminal execution skill.
+  [P5·Execution·Review] Evaluates implementation: design-spec compliance then code quality/security. Classifies findings CRITICAL/HIGH (block) vs MEDIUM/LOW (pass). Fix loop max 3 iterations. Terminal execution skill.
 
-  Use when: After code/infra implementation complete, need quality review before verification.
   WHEN: After execution-code and/or execution-infra complete. All execution outputs converge here.
-  CONSUMES: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
-  PRODUCES: L1 YAML review verdict with severity breakdown, L2 file:line findings → verify domain (PASS) | execution-code/infra (FAIL: fix loop).
+  DOMAIN: execution (skill 5 of 6).
+  INPUT_FROM: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
+  OUTPUT_TO: verify domain (PASS) | execution-code/infra (FAIL: fix loop). Review verdict with severity breakdown.
+
+  METHODOLOGY: (1) Check design-spec compliance, (2) Audit code quality, (3) Security scan, (4) Classify findings by severity, (5) Route: PASS→verify or FAIL→fix loop.
+  OUTPUT_FORMAT: L1 YAML (review verdict with severity breakdown), L2 file:line findings.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -176,6 +179,14 @@ If execution-impact ran, its L1 report provides critical context: which files we
 
 ### DO NOT: Trust Fix Implementers to Self-Verify
 After a fix loop iteration, ALWAYS re-review. Implementers fixing review findings may introduce new issues. Self-certification is not verification.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

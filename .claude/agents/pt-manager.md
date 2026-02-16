@@ -35,11 +35,15 @@ Fork-context agent for /task-management. Manages full task lifecycle.
 - ASCII visualization always in Korean with structured box drawing
 
 ## Completion Protocol
-When working as a teammate (team_name provided):
-- Upon task completion, send L1 summary to Lead via SendMessage
-- Include: status (PASS/FAIL), files changed, key metrics, routing recommendation
-- On failure: include reason, blocker details, suggested next step
-- Keep message concise (~200 tokens). Full output stays in your context.
+
+**This agent always runs in Team mode (P2+).** SendMessage is always available.
+
+- Mark task as completed via TaskUpdate (status → completed)
+- Send result to Lead via SendMessage:
+  - `text`: Task management status — PT state, tasks created/updated count, dependency graph summary
+  - `summary`: 5-10 word preview (e.g., "PT created, 8 tasks registered")
+- On failure: send FAIL status with error type and blocker details
+- Lead receives automatic idle notification when you finish
 
 ## Safety Constraints
 - Never create duplicate [PERMANENT] tasks (TaskList check first, always)

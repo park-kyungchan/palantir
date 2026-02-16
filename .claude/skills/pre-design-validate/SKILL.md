@@ -1,12 +1,15 @@
 ---
 name: pre-design-validate
 description: |
-  Validates requirement completeness across 5 dimensions (scope/constraints/criteria/errors/integration). Classifies gaps as critical/recommended/nice-to-have. Returns to brainstorm on critical gaps, forwards to feasibility after PASS or max 3 iterations.
+  [P0·PreDesign·Validate] Validates requirement completeness across 5 dimensions. Classifies gaps as critical/recommended/nice-to-have. Returns to brainstorm on critical gaps.
 
-  Use when: After brainstorm produces requirements. Completeness check needed before feasibility analysis.
   WHEN: After pre-design-brainstorm completes. Requirements exist but completeness unverified.
-  CONSUMES: pre-design-brainstorm (structured requirements with tier estimate).
-  PRODUCES: L1 YAML completeness matrix PASS/FAIL per dimension, L2 gap analysis → pre-design-feasibility (PASS) | pre-design-brainstorm (FAIL: gap report).
+  DOMAIN: pre-design (skill 2 of 3).
+  INPUT_FROM: pre-design-brainstorm (structured requirements with tier estimate).
+  OUTPUT_TO: pre-design-feasibility (PASS) | pre-design-brainstorm (FAIL: gap report).
+
+  METHODOLOGY: (1) Scan requirements across 5 dimensions, (2) Classify gaps by severity, (3) Check inter-requirement consistency, (4) Produce completeness matrix, (5) Route based on verdict.
+  OUTPUT_FORMAT: L1 YAML (completeness PASS/FAIL per dimension), L2 gap analysis with severity classification.
 user-invocable: true
 disable-model-invocation: false
 ---

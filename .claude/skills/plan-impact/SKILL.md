@@ -1,11 +1,15 @@
 ---
 name: plan-impact
 description: |
-  Sequences execution order by propagation containment into checkpoint-bounded waves. Groups tasks (max 4 per wave) by propagation independence, defines containment strategy per path.
+  [P3·Plan·Impact] Sequences execution order by propagation containment into checkpoint-bounded waves. Groups tasks by propagation independence. Parallel with plan-static/behavioral/relational.
 
-  WHEN: After research-coordinator complete. Parallel with plan-static/behavioral/relational.
-  CONSUMES: research-coordinator (audit-impact L3 propagation paths via $ARGUMENTS).
-  PRODUCES: L1 YAML execution sequence with wave groups and checkpoints, L2 sequencing rationale with containment → plan-verify-impact.
+  WHEN: After research-coordinator complete. Parallel with 3 other plan skills.
+  DOMAIN: plan (skill 4 of 4).
+  INPUT_FROM: research-coordinator (audit-impact L3 propagation paths via $ARGUMENTS).
+  OUTPUT_TO: plan-verify-impact (execution sequence with wave groups and checkpoints, sequencing rationale).
+
+  METHODOLOGY: (1) Analyze propagation paths, (2) Group tasks by independence (max 4/wave), (3) Define checkpoint boundaries, (4) Assign containment strategy per path, (5) Validate sequence acyclicity.
+  OUTPUT_FORMAT: L1 YAML (execution sequence with wave groups and checkpoints), L2 sequencing rationale with containment.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,9 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn analyst (maxTurns:25). Deep propagation analysis across 9+ tasks with multi-wave containment boundaries.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-impact.md`, sends micro-signal: `{STATUS}|groups:{N}|checkpoints:{N}|ref:/tmp/pipeline/p3-plan-impact.md`
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

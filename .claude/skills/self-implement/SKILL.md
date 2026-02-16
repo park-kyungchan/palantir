@@ -1,11 +1,15 @@
 ---
 name: self-implement
 description: |
-  Executes INFRA improvements from diagnosis findings. Spawns infra-implementer waves (max 2 parallel, non-overlapping files), verifies compliance post-fix. Max 3 iterations. Paired with self-diagnose.
+  [H·Homeostasis·Implement] Executes INFRA improvements from diagnosis findings. Spawns infra-implementer waves (max 2 parallel, non-overlapping files). Max 3 iterations. Paired with self-diagnose.
 
   WHEN: After self-diagnose produces findings list. Findings ready for implementation.
-  CONSUMES: self-diagnose (categorized findings with severity and evidence).
-  PRODUCES: L1 YAML improvement manifest (fixed/deferred counts), L2 implementation report → delivery-pipeline, manage-skills, manage-infra.
+  DOMAIN: homeostasis (skill 5 of 5).
+  INPUT_FROM: self-diagnose (categorized findings with severity and evidence).
+  OUTPUT_TO: delivery-pipeline, manage-skills, manage-infra (improvement manifest, implementation report).
+
+  METHODOLOGY: (1) Prioritize findings by severity, (2) Group into non-overlapping file batches, (3) Spawn infra-implementers (max 2 parallel), (4) Verify compliance post-fix, (5) Iterate up to 3 rounds.
+  OUTPUT_FORMAT: L1 YAML (fixed/deferred counts), L2 implementation report.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: 3-4 infra-implementer waves (maxTurns:25 each) + extended verification. Major structural changes.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

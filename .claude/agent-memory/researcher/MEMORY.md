@@ -62,6 +62,15 @@
 - Dynamic context (!`shell`) executes at skill load time -- $ARGUMENTS is substituted first
 - Pre-reading target files via !`shell` is risky for variable targets -- use `wc -l` size check instead
 
+### Official CC Docs Research Pattern (2026-02-17)
+- code.claude.com/docs/en/{feature} pages provide COMPLETE official specs
+- Key pages: agent-teams, sub-agents, best-practices, memory, skills, hooks
+- Always WebFetch official docs FIRST, then cross-reference with ref_*.md for deltas
+- Official docs may not cover advanced patterns (e.g., structured L1 format) -- note which are custom conventions vs official
+- GitHub issues (anthropics/claude-code) are valuable for bug reports and workarounds
+- Anthropic engineering blog has multi-agent coordination lessons not in product docs
+- Agent field name is `tools` (NOT `allowed-tools`) -- ref_agents.md had this wrong but agent files were correct
+
 ### Research Output Format
 - Findings list with id, topic, priority, status, target_doc, action, summary
 - Executive summary -> detailed findings by topic -> cross-impact matrix -> recommendations -> sources

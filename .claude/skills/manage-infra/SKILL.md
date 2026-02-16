@@ -1,12 +1,15 @@
 ---
 name: manage-infra
 description: |
-  Monitors .claude/ directory integrity with weighted health scoring. Inventories agents, skills, settings, hooks, CLAUDE.md — detects configuration drift, orphaned files, cross-component inconsistencies.
+  [H·Homeostasis·Infra] Monitors .claude/ directory integrity with weighted health scoring. Detects configuration drift, orphaned files, cross-component inconsistencies.
 
-  Use when: After .claude/ modification or periodic health check.
-  WHEN: After .claude/ modification, after pipeline completion, or periodic health check. AI can auto-invoke.
-  CONSUMES: .claude/ directory (agents/, skills/, settings.json, hooks/, CLAUDE.md).
-  PRODUCES: L1 YAML health report (scores, orphans, drift, health_score %), L2 repair recommendations.
+  WHEN: After .claude/ modification, pipeline completion, or periodic health check. AI can auto-invoke.
+  DOMAIN: homeostasis (skill 3 of 5).
+  INPUT_FROM: .claude/ directory (agents/, skills/, settings.json, hooks/, CLAUDE.md).
+  OUTPUT_TO: L1 health report (scores, orphans, drift, health_score %), L2 repair recommendations.
+
+  METHODOLOGY: (1) Inventory agents/skills/settings/hooks, (2) Check field compliance, (3) Detect orphaned files, (4) Score health per category, (5) Produce weighted overall health score.
+  OUTPUT_FORMAT: L1 YAML (health score %, orphan count, drift count), L2 repair recommendations.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -19,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 2 analysts (maxTurns:15 each). One for agents+skills, one for settings+hooks+CLAUDE.md.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Methodology
 

@@ -28,11 +28,22 @@ You are an analysis and documentation agent. Read codebase files, analyze patter
 - Structure output hierarchically: summary → details → evidence
 
 ## Completion Protocol
-When working as a teammate (team_name provided):
-- Upon task completion, send L1 summary to Lead via SendMessage
-- Include: status (PASS/FAIL), files changed, key metrics, routing recommendation
-- On failure: include reason, blocker details, suggested next step
-- Keep message concise (~200 tokens). Full output stays in your context.
+
+**Detect mode**: If SendMessage tool is available → Team mode. Otherwise → Local mode.
+
+### Local Mode (P0-P1)
+- Write output to the path specified in the task prompt (e.g., `/tmp/pipeline/{name}.md`)
+- Structure: L1 summary at top, L2 detail below
+- Parent reads your output via TaskOutput after completion
+
+### Team Mode (P2+)
+- Mark task as completed via TaskUpdate (status → completed)
+- Send result to Lead via SendMessage:
+  - `text`: Structured summary — status (PASS/FAIL), key findings, file references, routing recommendation
+  - `summary`: 5-10 word preview (e.g., "Analysis complete, 3 findings")
+- For large outputs (>500 lines): write to disk file, include path in SendMessage text
+- On failure: send FAIL status with error type, blocker details, and suggested fix
+- Lead receives automatic idle notification when you finish
 
 ## Constraints
 - Never attempt to use Edit tool (you don't have it)

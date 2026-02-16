@@ -1,12 +1,15 @@
 ---
 name: verify-quality
 description: |
-  Audits routing effectiveness via WHEN specificity, CONSUMES/PRODUCES clarity, and description utilization. Scores each skill 0-100 across 4 dimensions, identifies bottom-5 for priority improvement. Third of 4 sequential verify stages.
+  [P7·Verify·Quality] Audits routing effectiveness via WHEN specificity, INPUT_FROM/OUTPUT_TO clarity, and description utilization. Scores skills 0-100, identifies bottom-5. Third of 4 sequential verify stages.
 
-  Use when: After consistency verification, need routing quality audit.
   WHEN: After verify-consistency PASS. Also after routing failures requiring investigation.
-  CONSUMES: verify-consistency (relationship integrity confirmed).
-  PRODUCES: L1 YAML quality score per file (0-100) with dimension breakdown, L2 quality report → verify-cc-feasibility (PASS) | execution-infra (FAIL).
+  DOMAIN: verify (skill 3 of 4, sequential).
+  INPUT_FROM: verify-consistency (relationship integrity confirmed).
+  OUTPUT_TO: verify-cc-feasibility (PASS) | execution-infra (FAIL). Quality scores per file.
+
+  METHODOLOGY: (1) Score WHEN specificity, (2) Score INPUT_FROM/OUTPUT_TO clarity, (3) Score description utilization, (4) Score canonical structure compliance, (5) Identify bottom-5 for improvement.
+  OUTPUT_FORMAT: L1 YAML (quality score 0-100 per file with dimension breakdown), L2 quality report.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -276,6 +279,14 @@ A concise, specific description outperforms a padded, vague one. Utilization is 
 
 ### DO NOT: Auto-Fix Low Scores
 Quality check is read-only. Mixing assessment and modification introduces bias. Produce improvement instructions only. Fixes go through execution-infra with specific data.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

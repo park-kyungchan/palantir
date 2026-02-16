@@ -1,12 +1,15 @@
 ---
 name: execution-code
 description: |
-  Spawns implementers for non-.claude/ source files via DPS delegation prompts. Monitors completion signals, handles failures with max 3 retries, consolidates file change manifest. Parallel with execution-infra.
+  [P5·Execution·Code] Spawns implementers for non-.claude/ source files via DPS delegation prompts. Monitors completion via SendMessage, handles failures with max 3 retries. Parallel with execution-infra.
 
-  Use when: Code tasks ready for implementation after orchestration planning.
   WHEN: After orchestrate-coordinator complete (PASS). Code tasks assigned in unified plan. Non-.claude/ files only.
-  CONSUMES: orchestrate-coordinator (unified execution plan L3 with code task assignments and DPS prompts).
-  PRODUCES: L1 YAML file change manifest with per-implementer status, L2 implementation summary → execution-impact, execution-review.
+  DOMAIN: execution (skill 1 of 6).
+  INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with code task assignments and DPS prompts).
+  OUTPUT_TO: execution-impact, execution-review (file change manifest with per-implementer status, implementation summary).
+
+  METHODOLOGY: (1) Parse DPS prompts from execution plan, (2) Spawn implementers via Task tool, (3) Monitor completion via SendMessage, (4) Handle failures (max 3 retries), (5) Consolidate file change manifest.
+  OUTPUT_FORMAT: L1 YAML (file change manifest with per-implementer status), L2 implementation summary.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -134,6 +137,14 @@ After consolidation, always check for SubagentStop hook's SRC IMPACT ALERT. Skip
 
 ### DO NOT: Use `run_in_background: true` for Dependent Tasks
 Background implementers can't receive mid-task guidance. Use background only for independent tasks where no mid-execution course correction is expected.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

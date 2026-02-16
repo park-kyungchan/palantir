@@ -1,12 +1,15 @@
 ---
 name: manage-codebase
 description: |
-  Generates per-file dependency map across .claude/ scope. Creates/updates codebase-map.md with refs, refd_by, hotspot scores. Full scan on first run, incremental after pipeline execution. Max 150 entries, 300 lines.
+  [H·Homeostasis·Codebase] Generates per-file dependency map across .claude/ scope. Creates/updates codebase-map.md with refs, refd_by, hotspot scores. Full scan or incremental mode.
 
-  Use when: After pipeline execution or major codebase changes. Periodic maintenance.
-  WHEN: After pipeline execution completes, after major codebase changes, or periodic maintenance. AI can auto-invoke.
-  CONSUMES: .claude/ directory files (Glob+Grep structural references).
-  PRODUCES: L1 YAML map health report (entries, mode, staleness), codebase-map.md file.
+  WHEN: After pipeline execution, major codebase changes, or periodic maintenance. AI can auto-invoke.
+  DOMAIN: homeostasis (skill 1 of 5).
+  INPUT_FROM: .claude/ directory files (Glob+Grep structural references).
+  OUTPUT_TO: codebase-map.md file, L1 map health report.
+
+  METHODOLOGY: (1) Glob .claude/ for all files, (2) Grep cross-references, (3) Build refs/refd_by graph, (4) Calculate hotspot scores, (5) Write/update codebase-map.md (max 150 entries, 300 lines).
+  OUTPUT_FORMAT: L1 YAML (entries count, mode, staleness), codebase-map.md file.
 user-invocable: true
 argument-hint: "[full|incremental]"
 disable-model-invocation: false
@@ -20,8 +23,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 1 analyst (maxTurns:30). Full generation scan of entire `.claude/` scope.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Methodology
 

@@ -1,11 +1,15 @@
 ---
 name: orchestrate-relational
 description: |
-  Specifies DPS contracts per producer-consumer handoff with path, format, and validation rules. Validates chain completeness: no dangling inputs, no circular chains.
+  [P4·Orchestrate·Relational] Specifies DPS contracts per producer-consumer handoff with path, format, and validation rules. Validates chain completeness. Parallel with 3 other orchestrate skills.
 
   WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/behavioral/impact.
-  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  PRODUCES: L1 YAML DPS specs with chain_complete flag, L2 data flow chain with gap report → orchestrate-coordinator.
+  DOMAIN: orchestrate (skill 3 of 5).
+  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  OUTPUT_TO: orchestrate-coordinator (DPS specs with chain_complete flag, data flow chain with gap report).
+
+  METHODOLOGY: (1) Define DPS contracts per handoff, (2) Specify path + format + validation, (3) Check no dangling inputs, (4) Verify no circular chains, (5) Produce chain completeness flag.
+  OUTPUT_FORMAT: L1 YAML (DPS specs with chain_complete flag), L2 data flow chain with gap report.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,8 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep handoff analysis with validation rules and chain completeness proofs.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn analyst with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-relational.md`. Send micro-signal to Lead via SendMessage: `PASS|handoffs:{N}|ref:/tmp/pipeline/p5-orch-relational.md`.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 
@@ -27,7 +35,7 @@ disable-model-invocation: false
 When deciding handoff specification depth:
 - **Independent tasks** (no shared data): No DPS needed between them. Skip.
 - **File-based handoff** (producer writes file, consumer reads): Define path + format + required fields.
-- **Status-signal handoff** (producer reports PASS/FAIL): Define signal format per conventions.md. No file DPS needed.
+- **Status-signal handoff** (producer reports PASS/FAIL): Define signal format per SendMessage protocol. No file DPS needed.
 - **Shared-state handoff** (both read/write same file): REJECT. Redesign as file-based with single producer.
 
 ### Format Selection
@@ -52,7 +60,7 @@ Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
 - File change manifest per task
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste verified plan L3 content. Include conventions.md SendMessage protocol. Include DPS reference: each handoff needs producer task, consumer task, file path, format, fields, validation.
+- **Context**: Paste verified plan L3 content. Include SendMessage protocol. Include DPS reference: each handoff needs producer task, consumer task, file path, format, fields, validation.
 - **Task**: "Identify ALL inter-task data dependencies. For each, define a DPS (Data-Passing Specification) with: producer task, consumer task, handoff file path, data format, required fields, validation rules. Validate chain completeness: every consumer input has a producer, no dangling inputs."
 - **Constraints**: Read-only analysis. No modifications. Use `/tmp/pipeline/` as base path for handoff files. Every DPS must be fully specified.
 - **Expected Output**: L1 YAML DPS specs. L2 handoff chain visualization with data flow.
@@ -112,7 +120,7 @@ All handoff files follow the pattern: `/tmp/pipeline/{phase}-{skill}-{artifact}.
 | Structured results (L1) | YAML | Machine-parseable, standard L1 format |
 | Narrative analysis (L2) | Markdown | Human-readable, supports tables |
 | Task lists | YAML | Structured with arrays |
-| Status signals | Micro-signal string | Minimal, follows conventions.md protocol |
+| Status signals | Micro-signal string | Minimal, follows SendMessage protocol |
 
 ### 4. Validate Handoff Chain Completeness
 Verify the handoff chain has no gaps:

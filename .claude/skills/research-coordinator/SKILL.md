@@ -1,11 +1,15 @@
 ---
 name: research-coordinator
 description: |
-  Consolidates 4 audit dimensions into tiered output with cross-dimensional pattern analysis. Terminal research phase — merges parallel audit results into unified intelligence for downstream planning.
+  [P2·Research·Coordinator] Consolidates 4 audit dimensions into tiered output with cross-dimensional pattern analysis. Terminal research skill — merges parallel audit results into unified intelligence.
 
   WHEN: After ALL 4 audit skills complete (audit-static, audit-behavioral, audit-relational, audit-impact).
-  CONSUMES: audit-static (dependency graph), audit-behavioral (behavior predictions), audit-relational (relationship graph), audit-impact (propagation paths).
-  PRODUCES: L1 index.md + L2 summary.md → Lead, L3 per-dimension files → plan-static/plan-behavioral/plan-relational/plan-impact (via $ARGUMENTS).
+  DOMAIN: research (skill 3 of 3).
+  INPUT_FROM: audit-static (dependency graph), audit-behavioral (behavior predictions), audit-relational (relationship graph), audit-impact (propagation paths).
+  OUTPUT_TO: plan-static, plan-behavioral, plan-relational, plan-impact (L1 index + L2 summary → Lead, L3 per-dimension files via $ARGUMENTS).
+
+  METHODOLOGY: (1) Aggregate 4 audit outputs, (2) Cross-dimensional pattern analysis, (3) Identify systemic themes, (4) Produce tiered output (L1/L2/L3), (5) Route L3 to plan skills via $ARGUMENTS.
+  OUTPUT_FORMAT: L1 index.md, L2 summary.md → Lead, L3 per-dimension files → plan domain.
 user-invocable: false
 disable-model-invocation: false
 ---

@@ -1,11 +1,15 @@
 ---
 name: execution-cascade
 description: |
-  Iterates DIRECT-dependent updates in max 3 rounds with convergence tracking. Max 2 implementers per iteration. Reports: converged/partial/non-convergent. Non-convergence routes to execution-review.
+  [P5·Execution·Cascade] Iterates DIRECT-dependent updates in max 3 rounds with convergence tracking. Max 2 implementers per iteration. Reports converged/partial/non-convergent.
 
-  WHEN: After execution-impact reports cascade_recommended: true. Never invoked if cascade_recommended: false.
-  CONSUMES: execution-impact (DIRECT dependent files with classification).
-  PRODUCES: L1 YAML cascade result with iteration_details array, L2 update log with convergence evidence → execution-review.
+  WHEN: After execution-impact reports cascade_recommended: true. Never invoked if false.
+  DOMAIN: execution (skill 4 of 6).
+  INPUT_FROM: execution-impact (DIRECT dependent files with classification).
+  OUTPUT_TO: execution-review (cascade result with iteration details, update log with convergence evidence).
+
+  METHODOLOGY: (1) Identify DIRECT dependents needing update, (2) Spawn max 2 implementers per iteration, (3) Track convergence per round, (4) Repeat up to 3 rounds, (5) Report convergence status.
+  OUTPUT_FORMAT: L1 YAML (cascade result with iteration_details array), L2 update log with convergence evidence.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -214,6 +218,14 @@ If the implementer reports that the dependent file doesn't actually reference th
 
 ### DO NOT: Use Background Agents for Cascade Implementers
 Cascade implementers need monitoring between iterations. Background agents (`run_in_background: true`) can't receive mid-task corrections. Always use foreground spawning for cascade work.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

@@ -1,11 +1,15 @@
 ---
 name: plan-behavioral
 description: |
-  Prescribes test and rollback strategy per predicted behavior change. Defines test cases with priority P0-P3, designs rollback triggers (atomic/selective/forward-fix) for high-risk changes.
+  [P3·Plan·Behavioral] Prescribes test and rollback strategy per predicted behavior change. Defines test cases P0-P3 and rollback triggers. Parallel with plan-static/relational/impact.
 
-  WHEN: After research-coordinator complete. Parallel with plan-static/relational/impact.
-  CONSUMES: research-coordinator (audit-behavioral L3 behavior predictions via $ARGUMENTS).
-  PRODUCES: L1 YAML test/rollback inventory with counts, L2 per-change test cases and rollback procedures → plan-verify-behavioral.
+  WHEN: After research-coordinator complete. Parallel with 3 other plan skills.
+  DOMAIN: plan (skill 2 of 4).
+  INPUT_FROM: research-coordinator (audit-behavioral L3 behavior predictions via $ARGUMENTS).
+  OUTPUT_TO: plan-verify-behavioral (test/rollback inventory, per-change test cases and rollback procedures).
+
+  METHODOLOGY: (1) Map behavior predictions to test cases, (2) Prioritize tests P0-P3, (3) Design rollback triggers per risk level, (4) Classify rollback type (atomic/selective/forward-fix), (5) Verify coverage completeness.
+  OUTPUT_FORMAT: L1 YAML (test/rollback inventory with counts), L2 per-change test cases and rollback procedures.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -18,9 +22,12 @@ disable-model-invocation: false
 - **COMPLEX**: Spawn analyst (maxTurns:25). Deep behavior chain analysis with cascading rollback design across 9+ changes.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
-- **Delivery**: Agent writes to `/tmp/pipeline/p3-plan-behavioral.md`, sends micro-signal: `{STATUS}|tests:{N}|rollbacks:{N}|ref:/tmp/pipeline/p3-plan-behavioral.md`
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 

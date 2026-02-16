@@ -1,6 +1,6 @@
 # Skill System — Fields, Invocation & Routing
 
-> Verified: 2026-02-16 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide + researcher agent, cross-referenced with code.claude.com
 
 ---
 
@@ -70,6 +70,14 @@ When set, skill runs as subagent (not in main context). The `agent` field specif
 - Custom subagent from `.claude/agents/`
 
 **Caveat (GitHub #17283)**: Skill tool auto-invoke may not reliably honor `context: fork` and `agent:` fields. Works reliably via /slash-command only. When auto-invoked, may run inline instead of spawning subagent.
+
+### Skill-Agent Bidirectional Relationship
+
+Two inverse patterns for combining skills and agents:
+1. **Skills in agent** (`skills` field in agent frontmatter): Agent controls system prompt, skill content loaded as reference. Agent is the primary context.
+2. **context:fork in skill** (`context: fork` in skill frontmatter): Skill content becomes the task, agent provides execution environment. Skill is the primary context.
+
+Key: Subagents do NOT inherit skills from parent — must be listed explicitly in agent's `skills` field.
 
 ### Skill Invocation Flow
 
@@ -151,6 +159,8 @@ Shown in `/` autocomplete menu. Display only — does NOT affect parsing.
 
 ### Canonical L1 Structure
 
+> **Note**: This canonical structure is our custom convention for routing optimization, NOT an official CC requirement. Official guidance only says: "write a clear description that includes keywords users would naturally say."
+
 ```
 [Phase·Domain·Role] Unique-verb unique-noun summary.
 
@@ -170,6 +180,13 @@ OUTPUT_FORMAT: L1 format, L2 format.
 - Each new auto-loaded skill: ~300-400 chars
 - Skills with `disable-model-invocation: true` excluded
 
+### Skill Troubleshooting (Official)
+
+- Run `/context` to check for excluded skills warnings
+- If skill not triggering: check description includes keywords users would naturally say
+- If triggering too often: make the description more specific
+- If excluded from budget: skill won't be available for auto-invocation (only via /slash-command)
+
 ### CC-Native Persistent Storage
 
 | Mechanism | Location | Auto-Load | Persistence |
@@ -187,3 +204,5 @@ OUTPUT_FORMAT: L1 format, L2 format.
 - Homeostasis skills: `disable-model-invocation: false` (Claude auto-invokes)
 - 0 skills use: context, agent, allowed-tools, model, hooks (all routing via Lead)
 - 7 skills use: argument-hint
+- Canonical L1 structure (Phase·Domain·Role, WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO, METHODOLOGY, OUTPUT_FORMAT) is custom convention — not CC native
+- Official L1 guidance: "Write a clear description that helps Claude decide when to apply the skill"

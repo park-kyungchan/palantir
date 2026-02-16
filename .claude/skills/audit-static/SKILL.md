@@ -1,11 +1,15 @@
 ---
 name: audit-static
 description: |
-  Maps structural dependency graph and coupling hotspots via Glob/Grep file-to-file import analysis. Identifies files with >3 dependents as hotspots, builds weighted DAG with file:line evidence.
+  [P2·Audit·Static] Maps structural dependency graph and coupling hotspots via Glob/Grep import analysis. Builds weighted DAG with file:line evidence. Parallel with audit-behavioral/relational/impact.
 
-  WHEN: After research-codebase AND research-external complete. Parallel with audit-behavioral/relational/impact.
-  CONSUMES: research-codebase (local patterns, file inventory), research-external (community constraints), design-architecture (component structure).
-  PRODUCES: L1 YAML dependency summary, L2 DAG with hotspot analysis → research-coordinator.
+  WHEN: After research-codebase AND research-external complete. Parallel with 3 other audit skills.
+  DOMAIN: audit (skill 1 of 4).
+  INPUT_FROM: research-codebase (local patterns, file inventory), research-external (community constraints), design-architecture (component structure).
+  OUTPUT_TO: research-coordinator (dependency summary, DAG with hotspot analysis).
+
+  METHODOLOGY: (1) Glob/Grep file-to-file imports, (2) Build weighted dependency DAG, (3) Identify hotspots (>3 dependents), (4) Classify coupling strength, (5) Produce evidence with file:line refs.
+  OUTPUT_FORMAT: L1 YAML (dependency summary), L2 DAG with hotspot analysis.
 user-invocable: false
 disable-model-invocation: false
 ---

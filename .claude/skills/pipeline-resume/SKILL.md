@@ -1,12 +1,15 @@
 ---
 name: pipeline-resume
 description: |
-  Reconstructs pipeline state from Task API after session interruption. Categorizes work tasks, determines resume point, validates git branch state, re-spawns agents with PT context.
+  [Px·Pipeline·Resume] Reconstructs pipeline state from Task API after session interruption. Categorizes work tasks, determines resume point, re-spawns agents with PT context.
 
-  Use when: User says /pipeline-resume. Session continuation with incomplete pipeline.
   WHEN: Session continuation after interruption. PT exists with metadata.current_phase set.
-  CONSUMES: Task API (PT + work tasks), git branch state.
-  PRODUCES: L1 YAML resume state (phases, task counts), L2 recovery report with resume rationale.
+  DOMAIN: pipeline (skill 6 of 6).
+  INPUT_FROM: Task API (PT + work tasks), git branch state.
+  OUTPUT_TO: Lead (resume state with phases and task counts, recovery report with resume rationale).
+
+  METHODOLOGY: (1) Read PT metadata for current phase, (2) Categorize work tasks by status, (3) Validate git branch state, (4) Determine resume point, (5) Re-spawn agents with PT context.
+  OUTPUT_FORMAT: L1 YAML (resume state: phases, task counts), L2 recovery report with resume rationale.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[resume-from-phase]"
@@ -201,6 +204,14 @@ After compaction, Lead may have inaccurate or incomplete memories of previous wo
 
 ### DO NOT: Resume Parallel Tasks Sequentially
 If the interrupted phase had parallel tasks (e.g., code and infra in P5, or multiple parallel research tasks in P2), resume them in parallel. Do not accidentally serialize by spawning them one at a time. Check the original orchestration-assign output (stored in PT metadata or task descriptions) for the parallelism strategy. Serializing previously-parallel work wastes time and may introduce ordering dependencies that did not exist in the original plan.
+
+## Phase-Aware Execution
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Transitions
 

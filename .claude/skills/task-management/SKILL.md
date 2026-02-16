@@ -1,12 +1,15 @@
 ---
 name: task-management
 description: |
-  Task lifecycle manager for PT and work tasks via Task API. Heavy ops (PT create/update, batch tasks, ASCII viz) → pt-manager agent. Light ops (single TaskUpdate) → Lead direct. Exactly 1 PT per pipeline.
+  [Px·Delivery·TaskMgmt] Task lifecycle manager for PT and work tasks via Task API. Heavy ops → pt-manager agent. Light ops → Lead direct. Exactly 1 PT per pipeline.
 
-  Use when: User says /task-management. Pipeline needs PT create/update, batch task creation, or status visualization.
   WHEN: Any phase. (1) Pipeline start: create PT. (2) Plan ready: batch tasks. (3) Execution: status updates. (4) Commit done: PT completed.
-  CONSUMES: Pipeline context (tier, phase, requirements, architecture decisions).
-  PRODUCES: PT lifecycle (create/update/complete), work tasks (batch creation), ASCII status visualization.
+  DOMAIN: delivery (skill 2 of 2).
+  INPUT_FROM: Pipeline context (tier, phase, requirements, architecture decisions).
+  OUTPUT_TO: PT lifecycle (create/update/complete), work tasks (batch creation), ASCII status visualization.
+
+  METHODOLOGY: (1) Classify operation weight (heavy/light), (2) Route heavy → pt-manager, light → Lead, (3) Execute task operations, (4) Validate no duplicate PTs, (5) Return status.
+  OUTPUT_FORMAT: L1 YAML (operation type, task counts), L2 task details or ASCII visualization.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[action] [args]"
@@ -25,8 +28,12 @@ argument-hint: "[action] [args]"
 - **Light ops** → Lead executes directly. Single TaskUpdate for status/metadata changes.
 
 ## Phase-Aware Execution
-- **Standalone / P0-P1**: Spawn agent with `run_in_background`. Lead reads TaskOutput directly.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers result via SendMessage micro-signal per conventions.md protocol.
+
+This skill runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Task tracking**: Update task status via TaskUpdate after completion.
+- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Operations
 

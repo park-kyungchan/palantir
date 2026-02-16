@@ -1,12 +1,15 @@
 ---
 name: design-risk
 description: |
-  Assesses failure modes and security risks per component. FMEA with calibrated RPN, OWASP check, CC boundary risks (hooks timeout, truncation, context isolation), performance bottlenecks. Terminal design skill.
+  [P1·Design·Risk] Assesses failure modes and security risks per component. FMEA with calibrated RPN, OWASP check, CC boundary risks, performance bottlenecks. Terminal design skill.
 
-  Use when: Architecture and interfaces defined but risk unassessed.
   WHEN: After design-architecture and design-interface complete.
-  CONSUMES: design-architecture (component structure, ADRs), design-interface (API contracts, error contracts).
-  PRODUCES: L1 YAML risk matrix (ID, severity, likelihood, RPN, mitigation), L2 risk narrative → research-codebase, research-external.
+  DOMAIN: design (skill 3 of 3).
+  INPUT_FROM: design-architecture (component structure, ADRs), design-interface (API contracts, error contracts).
+  OUTPUT_TO: research-codebase, research-external (risk matrix with mitigations, risk narrative).
+
+  METHODOLOGY: (1) Identify failure modes per component (FMEA), (2) OWASP security check, (3) Assess CC boundary risks, (4) Evaluate performance bottlenecks, (5) Calculate RPN and assign mitigations.
+  OUTPUT_FORMAT: L1 YAML (risk matrix: ID, severity, likelihood, RPN, mitigation), L2 risk narrative.
 user-invocable: true
 disable-model-invocation: false
 ---
