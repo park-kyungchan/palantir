@@ -1,0 +1,209 @@
+# Configuration, Context & Session
+
+> Verified: 2026-02-16 via claude-code-guide, cross-referenced with code.claude.com
+
+---
+
+## 1. Configuration System — 5-Layer Settings
+
+### Precedence Order (Highest to Lowest)
+
+| Priority | Scope | Location | Affects | Shared? |
+|----------|-------|----------|---------|---------|
+| 1 | **Managed** | `managed-settings.json` (system dir) | All users on machine | IT deployed |
+| 2 | **CLI args** | `--model`, `--agent`, etc. | Current session only | N/A |
+| 3 | **Local** | `.claude/settings.local.json` (project) | Current project, you only | No (gitignored) |
+| 4 | **Project** | `.claude/settings.json` (project) | All collaborators | Yes (git) |
+| 5 | **User** | `~/.claude/settings.json` | All your projects | No |
+
+More specific scopes take precedence. If the same key has conflicting values, higher-priority scope wins.
+
+### Environment Variables
+
+Shell-level env vars take precedence over `env` object in settings.json. Pre-existing shell variables are not overwritten.
+
+### Key settings.json Sections
+
+```jsonc
+{
+  "model": "opus",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Read(./.env)", "Read(./.env.*)"],
+    "ask": ["Bash(git push *)"]
+  },
+  "defaultMode": "default",
+  "hooks": { /* ... */ },
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80"
+  }
+}
+```
+
+### Functional Separation
+
+- **settings.json**: Controls "what Claude CAN do" — permissions, model, env vars, hooks
+- **CLAUDE.md**: Controls "what Claude SHOULD KNOW" — conventions, architecture, project rules
+
+---
+
+## 2. CLAUDE.md — Knowledge Injection Layer
+
+### Loading Order
+
+```
+~/.claude/CLAUDE.md            ← Global (all projects)
+./CLAUDE.md                    ← Project root
+./CLAUDE.local.md              ← Project local (gitignored)
+./src/CLAUDE.md                ← Subdirectory (on-demand when working in that dir)
+```
+
+Full chain: managed policy → user → project → local → subdirectory (on-demand).
+
+### Critical Behavior
+
+- Injected into system prompt on **every single API request** — permanently consumes context tokens
+- Survives compaction (re-injected automatically)
+- `--add-dir` requires `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1`
+- Max recommended: keep total under 2000 tokens for efficiency
+- Progressive disclosure: keep CLAUDE.md lean, move details to reference files
+
+### Rules Directory (.claude/rules/)
+
+- Supplements CLAUDE.md (does NOT replace it)
+- All `.md` files auto-discovered recursively
+- Loading order: User-level (`~/.claude/rules/`) then Project-level (`./.claude/rules/`)
+- Frontmatter field: `paths` (array of glob patterns for conditional loading)
+- Example: `paths: ["src/api/**/*.ts"]` only loads when working with those files
+- Rules without `paths` frontmatter are loaded globally
+- Survives compaction (re-injected automatically)
+
+### System Reminders
+
+Claude Code injects `<system-reminder>` tags into user messages at runtime containing CLAUDE.md content and internal state.
+
+---
+
+## 3. Context Window Management
+
+### The 200K Constraint
+
+The 200,000-token context window (Claude Max) is shared between input and output.
+
+```
+System Prompt (internal, unpublished)
+  + CLAUDE.md (all levels merged — ALWAYS present)
+  + MCP tool definitions (connected servers — ALWAYS present unless deferred)
+  + Skill L1 descriptions (loaded at session start)
+  + Conversation history (all user + assistant turns)
+  + Tool use inputs and results
+  = Total context usage
+```
+
+1M beta available for API users only (tier 4+, requires `anthropic-beta: context-1m-2025-08-07` header). Claude Max operates at 200K.
+
+### Session Start Loading Order
+
+1. System prompt (CC base instructions, internal)
+2. CLAUDE.md chain: managed → user → project → local → subdirectory (on-demand)
+2.5. `.claude/rules/*.md` — loaded when matching files referenced
+3. Project memory: MEMORY.md first 200 lines auto-loaded
+4. Skill L1 descriptions aggregated into Skill tool definition
+5. Agent L1 descriptions loaded into Task tool definition
+6. SessionStart hooks fire, additionalContext injected
+7. Conversation begins
+
+### Auto-Compaction
+
+- Triggers: ~95% of context window (configurable via `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`)
+- PreCompact hook fires before compaction
+- Conversation summarized, old tool outputs cleared
+- CLAUDE.md + Skill L1 re-injected automatically
+- SessionStart hook fires with `compact` matcher
+- ~30-50% capacity recovered
+- Compaction buffer: ~33K tokens reserved (not configurable)
+- Active teammates NOT notified of parent compaction (BUG-004)
+
+### Hook Context Injection
+
+- `hookSpecificOutput.additionalContext`: injected as system-level context
+- Scope: SINGLE TURN only (not persisted)
+- NOT visible to spawned subagents
+- Does NOT survive compaction
+- Multiple hooks same turn: concatenated in declaration order
+
+### MCP Tool Definition Cost
+
+Every connected MCP server adds tool definitions to context. Tool Search mitigates by loading descriptions up to 10% of context, deferring rest via MCPSearch tool.
+
+### Skill L1 Budget
+
+- Formula: `max(context_window × 2%, 16000)` characters (total for ALL skill descriptions)
+- Override: `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var
+- Skills with `disable-model-invocation: true` excluded from budget
+- If exceeded: skills excluded likely FIFO (no priority mechanism)
+
+### Context Budget Environment Variables
+
+| Variable | Default | Range/Values | Description |
+|----------|---------|-------------|-------------|
+| CLAUDE_CODE_MAX_OUTPUT_TOKENS | 32000 | max 64K (CC cap) | Max output tokens per response |
+| CLAUDE_AUTOCOMPACT_PCT_OVERRIDE | ~95% | 1-100 | Compaction trigger threshold |
+| CLAUDE_CODE_EFFORT_LEVEL | high | low/medium/high | Opus thinking depth |
+| MAX_THINKING_TOKENS | 31999 | 0 to disable | Legacy thinking budget |
+| CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS | (default) | number | File read token limit |
+| MAX_MCP_OUTPUT_TOKENS | 25000 | number | MCP tool output limit |
+| SLASH_COMMAND_TOOL_CHAR_BUDGET | dynamic | number | Skill L1 total char budget |
+| ENABLE_TOOL_SEARCH | auto | auto/auto:N/true/false | MCP tool search threshold |
+
+### Critical Constraints
+
+- Context window: 200K tokens (Claude Max)
+- Agent `skills` preloads FULL L1+L2 (context expensive)
+- Skill description > 1024 chars: excess may be lost in L1 loading
+- Only ONE skill active at a time
+- `$ARGUMENTS` works in skill body only, NOT in frontmatter
+- Agent body: no parent conversation access
+- MEMORY.md: 200-line limit, lines 201+ silently truncated
+
+---
+
+## 4. Session & Persistence — Filesystem Map
+
+### Complete Filesystem Map
+
+```
+~/.claude/                              ← GLOBAL (User scope)
+├── settings.json                       ← User settings (all projects)
+├── settings.local.json                 ← User local settings
+├── CLAUDE.md                           ← Global instructions
+├── agents/                             ← Global subagent definitions
+├── skills/                             ← Global skills
+├── commands/                           ← Global slash commands
+├── teams/{team-name}/                  ← Agent Teams data
+│   ├── config.json                     ← Team metadata
+│   └── inboxes/*.json                  ← Teammate inboxes
+└── tasks/{team-name}/*.json            ← Task data
+
+{project}/.claude/                      ← PROJECT scope
+├── settings.json                       ← Team-shared settings (git)
+├── settings.local.json                 ← Personal settings (gitignored)
+├── agents/                             ← Project agents
+├── skills/                             ← Project skills
+└── commands/                           ← Project commands
+
+{project}/
+├── CLAUDE.md                           ← Project root instructions (git)
+├── CLAUDE.local.md                     ← Project local (gitignored)
+├── .mcp.json                           ← MCP server config (git)
+└── src/CLAUDE.md                       ← Subdirectory instructions
+```
+
+### Session Storage
+
+Claude Code saves conversations locally. Each message, tool use, and result stored. Enables: rewinding (`/rewind`), resuming (`--resume`), forking sessions. File snapshots taken before code changes. Sessions tied to current directory.
+
+### Configuration Backups
+
+Timestamped backups when config files change. Keeps 5 most recent per file.

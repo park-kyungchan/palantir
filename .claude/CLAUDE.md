@@ -44,7 +44,17 @@ Flow: PRE (P0-P4) → EXEC (P5-P7) → POST (P8). Max 3 iterations per phase.
 - Routes via Skill L1 WHEN conditions + Agent L1 PROFILE tags (both auto-loaded)
 - Spawns agents via Task tool (`subagent_type` = agent name)
 - Executes Lead-direct skills inline (no agent spawn needed)
-- **CC-Reference Cache-First**: Before verify-cc-feasibility or any CC native field validation, Read relevant cc-reference files (`.claude/projects/-home-palantir/memory/cc-reference/`) first. Only spawn claude-code-guide agent for gaps not covered by cache. Minimizes context waste.
+
+### CC Native Boundary Reference [ALWAYS ACTIVE]
+**Purpose**: Lead의 모든 의사결정(라우팅, 에러 핸들링, 컨텍스트 관리, 도구 선택)의 제약 조건 파악
+**Path**: `.claude/projects/-home-palantir/memory/`
+**L1**: `CC_SECTIONS.md` — 섹션별 라우팅 인텔리전스 (항상 먼저 참조)
+**L2**: `ref_*.md` — CC_SECTIONS.md의 WHEN 조건 매칭 시 on-demand 로드
+
+**Rules**:
+- 모든 작업 전: `CC_SECTIONS.md`로 관련 CC native 제약 확인
+- 제약과 관련된 결정 시: 해당 `ref_*.md` 로드 (Skill L2 invocation과 동일 패턴)
+- claude-code-guide: ref 파일로 해결 불가한 gap에만 spawn
 
 ## 4. PERMANENT Task (PT)
 Single source of truth for active pipeline. Exactly 1 per pipeline.

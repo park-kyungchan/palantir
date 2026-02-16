@@ -36,7 +36,7 @@
 | Skills | v11.0+L2opt | 54 dirs | 44 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized. Budget: ~47,000/56,000 (16% headroom) |
 | Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
 | Hooks | 8 scripts | ~380L | 6 global events + 5 agent-scoped hooks (SRC moved to agent scope) |
-| Conventions | v11.0 | ~60L | +SendMessage signal format + error taxonomy + checkpoint micro-format |
+| Conventions | DELETED | 0L | Content distributed: agent bodies (SendMessage), CLAUDE.md §2.1 (isolation), skill L2 (output) |
 | Agent Memory | -- | 7 files | +rsi-ce-diagnosis.md (342L, CE health 3/10→~7/10) |
 
 ### Architecture (v10 Native Optimization)
@@ -119,15 +119,22 @@ Branch: `infra`. Latest commit: 798b9dc. PR #53.
 - Full history: `memory/infrastructure-history.md`
 
 ## Topic Files Index
+
+### CC Architecture Reference (L1/L2 Pattern)
+- `memory/CC_SECTIONS.md` -- **L1 (ALWAYS READ)**: Section descriptions + routing shortcuts for all ref files
+- `memory/ref_runtime_security.md` -- R1: Agentic loop, 20+ tools, permission system, sandboxing
+- `memory/ref_config_context.md` -- R2: 5-layer config, CLAUDE.md, 200K context, compaction, session map
+- `memory/ref_hooks.md` -- R3: 14 hook events, 3 handler types, I/O contract, exit codes, 6 scopes
+- `memory/ref_skills.md` -- R4: Skill frontmatter, $ARGUMENTS, shell preprocessing, disambiguation, budget
+- `memory/ref_agents.md` -- R5: Agent fields, permissionMode, memory config, subagent comparison
+- `memory/ref_teams.md` -- R6: Agent Teams coordination, task sharing, inbox messaging
+- `memory/ref_model_integration.md` -- R7: Model config, cost benchmarks, MCP, plugins
+- `memory/ref_community.md` -- R8: 10 post-Opus 4.6 community tools
+
+### Project History & Domain
 - `memory/infrastructure-history.md` -- Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
 - `memory/skill-optimization-history.md` -- SKL-001~SKL-005 detailed records
 - `memory/agent-teams-bugs.md` -- BUG-001~BUG-004 details and workarounds
 - `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
 - `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)
 - `memory/context-engineering.md` -- CC native field reference, context loading order, critical findings
-- `memory/cc-reference/` -- Machine-readable CC native reference (5 files):
-  - `native-fields.md` -- Skill + Agent frontmatter field tables, flag combos, permissionMode details
-  - `context-loading.md` -- Session loading order, L1 budget, invocation flow, compaction, context budget
-  - `hook-events.md` -- All 14 hook events, types, input/output format, matchers, our configuration
-  - `arguments-substitution.md` -- $ARGUMENTS, dynamic context injection, env vars, argument-hint
-  - `skill-disambiguation.md` -- Sub-skill naming (flat only, 64 chars), semantic disambiguation, incremental cache, L1 budget impact
