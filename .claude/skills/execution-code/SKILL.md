@@ -4,7 +4,7 @@ description: |
   [P5·Execution·Code] Spawns implementers for non-.claude/ source files via DPS delegation prompts. Monitors completion via SendMessage, handles failures with max 3 retries. Parallel with execution-infra.
 
   WHEN: After orchestrate-coordinator complete (PASS). Code tasks assigned in unified plan. Non-.claude/ files only.
-  DOMAIN: execution (skill 1 of 6).
+  DOMAIN: execution (skill 1 of 5).
   INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with code task assignments and DPS prompts).
   OUTPUT_TO: execution-impact, execution-review (file change manifest with per-implementer status, implementation summary).
 

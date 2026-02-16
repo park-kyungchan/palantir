@@ -4,7 +4,7 @@ description: |
   [Px·Pipeline·Resume] Reconstructs pipeline state from Task API after session interruption. Categorizes work tasks, determines resume point, re-spawns agents with PT context.
 
   WHEN: Session continuation after interruption. PT exists with metadata.current_phase set.
-  DOMAIN: pipeline (skill 6 of 6).
+  DOMAIN: cross-cutting (pipeline resume).
   INPUT_FROM: Task API (PT + work tasks), git branch state.
   OUTPUT_TO: Lead (resume state with phases and task counts, recovery report with resume rationale).
 

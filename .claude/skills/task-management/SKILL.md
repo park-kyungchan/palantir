@@ -35,7 +35,7 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 - **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
-## Operations
+## Methodology
 
 ### 1. PT Creation
 

@@ -1,14 +1,14 @@
 ---
 name: self-diagnose
 description: |
-  [H·Homeostasis·Diagnose] Diagnoses INFRA health against CC native state across 8 categories. Reads cc-reference cache, scans .claude/ files. Diagnosis only — does NOT fix. Paired with self-implement.
+  [H·Homeostasis·Diagnose] Diagnoses INFRA health against CC native state across 9 categories. Reads cc-reference cache, scans .claude/ files. Diagnosis only — does NOT fix. Paired with self-implement.
 
   WHEN: User invokes for INFRA health audit. After CC updates or before releases.
   DOMAIN: homeostasis (skill 4 of 5).
   INPUT_FROM: cc-reference cache (ref_*.md files for ground truth), manage-infra (health findings).
   OUTPUT_TO: self-implement (findings list with severity counts, diagnostic report with file:line evidence).
 
-  METHODOLOGY: (1) Load cc-reference cache, (2) Scan .claude/ files across 8 categories, (3) Compare against CC native state, (4) Classify findings by severity, (5) Produce diagnostic report.
+  METHODOLOGY: (1) Load cc-reference cache, (2) Scan .claude/ files across 9 categories, (3) Compare against CC native state, (4) Classify findings by severity, (5) Produce diagnostic report.
   OUTPUT_FORMAT: L1 YAML (findings list with severity counts), L2 diagnostic report with per-category evidence.
 user-invocable: true
 disable-model-invocation: false
@@ -80,15 +80,31 @@ Scan all `.claude/` files systematically using the diagnostic category checklist
 | Settings permissions | All `allow` entries reference existing tools/skills | Read settings.json, cross-reference | MEDIUM |
 | Description utilization | Each description uses >80% of 1024 chars | Read + measure per-skill | LOW |
 | Color assignments | All agents have unique `color` fields | Read agents, check duplicates | LOW |
+| Constraint-implication | CC native constraint has unaddressed design implication in current INFRA | Read ref_*.md constraints → trace implication → verify INFRA compliance | HIGH |
+
+**Category 9: Constraint-Implication Alignment**
+
+Traces each CC native constraint to its design implications and verifies current INFRA respects them:
+
+| CC Native Constraint | Design Implication | Verification Check |
+|---------------------|-------------------|-------------------|
+| No shared memory between agents | Information must be explicitly communicated; external file refs are phantom dependencies | Verify no skill/agent assumes implicit context sharing. Check all cross-agent data has explicit delivery mechanism (DPS inline, SendMessage, or disk+path). |
+| Agent ≠ skill context | Agent does not see skill L2 body; DPS must fully convey execution instructions | Verify DPS templates include all execution-critical info from skill L2 (Phase-Aware, error handling, output format). |
+| Lead compaction risk | Inter-phase routing state may be lost during auto-compaction | Verify PT metadata captures enough state for phase resumption. Check pipeline-resume can reconstruct from PT alone. |
+| SendMessage = text only | Cannot inject structured data into agent context; summary must be self-contained | Verify micro-signal formats contain enough context for Lead routing decisions without loading full disk output. |
+| Inbox = poll per API turn | No real-time coordination; teammate sees messages only on next turn | Verify no skill assumes synchronous teammate response. Check all coordination is async-compatible. |
+| Subagent 30K char limit | Background agent output truncated beyond 30K chars | Verify agents prioritize critical info first in output. Check large outputs use disk+path pattern. |
+
+For each row: Read the relevant ref_*.md for the constraint, then Grep/Read INFRA files to verify the check. Flag violations as HIGH severity.
 
 **Procedure:**
 - For focused scans: run only matching categories
-- For full scans: run all 8 categories
+- For full scans: run all 9 categories
 - Each finding includes: ID, category, severity, file path, current value, expected value
 - Produce categorized finding list sorted by severity (CRITICAL first)
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt:
-- **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 8 categories.
+- **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 9 categories.
 - **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
 - **Constraints**: Read-only analyst agent. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config). maxTurns:20.
 - **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
@@ -137,7 +153,7 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 
 ## Quality Gate
 - CC reference ground truth established (cache or live research)
-- All 8 diagnostic categories scanned (or focused subset per arguments)
+- All 9 diagnostic categories scanned (or focused subset per arguments)
 - Each finding has: ID, category, severity, file path, evidence
 - Findings sorted by severity (CRITICAL → LOW)
 - No false positives (each finding verified with file:line evidence)
@@ -157,7 +173,7 @@ findings_by_severity:
   medium: 0
   low: 0
 categories_scanned: 0
-categories_total: 8
+categories_total: 9
 findings:
   - id: ""
     category: ""
@@ -172,3 +188,4 @@ findings:
 - **Diagnosis Report**: Per-category findings table with evidence
 - **Coverage**: Categories scanned, files analyzed, scan completeness
 - **Recommendations**: Priority-ordered list for self-implement
+  - **Constraint-Implication Gaps**: Design implications of CC native constraints not addressed in current INFRA

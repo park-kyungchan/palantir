@@ -4,7 +4,7 @@ description: |
   [P5·Execution·Infra] Deploys infra-implementers for .claude/ files (Write/Edit only, no Bash). Validates YAML/JSON post-completion, handles failures with max 3 retries. Parallel with execution-code.
 
   WHEN: After orchestrate-coordinator complete (PASS). Infra tasks assigned in unified plan. .claude/ files exclusively.
-  DOMAIN: execution (skill 2 of 6).
+  DOMAIN: execution (skill 2 of 5).
   INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with infra task assignments and .claude/ file paths).
   OUTPUT_TO: execution-impact, execution-review (infra change manifest, config change summary).
 
@@ -38,7 +38,7 @@ Lead determines tier based on orchestration-verify output:
 Before spawning infra-implementers, verify:
 1. orchestration-verify L1 shows `status: PASS` for infra assignments
 2. All target file paths exist (for modifications) or parent directories exist (for creation)
-3. For frontmatter changes: verify field names against CC native fields list (memory/cc-reference/native-fields.md)
+3. For frontmatter changes: verify field names against CC native fields list (.claude/projects/-home-palantir/memory/ref_agents.md, Section 2: Frontmatter Fields)
 4. For settings.json changes: verify the JSON key path exists or is a valid new addition
 5. No .claude/ file appears in multiple infra-implementer assignments
 
@@ -71,7 +71,7 @@ For each infra task group:
 - Create Task with `subagent_type: infra-implementer`
 
 Construct each delegation prompt with:
-- **Context**: List exact `.claude/` file paths to modify (e.g., `.claude/skills/foo/SKILL.md`, `.claude/agents/bar.md`). For frontmatter changes, specify which YAML fields to add/modify/remove and their exact values. Reference CC native field list at `memory/cc-reference/native-fields.md` for valid fields.
+- **Context**: List exact `.claude/` file paths to modify (e.g., `.claude/skills/foo/SKILL.md`, `.claude/agents/bar.md`). For frontmatter changes, specify which YAML fields to add/modify/remove and their exact values. Reference CC native field list at `.claude/projects/-home-palantir/memory/ref_agents.md` (Section 2: Frontmatter Fields) for valid fields.
 - **Task**: For each file, describe the precise change: "In `.claude/skills/X/SKILL.md`, update the `description` field to include INPUT_FROM/OUTPUT_TO references" or "Add `model: haiku` to `.claude/agents/Y.md` frontmatter." For description edits, provide the new text or the specific substring to replace.
 - **Constraints**: Write and Edit tools only — NO Bash (cannot run shell commands, cannot validate by execution). Cannot delete files. Skill `description` field max 1024 characters (count before writing). YAML frontmatter must remain valid. Settings.json must remain valid JSON. Do not introduce non-native frontmatter fields.
 - **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed). Provide L2 markdown listing each file modified, what changed (before→after for field values), and any issues encountered.

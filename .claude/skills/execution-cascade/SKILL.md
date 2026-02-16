@@ -4,7 +4,7 @@ description: |
   [P5·Execution·Cascade] Iterates DIRECT-dependent updates in max 3 rounds with convergence tracking. Max 2 implementers per iteration. Reports converged/partial/non-convergent.
 
   WHEN: After execution-impact reports cascade_recommended: true. Never invoked if false.
-  DOMAIN: execution (skill 4 of 6).
+  DOMAIN: execution (skill 4 of 5).
   INPUT_FROM: execution-impact (DIRECT dependent files with classification).
   OUTPUT_TO: execution-review (cascade result with iteration details, update log with convergence evidence).
 

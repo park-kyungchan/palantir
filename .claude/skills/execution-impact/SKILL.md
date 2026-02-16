@@ -4,7 +4,7 @@ description: |
   [P5·Execution·Impact] Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation. Outputs cascade_recommended flag for downstream routing.
 
   WHEN: After execution-code and/or execution-infra complete. File change manifest exists.
-  DOMAIN: execution (skill 3 of 6).
+  DOMAIN: execution (skill 3 of 5).
   INPUT_FROM: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
   OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (always). Impact report with cascade flag.
 

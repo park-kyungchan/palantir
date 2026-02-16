@@ -4,7 +4,7 @@ description: |
   [P5·Execution·Review] Evaluates implementation: design-spec compliance then code quality/security. Classifies findings CRITICAL/HIGH (block) vs MEDIUM/LOW (pass). Fix loop max 3 iterations. Terminal execution skill.
 
   WHEN: After execution-code and/or execution-infra complete. All execution outputs converge here.
-  DOMAIN: execution (skill 5 of 6).
+  DOMAIN: execution (skill 5 of 5).
   INPUT_FROM: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
   OUTPUT_TO: verify domain (PASS) | execution-code/infra (FAIL: fix loop). Review verdict with severity breakdown.
 
