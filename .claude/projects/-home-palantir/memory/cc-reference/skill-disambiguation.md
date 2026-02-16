@@ -1,5 +1,5 @@
 # CC Skill Disambiguation & Sub-Skill Patterns
-<!-- Verified: 2026-02-15 via claude-code-guide agent (research for Phase Efficiency Optimization) -->
+<!-- Verified: 2026-02-16 via claude-code-guide agent, community metrics annotated -->
 <!-- Update policy: Re-verify after CC version updates or skill architecture changes -->
 
 ## 1. Semantic Disambiguation Between Similar Skills
@@ -7,8 +7,8 @@
 ### Transformer Routing Mechanics
 - Lead (Opus 4.6) uses pure transformer reasoning for skill selection (not keyword matching)
 - All auto-loaded L1 descriptions visible every request as part of Skill tool definition
-- First 50-100 chars receive 3-5x higher attention weight than mid-description tokens
-- "Use when:" trigger language improves activation reliability ~15% (community finding)
+- First 50-100 chars receive higher attention weight than mid-description tokens (approximate, community observation — not officially quantified)
+- "Use when:" trigger language improves activation reliability (community finding, ~15% estimated — not officially measured)
 
 ### Disambiguation Patterns (Ranked by Effectiveness)
 
@@ -130,6 +130,6 @@ OUTPUT_FORMAT: L1 format, L2 format.
 1. Core differentiator in first 50 chars (tag + verb + noun)
 2. WHEN must be mutually exclusive within domain
 3. INPUT_FROM/OUTPUT_TO must be bidirectionally consistent
-4. Total ≤1024 chars (CC truncation boundary)
+4. Total <=1024 chars (CC L1 loading truncation boundary — not a schema validation limit, but excess chars silently lost)
 5. "Use when:" trigger phrase improves user-facing activation
 6. Our WHEN: field serves equivalent purpose for Lead routing

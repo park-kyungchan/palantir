@@ -1,5 +1,5 @@
 # CC Native Fields Reference
-<!-- Last verified: 2026-02-15 via claude-code-guide, 128K output + effort level + field freeze noted 2026-02-15 -->
+<!-- Last verified: 2026-02-16 via claude-code-guide, context/agent Skill-tool caveat added, globs fix, CC 64K cap noted -->
 <!-- Update policy: Re-verify after CC version updates -->
 
 ## Skill Frontmatter Fields (SKILL.md)
@@ -7,19 +7,20 @@
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | name | string | no | directory name | Lowercase, numbers, hyphens. Max 64 chars |
-| description | string | recommended | none | L1 routing intelligence. Max 1024 chars. Multi-line via YAML `\|` |
+| description | string | recommended | none | L1 routing intelligence. Truncated at ~1024 chars in L1 loading (rest lost). Multi-line via YAML `\|` |
 | argument-hint | string | no | none | Shown in autocomplete. E.g., `[topic]`, `[file] [format]` |
 | user-invocable | boolean | no | true | If false, hidden from `/` menu. Claude can still auto-invoke |
 | disable-model-invocation | boolean | no | false | If true, description NOT loaded into context. User-only |
 | allowed-tools | list | no | all | Restricts tools available during skill execution |
 | model | enum | no | inherit | Values: sonnet, opus, haiku, inherit |
-| context | enum | no | none | Values: fork. Forks subagent with skill L2 as task prompt |
-| agent | string | no | general-purpose | Which subagent type when context=fork |
+| context | enum | no | none | Values: fork. Forks subagent with skill L2 as task prompt. **Caveat**: Skill tool (auto-invoke) may not honor this field — works reliably via /slash-command only (GitHub #17283) |
+| agent | string | no | general-purpose | Which subagent type when context=fork. **Caveat**: Skill tool (auto-invoke) may not honor this field (GitHub #17283) |
 | hooks | object | no | none | Skill-scoped hooks (PreToolUse, PostToolUse, etc.) |
 
-### Output Token Limits (verified 2026-02-15)
-- Opus 4.6: max 128K output tokens (`CLAUDE_CODE_MAX_OUTPUT_TOKENS=128000`)
-- Default: 32K output tokens if not overridden
+### Output Token Limits (verified 2026-02-16)
+- Opus 4.6 API max: 128K output tokens
+- Claude Code practical cap: 64K output tokens (CC runtime limits, GitHub #24159)
+- Default: 32K output tokens if `CLAUDE_CODE_MAX_OUTPUT_TOKENS` not set
 - `CLAUDE_CODE_EFFORT_LEVEL` (low/medium/high/max) replaces `MAX_THINKING_TOKENS` for Opus 4.6
 
 ### Shell Preprocessing in Skills
@@ -27,9 +28,10 @@
 - Commands execute at load time, output replaces placeholder
 - See arguments-substitution.md for full details
 
-### Field Freeze Note (2026-02-15)
-- No NEW frontmatter fields introduced since Feb 2026
-- All fields listed below remain current and verified
+### Field Evolution Note (2026-02-16)
+- `memory` field for agents: added Feb 2026 (scope: user/project/local)
+- `hooks` (prompt/agent types): expanded Feb 2026
+- New fields may be added in future CC releases — re-verify after updates
 
 ### Non-Native Fields (Silently Ignored)
 - input_schema, confirm, working_dir, timeout, env
@@ -92,7 +94,7 @@
 ### tools vs disallowedTools
 - `tools` = allowlist (ONLY listed tools work). If omitted, all tools available
 - `disallowedTools` = denylist (block specific tools). Rest remain available
-- If both specified: tools takes precedence, disallowedTools ignored
+- If both specified: `tools` allowlist takes precedence, `disallowedTools` ignored (observed behavior, not officially documented)
 - Tool names: exact match against CC tool registry (Read, Write, Edit, Glob, Grep, Bash, Task, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion, WebSearch, WebFetch, plus MCP tool names)
 
 ### Our Usage Pattern
@@ -110,9 +112,10 @@
 Path-specific rule files with optional frontmatter:
 - Location: `.claude/rules/*.md` (recursive auto-discovery)
 - Supplements CLAUDE.md (does NOT replace it)
-- Frontmatter fields: `paths` (array of glob patterns to scope rule to specific files/dirs)
-- Example: `paths: ["src/api/**/*.ts"]` only loads when working with those files
-- Rules without `paths` frontmatter are loaded globally (same as CLAUDE.md content)
+- Frontmatter fields: `globs` (array of glob patterns to scope rule to specific files/dirs)
+- Example: `globs: ["src/api/**/*.ts"]` only loads when working with those files
+- **Known bug**: Official docs reference `paths` field but it is broken in user-level rules (~/.claude/rules/). Use `globs` instead (GitHub #17204, #21858)
+- Rules without `globs` frontmatter are loaded globally (same as CLAUDE.md content)
 - Loading order: User-level (`~/.claude/rules/`) then Project-level (`./.claude/rules/`)
 - Body: markdown instructions applied when matching files are in context
 - No `description` or routing metadata — purely instructional

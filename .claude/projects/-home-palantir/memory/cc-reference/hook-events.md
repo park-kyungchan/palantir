@@ -1,8 +1,10 @@
 # CC Hook Events Reference
-<!-- Last verified: 2026-02-15 via claude-code-guide, SRC delta 2026-02-15, prompt/agent hooks added 2026-02-15, agent-scoped hooks migrated 2026-02-15 -->
+<!-- Last verified: 2026-02-16 via claude-code-guide, exit code nuance added, event count verified -->
 <!-- Update policy: Re-verify after CC version updates -->
 
 ## All 14 Hook Events
+
+> Note: Some community guides list 12 events (omitting TeammateIdle and TaskCompleted as agent-team specific). All 14 events below are verified from official docs and GitHub issues.
 
 | Event | Fires When | Can Block | Matcher | Scope |
 |-------|-----------|-----------|---------|-------|
@@ -227,9 +229,22 @@ Exit code 2 prevents idle, teammate continues. Can enforce quality gates (e.g., 
 
 | Code | Meaning | Behavior |
 |------|---------|----------|
-| 0 | Success | Action proceeds, output parsed |
-| 2 | Block | Action blocked, stderr fed back as user-visible feedback |
+| 0 | Success | Action proceeds, stdout JSON parsed for structured control |
+| 2 | Block | Action blocked, stderr fed back as user-visible feedback. JSON stdout ignored |
 | other | Error | Non-blocking error, logged but action proceeds |
+
+### Exit Code 0 with JSON Decision (structured control)
+- Exit 0 + `{ "hookSpecificOutput": { "permissionDecision": "deny" } }` = blocks via structured decision
+- Exit 0 + `{ "hookSpecificOutput": { "permissionDecision": "allow" } }` = allows explicitly
+- Exit 0 + `{ "hookSpecificOutput": { "additionalContext": "..." } }` = injects context, action proceeds
+- Exit 0 without JSON = action proceeds (default allow)
+- **Important**: Choose ONE approach per hook — either exit codes only OR exit 0 with JSON. Do not mix.
+
+### Exit Code 2 (binary block)
+- Blocks the action immediately
+- stderr content fed back to Claude as feedback
+- JSON stdout is ignored on exit 2
+- Use for hard blocks that don't need structured reasoning
 
 ## Async Hooks
 - `"async": true` on command hooks only

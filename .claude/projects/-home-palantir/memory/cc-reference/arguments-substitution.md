@@ -1,5 +1,5 @@
 # CC Skill Arguments & Substitution Reference
-<!-- Last verified: 2026-02-15 via claude-code-guide, shell preprocessing added 2026-02-15 -->
+<!-- Last verified: 2026-02-16 via claude-code-guide, all claims confirmed -->
 <!-- Update policy: Re-verify after CC version updates -->
 
 ## $ARGUMENTS Substitution

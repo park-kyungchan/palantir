@@ -1,5 +1,5 @@
 # CC Context Loading Mechanics
-<!-- Last verified: 2026-02-15 via claude-code-guide, SRC delta 2026-02-15, env vars added 2026-02-15 -->
+<!-- Last verified: 2026-02-16 via claude-code-guide, globs fix, CC 64K cap, compaction buffer noted -->
 <!-- Update policy: Re-verify after CC version updates -->
 
 ## Session Start Loading Order
@@ -22,9 +22,10 @@
 - Supplements CLAUDE.md (does NOT replace it)
 - All `.md` files in `rules/` are auto-discovered and loaded recursively
 - Loading order: User-level rules (`~/.claude/rules/`) then Project-level (`./.claude/rules/`)
-- Supports YAML frontmatter with `paths` glob patterns for conditional loading
-- Path-specific example: `paths: ["src/api/**/*.ts"]` only loads when working with those files
-- Rules without `paths` frontmatter are loaded globally (same as CLAUDE.md content)
+- Supports YAML frontmatter with `globs` field for conditional loading
+- Path-specific example: `globs: ["src/api/**/*.ts"]` only loads when working with those files
+- **Known bug**: Official docs reference `paths` field but it is broken in user-level rules (~/.claude/rules/). Use `globs` instead (GitHub #17204, #21858)
+- Rules without `globs` frontmatter are loaded globally (same as CLAUDE.md content)
 - Survives compaction (re-injected automatically, same as CLAUDE.md)
 
 ## Skill L1 Budget
@@ -65,6 +66,8 @@
 5. Skill L1 descriptions re-injected automatically
 6. SessionStart hook fires with `compact` matcher
 7. Fresh context with ~30-50% capacity recovered
+- Compaction buffer: ~33K tokens reserved (reduced from 45K in earlier versions)
+- Compaction does NOT trigger at exact threshold — actual trigger may vary ±5%
 8. Active teammates NOT notified of parent compaction (BUG-004)
 
 ## Hook Context Injection
@@ -94,7 +97,7 @@
 
 | Variable | Default | Range/Values | Description |
 |----------|---------|-------------|-------------|
-| `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | 32000 | max 128000 (Opus 4.6) | Max output tokens per response |
+| `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | 32000 | max 128000 (Opus 4.6) | Max output tokens per response (API max 128K, CC runtime caps at 64K) |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | ~95% | 1-100 | Compaction trigger threshold percentage |
 | `MAX_THINKING_TOKENS` | 31999 | 0 to disable | Thinking budget (legacy, see EFFORT_LEVEL) |
 | `CLAUDE_CODE_EFFORT_LEVEL` | high | low/medium/high/max | Opus 4.6 thinking depth (replaces MAX_THINKING_TOKENS) |
@@ -121,3 +124,4 @@
 - `$ARGUMENTS` works in skill body only, NOT in frontmatter
 - Agent body is isolated: no access to Lead's conversation, skills, or other agents' context
 - MEMORY.md 200-line limit: lines 201+ silently truncated in agent system prompt
+- Compaction buffer: ~33K tokens reserved (hardcoded, not configurable)
