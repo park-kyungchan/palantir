@@ -57,6 +57,33 @@
 7. SubagentStart hook fires after spawn (can inject additionalContext)
 8. Agent runs independently until maxTurns or task completion
 
+## Teammate Context Isolation
+
+Each teammate spawned via Agent Teams runs as an independent Claude Code session:
+
+**Shared across teammates:**
+- Project filesystem (codebase, working directory)
+- CLAUDE.md chain (project + directory-level)
+- MCP servers configuration
+- Skills directory (.claude/skills/)
+- Rules directory (.claude/rules/)
+
+**Isolated per teammate:**
+- Context window (conversation history) — no shared memory
+- Reasoning state and intermediate analysis
+- Token usage counters
+
+**Communication channels (file-based only):**
+1. Task files: `~/.claude/tasks/<team>/N.json` — state machine: pending → in_progress → completed. File-locked for concurrent access.
+2. Inbox messages: `~/.claude/teams/<team>/inboxes/<member>.json` — via SendMessage tool. Lead↔teammate bidirectional (teammates → lead only).
+3. Project filesystem: shared files (e.g., `/tmp/pipeline/`) as coordination artifacts.
+
+**No OS-level IPC:** No sockets, pipes, shared memory segments, or semaphores. All coordination is disk I/O via JSON files with file locking.
+
+**"Automatic delivery" caveat:** SendMessage inbox polling occurs at teammate's next API turn, not via OS push notification. "Automatic" means no manual poll required, not real-time push.
+
+**Known limitation (as of Feb 2026):** tmux mode teammates may fail to poll inbox after initial spawn. Messages written to inbox files remain unread. Tracked in Issues #23415, #24108, #24771. Workaround: use filesystem-based signaling (write to shared paths like /tmp/pipeline/) instead of relying on SendMessage for critical coordination.
+
 ## Compaction Behavior
 1. Triggered: auto (context ~80% full) or manual (/compact)
 2. PreCompact hook fires (can save state, inject warnings)

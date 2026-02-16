@@ -93,7 +93,11 @@
 - `tools` = allowlist (ONLY listed tools work). If omitted, all tools available
 - `disallowedTools` = denylist (block specific tools). Rest remain available
 - If both specified: tools takes precedence, disallowedTools ignored
-- Tool names: exact match against CC tool registry (Read, Write, Edit, Glob, Grep, Bash, Task, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion, WebSearch, WebFetch, plus MCP tool names)
+- Tool names: exact match against CC tool registry (Read, Write, Edit, Glob, Grep, Bash, Task, TaskCreate, TaskUpdate, TaskGet, TaskList, SendMessage, TeamCreate, AskUserQuestion, WebSearch, WebFetch, plus MCP tool names)
+
+### Agent Teams Tools (verified 2026-02-16)
+- `SendMessage`: Agent Teams inbox messaging tool. Writes to `~/.claude/teams/<team>/inboxes/<member>.json`. Lead can message any teammate; teammates can message lead only. Known bug: tmux mode teammates may not poll inbox (Issues #23415, #24108, #24771).
+- `TeamCreate`: Creates team infrastructure at `~/.claude/teams/<team-name>/` with config.json and inboxes/ directory.
 
 ### Our Usage Pattern
 - All 6 agents use: name, description, tools (explicit allowlist), maxTurns
