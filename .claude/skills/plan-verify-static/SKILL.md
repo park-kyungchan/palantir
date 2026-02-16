@@ -1,15 +1,11 @@
 ---
 name: plan-verify-static
 description: |
-  [P4·PlanVerify·StaticCoverage] Verifies task coverage against dependency DAG for orphan files and missing edges.
+  Verifies task coverage against dependency DAG for orphan files and missing edges. Cross-references plan file set against dependency file set. Verdict: PASS (≥95% coverage, zero HIGH orphans), FAIL (<85% or HIGH gaps).
 
-  WHEN: After plan-static complete. Wave 4 parallel with pv-behavioral/relational/impact.
-  DOMAIN: plan-verify (skill 1 of 5). Parallel with pv-behavioral/relational/impact.
-  INPUT_FROM: plan-static (task breakdown with file assignments), research-coordinator (audit-static L3 dependency graph).
-  OUTPUT_TO: plan-verify-coordinator (coverage verdict with orphan/gap evidence).
-
-  METHODOLOGY: (1) Build plan file set from task assignments, (2) Build dependency file set from audit-static L3, (3) Cross-reference: every dependency file assigned to a task?, (4) Identify orphans (unassigned files, severity by fan-in) and missing dependency edges between tasks, (5) Verdict: PASS (>=95% coverage, zero HIGH orphans), FAIL (<85% or HIGH-severity gaps).
-  OUTPUT_FORMAT: L1 YAML coverage verdict with metrics, L2 coverage matrix with orphan/gap evidence.
+  WHEN: After plan-static complete. Parallel with plan-verify-behavioral/relational/impact.
+  CONSUMES: plan-static (task breakdown with file assignments), research-coordinator (audit-static L3 dependency graph).
+  PRODUCES: L1 YAML coverage verdict with metrics, L2 coverage matrix with orphan/gap evidence → plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

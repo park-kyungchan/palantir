@@ -1,15 +1,11 @@
 ---
 name: audit-impact
 description: |
-  [P2·Research·Impact] Traces change propagation paths: DIRECT vs TRANSITIVE.
+  Traces change propagation paths: DIRECT (1-hop) vs TRANSITIVE (2-3 hops). Classifies impact severity per path, assesses maintenance/scalability risk with file:line evidence.
 
-  WHEN: After research-codebase AND research-external complete. Wave 2 parallel audit.
-  DOMAIN: research (skill 6 of 7). Parallel: static ∥ behavioral ∥ relational ∥ impact.
-  INPUT_FROM: research-codebase (file inventory), research-external (constraints), design-risk (risk matrix from P1).
-  OUTPUT_TO: research-coordinator (impact analysis), execution-impact (P6 predicted paths via Shift-Left).
-
-  METHODOLOGY: (1) Ingest Wave 1 findings + design-risk matrix, (2) Trace change propagation paths (DIRECT=1-hop, TRANSITIVE=2-3 hops), (3) Classify impact severity per path, (4) Assess maintenance/scalability risk, (5) Report propagation paths + risk assessment with file:line evidence.
-  OUTPUT_FORMAT: L1 YAML impact summary, L2 markdown propagation analysis with risk assessment.
+  WHEN: After research-codebase AND research-external complete. Parallel with audit-static/behavioral/relational.
+  CONSUMES: research-codebase (file inventory), research-external (constraints), design-risk (risk matrix from P1).
+  PRODUCES: L1 YAML impact summary, L2 propagation analysis → research-coordinator, execution-impact (Shift-Left predicted paths).
 user-invocable: false
 disable-model-invocation: false
 ---

@@ -1,15 +1,12 @@
 ---
 name: qc-report
 description: |
-  [D1·PipelineB·QCReport] ProduceQCVerdict: production pass/fail report with HITL routing, batch aggregation, auto-fix suggestions. Pipeline B terminal.
+  Produces QC verdict: production pass/fail report with HITL routing, batch aggregation, auto-fix suggestions. Terminal Pipeline B skill. PM/PL-facing output.
 
-  WHEN: After render-evaluate completes in production mode (IC-12 qc_rendering available). Pipeline B terminal skill.
-  DOMAIN: production QC (D1 terminal). Pipeline B ONLY. PM/PL-facing output.
-  INPUT_FROM: IC-12 qc_rendering (render-evaluate: fidelity_score, fidelity_breakdown, error_taxonomy, element_verdicts, hitl_required, source_comparison).
-  OUTPUT_TO: qc-metrics (QC report data for aggregation at crowd_works/data/qc-reports/), PM/PL (HITL review items).
-
-  METHODOLOGY: (1) Receive IC-12 qc_rendering, (2) Determine verdict (PASS/CONDITIONAL_PASS/FAIL/HITL_REQUIRED), (3) Filter auto-fix suggestions (confidence>95%), (4) Generate QC report with CrowdWorks format, (5) Persist + batch summary.
-  OUTPUT_FORMAT: L1 YAML verdict+fidelity+error_count, L2 full QC report with error details+fix suggestions+HITL items.
+  Use when: Production rendering complete, need QC verdict and report.
+  WHEN: After render-evaluate completes in production mode (IC-12 qc_rendering available). Pipeline B only.
+  CONSUMES: IC-12 qc_rendering (render-evaluate: fidelity_score, fidelity_breakdown, error_taxonomy, element_verdicts, hitl_required).
+  PRODUCES: L1 YAML verdict+fidelity+error_count, L2 QC report with fix suggestions → qc-metrics (aggregation), PM/PL (HITL items).
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[file-or-directory]"
@@ -76,48 +73,12 @@ NEVER auto-fix:
 Auto-fix suggestions are SUGGESTIONS only -- they do not modify the source file. PM/PL decides whether to apply.
 
 ### 3. Batch Processing Strategy (REQ-QR-02)
-
-```
-IF input is single file:
-  -> Generate one QC report
-  -> Persist to crowd_works/data/qc-reports/{date}_{file_id}.yaml
-
-IF input is directory:
-  -> Process each JSONL file independently (each gets its own IC-12)
-  -> Generate per-file QC report
-  -> Aggregate batch summary:
-     batch_id, total, pass_count, conditional_pass_count,
-     fail_count, hitl_count, avg_fidelity, systemic_issues[]
-  -> Persist to crowd_works/data/qc-reports/{batch-date}.yaml
-
-IF batch fail_rate > 50%:
-  -> Flag batch for systemic issue review
-  -> Identify common error categories across failed files
-  -> Recommend batch-level corrective action
-```
+- **Single file**: Generate one QC report. Persist to `crowd_works/data/qc-reports/{date}_{file_id}.yaml`.
+- **Directory**: Process each JSONL independently (each gets own IC-12), generate per-file report, aggregate batch summary (batch_id, total, pass/conditional_pass/fail/hitl counts, avg_fidelity, systemic_issues[]). Persist to `crowd_works/data/qc-reports/{batch-date}.yaml`.
+- **Batch fail_rate > 50%**: Flag for systemic issue review, identify common error categories across failures, recommend batch-level corrective action.
 
 ### 4. HITL Routing (REQ-QR-04)
-
-Priority assignment based on severity and score:
-```
-urgent:
-  - Any FATAL error in error_taxonomy
-  - render_status == CRASH
-  - fidelity_score < 0.50
-
-normal:
-  - fidelity_score 0.50-0.70 (clear fail, needs rework)
-  - fidelity_score 0.70-0.85 (threshold zone, needs review)
-
-low:
-  - confidence < 0.80 but fidelity_score >= 0.85
-  - Minor ambiguities requiring confirmation
-```
-
-HITL items enter "검수 대기" (review pending) state. PM can:
-- **Approve**: Override to PASS (with PM approval stamp)
-- **Reject**: Confirm FAIL, route to rework
-- **Request Re-work**: Send back with specific correction instructions
+Priority: **urgent** (FATAL error, CRASH, or fidelity < 0.50), **normal** (fidelity 0.50-0.85), **low** (confidence < 0.80 but fidelity >= 0.85). HITL items enter "검수 대기" (review pending). PM can: Approve (override to PASS), Reject (confirm FAIL, route to rework), or Request Re-work (specific correction instructions).
 
 ### 5. CrowdWorks Submission Format (REQ-QR-05)
 
@@ -196,85 +157,19 @@ Count auto-fixable vs manual-fix items for summary statistics.
 
 ### 4. Generate QC Report
 
-Assemble the report in CrowdWorks submission format:
+Assemble in CrowdWorks submission format with Korean labels for PM:
 
-**Header** (Korean labels for PM consumption):
-```
-파일 ID: {file_id}
-배치 ID: {batch_id or "단건"}
-작업자 ID: {worker_id or "N/A"}
-검수 일시: {evaluated_at}
-판정: {Korean verdict label}
-```
-
-**Fidelity Summary**:
-```
-종합 충실도: {fidelity_score * 100}%
-  구조 정확도: {structural * 100}%
-  텍스트 정확도: {textual * 100}%
-  서식 정확도: {formatting * 100}%
-  완전성: {completeness * 100}%
-```
-
-**Error Details** (from error_taxonomy, sorted by severity FATAL-first):
-For each error:
-- Human-readable description (no raw JSONL/LaTeX code)
-- Category (7-category: ESCAPE/GROUPING/OPERATOR/SIZING/TEXT/ENVIRONMENT/SEMANTIC)
-- Severity (FATAL/FAIL/WARN/INFO)
-- Auto-fix available? If yes, include suggestion text.
-
-**HITL Section** (only if hitl_required):
-- Priority level with Korean label
-- Reason for human review
-- Specific items requiring PM decision
-- Recommended action
-
-**Source Comparison** (REQ-QR-03, if source_comparison available):
-- Source type (image/latex_draft/ocr_output)
-- Comparison method used
-- Discrepancies list with location, expected vs actual, severity
+- **Header**: 파일 ID, 배치 ID (or "단건"), 작업자 ID, 검수 일시, 판정 (합격/조건부 합격/불합격/검수 대기)
+- **Fidelity Summary**: 종합 충실도 + 4 sub-scores (구조/텍스트/서식/완전성) as percentages
+- **Error Details**: From error_taxonomy, FATAL-first. Per error: human-readable description, category (7-cat), severity (FATAL/FAIL/WARN/INFO), auto-fix status + suggestion if eligible
+- **HITL Section** (if hitl_required): Priority with Korean label, review reason, items needing PM decision, recommended action
+- **Source Comparison** (REQ-QR-03, if available): Source type, comparison method, discrepancy list (location, expected vs actual, severity)
 
 ### 5. Persist + Batch Summary
 
-**Single file persistence**:
-```
-crowd_works/data/qc-reports/{YYYY-MM-DD}_{file_id}.yaml
-```
+**Persistence paths**: Single file to `crowd_works/data/qc-reports/{YYYY-MM-DD}_{file_id}.yaml`; batch to `crowd_works/data/qc-reports/{batch_id}_{YYYY-MM-DD}.yaml`. Contents: verdict, fidelity_score, fidelity_breakdown, error_taxonomy (with auto-fix annotations), hitl_routing, source_comparison, metadata (evaluated_at, batch_id, skill version).
 
-**Batch persistence**:
-```
-crowd_works/data/qc-reports/{batch_id}_{YYYY-MM-DD}.yaml
-```
-
-Contents: Full structured QC report (YAML format) including:
-- verdict, fidelity_score, fidelity_breakdown
-- error_taxonomy (full, with auto-fix annotations)
-- hitl_routing (if applicable)
-- source_comparison (if applicable)
-- metadata (evaluated_at, batch_id, skill version)
-
-**Batch summary** (appended to batch file):
-```yaml
-batch_summary:
-  batch_id: string
-  total_files: int
-  pass_count: int
-  conditional_pass_count: int
-  fail_count: int
-  hitl_count: int
-  avg_fidelity: float
-  min_fidelity: float
-  max_fidelity: float
-  common_errors:
-    - category: ESCAPE
-      count: 12
-      description: "Backslash escaping issues"
-    - category: GROUPING
-      count: 5
-      description: "Missing braces in expressions"
-  systemic_flag: boolean       # true if fail_rate > 50%
-  systemic_analysis: string    # Common root cause if systemic_flag
-```
+**Batch summary** (appended to batch file): batch_id, total_files, pass/conditional_pass/fail/hitl counts, avg/min/max fidelity, common_errors[] (category, count, description), systemic_flag (true if fail_rate > 50%), systemic_analysis (root cause if flagged).
 
 ## Failure Handling
 
@@ -377,8 +272,8 @@ If IC-12 sets hitl_required: true, the QC report MUST preserve this. Never downg
 domain: production
 skill: qc-report
 status: complete
-file_id: "PROD-2024-001"
-batch_id: "BATCH-20240215"
+file_id: "PROD-2024-001"          # single mode
+batch_id: "BATCH-20240215"        # batch mode (or null for single)
 verdict: PASS|CONDITIONAL_PASS|FAIL|HITL_REQUIRED
 fidelity_score: 0.87
 error_count: 2
@@ -386,23 +281,7 @@ auto_fix_count: 1
 hitl_required: false
 hitl_priority: null
 persisted_to: "crowd_works/data/qc-reports/2024-02-15_PROD-2024-001.yaml"
-```
-
-### L1 -- Batch Mode
-```yaml
-domain: production
-skill: qc-report
-status: complete
-batch_id: "BATCH-20240215"
-batch_summary:
-  total: 25
-  pass: 18
-  conditional_pass: 3
-  fail: 2
-  hitl_required: 2
-  avg_fidelity: 0.89
-  systemic_flag: false
-persisted_to: "crowd_works/data/qc-reports/BATCH-20240215_2024-02-15.yaml"
+# Batch mode adds: batch_summary (total, pass, conditional_pass, fail, hitl_required, avg_fidelity, systemic_flag)
 ```
 
 ### L2

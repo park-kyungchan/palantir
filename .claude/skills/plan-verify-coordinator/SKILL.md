@@ -1,15 +1,11 @@
 ---
 name: plan-verify-coordinator
 description: |
-  [P4·PlanVerify·Coordinator] Consolidates 4 dimension verdicts with cross-dimension consistency checks into tiered output.
+  Consolidates 4 dimension verdicts with cross-dimension consistency checks into tiered output. Terminal plan-verify skill — cross-checks dependency↔sequence, contract↔boundary, rollback↔checkpoint traceability.
 
-  WHEN: After all 4 pv-* skills complete. Wave 4.5. Terminal.
-  DOMAIN: plan-verify (skill 5 of 5). Terminal. Receives from 4 parallel verifiers.
-  INPUT_FROM: pv-static (coverage verdict), pv-behavioral (test coverage verdict), pv-relational (integrity verdict), pv-impact (containment verdict).
-  OUTPUT_TO: orchestrate-static/behavioral/relational/impact (all PASS: L3 per-dimension), plan domain (any FAIL: route back). Lead reads L1 index + L2 summary.
-
-  METHODOLOGY: (1) Read 4 dimension verdicts+metrics, (2) Cross-check: dep<->seq, contract<->boundary, rollback<->checkpoint, traceability, (3) L1 index.md (verdict+routing), (4) L2 summary.md (cross-dim findings), (5) L3 per-dim files with annotations.
-  OUTPUT_FORMAT: Tiered /tmp/pipeline/p4-coordinator/. L1 index, L2 summary, L3 verify-{dim}.
+  WHEN: After ALL 4 plan-verify dimension skills complete (plan-verify-static/behavioral/relational/impact).
+  CONSUMES: plan-verify-static (coverage verdict), plan-verify-behavioral (test coverage verdict), plan-verify-relational (integrity verdict), plan-verify-impact (containment verdict).
+  PRODUCES: L1 index.md + L2 summary.md → Lead, L3 per-dimension files → orchestrate-static/behavioral/relational/impact (all PASS) | plan domain (FAIL: route back).
 user-invocable: false
 disable-model-invocation: false
 ---

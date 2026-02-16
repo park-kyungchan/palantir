@@ -1,15 +1,12 @@
 ---
 name: verify-consistency
 description: |
-  [P7·Verify·Consistency] Cross-references INPUT_FROM/OUTPUT_TO bidirectionality and counts.
+  Cross-references CONSUMES/PRODUCES bidirectionality and counts across all skill descriptions. Verifies phase sequence P0→P8, checks CLAUDE.md counts match filesystem. Second of 4 sequential verify stages.
 
-  WHEN: After verify-structural-content PASS. Second of 4 sequential verify stages. Also after multi-skill INPUT_FROM/OUTPUT_TO edits.
-  DOMAIN: verify (skill 2 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
-  INPUT_FROM: verify-structural-content (structural+content integrity confirmed).
-  OUTPUT_TO: verify-quality (if PASS) or execution-infra (if FAIL with inconsistency details).
-
-  METHODOLOGY: (1) Extract all INPUT_FROM/OUTPUT_TO references from every skill description, (2) Build directed reference graph, (3) Verify bidirectionality (A refs B ↔ B refs A; coordinator intermediary valid), (4) Check phase sequence P0→P8 (exempt: homeostasis, cross-cutting, FAIL routes), (5) Verify CLAUDE.md counts (agents, skills, domains) match filesystem.
-  OUTPUT_FORMAT: L1 YAML relationship matrix with consistency status, L2 inconsistency report with source/target evidence.
+  Use when: After structural verification, need cross-reference consistency check.
+  WHEN: After verify-structural-content PASS. Also after multi-skill CONSUMES/PRODUCES edits.
+  CONSUMES: verify-structural-content (structural+content integrity confirmed).
+  PRODUCES: L1 YAML relationship matrix with consistency status, L2 inconsistency report → verify-quality (PASS) | execution-infra (FAIL).
 user-invocable: true
 disable-model-invocation: false
 ---

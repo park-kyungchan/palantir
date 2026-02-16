@@ -1,15 +1,12 @@
 ---
 name: pipeline-resume
 description: |
-  [X-Cut·Resume·Recovery] Reconstructs pipeline state from Task API after session interruption.
+  Reconstructs pipeline state from Task API after session interruption. Categorizes work tasks, determines resume point, validates git branch state, re-spawns agents with PT context.
 
-  Use when: User says /pipeline-resume. Session continuation with incomplete pipeline. PT exists with metadata.current_phase set.
-
-  WHEN: Session continuation after interruption. Previous pipeline active but incomplete. User invokes or Lead detects incomplete state.
-  DOMAIN: Cross-cutting (session recovery). Independent of pipeline sequence.
-
-  METHODOLOGY: (1) TaskList to find all tasks including [PERMANENT], (2) TaskGet PT for project context, tier, and current_phase, (3) Categorize work tasks: completed/in-progress/pending/failed, (4) Determine resume point (first non-completed phase), (5) Validate git branch state matches PT expectations, (6) Re-spawn agents with PT context + task descriptions.
-  OUTPUT_FORMAT: L1 YAML resume state (phases, task counts), L2 recovery report with resume rationale.
+  Use when: User says /pipeline-resume. Session continuation with incomplete pipeline.
+  WHEN: Session continuation after interruption. PT exists with metadata.current_phase set.
+  CONSUMES: Task API (PT + work tasks), git branch state.
+  PRODUCES: L1 YAML resume state (phases, task counts), L2 recovery report with resume rationale.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[resume-from-phase]"

@@ -1,15 +1,12 @@
 ---
 name: verify-structural-content
 description: |
-  [P7·Verify·StructuralContent] Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness in single pass.
+  Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness in single pass. First of 4 sequential verify stages: structural-content → consistency → quality → cc-feasibility.
 
-  WHEN: After execution-review PASS or any INFRA file creation/modification. First of 4 sequential verify stages.
-  DOMAIN: verify (skill 1 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
-  INPUT_FROM: execution-review (PASS verdict, implementation artifacts).
-  OUTPUT_TO: verify-consistency (if PASS) or execution-infra (if FAIL with fix instructions).
-
-  METHODOLOGY: (1) Glob agents/*.md + skills/*/SKILL.md, (2) Validate YAML frontmatter fields, (3) Check naming+directory compliance, (4) Verify description utilization (>80% of 1024) + orchestration keys, (5) Verify L2: Execution Model, Methodology, Quality Gate, Output.
-  OUTPUT_FORMAT: L1 YAML PASS/FAIL per file with structure+content scores, L2 integrity report.
+  Use when: After implementation, need structural integrity check on modified files.
+  WHEN: After execution-review PASS or any INFRA file creation/modification.
+  CONSUMES: execution-review (PASS verdict, implementation artifacts).
+  PRODUCES: L1 YAML PASS/FAIL per file with structure+content scores, L2 integrity report → verify-consistency (PASS) | execution-infra (FAIL).
 user-invocable: true
 disable-model-invocation: false
 ---

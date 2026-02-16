@@ -1,15 +1,12 @@
 ---
 name: execution-code
 description: |
-  [P6·Execution·Code] Spawns implementers for non-.claude/ source files via DPS delegation prompts.
+  Spawns implementers for non-.claude/ source files via DPS delegation prompts. Monitors completion signals, handles failures with max 3 retries, consolidates file change manifest. Parallel with execution-infra.
 
+  Use when: Code tasks ready for implementation after orchestration planning.
   WHEN: After orchestrate-coordinator complete (PASS). Code tasks assigned in unified plan. Non-.claude/ files only.
-  DOMAIN: execution (skill 1 of 5). Parallel-capable: code ∥ infra -> impact -> cascade -> review.
-  INPUT_FROM: orchestrate-coordinator (unified execution plan L3 with code task assignments and DPS prompts).
-  OUTPUT_TO: execution-impact (file change manifest), execution-review (implementation artifacts).
-
-  METHODOLOGY: (1) Read orchestrate-coordinator L3 code task assignments, (2) Spawn implementer per task with DPS: Context/Task/Constraints/Output/Delivery, (3) Monitor via SendMessage completion signals (PASS/FAIL + files), (4) Handle failures: max 3 retries per implementer, (5) Consolidate file change manifest with per-file status for downstream.
-  OUTPUT_FORMAT: L1 YAML file change manifest with per-implementer status, L2 implementation summary.
+  CONSUMES: orchestrate-coordinator (unified execution plan L3 with code task assignments and DPS prompts).
+  PRODUCES: L1 YAML file change manifest with per-implementer status, L2 implementation summary → execution-impact, execution-review.
 user-invocable: true
 disable-model-invocation: false
 ---

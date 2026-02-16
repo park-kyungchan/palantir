@@ -1,15 +1,12 @@
 ---
 name: reference-build
 description: |
-  [D0·Foundation·Reference] BuildDomainReference with OCR pattern library, backslash depth guide, structured R1-R5 rules. Tiered command tables (T1-3), per-domain separation.
+  Builds domain reference with OCR pattern library, backslash depth guide, structured R1-R5 rules. Tiered command tables (T1-3), per-domain separation. Extensible registry (math/physics/chemistry/biology).
 
+  Use when: First session, reference refresh, or new domain onboarding.
   WHEN: First session, reference refresh, or new domain onboarding. No prerequisites.
-  DOMAIN: foundation (1/1). Independent. Extensible registry (math/physics/chemistry/biology).
-  INPUT_FROM: User request (domain scope), progress-track (weak areas).
-  OUTPUT_TO: challenge-generate IC-01 command_pool (commands[], escape_rules[], ocr_confusions[], trap_catalog[]), latex-parse IC-02 command_allowlist (valid_commands[], operators[], environments[], domain_semantics[]), golden-correct (canonical syntax).
-
-  METHODOLOGY: (1) Domain scope from registry, (2) Tiered command table, (3) OCR confusion patterns, (4) Backslash depth guide (0-2), (5) R1-R5 rules with severity/example/counter-example, (6) Trap catalog, (7) Persist reference-cache/{domain}.yaml.
-  OUTPUT_FORMAT: L1 YAML inventory + contract compliance, L2 with IC-01/IC-02 sections.
+  CONSUMES: User request (domain scope), progress-track (weak areas for targeted refresh).
+  PRODUCES: IC-01 command_pool → challenge-generate, IC-02 command_allowlist → latex-parse, canonical syntax → golden-correct. Persists reference-cache/{domain}.yaml.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[domain: math|physics|chemistry|biology]"

@@ -1,15 +1,12 @@
 ---
 name: verify-cc-feasibility
 description: |
-  [P7·Verify·CCFeasibility] Validates CC native field compliance via cc-guide verification.
+  Validates CC native field compliance via cc-reference cache and cc-guide verification. Checks each frontmatter field against CC native field lists. Terminal verify stage — gates delivery pipeline.
 
-  WHEN: After verify-quality PASS. Fourth and final verify stage. Terminal P7 skill. Also after skill/agent creation or frontmatter modification.
-  DOMAIN: verify (skill 4 of 4). Terminal. Sequential: structural-content -> consistency -> quality -> cc-feasibility.
-  INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes).
-  OUTPUT_TO: delivery-pipeline (all 4 verify stages PASS) or execution-infra (FAIL: non-native field fix required).
-
-  METHODOLOGY: (1) Read target frontmatter fields from modified skill/agent files, (2) Check each field against CC native field lists (skills: name/description/user-invocable/etc., agents: name/description/tools/model/etc.), (3) Flag any non-native or custom fields, (4) Spawn claude-code-guide for questionable fields, (5) Return per-file compliance verdict.
-  OUTPUT_FORMAT: L1 YAML native compliance per file, L2 feasibility report with field-level feedback.
+  Use when: After quality verification, need CC native compliance check before delivery.
+  WHEN: After verify-quality PASS. Also after skill/agent creation or frontmatter modification.
+  CONSUMES: verify-quality (routing quality confirmed), execution-infra (frontmatter changes).
+  PRODUCES: L1 YAML native compliance per file, L2 field-level feedback → delivery-pipeline (all PASS) | execution-infra (FAIL: fix required).
 user-invocable: true
 disable-model-invocation: false
 ---

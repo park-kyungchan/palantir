@@ -1,15 +1,11 @@
 ---
 name: latex-parse
 description: |
-  [D1·Shared·LaTeXParse] Dual-mode LaTeX validation. Drill: FAIL/WARN/PASS against expected_constructs. Production QC: CRITICAL/MAJOR/MINOR against command_allowlist + OCR artifact detection.
+  Dual-mode LaTeX validation. Drill: FAIL/WARN/PASS against expected_constructs. Production QC: CRITICAL/MAJOR/MINOR against command_allowlist + OCR artifact detection. Parallel with jsonl-validate.
 
-  WHEN: After JSONL submit (drill) or OCR/worker LaTeX extracted (production). Parallel with jsonl-validate. D1 shared validation core.
-  DOMAIN: drill+production (D1 shared). Parallel: jsonl-validate || latex-parse -> render-evaluate.
-  INPUT_FROM: jsonl-validate (extracted text), challenge-generate (expected_constructs IC-05), reference-build (command_allowlist + domain_semantics IC-02), image-preprocess (flagged_artifacts).
-  OUTPUT_TO: render-evaluate (parse_result IC-08 mode-tagged), golden-correct (drill errors), qc-report (production findings).
-
-  METHODOLOGY: (1) Detect mode from $ARGUMENTS/upstream, (2) Tokenize segments, (3) Apply mode rules + domain semantics, (4) OCR artifact cross-ref if production, (5) Emit parse_result with tentative + HITL flags.
-  OUTPUT_FORMAT: L1 YAML verdict with mode/tentative/confidence, L2 segment-level analysis with per-finding evidence.
+  WHEN: After JSONL submit (drill) or OCR/worker LaTeX extracted (production). Parallel with jsonl-validate.
+  CONSUMES: jsonl-validate (extracted text), challenge-generate (IC-05 expected_constructs), reference-build (IC-02 command_allowlist), image-preprocess (flagged_artifacts).
+  PRODUCES: IC-08 parse_result (mode-tagged) → render-evaluate, drill errors → golden-correct, production findings → qc-report.
 user-invocable: false
 disable-model-invocation: false
 ---

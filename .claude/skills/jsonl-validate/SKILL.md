@@ -1,15 +1,11 @@
 ---
 name: jsonl-validate
 description: |
-  [D1·Shared·DualMode·JSONLValidate] Validates JSONL structural integrity in dual mode: drill (vs challenge_spec, educational feedback) or production QC (vs preprocessed_input, PASS/FAIL binary). 3-tier severity (FATAL/WARN/INFO), char-level error positioning, backslash depth tracking, R1-R5 escape compliance. Parallel with latex-parse.
+  Validates JSONL structural integrity in dual mode: drill (vs challenge_spec, educational feedback) or production QC (vs preprocessed_input, PASS/FAIL binary). 3-tier severity (FATAL/WARN/INFO), char-level positioning, R1-R5 escape compliance. Parallel with latex-parse.
 
-  WHEN: After trainee submits JSONL (drill) or worker/OCR output arrives (production). Parallel with latex-parse. Mode from $ARGUMENTS or upstream skill.
-  DOMAIN: D1 shared validation core (skill 2 of 5). Parallel: jsonl-validate || latex-parse -> render-evaluate.
-  INPUT_FROM: challenge-generate (challenge_spec IC-04, drill), image-preprocess (preprocessed_input IC-13, production), User input (raw JSONL).
-  OUTPUT_TO: render-evaluate (validation_result IC-07), golden-correct (drill errors), qc-report (production verdict). HITL queue when confidence < 0.8 (production only).
-
-  METHODOLOGY: (1) Determine mode from $ARGUMENTS/upstream, (2) Parse + locate failure with char position, (3) Backslash depth normalize (production: from IC-13 depth_map), (4) R1-R5 escape compliance with R3-enhanced newline analysis, (5) Produce mode-specific output (drill: educational verdict, production: binary + auto-fix + HITL flag).
-  OUTPUT_FORMAT: L1 YAML validation_result (IC-07 schema), L2 per-instance char-level evidence table.
+  WHEN: After trainee submits JSONL (drill) or worker/OCR output arrives (production). Mode from $ARGUMENTS or upstream.
+  CONSUMES: challenge-generate (IC-04 challenge_spec, drill), image-preprocess (IC-13 preprocessed_input, production), User input (raw JSONL).
+  PRODUCES: IC-07 validation_result → render-evaluate, drill errors → golden-correct, production verdict → qc-report. HITL queue when confidence < 0.8 (production).
 user-invocable: false
 disable-model-invocation: false
 ---

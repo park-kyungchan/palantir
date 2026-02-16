@@ -1,15 +1,12 @@
 ---
 name: verify-quality
 description: |
-  [P7·Verify·Quality] Audits routing effectiveness via WHEN specificity and methodology concreteness.
+  Audits routing effectiveness via WHEN specificity, CONSUMES/PRODUCES clarity, and description utilization. Scores each skill 0-100 across 4 dimensions, identifies bottom-5 for priority improvement. Third of 4 sequential verify stages.
 
-  WHEN: After verify-consistency PASS. Third of 4 sequential verify stages. Also after routing failures requiring investigation.
-  DOMAIN: verify (skill 3 of 4). Sequential: structural-content -> consistency -> quality -> cc-feasibility.
-  INPUT_FROM: verify-consistency (relationship integrity confirmed).
-  OUTPUT_TO: verify-cc-feasibility (if PASS) or execution-infra (if FAIL on .claude/ files).
-
-  METHODOLOGY: (1) Score WHEN specificity per skill (reject vague triggers, 30% weight), (2) Score METHODOLOGY concreteness (numbered steps + tool/agent refs, 30%), (3) Score OUTPUT FORMAT completeness (L1 YAML + L2 markdown, 20%), (4) Score utilization (>80% of 1024 chars, 20%), (5) Rank all skills, identify bottom-5 for priority improvement.
-  OUTPUT_FORMAT: L1 YAML quality score per file (0-100) with dimension breakdown, L2 quality report with improvement suggestions.
+  Use when: After consistency verification, need routing quality audit.
+  WHEN: After verify-consistency PASS. Also after routing failures requiring investigation.
+  CONSUMES: verify-consistency (relationship integrity confirmed).
+  PRODUCES: L1 YAML quality score per file (0-100) with dimension breakdown, L2 quality report → verify-cc-feasibility (PASS) | execution-infra (FAIL).
 user-invocable: true
 disable-model-invocation: false
 ---

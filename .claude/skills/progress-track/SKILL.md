@@ -1,15 +1,12 @@
 ---
 name: progress-track
 description: |
-  [D2·Eval·Progress] Terminal Pipeline A evaluator + feedback loop. Aggregates multi-drill results, identifies weak patterns, calculates 4-level mastery, persists to progress.yaml, generates IC-03 recommendation.
+  Terminal Pipeline A evaluator + feedback loop. Aggregates multi-drill results, identifies weak patterns, calculates 4-level mastery, persists to progress.yaml. Generates IC-03 recommendation for next drill cycle.
 
-  WHEN: After golden-correct (IC-11). Terminal D2. User-invocable: report/reset.
-  DOMAIN: eval (1/1). Terminal + loop: progress-track->IC-03->challenge-generate. Pipeline A only.
-  INPUT_FROM: IC-10 trap_results (score, category_breakdown, render_status), IC-11 correction_report (corrections[], severity, rule_violated, badge).
-  OUTPUT_TO: IC-03 recommendation (next_difficulty, difficulty_delta+/-1, focus_rules R1-R5, weak_patterns[], focus_weight, domain_performance[]).
-  PERSISTENCE: crowd_works/data/progress.yaml. Cross-cutting C: Optimization Loop.
-
-  METHODOLOGY: (1) Load IC-10+IC-11+progress.yaml, (2) Merge category_breakdown+corrections, (3) Domain-separated+per-category mastery, (4) Pattern ID: failures+errors+trend, (5) IC-03: delta+/-1, focus, persist.
+  Use when: After drill correction, or user-invocable report/reset.
+  WHEN: After golden-correct (IC-11). Pipeline A terminal + loop back to challenge-generate.
+  CONSUMES: IC-10 trap_results (score, category_breakdown), IC-11 correction_report (corrections[], severity, badge).
+  PRODUCES: IC-03 recommendation (next_difficulty, focus_rules R1-R5, weak_patterns[]) → challenge-generate. Persists progress.yaml.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[report|reset]"
@@ -38,196 +35,50 @@ argument-hint: "[report|reset]"
 Applied per-category (7 categories) and per-domain independently. Overall mastery = weighted average across categories (weighted by attempt count).
 
 ### Difficulty Adjustment Rules
-```
-INPUT: category mastery levels, consecutive pass/fail counts, overall mastery
-OUTPUT: difficulty_delta (-1, 0, or +1 ONLY -- no jumps >1)
-
-IF any category has consecutive_failures >= 3 AND mastery == Novice:
-  -> difficulty_delta: -1 (floor: Level 1)
-  -> focus_weight: 0.8 (increase focus on weak area)
-  -> Rationale: "Persistent weakness requires lower difficulty for foundation building"
-
-ELIF overall mastery >= Proficient AND consecutive_passes >= 3 across all categories:
-  -> difficulty_delta: +1 (ceiling: Level 5)
-  -> focus_weight: 0.5 (balance weak and mastered areas)
-  -> Rationale: "Consistent proficiency supports difficulty increase"
-
-ELIF overall mastery == Master AND all 7 categories == Master:
-  -> difficulty_delta: +1 to Level 5
-  -> Recommend composite challenges (multiple categories combined)
-  -> Rationale: "Full mastery -- graduation track"
-
-ELIF any category regressed (dropped 2+ mastery levels since last drill):
-  -> difficulty_delta: -1
-  -> Flag regression in IC-03 weak_patterns[].trend = "critical"
-  -> HITL trigger: mastery drop >= 2 levels (Cross-cutting theme D)
-  -> Rationale: "Regression detected -- stabilize before advancing"
-
-ELSE:
-  -> difficulty_delta: 0
-  -> focus_weight: 0.7 (default -- 70% traps from weak areas)
-```
+Input: category mastery levels, consecutive pass/fail counts, overall mastery. Output: `difficulty_delta` (-1, 0, or +1 ONLY).
+- **consecutive_failures >= 3 AND Novice**: delta -1 (floor L1), focus_weight 0.8 -- persistent weakness needs foundation
+- **overall >= Proficient AND consecutive_passes >= 3 all categories**: delta +1 (ceiling L5), focus_weight 0.5
+- **all 7 categories Master**: delta +1 to L5, recommend composite challenges -- graduation track
+- **any category regressed 2+ levels**: delta -1, flag trend "critical", HITL trigger (Cross-cutting D)
+- **else**: delta 0, focus_weight 0.7 (default 70% traps from weak areas)
 
 ### Domain-Separated Tracking (REQ-PT-04)
-Map IC-10 `challenge_metadata.topic` to domains:
-```
-Domain mapping (topic -> domain):
-  calculus, integration, differentiation, limits -> "calculus"
-  linear_algebra, matrices, vectors, eigenvalues -> "linear_algebra"
-  set_theory, logic, quantifiers, proofs         -> "set_theory"
-  statistics, probability, distributions          -> "statistics"
-  (unmapped topics)                               -> "general"
-```
-
-Per-domain tracking stored in `progress.yaml.cumulative_stats.by_domain{}`:
-- domain pass_rate = total passes / total attempts across all drills in that domain
-- domain mastery = classify pass_rate using 4-level thresholds
-- IC-03 `domain_performance[]` populated from this data
-- `recommended` field in domain_performance: true if domain mastery < Developing
+Map IC-10 `challenge_metadata.topic` to domains: calculus (calculus/integration/differentiation/limits), linear_algebra (matrices/vectors/eigenvalues), set_theory (logic/quantifiers/proofs), statistics (probability/distributions), general (unmapped). Per-domain: pass_rate = passes/attempts, mastery from 4-level thresholds. IC-03 `domain_performance[]` populated from by_domain data; `recommended: true` if mastery < Developing.
 
 ### Pattern Identification (REQ-PT-02)
-A **pattern** is a recurring error identified across multiple drills:
-```
-Pattern definition:
-  - Same rule_violated (from IC-11 corrections[].rule_violated)
-  - Same category (from IC-11 corrections[].category)
-  - Appears in >= 3 separate drills
-
-Pattern output (maps to IC-03 weak_patterns[].specific_errors[]):
-  - "Missing \\, before dx (R1, SEMANTIC) -- 5 occurrences across 4 drills"
-  - "Unescaped backslash in \\frac (R1, ESCAPE) -- 3 occurrences across 3 drills"
-
-Pattern tracking in progress.yaml:
-  error_patterns:
-    - rule: "R1"
-      category: "ESCAPE"
-      description: "backslash double-escape in \\frac"
-      drill_ids: [3, 5, 7]
-      occurrence_count: 5
-      last_seen: "2026-02-15"
-```
+A **pattern** = same (rule_violated, category) appearing in >= 3 drills. Track in `progress.yaml.error_patterns[]` with fields: rule, category, description, drill_ids[], occurrence_count, last_seen. Output maps to IC-03 `weak_patterns[].specific_errors[]` (e.g., "Missing \\, before dx (R1, SEMANTIC) -- 5 occurrences across 4 drills").
 
 ### Trend Calculation
-Trend classification for each category, based on last 3+ drills:
-```
-improving:  last 3 pass_rates strictly increasing (e.g., 40% -> 55% -> 70%)
-stable:     last 3 pass_rates within +/-5% variance (e.g., 65% -> 68% -> 63%)
-declining:  last 3 pass_rates strictly decreasing (e.g., 80% -> 65% -> 50%)
-critical:   consecutive_failures >= 3 AND current pass_rate < 40%
-```
-- Trend requires minimum 3 data points. With < 3 drills, trend = "insufficient_data".
-- Trend feeds IC-03 `weak_patterns[].trend` field.
-- "critical" trend triggers HITL review suggestion (Cross-cutting theme D).
+Per-category trend from last 3+ drills: **improving** (strictly increasing), **stable** (+/-5% variance), **declining** (strictly decreasing), **critical** (consecutive_failures >= 3 AND pass_rate < 40%). Requires minimum 3 data points; fewer = "insufficient_data". Feeds IC-03 `weak_patterns[].trend`. Critical triggers HITL review (Cross-cutting D).
 
 ### Progress Report Triggers
-```
-IF user invokes with "report":
-  -> Generate full progress dashboard (L2 format)
-  -> No new drill data recorded
-
-ELIF drill_count % 5 == 0:
-  -> Auto-generate mini progress summary alongside normal IC-03 output
-
-ELIF any mastery level changes (up or down):
-  -> Report the level change in IC-03 difficulty_rationale
-
-ELIF regression detected (mastery drops 2+ levels):
-  -> Full alert with HITL trigger recommendation
-```
+- **"report" invocation**: full dashboard (L2), no new drill recorded
+- **drill_count % 5 == 0**: auto mini-summary alongside normal IC-03
+- **mastery level change**: report in IC-03 difficulty_rationale
+- **regression (2+ level drop)**: full alert with HITL trigger recommendation
 
 ## Methodology
 
 ### 1. Load Inputs and State
-Read IC-10 (trap_results from render-evaluate) + IC-11 (correction_report from golden-correct). Load `crowd_works/data/progress.yaml` for cumulative state.
+Read IC-10 (trap_results) + IC-11 (correction_report) + `crowd_works/data/progress.yaml`.
 
-**IC-10 key fields consumed**:
-- `challenge_id`, `mode` (must be "drill"), `evaluated_at`
-- `results` (map of trap_type -> PASS/FAIL)
-- `score.total` ("N/M"), `score.total_numeric` (0.0-1.0), `score.by_category` (4 scoring categories)
-- `render_status` (FULL/PARTIAL/CRASH)
-- `challenge_metadata.difficulty`, `challenge_metadata.topic`, `challenge_metadata.trap_count`, `challenge_metadata.trap_types[]`
-- `category_breakdown[]` (per-category: category, tested, result, instance_count, pass_count, fail_count)
+**IC-10 fields**: challenge_id, mode (must be "drill"), evaluated_at, results (trap->PASS/FAIL), score (total, total_numeric, by_category), render_status, challenge_metadata (difficulty, topic, trap_count, trap_types), category_breakdown[] (per-category pass/fail counts).
 
-**IC-11 key fields consumed**:
-- `challenge_id`, `mode` (must match IC-10)
-- `corrections[]` (each: correction_id, category, severity, rule_violated, description, confidence, hitl_required)
-- `verification.badge` (VERIFIED_3STAGE / VERIFIED_PARTIAL / UNVERIFIED)
-- `summary.total_corrections`, `summary.by_category{}`, `summary.by_severity{}`, `summary.correction_density`, `summary.estimated_learning_value`
+**IC-11 fields**: challenge_id, mode, corrections[] (category, severity, rule_violated, description, confidence), verification.badge, summary (total_corrections, by_category, by_severity, correction_density, estimated_learning_value).
 
-**Validation checks**:
-- IC-10 `mode` == "drill" (reject production data)
-- IC-10 `render_status` == CRASH -> override: record ALL traps as FAIL regardless of individual results
-- IC-11 `verification.badge` != VERIFIED_3STAGE -> log verification gap (still record results)
-- IC-10 and IC-11 `challenge_id` must match (mismatch = error)
-- Empty IC-11 corrections[] = perfect score (0 corrections is valid)
+**Validation**: mode must be "drill" (reject production); CRASH render_status -> override all traps as FAIL; non-VERIFIED_3STAGE badge -> log gap but still record; challenge_id must match across IC-10/IC-11; empty corrections[] is valid (perfect score).
 
 ### 2. Record Drill Result
-Merge IC-10 category_breakdown + IC-11 corrections into a single drill record:
-
-```yaml
-drill_record:
-  drill_id: int          # Auto-increment from progress.yaml.drill_history.length + 1
-  challenge_id: string   # From IC-10/IC-11
-  timestamp: string      # IC-10.evaluated_at (ISO 8601)
-  difficulty: int        # IC-10.challenge_metadata.difficulty
-  topic: string          # IC-10.challenge_metadata.topic
-  domain: string         # Mapped from topic (see Domain-Separated Tracking)
-  score_total: string    # IC-10.score.total ("7/10")
-  score_numeric: float   # IC-10.score.total_numeric (0.7)
-  render_status: string  # IC-10.render_status
-  trap_results: {}       # IC-10.results (per-trap PASS/FAIL)
-  category_breakdown:    # IC-10.category_breakdown (7 categories)
-    ESCAPE: {tested: true, pass: 2, fail: 1}
-    GROUPING: {tested: true, pass: 1, fail: 0}
-    # ... all 7 categories
-  corrections:           # From IC-11
-    total: int           # IC-11.summary.total_corrections
-    by_category: {}      # IC-11.summary.by_category
-    by_severity: {}      # IC-11.summary.by_severity
-    rules_violated: []   # Extracted from IC-11.corrections[].rule_violated (unique)
-    patterns: []         # Extracted from IC-11.corrections[].description (for pattern tracking)
-  verification_badge: string  # IC-11.verification.badge
-  learning_value: string      # IC-11.summary.estimated_learning_value
-```
-
-Append to `progress.yaml.drill_history[]`.
+Merge IC-10 category_breakdown + IC-11 corrections into a single drill_record with fields: drill_id (auto-increment), challenge_id, timestamp (IC-10.evaluated_at), difficulty, topic, domain (mapped from topic), score_total ("N/M"), score_numeric (0.0-1.0), render_status, trap_results (per-trap PASS/FAIL), category_breakdown (7 categories: tested/pass/fail counts), corrections (total, by_category, by_severity, rules_violated[], patterns[]), verification_badge, learning_value. Append to `progress.yaml.drill_history[]`.
 
 ### 3. Update Cumulative Statistics
-Update domain-separated tracking (REQ-PT-04) and per-category mastery:
+Update domain-separated tracking (REQ-PT-04) and per-category mastery.
 
-**Per-category update** (7 categories: ESCAPE, GROUPING, OPERATOR, SIZING, TEXT, ENVIRONMENT, SEMANTIC):
-```yaml
-cumulative_stats.by_category.{CATEGORY}:
-  total_attempts: int       # += category_breakdown[cat].instance_count (if tested)
-  total_passes: int         # += category_breakdown[cat].pass_count
-  total_fails: int          # += category_breakdown[cat].fail_count
-  pass_rate: float          # total_passes / total_attempts
-  mastery: enum             # Classify pass_rate: Novice/Developing/Proficient/Master
-  previous_mastery: enum    # For regression detection
-  consecutive_passes: int   # Reset to 0 on any FAIL, increment on PASS
-  consecutive_failures: int # Reset to 0 on any PASS, increment on FAIL
-  last_result: enum         # PASS or FAIL (from this drill)
-```
+**Per-category** (7: ESCAPE, GROUPING, OPERATOR, SIZING, TEXT, ENVIRONMENT, SEMANTIC): total_attempts/passes/fails (from category_breakdown), pass_rate, mastery (4-level), previous_mastery (for regression), consecutive_passes/failures (reset on opposite result), last_result.
 
-**Per-domain update** (mapped from topic):
-```yaml
-cumulative_stats.by_domain.{domain}:
-  total_drills: int
-  total_score_numeric: float  # Sum of score_numeric across drills in this domain
-  pass_rate: float            # Average score_numeric
-  mastery: enum               # Classify pass_rate
-  topics_seen: []             # Unique topics encountered
-```
+**Per-domain** (mapped from topic): total_drills, total_score_numeric, pass_rate (avg score_numeric), mastery, topics_seen[].
 
-**Overall update**:
-```yaml
-cumulative_stats.overall:
-  total_drills: int
-  total_score: string         # "N/M" cumulative
-  overall_pass_rate: float    # Weighted average of category pass_rates (by attempt count)
-  overall_mastery: enum       # Classify overall_pass_rate
-  overall_level: enum         # Same as overall_mastery (IC-03 field name)
-```
+**Overall**: total_drills, total_score ("N/M"), overall_pass_rate (weighted avg by attempt count), overall_mastery, overall_level (same as mastery, IC-03 field name).
 
 ### 4. Identify Weak Patterns
 Scan drill_history for recurring error patterns (REQ-PT-02):

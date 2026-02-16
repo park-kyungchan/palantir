@@ -1,15 +1,11 @@
 ---
 name: orchestrate-static
 description: |
-  [P5·Orchestration·WHO] Assigns task-agent pairs by matching tool requirements to agent profiles (B/C/D/E).
+  Assigns task-agent pairs by matching tool requirements to agent profiles (B=analyst, C=researcher, D=implementer, E=infra-impl). Splits multi-capability tasks into single-profile sub-tasks.
 
-  WHEN: After plan-verify-coordinator complete (all PASS). Wave 5 parallel with orchestrate-behavioral/relational/impact.
-  DOMAIN: orchestration (skill 1 of 5). Parallel: static ∥ behavioral ∥ relational ∥ impact -> coordinator.
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (task-agent assignment matrix with confidence scores).
-
-  METHODOLOGY: (1) Read pv-coordinator L3 task list and dependency graph, (2) Extract tool requirements per task (Read/Edit/Bash/Write/Web), (3) Match to profiles: B=analyst, C=researcher, D=implementer, E=infra-impl, (4) Split multi-capability tasks into single-profile sub-tasks, (5) Output matrix with HIGH/MEDIUM/LOW confidence per assignment.
-  OUTPUT_FORMAT: L1 YAML task-agent matrix with splits count, L2 rationale per assignment with capability evidence.
+  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-behavioral/relational/impact.
+  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  PRODUCES: L1 YAML task-agent matrix with splits count, L2 rationale per assignment → orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

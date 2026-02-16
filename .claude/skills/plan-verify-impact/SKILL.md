@@ -1,15 +1,11 @@
 ---
 name: plan-verify-impact
 description: |
-  [P4·PlanVerify·ImpactContainment] Confirms checkpoint containment against propagation chains for unmitigated paths.
+  Confirms checkpoint containment against propagation chains for unmitigated paths. Classifies gaps: unmitigated/late/insufficient. Verdict: PASS (all HIGH contained), FAIL (HIGH unmitigated or >3 total gaps).
 
-  WHEN: After plan-impact complete. Wave 4 parallel with pv-static/behavioral/relational.
-  DOMAIN: plan-verify (skill 4 of 5). Parallel with pv-static/behavioral/relational.
-  INPUT_FROM: plan-impact (execution sequence with checkpoints), research-coordinator (audit-impact L3 propagation paths).
-  OUTPUT_TO: plan-verify-coordinator (containment verdict with unmitigated path evidence).
-
-  METHODOLOGY: (1) Build checkpoint inventory from plan-impact sequence, (2) Build propagation inventory from audit-impact L3, (3) Verify each path intercepted by correctly-positioned checkpoint with matching criteria, (4) Classify gaps: unmitigated (no checkpoint), late (after terminal), insufficient (weak criteria), (5) Verdict: PASS (all HIGH contained), FAIL (HIGH unmitigated or >3 total gaps).
-  OUTPUT_FORMAT: L1 YAML containment verdict, L2 path-checkpoint mapping with gap classification.
+  WHEN: After plan-impact complete. Parallel with plan-verify-static/behavioral/relational.
+  CONSUMES: plan-impact (execution sequence with checkpoints), research-coordinator (audit-impact L3 propagation paths).
+  PRODUCES: L1 YAML containment verdict, L2 path-checkpoint mapping with gap classification → plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

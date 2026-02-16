@@ -1,15 +1,11 @@
 ---
 name: audit-behavioral
 description: |
-  [P2·Research·Behavioral] Predicts runtime behavior changes and regression risks.
+  Predicts runtime behavior changes and regression risks per component. Identifies behavior-bearing components affected by design, classifies risk (HIGH/MEDIUM/LOW) with file:line evidence.
 
-  WHEN: After research-codebase AND research-external complete. Wave 2 parallel audit.
-  DOMAIN: research (skill 4 of 7). Parallel: static ∥ behavioral ∥ relational ∥ impact.
-  INPUT_FROM: research-codebase (existing behaviors), research-external (known issues/workarounds), design-architecture (change scope).
-  OUTPUT_TO: research-coordinator (behavior predictions for cross-dimensional consolidation).
-
-  METHODOLOGY: (1) Ingest Wave 1 findings, (2) Identify behavior-bearing components affected by design, (3) Predict side effects and regressions per component, (4) Classify risk (HIGH/MEDIUM/LOW) with evidence, (5) Report predictions + risk matrix with file:line references.
-  OUTPUT_FORMAT: L1 YAML behavior change summary, L2 markdown prediction report with risk matrix.
+  WHEN: After research-codebase AND research-external complete. Parallel with audit-static/relational/impact.
+  CONSUMES: research-codebase (existing behaviors), research-external (known issues/workarounds), design-architecture (change scope).
+  PRODUCES: L1 YAML behavior change summary, L2 prediction report with risk matrix → research-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

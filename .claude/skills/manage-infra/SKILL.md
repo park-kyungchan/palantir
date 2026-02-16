@@ -1,14 +1,12 @@
 ---
 name: manage-infra
 description: |
-  [Homeostasis·InfraMonitor] Monitors .claude/ directory integrity with weighted health scoring. Inventories agents, skills, settings, hooks, CLAUDE.md — detects configuration drift, orphaned files, cross-component inconsistencies.
+  Monitors .claude/ directory integrity with weighted health scoring. Inventories agents, skills, settings, hooks, CLAUDE.md — detects configuration drift, orphaned files, cross-component inconsistencies.
 
+  Use when: After .claude/ modification or periodic health check.
   WHEN: After .claude/ modification, after pipeline completion, or periodic health check. AI can auto-invoke.
-  DOMAIN: Homeostasis (cross-cutting, entire .claude/ directory).
-
-  SCOPE: agents/, skills/, settings.json, hooks/, CLAUDE.md.
-  METHODOLOGY: (1) Inventory all .claude/ files with Glob, (2) Check counts match CLAUDE.md declarations, (3) Validate settings.json schema and references, (4) Detect orphaned files and cross-component drift, (5) Calculate weighted health score and propose repair actions.
-  OUTPUT_FORMAT: L1 YAML health report (scores, orphans, drift, health_score %), L2 repair recommendations.
+  CONSUMES: .claude/ directory (agents/, skills/, settings.json, hooks/, CLAUDE.md).
+  PRODUCES: L1 YAML health report (scores, orphans, drift, health_score %), L2 repair recommendations.
 user-invocable: true
 disable-model-invocation: false
 ---

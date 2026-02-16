@@ -1,15 +1,11 @@
 ---
 name: audit-relational
 description: |
-  [P2·Research·Relational] Inventories bidirectional cross-file relationship chains.
+  Inventories bidirectional cross-file relationship chains. Maps all data flow references across files, verifies bidirectional consistency (A→B implies B←A), identifies broken/orphan/asymmetric links.
 
-  WHEN: After research-codebase AND research-external complete. Wave 2 parallel audit.
-  DOMAIN: research (skill 5 of 7). Parallel: static ∥ behavioral ∥ relational ∥ impact.
-  INPUT_FROM: research-codebase (file inventory), research-external (pattern constraints), design-architecture (component boundaries).
-  OUTPUT_TO: research-coordinator (relationship graph for cross-dimensional consolidation).
-
-  METHODOLOGY: (1) Ingest Wave 1 findings, (2) Map all INPUT_FROM/OUTPUT_TO chains across files, (3) Verify bidirectional consistency (A→B implies B←A), (4) Identify broken/orphan/asymmetric links, (5) Report relationship graph + integrity issues with evidence.
-  OUTPUT_FORMAT: L1 YAML relationship summary, L2 markdown integrity report.
+  WHEN: After research-codebase AND research-external complete. Parallel with audit-static/behavioral/impact.
+  CONSUMES: research-codebase (file inventory), research-external (pattern constraints), design-architecture (component boundaries).
+  PRODUCES: L1 YAML relationship summary, L2 integrity report with link evidence → research-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

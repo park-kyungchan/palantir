@@ -1,15 +1,11 @@
 ---
 name: orchestrate-behavioral
 description: |
-  [P5·Orchestration·WHERE] Plans gate/monitor/aggregate checkpoints at wave boundaries with measurable pass/fail criteria.
+  Plans gate/monitor/aggregate checkpoints at wave boundaries with measurable pass/fail criteria. Assigns checkpoint types: gate (blocks), monitor (warns), aggregate (collects) with failure escalation paths.
 
-  WHEN: After plan-verify-coordinator complete (all PASS). Wave 5 parallel with orchestrate-static/relational/impact.
-  DOMAIN: orchestration (skill 2 of 5). Parallel: static ∥ behavioral ∥ relational ∥ impact -> coordinator.
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (checkpoint schedule with pass/fail criteria).
-
-  METHODOLOGY: (1) Read pv-coordinator L3 execution flow and dependency graph, (2) Identify critical transitions: wave boundary, producer-consumer handoff, domain boundary, (3) Define measurable pass/fail criteria per checkpoint (files exist, tests pass, schema valid), (4) Assign checkpoint type: gate (blocks), monitor (warns), aggregate (collects), (5) Output schedule with failure escalation paths.
-  OUTPUT_FORMAT: L1 YAML checkpoint schedule with type counts, L2 rationale per checkpoint with criteria.
+  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/relational/impact.
+  CONSUMES: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
+  PRODUCES: L1 YAML checkpoint schedule with type counts, L2 rationale per checkpoint → orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
 ---

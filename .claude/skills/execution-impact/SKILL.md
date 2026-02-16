@@ -1,15 +1,11 @@
 ---
 name: execution-impact
 description: |
-  [P6·Execution·Impact] Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation.
+  Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation against audit-impact predictions. Outputs cascade_recommended flag for downstream routing.
 
-  WHEN: After execution-code and/or execution-infra complete. File change manifest exists. SubagentStop hook may inject SRC IMPACT ALERT.
-  DOMAIN: execution (skill 3 of 5). After code/infra, before cascade/review.
-  INPUT_FROM: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
-  OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (impact report always).
-
-  METHODOLOGY: (1) Read file change manifests from execution-code/infra, (2) Load audit-impact L3 predicted paths (Shift-Left), (3) Verify predicted impacts via grep: predicted_confirmed count, (4) Scan for unpredicted impacts: newly_discovered count, (5) Classify DIRECT vs TRANSITIVE, output cascade_recommended flag.
-  OUTPUT_FORMAT: L1 YAML impact report with cascade_recommended flag, L2 analysis with grep evidence per dependent.
+  WHEN: After execution-code and/or execution-infra complete. File change manifest exists.
+  CONSUMES: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
+  PRODUCES: L1 YAML impact report with cascade_recommended flag, L2 grep evidence per dependent → execution-cascade (if cascade_recommended), execution-review (always).
 user-invocable: false
 disable-model-invocation: false
 ---

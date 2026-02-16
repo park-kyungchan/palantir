@@ -1,15 +1,11 @@
 ---
 name: plan-impact
 description: |
-  [P3·Plan·ImpactSequencing] Sequences execution order by propagation containment into checkpoint-bounded waves.
+  Sequences execution order by propagation containment into checkpoint-bounded waves. Groups tasks (max 4 per wave) by propagation independence, defines containment strategy per path.
 
-  WHEN: After research-coordinator complete. Wave 3 parallel with plan-static/behavioral/relational.
-  DOMAIN: plan (skill 4 of 4). Wave 3 parallel execution.
-  INPUT_FROM: research-coordinator (audit-impact L3 propagation paths via $ARGUMENTS).
-  OUTPUT_TO: plan-verify-impact (execution sequence with checkpoints for verification).
-
-  METHODOLOGY: (1) Read audit-impact L3 propagation paths and blast radius, (2) Group tasks into parallel waves (max 4 per wave) by propagation independence, (3) Set checkpoint boundaries between high-risk waves, (4) Define containment strategy per path (isolation/ordered/blast-limit/rollback), (5) Output execution sequence with parallel efficiency metric.
-  OUTPUT_FORMAT: L1 YAML execution sequence with wave groups and checkpoints, L2 sequencing rationale with containment strategy.
+  WHEN: After research-coordinator complete. Parallel with plan-static/behavioral/relational.
+  CONSUMES: research-coordinator (audit-impact L3 propagation paths via $ARGUMENTS).
+  PRODUCES: L1 YAML execution sequence with wave groups and checkpoints, L2 sequencing rationale with containment → plan-verify-impact.
 user-invocable: false
 disable-model-invocation: false
 ---
