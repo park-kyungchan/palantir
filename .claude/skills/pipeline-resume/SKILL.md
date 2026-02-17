@@ -1,18 +1,20 @@
 ---
 name: pipeline-resume
-description: |
-  [Px·Pipeline·Resume] Reconstructs pipeline state from Task API after session interruption. Categorizes work tasks, determines resume point, re-spawns agents with PT context.
-
-  WHEN: Session continuation after interruption. PT exists with metadata.current_phase set.
-  DOMAIN: cross-cutting (pipeline resume).
-  INPUT_FROM: Task API (PT + work tasks), git branch state.
-  OUTPUT_TO: Lead (resume state with phases and task counts, recovery report with resume rationale).
-
-  METHODOLOGY: (1) Read PT metadata for current phase, (2) Categorize work tasks by status, (3) Validate git branch state, (4) Determine resume point, (5) Re-spawn agents with PT context.
-  OUTPUT_FORMAT: L1 YAML (resume state: phases, task counts), L2 recovery report with resume rationale.
+description: >-
+  Reconstructs pipeline state from Task API after session
+  interruption. Categorizes work tasks, determines resume point,
+  and re-spawns agents with PT context. Use when session continues
+  after interruption and PT exists with metadata.current_phase
+  set. Reads from Task API including PT and work tasks, plus git
+  branch state. Produces resume state with phases and task counts,
+  and recovery report with resume rationale for Lead.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[resume-from-phase]"
+metadata:
+  category: cross-cutting
+  tags: [pipeline-recovery, state-reconstruction, session-resume]
+  version: 2.0.0
 ---
 
 # Pipeline — Resume

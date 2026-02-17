@@ -1,17 +1,23 @@
 ---
 name: execution-impact
-description: |
-  [P5·Execution·Impact] Classifies changed-file dependencies as DIRECT (1-hop) or TRANSITIVE (2+hop) with Shift-Left validation. Outputs cascade_recommended flag for downstream routing.
-
-  WHEN: After execution-code and/or execution-infra complete. File change manifest exists.
-  DOMAIN: execution (skill 3 of 5).
-  INPUT_FROM: execution-code (code manifest), execution-infra (infra manifest), research-coordinator (audit-impact L3 predicted paths).
-  OUTPUT_TO: execution-cascade (if cascade_recommended), execution-review (always). Impact report with cascade flag.
-
-  METHODOLOGY: (1) Map changed files to dependency graph, (2) Classify as DIRECT/TRANSITIVE, (3) Shift-Left validate vs audit-impact predictions, (4) Grep evidence per dependent, (5) Set cascade_recommended flag.
-  OUTPUT_FORMAT: L1 YAML (impact report with cascade_recommended flag), L2 grep evidence per dependent.
+description: >-
+  Classifies changed-file dependencies as DIRECT (1-hop) or
+  TRANSITIVE (2+ hops) with Shift-Left validation against
+  audit-impact predictions. Outputs cascade_recommended flag for
+  downstream routing. Use after execution-code and/or
+  execution-infra complete when file change manifest exists.
+  Reads from execution-code code manifest, execution-infra infra
+  manifest, and research-coordinator audit-impact L3 predicted
+  paths. Produces impact report with cascade flag for
+  execution-cascade if recommended and always for
+  execution-review.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: execution
+  tags: [impact-classification, shift-left-validation, cascade-routing]
+  version: 2.0.0
 ---
 
 # Execution — Impact

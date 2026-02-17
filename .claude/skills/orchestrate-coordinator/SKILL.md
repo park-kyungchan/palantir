@@ -1,17 +1,24 @@
 ---
 name: orchestrate-coordinator
-description: |
-  [P4·Orchestrate·Coordinator] Unifies WHO+WHERE+HOW+WHEN into per-task spawn instructions with cross-validation. Terminal orchestration skill — merges 4 dimension outputs into unified execution plan.
-
-  WHEN: After ALL 4 orchestrate dimension skills complete.
-  DOMAIN: orchestrate (skill 5 of 5).
-  INPUT_FROM: orchestrate-static (WHO: task-agent matrix), orchestrate-behavioral (WHERE: checkpoints), orchestrate-relational (HOW: DPS specs), orchestrate-impact (WHEN: wave schedule).
-  OUTPUT_TO: execution-code, execution-infra (L1 index + L2 summary → Lead, L3 execution-plan.md → execution skills).
-
-  METHODOLOGY: (1) Merge 4 dimension outputs, (2) Cross-validate assignments, (3) Generate per-task spawn instructions, (4) Resolve conflicts, (5) Produce unified execution plan.
-  OUTPUT_FORMAT: L1 index.md, L2 summary.md → Lead, L3 execution-plan.md → execution skills.
+description: >-
+  Unifies task-agent assignments, checkpoints, DPS contracts, and
+  wave schedule into per-task spawn instructions with
+  cross-validation. Terminal orchestration skill that merges four
+  dimension outputs into unified execution plan. Use after all
+  four orchestrate dimension skills complete (orchestrate-static,
+  orchestrate-behavioral, orchestrate-relational,
+  orchestrate-impact). Reads from orchestrate-static task-agent
+  matrix, orchestrate-behavioral checkpoint schedule,
+  orchestrate-relational DPS specs, and orchestrate-impact wave
+  schedule. Produces L1 index and L2 summary for Lead, L3
+  execution-plan for execution-code and execution-infra.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: orchestrate
+  tags: [plan-unification, spawn-instructions, cross-validation]
+  version: 2.0.0
 ---
 
 # Orchestrate — Coordinator

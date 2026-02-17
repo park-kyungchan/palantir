@@ -1,17 +1,22 @@
 ---
 name: audit-relational
-description: |
-  [P2·Audit·Relational] Inventories bidirectional cross-file relationship chains. Verifies A→B implies B←A consistency, identifies broken/orphan/asymmetric links. Parallel with audit-static/behavioral/impact.
-
-  WHEN: After research-codebase AND research-external complete. Parallel with 3 other audit skills.
-  DOMAIN: audit (skill 3 of 4).
-  INPUT_FROM: research-codebase (file inventory), research-external (pattern constraints), design-architecture (component boundaries).
-  OUTPUT_TO: research-coordinator (relationship summary, integrity report with link evidence).
-
-  METHODOLOGY: (1) Map all data flow references across files, (2) Check bidirectional consistency, (3) Identify broken/orphan links, (4) Classify asymmetric relationships, (5) Produce integrity report.
-  OUTPUT_FORMAT: L1 YAML (relationship summary), L2 integrity report with link evidence.
+description: >-
+  Inventories bidirectional cross-file relationship chains.
+  Verifies A-to-B implies B-to-A consistency, identifies broken,
+  orphan, and asymmetric links. Parallel with audit-static,
+  audit-behavioral, and audit-impact. Use after research-codebase
+  and research-external complete. Reads from research-codebase
+  file inventory, research-external pattern constraints, and
+  design-architecture component boundaries. Produces relationship
+  summary and integrity report with link evidence for
+  research-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: audit
+  tags: [relationship-integrity, bidirectional-consistency, cross-file-analysis]
+  version: 2.0.0
 ---
 
 # Audit — Relational (Cross-File Relationship Integrity)

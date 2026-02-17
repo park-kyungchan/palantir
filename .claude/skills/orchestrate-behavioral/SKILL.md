@@ -1,17 +1,21 @@
 ---
 name: orchestrate-behavioral
-description: |
-  [P4·Orchestrate·Behavioral] Plans gate/monitor/aggregate checkpoints at wave boundaries with pass/fail criteria. Assigns checkpoint types and failure escalation paths. Parallel with 3 other orchestrate skills.
-
-  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/relational/impact.
-  DOMAIN: orchestrate (skill 2 of 5).
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (checkpoint schedule with type counts, rationale per checkpoint).
-
-  METHODOLOGY: (1) Identify wave boundaries needing checkpoints, (2) Assign type: gate/monitor/aggregate, (3) Define measurable pass/fail criteria, (4) Map failure escalation paths, (5) Validate checkpoint coverage.
-  OUTPUT_FORMAT: L1 YAML (checkpoint schedule with type counts), L2 rationale per checkpoint.
+description: >-
+  Plans gate, monitor, and aggregate checkpoints at wave
+  boundaries with pass/fail criteria. Assigns checkpoint types
+  and failure escalation paths. Parallel with orchestrate-static,
+  orchestrate-relational, and orchestrate-impact. Use after
+  plan-verify-coordinator complete with all PASS. Reads from
+  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  Produces checkpoint schedule with type counts and rationale
+  per checkpoint for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: orchestrate
+  tags: [checkpoint-planning, gate-criteria, failure-escalation]
+  version: 2.0.0
 ---
 
 # Orchestrate — Behavioral (WHERE)

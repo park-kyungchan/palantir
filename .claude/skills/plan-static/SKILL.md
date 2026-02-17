@@ -1,17 +1,20 @@
 ---
 name: plan-static
-description: |
-  [P3·Plan·Static] Decomposes tasks by structural dependency clusters into SRP-bounded units. Builds acyclic task DAG with critical path. Parallel with plan-behavioral/relational/impact.
-
-  WHEN: After research-coordinator complete. Parallel with 3 other plan skills.
-  DOMAIN: plan (skill 1 of 4).
-  INPUT_FROM: research-coordinator (audit-static L3 dependency graph via $ARGUMENTS).
-  OUTPUT_TO: plan-verify-static (task list with dependency edges and complexity, cluster rationale).
-
-  METHODOLOGY: (1) Identify tight/loose/isolated dependency clusters, (2) Define SRP task boundaries (1-4 files each), (3) Build acyclic task DAG, (4) Calculate critical path, (5) Assign complexity estimates.
-  OUTPUT_FORMAT: L1 YAML (task list with dependency edges and complexity), L2 cluster rationale with critical path.
+description: >-
+  Decomposes tasks by structural dependency clusters into
+  SRP-bounded units. Builds acyclic task DAG with critical path.
+  Parallel with plan-behavioral, plan-relational, and
+  plan-impact. Use after research-coordinator complete. Reads
+  from research-coordinator audit-static L3 dependency graph via
+  $ARGUMENTS. Produces task list with dependency edges and
+  complexity, and cluster rationale for plan-verify-static.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: plan
+  tags: [task-decomposition, dependency-dag, critical-path]
+  version: 2.0.0
 ---
 
 # Plan — Static Decomposition

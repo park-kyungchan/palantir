@@ -1,17 +1,20 @@
 ---
 name: design-interface
-description: |
-  [P1·Design·Interface] Specifies inter-component API contracts and error boundaries. Defines function signatures, data types, protocols, and error propagation rules per boundary.
-
-  WHEN: After design-architecture produces component structure. Parallel with design-risk.
-  DOMAIN: design (skill 2 of 3).
-  INPUT_FROM: design-architecture (component structure, module boundaries, data flow).
-  OUTPUT_TO: design-risk (interface registry with protocols, per-boundary specs).
-
-  METHODOLOGY: (1) Identify component boundaries, (2) Define function signatures and data types, (3) Specify protocols per boundary, (4) Define error propagation rules, (5) Document with examples.
-  OUTPUT_FORMAT: L1 YAML (interface registry with protocols), L2 per-boundary specs with examples.
+description: >-
+  Specifies inter-component API contracts and error boundaries.
+  Defines function signatures, data types, protocols, and error
+  propagation rules per boundary. Use after design-architecture
+  produces component structure, parallel with design-risk. Reads
+  from design-architecture component structure, module boundaries,
+  and data flow. Produces interface registry with protocols and
+  per-boundary specs for design-risk.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: design
+  tags: [api-contracts, error-boundaries, interface-specification]
+  version: 2.0.0
 ---
 
 # Design — Interface

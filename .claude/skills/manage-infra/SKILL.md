@@ -1,17 +1,21 @@
 ---
 name: manage-infra
-description: |
-  [H·Homeostasis·Infra] Monitors .claude/ directory integrity with weighted health scoring. Detects configuration drift, orphaned files, cross-component inconsistencies.
-
-  WHEN: After .claude/ modification, pipeline completion, or periodic health check. AI can auto-invoke.
-  DOMAIN: homeostasis (skill 3 of 5).
-  INPUT_FROM: .claude/ directory (agents/, skills/, settings.json, hooks/, CLAUDE.md).
-  OUTPUT_TO: L1 health report (scores, orphans, drift, health_score %), L2 repair recommendations.
-
-  METHODOLOGY: (1) Inventory agents/skills/settings/hooks, (2) Check field compliance, (3) Detect orphaned files, (4) Score health per category, (5) Produce weighted overall health score.
-  OUTPUT_FORMAT: L1 YAML (health score %, orphan count, drift count), L2 repair recommendations.
+description: >-
+  Monitors .claude/ directory integrity with weighted health
+  scoring. Detects configuration drift, orphaned files, and
+  cross-component inconsistencies. Use after .claude/
+  modification, pipeline completion, or periodic health check.
+  AI can auto-invoke. Reads from .claude/ directory including
+  agents, skills, settings.json, hooks, and CLAUDE.md. Produces
+  health report with scores, orphan count, drift count, and
+  weighted health score percentage, plus repair recommendations.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: homeostasis
+  tags: [health-scoring, drift-detection, orphan-detection]
+  version: 2.0.0
 ---
 
 # Manage — INFRA

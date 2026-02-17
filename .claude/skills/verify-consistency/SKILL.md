@@ -1,17 +1,21 @@
 ---
 name: verify-consistency
-description: |
-  [P6·Verify·Consistency] Cross-references INPUT_FROM/OUTPUT_TO bidirectionality and counts across all skill descriptions. Verifies phase sequence P0→P8. Second of 4 sequential verify stages.
-
-  WHEN: After verify-structural-content PASS. Also after multi-skill INPUT_FROM/OUTPUT_TO edits.
-  DOMAIN: verify (skill 2 of 4, sequential).
-  INPUT_FROM: verify-structural-content (structural+content integrity confirmed).
-  OUTPUT_TO: verify-quality (PASS) | execution-infra (FAIL). Relationship matrix with consistency status.
-
-  METHODOLOGY: (1) Map all INPUT_FROM/OUTPUT_TO references, (2) Check bidirectional consistency (A→B implies B←A), (3) Verify phase sequence, (4) Cross-check CLAUDE.md counts vs filesystem, (5) Produce consistency matrix.
-  OUTPUT_FORMAT: L1 YAML (relationship matrix with consistency status), L2 inconsistency report.
+description: >-
+  Cross-references skill input/output bidirectionality and counts
+  across all skill descriptions. Verifies phase sequence P0
+  through P8. Second of four sequential verify stages. Use after
+  verify-structural-content PASS or after multi-skill description
+  edits. Reads from verify-structural-content structural and
+  content integrity confirmation. Produces relationship matrix
+  with consistency status for verify-quality on PASS, or routes
+  back to execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: verify
+  tags: [bidirectional-consistency, phase-sequence, relationship-matrix]
+  version: 2.0.0
 ---
 
 # Verify — Consistency

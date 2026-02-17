@@ -1,18 +1,20 @@
 ---
 name: delivery-pipeline
-description: |
-  [P8·Delivery·Pipeline] Delivers pipeline results via structured git commit, MEMORY.md archive, and PT completion. User confirmation required before git commit. Pipeline terminal skill.
-
-  WHEN: Verify domain complete (all 4 stages PASS, no outstanding FAIL). Pipeline terminal.
-  DOMAIN: delivery (skill 1 of 2).
-  INPUT_FROM: verify-cc-feasibility (all 4 verify stages PASS confirmed).
-  OUTPUT_TO: Git commit, MEMORY.md archive, PT status → DELIVERED.
-
-  METHODOLOGY: (1) Verify all-PASS status, (2) Stage files individually, (3) Create conventional commit, (4) Archive learnings to MEMORY.md, (5) Mark PT as DELIVERED.
-  OUTPUT_FORMAT: L1 YAML (commit hash, files count, PT status), L2 delivery report.
+description: >-
+  Delivers pipeline results via structured git commit, MEMORY.md
+  archive, and PT completion. User confirmation required before
+  git commit. Pipeline terminal skill. Use after verify domain
+  complete with all 4 stages PASS and no outstanding FAIL. Reads
+  from verify-cc-feasibility all 4 verify stages PASS confirmed.
+  Produces git commit, MEMORY.md archive, and PT status DELIVERED.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[commit-message]"
+allowed-tools: "Read Glob Grep Edit Write Bash"
+metadata:
+  category: delivery
+  tags: [git-commit, memory-archive, pipeline-terminal]
+  version: 2.0.0
 ---
 
 # Delivery Pipeline

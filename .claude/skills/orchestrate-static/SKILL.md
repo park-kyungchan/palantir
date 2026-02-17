@@ -1,17 +1,21 @@
 ---
 name: orchestrate-static
-description: |
-  [P4·Orchestrate·Static] Assigns task-agent pairs by matching tool requirements to agent profiles. Splits multi-capability tasks into single-profile sub-tasks. Parallel with 3 other orchestrate skills.
-
-  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-behavioral/relational/impact.
-  DOMAIN: orchestrate (skill 1 of 5).
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (task-agent matrix with splits count, rationale per assignment).
-
-  METHODOLOGY: (1) Profile-match tasks to agents (B/C/D/E), (2) Identify multi-capability tasks, (3) Split into single-profile sub-tasks, (4) Verify no agent overload, (5) Document assignment rationale.
-  OUTPUT_FORMAT: L1 YAML (task-agent matrix with splits count), L2 rationale per assignment.
+description: >-
+  Assigns task-agent pairs by matching tool requirements to agent
+  profiles. Splits multi-capability tasks into single-profile
+  sub-tasks. Parallel with orchestrate-behavioral,
+  orchestrate-relational, and orchestrate-impact. Use after
+  plan-verify-coordinator complete with all PASS. Reads from
+  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  Produces task-agent matrix with splits count and assignment
+  rationale for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: orchestrate
+  tags: [agent-assignment, task-splitting, profile-matching]
+  version: 2.0.0
 ---
 
 # Orchestrate — Static (WHO)

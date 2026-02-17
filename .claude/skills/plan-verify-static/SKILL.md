@@ -1,17 +1,21 @@
 ---
 name: plan-verify-static
-description: |
-  [P3·PlanVerify·Static] Verifies task coverage against dependency DAG for orphan files and missing edges. Verdict: PASS (≥95%, zero HIGH orphans), FAIL (<85% or HIGH gaps). Parallel with 3 other verify skills.
-
-  WHEN: After plan-static complete. Parallel with plan-verify-behavioral/relational/impact.
-  DOMAIN: plan-verify (skill 1 of 5).
-  INPUT_FROM: plan-static (task breakdown with file assignments), research-coordinator (audit-static L3 dependency graph).
-  OUTPUT_TO: plan-verify-coordinator (coverage verdict with metrics, coverage matrix with evidence).
-
-  METHODOLOGY: (1) Cross-reference plan file set vs dependency file set, (2) Identify orphan files, (3) Check missing dependency edges, (4) Score coverage %, (5) Classify gaps by severity.
-  OUTPUT_FORMAT: L1 YAML (coverage verdict PASS/FAIL with metrics), L2 coverage matrix with orphan/gap evidence.
+description: >-
+  Verifies task coverage against dependency DAG for orphan files
+  and missing edges. Verdict: PASS (≥95%, zero HIGH orphans),
+  FAIL (<85% or HIGH gaps). Parallel with plan-verify-behavioral,
+  plan-verify-relational, and plan-verify-impact. Use after
+  plan-static complete. Reads from plan-static task breakdown
+  with file assignments and research-coordinator audit-static L3
+  dependency graph. Produces coverage verdict with metrics and
+  coverage matrix with evidence for plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: plan-verify
+  tags: [coverage-verification, orphan-detection, dependency-dag-check]
+  version: 2.0.0
 ---
 
 # Plan Verify — Static Coverage

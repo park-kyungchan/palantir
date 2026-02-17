@@ -1,17 +1,21 @@
 ---
 name: pre-design-feasibility
-description: |
-  [P0·PreDesign·Feasibility] Verifies CC native implementability per requirement. Checks cc-reference cache or spawns claude-code-guide. Scores feasible/partial/infeasible. Terminal pre-design skill.
-
-  WHEN: After pre-design-validate PASS. Requirements complete but CC feasibility unconfirmed.
-  DOMAIN: pre-design (skill 3 of 3).
-  INPUT_FROM: pre-design-validate (validated, complete requirements).
-  OUTPUT_TO: design-architecture (PASS) | pre-design-brainstorm (FAIL: scope re-negotiation).
-
-  METHODOLOGY: (1) Map each requirement to CC native capability, (2) Check cc-reference cache, (3) Spawn claude-code-guide for gaps, (4) Score feasibility, (5) Produce verdict with alternatives.
-  OUTPUT_FORMAT: L1 YAML (feasibility verdict per requirement), L2 CC capability mappings with alternatives.
+description: >-
+  Verifies CC native implementability per requirement by checking
+  cc-reference cache or spawning claude-code-guide for gaps.
+  Scores each requirement as feasible, partial, or infeasible.
+  Terminal pre-design skill. Use after pre-design-validate PASS
+  when requirements are complete but CC feasibility unconfirmed.
+  Reads from pre-design-validate validated requirements. Produces
+  feasibility verdict for design-architecture on PASS, or routes
+  back to pre-design-brainstorm for scope re-negotiation on FAIL.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: pre-design
+  tags: [cc-feasibility, capability-mapping, requirement-validation]
+  version: 2.0.0
 ---
 
 # Pre-Design — Feasibility

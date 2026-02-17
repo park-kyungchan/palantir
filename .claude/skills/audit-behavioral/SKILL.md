@@ -1,17 +1,22 @@
 ---
 name: audit-behavioral
-description: |
-  [P2·Audit·Behavioral] Predicts runtime behavior changes and regression risks per component. Classifies risk (HIGH/MEDIUM/LOW) with file:line evidence. Parallel with audit-static/relational/impact.
-
-  WHEN: After research-codebase AND research-external complete. Parallel with 3 other audit skills.
-  DOMAIN: audit (skill 2 of 4).
-  INPUT_FROM: research-codebase (existing behaviors), research-external (known issues/workarounds), design-architecture (change scope).
-  OUTPUT_TO: research-coordinator (behavior change summary, prediction report with risk matrix).
-
-  METHODOLOGY: (1) Identify behavior-bearing components, (2) Predict behavior changes from design, (3) Classify regression risk per component, (4) Cross-reference with known issues, (5) Produce risk matrix with evidence.
-  OUTPUT_FORMAT: L1 YAML (behavior change summary), L2 prediction report with risk matrix.
+description: >-
+  Predicts runtime behavior changes and regression risks per
+  component. Classifies risk as HIGH, MEDIUM, or LOW with
+  file:line evidence. Parallel with audit-static,
+  audit-relational, and audit-impact. Use after research-codebase
+  and research-external complete. Reads from research-codebase
+  existing behaviors, research-external known issues and
+  workarounds, and design-architecture change scope. Produces
+  behavior change summary and prediction report with risk matrix
+  for research-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: audit
+  tags: [behavior-prediction, regression-risk, runtime-analysis]
+  version: 2.0.0
 ---
 
 # Audit — Behavioral (Runtime Behavior Prediction)

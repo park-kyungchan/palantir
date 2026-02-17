@@ -6,10 +6,14 @@
 
 ## 1. Agent Definition
 
-```
-~/.claude/agents/       ← Global agents
-.claude/agents/         ← Project agents
-```
+**Claude Agent SDK**: `@anthropic-ai/claude-agent-sdk` (TS), `claude-agent-sdk` (Python)
+
+### Agent Scope Priority (highest to lowest)
+
+1. `--agents` CLI flag (session only)
+2. `.claude/agents/` (project)
+3. `~/.claude/agents/` (user)
+4. Plugin's `agents/` (lowest)
 
 Each agent is a Markdown file with YAML frontmatter:
 
@@ -115,11 +119,12 @@ Lines 201+ silently truncated.
 
 ### Built-in Subagent Types
 
-| Type | Purpose | Tool Access |
-|------|---------|-------------|
-| **Explore** | Read-only codebase navigation | Read, Glob, Grep only |
-| **Plan** | Structured planning | Read, Glob, Grep only |
-| **General-purpose** | Full multi-step tasks | All tools |
+| Agent | Model | Tools | Purpose |
+|-------|-------|-------|---------|
+| **Explore** | Haiku | Read-only | File discovery |
+| **Plan** | Inherit | Read-only | Codebase research |
+| **General-purpose** | Inherit | All | Complex tasks |
+| **Bash** | Inherit | Bash | Terminal commands |
 
 ### Subagent Output Handling
 
@@ -133,6 +138,7 @@ Background subagent outputs truncated to 30,000 characters. Full output written 
 - Cleaned up based on `cleanupPeriodDays` setting (default: 30 days)
 - Resume: "Continue that code review" — Claude resumes with full conversation history
 - Auto-compaction events: `compact_boundary` with `preTokens` count
+- `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` — override auto-compaction threshold percentage
 
 ---
 

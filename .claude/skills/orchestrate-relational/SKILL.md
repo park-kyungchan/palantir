@@ -1,17 +1,21 @@
 ---
 name: orchestrate-relational
-description: |
-  [P4·Orchestrate·Relational] Specifies DPS contracts per producer-consumer handoff with path, format, and validation rules. Validates chain completeness. Parallel with 3 other orchestrate skills.
-
-  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/behavioral/impact.
-  DOMAIN: orchestrate (skill 3 of 5).
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (DPS specs with chain_complete flag, data flow chain with gap report).
-
-  METHODOLOGY: (1) Define DPS contracts per handoff, (2) Specify path + format + validation, (3) Check no dangling inputs, (4) Verify no circular chains, (5) Produce chain completeness flag.
-  OUTPUT_FORMAT: L1 YAML (DPS specs with chain_complete flag), L2 data flow chain with gap report.
+description: >-
+  Specifies DPS contracts per producer-consumer handoff with
+  path, format, and validation rules. Validates chain
+  completeness. Parallel with orchestrate-static,
+  orchestrate-behavioral, and orchestrate-impact. Use after
+  plan-verify-coordinator complete with all PASS. Reads from
+  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  Produces DPS specs with chain completeness flag and data flow
+  chain with gap report for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: orchestrate
+  tags: [dps-contracts, handoff-specification, chain-validation]
+  version: 2.0.0
 ---
 
 # Orchestrate — Relational (HOW)

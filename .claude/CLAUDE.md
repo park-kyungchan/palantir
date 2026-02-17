@@ -1,6 +1,6 @@
 # Agent Teams — Team Constitution v10.9
 
-> v10.9 · Opus 4.6 native · Skill-driven routing · 6 agents · 44 skills · Protocol-only CLAUDE.md
+> v10.9 · Opus 4.6 native · Skill-driven routing · 6 agents · 43 skills · Protocol-only CLAUDE.md
 > Agent L1 auto-loaded in Task tool definition · Skill L1 auto-loaded in system-reminder
 
 > **INVIOLABLE — Skill-Driven Orchestration**
@@ -20,8 +20,8 @@
 - **Agent Teams:** Enabled (tmux split pane)
 - **Lead:** Pipeline Controller — routes skills, spawns agents
 - **Agents:** 6 custom (analyst, researcher, implementer, infra-implementer, delivery-agent, pt-manager)
-- **Skills:** 44 across 10 pipeline domains + 5 homeostasis + 3 cross-cutting (pipeline-resume, delivery-pipeline, task-management)
-- **Project Skills (DO NOT EDIT during INFRA):** 10 crowd_works project skills (D0·foundation, D1·drill+production, D2·eval) — separate project, excluded from manage-skills/RSI/homeostasis
+- **Skills:** 43 across 10 pipeline domains + 4 homeostasis + 3 cross-cutting (pipeline-resume, delivery-pipeline, task-management)
+- **Project Skills (DO NOT EDIT during INFRA):** 10 crowd_works project skills (D0·foundation, D1·drill+production, D2·eval) — separate project, excluded from RSI/homeostasis
 
 ## 2. Pipeline Tiers
 Classified at Phase 0:
@@ -41,7 +41,7 @@ Flow: PRE (P0-P4) → EXEC (P5-P7) → POST (P8). Max 3 iterations per phase.
 - **P2+ (RESEARCH through DELIVERY)**: Team infrastructure ONLY. TeamCreate, TaskCreate/Update, SendMessage. Local agents (`team_name` omitted) PROHIBITED. Lead MUST NOT use TaskOutput to read full agent results — use SendMessage for result exchange.
 
 ## 3. Lead
-- Routes via Skill L1 WHEN conditions + Agent L1 PROFILE tags (both auto-loaded)
+- Routes via Skill L1 descriptions + Agent L1 tool profiles (both auto-loaded)
 - Spawns agents via Task tool (`subagent_type` = agent name)
 - Executes Lead-direct skills inline (no agent spawn needed)
 

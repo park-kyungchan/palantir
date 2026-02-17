@@ -1,17 +1,20 @@
 ---
 name: plan-impact
-description: |
-  [P3·Plan·Impact] Sequences execution order by propagation containment into checkpoint-bounded waves. Groups tasks by propagation independence. Parallel with plan-static/behavioral/relational.
-
-  WHEN: After research-coordinator complete. Parallel with 3 other plan skills.
-  DOMAIN: plan (skill 4 of 4).
-  INPUT_FROM: research-coordinator (audit-impact L3 propagation paths via $ARGUMENTS).
-  OUTPUT_TO: plan-verify-impact (execution sequence with wave groups and checkpoints, sequencing rationale).
-
-  METHODOLOGY: (1) Analyze propagation paths, (2) Group tasks by independence (max 4/wave), (3) Define checkpoint boundaries, (4) Assign containment strategy per path, (5) Validate sequence acyclicity.
-  OUTPUT_FORMAT: L1 YAML (execution sequence with wave groups and checkpoints), L2 sequencing rationale with containment.
+description: >-
+  Sequences execution order by propagation containment into
+  checkpoint-bounded waves. Groups tasks by propagation
+  independence. Parallel with plan-static, plan-behavioral, and
+  plan-relational. Use after research-coordinator complete. Reads
+  from research-coordinator audit-impact L3 propagation paths via
+  $ARGUMENTS. Produces execution sequence with wave groups and
+  checkpoints, and sequencing rationale for plan-verify-impact.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: plan
+  tags: [execution-sequencing, wave-scheduling, propagation-containment]
+  version: 2.0.0
 ---
 
 # Plan — Impact Sequencing

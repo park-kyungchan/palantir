@@ -21,8 +21,8 @@ Skills are the primary mechanism for teaching Claude Code domain-specific workfl
 Locations:
 - `~/.claude/skills/` — Global (user scope, all projects)
 - `.claude/skills/` — Project scope (shared via git)
-- Flat structure ONLY: `.claude/skills/{name}/SKILL.md` (nested NOT supported)
-- Discovery: `.claude/skills/*/SKILL.md` (one glob level)
+- Standard structure: `.claude/skills/{name}/SKILL.md`
+- Discovery: `.claude/skills/*/SKILL.md` (one glob level). Monorepo: also discovers from subdirectory `.claude/skills/`
 - Max name: 64 chars, lowercase + numbers + hyphens only
 
 ---
@@ -31,12 +31,12 @@ Locations:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| name | string | no | directory name | Lowercase, numbers, hyphens. Max 64 chars |
-| description | string | recommended | none | L1 routing intelligence. Multi-line via YAML `\|`. If omitted, first paragraph of body used |
+| name | string | Required (API) / No (CC: defaults to dir name) | directory name | Lowercase, numbers, hyphens. Max 64 chars. Cannot contain "anthropic" or "claude". No XML tags (`<` `>`). Gerund form recommended: `processing-pdfs`, `analyzing-spreadsheets` |
+| description | string | Required (API: non-empty) / Recommended (CC: falls back to first paragraph) | none | L1 routing intelligence. Multi-line via YAML `\|`. No XML tags (`<` `>`). Write in third person ("Processes files", not "I can help you") |
 | argument-hint | string | no | none | Shown in `/` autocomplete. E.g., `[topic]`, `[file] [format]` |
 | user-invocable | boolean | no | true | If false, hidden from `/` menu. Claude can still auto-invoke |
 | disable-model-invocation | boolean | no | false | If true, description NOT loaded into context |
-| allowed-tools | list | no | all | CSV list of tools allowed during skill execution |
+| allowed-tools | list | no | all | Tools Claude can use without asking permission when skill is active. EXPERIMENTAL (agentskills.io spec) |
 | model | enum | no | inherit | Values: sonnet, opus, haiku, inherit |
 | context | enum | no | none | Values: fork. Forks subagent with skill L2 as task |
 | agent | string | no | general-purpose | Subagent type when context=fork |
@@ -89,6 +89,17 @@ Key: Subagents do NOT inherit skills from parent — must be listed explicitly i
 6. `$ARGUMENTS` substituted in L2 body
 7. Skill executes (only ONE skill active at a time)
 8. After completion: L2 body removed, L1 description remains
+
+---
+
+## 3.5 Content Guidelines
+
+- Keep SKILL.md body under **500 lines** (optimal performance, not hard limit)
+- Body token budget: under **5,000 tokens** recommended
+- References should be **one level deep** from SKILL.md (no nested references)
+- For reference files >100 lines, include a table of contents at top
+- Including "ultrathink" anywhere in skill content enables extended thinking
+- Prompt caching: changing skills list in API `container` breaks prompt cache
 
 ---
 
@@ -175,7 +186,7 @@ OUTPUT_FORMAT: L1 format, L2 format.
 
 ### Budget Math
 
-- Total budget: `max(context_window × 2%, 16000)` chars (our override: 56000)
+- Total budget: `max(context_window × 2%, 16000)` chars. Override via env var `SLASH_COMMAND_TOOL_CHAR_BUDGET`
 - Per-skill recommendation: ≤1024 chars (self-imposed for zero truncation)
 - Each new auto-loaded skill: ~300-400 chars
 - Skills with `disable-model-invocation: true` excluded
@@ -186,6 +197,11 @@ OUTPUT_FORMAT: L1 format, L2 format.
 - If skill not triggering: check description includes keywords users would naturally say
 - If triggering too often: make the description more specific
 - If excluded from budget: skill won't be available for auto-invocation (only via /slash-command)
+
+### Permission Control & Discovery
+
+- Permission deny/allow rules: `Skill(name)` exact match, `Skill(name *)` prefix match
+- Nested directory discovery: Monorepo support — discovers skills from subdirectory `.claude/skills/`
 
 ### CC-Native Persistent Storage
 
@@ -202,7 +218,19 @@ OUTPUT_FORMAT: L1 format, L2 format.
 
 - Pipeline entry skills: `disable-model-invocation: true` + `user-invocable: true`
 - Homeostasis skills: `disable-model-invocation: false` (Claude auto-invokes)
-- 0 skills use: context, agent, allowed-tools, model, hooks (all routing via Lead)
+- 0 skills use: context, agent, allowed-tools, model, hooks (all routing via Lead). Note: allowed-tools usage planned for future INFRA redesign
 - 7 skills use: argument-hint
 - Canonical L1 structure (Phase·Domain·Role, WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO, METHODOLOGY, OUTPUT_FORMAT) is custom convention — not CC native
 - Official L1 guidance: "Write a clear description that helps Claude decide when to apply the skill"
+- Portable skill format: agentskills.io open standard defines cross-platform skill interchange format
+
+---
+
+## 7. Skills API
+
+- REST API: `/v1/skills` with CRUD + versioning (beta header: `skills-2025-10-02`)
+- Container parameter: `container.skills` array (max **8** per API request)
+- Upload limit: **8MB** max total
+- Pre-built Anthropic skills: pptx, xlsx, docx, pdf (API/claude.ai only, NOT CC)
+- Cross-surface isolation: Skills do NOT sync between CC, API, and claude.ai
+- Skill priority hierarchy: Enterprise > Personal > Project; plugins namespaced as `plugin-name:skill-name`

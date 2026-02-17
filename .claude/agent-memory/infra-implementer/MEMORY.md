@@ -27,4 +27,7 @@
 - 2026-02-15: RSI Iter 2 -- added agent `model` (aliases to latest), `skills` (uses agent context, not L1 budget)
 - 2026-02-15: RSI Iter 2 -- added TaskCompleted/TeammateIdle hook events, agent hook type details
 - 2026-02-15: RSI Iter 2 -- added .claude/rules/ directory details (supplements CLAUDE.md, paths glob)
+- 2026-02-17: ref_model_integration -- Opus 4.6 spec, effort GA, pricing table, web search, tool token overhead
+- 2026-02-17: ref_agents -- Claude Agent SDK rename, built-in Bash agent, AUTOCOMPACT env var, scope priority
+- 2026-02-17: Added context editing beta, server-side compaction API, tool token overhead, PTC, tool search to ref_config_context.md + ref_runtime_security.md
 - When updating cc-reference, always cross-reference between native-fields.md and context-loading.md for consistency

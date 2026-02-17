@@ -1,17 +1,22 @@
 ---
 name: audit-impact
-description: |
-  [P2·Audit·Impact] Traces change propagation paths: DIRECT (1-hop) vs TRANSITIVE (2-3 hops). Classifies impact severity per path with file:line evidence. Parallel with audit-static/behavioral/relational.
-
-  WHEN: After research-codebase AND research-external complete. Parallel with 3 other audit skills.
-  DOMAIN: audit (skill 4 of 4).
-  INPUT_FROM: research-codebase (file inventory), research-external (constraints), design-risk (risk matrix from P1).
-  OUTPUT_TO: research-coordinator (impact summary, propagation analysis), execution-impact (Shift-Left predicted paths).
-
-  METHODOLOGY: (1) Trace DIRECT propagation paths (1-hop), (2) Trace TRANSITIVE paths (2-3 hops), (3) Classify severity per path, (4) Assess maintenance/scalability risk, (5) Produce Shift-Left predictions.
-  OUTPUT_FORMAT: L1 YAML (impact summary), L2 propagation analysis with path evidence.
+description: >-
+  Traces change propagation paths classifying as DIRECT (1-hop)
+  or TRANSITIVE (2-3 hops). Classifies impact severity per path
+  with file:line evidence. Parallel with audit-static,
+  audit-behavioral, and audit-relational. Use after
+  research-codebase and research-external complete. Reads from
+  research-codebase file inventory, research-external constraints,
+  and design-risk risk matrix. Produces impact summary and
+  propagation analysis for research-coordinator, and Shift-Left
+  predicted paths for execution-impact.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: audit
+  tags: [change-propagation, impact-analysis, shift-left-prediction]
+  version: 2.0.0
 ---
 
 # Audit — Impact (Change Propagation Analysis)
