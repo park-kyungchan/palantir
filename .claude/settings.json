@@ -193,7 +193,8 @@
   },
   "enabledPlugins": {
     "superpowers-developing-for-claude-code@superpowers-marketplace": true,
-    "superpowers@superpowers-marketplace": true
+    "superpowers@superpowers-marketplace": true,
+    "everything-claude-code@everything-claude-code": true
   },
   "alwaysThinkingEnabled": true,
   "promptSuggestionEnabled": true,

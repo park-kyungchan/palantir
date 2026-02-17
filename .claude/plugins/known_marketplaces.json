@@ -5,14 +5,14 @@
       "repo": "anthropics/claude-plugins-official"
     },
     "installLocation": "/home/palantir/.claude/plugins/marketplaces/claude-plugins-official",
-    "lastUpdated": "2026-02-15T14:00:50.746Z"
+    "lastUpdated": "2026-02-17T12:48:58.336Z"
   },
-  "superpowers-marketplace": {
+  "everything-claude-code": {
     "source": {
       "source": "github",
-      "repo": "obra/superpowers-marketplace"
+      "repo": "affaan-m/everything-claude-code"
     },
-    "installLocation": "/home/palantir/.claude/plugins/marketplaces/superpowers-marketplace",
-    "lastUpdated": "2026-02-11T16:16:18.587Z"
+    "installLocation": "/home/palantir/.claude/plugins/marketplaces/everything-claude-code",
+    "lastUpdated": "2026-02-17T13:13:09.007Z"
   }
 }

@@ -27,13 +27,13 @@
 - **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
 - teammateMode: tmux (settings.json)
 
-## Current INFRA State (v11.0-L2opt, 2026-02-15)
+## Current INFRA State (v11.1-health, 2026-02-17)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
 | CLAUDE.md | v11.0 | 55L | Protocol-only + §2.1 CE + 45 skills (10 pipeline + 5 homeostasis + 2 cross-cutting) |
 | Agents | v10.9+CE | 6 files | All 6 have Completion Protocol section (SendMessage on task completion) |
-| Skills | v11.0+L2opt | 55 dirs | 45 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized. Budget: ~47,000/56,000 (16% headroom) |
+| Skills | v11.1+eval | 56 dirs | 46 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized + evaluation-criteria (new). Budget: ~48,000/56,000 (14% headroom) |
 | Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
 | Hooks | 14 scripts | ~420L | 8 global lifecycle events + 2 agent-scoped SRC hooks + 4 PreToolUse guards |
 | Conventions | DELETED | 0L | Content distributed: agent bodies (SendMessage), CLAUDE.md §2.1 (isolation), skill L2 (output) |
@@ -43,7 +43,7 @@
 - **Routing**: Skill L1 auto-loaded in system-reminder, Agent L1 auto-loaded in Task tool definition
 - **L1 (frontmatter)**: WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY -- routing intelligence, 1024 chars max
 - **L2 (body)**: Execution Model + Methodology (5 steps) + Quality Gate + Output -- loaded on invocation
-- **CLAUDE.md**: Protocol-only (43L), zero routing data -- all routing via auto-loaded metadata
+- **CLAUDE.md**: Protocol-only (55L), zero routing data -- all routing via auto-loaded metadata
 - **Lead**: Pure Orchestrator, never edits files directly, routes via skills+agents
 
 ### Pipeline Tiers
@@ -61,6 +61,9 @@
 | BUG-001 | CRITICAL | `permissionMode: plan` blocks MCP tools | Always spawn with `mode: "default"` |
 | BUG-002 | HIGH | Large-task teammates auto-compact before L1/L2 | Keep prompts focused, avoid context bloat |
 | BUG-004 | HIGH | No cross-agent compaction notification | tmux monitoring + protocol self-report |
+| BUG-006 | MEDIUM | `allowed-tools` in skill/agent frontmatter NOT_ENFORCED at runtime (CC #18837) | Remove field; use `tools` in agent frontmatter |
+| BUG-007 | MEDIUM | Global hooks fire in ALL contexts (lead+teammates+subagents) | session_id guard pattern in command hooks |
+| BUG-008 | LOW | SubagentStop prompt hooks cannot block termination (CC #20221) | Use command-type hooks for SubagentStop |
 
 Details: `memory/agent-teams-bugs.md`
 
@@ -95,12 +98,25 @@ Context Engineering RSI Loop: 3 iterations, 22/22 findings resolved. Health 3/10
 
 ### Meta-Cognition INFRA Update -- Largely Implemented (2026-02-14)
 Core ideas from meta-cognition brainstorming have been implemented in v10:
-- CLAUDE.md Protocol-Only transition: DONE (43L)
-- Homeostasis System: DONE (manage-infra + manage-skills + 5 verify-* skills)
-- Self-describing components (frontmatter routing): DONE (31 skills with full L1/L2)
-- Root Exemption Zone concept: Applied in manage-skills self-management detection
+- CLAUDE.md Protocol-Only transition: DONE (55L)
+- Homeostasis System: DONE (manage-infra + manage-codebase + self-diagnose + self-implement + rsil + 4 verify-*)
+- Self-describing components (frontmatter routing): DONE (45 skills with full L1/L2)
 Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -- using native fields only.
 Details: `memory/meta-cognition-infra.md`
+
+### INFRA Health Repair -- DONE (2026-02-17)
+CC runtime 5건 실증 검증 후 3-wave 수리. 72%→94% health. PR #59 (da232ba).
+- Verifications: allowed-tools NOT_ENFORCED, Stop prompt BROKEN, memory:none INVALID, TaskCompleted prompt NOT_SUPPORTED, global hooks fire EVERYWHERE
+- Wave 1: 45 skills metadata/allowed-tools, Stop prompt→command (~$0.35/session savings), orphans, session_id guards
+- Wave 2: ref_hooks §8.5-8.6 + §9, ref_agents memory default, CC_SECTIONS R9, counts
+- Wave 3: manage-skills phantom refs (4 skills)
+- Net: 57 files, +92/-503
+
+### ECC Integration + Evaluation Criteria -- IN PROGRESS (2026-02-17)
+- ECC plugin pruned: 43→12 items (4 agents, 3 commands, 5 skills). scope: user.
+- 7 rules promoted to `~/.claude/rules/` (common/ 6 + typescript/ 1).
+- New skill: `evaluation-criteria` (P2 research domain, CDST methodology, Lead-direct).
+- CLAUDE.md §5 Agent Teams section enhanced with isolation/shared table, file-based architecture detail.
 
 ### L2 Body Design -- COMPLETE (2026-02-15)
 All 44 INFRA skills L2 bodies CE/PE optimized. PR #53 merged to main.
@@ -115,7 +131,8 @@ All 44 INFRA skills L2 bodies CE/PE optimized. PR #53 merged to main.
 
 ## Session History
 
-Branch: `main` (infra fully merged). Latest commit: 59cae35.
+Branch: `main`. Latest commit: da232ba (pending new commit for ECC + evaluation-criteria).
+- da232ba: Health repair — CC runtime verified, 57 files, PR #59
 - 59cae35: Merge branch 'infra' (cc-reference + MEMORY.md into main)
 - 9e35a4c: MEMORY.md L2 Body Design COMPLETE
 - b596365: cc-reference cache-first rule + 6 missing memory files tracked
@@ -142,7 +159,7 @@ Branch: `main` (infra fully merged). Latest commit: 59cae35.
 ### Project History & Domain
 - `memory/infrastructure-history.md` -- Delivery records (INFRA v7.0, RTD, COW v2.0, RSIL), DIA evolution, Agent Teams redesign
 - `memory/skill-optimization-history.md` -- SKL-001~SKL-005 detailed records
-- `memory/agent-teams-bugs.md` -- BUG-001~BUG-004 details and workarounds
+- `memory/agent-teams-bugs.md` -- BUG-001~BUG-008 details and workarounds
 - `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
 - `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)
 - `memory/context-engineering.md` -- CC native field reference, context loading order, critical findings
