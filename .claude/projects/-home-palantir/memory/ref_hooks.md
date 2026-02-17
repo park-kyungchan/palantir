@@ -1,6 +1,6 @@
 # Hook System — 14 Lifecycle Events
 
-> Verified: 2026-02-16 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide team investigation
 
 ---
 
@@ -55,6 +55,8 @@ SessionEnd (clear/logout/other)
 | TaskCompleted | Task marked complete | yes (exit 2) | no | global |
 | PreCompact | Before compaction | no | manual, auto | global |
 | SessionEnd | Session terminates | no | clear, logout, other | global |
+
+**Handler type support**: `TeammateIdle` and `TaskCompleted` do NOT support `prompt` or `agent` hook types — exit code (0/2) only. No JSON decision control for these events.
 
 ---
 

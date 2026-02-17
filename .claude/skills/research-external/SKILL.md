@@ -3,13 +3,14 @@ name: research-external
 description: >-
   Collects community patterns via WebSearch and tavily. Filters
   for verified and reproducible information, cross-references
-  with official docs. Parallel with research-codebase. Use after
-  design domain complete when technology choices, API contracts,
-  and risk areas needing validation are defined. Reads from
-  design-architecture technology choices, design-interface API
-  contracts, and design-risk risk areas. Produces community
-  pattern matrix and report with source URLs for audit-static,
-  audit-behavioral, audit-relational, and audit-impact.
+  with official docs. Tags CC-native behavioral claims from
+  community sources for shift-left verification. Parallel with
+  research-codebase. Use after design domain complete when
+  technology choices, API contracts, and risk areas needing
+  validation are defined. Reads from design-architecture technology
+  choices, design-interface API contracts, and design-risk risk
+  areas. Produces community pattern matrix with source URLs for
+  audit skills, plus CC-native claims for research-cc-verify gate.
 user-invocable: true
 disable-model-invocation: false
 allowed-tools: "Read Glob Grep Write WebSearch WebFetch"
@@ -84,6 +85,23 @@ For each validated community finding:
 - **Verification Status**: verified/reproducible/anecdotal
 - **Practical Impact**: How this affects implementation approach
 - **Version Context**: Which version/date the finding applies to
+
+### 5.5. Tag CC-Native Behavioral Claims
+
+When community research discovers claims about CC runtime behavior (Claude Code internals, agent teams mechanics, hook behaviors, context management), tag them for verification:
+
+**Community CC-native claims require EXTRA scrutiny** because:
+- Community posts may describe behavior from older CC versions
+- Blog authors may have tested under different configurations
+- Forum answers may conflate CC behavior with general Claude behavior
+
+**Tagging protocol** (same as research-codebase):
+For each CC-native behavioral claim from community sources:
+- `[CC-CLAIM]` tag with claim text, category, source URL, and publication date
+- **Confidence downgrade**: Community-sourced CC claims start at `confidence: low` until verified
+- **Version context**: Note which CC version the claim was reportedly observed on
+
+These tagged claims join research-codebase claims in the research-cc-verify verification pipeline.
 
 ## Decision Points
 
@@ -220,6 +238,7 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 - Sources cited with full URLs (not just domain names -- direct links to specific documentation pages)
 - License compatibility verified for all libraries (MIT/Apache/BSD compatible with project; GPL flagged for review)
 - Tool chain documented: each finding notes which tool produced it (context7, WebSearch, WebFetch, or tavily) for reproducibility and audit
+- CC-native behavioral claims tagged with [CC-CLAIM] and source-attributed (if any discovered)
 
 ## Output
 
@@ -235,6 +254,7 @@ dependencies:
     version: ""
     status: validated|issue|unknown
     source: ""
+cc_native_claims: 0
 ```
 
 ### L2
@@ -269,3 +289,10 @@ For dependencies with `status: unknown`:
 - Tools attempted and results (e.g., "context7: library not indexed, WebSearch: no official docs found")
 - Recommended next steps (e.g., "contact vendor directly", "check internal documentation")
 - Risk assessment if proceeding without validation
+
+#### CC-Native Claims (conditional)
+For community-sourced CC behavioral claims:
+- Claim text with [CC-CLAIM] tag
+- Source URL and publication date
+- CC version context (if mentioned)
+- Confidence: low (pending verification via research-cc-verify)

@@ -2,15 +2,16 @@
 name: research-coordinator
 description: >-
   Consolidates four audit dimensions into tiered output with
-  cross-dimensional pattern analysis. Terminal research skill
-  that merges parallel audit results into unified intelligence.
-  Use after all four audit skills complete (audit-static,
-  audit-behavioral, audit-relational, audit-impact). Reads from
-  audit-static dependency graph, audit-behavioral behavior
-  predictions, audit-relational relationship graph, and
-  audit-impact propagation paths. Produces L1 index and L2
-  summary for Lead, L3 per-dimension files via $ARGUMENTS for
-  plan-static, plan-behavioral, plan-relational, and plan-impact.
+  cross-dimensional pattern analysis. Aggregates CC-native behavioral
+  claims from research dimensions and flags for verification routing.
+  Terminal research skill that merges parallel audit results into
+  unified intelligence. Use after all four audit skills complete
+  (audit-static, audit-behavioral, audit-relational, audit-impact).
+  Reads from audit-static dependency graph, audit-behavioral behavior
+  predictions, audit-relational relationship graph, and audit-impact
+  propagation paths. Produces L1 index and L2 summary for Lead,
+  L3 per-dimension files for plan skills, plus CC-native claim
+  aggregation for research-cc-verify.
 user-invocable: false
 disable-model-invocation: false
 allowed-tools: "Read Glob Grep Write"
@@ -100,6 +101,20 @@ For each compound pattern, document:
 - Which files/components are involved
 - Compound severity (typically higher than either individual finding)
 - Evidence from both dimensions (file:line references)
+
+### 2.5. Aggregate CC-Native Claims
+
+Collect all `[CC-CLAIM]` tagged items from research-codebase and research-external outputs:
+
+1. **Scan** both research outputs for `[CC-CLAIM]` markers
+2. **Deduplicate** claims that appear in both sources (same behavioral assertion, different evidence)
+3. **Categorize** by type: FILESYSTEM, PERSISTENCE, STRUCTURE, CONFIG, BEHAVIORAL
+4. **Priority rank** by verification importance:
+   - PERSISTENCE claims → highest priority (hardest to verify, most costly if wrong)
+   - CONFIG/STRUCTURE → medium priority (file-based verification straightforward)
+   - BEHAVIORAL → lowest priority (may require deeper investigation beyond file inspection)
+
+Include aggregated claims in L2 summary with routing recommendation: "Route to research-cc-verify before ref cache update if cc_native_claims > 0."
 
 ### 3. Produce L1 Index
 The L1 index is what Lead always reads. Keep it compact and routing-focused.
@@ -243,6 +258,7 @@ L1 index must stay compact for Lead context budget. Move any detail beyond summa
 - L3 files contain complete per-dimension data plus relevant compound patterns
 - Missing dimensions explicitly noted in L1 and L2
 - No new research performed (consolidation only)
+- CC-native behavioral claims from research dimensions aggregated and flagged for verification
 - All 6 output files written to `/tmp/pipeline/p2-coordinator/`
 
 ## Output
@@ -275,6 +291,7 @@ audit_summary:
     critical_paths: 0
     maintenance_risk: LOW
 routing_recommendation: ""
+cc_native_claims: 0
 ```
 
 ### L2 (summary.md)
@@ -283,6 +300,7 @@ routing_recommendation: ""
 - Risk distribution across all dimensions
 - Gap report for missing/partial dimensions
 - Routing guidance for plan-phase skills
+- CC-native claims aggregated from research dimensions (for research-cc-verify routing)
 
 ### L3 (4 per-dimension files)
 - Complete audit data per dimension

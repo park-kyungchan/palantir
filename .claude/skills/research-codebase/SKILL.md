@@ -2,14 +2,14 @@
 name: research-codebase
 description: >-
   Discovers local codebase patterns via Glob/Grep/Read and documents
-  patterns and anti-patterns with file:line references. Parallel
-  with research-external. Use after design domain complete when
+  patterns and anti-patterns with file:line references. Tags CC-native
+  behavioral claims for shift-left verification via research-cc-verify.
+  Parallel with research-external. Use after design domain complete when
   component structure, API contracts, and risk areas are defined.
   Reads from design-architecture component structure,
   design-interface API contracts, and design-risk risk areas.
-  Produces pattern inventory and findings with evidence for
-  audit-static, audit-behavioral, audit-relational, and
-  audit-impact.
+  Produces pattern inventory with evidence for audit skills,
+  plus CC-native claims for research-cc-verify gate.
 user-invocable: true
 disable-model-invocation: false
 allowed-tools: "Read Glob Grep Write"
@@ -92,6 +92,32 @@ Note problematic patterns that architecture should avoid:
 Map findings to architecture components:
 - Components with strong codebase evidence → validated
 - Components with no codebase evidence → novel, higher risk
+
+### 6. Tag CC-Native Behavioral Claims
+
+When codebase research discovers patterns related to CC runtime behavior, tag them explicitly for verification:
+
+**What constitutes a CC-native behavioral claim:**
+- File structure assertions: "X file exists at Y path", "directory Z has layout W"
+- Persistence assertions: "X survives compaction/termination/restart"
+- Runtime behavior: "feature X triggers Y", "setting Z produces effect W"
+- Configuration effects: "field X accepts values Y", "setting Z enables feature W"
+
+**Tagging protocol:**
+For each discovered CC-native pattern, add a `[CC-CLAIM]` tag in the findings with:
+- **Claim text**: The behavioral assertion in quotable form
+- **Category**: FILESYSTEM | PERSISTENCE | STRUCTURE | CONFIG | BEHAVIORAL
+- **Source evidence**: file:line where the pattern was observed
+- **Verification need**: What empirical test would confirm/deny this claim
+
+**Example:**
+```
+[CC-CLAIM] PERSISTENCE: "Inbox JSON files persist after agent termination"
+Source: ~/.claude/teams/*/inboxes/*.json (observed files from terminated agents)
+Verification: Read inbox file for known-terminated agent, check message timestamps
+```
+
+These tagged claims become input for research-cc-verify, which runs the empirical verification before claims enter ref cache.
 
 ## Common Codebase Patterns Reference
 
@@ -239,6 +265,7 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 - No prescriptive recommendations in findings (evidence only)
 - COMPLEX: All analyst scopes covered, cross-references resolved
 - If `escalate_to_design: true`, escalation_reason is detailed and threshold criteria documented
+- CC-native behavioral claims tagged with [CC-CLAIM] and categorized (if any discovered)
 
 ## Output
 
@@ -250,6 +277,7 @@ pattern_count: 0
 file_count: 0
 escalate_to_design: false
 escalation_reason: ""
+cc_native_claims: 0
 patterns:
   - name: ""
     files: []
@@ -271,3 +299,4 @@ uncovered_areas:
 - Cross-reference notes (COMPLEX only): inter-analyst findings resolved
 - Novel decision rationale: why no codebase evidence was found
 - Escalation details (if applicable): contradiction evidence with file:line proof
+- CC-native claims tagged for verification (for research-cc-verify routing)

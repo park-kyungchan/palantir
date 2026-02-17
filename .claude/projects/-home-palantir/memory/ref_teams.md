@@ -1,6 +1,6 @@
 # Agent Teams — Architecture, Coordination & Task Sharing
 
-> Verified: 2026-02-17 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide team investigation
 
 ---
 
@@ -80,12 +80,30 @@ The official docs refer to the messaging infrastructure as the **"Mailbox"** sys
 
 ## 3. Coordination Channels
 
-There are exactly two coordination mechanisms:
+There are exactly two coordination mechanisms, **both file-based and persistent on disk**:
 
 1. **Task files on disk** (`~/.claude/tasks/{team-name}/*.json`)
 2. **Inbox messaging via SendMessage** (`~/.claude/teams/{team-name}/inboxes/*.json`)
 
 **There is no shared memory.** No sockets, no pipes, no IPC. Every coordination action is file I/O.
+
+### Physical File Structure
+
+```
+~/.claude/
+├── teams/{team-name}/
+│   ├── config.json          # Team metadata, member list
+│   └── inboxes/
+│       ├── team-lead.json   # Lead's inbox
+│       ├── worker-1.json    # Worker 1's inbox
+│       └── worker-2.json    # Worker 2's inbox
+└── tasks/{team-name}/
+    ├── 1.json               # Task #1
+    ├── 2.json               # Task #2
+    └── .lock                # File lock
+```
+
+This is the **complete** physical infrastructure. These JSON files are the entirety of team coordination.
 
 ### Channel 1: Task Files
 
@@ -94,6 +112,8 @@ Each task is an independent JSON file. State machine: `pending → in_progress �
 **Claiming**: Teammate reads task directory, finds pending task, atomically updates JSON (status + owner). File locking prevents race conditions.
 
 **Concurrency control**: `tempfile + os.replace` for atomic writes, `filelock` library for cross-platform locking.
+
+**Key**: This is not a database or IPC mechanism. It is literally **reading and writing JSON files** on the filesystem.
 
 **Dependency tracking**: Tasks support DAGs via `blocked_by` field. Completing a blocking task automatically unblocks downstream tasks.
 
@@ -117,6 +137,10 @@ The official docs call this the **"Mailbox"** system.
 - Sending = appending entry to recipient's inbox JSON, protected by file locks
 
 **"Automatic delivery"**: Claude Code checks inbox on each API turn — NOT OS-level push. "Automatic" means user doesn't need to poll manually.
+
+**Persistence**: Inbox JSON files are **disk-resident and persist** through compaction, agent termination, session restart, and crashes. Compaction only affects the context window (conversation history compression) — disk files are untouched. Messages remain in inbox files indefinitely until explicitly cleaned up.
+
+**Concurrency**: Same as Task files — `tempfile + os.replace` for atomic writes, `filelock` for cross-platform file locking.
 
 ### Sequence Diagram
 
@@ -159,6 +183,22 @@ When Teammate A develops an insight, that insight exists ONLY in A's context. Fo
 3. Lead must receive A's result and forward to B
 
 **No automatic propagation of insights between teammates.**
+
+### Design Rationale
+
+1. **Simplicity**: Filesystem works in any environment — WSL2, Docker, macOS, Linux
+2. **Crash recovery**: Process dies, JSON files remain. No state loss
+3. **Observability**: `cat ~/.claude/tasks/feat/1.json | jq .` for instant debugging
+4. **No daemon**: No coordination server (Redis, SQLite) required
+
+### Hook-Based Pseudo-Shared Memory
+
+The "no shared memory" limitation can be circumvented within CC native boundaries:
+- **PostToolUse hook** detects `.claude/**` Write/Edit operations
+- Hook script updates a shared JSON file (e.g., `ontology.json`)
+- `hookSpecificOutput.additionalContext` injects updated state into next turn for ALL teammates
+- This is the ONLY CC-native mechanism for meta-level coordination beyond Task API and SendMessage
+- Limitation: `additionalContext` is single-turn only (not persisted), not visible to spawned subagents
 
 ---
 
@@ -208,6 +248,14 @@ Official pattern for requiring teammates to plan before implementing:
 6. Once approved, teammate exits plan mode and implements
 
 Lead makes approval decisions autonomously. Influence via prompt (e.g., "only approve plans that include test coverage").
+
+### Delegate Mode (Shift+Tab)
+
+- Activated by pressing Shift+Tab during active team session
+- Restricts lead to coordination-only tools: spawn, message, shutdown, task management
+- Lead CANNOT write code, run tests, or do implementation work
+- This is the CC native enforcement of "Lead NEVER edits files directly"
+- **Known Bug (#25037)**: Enabling delegate mode causes teammates to inherit restricted tool access — they lose Read, Write, Edit, Bash, Glob, Grep. Workaround: enforce via CLAUDE.md convention instead of delegate permissionMode.
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 name: self-diagnose
 description: >-
-  Diagnoses INFRA health against CC native state across 9
-  categories. Reads cc-reference cache and scans .claude/ files.
+  Diagnoses INFRA health against CC native state across 10
+  categories including unverified CC-native claims detection. Reads cc-reference cache and scans .claude/ files.
   Diagnosis only, does not fix. Paired with self-implement. Use
   when user invokes for INFRA health audit, after CC updates, or
   before releases. Reads from cc-reference cache ref_*.md files
@@ -15,7 +15,7 @@ argument-hint: "[focus-area]"
 allowed-tools: "Read Glob Grep Write"
 metadata:
   category: homeostasis
-  tags: [cc-native-diagnosis, infra-health-audit, 9-category-scan]
+  tags: [cc-native-diagnosis, infra-health-audit, 10-category-scan]
   version: 2.0.0
 ---
 
@@ -85,6 +85,7 @@ Scan all `.claude/` files systematically using the diagnostic category checklist
 | Description utilization | Each description uses >80% of 1024 chars | Read + measure per-skill | LOW |
 | Color assignments | All agents have unique `color` fields | Read agents, check duplicates | LOW |
 | Constraint-implication | CC native constraint has unaddressed design implication in current INFRA | Read ref_*.md constraints → trace implication → verify INFRA compliance | HIGH |
+| Unverified CC claims | ref_*.md behavioral claims lack empirical file:line evidence | Read ref_*.md + classify claims by evidence presence | HIGH |
 
 **Category 9: Constraint-Implication Alignment**
 
@@ -101,14 +102,28 @@ Traces each CC native constraint to its design implications and verifies current
 
 For each row: Read the relevant ref_*.md for the constraint, then Grep/Read INFRA files to verify the check. Flag violations as HIGH severity.
 
+**Category 10: Unverified CC-Native Claims in Ref Cache**
+
+Detects behavioral claims in ref_*.md files that were codified without empirical verification:
+
+| Check | Method | What It Detects |
+|-------|--------|-----------------|
+| Behavioral verb scan | Grep ref_*.md for "persist", "survive", "trigger", "inject", "deliver", "auto-", "ephemeral", "transient" | Claims about CC runtime behavior |
+| Evidence presence | For each claim: check for file:line evidence or "Verified:" annotation | Unverified assertions presented as facts |
+| Cross-reference | Compare claim against actual filesystem state | Claims contradicted by current system state |
+
+For each unverified claim found: flag as HIGH severity with the claim text, source file:line, and suggested verification method (Glob/Read test to run via research-cc-verify).
+
+**Origin**: SendMessage "ephemeral" error (2026-02-17). Lead's reasoning-only judgment produced incorrect CC-native claim → propagated to 4 ref files before user caught it. Cost: full correction cycle. Prevention: this category + research-cc-verify Shift-Left gate.
+
 **Procedure:**
 - For focused scans: run only matching categories
-- For full scans: run all 9 categories
+- For full scans: run all 10 categories
 - Each finding includes: ID, category, severity, file path, current value, expected value
 - Produce categorized finding list sorted by severity (CRITICAL first)
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt:
-- **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 9 categories.
+- **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 10 categories.
 - **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
 - **Constraints**: Read-only analyst agent. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config). maxTurns:20.
 - **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
@@ -157,7 +172,7 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 
 ## Quality Gate
 - CC reference ground truth established (cache or live research)
-- All 9 diagnostic categories scanned (or focused subset per arguments)
+- All 10 diagnostic categories scanned (or focused subset per arguments)
 - Each finding has: ID, category, severity, file path, evidence
 - Findings sorted by severity (CRITICAL → LOW)
 - No false positives (each finding verified with file:line evidence)
@@ -177,7 +192,7 @@ findings_by_severity:
   medium: 0
   low: 0
 categories_scanned: 0
-categories_total: 9
+categories_total: 10
 findings:
   - id: ""
     category: ""
