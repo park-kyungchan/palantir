@@ -1,6 +1,6 @@
 # Skill System — Fields, Invocation & Routing
 
-> Verified: 2026-02-17 via claude-code-guide + researcher agent, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide team investigation
 
 ---
 
@@ -55,6 +55,8 @@ Locations:
 
 input_schema, confirm, working_dir, timeout, env, and any custom YAML keys — parsed but NOT consumed by CC runtime.
 
+**agentskills.io standard fields** (NOT CC-native): `compatibility`, `license`, `metadata.version`, `metadata.author`. CC ignores these but doesn't break. Our `metadata` field with `category`, `tags`, `version` is non-native — used only as human-readable documentation.
+
 ---
 
 ## 3. On-Demand Loading & context:fork
@@ -69,7 +71,7 @@ When set, skill runs as subagent (not in main context). The `agent` field specif
 - **general-purpose**: Full tool access
 - Custom subagent from `.claude/agents/`
 
-**Caveat (GitHub #17283)**: Skill tool auto-invoke may not reliably honor `context: fork` and `agent:` fields. Works reliably via /slash-command only. When auto-invoked, may run inline instead of spawning subagent.
+**context:fork Status (CC 2.1, Feb 2026)**: Previously broken — auto-invoke ignored `context: fork` and `agent:` fields (GitHub #17283). **Now FIXED** in CC 2.1. Both auto-invocation and manual `/slash-command` properly delegate to isolated subagent. `agent:` field correctly determines execution environment.
 
 ### Skill-Agent Bidirectional Relationship
 
@@ -94,8 +96,8 @@ Key: Subagents do NOT inherit skills from parent — must be listed explicitly i
 
 ## 3.5 Content Guidelines
 
-- Keep SKILL.md body under **500 lines** (optimal performance, not hard limit)
-- Body token budget: under **5,000 tokens** recommended
+- Keep SKILL.md body under **500 lines** (soft recommendation, NOT hard limit — files exceeding 500 lines will still load)
+- Body token budget: under **5,000 tokens** recommended (community guidance, not official threshold)
 - References should be **one level deep** from SKILL.md (no nested references)
 - For reference files >100 lines, include a table of contents at top
 - Including "ultrathink" anywhere in skill content enables extended thinking
@@ -188,6 +190,10 @@ OUTPUT_FORMAT: L1 format, L2 format.
 
 - Total budget: `max(context_window × 2%, 16000)` chars. Override via env var `SLASH_COMMAND_TOOL_CHAR_BUDGET`
 - Per-skill recommendation: ≤1024 chars (self-imposed for zero truncation)
+- When exceeded: skills become **invisible** to the agent (completely hidden)
+- **Drop order is UNDOCUMENTED** — not FIFO, not alphabetical. Algorithm is opaque (GitHub #13099)
+- Mitigation: stay within budget proactively. Check via `/context` for excluded skills warning
+- Practical guidance: ≤130 chars for 60+ skills, ≤150 chars for 40-60 skills
 - Each new auto-loaded skill: ~300-400 chars
 - Skills with `disable-model-invocation: true` excluded
 
@@ -218,7 +224,7 @@ OUTPUT_FORMAT: L1 format, L2 format.
 
 - Pipeline entry skills: `disable-model-invocation: true` + `user-invocable: true`
 - Homeostasis skills: `disable-model-invocation: false` (Claude auto-invokes)
-- 0 skills use: context, agent, allowed-tools, model, hooks (all routing via Lead). Note: allowed-tools usage planned for future INFRA redesign
+- 0 skills use: context, agent, allowed-tools, model, hooks (all routing via Lead). Note: context:fork now FIXED in CC 2.1 — available for future use
 - 7 skills use: argument-hint
 - Canonical L1 structure (Phase·Domain·Role, WHEN, DOMAIN, INPUT_FROM, OUTPUT_TO, METHODOLOGY, OUTPUT_FORMAT) is custom convention — not CC native
 - Official L1 guidance: "Write a clear description that helps Claude decide when to apply the skill"

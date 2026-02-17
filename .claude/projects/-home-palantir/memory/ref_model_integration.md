@@ -1,6 +1,6 @@
 # Model Configuration, MCP & Plugins
 
-> Verified: 2026-02-17 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide team investigation
 
 ---
 
@@ -194,8 +194,8 @@ Plugins bundle skills, agents, hooks, MCP servers, and commands for distribution
 ```
 my-plugin/
 ├── .claude-plugin/
-│   └── plugin.json        ← Manifest (required)
-├── commands/              ← Skills as Markdown
+│   └── plugin.json        ← Manifest (required field: name only)
+├── commands/              ← Legacy slash commands
 ├── skills/                ← Agent Skills with SKILL.md
 ├── agents/                ← Custom agent definitions
 ├── hooks/
@@ -203,6 +203,44 @@ my-plugin/
 ├── .mcp.json              ← MCP server configs
 └── .lsp.json              ← LSP server configs
 ```
+
+### Plugin Manifest (plugin.json)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | yes | kebab-case, no spaces |
+| `version` | string | no | semver |
+| `description` | string | no | Brief description |
+| `author` | object | no | name, email, url |
+| `commands` | string/array | no | Path to commands dir |
+| `agents` | string/array | no | Path to agents dir |
+| `skills` | string/array | no | Path to skills dir |
+| `hooks` | string/object | no | Path to hooks.json or inline |
+| `mcpServers` | string/object | no | Path to .mcp.json or inline |
+| `lspServers` | string/object | no | Path to .lsp.json or inline |
+
+Manifest is optional — if omitted, CC auto-discovers components in default locations.
+
+### LSP Server Config (.lsp.json)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `command` | string | yes | Binary to execute |
+| `extensionToLanguage` | object | yes | File ext → language mapping |
+| `args` | array | no | Command arguments |
+| `transport` | string | no | `"stdio"` (default) or `"socket"` |
+| `startupTimeout` | number | no | ms (default: 5000) |
+| `restartOnCrash` | boolean | no | Auto-restart on crash |
+
+### Plugin Lifecycle
+
+| Command | Effect |
+|---------|--------|
+| `claude plugin install <name>` | Install from marketplace |
+| `claude plugin enable <name>` | Activate disabled plugin |
+| `claude plugin disable <name>` | Deactivate without removing |
+| `claude plugin update <name>` | Fetch latest version |
+| `claude plugin uninstall <name>` | Remove plugin |
 
 ### Installation Scopes
 
@@ -212,14 +250,33 @@ my-plugin/
 | Project | All collaborators | Yes |
 | Local | You only, this project | No |
 
+### Marketplace Configuration
+
+- Marketplace = git repo with `.claude-plugin/marketplace.json`
+- `extraKnownMarketplaces` in settings.json: additional marketplace sources
+- `strictKnownMarketplaces` in managed settings: restrict allowed marketplaces
+- `enabledPlugins` in settings.json: `{"name@marketplace": boolean}`
+- `known_marketplaces.json`: tracks installed marketplace registrations
+- Plugin caching: copied to `~/.claude/plugins/cache/`, path traversal blocked
+
 ### Namespacing
 
 - Plugin skills: `/plugin-name:skill-name` (namespaced)
 - Standalone skills: `/skill-name` (short names)
+- Skills take priority over commands on name collision
 
-### Plugin Lifecycle
+---
 
-- Loaded at Claude Code startup
-- Skills/agents appear immediately after installation
-- MCP servers auto-start when plugin enabled
-- Changes require restart
+## 6. Legacy Commands (commands/)
+
+| Aspect | commands/ | skills/ |
+|--------|-----------|---------|
+| File structure | Single `.md` file | Directory with `SKILL.md` |
+| Invocation | User types `/name` | Claude auto-discovers |
+| Context | Explicit `$ARGUMENTS` | Infers from conversation |
+| Precedence | Lower | **Skills win** on name collision |
+| Status | Legacy (still functional) | Current recommended approach |
+
+- Location: `~/.claude/commands/` (global) or `.claude/commands/` (project)
+- Filename becomes command name (e.g., `deploy.md` → `/deploy`)
+- Can use `$ARGUMENTS` placeholder

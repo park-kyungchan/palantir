@@ -1,6 +1,6 @@
 # Configuration, Context & Session
 
-> Verified: 2026-02-17 via claude-code-guide + researcher agent, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide team investigation
 
 ---
 
@@ -55,6 +55,53 @@ Shell-level env vars take precedence over `env` object in settings.json. Pre-exi
   "enableAllProjectMcpServers": false // Auto-enable all project MCP servers
 }
 ```
+
+### Complete Settings Reference
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `$schema` | string | — | JSON schema URL |
+| `alwaysThinkingEnabled` | boolean | `false` | Force extended thinking for all sessions |
+| `apiKeyHelper` | string | — | Shell script for auth token generation |
+| `attribution` | object | — | Git commit/PR attribution customization |
+| `autoUpdatesChannel` | string | `"latest"` | Release channel: `"stable"` or `"latest"` |
+| `availableModels` | array | — | Restrict selectable models |
+| `cleanupPeriodDays` | number | `30` | Session cleanup period |
+| `companyAnnouncements` | array | — | Startup announcement strings |
+| `disableAllHooks` | boolean | `false` | Kill switch for all hooks |
+| `enableAllProjectMcpServers` | boolean | `false` | Auto-approve project MCP servers |
+| `enabledMcpjsonServers` | array | — | MCP server allowlist |
+| `disabledMcpjsonServers` | array | — | MCP server denylist |
+| `enabledPlugins` | object | — | `{"name@marketplace": boolean}` |
+| `fileSuggestion` | object | — | Custom `@` autocomplete script |
+| `forceLoginMethod` | string | — | `"claudeai"` or `"console"` |
+| `language` | string | — | Response language preference |
+| `model` | string | — | Override default model |
+| `outputStyle` | string | — | Output formatting style |
+| `permissions` | object | — | Permission rules (allow/deny/ask) |
+| `plansDirectory` | string | `~/.claude/plans` | Plan file storage |
+| `prefersReducedMotion` | boolean | `false` | Reduce UI animations |
+| `promptSuggestionEnabled` | boolean | `true` | Ghost-text followup suggestions |
+| `respectGitignore` | boolean | `true` | Honor .gitignore in file operations |
+| `sandbox` | object | — | Advanced sandboxing config |
+| `showTurnDuration` | boolean | `true` | Show turn duration messages |
+| `skipDangerousModePermissionPrompt` | boolean | `false` | Suppress bypass warning |
+| `spinnerTipsEnabled` | boolean | `true` | Show tips in spinner |
+| `spinnerVerbs` | object | — | Customize spinner verbs |
+| `statusLine` | object | — | Custom status line script |
+| `teammateMode` | string | `"auto"` | Agent team display: auto/in-process/tmux |
+| `terminalProgressBarEnabled` | boolean | `true` | Terminal progress bar |
+
+**Managed-only fields** (only in `managed-settings.json`):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `allowManagedHooksOnly` | boolean | Block user/project/plugin hooks |
+| `allowManagedPermissionRulesOnly` | boolean | Only managed permission rules |
+| `allowedMcpServers` | array | MCP server allowlist |
+| `deniedMcpServers` | array | MCP server denylist |
+| `disableBypassPermissionsMode` | string | `"disable"` prevents bypass mode |
+| `strictKnownMarketplaces` | array | Plugin marketplace allowlist |
 
 ### Functional Separation
 
@@ -122,6 +169,8 @@ Pruning test: "Would removing this cause Claude to make mistakes?" If not, cut i
 - Symlinks supported (circular links handled gracefully)
 - Rules without `paths` frontmatter are loaded globally (unconditionally)
 - Survives compaction (re-injected automatically)
+- **Known Bug**: User-level rules (`~/.claude/rules/`) ignore `paths` field — always load globally
+- **Known Bug**: Project rules with `paths` may sometimes load globally regardless
 
 ### System Reminders
 
@@ -240,6 +289,18 @@ Every connected MCP server adds tool definitions to context. Tool Search mitigat
 | CLAUDE_CODE_TASK_LIST_ID | (none) | string | Task list ID for task management |
 | CLAUDE_CODE_EXIT_AFTER_STOP_DELAY | (none) | ms | Exit after stop with delay |
 | CLAUDE_CODE_DISABLE_AUTO_MEMORY | (enabled) | 0/1 | Disable auto memory feature |
+| ANTHROPIC_MODEL | — | string | Override model |
+| CLAUDE_CODE_SUBAGENT_MODEL | — | string | Model for subagents |
+| CLAUDE_CODE_SHELL_PREFIX | — | string | Command prefix for all bash |
+| CLAUDE_ENV_FILE | — | string | Shell script for persistent env |
+| CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR | — | boolean | Reset to project dir after each command |
+| CLAUDE_CODE_DISABLE_BACKGROUND_TASKS | — | 0/1 | Disable background tasks |
+| CLAUDE_CODE_ENABLE_TASKS | true | boolean | Enable task tracking |
+| CLAUDE_CODE_TEAM_NAME | — | string | Team name for agent teams |
+| CLAUDE_CODE_PLAN_MODE_REQUIRED | — | boolean | Auto-set on team teammates |
+| MCP_TIMEOUT | — | ms | MCP server startup timeout |
+| MCP_TOOL_TIMEOUT | — | ms | MCP tool execution timeout |
+| CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC | — | 0/1 | Bundles: disable autoupdater+telemetry+error reporting |
 
 ### Critical Constraints
 
@@ -302,6 +363,7 @@ Auto memory details:
 - Git worktrees get separate memory directories
 - `/memory` command opens file selector
 - Tell Claude: "remember that we use pnpm" to explicitly save
+- **Known Bug (#24044)**: MEMORY.md injected twice per API call — once via auto-memory loader, once via claudeMd loader. Doubles token cost for MEMORY.md content.
 
 ### Configuration Backups
 

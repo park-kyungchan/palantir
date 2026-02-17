@@ -1,6 +1,6 @@
 # Agent System — Fields, Spawning & Subagents
 
-> Verified: 2026-02-17 via claude-code-guide + researcher agent, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide team investigation
 
 ---
 
@@ -61,6 +61,7 @@ You are a code reviewer. Never modify files, only analyze and report.
 - Omitting `Task` entirely: agent cannot spawn subagents
 - MCP tools: `mcp__servername__toolname`
 - When `memory` is enabled: Read, Write, Edit are auto-added to tools regardless of tools field
+- **IMPORTANT**: When `memory` is enabled, Read, Write, Edit are auto-added to tools regardless of explicit `tools` field. This means agent tool isolation is partially broken for memory-enabled agents — they always have file manipulation capability.
 
 ### permissionMode Values
 
@@ -85,6 +86,8 @@ You are a code reviewer. Never modify files, only analyze and report.
 
 Lines 201+ silently truncated.
 
+**Known Bug (#24044)**: MEMORY.md is injected **twice** per API call — once via auto-memory loader, once via claudeMd/project-instructions loader. Doubles MEMORY.md token cost. Mitigation: keep MEMORY.md as lean as possible (well under 200 lines).
+
 ---
 
 ## 3. Agent Spawning Flow
@@ -99,6 +102,9 @@ Lines 201+ silently truncated.
    - Subagents do NOT inherit skills from parent — must be listed explicitly
 6. If `memory` field: MEMORY.md first 200 lines auto-loaded
 7. SubagentStart hook fires after spawn
+- Agent-scoped hooks **augment** (not override) global hooks. Both fire for the same event.
+- Agent hooks are scoped to the component's lifecycle — cleaned up when agent finishes.
+- `Stop` hooks in agent frontmatter auto-convert to `SubagentStop` events (confirmed).
 8. Agent runs independently until maxTurns or task completion
 
 ---
@@ -149,7 +155,8 @@ Background subagent outputs truncated to 30,000 characters. Full output written 
   - When memory enabled: Read, Write, Edit auto-added to tools (regardless of explicit tools field)
 - 2 agents: model: haiku (pt-manager, delivery-agent)
 - 2 agents: hooks (implementer, infra-implementer: PostToolUse + PostToolUseFailure)
-- Note: `Stop` hooks in agent frontmatter auto-convert to `SubagentStop` events
+- Note: `Stop` hooks in agent frontmatter auto-convert to `SubagentStop` events (confirmed)
+- Note: Agent-scoped hooks AUGMENT global hooks (both fire). Hooks cleaned up when agent finishes.
 - 0 agents: permissionMode, skills, mcpServers, disallowedTools
 
 ---
