@@ -191,6 +191,9 @@ If the verify domain had warnings (non-blocking MEDIUM findings that did not pre
 ### DO NOT: Archive Implementation Details in MEMORY.md
 MEMORY.md captures session-level summaries, not implementation details. Do not include code snippets, full file diffs, agent conversation logs, or step-by-step execution traces. Keep session entries to 3-5 lines maximum. Detailed implementation notes belong in topic files (e.g., `memory/infrastructure-history.md`) linked from the topic file index, not in the session entry itself.
 
+### DO NOT: Call TeamDelete Before PT Completion
+TeamDelete removes the entire `~/.claude/tasks/{team-name}/` directory, including PT task files. If PT has not been marked completed before TeamDelete, the PT becomes unreachable ("Task not found"). **Correct order**: `TaskUpdate(PT, status: completed)` → agent shutdown → `TeamDelete`. **Incident**: 2026-02-17 Meta-Cognition pipeline — PT #1 lost due to reversed ordering.
+
 ## Phase-Aware Execution
 
 This skill runs in P2+ Team mode only. Agent Teams coordination applies:

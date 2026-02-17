@@ -222,6 +222,10 @@ Key rules:
 - **Cause**: Agent assigned to the task crashed, exhausted turns, or was interrupted without updating status.
 - **Action**: Lead detects via TaskList monitoring. If agent is confirmed terminated, update task status to `failed` with `metadata.error: "agent_interrupted"`. Route to the appropriate execution skill for re-assignment.
 
+### Dead Teammate Blocking TeamDelete
+- **Cause**: User interrupted/killed a teammate process. Agent is dead but `config.json` still lists it as an active member. `shutdown_request` is "sent" but never processed (dead agent cannot respond). TeamDelete fails: "Cannot cleanup team with N active member(s)."
+- **Action**: Edit `~/.claude/teams/{team-name}/config.json` directly to remove the dead member from the `members` array. Then retry TeamDelete. This is the only CC-native workaround — there is no API to force-remove a dead teammate.
+
 ## Anti-Patterns
 
 ### DO NOT: Overwrite PT Without Reading First
@@ -238,6 +242,9 @@ Always verify the dependency graph is acyclic before adding `addBlockedBy` relat
 
 ### DO NOT: Complete PT Before All Work Tasks Finish
 PT completion signals "pipeline done." If any child work task is still in_progress, pending, or failed, completing the PT creates a false signal. Always verify all `parent: {PT-id}` tasks are completed first.
+
+### DO NOT: TeamDelete Before PT Completion
+TeamDelete removes `~/.claude/tasks/{team-name}/` entirely — including PT task files. Always complete PT (`TaskUpdate status: completed`) BEFORE TeamDelete. Reversed order causes "Task not found" and permanent PT loss. **Correct sequence**: PT completed → agent shutdown → TeamDelete → team resources cleaned.
 
 ## Transitions
 
