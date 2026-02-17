@@ -1,17 +1,21 @@
 ---
 name: verify-cc-feasibility
-description: |
-  [P7·Verify·CCFeasibility] Validates CC native field compliance via cc-reference cache. Checks frontmatter fields against CC native field lists. Terminal verify stage — gates delivery pipeline.
-
-  WHEN: After verify-quality PASS. Also after skill/agent creation or frontmatter modification.
-  DOMAIN: verify (skill 4 of 4, sequential).
-  INPUT_FROM: verify-quality (routing quality confirmed), execution-infra (frontmatter changes).
-  OUTPUT_TO: delivery-pipeline (all PASS) | execution-infra (FAIL: fix required). Native compliance per file.
-
-  METHODOLOGY: (1) Load cc-reference cache, (2) Check each frontmatter field vs CC native list, (3) Flag non-native fields, (4) Verify tool names match CC built-ins, (5) Produce compliance verdict.
-  OUTPUT_FORMAT: L1 YAML (native compliance per file), L2 field-level feedback.
+description: >-
+  Validates CC native field compliance via cc-reference cache.
+  Checks frontmatter fields against CC native field lists.
+  Terminal verify stage that gates delivery pipeline. Use after
+  verify-quality PASS or after skill/agent creation or
+  frontmatter modification. Reads from verify-quality routing
+  quality confirmation and execution-infra frontmatter changes.
+  Produces native compliance per file for delivery-pipeline on
+  all PASS, or routes back to execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: verify
+  tags: [cc-native-compliance, field-validation, delivery-gate]
+  version: 2.0.0
 ---
 
 # Verify — CC Feasibility

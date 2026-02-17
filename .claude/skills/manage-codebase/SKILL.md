@@ -1,18 +1,22 @@
 ---
 name: manage-codebase
-description: |
-  [H·Homeostasis·Codebase] Generates per-file dependency map across .claude/ scope. Creates/updates codebase-map.md with refs, refd_by, hotspot scores. Full scan or incremental mode.
-
-  WHEN: After pipeline execution, major codebase changes, or periodic maintenance. AI can auto-invoke.
-  DOMAIN: homeostasis (skill 1 of 5).
-  INPUT_FROM: .claude/ directory files (Glob+Grep structural references).
-  OUTPUT_TO: codebase-map.md file, L1 map health report.
-
-  METHODOLOGY: (1) Glob .claude/ for all files, (2) Grep cross-references, (3) Build refs/refd_by graph, (4) Calculate hotspot scores, (5) Write/update codebase-map.md (max 150 entries, 300 lines).
-  OUTPUT_FORMAT: L1 YAML (entries count, mode, staleness), codebase-map.md file.
+description: >-
+  Generates per-file dependency map across .claude/ scope.
+  Creates or updates codebase-map.md with refs, refd_by, and
+  hotspot scores. Supports full scan or incremental mode. Use
+  after pipeline execution, major codebase changes, or periodic
+  maintenance. AI can auto-invoke. Reads from .claude/ directory
+  files via structural reference scanning. Produces
+  codebase-map.md file and map health report with entries count,
+  mode, and staleness metrics.
 user-invocable: true
 argument-hint: "[full|incremental]"
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: homeostasis
+  tags: [dependency-map, hotspot-scoring, codebase-health]
+  version: 2.0.0
 ---
 
 # Manage — Codebase

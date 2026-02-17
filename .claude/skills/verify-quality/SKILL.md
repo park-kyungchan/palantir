@@ -1,17 +1,21 @@
 ---
 name: verify-quality
-description: |
-  [P7·Verify·Quality] Audits routing effectiveness via WHEN specificity, INPUT_FROM/OUTPUT_TO clarity, and description utilization. Scores skills 0-100, identifies bottom-5. Third of 4 sequential verify stages.
-
-  WHEN: After verify-consistency PASS. Also after routing failures requiring investigation.
-  DOMAIN: verify (skill 3 of 4, sequential).
-  INPUT_FROM: verify-consistency (relationship integrity confirmed).
-  OUTPUT_TO: verify-cc-feasibility (PASS) | execution-infra (FAIL). Quality scores per file.
-
-  METHODOLOGY: (1) Score WHEN specificity, (2) Score INPUT_FROM/OUTPUT_TO clarity, (3) Score description utilization, (4) Score canonical structure compliance, (5) Identify bottom-5 for improvement.
-  OUTPUT_FORMAT: L1 YAML (quality score 0-100 per file with dimension breakdown), L2 quality report.
+description: >-
+  Audits routing effectiveness via description specificity,
+  input/output clarity, and description utilization. Scores
+  skills 0-100 and identifies bottom-5 for improvement. Third of
+  four sequential verify stages. Use after verify-consistency
+  PASS or after routing failures requiring investigation. Reads
+  from verify-consistency relationship integrity confirmation.
+  Produces quality scores per file for verify-cc-feasibility on
+  PASS, or routes back to execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: verify
+  tags: [routing-quality, description-scoring, quality-audit]
+  version: 2.0.0
 ---
 
 # Verify — Quality

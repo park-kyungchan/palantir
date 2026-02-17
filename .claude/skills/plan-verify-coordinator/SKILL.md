@@ -1,17 +1,25 @@
 ---
 name: plan-verify-coordinator
-description: |
-  [P3·PlanVerify·Coordinator] Consolidates 4 dimension verdicts with cross-dimension consistency checks. Terminal plan-verify skill — cross-checks dependency↔sequence, contract↔boundary, rollback↔checkpoint.
-
-  WHEN: After ALL 4 plan-verify dimension skills complete.
-  DOMAIN: plan-verify (skill 5 of 5).
-  INPUT_FROM: plan-verify-static (coverage verdict), plan-verify-behavioral (test coverage verdict), plan-verify-relational (integrity verdict), plan-verify-impact (containment verdict).
-  OUTPUT_TO: orchestrate domain (all PASS) | plan domain (FAIL: route back). L1 index + L2 summary → Lead, L3 per-dimension → orchestrate skills.
-
-  METHODOLOGY: (1) Aggregate 4 verdicts, (2) Cross-check dependency↔sequence traceability, (3) Verify contract↔boundary alignment, (4) Check rollback↔checkpoint coverage, (5) Produce tiered output.
-  OUTPUT_FORMAT: L1 index.md, L2 summary.md → Lead, L3 per-dimension files → orchestrate skills.
+description: >-
+  Consolidates four dimension verdicts with cross-dimension
+  consistency checks. Terminal plan-verify skill that
+  cross-checks dependency-sequence, contract-boundary, and
+  rollback-checkpoint alignment. Use after all four plan-verify
+  dimension skills complete (plan-verify-static,
+  plan-verify-behavioral, plan-verify-relational,
+  plan-verify-impact). Reads from plan-verify-static coverage
+  verdict, plan-verify-behavioral test coverage verdict,
+  plan-verify-relational integrity verdict, and
+  plan-verify-impact containment verdict. Produces L1 index and
+  L2 summary for Lead, L3 per-dimension files for orchestrate
+  skills.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: plan-verify
+  tags: [verdict-consolidation, cross-dimension-check, plan-gate]
+  version: 2.0.0
 ---
 
 # Plan Verify — Coordinator

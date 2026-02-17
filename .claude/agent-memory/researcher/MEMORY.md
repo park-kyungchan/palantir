@@ -64,12 +64,16 @@
 
 ### Official CC Docs Research Pattern (2026-02-17)
 - code.claude.com/docs/en/{feature} pages provide COMPLETE official specs
-- Key pages: agent-teams, sub-agents, best-practices, memory, skills, hooks
+- Key pages: agent-teams, sub-agents, best-practices, memory, skills, hooks, cli-reference, settings
+- API docs at platform.claude.com/docs/en/build-with-claude/{feature} and platform.claude.com/docs/en/api/{endpoint}
+- ALL docs.anthropic.com URLs now 301 redirect: CC docs -> code.claude.com, API docs -> platform.claude.com
+- The old URL docs.anthropic.com/en/docs/claude-code/reference returns 404; use cli-reference + settings instead
 - Always WebFetch official docs FIRST, then cross-reference with ref_*.md for deltas
 - Official docs may not cover advanced patterns (e.g., structured L1 format) -- note which are custom conventions vs official
 - GitHub issues (anthropics/claude-code) are valuable for bug reports and workarounds
 - Anthropic engineering blog has multi-agent coordination lessons not in product docs
 - Agent field name is `tools` (NOT `allowed-tools`) -- ref_agents.md had this wrong but agent files were correct
+- Key new API features (2026-02): context editing (beta), server-side compaction (beta), effort GA with `max`, analytics API
 
 ### Research Output Format
 - Findings list with id, topic, priority, status, target_doc, action, summary

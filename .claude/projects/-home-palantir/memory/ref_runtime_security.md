@@ -1,6 +1,6 @@
 # Runtime, Tools & Security
 
-> Verified: 2026-02-16 via claude-code-guide, cross-referenced with code.claude.com
+> Verified: 2026-02-17 via claude-code-guide, cross-referenced with code.claude.com
 
 ---
 
@@ -51,6 +51,32 @@ Each session starts with a fresh context window. No conversation history from pr
 | **TeammateTool** | Agent Teams coordination | spawn, sendMessage, broadcast, etc. |
 | **ListMcpResources/ReadMcpResource** | MCP resource access | — |
 | **mcp__*__*** | MCP server tools | `mcp__servername__actionname` |
+
+### pause_turn Stop Reason
+
+Server-side sampling loop has a 10-iteration limit. When reached, returns `stop_reason="pause_turn"`. Client must re-send the conversation to continue execution.
+
+### Tool Token Overhead
+
+| Configuration | Token Cost | Notes |
+|---------------|-----------|-------|
+| `auto` / `none` | 346 tokens | All models except Haiku 3.5 |
+| `any` / specific `tool` | 313 tokens | All models except Haiku 3.5 |
+| Haiku 3.5 | 264 / 340 tokens | Different overhead profile |
+
+### Memory Tool (Beta)
+
+Beta: `memory_20250818`. Client-side file-based memory with CRUD commands:
+- Commands: `view`, `create`, `str_replace`, `insert`, `delete`, `rename`
+- Operates on memory files specified by client in tool definition
+
+### Programmatic Tool Calling (PTC)
+
+API-level feature (beta `advanced-tool-use-2025-11-20`). Adds `allowed_callers` field to tool definitions — restricts which tools can invoke other tools. Not used in CC Agent Teams.
+
+### Tool Search Tool (API)
+
+API-level feature (beta). Adds `defer_loading: true` field to tool definitions. Scales to 10K tools by deferring tool schema loading. Not used in CC (CC has its own MCP Tool Search implementation).
 
 ---
 

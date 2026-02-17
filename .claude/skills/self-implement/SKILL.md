@@ -1,17 +1,21 @@
 ---
 name: self-implement
-description: |
-  [H·Homeostasis·Implement] Executes INFRA improvements from diagnosis findings. Spawns infra-implementer waves (max 2 parallel, non-overlapping files). Max 3 iterations. Paired with self-diagnose.
-
-  WHEN: After self-diagnose produces findings list. Findings ready for implementation.
-  DOMAIN: homeostasis (skill 5 of 5).
-  INPUT_FROM: self-diagnose (categorized findings with severity and evidence).
-  OUTPUT_TO: delivery-pipeline, manage-skills, manage-infra (improvement manifest, implementation report).
-
-  METHODOLOGY: (1) Prioritize findings by severity, (2) Group into non-overlapping file batches, (3) Spawn infra-implementers (max 2 parallel), (4) Verify compliance post-fix, (5) Iterate up to 3 rounds.
-  OUTPUT_FORMAT: L1 YAML (fixed/deferred counts), L2 implementation report.
+description: >-
+  Executes INFRA improvements from diagnosis findings. Spawns
+  infra-implementer waves with max 2 parallel on non-overlapping
+  files. Max 3 iterations for convergence. Paired with
+  self-diagnose. Use after self-diagnose produces findings list
+  with findings ready for implementation. Reads from self-diagnose
+  categorized findings with severity and evidence. Produces
+  improvement manifest and implementation report for
+  delivery-pipeline and manage-infra.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Edit Write"
+metadata:
+  category: homeostasis
+  tags: [infra-improvement, wave-implementation, convergence-tracking]
+  version: 2.0.0
 ---
 
 # Self-Implement — INFRA Fix Executor

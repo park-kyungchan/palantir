@@ -41,6 +41,21 @@ Shell-level env vars take precedence over `env` object in settings.json. Pre-exi
 }
 ```
 
+### Additional Settings Keys
+
+```jsonc
+{
+  "otelHeadersHelper": "...",        // OpenTelemetry header config
+  "statusLine": true,                // Show status line in UI
+  "fileSuggestion": true,            // Suggest files to read
+  "respectGitignore": true,          // Honor .gitignore in file operations
+  "outputStyle": "...",              // Output formatting style
+  "disableAllHooks": false,          // Kill switch for all hooks
+  "allowManagedHooksOnly": false,    // Only run managed (IT-deployed) hooks
+  "enableAllProjectMcpServers": false // Auto-enable all project MCP servers
+}
+```
+
 ### Functional Separation
 
 - **settings.json**: Controls "what Claude CAN do" — permissions, model, env vars, hooks
@@ -130,7 +145,13 @@ System Prompt (internal, unpublished)
   = Total context usage
 ```
 
-1M beta available for API users only (tier 4+, requires `anthropic-beta: context-1m-2025-08-07` header). Claude Max operates at 200K.
+1M beta available for API users only (tier 4+, requires `anthropic-beta: context-1m-2025-08-07` header, pricing 2x input / 1.5x output). Claude Max operates at 200K.
+
+### Context Awareness Tags
+
+Models (Sonnet 4.5, Haiku 4.5) receive XML budget tags in context:
+- `<budget:token_budget>200000</budget:token_budget>` — total budget
+- `<system_warning>Token usage: N/200000</system_warning>` — current usage
 
 ### Session Start Loading Order
 
@@ -143,9 +164,9 @@ System Prompt (internal, unpublished)
 6. SessionStart hooks fire, additionalContext injected
 7. Conversation begins
 
-### Auto-Compaction
+### Auto-Compaction (CC Client-Side)
 
-- Triggers: ~95% of context window (configurable via `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`)
+- Triggers: ~95% of context window (configurable via `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` env var)
 - PreCompact hook fires before compaction
 - Conversation summarized, old tool outputs cleared
 - CLAUDE.md + Skill L1 re-injected automatically
@@ -158,6 +179,32 @@ System Prompt (internal, unpublished)
 - `/rewind` + "Summarize from here" — condenses messages from a point forward
 - Subagent transcripts survive main conversation compaction (separate files)
 - Practical heuristic: after 2 failed corrections, `/clear` and start fresh
+
+### Server-Side Compaction API (Beta)
+
+Beta header: `compact-2026-01-12` (Opus 4.6 only). Alternative to CC client-side compaction for API users.
+
+- Type: `compact_20260112`, trigger default 150K tokens (minimum 50K)
+- `pause_after_compaction`: boolean — pauses to let client preserve messages before continuing
+- Custom `instructions` parameter replaces default summarization prompt
+- Usage tracking: `usage.iterations` array contains compaction + message type entries
+- Token budget enforcement: count compactions x trigger threshold
+
+### Context Editing (Beta)
+
+Beta header: `context-management-2025-06-27`. Server-side strategies to trim context:
+
+1. **`clear_tool_uses_20250919`**: Clears old tool results from context
+   - `trigger`: token threshold (default 100K)
+   - `keep`: number of recent tool uses to preserve (default 3)
+   - `clear_at_least`: minimum tool uses to clear per edit
+   - `exclude_tools`: array of tool names to never clear
+   - `clear_tool_inputs`: also clear tool inputs (not just results)
+
+2. **`clear_thinking_20251015`**: Clears old thinking blocks
+   - `keep`: number of recent thinking turns to preserve (default 1)
+
+Response includes `context_management.applied_edits` array with cleared counts.
 
 ### Hook Context Injection
 
@@ -173,7 +220,7 @@ Every connected MCP server adds tool definitions to context. Tool Search mitigat
 
 ### Skill L1 Budget
 
-- Formula: `max(context_window × 2%, 16000)` characters (total for ALL skill descriptions)
+- Formula: `max(context_window × 2%, 16000)` characters (total for ALL skill descriptions) — confirmed: 2% of context window, fallback 16,000 chars
 - Override: `SLASH_COMMAND_TOOL_CHAR_BUDGET` env var
 - Skills with `disable-model-invocation: true` excluded from budget
 - If exceeded: skills excluded likely FIFO (no priority mechanism)
@@ -190,6 +237,8 @@ Every connected MCP server adds tool definitions to context. Tool Search mitigat
 | MAX_MCP_OUTPUT_TOKENS | 25000 | number | MCP tool output limit |
 | SLASH_COMMAND_TOOL_CHAR_BUDGET | dynamic | number | Skill L1 total char budget |
 | ENABLE_TOOL_SEARCH | auto | auto/auto:N/true/false | MCP tool search threshold |
+| CLAUDE_CODE_TASK_LIST_ID | (none) | string | Task list ID for task management |
+| CLAUDE_CODE_EXIT_AFTER_STOP_DELAY | (none) | ms | Exit after stop with delay |
 | CLAUDE_CODE_DISABLE_AUTO_MEMORY | (enabled) | 0/1 | Disable auto memory feature |
 
 ### Critical Constraints

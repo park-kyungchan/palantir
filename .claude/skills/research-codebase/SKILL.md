@@ -1,17 +1,22 @@
 ---
 name: research-codebase
-description: |
-  [P2·Research·Codebase] Discovers local codebase patterns via Glob/Grep/Read. Documents patterns and anti-patterns with file:line references. Parallel with research-external.
-
-  WHEN: Design domain complete. Parallel with research-external.
-  DOMAIN: research (skill 1 of 3).
-  INPUT_FROM: design-architecture (component structure), design-interface (API contracts), design-risk (risk areas).
-  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (pattern inventory, findings with evidence).
-
-  METHODOLOGY: (1) Extract architecture questions needing evidence, (2) Glob/Grep for structural patterns, (3) Read key files for behavioral patterns, (4) Document with file:line refs, (5) Classify as pattern or anti-pattern.
-  OUTPUT_FORMAT: L1 YAML (pattern inventory), L2 findings with file:line references.
+description: >-
+  Discovers local codebase patterns via Glob/Grep/Read and documents
+  patterns and anti-patterns with file:line references. Parallel
+  with research-external. Use after design domain complete when
+  component structure, API contracts, and risk areas are defined.
+  Reads from design-architecture component structure,
+  design-interface API contracts, and design-risk risk areas.
+  Produces pattern inventory and findings with evidence for
+  audit-static, audit-behavioral, audit-relational, and
+  audit-impact.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: research
+  tags: [codebase-patterns, dependency-analysis, pattern-discovery]
+  version: 2.0.0
 ---
 
 # Research — Codebase

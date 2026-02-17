@@ -1,17 +1,23 @@
 ---
 name: execution-review
-description: |
-  [P5·Execution·Review] Evaluates implementation: design-spec compliance then code quality/security. Classifies findings CRITICAL/HIGH (block) vs MEDIUM/LOW (pass). Fix loop max 3 iterations. Terminal execution skill.
-
-  WHEN: After execution-code and/or execution-infra complete. All execution outputs converge here.
-  DOMAIN: execution (skill 5 of 5).
-  INPUT_FROM: execution-code (code changes), execution-infra (infra changes), execution-impact (impact report), execution-cascade (cascade results), design domain (specs).
-  OUTPUT_TO: verify domain (PASS) | execution-code/infra (FAIL: fix loop). Review verdict with severity breakdown.
-
-  METHODOLOGY: (1) Check design-spec compliance, (2) Audit code quality, (3) Security scan, (4) Classify findings by severity, (5) Route: PASS→verify or FAIL→fix loop.
-  OUTPUT_FORMAT: L1 YAML (review verdict with severity breakdown), L2 file:line findings.
+description: >-
+  Evaluates implementation for design-spec compliance then code
+  quality and security. Classifies findings as CRITICAL/HIGH
+  (block) or MEDIUM/LOW (pass). Fix loop max 3 iterations.
+  Terminal execution skill where all outputs converge. Use after
+  execution-code and/or execution-infra complete. Reads from
+  execution-code code changes, execution-infra infra changes,
+  execution-impact impact report, execution-cascade cascade
+  results, and design domain specs. Produces review verdict with
+  severity breakdown for verify domain on PASS, or routes back
+  to execution-code/infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: execution
+  tags: [implementation-review, spec-compliance, quality-security]
+  version: 2.0.0
 ---
 
 # Execution — Review

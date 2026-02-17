@@ -1,17 +1,20 @@
 ---
 name: execution-cascade
-description: |
-  [P5·Execution·Cascade] Iterates DIRECT-dependent updates in max 3 rounds with convergence tracking. Max 2 implementers per iteration. Reports converged/partial/non-convergent.
-
-  WHEN: After execution-impact reports cascade_recommended: true. Never invoked if false.
-  DOMAIN: execution (skill 4 of 5).
-  INPUT_FROM: execution-impact (DIRECT dependent files with classification).
-  OUTPUT_TO: execution-review (cascade result with iteration details, update log with convergence evidence).
-
-  METHODOLOGY: (1) Identify DIRECT dependents needing update, (2) Spawn max 2 implementers per iteration, (3) Track convergence per round, (4) Repeat up to 3 rounds, (5) Report convergence status.
-  OUTPUT_FORMAT: L1 YAML (cascade result with iteration_details array), L2 update log with convergence evidence.
+description: >-
+  Iterates DIRECT-dependent updates in max 3 rounds with
+  convergence tracking. Max 2 implementers per iteration. Reports
+  converged, partial, or non-convergent status. Use after
+  execution-impact reports cascade_recommended true. Never
+  invoked if cascade is false. Reads from execution-impact DIRECT
+  dependent files with classification. Produces cascade result
+  with iteration details and update log with convergence evidence
+  for execution-review.
 user-invocable: false
 disable-model-invocation: false
+metadata:
+  category: execution
+  tags: [cascade-updates, convergence-tracking, dependent-propagation]
+  version: 2.0.0
 ---
 
 # Execution — Cascade

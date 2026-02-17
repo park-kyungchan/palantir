@@ -1,17 +1,22 @@
 ---
 name: plan-verify-impact
-description: |
-  [P3·PlanVerify·Impact] Confirms checkpoint containment against propagation chains. Verdict: PASS (all HIGH contained), FAIL (HIGH unmitigated or >3 gaps). Parallel with 3 other verify skills.
-
-  WHEN: After plan-impact complete. Parallel with plan-verify-static/behavioral/relational.
-  DOMAIN: plan-verify (skill 4 of 5).
-  INPUT_FROM: plan-impact (execution sequence with checkpoints), research-coordinator (audit-impact L3 propagation paths).
-  OUTPUT_TO: plan-verify-coordinator (containment verdict, path-checkpoint mapping with gap classification).
-
-  METHODOLOGY: (1) Map checkpoints to propagation paths, (2) Identify unmitigated paths, (3) Check containment timing (late/insufficient), (4) Classify gaps by severity, (5) Produce containment verdict.
-  OUTPUT_FORMAT: L1 YAML (containment verdict), L2 path-checkpoint mapping with gap classification.
+description: >-
+  Confirms checkpoint containment against propagation chains.
+  Verdict: PASS (all HIGH contained), FAIL (HIGH unmitigated
+  or >3 gaps). Parallel with plan-verify-static,
+  plan-verify-behavioral, and plan-verify-relational. Use after
+  plan-impact complete. Reads from plan-impact execution
+  sequence with checkpoints and research-coordinator audit-impact
+  L3 propagation paths. Produces containment verdict and
+  path-checkpoint mapping with gap classification for
+  plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: plan-verify
+  tags: [containment-verification, checkpoint-validation, propagation-check]
+  version: 2.0.0
 ---
 
 # Plan Verify — Impact Containment

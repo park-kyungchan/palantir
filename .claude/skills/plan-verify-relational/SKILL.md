@@ -1,17 +1,22 @@
 ---
 name: plan-verify-relational
-description: |
-  [P3·PlanVerify·Relational] Validates contract integrity against relationship graph for asymmetric or missing contracts. Verdict: PASS (zero HIGH gaps), FAIL (HIGH asymmetric or >5 gaps). Parallel with 3 other verify skills.
-
-  WHEN: After plan-relational complete. Parallel with plan-verify-static/behavioral/impact.
-  DOMAIN: plan-verify (skill 3 of 5).
-  INPUT_FROM: plan-relational (interface contracts), research-coordinator (audit-relational L3 relationship graph).
-  OUTPUT_TO: plan-verify-coordinator (integrity verdict, consistency matrix with gap analysis).
-
-  METHODOLOGY: (1) Compare contracts vs relationship graph, (2) Identify asymmetric contracts, (3) Find missing contracts, (4) Classify gaps by severity, (5) Produce consistency matrix.
-  OUTPUT_FORMAT: L1 YAML (integrity verdict), L2 consistency matrix with contract gap analysis.
+description: >-
+  Validates contract integrity against relationship graph for
+  asymmetric or missing contracts. Verdict: PASS (zero HIGH
+  gaps), FAIL (HIGH asymmetric or >5 gaps). Parallel with
+  plan-verify-static, plan-verify-behavioral, and
+  plan-verify-impact. Use after plan-relational complete. Reads
+  from plan-relational interface contracts and
+  research-coordinator audit-relational L3 relationship graph.
+  Produces integrity verdict and consistency matrix with gap
+  analysis for plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: plan-verify
+  tags: [contract-integrity, asymmetry-detection, relationship-validation]
+  version: 2.0.0
 ---
 
 # Plan Verify — Relational Integrity

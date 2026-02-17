@@ -1,17 +1,21 @@
 ---
 name: verify-structural-content
-description: |
-  [P6·Verify·Structure] Inspects YAML frontmatter, naming conventions, and L2 body sections for completeness. First of 4 sequential verify stages: structure → consistency → quality → cc-feasibility.
-
-  WHEN: After execution-review PASS or any INFRA file creation/modification.
-  DOMAIN: verify (skill 1 of 4, sequential).
-  INPUT_FROM: execution-review (PASS verdict, implementation artifacts).
-  OUTPUT_TO: verify-consistency (PASS) | execution-infra (FAIL). Structure+content scores per file.
-
-  METHODOLOGY: (1) Parse YAML frontmatter fields, (2) Check naming conventions, (3) Validate L2 body section structure, (4) Score completeness per file, (5) Produce PASS/FAIL verdict.
-  OUTPUT_FORMAT: L1 YAML (PASS/FAIL per file with structure+content scores), L2 integrity report.
+description: >-
+  Inspects YAML frontmatter, naming conventions, and L2 body
+  sections for completeness. First of four sequential verify
+  stages: structure, consistency, quality, cc-feasibility. Use
+  after execution-review PASS or any INFRA file creation or
+  modification. Reads from execution-review PASS verdict and
+  implementation artifacts. Produces structure and content scores
+  per file for verify-consistency on PASS, or routes back to
+  execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: verify
+  tags: [frontmatter-inspection, naming-conventions, structural-completeness]
+  version: 2.0.0
 ---
 
 # Verify — Structural Content (Unified)

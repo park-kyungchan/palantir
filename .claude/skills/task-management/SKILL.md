@@ -1,18 +1,22 @@
 ---
 name: task-management
-description: |
-  [Px·Delivery·TaskMgmt] Task lifecycle manager for PT and work tasks via Task API. Heavy ops → pt-manager agent. Light ops → Lead direct. Exactly 1 PT per pipeline.
-
-  WHEN: Any phase. (1) Pipeline start: create PT. (2) Plan ready: batch tasks. (3) Execution: status updates. (4) Commit done: PT completed.
-  DOMAIN: delivery (skill 2 of 2).
-  INPUT_FROM: Pipeline context (tier, phase, requirements, architecture decisions).
-  OUTPUT_TO: PT lifecycle (create/update/complete), work tasks (batch creation), ASCII status visualization.
-
-  METHODOLOGY: (1) Classify operation weight (heavy/light), (2) Route heavy → pt-manager, light → Lead, (3) Execute task operations, (4) Validate no duplicate PTs, (5) Return status.
-  OUTPUT_FORMAT: L1 YAML (operation type, task counts), L2 task details or ASCII visualization.
+description: >-
+  Manages PT and work task lifecycle via Task API. Heavy ops
+  spawn pt-manager agent, light ops Lead-direct. Exactly 1 PT
+  per pipeline. Use at any phase: pipeline start for PT creation,
+  plan ready for batch tasks, execution for status updates, commit
+  done for PT completion. Reads from pipeline context including
+  tier, phase, requirements, and architecture decisions. Produces
+  PT lifecycle events, work task batches, and ASCII status
+  visualization.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[action] [args]"
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: delivery
+  tags: [task-lifecycle, pt-management, batch-creation]
+  version: 2.0.0
 ---
 
 # Task Management

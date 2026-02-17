@@ -1,17 +1,21 @@
 ---
 name: orchestrate-impact
-description: |
-  [P4·Orchestrate·Impact] Schedules execution waves via topological sort with capacity balancing (max 4 parallel/wave). Calculates critical path and parallel efficiency. Parallel with 3 other orchestrate skills.
-
-  WHEN: After plan-verify-coordinator complete (all PASS). Parallel with orchestrate-static/behavioral/relational.
-  DOMAIN: orchestrate (skill 4 of 5).
-  INPUT_FROM: plan-verify-coordinator (verified plan L3 via $ARGUMENTS).
-  OUTPUT_TO: orchestrate-coordinator (wave schedule with critical path length, wave visualization with DAG).
-
-  METHODOLOGY: (1) Topological sort of task DAG, (2) Group into waves (max 4 parallel), (3) Balance wave load, (4) Verify acyclicity, (5) Calculate critical path and efficiency metrics.
-  OUTPUT_FORMAT: L1 YAML (wave schedule with critical path length), L2 wave visualization with DAG.
+description: >-
+  Schedules execution waves via topological sort with capacity
+  balancing at max 4 parallel per wave. Calculates critical path
+  and parallel efficiency. Parallel with orchestrate-static,
+  orchestrate-behavioral, and orchestrate-relational. Use after
+  plan-verify-coordinator complete with all PASS. Reads from
+  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  Produces wave schedule with critical path length and wave
+  visualization with DAG for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write"
+metadata:
+  category: orchestrate
+  tags: [wave-scheduling, topological-sort, critical-path]
+  version: 2.0.0
 ---
 
 # Orchestrate — Impact (WHEN)

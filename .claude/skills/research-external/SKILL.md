@@ -1,17 +1,22 @@
 ---
 name: research-external
-description: |
-  [P2·Research·External] Collects community patterns via WebSearch/tavily. Filters for verified/reproducible information, cross-references with official docs. Parallel with research-codebase.
-
-  WHEN: Design domain complete. Parallel with research-codebase.
-  DOMAIN: research (skill 2 of 3).
-  INPUT_FROM: design-architecture (technology choices), design-interface (API contracts), design-risk (risk areas needing validation).
-  OUTPUT_TO: audit-static, audit-behavioral, audit-relational, audit-impact (community pattern matrix, report with source URLs).
-
-  METHODOLOGY: (1) Identify external validation needs, (2) Search official docs + community, (3) Filter for verified/reproducible info, (4) Cross-reference with cc-feasibility, (5) Produce sourced pattern matrix.
-  OUTPUT_FORMAT: L1 YAML (community pattern matrix), L2 pattern report with source URLs.
+description: >-
+  Collects community patterns via WebSearch and tavily. Filters
+  for verified and reproducible information, cross-references
+  with official docs. Parallel with research-codebase. Use after
+  design domain complete when technology choices, API contracts,
+  and risk areas needing validation are defined. Reads from
+  design-architecture technology choices, design-interface API
+  contracts, and design-risk risk areas. Produces community
+  pattern matrix and report with source URLs for audit-static,
+  audit-behavioral, audit-relational, and audit-impact.
 user-invocable: true
 disable-model-invocation: false
+allowed-tools: "Read Glob Grep Write WebSearch WebFetch"
+metadata:
+  category: research
+  tags: [community-patterns, web-research, external-validation]
+  version: 2.0.0
 ---
 
 # Research — External
