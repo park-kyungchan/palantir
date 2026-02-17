@@ -11,11 +11,6 @@ description: >-
   PASS, or routes back to execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: verify
-  tags: [routing-quality, description-scoring, quality-audit]
-  version: 2.0.0
 ---
 
 # Verify — Quality

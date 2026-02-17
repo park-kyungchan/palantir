@@ -11,10 +11,6 @@ description: >-
   for execution-review.
 user-invocable: false
 disable-model-invocation: true
-metadata:
-  category: execution
-  tags: [cascade-updates, convergence-tracking, dependent-propagation]
-  version: 2.0.0
 ---
 
 # Execution — Cascade

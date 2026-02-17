@@ -11,11 +11,6 @@ description: >-
   delivery-pipeline and manage-infra.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Edit Write"
-metadata:
-  category: homeostasis
-  tags: [infra-improvement, wave-implementation, convergence-tracking]
-  version: 2.0.0
 ---
 
 # Self-Implement — INFRA Fix Executor
@@ -129,7 +124,6 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | delivery-pipeline | Committed improvement cycle | Step 5 routes to delivery |
-| manage-skills | Updated skills needing inventory refresh | After skill frontmatter modifications |
 | manage-infra | Updated INFRA needing health re-check | After structural changes |
 
 ### Failure Routes

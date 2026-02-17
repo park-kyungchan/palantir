@@ -12,11 +12,6 @@ description: >-
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[focus-area]"
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: homeostasis
-  tags: [cc-native-diagnosis, infra-health-audit, 10-category-scan]
-  version: 2.0.0
 ---
 
 # Self-Diagnose — INFRA Health Research
@@ -153,7 +148,6 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 |-------------|---------------|--------|
 | (User invocation) | Focus area or general diagnosis request | `$ARGUMENTS` text |
 | manage-infra | Health check findings suggesting deeper analysis | L1 YAML: health_score, findings[] |
-| manage-skills | Skill inventory compliance issues | L1 YAML: actions[] |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

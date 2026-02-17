@@ -16,7 +16,6 @@
 | R6 | `ref_teams.md` | Agent Teams coordination, task sharing | File-based channels (both persistent on disk), inbox messaging (append-only, auto-deliver on turn), task DAG with file-lock concurrency, heartbeat 5min, plan approval workflow, **delegate mode (Shift+Tab)**, physical file structure, atomic write mechanism, hook-based pseudo-shared memory, design rationale, known limitations + BUG-025037 |
 | R7 | `ref_model_integration.md` | Model selection, cost tuning, MCP/plugin setup, **commands/ legacy** | Effort levels, cost benchmarks, MCP server types, tool search, **plugin manifest/LSP/marketplace/lifecycle**, commands/ vs skills/, Opus 4.6, fast mode 6x, 128K output |
 | R8 | `ref_community.md` | External tool evaluation, community patterns | agnix linter, claude-flow, superpowers, 10 post-Opus 4.6 community tools |
-| R9 | `ref_analytics.md` | Monitoring, analytics, cost tracking, OTel | CC Analytics API, Usage & Cost API, OTel metrics/events, Admin API overview |
 
 ## Routing Shortcuts
 
@@ -26,8 +25,7 @@
 | Permission/sandbox error | R1 (security section) |
 | Context overflow / compaction | R2 (context section) |
 | Hook failure diagnosis | R3 → R2 (hook context injection) |
-| Cost optimization | R7 + R9 (model/cost + analytics) |
-| Dashboard/monitoring setup | R9 (analytics) |
+| Cost optimization | R7 (model/cost) |
 | Context management API | R2 (config + context editing) |
 | Agent Teams debugging | R6 → R2 (task sharing + context) |
 | User CC architecture question | Relevant R-file, explain from reference |

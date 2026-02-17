@@ -12,11 +12,6 @@ description: >-
   predicted paths for execution-impact.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: audit
-  tags: [change-propagation, impact-analysis, shift-left-prediction]
-  version: 2.0.0
 ---
 
 # Audit — Impact (Change Propagation Analysis)

@@ -10,11 +10,6 @@ description: >-
   checkpoints, and sequencing rationale for plan-verify-impact.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan
-  tags: [execution-sequencing, wave-scheduling, propagation-containment]
-  version: 2.0.0
 ---
 
 # Plan — Impact Sequencing

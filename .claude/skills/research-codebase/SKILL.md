@@ -12,11 +12,6 @@ description: >-
   plus CC-native claims for research-cc-verify gate.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: research
-  tags: [codebase-patterns, dependency-analysis, pattern-discovery]
-  version: 2.0.0
 ---
 
 # Research — Codebase

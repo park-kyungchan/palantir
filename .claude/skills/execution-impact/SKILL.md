@@ -13,11 +13,6 @@ description: >-
   execution-review.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: execution
-  tags: [impact-classification, shift-left-validation, cascade-routing]
-  version: 2.0.0
 ---
 
 # Execution — Impact

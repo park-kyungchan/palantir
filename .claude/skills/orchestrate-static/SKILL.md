@@ -11,11 +11,6 @@ description: >-
   rationale for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: orchestrate
-  tags: [agent-assignment, task-splitting, profile-matching]
-  version: 2.0.0
 ---
 
 # Orchestrate — Static (WHO)

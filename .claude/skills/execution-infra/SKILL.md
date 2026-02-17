@@ -12,10 +12,6 @@ description: >-
   execution-review.
 user-invocable: true
 disable-model-invocation: true
-metadata:
-  category: execution
-  tags: [infra-implementation, config-deployment, yaml-validation]
-  version: 2.0.0
 ---
 
 # Execution — Infra

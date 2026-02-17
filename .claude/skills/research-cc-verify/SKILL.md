@@ -13,15 +13,6 @@ description: >-
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[claim-source or investigation-context]"
-allowed-tools:
-  - analyst
-metadata:
-  category: research
-  tags:
-    - shift-left
-    - verification
-    - cc-native
-  version: 2.0.0
 ---
 
 # CC-Native Claim Verification — Shift-Left Gate

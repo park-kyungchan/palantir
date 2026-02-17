@@ -10,6 +10,15 @@ set -euo pipefail
 INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
 
+# Guard: Only lead session should clean up shared /tmp files
+TEAM_CONFIG=$(find ~/.claude/teams/ -name "config.json" -print -quit 2>/dev/null)
+if [[ -n "$TEAM_CONFIG" ]]; then
+  LEAD_SESSION=$(jq -r '.leadSessionId // empty' "$TEAM_CONFIG" 2>/dev/null)
+  if [[ -n "$LEAD_SESSION" && -n "$SESSION_ID" && "$SESSION_ID" != "$LEAD_SESSION" ]]; then
+    exit 0  # Only lead session cleans up shared /tmp files
+  fi
+fi
+
 # Archive pipeline state to dashboard sessions
 STATE_FILE="/tmp/claude-pipeline-state.json"
 SESSIONS_DIR="$HOME/.claude/dashboard/sessions"

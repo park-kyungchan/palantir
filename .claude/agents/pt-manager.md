@@ -17,7 +17,6 @@ tools:
   - TaskCreate
   - TaskUpdate
   - AskUserQuestion
-memory: none
 skills:
   - task-management
 model: haiku

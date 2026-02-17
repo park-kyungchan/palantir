@@ -11,11 +11,6 @@ description: >-
   back to execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: verify
-  tags: [bidirectional-consistency, phase-sequence, relationship-matrix]
-  version: 2.0.0
 ---
 
 # Verify — Consistency
@@ -54,7 +49,7 @@ Skills exempt from forward-only phase sequence enforcement:
 
 | Category | Skills | Exemption Reason |
 |----------|--------|------------------|
-| Homeostasis | manage-infra, manage-skills, manage-codebase, self-diagnose, self-implement | Cross-cutting, any-phase operation |
+| Homeostasis | manage-infra, manage-codebase, self-diagnose, self-implement | Cross-cutting, any-phase operation |
 | Cross-cutting | delivery-pipeline, pipeline-resume, task-management | Phase-independent utilities |
 | FAIL routes | Any skill routing FAIL back to earlier phase | Error recovery is always backward |
 

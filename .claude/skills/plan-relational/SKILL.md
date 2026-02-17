@@ -10,11 +10,6 @@ description: >-
   gap counts and per-task contracts for plan-verify-relational.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan
-  tags: [interface-contracts, producer-consumer, contract-registry]
-  version: 2.0.0
 ---
 
 # Plan — Relational Contracts

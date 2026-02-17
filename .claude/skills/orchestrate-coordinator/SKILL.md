@@ -14,11 +14,6 @@ description: >-
   execution-plan for execution-code and execution-infra.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: orchestrate
-  tags: [plan-unification, spawn-instructions, cross-validation]
-  version: 2.0.0
 ---
 
 # Orchestrate — Coordinator

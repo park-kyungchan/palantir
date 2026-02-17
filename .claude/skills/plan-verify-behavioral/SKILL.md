@@ -12,11 +12,6 @@ description: >-
   coverage matrices for plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan-verify
-  tags: [test-coverage-check, risk-weighted-scoring, rollback-verification]
-  version: 2.0.0
 ---
 
 # Plan Verify — Behavioral Coverage

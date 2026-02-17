@@ -65,7 +65,7 @@ SessionEnd (clear/logout/other)
 | Type | Description | Supported Events | Default Timeout |
 |------|-------------|-----------------|-----------------|
 | command | Shell script; receives JSON on stdin | All 14 events | 60s |
-| prompt | Single-turn LLM eval (Haiku default) | PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, UserPromptSubmit, Stop, SubagentStop, TaskCompleted | 30s |
+| prompt | Single-turn LLM eval (Haiku default) | PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, UserPromptSubmit, Stop, SubagentStop | 30s |
 | agent | Multi-turn subagent with tools (Read, Grep, Glob, Bash). Max 50 turns | Same as prompt | 60s |
 
 ### Hook Definition Fields
@@ -183,6 +183,36 @@ Exit code 2 behavior by event:
 
 Hooks follow 5-layer settings precedence. `allowManagedHooksOnly` blocks user, project, and plugin hooks.
 
+### 8.5 Hook Propagation Scope
+
+> **Empirical finding** (2026-02-17): All global hooks fire in ALL execution contexts — lead session, teammates, AND subagents. There is NO built-in scoping mechanism.
+
+Evidence: 315 PreToolUse hook invocations across 9 distinct session_ids in a single Agent Teams session. Global hooks cannot be restricted to lead-only via configuration alone.
+
+**Workaround — session_id guard pattern** (for command-type hooks):
+
+```bash
+# Session_id guard — lead-only execution
+TEAM_CONFIG=$(find ~/.claude/teams/ -name "config.json" -print -quit 2>/dev/null)
+if [[ -n "$TEAM_CONFIG" ]]; then
+  LEAD_SESSION=$(jq -r '.leadSessionId // empty' "$TEAM_CONFIG" 2>/dev/null)
+  SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+  if [[ -n "$LEAD_SESSION" && -n "$SESSION_ID" && "$SESSION_ID" != "$LEAD_SESSION" ]]; then
+    exit 0  # Skip non-lead sessions
+  fi
+fi
+```
+
+This pattern reads `leadSessionId` from team config and compares against the hook's `session_id` input. Non-lead sessions exit 0 (no-op). Used in: `anti-rationalization.sh`, `on-session-end.sh`.
+
+### 8.6 Known Issues
+
+| Issue | Event | Description |
+|-------|-------|-------------|
+| SubagentStop prompt blocking (#20221) | SubagentStop | Prompt-type hooks cannot actually prevent subagent termination (exit 2 ineffective) |
+| Stop prompt context | Stop | Prompt-type Stop hooks see metadata only, not the full assistant response text |
+| Global hook cost | All | Prompt-type global hooks fire in every context, multiplying LLM call cost by number of active sessions |
+
 ---
 
 ## 9. Our Hook Configuration
@@ -192,9 +222,14 @@ Hooks follow 5-layer settings precedence. `allowManagedHooksOnly` blocks user, p
 | on-subagent-start.sh | SubagentStart | (all) | command | global | Team context injection |
 | on-pre-compact.sh | PreCompact | (all) | command | global | Task snapshot preservation |
 | on-session-compact.sh | SessionStart | compact | command | global | Compaction recovery guidance |
-| on-session-end.sh | SessionEnd | (all) | command | global | Temp file cleanup |
+| on-session-end.sh | SessionEnd | (all) | command | global | Temp file cleanup (lead-only via session_id guard) |
 | on-file-change.sh | PostToolUse | Edit\|Write | command | agent (impl/infra-impl) | SRC Stage 1 file logger |
 | on-file-change-fail.sh | PostToolUseFailure | Edit\|Write | command | agent (impl/infra-impl) | Failed write logger |
 | on-implementer-done.sh | SubagentStop | implementer\|infra-implementer | command | global | SRC Stage 2 impact summary |
 | on-task-completed.sh | TaskCompleted | (all) | command | global | Pipeline task logging |
-| (prompt hook) | Stop | (delivery-agent) | prompt | agent (delivery-agent) | Haiku quality gate |
+| anti-rationalization.sh | Stop | (all) | command | global | Rationalization cop-out check (lead-only via session_id guard) |
+| anti-rm-rf.sh | PreToolUse | Bash | command | global | Destructive command guard |
+| anti-push-main.sh | PreToolUse | Bash | command | global | Git push safety |
+| input-modifier.sh | PreToolUse | Bash\|Edit\|Write | command | global | Co-author + file lock + path safety |
+| budget-monitor.sh | PreToolUse | (all) | command | global | Tool budget monitoring |
+| idle-quality-gate.sh | TeammateIdle | (all) | command | global | Teammate output verification |

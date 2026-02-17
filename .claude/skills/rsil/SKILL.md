@@ -14,11 +14,6 @@ description: >-
 user-invocable: true
 argument-hint: "[focus-area]"
 disable-model-invocation: false
-allowed-tools: "Task"
-metadata:
-  category: homeostasis
-  tags: [rsil, self-improvement, meta-level, homeostasis, continuous-improvement]
-  version: 1.0.0
 ---
 
 # RSIL — Recursive Self-Improvement Loop

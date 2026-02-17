@@ -11,11 +11,6 @@ description: >-
   back to pre-design-brainstorm for scope re-negotiation on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: pre-design
-  tags: [cc-feasibility, capability-mapping, requirement-validation]
-  version: 2.0.0
 ---
 
 # Pre-Design — Feasibility

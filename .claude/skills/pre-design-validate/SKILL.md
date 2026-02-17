@@ -11,11 +11,6 @@ description: >-
   gap report back to pre-design-brainstorm on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: pre-design
-  tags: [requirement-validation, completeness-check, gap-analysis]
-  version: 2.0.0
 ---
 
 # Pre-Design — Validate

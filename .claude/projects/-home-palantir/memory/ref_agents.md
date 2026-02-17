@@ -50,7 +50,7 @@ You are a code reviewer. Never modify files, only analyze and report.
 | skills | list | no | none | FULL L1+L2 content preloaded at startup |
 | mcpServers | list | no | none | MCP server access config |
 | hooks | object | no | none | Agent-scoped hooks |
-| memory | enum | no | none | Values: user, project, local |
+| memory | enum | no | (omit) | Values: user, project, local. Omit field for no memory. |
 | color | string | no | none | UI color coding |
 
 ### Tools Field — Advanced Syntax
