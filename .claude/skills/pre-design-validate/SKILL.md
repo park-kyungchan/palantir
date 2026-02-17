@@ -44,8 +44,8 @@ metadata:
 
 ### P0-P1 Execution Context
 This skill runs in P0-P1:
-- Use `run_in_background: true` for analyst spawns
-- No Team infrastructure — one-way communication
+- TRIVIAL/STANDARD: Lead with local agents (run_in_background), no Team infrastructure
+- COMPLEX: Team infrastructure available (TeamCreate, TaskCreate/Update, SendMessage)
 - Validation is READ-ONLY (does not modify requirements, only checks them)
 - If re-brainstorm needed: Lead invokes brainstorm, not validate
 

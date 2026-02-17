@@ -10,7 +10,7 @@ description: >-
   with iteration details and update log with convergence evidence
   for execution-review.
 user-invocable: false
-disable-model-invocation: false
+disable-model-invocation: true
 metadata:
   category: execution
   tags: [cascade-updates, convergence-tracking, dependent-propagation]

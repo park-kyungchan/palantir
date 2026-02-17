@@ -9,7 +9,7 @@ description: >-
   branch state. Produces resume state with phases and task counts,
   and recovery report with resume rationale for Lead.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[resume-from-phase]"
 metadata:
   category: cross-cutting

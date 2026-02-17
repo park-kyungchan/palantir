@@ -15,6 +15,8 @@ tools:
   - Write
   - mcp__sequential-thinking__sequentialthinking
 memory: project
+skills:
+  - execution-infra
 maxTurns: 35
 color: red
 hooks:

@@ -18,6 +18,8 @@ tools:
   - TaskUpdate
   - AskUserQuestion
 memory: none
+skills:
+  - task-management
 model: haiku
 maxTurns: 20
 color: blue

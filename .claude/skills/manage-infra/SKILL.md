@@ -20,6 +20,10 @@ metadata:
 
 # Manage — INFRA
 
+## Current INFRA State
+- Skills: !`ls .claude/skills/*/SKILL.md 2>/dev/null | wc -l` skill files
+- Agents: !`ls .claude/agents/*.md 2>/dev/null | wc -l` agent files
+
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick health check on single component. No agent spawn.
 - **STANDARD**: Spawn 1 analyst (maxTurns:20). Systematic inventory and drift detection.

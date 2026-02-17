@@ -19,6 +19,11 @@ metadata:
 
 # Delivery Pipeline
 
+## Current Git State
+- Branch: !`git branch --show-current`
+- Recent commits:
+!`git log --oneline -3 2>/dev/null || echo "(no commits)"`
+
 ## Execution Model
 - **TRIVIAL**: Lead-direct via delivery-agent fork. Simple commit with 1-2 files.
 - **STANDARD**: delivery-agent fork. Full consolidation + commit + archive.

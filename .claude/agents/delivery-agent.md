@@ -19,6 +19,8 @@ tools:
   - TaskUpdate
   - AskUserQuestion
 memory: none
+skills:
+  - delivery-pipeline
 model: haiku
 maxTurns: 20
 color: cyan

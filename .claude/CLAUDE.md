@@ -38,8 +38,11 @@ Flow: PRE (P0-P4) → EXEC (P5-P7) → POST (P8). Max 3 iterations per phase.
 > Note: Skill WHEN conditions describe the COMPLEX (full) path. For TRIVIAL/STANDARD tiers, Lead overrides skill-level WHEN conditions and routes based on the tier table above.
 
 ## 2.1 Execution Mode by Phase
-- **P0-P1 (PRE-DESIGN + DESIGN)**: Lead with local agents (run_in_background). No Team infrastructure (no TeamCreate/SendMessage). Brainstorm, validate, feasibility, architecture, interface, risk.
-- **P2+ (RESEARCH through DELIVERY)**: Team infrastructure ONLY. TeamCreate, TaskCreate/Update, SendMessage. Local agents (`team_name` omitted) PROHIBITED. Lead MUST NOT use TaskOutput to read full agent results — use SendMessage for result exchange.
+- **TRIVIAL/STANDARD — P0-P1 (PRE-DESIGN + DESIGN)**: Lead with local agents (run_in_background). No Team infrastructure (no TeamCreate/SendMessage).
+- **COMPLEX — P0+ (all phases)**: Team infrastructure from pipeline start. TeamCreate at P0, TaskCreate/Update, SendMessage throughout all phases. Local agents (`team_name` omitted) PROHIBITED.
+- **All tiers — P2+ (RESEARCH through DELIVERY)**: Team infrastructure ONLY. Local agents PROHIBITED.
+- Lead MUST NOT use TaskOutput to read full agent results — use SendMessage for result exchange.
+- AskUserQuestion remains Lead-direct in all tiers (agents cannot interact with users).
 
 ## 3. Lead
 - Routes via Skill L1 descriptions + Agent L1 tool profiles (both auto-loaded)
@@ -93,9 +96,18 @@ Single source of truth for active pipeline. Exactly 1 per pipeline.
 - **"Automatic delivery" 실체**: OS push가 아닌, 다음 API turn에서 inbox 파일 자동 체크.
 - **Task API vs SendMessage**: 영속성 차이가 아닌 access pattern 차이. Task = 구조화된 상태 머신(queryable). SendMessage = append-only 메시지 큐(auto-deliver). 둘 다 디스크 영속.
 - **Pseudo-shared memory**: PostToolUse hook → 파일 변경 감지 → JSON 갱신 → additionalContext 주입 (single-turn only). 유일한 CC-native 메타 조정 메커니즘.
+- **MCP Tool Propagation [UNVERIFIED]**: MCP servers = parent process binding. Spawned teammates의 MCP tool 접근 가능 여부 미검증 (CC-native claim). Local agents 확인: MCP 미전파 → WebSearch/WebFetch fallback. Team agents: 미검증. research-cc-verify 실증 필요.
+- **Tool Usage Tracking**: Teammate별 실제 tool 사용 추적 메커니즘 부재. DPS에 tool usage reporting convention 또는 PostToolUse hook으로 tool audit trail 설계 필요.
 
 ### Meta-Cognition Protocol
 - **CC-native behavioral claims** (파일 구조, 런타임 동작, 설정 효과): 반드시 실증 검증 후 ref cache 반영. research-cc-verify = Shift-Left gate.
 - **Claim Flow**: Producer (research-codebase/external, claude-code-guide) → Tagger ([CC-CLAIM]) → Verifier (research-cc-verify) → Codifier (execution-infra).
 - **Retroactive Audit**: self-diagnose Category 10 — ref cache 내 미검증 claims 감지.
 - **Lead Rule**: CC-native claim 발견 시 ref cache/CLAUDE.md 기록 전 research-cc-verify 라우팅 필수. 추론만으로 판단 금지.
+
+### RSIL (Recursive Self-Improvement Loop) [ALWAYS ACTIVE]
+- **Meta-Level 자기개선**: 모든 작업 수행 = RSIL 트리거. File I/O 병목, 스킬 라우팅 실패, tool 가용성 gap 상시 관찰.
+- **병목 감지 → 즉시 개선**: CC Agent Teams file I/O 기반 시스템에서 병목 발견 시, 해당 스킬 제거/개선/통합을 self-diagnose → self-implement로 라우팅.
+- **Skill Lifecycle**: 스킬 수 무제한. 추가는 자유, 병목 스킬은 제거 또는 통합. 양보다 효율.
+- **Cross-Session Persistence**: RSIL 인사이트는 PT metadata + MEMORY.md에 기록하여 세션 간 연속성 보장.
+- **Homeostasis Integration**: self-diagnose (10 categories) + manage-infra (health score) + manage-codebase (dependency map) = RSIL의 정량적 기반.

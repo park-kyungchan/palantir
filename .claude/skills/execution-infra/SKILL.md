@@ -11,7 +11,7 @@ description: >-
   manifest and config change summary for execution-impact and
   execution-review.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 metadata:
   category: execution
   tags: [infra-implementation, config-deployment, yaml-validation]

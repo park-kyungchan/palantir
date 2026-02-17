@@ -16,6 +16,8 @@ tools:
   - Bash
   - mcp__sequential-thinking__sequentialthinking
 memory: project
+skills:
+  - execution-code
 maxTurns: 50
 color: green
 hooks:
