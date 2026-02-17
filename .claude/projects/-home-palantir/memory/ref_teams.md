@@ -113,7 +113,7 @@ Each task is an independent JSON file. State machine: `pending → in_progress �
 
 **Concurrency control**: `tempfile + os.replace` for atomic writes, `filelock` library for cross-platform locking.
 
-**Key**: This is not a database or IPC mechanism. It is literally **reading and writing JSON files** on the filesystem.
+**Key**: This is not a database or IPC mechanism. It is literally **reading and writing JSON files** on the filesystem. This runs on the local filesystem (WSL2, macOS, Linux) — no network, no daemon, no database engine.
 
 **Dependency tracking**: Tasks support DAGs via `blocked_by` field. Completing a blocking task automatically unblocks downstream tasks.
 
@@ -136,7 +136,7 @@ The official docs call this the **"Mailbox"** system.
 - Each agent reads only its own inbox file
 - Sending = appending entry to recipient's inbox JSON, protected by file locks
 
-**"Automatic delivery"**: Claude Code checks inbox on each API turn — NOT OS-level push. "Automatic" means user doesn't need to poll manually.
+**"Automatic delivery"**: Claude Code checks inbox on each API turn — NOT OS-level push. "Automatic" means user doesn't need to poll manually. Each teammate checks its inbox JSON file at the start of each API turn. The message sits as an unread JSON entry until that check happens. This is pull-based, not push-based.
 
 **Persistence**: Inbox JSON files are **disk-resident and persist** through compaction, agent termination, session restart, and crashes. Compaction only affects the context window (conversation history compression) — disk files are untouched. Messages remain in inbox files indefinitely until explicitly cleaned up.
 
@@ -184,6 +184,8 @@ When Teammate A develops an insight, that insight exists ONLY in A's context. Fo
 
 **No automatic propagation of insights between teammates.**
 
+Each teammate is a complete Claude Code session with its own context window. All teammates load the same project context (CLAUDE.md, MCP servers, skills) but do NOT inherit the lead's conversation history. The two disk-based channels (Task JSON + Inbox JSON) are the ONLY coordination mechanisms — there is no shared memory segment.
+
 ### Design Rationale
 
 1. **Simplicity**: Filesystem works in any environment — WSL2, Docker, macOS, Linux
@@ -199,6 +201,8 @@ The "no shared memory" limitation can be circumvented within CC native boundarie
 - `hookSpecificOutput.additionalContext` injects updated state into next turn for ALL teammates
 - This is the ONLY CC-native mechanism for meta-level coordination beyond Task API and SendMessage
 - Limitation: `additionalContext` is single-turn only (not persisted), not visible to spawned subagents
+
+**Concrete example**: Place `ontology.json` under `~/.claude/`. A PostToolUse hook detects Write/Edit on `.claude/**`, regenerates `ontology.json`, and the updated content is injected via `additionalContext` to all teammates on their next turn. This pattern enables team-wide state synchronization within CC native boundaries.
 
 ---
 

@@ -23,6 +23,7 @@
 - **Agents:** 6 custom (analyst, researcher, implementer, infra-implementer, delivery-agent, pt-manager)
 - **Skills:** 45 across 10 pipeline domains + 5 homeostasis + 2 cross-cutting (pipeline-resume, task-management)
 - **Project Skills (DO NOT EDIT during INFRA):** 10 crowd_works project skills (D0·foundation, D1·drill+production, D2·eval) — separate project, excluded from RSI/homeostasis
+- **Plugin:** `everything-claude-code` (ECC) — plugin + project-level rules at `~/everything-claude-code/.claude/rules/` (common + typescript)
 
 ## 2. Pipeline Tiers
 Classified at Phase 0:
@@ -90,13 +91,28 @@ Single source of truth for active pipeline. Exactly 1 per pipeline.
 - **Agent memory auto-tool**: `memory` 필드 설정 시 Read/Write/Edit 자동 추가. tools 필드와 상호작용 주의.
 
 ### Agent Teams File-Based Architecture
-- **전체 채널 = file I/O**: Task JSON (`~/.claude/tasks/`) + Inbox JSON (`~/.claude/teams/{name}/inboxes/`) + Disk files. 소켓, pipe, IPC 없음.
+- **전체 채널 = file I/O**: Task JSON (`~/.claude/tasks/`) + Inbox JSON (`~/.claude/teams/{name}/inboxes/`). 소켓, pipe, IPC 없음. 로컬 파일시스템(WSL2/macOS/Linux) 위에서 동작.
+- **물리적 구조**: `teams/{name}/config.json` (팀 메타데이터) + `teams/{name}/inboxes/*.json` (에이전트별 수신함) + `tasks/{name}/*.json` (태스크별 파일) + `.lock` (파일 락). 이것이 팀 조정의 물리적 실체 전부.
+- **Task 상태 머신**: `pending → in_progress → completed`. Teammate가 claim → JSON의 status를 변경 + owner 필드에 ID 기록. `tempfile + os.replace` atomic write + `filelock` cross-platform file lock으로 동시성 제어.
 - **Inbox 영속성**: SendMessage = inbox JSON 파일에 디스크 기록. Compaction, agent 종료, 세션 재시작과 무관하게 파일 유지.
 - **Compaction 영향 범위**: Context window(대화 이력)만 압축. 디스크 파일(inbox, task, project) 무관.
-- **"Automatic delivery" 실체**: OS push가 아닌, 다음 API turn에서 inbox 파일 자동 체크.
+- **"Automatic delivery" 실체**: OS push가 아닌 pull-based. 각 teammate가 API turn 시작 시 자기 inbox JSON 파일 자동 체크. 메시지는 unread JSON 엔트리로 대기.
 - **Task API vs SendMessage**: 영속성 차이가 아닌 access pattern 차이. Task = 구조화된 상태 머신(queryable). SendMessage = append-only 메시지 큐(auto-deliver). 둘 다 디스크 영속.
-- **Pseudo-shared memory**: PostToolUse hook → 파일 변경 감지 → JSON 갱신 → additionalContext 주입 (single-turn only). 유일한 CC-native 메타 조정 메커니즘.
-- **MCP Tool Propagation [UNVERIFIED]**: MCP servers = parent process binding. Spawned teammates의 MCP tool 접근 가능 여부 미검증 (CC-native claim). Local agents 확인: MCP 미전파 → WebSearch/WebFetch fallback. Team agents: 미검증. research-cc-verify 실증 필요.
+
+#### Isolation vs Shared
+
+| 격리 (Per Teammate) | 공유 (Across Team) |
+|---|---|
+| Context window (대화 이력) | 프로젝트 파일시스템 (코드베이스) |
+| Lead의 conversation history | CLAUDE.md, MCP servers, skills |
+| 추론 과정, 중간 상태 | Task JSON files |
+| 토큰 사용량 | Inbox JSON files |
+
+- **각 teammate = 완전한 CC 세션** (고유 context window). 동일 프로젝트 컨텍스트(CLAUDE.md, MCP servers, skills) 로드하나 Lead conversation history 미상속. Task JSON + Inbox JSON = 유일한 조정 채널. **Shared memory 없음.**
+- **No Shared Memory 함의**: Teammate A의 insight는 A의 context에만 존재. B가 알려면: (1) A→B SendMessage, (2) A가 디스크에 기록 → B가 읽기, (3) Lead가 A 결과 받아 B에게 전달. **자동 전파 없음.**
+- **Pseudo-shared memory**: PostToolUse hook → 파일 변경 감지 → JSON 갱신 → additionalContext 주입 (single-turn only). 유일한 CC-native 메타 조정 메커니즘. 예: `ontology.json`을 `~/.claude/`에 두고 hook이 갱신 → 모든 teammate의 다음 turn에 주입.
+- **설계 이유**: (1) Simplicity — 어떤 환경에서든 작동, (2) Crash recovery — 프로세스 사망해도 JSON 잔존, (3) Observability — `jq`로 즉시 디버깅, (4) No daemon — 별도 조정 서버 불필요.
+- **MCP Tool Propagation [UNVERIFIED]**: MCP servers = parent process binding. Spawned teammates의 MCP tool 접근 가능 여부 미검증. Local agents: MCP 미전파 → WebSearch/WebFetch fallback. Team agents: 미검증.
 - **Tool Usage Tracking**: Teammate별 실제 tool 사용 추적 메커니즘 부재. DPS에 tool usage reporting convention 또는 PostToolUse hook으로 tool audit trail 설계 필요.
 
 ### Meta-Cognition Protocol
