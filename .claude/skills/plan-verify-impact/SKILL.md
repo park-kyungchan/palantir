@@ -12,11 +12,6 @@ description: >-
   plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan-verify
-  tags: [containment-verification, checkpoint-validation, propagation-check]
-  version: 2.0.0
 ---
 
 # Plan Verify — Impact Containment

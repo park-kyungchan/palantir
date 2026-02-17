@@ -1,6 +1,6 @@
 # Agent Teams — Team Constitution v10.9
 
-> v10.9 · Opus 4.6 native · Skill-driven routing · 6 agents · 43 skills · Protocol-only CLAUDE.md
+> v10.9 · Opus 4.6 native · Skill-driven routing · 6 agents · 45 skills · Protocol-only CLAUDE.md
 > Agent L1 auto-loaded in Task tool definition · Skill L1 auto-loaded in system-reminder
 
 > **INVIOLABLE — Skill-Driven Orchestration**
@@ -21,7 +21,7 @@
 - **Agent Teams:** Enabled (tmux split pane)
 - **Lead:** Pipeline Controller — routes skills, spawns agents
 - **Agents:** 6 custom (analyst, researcher, implementer, infra-implementer, delivery-agent, pt-manager)
-- **Skills:** 44 across 10 pipeline domains + 4 homeostasis + 3 cross-cutting (pipeline-resume, delivery-pipeline, task-management)
+- **Skills:** 45 across 10 pipeline domains + 5 homeostasis + 2 cross-cutting (pipeline-resume, task-management)
 - **Project Skills (DO NOT EDIT during INFRA):** 10 crowd_works project skills (D0·foundation, D1·drill+production, D2·eval) — separate project, excluded from RSI/homeostasis
 
 ## 2. Pipeline Tiers
@@ -72,7 +72,7 @@ Single source of truth for active pipeline. Exactly 1 per pipeline.
 
 ### Token Budget Awareness
 - **BUG-005**: MEMORY.md 2중 주입 (#24044). 모든 MEMORY.md 내용 = 2배 토큰 비용. 200줄 이하 엄수, 상세는 topic files 분리.
-- **L1 Budget**: `max(context_window × 2%, 16000)` chars. 43 skills ≈ budget boundary. 신규 스킬 추가 시 `/context`로 excluded 확인 필수.
+- **L1 Budget**: `max(context_window × 2%, 16000)` chars. 45 skills ≈ budget boundary. 신규 스킬 추가 시 `/context`로 excluded 확인 필수.
 - **Progressive Disclosure 원칙**: CLAUDE.md(1x every-call) → Skills L1(auto) → Skills L2(on-demand) → ref files(on-demand). CLAUDE.md에는 매 의사결정에 필요한 것만.
 
 ### DPS (Delegation Prompt Specification) Principles

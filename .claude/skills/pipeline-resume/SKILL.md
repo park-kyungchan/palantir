@@ -11,10 +11,6 @@ description: >-
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[resume-from-phase]"
-metadata:
-  category: cross-cutting
-  tags: [pipeline-recovery, state-reconstruction, session-resume]
-  version: 2.0.0
 ---
 
 # Pipeline — Resume

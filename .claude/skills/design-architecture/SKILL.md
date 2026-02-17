@@ -12,11 +12,6 @@ description: >-
   ADRs for design-interface and design-risk.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: design
-  tags: [component-decomposition, architecture-decisions, module-boundaries]
-  version: 2.0.0
 ---
 
 # Design — Architecture

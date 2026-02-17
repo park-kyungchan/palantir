@@ -31,11 +31,11 @@
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v11.0 | 55L | Protocol-only + §2.1 CE + 44 skills (8 pipeline + 5 homeostasis + 3 cross-cutting) |
+| CLAUDE.md | v11.0 | 55L | Protocol-only + §2.1 CE + 45 skills (10 pipeline + 5 homeostasis + 2 cross-cutting) |
 | Agents | v10.9+CE | 6 files | All 6 have Completion Protocol section (SendMessage on task completion) |
-| Skills | v11.0+L2opt | 54 dirs | 44 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized. Budget: ~47,000/56,000 (16% headroom) |
+| Skills | v11.0+L2opt | 55 dirs | 45 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized. Budget: ~47,000/56,000 (16% headroom) |
 | Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
-| Hooks | 8 scripts | ~380L | 6 global events + 5 agent-scoped hooks (SRC moved to agent scope) |
+| Hooks | 14 scripts | ~420L | 8 global lifecycle events + 2 agent-scoped SRC hooks + 4 PreToolUse guards |
 | Conventions | DELETED | 0L | Content distributed: agent bodies (SendMessage), CLAUDE.md §2.1 (isolation), skill L2 (output) |
 | Agent Memory | -- | 7 files | +rsi-ce-diagnosis.md (342L, CE health 3/10→~7/10) |
 
@@ -103,15 +103,23 @@ Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -
 Details: `memory/meta-cognition-infra.md`
 
 ### L2 Body Design -- COMPLETE (2026-02-15)
-All 44 INFRA skills L2 bodies CE/PE optimized. Commit 798b9dc on `infra` branch. PR #53.
+All 44 INFRA skills L2 bodies CE/PE optimized. PR #53 merged to main.
 - 11 batches (B1-B9+B10a+B10b), 3 waves, 50 files, +2930/-1110
 - DMI:true→false: brainstorm, task-management, pipeline-resume
 - Budget: 48,000→56,000 (SLASH_COMMAND_TOOL_CHAR_BUDGET)
 - All 44: DPS 5-field, tier DPS, Decision Points, maxTurns, Anti-Patterns >=3, Transitions 3 tables
+- cc-reference cache-first rule added to CLAUDE.md §3
+- 6 memory files force-added to git (3 cc-reference + 3 topic files)
+- Claude Web/App verification prompt generated: `tmp/claude-web-verification-prompt.md`
+- Next: crowd_works 10 skills L2 CE/PE optimization (6/10 over 375-line budget)
 
 ## Session History
 
-Branch: `infra`. Latest commit: 798b9dc. PR #53.
+Branch: `main` (infra fully merged). Latest commit: 59cae35.
+- 59cae35: Merge branch 'infra' (cc-reference + MEMORY.md into main)
+- 9e35a4c: MEMORY.md L2 Body Design COMPLETE
+- b596365: cc-reference cache-first rule + 6 missing memory files tracked
+- 520c772: Merge PR #53 (L2 Body CE/PE Optimization)
 - 798b9dc: L2 Body CE/PE Optimization (50 files, +2930/-1110, 44 skills L2 optimized)
 - c768d37: crowd_works Pipeline B skills (3 new, 7→10 total)
 - f24b294: Phase Efficiency Optimization + L1 CE/PE bulk (61 files, +19/-8 skills, 44 L1 optimized)

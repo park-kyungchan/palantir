@@ -12,11 +12,6 @@ description: >-
   for research-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: audit
-  tags: [behavior-prediction, regression-risk, runtime-analysis]
-  version: 2.0.0
 ---
 
 # Audit — Behavioral (Runtime Behavior Prediction)

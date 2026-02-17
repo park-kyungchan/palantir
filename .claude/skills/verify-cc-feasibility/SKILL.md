@@ -11,11 +11,6 @@ description: >-
   all PASS, or routes back to execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: verify
-  tags: [cc-native-compliance, field-validation, delivery-gate]
-  version: 2.0.0
 ---
 
 # Verify — CC Feasibility

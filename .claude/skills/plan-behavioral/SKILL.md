@@ -11,11 +11,6 @@ description: >-
   plan-verify-behavioral.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan
-  tags: [test-strategy, rollback-planning, behavior-coverage]
-  version: 2.0.0
 ---
 
 # Plan — Behavioral Strategy

@@ -10,11 +10,6 @@ description: >-
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[commit-message]"
-allowed-tools: "Read Glob Grep Edit Write Bash"
-metadata:
-  category: delivery
-  tags: [git-commit, memory-archive, pipeline-terminal]
-  version: 2.0.0
 ---
 
 # Delivery Pipeline

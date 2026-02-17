@@ -13,11 +13,6 @@ description: >-
   to execution-code/infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: execution
-  tags: [implementation-review, spec-compliance, quality-security]
-  version: 2.0.0
 ---
 
 # Execution — Review

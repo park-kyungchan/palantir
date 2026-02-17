@@ -10,11 +10,6 @@ description: >-
   complexity, and cluster rationale for plan-verify-static.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan
-  tags: [task-decomposition, dependency-dag, critical-path]
-  version: 2.0.0
 ---
 
 # Plan — Static Decomposition

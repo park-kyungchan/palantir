@@ -14,11 +14,6 @@ description: >-
   aggregation for research-cc-verify.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: research
-  tags: [audit-consolidation, cross-dimensional-analysis, pattern-synthesis]
-  version: 2.0.0
 ---
 
 # Research — Coordinator (Cross-Audit Consolidation)

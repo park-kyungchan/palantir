@@ -11,11 +11,6 @@ description: >-
   chain with gap report for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: orchestrate
-  tags: [dps-contracts, handoff-specification, chain-validation]
-  version: 2.0.0
 ---
 
 # Orchestrate — Relational (HOW)

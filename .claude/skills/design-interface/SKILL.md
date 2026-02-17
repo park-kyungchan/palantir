@@ -10,11 +10,6 @@ description: >-
   per-boundary specs for design-risk.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: design
-  tags: [api-contracts, error-boundaries, interface-specification]
-  version: 2.0.0
 ---
 
 # Design — Interface

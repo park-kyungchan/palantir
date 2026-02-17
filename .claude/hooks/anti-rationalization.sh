@@ -14,6 +14,16 @@ if echo "$INPUT" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; th
   exit 0
 fi
 
+# Guard: session_id — only check rationalization in lead session
+TEAM_CONFIG=$(find ~/.claude/teams/ -name "config.json" -print -quit 2>/dev/null)
+if [[ -n "$TEAM_CONFIG" ]]; then
+  LEAD_SESSION=$(jq -r '.leadSessionId // empty' "$TEAM_CONFIG" 2>/dev/null)
+  SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+  if [[ -n "$LEAD_SESSION" && -n "$SESSION_ID" && "$SESSION_ID" != "$LEAD_SESSION" ]]; then
+    exit 0  # Skip non-lead sessions
+  fi
+fi
+
 # Extract response/content text from available fields
 if command -v jq &>/dev/null; then
   RESPONSE=$(echo "$INPUT" | jq -r '

@@ -12,11 +12,6 @@ description: >-
   research-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: audit
-  tags: [dependency-graph, coupling-analysis, structural-audit]
-  version: 2.0.0
 ---
 
 # Audit — Static (Structural Dependencies)

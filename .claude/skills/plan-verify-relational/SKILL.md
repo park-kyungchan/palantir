@@ -12,11 +12,6 @@ description: >-
   analysis for plan-verify-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan-verify
-  tags: [contract-integrity, asymmetry-detection, relationship-validation]
-  version: 2.0.0
 ---
 
 # Plan Verify — Relational Integrity

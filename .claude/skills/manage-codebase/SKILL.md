@@ -12,11 +12,6 @@ description: >-
 user-invocable: true
 argument-hint: "[full|incremental]"
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: homeostasis
-  tags: [dependency-map, hotspot-scoring, codebase-health]
-  version: 2.0.0
 ---
 
 # Manage — Codebase

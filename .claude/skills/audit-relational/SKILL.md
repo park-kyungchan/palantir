@@ -12,11 +12,6 @@ description: >-
   research-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: audit
-  tags: [relationship-integrity, bidirectional-consistency, cross-file-analysis]
-  version: 2.0.0
 ---
 
 # Audit — Relational (Cross-File Relationship Integrity)

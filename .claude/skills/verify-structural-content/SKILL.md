@@ -11,11 +11,6 @@ description: >-
   execution-infra on FAIL.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: verify
-  tags: [frontmatter-inspection, naming-conventions, structural-completeness]
-  version: 2.0.0
 ---
 
 # Verify — Structural Content (Unified)

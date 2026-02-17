@@ -11,11 +11,6 @@ description: >-
   and research-external.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: design
-  tags: [risk-assessment, fmea, security-analysis]
-  version: 2.0.0
 ---
 
 # Design — Risk

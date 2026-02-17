@@ -10,10 +10,6 @@ description: >-
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[topic]"
-metadata:
-  category: pre-design
-  tags: [requirements-gathering, user-questioning, pipeline-entry]
-  version: 2.0.0
 ---
 
 # Pre-Design — Brainstorm

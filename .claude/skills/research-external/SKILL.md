@@ -13,11 +13,6 @@ description: >-
   audit skills, plus CC-native claims for research-cc-verify gate.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write WebSearch WebFetch"
-metadata:
-  category: research
-  tags: [community-patterns, web-research, external-validation]
-  version: 2.0.0
 ---
 
 # Research — External

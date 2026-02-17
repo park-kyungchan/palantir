@@ -12,11 +12,6 @@ description: >-
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[action] [args]"
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: delivery
-  tags: [task-lifecycle, pt-management, batch-creation]
-  version: 2.0.0
 ---
 
 # Task Management

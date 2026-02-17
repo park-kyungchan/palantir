@@ -12,10 +12,6 @@ description: >-
   execution-impact and execution-review.
 user-invocable: true
 disable-model-invocation: true
-metadata:
-  category: execution
-  tags: [code-implementation, implementer-spawn, dps-delegation]
-  version: 2.0.0
 ---
 
 # Execution — Code

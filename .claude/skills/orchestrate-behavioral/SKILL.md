@@ -11,11 +11,6 @@ description: >-
   per checkpoint for orchestrate-coordinator.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: orchestrate
-  tags: [checkpoint-planning, gate-criteria, failure-escalation]
-  version: 2.0.0
 ---
 
 # Orchestrate — Behavioral (WHERE)

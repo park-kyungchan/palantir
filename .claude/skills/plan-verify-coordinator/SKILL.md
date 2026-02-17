@@ -15,11 +15,6 @@ description: >-
   skills.
 user-invocable: false
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: plan-verify
-  tags: [verdict-consolidation, cross-dimension-check, plan-gate]
-  version: 2.0.0
 ---
 
 # Plan Verify — Coordinator

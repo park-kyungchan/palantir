@@ -11,11 +11,6 @@ description: >-
   weighted health score percentage, plus repair recommendations.
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: "Read Glob Grep Write"
-metadata:
-  category: homeostasis
-  tags: [health-scoring, drift-detection, orphan-detection]
-  version: 2.0.0
 ---
 
 # Manage — INFRA
@@ -237,7 +232,6 @@ Invoking manage-infra as a substitute for verify-structural-content after modify
 |-------------|---------------|-------------------|
 | (user) | Health report with repair recommendations | Always (terminal -- report to user) |
 | execution-infra | Repair task assignments | If user approves proposed repairs |
-| manage-skills | Skill-specific drift detected | If skill count mismatch or orphaned skill directories found |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
