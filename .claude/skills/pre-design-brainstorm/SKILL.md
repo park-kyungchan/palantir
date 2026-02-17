@@ -8,7 +8,7 @@ description: >-
   Produces requirement list with tier estimate and requirement
   document with open questions for pre-design-validate.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[topic]"
 metadata:
   category: pre-design
@@ -57,8 +57,9 @@ Key constraint: Only Lead can use AskUserQuestion (Step 3). Analysts perform ana
 
 ### P0-P1 Execution Context
 This skill is the pipeline ENTRY POINT:
-- Runs in P0-P1 (Lead with local agents, no Team infrastructure)
-- Use `run_in_background: true` for analyst spawns
+- TRIVIAL/STANDARD: Runs in P0-P1 (Lead with local agents, no Team infrastructure)
+- COMPLEX: Runs with Team infrastructure from P0 (TeamCreate, TaskCreate/Update, SendMessage available)
+- Use `run_in_background: true` for analyst spawns (TRIVIAL/STANDARD). COMPLEX uses Team agents.
 - AskUserQuestion is Lead-only (agents cannot interact with users)
 - This is the only skill where user interaction happens during pipeline execution
 

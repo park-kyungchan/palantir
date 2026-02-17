@@ -43,10 +43,10 @@ Heuristic: If a component's responsibility can be described in one sentence, it'
 
 ### P0-P1 Phase Execution Context
 This skill runs in the P0-P1 (PRE-DESIGN + DESIGN) phase:
-- **Lead with local agents only** — no Team infrastructure (TeamCreate/SendMessage)
-- Use `run_in_background: true` for analyst spawns
-- P0-P1: Lead reads local agent output. P2+: Lead receives results via SendMessage
-- Multiple analysts run as independent background tasks, not as coordinated teammates
+- **TRIVIAL/STANDARD**: Lead with local agents only — no Team infrastructure (TeamCreate/SendMessage)
+- **COMPLEX**: Team infrastructure available from P0 (TeamCreate, TaskCreate/Update, SendMessage)
+- TRIVIAL/STANDARD: Use `run_in_background: true` for analyst spawns. Lead reads local agent output.
+- COMPLEX: Analysts run as Team agents. Lead receives results via SendMessage.
 
 ### Feedback Loop Decision (COMPLEX Only)
 For COMPLEX tier, architecture may need validation against existing codebase:
@@ -179,7 +179,7 @@ Using a new pattern (new hook type, new agent role, new skill domain) without an
 Design for current requirements only. Over-engineering for hypothetical future needs adds complexity without immediate value. Future requirements should trigger future architecture revisions.
 
 ### DO NOT: Ignore P0-P1 Execution Context
-This skill runs in P0-P1 (Lead with local agents, no Team infrastructure). Don't design communication patterns that require TeamCreate/SendMessage — those are only available in P2+.
+For TRIVIAL/STANDARD tiers, this skill runs in P0-P1 with local agents only — no Team infrastructure. For COMPLEX tier, Team infrastructure is available from P0. Match communication patterns to the active tier's execution mode.
 
 ## Transitions
 

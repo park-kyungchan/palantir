@@ -45,10 +45,10 @@ Not all risks need mitigation plans:
 - **RPN < 10**: Low -- documented for awareness only
 
 ### P0-P1 Execution Context
-This skill runs in P0-P1 (Lead with local agents):
-- Use `run_in_background: true` for analyst spawns
+This skill runs in P0-P1:
+- TRIVIAL/STANDARD: Lead with local agents (run_in_background), no Team infrastructure
+- COMPLEX: Team infrastructure available (TeamCreate, TaskCreate/Update, SendMessage)
 - Can run in parallel with design-interface (both depend on design-architecture)
-- No Team infrastructure -- one-way communication only
 
 ### When to Escalate to Architecture Revision
 Risk analysis may uncover fundamental architectural issues:

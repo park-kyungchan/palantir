@@ -47,9 +47,9 @@ For each boundary, choose communication protocol:
 Selection heuristic: For .claude/ INFRA, prefer file-based (SKILL.md, agents, settings) or hook-based (event-driven). For application code, prefer direct call.
 
 ### P0-P1 Execution Context
-This skill runs in P0-P1 (Lead with local agents):
-- Use `run_in_background: true` for analyst spawns
-- No Team infrastructure — one-way communication only
+This skill runs in P0-P1:
+- TRIVIAL/STANDARD: Lead with local agents (run_in_background), no Team infrastructure
+- COMPLEX: Team infrastructure available (TeamCreate, TaskCreate/Update, SendMessage)
 - Can run in parallel with design-risk (both depend on design-architecture output)
 
 ### Error Contract Depth Decision

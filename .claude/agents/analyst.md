@@ -14,6 +14,18 @@ tools:
   - Write
   - mcp__sequential-thinking__sequentialthinking
 memory: project
+skills:
+  - self-diagnose
+  - manage-infra
+  - manage-codebase
+  - verify-structural-content
+  - verify-consistency
+  - verify-quality
+  - verify-cc-feasibility
+  - audit-static
+  - audit-behavioral
+  - audit-relational
+  - audit-impact
 maxTurns: 25
 color: magenta
 ---

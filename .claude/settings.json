@@ -28,7 +28,14 @@
       "Read(**/*credentials*)",
       "Read(**/.ssh/id_*)",
       "Bash(sudo rm *)",
-      "Bash(chmod 777 *)"
+      "Bash(chmod 777 *)",
+      "Read(~/.ssh/*)",
+      "Read(~/.aws/*)",
+      "Read(~/.config/gcloud/*)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout . *)"
     ],
     "defaultMode": "delegate"
   },
@@ -39,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-subagent-start.sh",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/on-subagent-start.sh",
             "timeout": 10,
             "statusMessage": "Injecting team context to new agent"
           }
@@ -52,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-pre-compact.sh",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/on-pre-compact.sh",
             "timeout": 30,
             "statusMessage": "Saving orchestration state before compaction"
           }
@@ -65,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-session-compact.sh",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/on-session-compact.sh",
             "timeout": 15,
             "statusMessage": "Recovery after compaction"
           }
@@ -78,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-implementer-done.sh",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/on-implementer-done.sh",
             "timeout": 30
           }
         ]
@@ -90,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-session-end.sh",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/on-session-end.sh",
             "timeout": 10,
             "statusMessage": "Cleaning up session temp files"
           }
@@ -103,9 +110,82 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/palantir/.claude/hooks/on-task-completed.sh",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/on-task-completed.sh",
             "timeout": 10,
-            "statusMessage": "Logging task completion"
+            "statusMessage": "Checking task completion quality"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/anti-rm-rf.sh",
+            "timeout": 5,
+            "statusMessage": "Checking for destructive commands"
+          },
+          {
+            "type": "command",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/anti-push-main.sh",
+            "timeout": 5,
+            "statusMessage": "Checking git push safety"
+          },
+          {
+            "type": "command",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/input-modifier.sh",
+            "timeout": 5,
+            "statusMessage": "Checking git commit co-author"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/input-modifier.sh",
+            "timeout": 5,
+            "statusMessage": "Checking file lock and path safety"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/budget-monitor.sh",
+            "timeout": 5,
+            "statusMessage": "Monitoring tool budget"
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sum/park-kyungchan/palantir/.claude/hooks/idle-quality-gate.sh",
+            "timeout": 10,
+            "statusMessage": "Verifying teammate produced output"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review the agent's response. Check for rationalization cop-outs: 'pre-existing issue', 'out of scope', 'beyond scope', 'follow-up task', 'future work', 'separate issue', 'cannot be fixed', 'not feasible', 'expected behavior'. IMPORTANT: If input contains stop_hook_active:true, this is a second pass — reply {\"ok\": true}. If cop-out detected and stop_hook_active is NOT true, reply {\"ok\": false, \"reason\": \"Rationalization detected: [phrase]. Continue working on the original task instead of dismissing it.\"}. If no cop-out, reply {\"ok\": true}.",
+            "model": "haiku",
+            "timeout": 15
           }
         ]
       }

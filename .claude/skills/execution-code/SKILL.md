@@ -11,7 +11,7 @@ description: >-
   with per-implementer status and implementation summary for
   execution-impact and execution-review.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 metadata:
   category: execution
   tags: [code-implementation, implementer-spawn, dps-delegation]

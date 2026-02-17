@@ -21,6 +21,9 @@ metadata:
 
 # Self-Diagnose — INFRA Health Research
 
+## Current Metrics
+- CLAUDE.md size: !`wc -c < .claude/CLAUDE.md 2>/dev/null || echo "0"` bytes
+
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick scan of 1-2 specific categories for a focused area. No agent spawn.
 - **STANDARD**: Spawn 1 analyst (maxTurns:20). Full diagnostic checklist across all .claude/ files.

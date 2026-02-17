@@ -19,6 +19,11 @@ tools:
   - mcp__context7__query-docs
   - mcp__tavily__search
 memory: project
+skills:
+  - research-codebase
+  - research-external
+  - research-cc-verify
+  - research-coordinator
 maxTurns: 20
 color: yellow
 ---

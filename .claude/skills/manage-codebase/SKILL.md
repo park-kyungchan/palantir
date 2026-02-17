@@ -21,6 +21,9 @@ metadata:
 
 # Manage — Codebase
 
+## Current Map State
+- Codebase map lines: !`wc -l < .claude/agent-memory/analyst/codebase-map.md 2>/dev/null || echo "0"`
+
 ## Execution Model
 - **TRIVIAL**: Lead-direct. Quick staleness check or single-file incremental update. No agent spawn.
 - **STANDARD**: Spawn 1 analyst (maxTurns:20). Incremental update for 3-8 changed files.
