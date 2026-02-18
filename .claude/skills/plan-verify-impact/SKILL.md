@@ -25,208 +25,116 @@ disable-model-invocation: false
 - **STANDARD**: Spawn analyst (maxTurns:20). Systematic cross-reference of checkpoints against propagation paths.
 - **COMPLEX**: Spawn analyst (maxTurns:30). Deep path-by-path containment analysis with cascade simulation across all propagation chains.
 
-Note: P4 validates PLANS (pre-execution). This skill verifies that the execution sequence safely contains predicted change propagation. It does NOT verify execution results or actual impact.
+> P4 validates PLANS (pre-execution). This skill verifies that the execution sequence safely contains predicted change propagation — not execution results or actual impact.
 
 ## Phase-Aware Execution
+> See `.claude/resources/phase-aware-execution.md` for team routing rules.
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-impact.md`, sends micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md`.
+- **Delivery**: Write `tasks/{team}/p4-pv-impact.md`. Micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md`.
 
 ## Decision Points
 
-### Containment Threshold Interpretation
-Path containment status determines verdict routing.
-- **All HIGH paths CONTAINED AND zero UNMITIGATED**: PASS. Route to plan-verify-coordinator.
-- **All HIGH paths CONTAINED AND UNMITIGATED are LOW-only (count <= 3)**: CONDITIONAL_PASS. Route with risk annotation.
-- **Any HIGH path UNMITIGATED or LATE**: FAIL. Route to plan-impact for fix.
-- **Default**: If > 50% of paths lack containment, always FAIL (systematic checkpoint gap).
+### Containment Threshold
+- **All HIGH CONTAINED + zero UNMITIGATED**: PASS → plan-verify-coordinator.
+- **All HIGH CONTAINED + UNMITIGATED are LOW-only (count ≤ 3)**: CONDITIONAL_PASS → route with risk annotation.
+- **Any HIGH path UNMITIGATED or LATE**: FAIL → plan-impact for fix.
+- **> 50% paths lack containment**: Always FAIL (systematic checkpoint gap).
 
 ### Propagation Graph Scale
-Path count determines spawn parameters.
 - **< 10 paths**: STANDARD analyst (maxTurns:20). Full path-by-path containment check.
-- **10-25 paths**: COMPLEX analyst (maxTurns:30). Prioritize HIGH-severity and deep (depth >= 3) paths first.
-- **> 25 paths**: COMPLEX analyst (maxTurns:30). Full HIGH path check, sample MEDIUM/LOW. Flag PARTIAL if < 100% verified.
+- **10–25 paths**: COMPLEX analyst (maxTurns:30). Prioritize HIGH-severity and deep (depth ≥ 3) paths first.
+- **> 25 paths**: COMPLEX analyst (maxTurns:30). Full HIGH check, sample MEDIUM/LOW. Flag PARTIAL if < 100% verified.
 
 ## Methodology
-
-### Analyst Delegation DPS
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  - INCLUDE: plan-impact L1 execution sequence (phases[], checkpoints[], rollback_boundaries[]); research-coordinator audit-impact L3 propagation paths (paths[], origin, chain[], severity, depth); file paths within this agent's ownership boundary
-  - EXCLUDE: other verify dimension results (static/behavioral/relational); historical rationale for plan-impact decisions; full pipeline state beyond P3-P4; rejected sequencing alternatives
-  - Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Map each propagation path to intercepting checkpoints. Verify checkpoint position (before terminal node) and criteria match (tests for specific propagation type). Classify gaps as UNMITIGATED, LATE, or INSUFFICIENT. Flag circular paths requiring dual checkpoints."
-- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed propagation paths.
-- **Expected Output**: L1 YAML: total_paths, contained_count, unmitigated_count, late_checkpoint_count, verdict, findings[]. L2: containment matrix with path evidence.
-- **Delivery**: SendMessage to Lead: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md`
-
-#### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. Verify each propagation path has an intercepting checkpoint inline. No criteria validation.
-**STANDARD**: Single analyst, maxTurns:20. Full containment matrix with position and criteria validation.
-**COMPLEX**: Single analyst, maxTurns:30. Full matrix + cascade simulation + circular path detection.
+> DPS template, containment matrix format, and gap classification rubric: `resources/methodology.md`
+> DPS v5 field structure: `.claude/resources/dps-construction-guide.md`
 
 ### 1. Read Plan-Impact Execution Sequence
-Load plan-impact output to extract:
-- Execution phases: ordered sequence of task groups
-- Checkpoints: verification gates between phases (what they check, pass criteria)
-- Containment claims: which propagation paths each checkpoint claims to contain
-- Rollback boundaries: points where partial execution can be safely reverted
-
+Load plan-impact output and extract: execution phases (ordered task groups), checkpoints (verification gates with pass criteria and containment claims), rollback boundaries.
 Build a **checkpoint inventory**: every checkpoint with its position in the sequence and containment scope.
 
 ### 2. Read Audit-Impact L3 Propagation Paths
-Load audit-impact L3 output from research-coordinator:
-- Propagation paths: chains of files/components affected by a change
-- Path severity: HIGH (crosses module boundary), MEDIUM (within module), LOW (isolated)
-- Cascade depth: how many hops from origin to terminal node
-- Origin nodes: files where changes originate
-
+Load research-coordinator audit-impact L3 output and extract: propagation paths (chains of files/components), path severity (HIGH/MEDIUM/LOW), cascade depth, origin nodes.
 Build a **propagation inventory**: every path as an ordered chain with severity and depth.
 
 ### 3. Verify Checkpoint Containment
-For each propagation path, check:
-- Is there at least one checkpoint that intercepts this path?
-- Does the checkpoint appear BEFORE the path reaches its terminal node?
-- Does the checkpoint's pass criteria detect the specific propagation being contained?
+For each propagation path: confirm an intercepting checkpoint exists, checkpoint appears BEFORE the terminal node, and checkpoint criteria detect the specific propagation type.
+Build a containment matrix (format and status definitions: `resources/methodology.md`).
 
-Build a containment matrix:
-
-| Propagation Path | Severity | Depth | Intercepting Checkpoint | Position Valid? | Criteria Match? | Status |
-|-----------------|----------|-------|------------------------|----------------|----------------|--------|
-| auth.ts -> session.ts -> api.ts | HIGH | 2 | CP-1 (after auth phase) | Yes | Yes (auth test) | CONTAINED |
-| config.json -> *.ts (broadcast) | HIGH | 1 | CP-2 (after config phase) | Yes | Partial (tests 3/5 consumers) | PARTIAL |
-| util.ts -> db.ts -> cache.ts | MEDIUM | 2 | -- | -- | -- | UNMITIGATED |
-
-**CONTAINED**: Checkpoint exists, positioned correctly, criteria match propagation type.
-**PARTIAL**: Checkpoint exists but criteria do not fully cover the propagation scope.
-**UNMITIGATED**: No checkpoint intercepts this propagation path.
-
-### 4. Identify Unmitigated Impact Paths
-Three categories of containment gaps:
-
-**Unmitigated paths**: Propagation paths with no intercepting checkpoint.
-- Risk: Changes propagate unchecked through the dependency chain during execution.
-- Severity: Inherits the path severity (HIGH/MEDIUM/LOW from audit-impact).
-
-**Late checkpoints**: Checkpoints that appear AFTER the propagation path has already reached its terminal node.
-- Risk: By the time the checkpoint runs, the propagation damage is already done.
-- Severity: HIGH if the path severity is HIGH, MEDIUM otherwise.
-
-**Insufficient criteria**: Checkpoints that intercept the path but do not test for the specific propagation.
-- Risk: The checkpoint passes even when the propagation has occurred unchecked.
-- Severity: MEDIUM (checkpoint exists but is ineffective for this path).
-
-For each gap, record:
-- Propagation path (origin -> intermediate -> terminal)
-- Gap type (UNMITIGATED, LATE, INSUFFICIENT)
-- Path severity from audit-impact L3
-- Evidence: specific path and checkpoint references
-- Recommended checkpoint position (for LATE gaps)
+### 4. Identify Gaps
+Classify all uncontained paths as UNMITIGATED, LATE, or INSUFFICIENT.
+Detect circular propagation cycles — these require dual checkpoints and are always HIGH severity.
+Full gap classification rubric and record format: `resources/methodology.md`.
 
 ### 5. Report Containment Verdict
-Produce final verdict with evidence:
 
-**PASS criteria**:
-- All HIGH-severity paths have CONTAINED status
-- Zero UNMITIGATED paths of any severity
-- Late and insufficient checkpoints total <= 2 (all MEDIUM severity)
+**PASS**: All HIGH-severity paths CONTAINED + zero UNMITIGATED paths + late/insufficient total ≤ 2 (MEDIUM only).
 
-**Conditional PASS criteria**:
-- All HIGH-severity paths CONTAINED
-- UNMITIGATED paths exist but are LOW-severity only
-- Total unmitigated count <= 3
+**CONDITIONAL_PASS**: All HIGH-severity paths CONTAINED + UNMITIGATED paths are LOW-severity only + total unmitigated ≤ 3.
 
-**FAIL criteria**:
-- Any HIGH-severity path UNMITIGATED, OR
-- Any HIGH-severity path has LATE checkpoint, OR
-- Total unmitigated count > 3 regardless of severity, OR
-- >50% of paths lack containment (systematic checkpoint gap)
+**FAIL** (any one condition):
+- Any HIGH-severity path UNMITIGATED
+- Any HIGH-severity path has LATE checkpoint
+- Total unmitigated count > 3 (any severity)
+- > 50% of paths lack containment
 
 ### Iteration Tracking (D15)
-- Lead manages `metadata.iterations.plan-verify-impact: N` in PT before each invocation
-- Iteration 1: strict mode (FAIL → return to plan-impact with gap evidence)
-- Iteration 2: relaxed mode (proceed with risk flags, document gaps in phase_signals)
-- Max iterations: 2
+- Lead manages `metadata.iterations.plan-verify-impact: N` in PT before each invocation.
+- Iteration 1: strict mode — FAIL returns to plan-impact with gap evidence.
+- Iteration 2: relaxed mode — proceed with risk flags, document gaps in phase_signals.
+- Max iterations: 2.
 
 ## Failure Handling
+> Escalation level definitions: `.claude/resources/failure-escalation-ladder.md`
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Audit-impact L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
+| Audit-impact L3 missing, tool error, timeout | L0 Retry | Re-invoke same agent, same DPS |
 | Containment matrix incomplete or paths unverified | L1 Nudge | SendMessage with refined context |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
 | Propagation graph stale or circular path detected | L3 Restructure | Modify task graph, reassign files |
 | Unresolvable containment gap, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
-### Audit-Impact L3 Not Available
-- **Cause**: research-coordinator did not produce audit-impact L3 output.
-- **Action**: FAIL with `reason: missing_upstream`. Cannot verify containment without propagation paths.
-- **Route**: Lead for re-routing to research-coordinator.
-
-### Plan-Impact Output Incomplete
-- **Cause**: plan-impact produced execution sequence but missing checkpoints or containment claims.
-- **Action**: FAIL with `reason: incomplete_plan`. Report which phases lack checkpoints.
-- **Route**: plan-impact for completion.
-
-### No Propagation Paths in Audit
-- **Cause**: audit-impact found zero propagation paths (fully isolated changes).
-- **Action**: PASS with `paths: 0`, `unmitigated: 0`. No containment verification needed.
-- **Route**: plan-verify-coordinator with trivial confirmation.
-
-### Circular Propagation Path
-- **Cause**: A propagation path forms a cycle (A -> B -> C -> A).
-- **Action**: Flag as HIGH-severity finding. Circular paths require TWO checkpoints minimum (entry and re-entry points).
-- **Route**: Include in findings. If no checkpoint covers both entry and re-entry, this is FAIL.
-
-### Analyst Exhausted Turns
-- **Cause**: Large propagation graph exceeds analyst budget.
-- **Action**: Report partial containment analysis with percentage of paths verified. Set `status: PARTIAL`.
-- **Route**: plan-verify-coordinator with partial flag and unverified path list.
+**Special cases:**
+- **Audit-impact L3 missing**: FAIL `reason: missing_upstream` → Lead re-routes to research-coordinator.
+- **Plan-impact checkpoints absent**: FAIL `reason: incomplete_plan` → report phases lacking checkpoints → route to plan-impact.
+- **Zero propagation paths**: PASS `paths:0, unmitigated:0` → route to plan-verify-coordinator with trivial confirmation.
+- **Analyst exhausted turns**: Report partial analysis with % verified, set `status: PARTIAL` → plan-verify-coordinator with partial flag.
 
 ## Anti-Patterns
 
-### DO NOT: Verify Execution Results
-P4 verifies PLANS, not outcomes. Check that checkpoints are positioned and specified to contain propagation paths. Do not simulate execution or predict whether checkpoints will actually catch problems.
-
-### DO NOT: Accept Position-Only Checkpoint Validation
-A checkpoint in the right position is necessary but not sufficient. Verify that the checkpoint criteria actually test for the specific propagation type. A generic "run all tests" checkpoint at the right position may miss specific propagation detection.
-
-### DO NOT: Ignore Low-Severity Paths
-Even LOW-severity paths should be reported if unmitigated. While they do not cause FAIL individually, accumulated low-severity gaps indicate weak containment strategy.
-
-### DO NOT: Treat Rollback Boundaries as Checkpoints
-Rollback boundaries are recovery mechanisms, not containment mechanisms. A rollback point after a propagation path means you can recover, but the propagation still occurred. Containment means prevention or detection BEFORE propagation completes.
-
-### DO NOT: Create or Modify Checkpoints
-If containment gaps exist, REPORT them with evidence. Do not propose new checkpoints or reposition existing ones. Execution sequence revision is the plan domain's responsibility.
+- **DO NOT verify execution results.** P4 verifies PLANS. Check that checkpoints are positioned and specified — do not simulate execution or predict actual checkpoint effectiveness.
+- **DO NOT accept position-only validation.** A checkpoint at the right position is necessary but not sufficient. Verify criteria actually test for the specific propagation type.
+- **DO NOT ignore LOW-severity unmitigated paths.** Report all unmitigated paths; accumulated low-severity gaps indicate a weak containment strategy.
+- **DO NOT treat rollback boundaries as checkpoints.** Rollback = recovery after propagation. Containment = prevention or detection BEFORE propagation completes.
+- **DO NOT propose new checkpoints.** Report gaps with evidence only. Checkpoint creation is plan-impact's responsibility.
 
 ## Transitions
+> Standard transition protocol: `.claude/resources/transitions-template.md`
 
 ### Receives From
-| Source Skill | Data Expected | Format |
-|-------------|---------------|--------|
-| plan-impact | Execution sequence with checkpoints | L1 YAML: phases[] with checkpoints[], rollback_boundaries[]. L2: containment claims per path |
-| research-coordinator | Audit-impact L3 propagation paths | L3: paths[] with origin, chain[], severity, depth |
+| Source | Data Expected |
+|--------|--------------|
+| plan-impact | L1 YAML: phases[], checkpoints[], rollback_boundaries[]. L2: containment claims per path |
+| research-coordinator | L3: paths[] with origin, chain[], severity, depth |
 
 ### Sends To
-| Target Skill | Data Produced | Trigger Condition |
-|-------------|---------------|-------------------|
-| plan-verify-coordinator | Containment verdict with evidence | Always (Wave 4 -> Wave 4.5 consolidation) |
-
-### Failure Routes
-| Failure Type | Route To | Data Passed |
-|-------------|----------|-------------|
-| Missing audit-impact L3 | Lead | Which upstream missing |
-| Incomplete plan-impact | plan-impact | Phases lacking checkpoints |
-| Circular propagation | Included in findings | Cycle details and checkpoint requirements |
-| Analyst exhausted | plan-verify-coordinator | Partial analysis + unverified paths |
+| Target | Data | Trigger |
+|--------|------|---------|
+| plan-verify-coordinator | Containment verdict with evidence | Always (Wave 4 → Wave 4.5) |
+| plan-impact | Phases lacking checkpoints | Incomplete plan-impact |
+| Lead | Which upstream missing | Missing audit-impact L3 |
 
 ## Quality Gate
+> Standard quality gate protocol: `.claude/resources/quality-gate-checklist.md`
+
 - Every propagation path from audit-impact checked for checkpoint coverage
 - Checkpoint position validated (appears BEFORE path terminal node)
 - Checkpoint criteria validated (tests for specific propagation type)
 - All gaps classified by type (UNMITIGATED/LATE/INSUFFICIENT) and severity
 - Circular propagation paths detected and flagged
 - Every finding has evidence citing specific paths and checkpoint IDs
-- Verdict (PASS/FAIL) with explicit counts and severity thresholds
+- Verdict (PASS/CONDITIONAL_PASS/FAIL) with explicit counts and severity thresholds
 
 ## Output
 
@@ -250,6 +158,7 @@ signal_format: "{STATUS}|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact
 ```
 
 ### L2
+> See `.claude/resources/output-micro-signal-format.md` for micro-signal formatting rules.
 - Containment matrix: propagation path vs checkpoint mapping
 - Unmitigated path analysis with severity and cascade depth
 - Late checkpoint analysis with recommended repositioning

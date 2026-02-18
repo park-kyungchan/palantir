@@ -26,17 +26,19 @@ disable-model-invocation: false
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+Runs in P2+ Team mode only. Agent Teams coordination applies:
+- **Communication**: Four-Channel Protocol — Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal to Lead, Ch4 P2P to downstream consumers.
 - **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+- **P2P**: Homeostasis repairs are terminal — no downstream P2P consumers. Write to disk + micro-signal to Lead.
+- **File ownership**: Only modify files assigned to this wave. No overlapping edits with parallel agents.
+
+> Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
 ## Decision Points
 
 ### Fix Wave Parallelism
 - **Single wave**: ≤5 findings, all in non-overlapping files. One infra-implementer handles everything.
-- **Parallel waves**: 6+ findings spanning multiple file categories. Group by category with max 2 concurrent infra-implementers per wave.
+- **Parallel waves**: 6+ findings spanning multiple file categories. Group by category, max 2 concurrent infra-implementers per wave.
 
 ### Convergence Threshold
 - **Strict convergence**: Zero findings remaining. Required for pre-release cycles.
@@ -51,58 +53,35 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 ## Methodology
 
 ### 1. Receive Findings
-Read findings list from self-diagnose output:
-- Parse findings by severity category
-- Group by file type for wave planning
-- Identify non-overlapping file sets for parallel execution
+Read self-diagnose output: parse by severity, group by file type for wave planning, identify non-overlapping file sets for parallel execution.
 
 ### 2. Spawn Infra-Implementer Waves
-Spawn infra-implementer agents in parallel waves:
-- Group fixes by category (field removal, feature addition, routing fix, etc.)
-- Max 2 infra-implementers per wave to avoid file conflicts
+Group fixes by category (field removal, routing fix, etc.) with max 2 infra-implementers per wave.
+Construct DPS: INCLUDE findings with severity + file:line evidence; EXCLUDE other waves' findings and pipeline state.
+Per-file instructions must specify exact change (field name, target value, line reference).
 
-Construct each delegation prompt with:
-- **Context** (D11 priority: cognitive focus > token efficiency):
-  INCLUDE: Specific findings for this wave with severity, category, and file:line evidence. CC native field reference from cc-reference cache. For description edits, include current character count and the 1024-char limit.
-  EXCLUDE: Other waves' findings, pipeline state, manage-infra internal data. Budget: context ≤30% of implementer context.
-- **Task**: For each file, specify exact change: "Remove field X from Y.md", "Change value A to B in Z/SKILL.md", etc. Provide target value where possible.
-- **Constraints**: Write and Edit tools only — no Bash. Files in this wave must not overlap with other concurrent infra-implementers. Only modify files listed in findings.
-- **Expected Output**: L1 YAML with files_changed, findings_fixed, status. L2 with per-file change log: finding ID, what changed, before→after.
-- **Delivery**: Write full result to `tasks/{team}/homeostasis-self-implement.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|fixed:{N}|deferred:{N}|ref:tasks/{team}/homeostasis-self-implement.md`.
-  If no team active, fallback to `/tmp/pipeline/homeostasis-self-implement.md`.
-
-Await infra-implementer result via SendMessage (P2+) or TaskOutput (standalone). If a wave fails, re-spawn with corrected instructions (max 1 retry per wave).
+> For DPS INCLUDE/EXCLUDE block, Task/Constraints/Expected Output/Delivery templates, and finding-to-task mapping: read `resources/methodology.md`
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
 
 ### 3. Verify Compliance
-Post-implementation verification. Re-run diagnostic categories from self-diagnose, but only for modified files.
-
-**Verification checklist:**
-- Re-scan modified files: zero non-native fields (CRITICAL)
-- Verify routing: all auto-loaded skills visible, no disable-model-invocation:true on pipeline skills
-- Verify budget: total description chars within 32,000
-- Cross-reference check: INPUT_FROM/OUTPUT_TO bidirectionality intact
-- Hook scripts: shebang, exit codes, JSON output format valid
+Re-run diagnostic categories for modified files only.
 
 **Iteration logic:**
-- Zero findings remain: proceed to Step 4 (convergence)
-- Findings decreased: loop to Step 2 (max 3 iterations)
-- Findings plateau: accept partial if all remaining are LOW
+- Zero findings remain → proceed to Step 4 (convergence)
+- Findings decreased → loop to Step 2 (max 3 iterations)
+- Findings plateau → accept partial if all remaining are LOW
+
+> For verification checklist (5 items): read `resources/methodology.md`
 
 ### 4. Update Records
-Spawn infra-implementer for memory updates:
-- **Context**: Improvement cycle findings, files changed, cc-reference updates
-- **Task**: Update memory/context-engineering.md with new findings. Update MEMORY.md session history with cycle summary.
-- **Constraints**: Edit tool only — modify existing sections, don't restructure.
-- **Expected Output**: L1 YAML with files_updated, status. L2 with change summary.
-- **Delivery**: Write full result to `tasks/{team}/homeostasis-self-implement-records.md`. Send micro-signal to Lead via SendMessage: `PASS|files:{N}|ref:tasks/{team}/homeostasis-self-implement-records.md`.
-  If no team active, fallback to `/tmp/pipeline/homeostasis-self-implement-records.md`.
+Spawn infra-implementer: update `memory/context-engineering.md` and `MEMORY.md` session history with cycle summary.
+
+> For memory update DPS template: read `resources/methodology.md`
 
 ### 5. Commit
-Lead-direct via Bash tool, or route to /delivery-pipeline:
-- Stage changed files with `git add` (specific files, never `-A`)
-- Structured commit message: `feat(infra): RSI [scope] -- [summary]`
-- Include finding categories in body
-- Report ASCII status visualization
+Lead-direct via Bash, or route to delivery-pipeline. Stage specific files (never `-A`). Commit message: `feat(infra): RSI [scope] -- [summary]`.
+
+> For commit procedure and message format: read `resources/methodology.md`
 
 ## Anti-Patterns
 
@@ -140,9 +119,10 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 | Non-convergence after 3 iterations | (Terminate partial) | Remaining findings deferred |
 | Infra-implementer wave failure (after retry) | (Continue) | Failed findings deferred |
 
-## Failure Handling
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
-### D12 Escalation Ladder
+## Failure Handling
 
 | Failure Type | Level | Action |
 |---|---|---|
@@ -152,12 +132,14 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 | Non-overlapping constraint violated or parallel conflict detected | L3 Restructure | Regroup findings into non-conflicting waves, reassign file ownership |
 | 3+ L2 failures on same wave or budget overflow unresolvable | L4 Escalate | AskUserQuestion with situation summary and options |
 
-| Failure Type | Severity | Route To | Blocking? | Resolution |
-|---|---|---|---|---|
-| Budget overflow detected | HIGH | Fix | Yes | Must resolve before commit |
-| Non-convergence after 3 iter | HIGH | Terminate partial | No | Commit successes, defer rest |
-| Implementer wave failure (all) | HIGH | Retry once | Conditional | Re-spawn or defer |
-| Implementer partial failure | MEDIUM | Continue | No | Some fixed, others deferred |
+| Failure Type | Severity | Blocking? | Resolution |
+|---|---|---|---|
+| Budget overflow detected | HIGH | Yes | Must resolve before commit |
+| Non-convergence after 3 iter | HIGH | No | Commit successes, defer rest |
+| Implementer wave failure (all) | HIGH | Conditional | Re-spawn or defer |
+| Implementer partial failure | MEDIUM | No | Some fixed, others deferred |
+
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Quality Gate
 - All CRITICAL findings addressed (zero remaining)

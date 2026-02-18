@@ -19,165 +19,102 @@ disable-model-invocation: false
 # Plan — Static Decomposition
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Flat file list with no clusters. 1-2 tasks with linear dependencies.
-- **STANDARD**: Spawn analyst. Systematic cluster identification across 3-8 files. Dependency-aware task grouping.
-- **COMPLEX**: Spawn analyst (maxTurns:25). Deep dependency graph analysis across 9+ files, multiple clusters, cross-module boundaries.
+- **TRIVIAL**: Lead-direct. Flat file list, no clusters. 1-2 tasks with linear dependencies.
+- **STANDARD**: Spawn analyst (maxTurns:15). Cluster identification across 3-8 files. Dependency-aware grouping.
+- **COMPLEX**: Spawn analyst (maxTurns:25). Deep dependency graph analysis, 9+ files, multi-cluster, cross-module.
 
-## Phase-Aware Execution
-
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
-
-## Decision Points
-
-### Cluster Split vs Merge
-When dependency cluster boundaries are ambiguous.
-- **Split**: If cluster > 4 files AND a weak internal edge exists (≤ 2 coupling edges). Split along weakest edge.
-- **Merge**: If two adjacent clusters share > 3 bidirectional edges. Merge into single task (accept larger scope).
-- **Default**: Keep cluster intact when 1-4 files with clear internal cohesion.
-
-### Task Granularity Selection
-When assigning files to tasks after clustering.
-- **Single-file**: If file has 0 dependencies (isolated node). Create minimal 1-file task.
-- **Multi-file**: If files form tight cluster (mutual deps). Group 2-4 files per SRP-bounded task.
-- **Default**: Prefer 2-3 files per task for balanced parallelism and manageability.
+> Phase-aware routing: read `.claude/resources/phase-aware-execution.md`
 
 ## Methodology
 
 ### 1. Read Audit-Static L3 (Dependency Graph)
-Load the audit-static L3 file path provided via `$ARGUMENTS`. This file contains:
-- File-level dependency graph (imports, calls, inheritance)
-- Module boundary annotations
-- Coupling metrics between files
-
-Validate the input exists and contains a parseable dependency graph. If absent, route to Failure Handling (Missing Audit Input).
+Load the audit-static L3 file path provided via `$ARGUMENTS`. Validate the file exists and contains a parseable dependency graph (file-level imports, calls, inheritance, coupling metrics, module boundary annotations). If absent, route to Failure Handling (Missing Audit Input).
 
 ### 2. Identify Dependency Clusters
-Analyze the dependency graph to find natural grouping boundaries:
-- **Tight clusters**: Files with bidirectional or high-frequency dependencies (import each other, call each other)
-- **Loose couplings**: Files connected by a single edge (one import, one call)
-- **Isolated nodes**: Files with no incoming or outgoing edges
+Classify all nodes in the graph:
+- **Tight clusters**: files with bidirectional or high-frequency dependencies — MUST stay in the same task
+- **Loose couplings**: files connected by a single edge — CAN be in separate tasks (edge becomes a task dependency)
+- **Isolated nodes**: files with no incoming or outgoing edges — each forms its own single-file task
 
-Grouping rules:
-- Files in a tight cluster MUST be in the same task (splitting them causes cross-task coordination overhead)
-- Loosely coupled files CAN be in separate tasks (edge becomes a dependency between tasks)
-- Isolated files form their own single-file tasks
-
-### 3. Define Task Boundaries (1-4 Files, SRP)
-For each identified cluster, create a task:
-- **Max 4 files per task**: If a cluster has >4 files, split along the weakest internal coupling edge
-- **Min 1 file per task**: Every file must belong to exactly one task
-- **SRP compliance**: Each task should represent one coherent unit of structural change
-- **Task naming**: Imperative verb + target module (e.g., "Implement auth handler cluster")
-
-Boundary validation:
-- No file assigned to multiple tasks
-- Related files (module + its tests) stay in same task
-- Config files (.claude/) grouped into infra tasks, source files into code tasks
+### 3. Define Task Boundaries (SRP, 1-4 Files)
+For each identified cluster, create one task:
+- Max 4 files per task. If cluster exceeds 4, split along the weakest internal coupling edge.
+- Every file belongs to exactly one task (exclusive ownership).
+- Each task represents one coherent SRP unit. Naming: imperative verb + target module.
+- Related files (module + tests) stay together. Config files grouped into infra tasks.
 
 ### 4. Assign File Ownership and Estimate Complexity
-For each task:
-- List exact file paths (create or modify)
-- Estimate complexity using structural signals:
+List exact file paths per task (create or modify). Estimate complexity (TRIVIAL/STANDARD/COMPLEX) using structural signals.
 
-| Indicator | TRIVIAL | STANDARD | COMPLEX |
-|-----------|---------|----------|---------|
-| Files per task | 1 | 2-3 | 4 |
-| Internal edges | 0-1 | 2-3 | 4+ |
-| Cross-task deps | 0 | 1 | 2+ |
-| Module boundaries | Same | 1-2 | Cross-module |
+> Complexity indicator table and ownership rubric: read `resources/methodology.md`
 
-### 5. Output Task List with Dependency Edges
-Build the final task graph:
-- For each pair of tasks, determine relationship from the original dependency graph:
-  - **blocks**: Producer task must complete before consumer task starts
-  - **independent**: No dependency edge between task clusters
-- Identify critical path (longest chain of blocking dependencies)
-- Calculate parallelism potential (tasks per wave)
+### 5. Build Task DAG with Critical Path
+For each task pair, determine relationship from the original dependency graph:
+- **blocks**: producer task must complete before consumer task starts
+- **independent**: no dependency edge between clusters
 
-**DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context** (D11 priority: cognitive focus > token efficiency):
-  INCLUDE:
-    - research-coordinator audit-static L3 from `tasks/{team}/p2-coordinator-audit-static.md`
-    - Pipeline tier and iteration count from PT
-  EXCLUDE:
-    - Other plan dimension outputs (unless dependency)
-    - Full research evidence detail (use L3 summaries only)
-    - Pre-design and design conversation history
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Identify dependency clusters in the file graph. Group files into tasks (1-4 files each, SRP). Assign file ownership (non-overlapping). Map inter-task dependency edges. Identify critical path. Estimate per-task complexity (T/S/C)."
-- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No modifications. maxTurns: 20.
-- **Expected Output**: L1 YAML with task_count, tasks[] (id, files, complexity, depends_on, cluster). L2 task descriptions with cluster rationale and critical path visualization.
-- **Delivery**: Write full result to `tasks/{team}/p3-plan-static.md`. Send micro-signal to Lead: `PASS|tasks:{N}|deps:{N}|ref:tasks/{team}/p3-plan-static.md`.
+Identify the critical path (longest blocking chain) and calculate per-wave parallelism (count of independent tasks per level).
 
-#### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. Flat file list (1-2 files), assign each to single task. No cluster analysis needed. Output inline.
-**STANDARD**: Spawn analyst (maxTurns: 15). Simplified cluster identification across 3-8 files. Single-pass grouping. Skip critical path if ≤ 3 tasks.
-**COMPLEX**: Full DPS above. Deep multi-cluster analysis, cross-module boundaries, full critical path.
+> DPS analyst spawn templates (TRIVIAL/STANDARD/COMPLEX): read `resources/methodology.md`
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
 
-### Iteration Tracking (D15)
-- Lead manages `metadata.iterations.plan-static: N` in PT before each invocation
-- Iteration 1: strict mode (FAIL → return to research-coordinator with dependency graph gaps)
-- Iteration 2: relaxed mode (proceed with documented coverage gaps, flag in phase_signals)
-- Max iterations: 2
+## Decision Points
+- **Cluster split**: cluster > 4 files AND weak internal edge (≤ 2 coupling edges) → split along weakest edge
+- **Cluster merge**: two adjacent clusters share > 3 bidirectional edges → merge into single task
+- **Task granularity**: single-file for isolated nodes; 2-4 files for tight clusters; default 2-3 for balance
+- **Iteration**: Lead tracks `metadata.iterations.plan-static: N` in PT. Iteration 1 = strict; iteration 2 = relaxed with documented gaps. Max 2 iterations.
+
+> Cluster strategy examples and iteration tracking (D15): read `resources/methodology.md`
 
 ## Failure Handling
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Tool error or timeout during cluster analysis | L0 Retry | Re-invoke same agent, same DPS |
-| Dependency graph incomplete or cluster output off-direction | L1 Nudge | SendMessage with refined scope constraints |
+| Tool error or timeout during cluster analysis | L0 Retry | Re-invoke same agent with same DPS |
+| Cluster output incomplete or off-direction | L1 Nudge | SendMessage with refined scope constraints |
 | Agent stuck on cycle detection or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
-| Task graph structure broken or scope shift requires replanning | L3 Restructure | Modify task graph, redefine clusters |
-| Strategic ambiguity on decomposition scope or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
+| Task graph structure broken or scope shift | L3 Restructure | Modify task graph, redefine clusters |
+| Strategic ambiguity or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
-| Failure Type | Severity | Route To | Blocking? | Resolution |
-|---|---|---|---|---|
-| Missing audit-static L3 input | CRITICAL | research-coordinator | Yes | Cannot decompose without dependency graph. Request re-run. |
-| Dependency graph has cycles | HIGH | Self (re-analyze) | No | Break cycles at weakest coupling edge. Document forced splits. |
-| Cluster exceeds 4-file limit, no clear split | MEDIUM | Self (re-analyze) | No | Split along least-coupled internal edge. Accept increased cross-task deps. |
-| All files isolated (no clusters) | LOW | Complete normally | No | Each file becomes its own task. Note: trivial decomposition. |
+| Failure Type | Severity | Route To |
+|---|---|---|
+| Missing audit-static L3 input | CRITICAL | research-coordinator — cannot decompose without dependency graph |
+| Dependency graph has cycles | HIGH | Self (re-analyze) — break at weakest coupling edge, document forced splits |
+| Cluster exceeds 4-file limit, no clear split | MEDIUM | Self (re-analyze) — split at least-coupled edge, accept cross-task deps |
+| All files isolated (no clusters) | LOW | Complete normally — each file becomes its own task |
+
+> Escalation ladder: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
-
-### DO NOT: Ignore Dependency Edges When Grouping
-Grouping files by directory or naming convention instead of actual dependency edges produces tasks that cross natural boundaries. Always use the audit-static dependency graph as primary input.
-
-### DO NOT: Create Tasks Larger Than 4 Files
-Tasks exceeding 4 files cause agent context overflow and reduce parallelism. Split large clusters even if it means adding cross-task dependencies.
-
-### DO NOT: Assign Same File to Multiple Tasks
-File ownership must be exclusive. If two tasks need the same file, assign it to the primary modifier and create a dependency edge to the secondary consumer.
-
-### DO NOT: Speculate Beyond Audit Data
-This skill converts IS (audit findings) to SHOULD (task plan). Do not invent dependencies not present in the audit-static L3. If the audit missed something, that is an upstream gap.
-
-### DO NOT: Decompose Below Testable Granularity
-Each task should be independently verifiable. If a task's changes cannot be validated without another task completing first, merge them.
+- **DO NOT ignore dependency edges when grouping** — directory or naming convention grouping produces tasks that cross natural boundaries; always use audit-static L3 as primary input
+- **DO NOT create tasks larger than 4 files** — causes agent context overflow and reduces parallelism; split even if it adds cross-task dependencies
+- **DO NOT assign same file to multiple tasks** — file ownership must be exclusive; if two tasks need a file, assign to the primary modifier and add a dependency edge to the consumer
+- **DO NOT speculate beyond audit data** — this skill converts IS (audit findings) to SHOULD (task plan); do not invent dependencies absent from the audit-static L3
+- **DO NOT decompose below testable granularity** — each task must be independently verifiable; if a task's changes cannot be validated without another task completing first, merge them
 
 ## Transitions
 
 ### Receives From
 | Source Skill | Data Expected | Format |
-|-------------|---------------|--------|
-| research-coordinator | audit-static L3 file path | `$ARGUMENTS`: file path to L3 with dependency graph |
+|---|---|---|
+| research-coordinator | audit-static L3 file path | `$ARGUMENTS`: path to L3 with dependency graph |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
-|-------------|---------------|-------------------|
+|---|---|---|
 | plan-verify-static | Task breakdown with dependency edges | Always (PASS or partial) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
-|-------------|----------|-------------|
+|---|---|---|
 | Missing audit input | research-coordinator | Which L3 file is missing |
 | Unresolvable cycles | Lead (escalation) | Cycle details with file:line evidence |
 
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
+
 ## Quality Gate
-- Every file in the dependency graph assigned to exactly one task
+- Every file in the dependency graph assigned to exactly one task (≥95% file coverage required for PASS)
 - No task exceeds 4 files
 - Dependency graph between tasks is acyclic (DAG)
 - Critical path identified with complexity estimates

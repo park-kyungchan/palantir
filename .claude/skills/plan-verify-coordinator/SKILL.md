@@ -29,8 +29,13 @@ disable-model-invocation: false
 Note: P4 validates PLANS (pre-execution). This coordinator merges dimension-specific verdicts and checks for cross-dimension inconsistencies that individual verifiers cannot detect. It does NOT re-verify dimensions or override individual verdicts.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes tiered output to `tasks/{team}/p4-coordinator-*.md`, sends micro-signal: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{team}/p4-coordinator-index.md`.
+- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via Four-Channel Protocol.
+- **Ch2**: Agent writes tiered output to `tasks/{team}/p4-coordinator-*.md`.
+- **Ch3** micro-signal to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{team}/p4-coordinator-index.md`.
+- **Ch4** P2P: not sent at this stage — Lead uses Deferred Spawn to route orchestrate-* skills with $ARGUMENTS pointing to L3 files.
+
+> Phase-aware routing details: read `.claude/resources/phase-aware-execution.md`
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
 
 ## Decision Points
 
@@ -39,166 +44,43 @@ Combined dimension results determine routing.
 - **All 4 PASS (or CONDITIONAL_PASS) AND cross-check issues = 0**: PASS. Route to orchestration domain.
 - **All 4 PASS AND cross-check issues exist (MEDIUM severity)**: CONDITIONAL_PASS. Route with annotations.
 - **Any dimension FAIL OR cross-check HIGH severity**: FAIL. Route to specific plan-X skill per finding.
-- **Default**: If 2+ dimensions FAIL, prioritize static first (foundation for others).
+- **Default — 2+ dimensions FAIL**: Prioritize static first (foundation for others).
 
 ### Partial Dimension Handling
-Incomplete verifier output determines coordinator behavior.
-- **1 dimension missing**: Produce partial output with 3 dimensions. Set status: PARTIAL. Route to Lead.
+- **1 dimension missing**: Produce partial output (3 dimensions). Set `status: PARTIAL`. Route to Lead.
 - **2+ dimensions missing**: FAIL with `reason: insufficient_data`. Cannot perform meaningful cross-checks.
-- **Partial coverage (> 70% per dimension)**: Proceed with risk annotation on unverified portions.
-- **Partial coverage (< 70% any dimension)**: Route that dimension for re-verification with focused scope.
+- **Coverage ≥ 70% per dimension**: Proceed with risk annotation on unverified portions.
+- **Coverage < 70% any dimension**: Route that dimension for re-verification with focused scope.
 
-## Methodology
+### Cross-Dimension Consistency Rules
+Individual verifiers check their own dimension. This coordinator checks BETWEEN dimensions:
+- **Dependency-Sequence** (Static × Impact): orphan files on propagation paths escalate severity; checkpoints mitigate missing edges.
+- **Contract-Boundary** (Relational × Static): every cross-boundary dependency edge must have a contract; orphan contracts are flagged.
+- **Rollback-Checkpoint** (Behavioral × Impact): every rollback trigger must have a corresponding checkpoint; HIGH-risk untested changes require both a test AND a containment checkpoint.
+- **Requirement Traceability** (All 4): any requirement covered by fewer than 3 dimensions is flagged as under-verified.
 
-### Coordinator Delegation DPS
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  - INCLUDE: all four plan-verify dimension L1 verdicts (pv-static coverage verdict, orphans; pv-behavioral test coverage, rollback coverage; pv-relational contract integrity, asymmetric/missing counts; pv-impact containment verdict, unmitigated paths) with L1 YAML metrics and L2 evidence summaries; file paths within this agent's ownership boundary
-  - EXCLUDE: individual plan dimension detail (plan-static, plan-behavioral, plan-relational, plan-impact outputs); historical rationale for dimension decisions; full pipeline state beyond P4; dimension-internal methodology
-  - Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Consolidate 4 dimension verdicts. Perform 4 cross-dimension checks: (a) dependency-sequence, (b) contract-boundary, (c) rollback-checkpoint, (d) requirement traceability. Produce tiered output: L1 index.md, L2 summary.md, L3 per-dimension annotated files."
-- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:25 (STANDARD) or 35 (COMPLEX). Do NOT re-evaluate individual dimensions.
-- **Expected Output**: L1: `tasks/{team}/p4-coordinator-index.md` (verdict, routing). L2: `tasks/{team}/p4-coordinator-summary.md` (cross-dim findings). L3: 4 files `tasks/{team}/p4-coordinator-verify-{dim}.md` with cross-dimension annotations.
-- **Delivery**: SendMessage to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{team}/p4-coordinator-index.md`
-
-#### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. If all 4 PASS with zero findings, merge verdicts inline. Write minimal L1 index only.
-**STANDARD**: Single analyst, maxTurns:25. Full 4 cross-checks + tiered L1/L2/L3 output.
-**COMPLEX**: Single analyst, maxTurns:35. Deep cross-dimension consistency matrix + comprehensive L3 with adjusted severity annotations.
-
-### 1. Read All 4 Dimension Verdicts
-Load each verifier's output:
-- **plan-verify-static**: Coverage verdict, orphan count, missing edge count
-- **plan-verify-behavioral**: Test coverage, weighted coverage, rollback coverage
-- **plan-verify-relational**: Contract count, asymmetric count, missing count
-- **plan-verify-impact**: Path count, unmitigated count, late checkpoint count
-
-For each dimension, extract:
-- Verdict (PASS/CONDITIONAL_PASS/FAIL)
-- Key metrics (counts, percentages)
-- Findings list with severity classifications
-- Evidence references
-
-If any dimension is PARTIAL (analyst exhausted), note the coverage percentage and treat unverified portions as risk.
-
-### 2. Cross-Dimension Consistency Checks
-Individual verifiers check their own dimension. The coordinator checks BETWEEN dimensions for inconsistencies that no single verifier can detect.
-
-#### 2a. Dependency-Sequence Consistency (Static x Impact)
-Cross-check plan-verify-static's dependency edges against plan-verify-impact's execution sequence:
-- Every dependency edge (A depends on B) should be respected by the execution sequence (B executes before A)
-- If static finds an orphan file and impact shows a propagation path through that file, the orphan is more severe than static alone detects
-
-| Static Finding | Impact Finding | Cross-Check Result |
-|---------------|----------------|-------------------|
-| Orphan file X | Path through X | ESCALATE: orphan on propagation path |
-| Missing edge A->B | Checkpoint between A and B | MITIGATED: checkpoint covers missing edge |
-| Coverage gap in module M | No paths through M | ACCEPTABLE: isolated module |
-
-#### 2b. Contract-Boundary Consistency (Relational x Static)
-Cross-check plan-verify-relational's contracts against plan-verify-static's dependency graph:
-- Every cross-boundary dependency edge should have a corresponding contract
-- A contract without a corresponding dependency edge is suspicious (orphan contract)
-- Asymmetric contracts should align with edge direction in the dependency graph
-
-| Relational Finding | Static Finding | Cross-Check Result |
-|-------------------|----------------|-------------------|
-| Missing contract for A->B | A->B is cross-boundary edge | ESCALATE: boundary without contract |
-| Orphan contract for C->D | No C->D edge in graph | CONFIRM: phantom contract |
-| Asymmetric A->B (no B->A contract) | B->A edge exists | ESCALATE: reverse dependency uncontracted |
-
-#### 2c. Rollback-Checkpoint Consistency (Behavioral x Impact)
-Cross-check plan-verify-behavioral's rollback triggers against plan-verify-impact's checkpoints:
-- Every rollback trigger should have a corresponding checkpoint that can invoke it
-- Checkpoints without rollback capability for their detected failures are detection-only
-- HIGH-risk behavior changes should have both a test AND a containment checkpoint
-
-| Behavioral Finding | Impact Finding | Cross-Check Result |
-|-------------------|----------------|-------------------|
-| Rollback trigger for auth | Checkpoint after auth phase | ALIGNED: trigger has checkpoint |
-| Rollback trigger for cache | No checkpoint near cache phase | GAP: trigger without checkpoint |
-| HIGH-risk untested change | Contained by checkpoint | PARTIAL: contained but untested |
-
-#### 2d. Requirement Traceability (All Dimensions)
-Verify that the combined plan verification covers all original requirements:
-- Static coverage ensures files are assigned
-- Behavioral coverage ensures changes are tested
-- Relational coverage ensures interfaces are specified
-- Impact coverage ensures changes are contained
-
-If any requirement is covered by fewer than 3 of the 4 dimensions, flag as under-verified.
-
-### 3. Produce L1 Index for Lead
-Write `/tmp/pipeline/p4-coordinator/index.md` with:
-- Overall verdict: AND of all 4 dimensions (CONDITIONAL_PASS counts as PASS)
-- Per-dimension verdict summary (one line each)
-- Cross-dimension issue count
-- Routing decision: PASS -> orchestration domain, FAIL -> specific plan-X skills
-
-### 4. Produce L2 Summary for Lead
-Write `/tmp/pipeline/p4-coordinator/summary.md` with:
-- Per-dimension metric summary table
-- Cross-dimension consistency findings
-- Escalated findings (cross-dimension issues that increase severity)
-- Routing recommendation with rationale
-
-### 5. Produce L3 Per-Dimension Files for Downstream
-Write individual files to `/tmp/pipeline/p4-coordinator/`:
-- `verify-static.md`: Static coverage details with orphan list
-- `verify-behavioral.md`: Test coverage details with untested change list
-- `verify-relational.md`: Contract integrity details with gap list
-- `verify-impact.md`: Containment details with unmitigated path list
-
-Each L3 file includes:
-- Original verifier findings
-- Cross-dimension annotations (escalations, mitigations)
-- Adjusted severity based on cross-checks
+> Full cross-check matrices and examples: read `resources/methodology.md`
 
 ## Failure Handling
 
-### One or More Dimension Verdicts Missing
-- **Cause**: A verifier did not complete (agent failure, exhaustion).
-- **Action**: If 1 dimension missing, produce partial coordinator output with 3 dimensions. Set `status: PARTIAL`. If 2+ dimensions missing, FAIL with `reason: insufficient_data`.
-- **Route**: Lead for re-routing missing verifiers.
+| Failure Type | Action | Route |
+|-------------|--------|-------|
+| 1 dimension missing | Partial output (3 dims), `status: PARTIAL` | Lead for re-routing |
+| 2+ dimensions missing | FAIL `reason: insufficient_data` | Lead |
+| Cross-check HIGH severity | Overall → FAIL | Specific plan-X skill owning finding |
+| Cross-check MEDIUM severity | Overall → CONDITIONAL_PASS | Route with annotations |
+| All dimensions FAIL | FAIL, prioritize static first | plan domain (ordered fix list) |
+| Conflicting plan assumptions | FAIL — internally inconsistent plan | Lead for arbitration |
 
-### All Dimensions PASS But Cross-Checks Find Issues
-- **Cause**: Individual dimensions pass their thresholds but cross-dimension analysis reveals inconsistencies.
-- **Action**: Set overall to CONDITIONAL_PASS if cross-issues are MEDIUM severity. Set overall to FAIL if any cross-issue is HIGH severity.
-- **Route**: If FAIL, route to the specific plan skill that owns the finding (plan-static for dependency issues, plan-behavioral for test issues, etc.).
-
-### All Dimensions FAIL
-- **Cause**: Systematic plan quality failure across all dimensions.
-- **Action**: FAIL with comprehensive feedback. Prioritize findings: address structural (static) first, then behavioral, relational, impact.
-- **Route**: plan domain with prioritized fix list. Recommend addressing static coverage first (foundation for other dimensions).
-
-### Partial Dimension Verdicts
-- **Cause**: One or more verifiers reported PARTIAL (analyst exhausted).
-- **Action**: Accept partial verdicts but note coverage gaps in L2. Unverified portions count as risk, not failure.
-- **Route**: If partial coverage > 70% per dimension, proceed with risk annotation. If < 70%, route for re-verification with focused scope.
-
-### Cross-Check Reveals Conflicting Plan Assumptions
-- **Cause**: plan-static assumes module A is independent, but plan-impact shows propagation paths through A.
-- **Action**: Escalate to FAIL. The plan has internally conflicting assumptions.
-- **Route**: Lead for arbitration between conflicting plan skills.
+> D12 escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
-
-### DO NOT: Override Individual Verifier Verdicts
-The coordinator consolidates and cross-checks. It does not re-evaluate individual dimensions. If plan-verify-static says PASS, the coordinator cannot change it to FAIL based on its own re-analysis. Cross-dimension issues create NEW findings, they do not override existing verdicts.
-
-### DO NOT: Perform Dimension-Specific Analysis
-Each dimension has its own verifier. The coordinator checks BETWEEN dimensions only. Do not re-check orphan files (that is plan-verify-static's job) or re-check test coverage (that is plan-verify-behavioral's job).
-
-### DO NOT: Skip Cross-Checks When All Dimensions PASS
-Cross-dimension inconsistencies can exist even when all individual dimensions pass. The coordinator's primary value is cross-dimension analysis. Always perform all 4 cross-checks.
-
-### DO NOT: Route All Failures to a Single Plan Skill
-Each failure maps to a specific plan-X skill. Route static issues to plan-static, behavioral to plan-behavioral, etc. Sending all failures to one skill overloads it.
-
-### DO NOT: Produce L3 Without Cross-Dimension Annotations
-Raw verifier output forwarded without cross-check annotations provides no coordinator value. Every L3 file must include cross-dimension context.
-
-### DO NOT: Accept Partial Input as Complete
-If a verifier sent PARTIAL status, the coordinator must reflect this in its output. Do not treat 70% verified as fully verified.
+- **DO NOT override individual verifier verdicts** — cross-dimension issues create NEW findings; they do not change existing verdicts.
+- **DO NOT perform dimension-specific analysis** — check BETWEEN dimensions only; re-checking orphans or test coverage belongs to the individual verifiers.
+- **DO NOT skip cross-checks when all dimensions PASS** — cross-dimension inconsistencies can exist even when all pass; always perform all 4 checks.
+- **DO NOT route all failures to a single plan skill** — each failure maps to its owning plan-X skill; distribute accordingly.
+- **DO NOT produce L3 without cross-dimension annotations** — raw verifier output forwarded without annotations provides no coordinator value.
+- **DO NOT treat partial input as complete** — if a verifier sent PARTIAL status, reflect this in all output.
 
 ## Transitions
 
@@ -228,6 +110,9 @@ If a verifier sent PARTIAL status, the coordinator must reflect this in its outp
 | All dimensions FAIL | plan domain (prioritized) | Comprehensive failure report with fix priority order |
 | Conflicting plan assumptions | Lead | Conflict details between plan skills |
 
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
+
 ## Quality Gate
 - All 4 dimension verdicts read and summarized
 - All 4 cross-dimension checks performed (dep-sequence, contract-boundary, rollback-checkpoint, traceability)
@@ -252,7 +137,7 @@ dimensions:
 cross_check_issues: 0
 escalated_findings: 0
 routing: orchestration|plan-static|plan-behavioral|plan-relational|plan-impact
-output_dir: /tmp/pipeline/p4-coordinator/
+output_ref: tasks/{team}/p4-coordinator-index.md
 ```
 
 ### L2
@@ -262,10 +147,12 @@ output_dir: /tmp/pipeline/p4-coordinator/
 - Routing decision with rationale
 
 ### L3
-Files in `/tmp/pipeline/p4-coordinator/`:
-- `index.md`: Overall verdict, dimension summary, routing decision
-- `summary.md`: Cross-dimension analysis narrative
-- `verify-static.md`: Static findings + cross-dimension annotations
-- `verify-behavioral.md`: Behavioral findings + cross-dimension annotations
-- `verify-relational.md`: Relational findings + cross-dimension annotations
-- `verify-impact.md`: Impact findings + cross-dimension annotations
+Files in `tasks/{team}/p4-coordinator-*.md`:
+- `p4-coordinator-index.md`: Overall verdict, dimension summary, routing decision
+- `p4-coordinator-summary.md`: Cross-dimension analysis narrative
+- `p4-coordinator-verify-static.md`: Static findings + cross-dimension annotations
+- `p4-coordinator-verify-behavioral.md`: Behavioral findings + cross-dimension annotations
+- `p4-coordinator-verify-relational.md`: Relational findings + cross-dimension annotations
+- `p4-coordinator-verify-impact.md`: Impact findings + cross-dimension annotations
+
+> Detailed methodology (DPS template, tier DPS variations, cross-check matrices, output steps, failure sub-cases): read `resources/methodology.md`

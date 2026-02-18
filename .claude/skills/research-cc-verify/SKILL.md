@@ -27,88 +27,50 @@ argument-hint: "[claim-source or investigation-context]"
 - **STANDARD**: Single analyst spawn. 3-10 claims, file-based verification. maxTurns: 10.
 - **COMPLEX**: Multiple analysts. 10+ claims across multiple CC subsystems. maxTurns: 15.
 
+> Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
+
 ## Phase-Aware Execution
 
-This skill operates at P2 (Research) or as ad-hoc gate before any ref cache update.
-- **P0-P1 mode**: Lead with local agent (run_in_background).
-- **P2+ mode**: Team agent with SendMessage delivery.
-
-## Phase-Aware Execution (P2+ Team Protocol)
-
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+- **P0-P1 mode**: Lead-direct with local subagent (`run_in_background`). No Team infrastructure.
+- **P2+ mode**: Team agent. Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to research-coordinator). Update task status via `TaskUpdate`. Read upstream outputs from `tasks/{team}/`. Only modify files assigned to you.
 
 ## Methodology
 
-### 1. Extract Claims
+### 1. Extract and Categorize Claims
 
-Parse CC-native behavioral claims from source (claude-code-guide output, research findings, or user-provided context via $ARGUMENTS). Categorize each claim:
+Parse CC-native behavioral claims from source (claude-code-guide output, research findings, `$ARGUMENTS`). Tag each with `[CC-CLAIM]`. Categorize:
 
 | Category | Description | Verification Method |
-|----------|-------------|-------------------|
+|---|---|---|
 | FILESYSTEM | "X file exists at Y path" | Glob + Read |
-| PERSISTENCE | "X survives Y event" | Read actual files, check timestamps |
+| PERSISTENCE | "X survives Y event" | Read files, check timestamps |
 | STRUCTURE | "Directory X has layout Y" | Glob tree comparison |
-| CONFIG | "Setting X accepts value Y" | Read settings.json, validate format |
-| BEHAVIORAL | "Feature X produces effect Y" | Flag for deeper investigation |
-| BUG | "Bug X causes behavior Y" | Check for described symptoms |
+| CONFIG | "Setting X accepts value Y" | Read settings.json or .claude.json |
+| BEHAVIORAL | "Feature X produces effect Y" | Inspect artifacts (hooks, profiles) |
+| BUG | "Bug X causes behavior Y" | Check symptoms in file state |
 
 ### 2. Design Verification Tests
 
-For each FILESYSTEM/PERSISTENCE/STRUCTURE/CONFIG claim, design a minimal empirical test:
+For each claim, identify the file path to inspect and the expected evidence. Map category → path using the lookup tables.
 
-**FILESYSTEM test pattern:**
-```
-Claim: "Inbox files stored at ~/.claude/teams/{name}/inboxes/{agent}.json"
-Test: Glob("~/.claude/teams/*/inboxes/*.json")
-Expected: Files matching pattern exist
-Verdict: PASS if files found, FAIL if not
-```
-
-**PERSISTENCE test pattern:**
-```
-Claim: "Inbox JSON persists after agent termination"
-Test: Read inbox file for terminated agent
-Expected: File exists and contains messages with timestamps before termination
-Verdict: PASS if messages present, FAIL if file missing/empty
-```
-
-**STRUCTURE test pattern:**
-```
-Claim: "Tasks use file locking via .lock file"
-Test: Glob("~/.claude/tasks/*/.lock")
-Expected: .lock file exists in active task directories
-Verdict: PASS if found, NEEDS-REVIEW if not (may be transient)
-```
-
-**CONFIG test pattern:**
-```
-Claim: "teammateMode accepts 'tmux', 'in-process', 'auto'"
-Test: Read settings.json, check teammateMode value
-Expected: Value is one of the documented options
-Verdict: PASS if valid value, NEEDS-REVIEW if field absent
-```
+> Filesystem path lookup tables and verification test patterns: read `resources/methodology.md`
 
 ### 3. Execute Tests
 
-Run all designed tests using file inspection tools (Read, Glob, Grep).
+Run tests with Read, Glob, Grep (read-only; no Bash, no file modification). Each test produces:
+- **PASS**: Empirical evidence confirms the claim (include file:line)
+- **FAIL**: Evidence contradicts the claim — **BLOCKS ref cache update** (include file:line)
+- **NEEDS-REVIEW**: Cannot verify empirically (behavioral/bug claims, or no live test data)
 
-Rules:
-- Each test must produce a clear PASS / FAIL / NEEDS-REVIEW verdict
-- **PASS**: Empirical evidence confirms the claim
-- **FAIL**: Empirical evidence contradicts the claim — **BLOCKS ref cache update**
-- **NEEDS-REVIEW**: Cannot verify empirically (behavioral/bug claims, or insufficient test data)
-- Include file:line evidence for each verdict
+> Claim evidence template and category inspection checklist: read `resources/methodology.md`
 
 ### 4. Gate Decision
 
 | Verdict Distribution | Gate Decision |
-|---------------------|--------------|
+|---|---|
 | All PASS | PROCEED — claims safe for ref cache |
 | Any FAIL | BLOCK — failed claims must be corrected before applying |
-| PASS + NEEDS-REVIEW only | PROCEED WITH CAUTION — flag NEEDS-REVIEW items as "unverified" |
+| PASS + NEEDS-REVIEW only | PROCEED WITH CAUTION — flag NEEDS-REVIEW as unverified |
 
 ### 5. Produce Verification Report
 
@@ -116,92 +78,77 @@ Per-claim verdict table with evidence, gate decision, and recommended actions fo
 
 ## Decision Points
 
-### When to Invoke This Skill
+### When to Invoke
 - **ALWAYS**: Before writing CC-native behavioral claims to ref_*.md cache
 - **ALWAYS**: Before adding CC-native directives to CLAUDE.md
 - **RECOMMENDED**: After claude-code-guide investigation produces findings
-- **OPTIONAL**: When existing ref cache content is suspected stale or incorrect
+- **OPTIONAL**: When existing ref cache content is suspected stale
 
 ### When NOT to Invoke
-- CC-native FIELD validation (handled by verify-cc-feasibility in P7)
-- Application code verification (not CC-native)
-- Skill frontmatter compliance (handled by verify-structural-content)
+- CC-native FIELD validation → handled by `verify-cc-feasibility` (P7)
+- Application code verification → not CC-native scope
+- Skill frontmatter compliance → handled by `verify-structural-content`
 
 ### Verification Depth by Tier
 - **TRIVIAL**: 1-3 claims, single file check each. Lead-direct.
 - **STANDARD**: 3-10 claims, multiple file checks. Single analyst.
-- **COMPLEX**: 10+ claims, cross-subsystem verification. Multiple analysts, parallel.
+- **COMPLEX**: 10+ claims, cross-subsystem. Multiple analysts, parallel by category.
 
 ### DPS for Analyst Spawn
-- **Context** (D11 priority: cognitive focus > token efficiency): List of CC-native claims with categories.
-  - INCLUDE: Specific claims to verify with expected file paths and verification patterns. Claim category (FILESYSTEM/PERSISTENCE/STRUCTURE/CONFIG/BEHAVIORAL/BUG).
-  - EXCLUDE: Pipeline context and phase history. Other teammates' task details. Design rationale and ADRs. Full pipeline state.
-  - Budget: Context field ≤ 30% of effective context budget.
-- **Task**: "Verify each claim empirically via file inspection. For each claim: Glob/Read the expected path, compare actual content against claimed behavior, produce PASS/FAIL/NEEDS-REVIEW verdict with file:line evidence."
-- **Constraints**: analyst agent. Read-only operations. No file modification. No Bash.
-- **Expected Output**: Per-claim verdict table with evidence.
-- **Delivery**: Write full output to tasks/{team}/p2-cc-verify.md. Send micro-signal to Lead via SendMessage: "PASS|claims:{total}|fail:{n}|ref:tasks/{team}/p2-cc-verify.md".
+- **Context (D11)**: Specific claims with expected paths and categories. EXCLUDE pipeline history, other teammates' tasks, design rationale. Budget: ≤30% of effective context.
+- **Task**: "Verify each claim via Glob/Read/Grep. Produce PASS/FAIL/NEEDS-REVIEW verdict with file:line evidence."
+- **Constraints**: `analyst` agent, read-only, no file modification, no Bash.
+- **Delivery (4-channel)**: Ch2 → `tasks/{team}/p2-cc-verify.md`. Ch3 → `"PASS|claims:{total}|fail:{n}|ref:tasks/{team}/p2-cc-verify.md"`. Ch4 → `"READY|path:tasks/{team}/p2-cc-verify.md|fields:claims,verdicts,feasibility_flags"` to research-coordinator.
 
 ## Failure Handling
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Tool error, filesystem read timeout, single claim inaccessible | L0 Retry | Re-invoke same analyst, same claim list |
-| Incomplete verdicts or off-scope evidence returned | L1 Nudge | SendMessage with refined file paths or narrower claim scope |
-| Analyst exhausted turns or context polluted across many claims | L2 Respawn | Kill → fresh analyst with remaining unverified claim list |
-| Claim list too large for single analyst, cross-subsystem scope | L3 Restructure | Split by category (FILESYSTEM/PERSISTENCE/STRUCTURE/CONFIG), reassign to parallel analysts |
-| 3+ L2 failures or systematic filesystem access denied for all claims | L4 Escalate | AskUserQuestion with blocked claims and options |
+| Tool error, read timeout, single claim inaccessible | L0 Retry | Re-invoke same analyst, same claim list |
+| Incomplete verdicts or off-scope evidence | L1 Nudge | SendMessage with refined paths or narrower scope |
+| Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh analyst with remaining unverified claims |
+| Claim list too large, cross-subsystem scope | L3 Restructure | Split by category, assign to parallel analysts |
+| 3+ L2 failures or filesystem access denied for all claims | L4 Escalate | AskUserQuestion with blocked claims and options |
 
-### Claim Fails Verification
-- **Cause**: Empirical evidence contradicts CC-native claim
-- **Action**: Mark claim as FAIL with contradicting evidence. Do NOT write to ref cache. Report to Lead.
-- **Routing**: Lead re-routes to claude-code-guide for deeper investigation or corrects based on evidence.
+- **Claim FAIL**: Mark with contradicting evidence. Do NOT write to ref cache. Lead re-routes to claude-code-guide.
+- **Insufficient data**: Mark NEEDS-REVIEW. Document attempted test and why inconclusive.
+- **Contradictory evidence**: Mark NEEDS-REVIEW. Document both results. Escalate to claude-code-guide.
 
-### Insufficient Test Data
-- **Cause**: No active team/session to verify against (e.g., can't check inbox files if no team exists)
-- **Action**: Mark as NEEDS-REVIEW. Document what test was attempted and why inconclusive. Proceed with caution.
-
-### Contradictory Evidence
-- **Cause**: Multiple tests for same claim produce conflicting results
-- **Action**: Mark as NEEDS-REVIEW. Document both results. Escalate to claude-code-guide for resolution.
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
 
-### DO NOT: Skip Verification for "Obvious" Claims
-Every CC-native behavioral claim must be verified. The SendMessage "ephemeral" error was an "obvious" assumption that turned out to be wrong. Cost: 4 files re-modified.
-
-### DO NOT: Verify Only File Claims
-PERSISTENCE claims (e.g., "survives compaction") are the highest-value verification targets. Don't skip them because they're harder to test.
-
-### DO NOT: Write FAIL Claims to Ref Cache
-Failed claims must be corrected or removed. Never write unverified or disproved information to the authoritative ref cache.
-
-### DO NOT: Treat NEEDS-REVIEW as PASS
-Unverifiable claims should be explicitly flagged in any downstream output. They are not confirmed.
+- **DO NOT skip "obvious" claims**: Every CC-native claim must be verified. The SendMessage "ephemeral" assumption cost 4 re-modified files.
+- **DO NOT skip PERSISTENCE claims**: Highest-value targets. Don't skip because they're harder to test.
+- **DO NOT write FAIL claims to ref cache**: Failed claims must be corrected or removed — never applied as-is.
+- **DO NOT treat NEEDS-REVIEW as PASS**: Unverifiable claims must be flagged explicitly in all downstream output.
 
 ## Transitions
 
 ### Receives From
-| Source Skill | Data Expected | Format |
-|-------------|---------------|--------|
+| Source | Data Expected | Format |
+|---|---|---|
 | claude-code-guide (agent) | CC-native investigation findings | Structured text with claims |
-| research-codebase | CC-native patterns discovered in codebase | Pattern inventory with file:line refs |
+| research-codebase | CC-native patterns in codebase | Pattern inventory with file:line refs |
 | research-external | Community-reported CC behaviors | Source-attributed claims |
-| (User invocation) | Specific claims to verify | $ARGUMENTS text |
+| (User invocation) | Specific claims to verify | `$ARGUMENTS` text |
 
 ### Sends To
-| Target Skill | Data Produced | Trigger Condition |
-|-------------|---------------|-------------------|
-| (Lead context) | Verification verdict | Always — Lead decides next action |
-| ref cache update (execution-infra) | Verified claims for ref cache | On ALL PASS or PASS+NEEDS-REVIEW |
-| claude-code-guide (agent) | Failed claims for re-investigation | On FAIL — deeper investigation needed |
+| Target | Data Produced | Trigger Condition |
+|---|---|---|
+| Lead context | Verification verdict | Always — Lead decides next action |
+| execution-infra (ref cache update) | Verified claims | On ALL PASS or PASS+NEEDS-REVIEW |
+| claude-code-guide (agent) | Failed claims for re-investigation | On FAIL |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
-|-------------|----------|-------------|
+|---|---|---|
 | Claim FAIL | claude-code-guide | Failed claim + contradicting evidence |
 | Insufficient data | (Self — flag) | NEEDS-REVIEW with test details |
 | Contradictory evidence | claude-code-guide | Both evidence sets |
+
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
 - Every claim has a clear PASS / FAIL / NEEDS-REVIEW verdict

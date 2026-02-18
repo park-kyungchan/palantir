@@ -23,9 +23,9 @@
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-### Environment: Claude Code CLI (2026-02-18)
-- **Claude Code CLI (in-process)**: Agent Teams in-process mode. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
-- teammateMode: in-process (settings.json)
+### Environment: Claude Code CLI (2026-02-19 verified)
+- **Claude Code CLI (tmux)**: Agent Teams tmux mode. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
+- teammateMode: tmux (settings.json) — verified 2026-02-19 via actual spawn test
 
 ### MCP Server Config [RESOLVED 2026-02-18]
 - Root cause: CC reads MCP from `.claude.json`, not `settings.json`. Fix applied, 5/5 connected, in-process 4/4 PASS.
@@ -143,8 +143,8 @@ COMPLEX tier (P0→P8). Freewheelin (MathFlat) 정수론 문제은행 포트폴�
 
 ## Session History
 
-Branch: `main`. Latest commit: 66e0cae.
-- 66e0cae: 20 web design template skills + orchestrate-* GAP fixes + CLAUDE.md §2.0 + stale ref fix
+Branch: `main`. Latest commit: c892d93.
+- c892d93: PR #62 — 20 web design template skills + stale ref fix + MEMORY.md archive
 - b3cecb2: D11-D17 design decision patches across 48 INFRA skills + cleanup, PR #61
 - 583de23: ECC integration + evaluation-criteria skill + CLAUDE.md §5 enhancement, PR #60
 - da232ba: Health repair — CC runtime verified, 57 files, PR #59

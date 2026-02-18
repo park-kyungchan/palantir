@@ -28,100 +28,60 @@ disable-model-invocation: true
 
 ### Tier Classification for Cascade
 Lead determines cascade depth based on execution-impact report:
-- **TRIVIAL indicators**: 1-2 DIRECT dependents, all in the same directory, simple reference pattern (e.g., filename mention in description). Single implementer, expect convergence in 1 iteration.
-- **STANDARD indicators**: 3-6 DIRECT dependents across 1-2 directories, mixed reference types (filename + function name). 1-2 implementers per iteration, expect convergence in 1-2 iterations.
-- **COMPLEX indicators**: 7+ DIRECT dependents across 3+ directories, deep reference chains, high-hotspot files affected. 2 implementers per iteration, may reach max 3 iterations.
+- **TRIVIAL**: 1-2 DIRECT dependents, same directory, simple reference pattern.
+- **STANDARD**: 3-6 DIRECT dependents across 1-2 directories, mixed reference types.
+- **COMPLEX**: 7+ DIRECT dependents across 3+ directories, deep reference chains, high-hotspot files.
 
 ### When to Skip Cascade
 Cascade can be skipped (set `status: skipped`) when:
 - execution-impact reports `cascade_recommended: false`
 - All dependents are TRANSITIVE-only (no DIRECT dependents)
-- All DIRECT dependents are already in the current pipeline's change set (being handled by execution-code/infra)
-- execution-impact reports `status: skipped` (no analysis was performed)
+- All DIRECT dependents are already in the current pipeline's change set
+- execution-impact reports `status: skipped` (no analysis performed)
 
 ### Implementer Type Selection
-Critical decision: which implementer type for each dependent file:
-- **implementer** (`subagent_type: implementer`): For application source files (Python, TypeScript, etc.). Has Bash for testing.
-- **infra-implementer** (`subagent_type: infra-implementer`): For `.claude/` directory files (skills, agents, settings, hooks). Has Edit/Write but NO Bash.
-- **Decision rule**: Check file path prefix. If path starts with `.claude/` → infra-implementer. Otherwise → implementer.
-- **Mixed cascade**: When dependents span both source and .claude/ files, spawn BOTH types in parallel (each owns its domain).
+Critical routing decision based on file path:
+- **implementer** (`subagent_type: implementer`): Application source files (Python, TypeScript, etc.). Has Bash for testing.
+- **infra-implementer** (`subagent_type: infra-implementer`): `.claude/` directory files. Has Edit/Write only — NO Bash.
+- **Decision rule**: Path starts with `.claude/` → infra-implementer. Otherwise → implementer.
+- **Mixed cascade**: When dependents span both domains, spawn BOTH types in parallel (each owns its domain).
 
 ### Convergence vs Max-Iteration Tradeoff
-- **Aggressive convergence** (default): Run convergence check after every iteration. Stop as soon as no new impacts detected. Minimizes unnecessary file touches.
-- **Conservative convergence**: Run all 3 iterations regardless, accumulating changes. Use when: high-hotspot files are affected, or execution-impact confidence was `low`.
-- **Early termination**: If iteration 1 produces 0 new impacts AND all implementers reported `status: complete`, skip remaining iterations entirely. This is the common case for well-structured codebases.
+- **Aggressive** (default): Check after every iteration, stop at first empty impact set. For well-structured codebases.
+- **Conservative**: Run all 3 iterations. Use when high-hotspot files affected or execution-impact confidence `low`.
+- **Early termination**: Iteration 1 → 0 impacts AND all implementers complete → skip remaining iterations.
+- For convergence check details: read `resources/methodology.md`
 
 ### Cascade Mode Activation
-When cascade begins, Lead enters "cascade mode":
-- SRC IMPACT ALERTs from cascade-spawned implementers are IGNORED (prevents recursive loop)
-- Lead tracks state internally (iteration_count, all_updated_files, etc.)
-- Convergence checking is done by analyst agent with CC Grep, not by hooks
-- Cascade mode exits when: convergence reached OR max iterations hit OR all implementers failed
+Lead enters "cascade mode" on start: SRC IMPACT ALERTs from cascade implementers are IGNORED (prevents recursive loop). Lead tracks state: `iteration_count`, `all_updated_files`, `original_impact_files`. Convergence delegated to analyst via CC Grep. Exits when: convergence OR max iterations OR all implementers failed.
 
 ## Methodology
 
 ### 1. Read Impact Report
 Load execution-impact L1 and L2 output:
-- Extract `impacts[]` array with changed files and their dependents
-- Prioritize DIRECT dependents over TRANSITIVE for update ordering
-- Record all dependent file paths as initial update targets
-- Initialize state tracking: `iteration_count = 0`, `all_updated_files = {}`, `original_impact_files = set(impacts[].dependents[].file)`
+- Extract `impacts[]` array — changed files and their dependents
+- Prioritize DIRECT dependents (hop_count=1) over TRANSITIVE for update ordering
+- Initialize state: `iteration_count = 0`, `all_updated_files = {}`, `original_impact_files = set(impacts[].dependents[].file)`
 
 ### 2. Spawn Implementers for Affected Files
 For each iteration (max 3):
 - Group dependent files by proximity (max 2 implementer groups)
 - Select agent type: `implementer` for source files, `infra-implementer` for `.claude/` files
-
-Construct each delegation prompt with:
-- **Context (D11 — cognitive focus first)**:
-  - INCLUDE: Root cause summary — which file changed and what was modified (e.g., "renamed function X to Y in `src/auth.ts`"). Evidence line from execution-impact L2: exact grep match `{dependent_file:line_number:matching_content}`. For `.claude/` files: relevant cc-reference field specifications.
-  - EXCLUDE: TRANSITIVE dependents (cascade updates DIRECT only). Full cascade iteration history. Full pipeline state beyond this iteration's dependent file list.
-  - Budget: Context field ≤ 30% of implementer effective context.
-- **Task**: "Update references in `<dependent_file>` to match the change in `<root_cause_file>`. Look for pattern `<reference_pattern>` and update to reflect `<new_value>`. After updating, grep the file to verify no stale references to the old pattern remain."
-- **Constraints**: Scope limited to assigned dependent files only — do NOT modify root cause file or other dependents. implementer has Bash (can test); infra-implementer has Edit/Write only (no Bash). maxTurns: 30.
-- **Expected Output**: Report as L1 YAML: `files_changed` (array), `status` (complete|failed), `verification` (grep confirms no stale references). L2: before/after for each updated reference.
-- **Delivery**: Upon completion, send summary to Lead via SendMessage: status (PASS/FAIL), files changed, grep verification result.
-
-#### Step 2 Tier-Specific DPS Variations
-
-**TRIVIAL**: Single implementer for 1-2 dependent files. Include full file content in Context (small files). Expect convergence in 1 iteration. maxTurns: 15.
-
-**STANDARD**: 1-2 implementers per iteration. Include relevant file sections in Context. Group related dependents to same implementer. maxTurns: 25.
-
-**COMPLEX**: 2 implementers per iteration (max). Include architecture context for cross-module references. May require all 3 iterations. maxTurns: 30.
+- DPS context: INCLUDE root cause summary + evidence line. EXCLUDE TRANSITIVE dependents, full pipeline state.
+- Each implementer verifies no stale references remain after updating (grep check)
+- For full DPS template and tier-specific variations: read `resources/methodology.md`
 
 ### 3. Check Convergence After Updates
 After all implementers in an iteration complete:
-- Collect files changed by implementers this iteration
-- Spawn an **analyst** agent (`subagent_type: analyst`) to perform the convergence check
-
-Analyst delegation prompt (DPS structure):
-- **Context**: Provide `iteration_changed_files` (files modified this iteration), `all_updated_files` (cumulative set across iterations), and `original_impact_files` (initial impact set from execution-impact).
-- **Task**: For each file in `iteration_changed_files`, extract basename without extension. Use the CC `Grep` tool with that basename as pattern, scoped to `.claude/` directory, glob `*.{md,json,sh}`. Exclude `agent-memory/` from results. For each match, subtract: the file itself, all files in `all_updated_files`, and all files in `original_impact_files`. Report any remaining dependents as new impacts.
-- **Constraints**: Read-only analysis (Profile-B). No Bash. Use CC Grep tool only. Do NOT modify any files.
-- **Expected Output**: Return `new_impacts` as a list of `{file, dependents[]}` pairs. Empty list = converged.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
-
-```
-# Analyst convergence check logic:
-# For each file in iteration_changed_files:
-#   basename = strip_extension(basename(file))
-#   dependents = CC Grep(pattern=basename, path=".claude/", glob="*.{md,json,sh}")
-#       excluding agent-memory/ results
-#   dependents = dependents - {file}                    # Remove self
-#   dependents = dependents - all_updated_files         # Remove already handled
-#   dependents = dependents - original_impact_files     # Remove already addressed
-#   if dependents is not empty:
-#       new_impacts.append({file, dependents})
-# return new_impacts  # empty = converged
-```
-
-- If `new_impacts` is empty: **CONVERGED** — exit loop
-- If `new_impacts` is non-empty AND `iteration_count < 3`: proceed to next iteration
-- If `iteration_count >= 3`: **MAX ITERATIONS** — exit loop with partial status
+- Spawn an **analyst** (`subagent_type: analyst`) to perform convergence check via CC Grep
+- Analyst checks each changed file's basename against `.claude/` directory (glob `*.{md,json,sh}`)
+- Subtract: self, `all_updated_files`, `original_impact_files` → remaining = new impacts
+- If `new_impacts` empty: **CONVERGED** — exit loop
+- If non-empty AND `iteration_count < 3`: proceed to next iteration; if `>= 3`: MAX ITERATIONS → exit partial
+- For analyst DPS template and algorithm: read `resources/methodology.md`
 
 ### 4. Handle Iteration State
-State persisted across iterations (in Lead's conversation context):
+State persisted in Lead's context across iterations:
 
 | State | Type | Purpose |
 |-------|------|---------|
@@ -131,117 +91,46 @@ State persisted across iterations (in Lead's conversation context):
 | `iteration_log` | array | Build L2 output |
 | `files_skipped` | set of paths | Failed updates |
 
-Per-iteration log entry:
-```yaml
-iteration: 1
-changed_files:
-  - path: ""
-    implementer: ""
-    status: complete|failed
-new_impacts_detected: 0
-new_impact_files: []
-```
+> For per-iteration log entry YAML format: read `resources/methodology.md`
 
 ### 5. Report Cascade Results
-Generate L1 YAML and L2 markdown:
 - Set `status`: `converged` (empty convergence check), `partial` (max iterations or failures), `skipped` (no DIRECT dependents)
 - Set `convergence`: `true` if converged, `false` if max iterations reached
-- Include `warnings` array for any non-convergence details or skipped files
-- L2 includes per-iteration narrative: what was updated, by whom, new impacts found
-
-## Cascade Mode: Hook Suppression
-During active cascade, Lead operates in "cascade mode":
-- SubagentStop hooks still fire for cascade-spawned implementers
-- Lead **ignores** SRC IMPACT ALERT from these hooks (prevents recursive re-entry into execution-impact)
-- Convergence is delegated to analyst using CC Grep, not via hook-driven analysis
-- This prevents infinite loop: cascade -> hook alert -> execution-impact -> cascade
+- Include `warnings` array for non-convergence details or skipped files
+- L2: per-iteration narrative — what was updated, by whom, new impacts found
 
 ## Error Handling
-
-### Implementer Failure
-- If implementer fails to update a file: retry once with fresh implementer
-- If retry fails: add file to `files_skipped`, continue with remaining
-- Never block cascade on a single file failure
-
-### Circular Dependency
-- If same file appears in both `changed_files` and `new_impacts` across iterations: break cycle
-- Mark file as updated (add to `all_updated_files`), do not re-process
-- Log warning in L1 `warnings` array
-
-### Non-Convergence
-When max 3 iterations reached without convergence:
-1. Set L1 `status: partial`, `convergence: false`
-2. Add unresolved files to `warnings` array
-3. Pipeline **CONTINUES** to execution-review (never blocks indefinitely)
-4. execution-review receives warnings and applies extra scrutiny
-5. verify-* phase (P7) catches remaining inconsistencies
-6. Delivery (P8) commit message notes "partial cascade convergence"
+- **Implementer Failure**: First failure → retry with fresh implementer. Second → add to `files_skipped`, continue. Never block cascade on one file.
+- **Circular Dependency**: Same file in `changed_files` AND `new_impacts` → add to `all_updated_files`, do not re-process, log warning.
+- **Non-Convergence**: Max 3 iterations → set `status: partial`, `convergence: false`. Pipeline CONTINUES to execution-review. P7 verify catches remaining issues.
 
 ## Failure Handling
 
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error, implementer spawn timeout | L0 Retry | Re-invoke same implementer with same DPS |
-| Implementer output incomplete or stale references remain | L1 Nudge | SendMessage with corrected reference pattern or updated scope |
-| Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS and root cause context |
-| Cascade scope conflict or circular dependency blocks iteration | L3 Restructure | Reorder dependent file processing, break cycle, reassign ownership |
-| All implementers failed in iteration after L2, or 3+ iterations non-convergent | L4 Escalate | AskUserQuestion with situation summary + options |
+| Incomplete output or stale references remain | L1 Nudge | SendMessage with corrected pattern or updated scope |
+| Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS |
+| Cascade scope conflict or circular dependency blocks | L3 Restructure | Reorder processing, break cycle, reassign ownership |
+| All implementers failed after L2, or 3+ non-convergent | L4 Escalate | AskUserQuestion with situation summary + options |
 
-### Impact Report Missing or Empty
-- **Cause**: execution-impact did not produce an impact report, or report contains no dependents
-- **Action**: Set `status: skipped` in L1. Route to execution-review with empty cascade results. Do not spawn any implementers.
-- **Never proceed**: with cascade when there is no impact data to act on. "No data" is not the same as "no impacts."
-
-### All Implementers Failed in an Iteration
-- **Cause**: Every implementer in an iteration returned failure (file locked, tool error, context exhaustion)
-- **Action**: FAIL the cascade. Set L1 `status: partial`, `convergence: false`. Include failed file list and error details per implementer. Route to execution-review with FAIL status.
-- **Note**: Single-implementer failure is retried once (see Error Handling). ALL-implementer failure is a cascade-level failure.
-
-### Convergence Check Analyst Failed
-- **Cause**: Analyst spawned for convergence checking failed to complete (context exhaustion, tool error)
-- **Action**: Treat as non-convergence. If `iteration_count < 3`: retry convergence check with fresh analyst. If retry also fails: terminate cascade with `status: partial` and route to execution-review.
-- **Never proceed**: to next iteration without a convergence verdict. Skipping convergence checks risks infinite cascade.
-
-### Cascade Triggered But No DIRECT Dependents
-- **Cause**: execution-impact reported `cascade_recommended: true` but all dependents are TRANSITIVE (hop_count > 1)
-- **Action**: Set `status: skipped` with explanation. Route to execution-review. This is a false trigger, not a failure.
-
-### Files Changed Outside Cascade Scope
-- **Cause**: During cascade iteration, files outside the dependent set were modified (implementer scope creep)
-- **Action**: Log unexpected files in `warnings`. Include in convergence check (they may create new impacts). Report scope violations in L2.
+> For verbose failure sub-cases (impact missing, all failed, analyst failed, no DIRECT dependents, scope creep): read `resources/methodology.md`
 
 ## Anti-Patterns
 
-### DO NOT: Process TRANSITIVE Dependents in Cascade
-Cascade updates ONLY DIRECT dependents (hop_count: 1). TRANSITIVE dependents (hop_count: 2) are informational from execution-impact. Updating transitive dependents causes unnecessary file churn and may create new cascading impacts.
-
-### DO NOT: Assign Same File to Multiple Implementers
-Within each iteration, file ownership must be non-overlapping. If two dependent files are in the same module and changes are interdependent, assign them to the SAME implementer. Parallel implementers modifying related files create race conditions.
-
-### DO NOT: Re-Invoke execution-impact After Cascade
-The cascade has its own convergence mechanism (analyst with CC Grep). Re-invoking execution-impact after cascade creates a circular loop: impact → cascade → impact → cascade. The analyst convergence check serves the same purpose.
-
-### DO NOT: Ignore Hook Alerts During Cascade
-While cascade-spawned implementer hook alerts should not trigger execution-impact, the alerts themselves contain useful data. Lead should READ the alerts for monitoring but NOT ACT on them (no re-routing to execution-impact).
-
-### DO NOT: Block Pipeline on Non-Convergence
-Max 3 iterations is a hard limit. If cascade doesn't converge in 3 iterations, the pipeline MUST continue. Non-convergence is reported as warnings to execution-review and verify domain, which apply extra scrutiny. Blocking indefinitely is worse than incomplete cascade.
-
-### DO NOT: Cascade When Root Cause File Is Wrong
-If the implementer reports that the dependent file doesn't actually reference the changed file (false positive from grep), do NOT force the update. Mark the dependent as `status: false_positive` and exclude from further iterations. The grep match may be in comments, strings, or unrelated context.
-
-### DO NOT: Use Background Agents for Cascade Implementers
-Cascade implementers need monitoring between iterations. Background agents (`run_in_background: true`) can't receive mid-task corrections. Always use foreground spawning for cascade work.
-
-## Phase-Aware Execution
-
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+- **DO NOT process TRANSITIVE dependents**: Cascade updates ONLY DIRECT (hop_count=1). Updating transitive causes churn and new cascading impacts.
+- **DO NOT assign same file to multiple implementers**: Within each iteration, file ownership must be non-overlapping. Interdependent files → assign to SAME implementer.
+- **DO NOT re-invoke execution-impact after cascade**: Convergence is handled internally by analyst. Re-invoking creates a circular loop.
+- **DO NOT ignore hook alerts during cascade**: Lead reads alerts for monitoring but does NOT act on them — no re-routing to execution-impact.
+- **DO NOT block pipeline on non-convergence**: Max 3 iterations is a hard limit. Report as warnings and continue. Blocking indefinitely is worse than incomplete cascade.
+- **DO NOT force-update false positives**: If a dependent file doesn't actually reference the changed file, mark `status: false_positive` and exclude from further iterations.
+- **DO NOT use background agents for cascade implementers**: Cascade implementers need monitoring between iterations. Always use foreground spawning.
 
 ## Transitions
+
+> P2+ team mode: 4-channel protocol — Ch1 (PT metadata) + Ch2 (`tasks/{team}/`) + Ch3 (micro-signal to Lead) + Ch4 (P2P).
+> TaskUpdate on completion. One file per implementer (no overlapping edits).
+> Micro-signal format: `.claude/resources/output-micro-signal-format.md` | Phase-aware routing: `.claude/resources/phase-aware-execution.md`
 
 ### Receives From
 | Source Skill | Data Expected | Format |
@@ -264,33 +153,19 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | Circular dependency detected | execution-review (with warnings) | Cycle details, files marked as updated to break cycle |
 | No DIRECT dependents (false cascade trigger) | execution-review (skipped) | `status: skipped`, empty iteration_details |
 
-### State Flow Between Iterations
+### State Flow
 ```
-Iteration 0 (init):
-  → Read impact report
-  → Initialize: iteration_count=0, all_updated_files={}, original_impact_files=set(dependents)
-
-Iteration N (1-3):
-  → Group dependents → Spawn implementers → Collect results
-  → Update: all_updated_files += iteration_changed_files
-  → Spawn analyst convergence check
-  → If new_impacts empty: CONVERGED → exit
-  → If new_impacts non-empty AND N < 3: → Iteration N+1
-  → If N >= 3: MAX_ITERATIONS → exit with partial status
-
-Post-cascade:
-  → Build L1/L2 with all iteration details
-  → Route to execution-review
-  → Exit cascade mode (re-enable SRC hook processing)
+Init: read impact → iteration_count=0, all_updated_files={}, original_impact_files=set(dependents)
+Iter N(1-3): group → spawn implementers → collect → all_updated_files += changed
+  → spawn analyst: new_impacts empty→CONVERGED exit | non-empty AND N<3→Iter N+1 | N>=3→partial exit
+Post: build L1/L2 → route execution-review → exit cascade mode
 ```
 
 ## Quality Gate
-- All DIRECT dependents from execution-impact have been processed (updated or skipped with reason)
+- All DIRECT dependents processed (updated or skipped with reason)
 - Each iteration's implementers reported `status: complete` for assigned files
-- Convergence check ran after every iteration
-- Non-convergent scenarios explicitly documented in warnings
-- No infinite loops (max 3 iterations enforced)
-- File ownership non-overlapping across implementers within each iteration
+- Convergence check ran after every iteration; non-convergent scenarios documented in warnings
+- Max 3 iterations enforced; file ownership non-overlapping across implementers within each iteration
 
 ## Output
 

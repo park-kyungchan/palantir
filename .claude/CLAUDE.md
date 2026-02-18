@@ -39,8 +39,9 @@
 - **Workspace:** `/home/palantir`
 - **Agent Teams:** Enabled (tmux mode)
 - **Lead:** Pipeline Controller — routes skills, spawns teammates/subagents
-- **Agent Profiles:** 6 custom profiles: `analyst`, `researcher`, `implementer`, `infra-implementer`, `delivery-agent`, `pt-manager`
+- **Agent Profiles:** 7 custom profiles: `analyst`, `researcher`, `coordinator` (Sub-Orchestrator), `implementer`, `infra-implementer`, `delivery-agent`, `pt-manager`
 - **Skills:** 45 total — 10 pipeline domains + 5 homeostasis + 2 cross-cutting (`pipeline-resume`, `task-management`)
+- **Resources:** `.claude/resources/` — shared Stage 3 references (phase-aware-execution, dps-construction-guide, failure-escalation-ladder, output-micro-signal-format, transitions-template, quality-gate-checklist). Zero cost until Read.
 - **Project Skills (DO NOT EDIT during INFRA):** 10 `crowd_works` project skills (D0·foundation, D1·drill+production, D2·eval) — these belong to a separate project and are excluded from RSI/homeostasis
 - **Plugin:** `everything-claude-code` (ECC) — plugin + project-level rules at `~/everything-claude-code/.claude/rules/` (common + typescript)
 
@@ -82,24 +83,78 @@ Classified at P0 (Pre-Design). The tier determines which phases are traversed:
 - **TRIVIAL/STANDARD — P0-P1 (PRE-DESIGN + DESIGN)**: Lead uses local subagents (`run_in_background`). No Team infrastructure (no `TeamCreate`/`SendMessage`).
 - **COMPLEX — P0+ (all phases)**: Team infrastructure from pipeline start. `TeamCreate` at P0; `TaskCreate`/`TaskUpdate`/`SendMessage` throughout all phases. Local subagents (those spawned with `team_name` omitted) are PROHIBITED.
 - **All tiers — P2+ (RESEARCH through DELIVERY)**: Team infrastructure ONLY. Local subagents are PROHIBITED.
-- Lead MUST NOT use `TaskOutput` to read full teammate results — use `SendMessage` for result exchange.
+- Lead MUST NOT use `TaskOutput` to read full teammate results. Lead receives Ch3 micro-signals for OBSERVE/ENFORCE; teammates exchange full data via Ch2 files + Ch4 P2P signals.
 - `AskUserQuestion` remains Lead-direct in all tiers (teammates and subagents cannot interact with the user).
 
-## 3. Lead
+## 3. Lead = Orchestration Intelligence
 - Routes via Skill L1 descriptions + Agent L1 tool profiles (both auto-loaded)
 - Spawns teammates/subagents via Task tool (`subagent_type` = agent profile name)
 - Executes Lead-direct skills inline (no spawn needed)
+- **Lead MUST NOT act as a data relay between teammates.** Lead's context window is reserved for orchestration decisions, not for forwarding upstream outputs to downstream DPS.
 
-### Lead Delegation Mode
-4 concurrent modes: OBSERVE (`TaskList`/`TaskGet`), COORDINATE (`SendMessage`/`TaskUpdate`), ENFORCE (DPS quality gates), SYNTHESIZE (merge outputs → phase signals).
+### Lead's 4 Modes (Orchestration Intelligence)
+| Mode | Purpose | Tools | Lead Context Cost |
+|------|---------|-------|-------------------|
+| **OBSERVE** | Who's idle, who's stuck, what's done | `TaskList`/`TaskGet` | Low (status queries) |
+| **COORDINATE** | Break work into tasks, assign, manage dependencies, spawn replacements | `TaskCreate`/`TaskUpdate`/`SendMessage` | Low (task metadata) |
+| **ENFORCE** | Plan approval, quality gates, DPS compliance | Read L1 micro-signals | Low (PASS/FAIL signals) |
+| **SYNTHESIZE** | Collect findings, resolve conflicts, report to user | Merge micro-signals → PT phase_signals | Low (signal aggregation) |
+
 Default: All 4 modes active. When `mode: "delegate"` is set: COORDINATE-primary — teammates self-coordinate via P2P `SendMessage`.
+
+**Anti-Pattern: Data Relay Tax**
+When Lead reads a teammate's full output and re-embeds it into another teammate's DPS, this is DATA RELAY. It consumes Lead context for zero orchestration value. The context consumed by relay cannot be reclaimed and accelerates compaction.
+
+```
+❌ BAD: Lead as relay (context-expensive)
+   Teammate-A → SendMessage(Lead, full_result) → Lead reads 5k tokens
+   → Lead constructs DPS with A's result embedded → spawns Teammate-B
+   = Lead consumed ~10k tokens for relay, 0 for orchestration
+
+✅ GOOD: File-first + micro-signal (context-cheap)
+   Teammate-A → writes tasks/{team}/output.md → SendMessage(Lead, "PASS|ref:output.md")
+   → Lead reads 50 tokens (micro-signal) → spawns Teammate-B with $ARGUMENTS=path
+   → Teammate-B reads tasks/{team}/output.md directly
+   = Lead consumed ~200 tokens, all for orchestration decisions
+```
 
 ### Team Lifecycle
 **Plan-First**: COMPLEX tier requires `/plan` mode (~10k tokens) before `TeamCreate`. A misdirected team wastes 500k+ tokens.
 `TeamCreate → N×TaskCreate → N×Task(spawn) → parallel work → N×SendMessage(report) → Lead SYNTHESIZE → N×shutdown_request → TeamDelete`
-- **EXECUTION loop** (per teammate): `TaskList → claim(TaskUpdate) → work → TaskUpdate(complete) → SendMessage(report) → poll next`
+- **EXECUTION loop** (per teammate): `TaskList → claim(TaskUpdate) → work → TaskUpdate(complete) → SendMessage(Lead, micro-signal) → P2P(consumer, input-ready) → poll next`
 - **Fan-Out** (independent tasks): Simple description in DPS. Lead operates in OBSERVE + SYNTHESIZE modes.
-- **P2P** (dependent tasks): DPS v5 with COMM_PROTOCOL section. Lead operates in COORDINATE + ENFORCE modes.
+- **Pipeline** (dependent tasks): DPS v5 with COMM_PROTOCOL section. Teammates self-coordinate via P2P SendMessage. Lead operates in OBSERVE + ENFORCE modes.
+
+#### Deferred Spawn Pattern (Primary — cross-profile dependent phases)
+Lead spawns N dimension analysts → collects N micro-signals (~50 tokens each) → spawns coordinator with `$ARGUMENTS=[file_path_1, ..., file_path_N]` → coordinator reads files directly → sends 1 micro-signal. Lead context cost: ~550 tokens total (vs ~40k with relay). Coordinator gets full turns budget for actual work (no polling waste).
+
+```
+Lead spawns: A1, A2, A3, A4 (parallel analysts)
+  → Each completes → Ch2 file + Ch3 micro-signal to Lead
+Lead reads 4 micro-signals (200 tokens) → confirms all PASS
+Lead spawns: Coordinator with $ARGUMENTS=[4 file paths]
+  → Light (≤3 files): Coordinator reads directly → consolidates
+  → Heavy (>3 files): Coordinator spawns analyst subagents per file group
+     → Subagents return ≤30K summaries → Coordinator synthesizes
+  → Ch3 micro-signal to Lead
+Lead reads 1 micro-signal (50 tokens) → routes next phase
+```
+
+**Coordinator as Sub-Orchestrator**: Coordinator has `Task(analyst, researcher)` — can spawn subagents to offload heavy file analysis while keeping its own context clean for synthesis decisions. This is NOT nested Teams (which is blocked); it's Teammate→Subagent delegation.
+
+**Why not pre-spawned AWAIT**: Inbox messages are pull-based (read at next API turn boundary, not push). A pre-spawned coordinator waiting for signals wastes turns/context polling an empty inbox. Deferred spawn is strictly more efficient.
+
+#### Self-Claim Pattern (Secondary — same-profile parallel tasks)
+When multiple tasks need the same agent profile (e.g., 5 implementer tasks), spawn fewer teammates than tasks. Teammates self-claim from the shared task list. Use `addBlockedBy` for wave ordering.
+
+```
+Lead creates: Task-1..5 (no blockers) + Task-6 (addBlockedBy: [1,2,3,4,5])
+Lead spawns: 3 implementers (< 5 tasks)
+  → Each claims and completes tasks from pool
+  → When all 5 complete, Task-6 unblocks → a free implementer claims it
+```
+
+**Constraint**: Only works when all tasks require the same agent profile. Cross-profile task dependencies must use Deferred Spawn.
 
 ### Spawn Rules [ALWAYS ACTIVE]
 - **Model**: `model: "sonnet"` for ALL teammates/subagents. Opus is reserved for Lead ONLY.
@@ -136,15 +191,19 @@ Single source of truth for the active pipeline. Exactly 1 PT exists per pipeline
 - **Cost Model**: Solo ≈ 200k tokens, 3 subagents ≈ 440k, 3-agent team ≈ 800k. Each teammate consumes a full context window. Lead target: < 80% context usage.
 
 ### DPS (Delegation Prompt Specification) Principles
-- **Self-Containment**: A spawned instance has zero access to its parent's context. The DPS must embed all information the instance needs. Referencing an external file path does NOT guarantee the instance can read that file.
+- **Self-Containment**: A spawned instance has zero access to its parent's context. The DPS must embed all information the instance needs. Referencing an external file path does NOT guarantee the instance can read that file — but teammates CAN read `tasks/{team}/` files written by other teammates.
 - **Output Cap**: Spawned instance output is limited to 30K characters. For large results, write to a file and send only the file path via `SendMessage`.
 - **File Ownership**: Parallel spawned instances MUST NOT edit the same file. Each file has exclusive ownership by one instance.
+- **Input via File Reference**: When a teammate needs upstream output, Lead passes the file path via `$ARGUMENTS` — NOT the file content. The teammate reads the file directly. This is the primary mechanism for avoiding Lead data relay.
 
 ### DPS v5 Template
 `WARNING → OBJECTIVE → CONTEXT → PLAN → MCP_DIRECTIVES → COMM_PROTOCOL → CRITERIA → OUTPUT → CONSTRAINTS`
 - WARNING: ToolSearch-first for MCP, NO_FALLBACK rule
 - MCP_DIRECTIVES: WHEN (trigger condition), WHY (rationale), WHAT (tools + queries)
-- COMM_PROTOCOL: P2P `SendMessage` targets for producer→consumer handoffs
+- COMM_PROTOCOL: **[MANDATORY for dependent tasks]** P2P handoff protocol. Specifies:
+  - `NOTIFY`: List of teammate names to SendMessage upon completion
+  - `SIGNAL_FORMAT`: `"READY|path:tasks/{team}/{file}|fields:{list}"`
+  - `AWAIT`: (Optional) List of teammate names whose input-ready signal to wait for before starting work
 
 ### Atomic Commit Pattern
 Each task = one atomic commit. Pre-commit hooks serve as quality backpressure: subagent attempts commit → hook fails → subagent self-corrects → subagent retries.
@@ -154,10 +213,32 @@ Each task = one atomic commit. Pre-commit hooks serve as quality backpressure: s
 
 ### Teammate P2P Self-Coordination
 Key differentiator from subagents: teammates can `SendMessage` to each other directly.
-- **Producer→Consumer**: API teammate finishes type definitions → messages UI teammate directly. No Lead round-trip required.
+- **Producer→Consumer**: Producer writes output to `tasks/{team}/` → sends P2P signal to consumer with file path. Consumer reads the file directly. No Lead round-trip.
 - **Peer requests**: Test teammate asks API teammate to spin up dev server. This is self-coordination.
-- **Lead role**: OBSERVE (`TaskList`), ENFORCE (quality gates). Lead is NOT a message relay station.
+- **Lead role**: OBSERVE (`TaskList`), ENFORCE (quality gates). **Lead is NOT a message relay station.** Lead receives micro-signals for status tracking, not full data for forwarding.
 - **File conflicts**: CC-native filelock handles concurrent file access. No P2P direct messages needed for file access coordination.
+
+#### P2P Handoff Protocol
+```
+Producer Teammate                          Consumer Teammate
+     │                                          │
+     ├─ work completes                           │
+     ├─ write output: tasks/{team}/output.md     │
+     ├─ SendMessage(Lead): micro-signal          │
+     │   "PASS|ref:tasks/{team}/output.md"       │
+     ├─ SendMessage(Consumer): input-ready       │
+     │   "READY|path:tasks/{team}/output.md"     │
+     │                                      ┌────┤
+     │                                      │ reads inbox
+     │                                      │ reads tasks/{team}/output.md
+     │                                      │ proceeds with work
+     │                                      └────┤
+     │                                           ├─ write output
+     │                                           ├─ SendMessage(Lead): micro-signal
+```
+- Lead sees: 2 micro-signals (~100 tokens total)
+- Lead decides: OBSERVE (track), ENFORCE (gate), SYNTHESIZE (aggregate)
+- Lead does NOT: read output.md, reconstruct it, embed it in DPS
 
 ### Context Distribution Protocol [D11]
 
@@ -195,7 +276,7 @@ For every DPS Context field, Lead applies this checklist:
 **Tier-Specific Distribution**:
 - **TRIVIAL**: Lead-direct execution, no distribution needed.
 - **STANDARD**: Single teammate gets a focused slice. Exclude parallel concerns.
-- **COMPLEX**: Each teammate gets a role-scoped view. Cross-cutting context flows through Lead, not peer-to-peer.
+- **COMPLEX**: Each teammate gets a role-scoped view via file references. Cross-cutting data flows through `tasks/{team}/` files and P2P signals — NOT through Lead's context. Lead passes file paths in DPS `$ARGUMENTS`, never file contents.
 
 ### Re-planning Escalation Ladder [D12]
 
@@ -286,15 +367,16 @@ Before invoking a loopable skill:
 
 **Compaction Safety**: Iteration count lives in PT metadata (disk-persisted JSON). It survives compaction, agent termination, and session restart. Lead MUST NEVER rely on in-context memory for iteration state.
 
-### Three-Channel Handoff Protocol [D17]
+### Four-Channel Handoff Protocol [D17]
 
-All skill outputs use 3 channels. No exceptions.
+All skill outputs use 4 channels. Channels 1-3 are mandatory. Channel 4 is mandatory when COMM_PROTOCOL specifies NOTIFY targets.
 
 ```
 Skill completes →
   Channel 1: PT metadata    ← compact signal (phase_signals)
   Channel 2: tasks/{team}/  ← full output file
-  Channel 3: SendMessage    ← micro-signal to Lead
+  Channel 3: SendMessage    ← micro-signal to Lead (status only)
+  Channel 4: SendMessage    ← P2P input-ready signal to consumer teammate(s)
 ```
 
 #### Channel 1: PT Metadata Signal
@@ -308,7 +390,7 @@ Skill completes →
 - **Location**: `~/.claude/tasks/{team}/{phase}-{skill}.md`
 - **Format**: L1 YAML header + L2 markdown body
 - **Size**: Unlimited (disk file)
-- **Purpose**: Detailed results for downstream skills. Passed via DPS `$ARGUMENTS` as a file path.
+- **Purpose**: Detailed results for downstream skills. Consumer teammate reads this file directly after receiving Ch4 P2P signal.
 - **Naming**: `{phase}-{skill}.md` (e.g., `p0-brainstorm.md`, `p2-codebase.md`, `p2-coordinator-index.md`)
 - **File Structure**:
   ```markdown
@@ -324,22 +406,34 @@ Skill completes →
   ...
   ```
 
-#### Channel 3: SendMessage Micro-Signal
+#### Channel 3: SendMessage Micro-Signal (→ Lead)
 - **Recipient**: Lead
 - **Format**: `"{STATUS}|{key}:{value}|ref:tasks/{team}/{filename}"`
 - **Size**: Single message, ≤ 500 characters
-- **Purpose**: Notify Lead of completion and point to the full output file. Auto-delivered to Lead's inbox.
+- **Purpose**: Notify Lead of completion status. Lead uses this for OBSERVE/ENFORCE/SYNTHESIZE — NOT for reading full data.
 - **Example**: `"PASS|reqs:6|ref:tasks/feat/p0-brainstorm.md"`
+- **Lead action**: Update PT phase_signals, check quality gates, route next phase. Lead does NOT read the Ch2 file unless ENFORCE requires it.
+
+#### Channel 4: P2P Input-Ready Signal (→ Consumer Teammates)
+- **Recipient**: Consumer teammate(s) listed in COMM_PROTOCOL NOTIFY
+- **Format**: `"READY|path:tasks/{team}/{filename}|fields:{available_data}"`
+- **Size**: Single message, ≤ 500 characters
+- **Purpose**: Direct notification to downstream teammate that their input data is ready. Consumer reads Ch2 file directly — no Lead relay.
+- **Example**: `"READY|path:tasks/feat/p2-codebase.md|fields:findings,file_refs,patterns"`
+- **When omitted**: Fan-out tasks with no downstream dependencies (Lead spawns the next phase independently).
 
 **Channel Usage by Consumer**:
 
 | Consumer | Reads Channel | When |
 |----------|--------------|------|
-| Lead (routing) | Ch3 SendMessage → Ch1 PT signal | Every skill completion |
-| Lead (context review) | Ch2 full output file | When routing needs additional detail |
-| Downstream skill (via DPS) | Ch2 full output file | Lead passes path in DPS Context |
+| Lead (routing) | Ch3 micro-signal → Ch1 PT signal | Every skill completion |
+| Lead (quality gate) | Ch2 full output file | ONLY when ENFORCE mode requires data verification |
+| Downstream skill (via P2P) | Ch4 P2P signal → Ch2 full output file | Consumer reads file directly after P2P notification |
+| Downstream skill (via DPS) | Ch2 full output file | Lead passes path in DPS `$ARGUMENTS` (for initial spawns with no prior P2P) |
 | Compaction recovery | Ch1 PT signal | After auto-compact, Lead calls `TaskGet(PT)` |
 | Human (debug/audit) | Ch2 full output file | `ls ~/.claude/tasks/{team}/` |
+
+**Lead Context Savings**: With 4 channels, Lead's context accumulates only Ch3 micro-signals (~50-100 tokens each). In a 9-phase COMPLEX pipeline with 40+ skill invocations, this saves ~80% of Lead's context budget compared to the old Three-Channel relay pattern.
 
 **Migration**: All skills that reference `/tmp/pipeline/` must migrate to `tasks/{team}/`. The `manage-skill` audit (D17 compliance check) flags non-compliant skills.
 

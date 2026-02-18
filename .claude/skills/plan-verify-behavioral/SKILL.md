@@ -31,111 +31,38 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the test stra
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
 - **Delivery**: Agent writes result to `tasks/{team}/p4-pv-behavioral.md`, sends micro-signal: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md`.
 
+→ See `.claude/resources/phase-aware-execution.md` for team spawn pattern detail.
+
 ## Decision Points
 
 ### Coverage Threshold Interpretation
 Weighted test coverage determines verdict routing.
-- **Weighted >= 90% AND rollback >= 90%**: PASS. Route to plan-verify-coordinator.
-- **Weighted 75-89% with untested items LOW-risk only**: CONDITIONAL_PASS. Route with risk annotation.
+- **Weighted ≥ 90% AND rollback ≥ 90%**: PASS. Route to plan-verify-coordinator.
+- **Weighted 75–89% with untested items LOW-risk only**: CONDITIONAL_PASS. Route with risk annotation.
 - **Weighted < 75% or any HIGH-risk untested**: FAIL. Route to plan-behavioral for fix.
 - **Default**: If any HIGH-risk change has neither test NOR rollback, always FAIL regardless of aggregate coverage.
 
 ### Prediction Set Scale
 Prediction count determines spawn parameters.
 - **< 10 predictions**: STANDARD analyst (maxTurns:20). Full prediction-by-prediction check.
-- **10-30 predictions**: COMPLEX analyst (maxTurns:30). Prioritize HIGH-risk predictions first, then MEDIUM.
+- **10–30 predictions**: COMPLEX analyst (maxTurns:30). Prioritize HIGH-risk predictions first, then MEDIUM.
 - **> 30 predictions**: COMPLEX analyst (maxTurns:30). Cover all HIGH-risk first, sample MEDIUM/LOW. Flag PARTIAL if < 100% verified.
 
 ## Methodology
 
-### Analyst Delegation DPS
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  - INCLUDE: plan-behavioral L1 test strategy (tests[], rollbacks[], risk classifications); research-coordinator audit-behavioral L3 behavior predictions (predictions[], change types, risk levels); file paths within this agent's ownership boundary
-  - EXCLUDE: other verify dimension results (static/relational/impact); historical rationale for plan-behavioral decisions; full pipeline state beyond P3-P4; rejected test strategy alternatives
-  - Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Cross-reference test inventory against prediction inventory. Verify assertion type match, scope match, and rollback trigger completeness for all HIGH-risk changes. Compute weighted coverage using risk weights HIGH=3, MEDIUM=2, LOW=1."
-- **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed predictions.
-- **Expected Output**: L1 YAML: test_coverage_percent, weighted_coverage_percent, rollback_coverage_percent, verdict, findings[]. L2: test/rollback coverage matrices.
-- **Delivery**: SendMessage to Lead: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md`
+Risk weights: **HIGH=3, MEDIUM=2, LOW=1**
 
-#### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. Verify each predicted change has a test entry inline. No rollback check needed.
-**STANDARD**: Single analyst, maxTurns:20. Full test + rollback coverage matrices.
-**COMPLEX**: Single analyst, maxTurns:30. Full matrices + scope mismatch analysis + over-testing observation.
+Steps: (1) Build test inventory from plan-behavioral. (2) Build prediction inventory from audit-behavioral L3. (3) Cross-reference test coverage with assertion-type and scope matching. (4) Verify rollback trigger completeness for all HIGH-risk changes. (5) Report verdict with threshold comparison.
 
-### 1. Read Plan-Behavioral Test Strategy
-Load plan-behavioral output to extract:
-- Test cases: each test with its target behavior, assertion type, and scope
-- Rollback triggers: conditions under which changes should be reverted
-- Risk classifications: which behavior changes are tagged HIGH/MEDIUM/LOW risk
-- Test coverage claims: what the plan says is tested
+→ See `resources/methodology.md` for full analyst delegation DPS (INCLUDE/EXCLUDE lists, tier DPS), coverage matrix examples, rollback matrix examples, per-behavior scoring rubric, and edge case handling.
 
-Build a **test inventory**: every planned test case with its target behavior ID.
+→ See `.claude/resources/dps-construction-guide.md` for DPS v5 template (WARNING/OBJECTIVE/CONTEXT/PLAN/MCP_DIRECTIVES/COMM_PROTOCOL/CRITERIA/OUTPUT/CONSTRAINTS).
 
-### 2. Read Audit-Behavioral L3 Predictions
-Load audit-behavioral L3 output from research-coordinator:
-- Predicted behavior changes: each change with affected component, change type, and confidence
-- Behavior change categories: functional, performance, error handling, integration
-- Risk annotations: predicted severity of each behavior change
-
-Build a **prediction inventory**: every predicted behavior change with its ID and risk level.
-
-### 3. Cross-Reference Test Coverage
-For each predicted behavior change, check:
-- Is there at least one test case targeting this change?
-- Does the test assertion match the change type (functional test for functional change, etc.)?
-- Is the test scope appropriate (unit for isolated changes, integration for cross-component)?
-
-Build a test coverage matrix:
-
-| Predicted Change | Risk | Test Case(s) | Assertion Match? | Scope Match? | Status |
-|-----------------|------|-------------|-----------------|-------------|--------|
-| Auth token refresh | HIGH | T-01, T-02 | Yes | Yes (integration) | TESTED |
-| Cache invalidation | HIGH | T-03 | Partial (wrong scope) | No (unit, needs integration) | PARTIAL |
-| Log format change | LOW | -- | -- | -- | UNTESTED |
-
-Test coverage = (TESTED changes) / (total predicted changes) * 100.
-Weighted coverage = sum(tested_risk_weight) / sum(total_risk_weight) * 100, where HIGH=3, MEDIUM=2, LOW=1.
-
-### 4. Verify Rollback Trigger Completeness
-For each HIGH-risk predicted behavior change:
-- Does a rollback trigger exist for this change?
-- Is the trigger condition specific (not just "if test fails" but what failure looks like)?
-- Is the rollback action defined (revert which files, restore which state)?
-
-Build a rollback coverage matrix:
-
-| HIGH-Risk Change | Rollback Trigger? | Trigger Specific? | Action Defined? | Status |
-|-----------------|-------------------|-------------------|-----------------|--------|
-| Auth token refresh | Yes | Yes (401 response) | Yes (revert auth.ts) | COVERED |
-| Cache invalidation | Yes | No (generic "failure") | Partial | GAP |
-| Data migration | No | -- | -- | MISSING |
-
-Rollback coverage = (COVERED triggers) / (total HIGH-risk changes) * 100.
-
-### 5. Report Test Coverage Verdict
-Produce final verdict with evidence:
-
-**PASS criteria**:
-- Weighted test coverage >= 90%
-- All HIGH-risk changes have at least one matching test
-- Rollback coverage >= 90% for HIGH-risk changes
-
-**Conditional PASS criteria**:
-- Weighted test coverage >= 75% with untested items being LOW-risk only
-- Rollback coverage >= 75% with gaps only on changes that have alternative mitigation
-
-**FAIL criteria**:
-- Weighted test coverage < 75%, OR
-- Any HIGH-risk change completely untested, OR
-- Rollback coverage < 75% for HIGH-risk changes, OR
-- Any HIGH-risk change has neither test nor rollback trigger
-
-### Iteration Tracking (D15)
-- Lead manages `metadata.iterations.plan-verify-behavioral: N` in PT before each invocation
-- Iteration 1: strict mode (FAIL → return to plan-behavioral with gap evidence)
-- Iteration 2: relaxed mode (proceed with risk flags, document gaps in phase_signals)
-- Max iterations: 2
+## Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-verify-behavioral: N` in PT before each invocation.
+- Iteration 1: strict mode — FAIL returns to plan-behavioral with gap evidence.
+- Iteration 2: relaxed mode — proceed with risk flags, document gaps in phase_signals.
+- Max iterations: 2. On exceed: proceed with documented gaps.
 
 ## Failure Handling
 
@@ -147,30 +74,7 @@ Produce final verdict with evidence:
 | Prediction set scope changed or behavioral model stale | L3 Restructure | Modify task graph, reassign files |
 | Strategic test coverage ambiguity, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
-### Audit-Behavioral L3 Not Available
-- **Cause**: research-coordinator did not produce audit-behavioral L3 output.
-- **Action**: FAIL with `reason: missing_upstream`. Cannot verify test coverage without behavior predictions.
-- **Route**: Lead for re-routing to research-coordinator.
-
-### Plan-Behavioral Output Incomplete
-- **Cause**: plan-behavioral produced partial test strategy (missing test cases or rollback triggers).
-- **Action**: FAIL with `reason: incomplete_plan`. Report which sections are missing.
-- **Route**: plan-behavioral for completion.
-
-### No Behavior Changes Predicted
-- **Cause**: audit-behavioral predicted zero behavior changes (cosmetic-only change).
-- **Action**: PASS with `tested: 0/0`, `rollbacks: 0`. No behavioral verification needed.
-- **Route**: plan-verify-coordinator with trivial confirmation.
-
-### Test-Prediction Mismatch (Tests Exist for Non-Predicted Changes)
-- **Cause**: plan-behavioral includes tests for behaviors not in the prediction set.
-- **Action**: Flag as informational finding (not a failure). Extra tests are conservative.
-- **Route**: Include in L2 as over-testing observation. Does not affect verdict.
-
-### Analyst Exhausted Turns
-- **Cause**: Large prediction set exceeds analyst budget.
-- **Action**: Report partial coverage with percentage of predictions verified. Set `status: PARTIAL`.
-- **Route**: plan-verify-coordinator with partial flag and unverified prediction list.
+→ See `.claude/resources/failure-escalation-ladder.md` for full L0–L4 escalation protocol.
 
 ## Anti-Patterns
 
@@ -178,7 +82,7 @@ Produce final verdict with evidence:
 P4 verifies PLANS, not code. Check that the test strategy covers predictions. Do not assess test code quality, assertion correctness, or framework usage.
 
 ### DO NOT: Accept Generic Rollback Triggers
-"Rollback if something goes wrong" is not a specific trigger. Each HIGH-risk change needs a trigger condition that describes what failure looks like for THAT specific change.
+"Rollback if something goes wrong" is not a specific trigger. Each HIGH-risk change needs a trigger condition describing what failure looks like for THAT specific change.
 
 ### DO NOT: Ignore Scope Mismatches
 A unit test for an integration-level behavior change is a scope mismatch. Report it as PARTIAL even if a test technically exists.
@@ -197,13 +101,13 @@ Rollback completeness is as important as test coverage. A plan with 100% test co
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| plan-behavioral | Test strategy with rollback triggers | L1 YAML: tests[] with target, assertion, scope. Rollbacks[] with trigger, action |
+| plan-behavioral | Test strategy with rollback triggers | L1 YAML: tests[] with target, assertion, scope; rollbacks[] with trigger, action |
 | research-coordinator | Audit-behavioral L3 behavior predictions | L3: predictions[] with change_type, affected_component, risk, confidence |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| plan-verify-coordinator | Test coverage verdict with evidence | Always (Wave 4 -> Wave 4.5 consolidation) |
+| plan-verify-coordinator | Test coverage verdict with evidence | Always (Wave 4 → Wave 4.5 consolidation) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
@@ -212,6 +116,8 @@ Rollback completeness is as important as test coverage. A plan with 100% test co
 | Incomplete plan-behavioral | plan-behavioral | Missing sections identified |
 | Analyst exhausted | plan-verify-coordinator | Partial coverage + unverified predictions |
 
+→ See `.claude/resources/transitions-template.md` for standard transition format.
+
 ## Quality Gate
 - Every predicted behavior change checked against the test inventory
 - Test coverage calculated with both raw and weighted (risk-proportional) metrics
@@ -219,6 +125,8 @@ Rollback completeness is as important as test coverage. A plan with 100% test co
 - Rollback trigger completeness verified for all HIGH-risk changes
 - Every finding has evidence citing specific prediction IDs and test case IDs
 - Verdict (PASS/FAIL) with explicit threshold comparison for both test and rollback coverage
+
+→ See `.claude/resources/quality-gate-checklist.md` for standard quality gate protocol.
 
 ## Output
 
@@ -244,8 +152,10 @@ signal_format: "{STATUS}|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-beh
 
 ### L2
 - Test coverage matrix: predicted change vs test case mapping
-- Weighted coverage calculation with risk weights
+- Weighted coverage calculation with risk weights (HIGH=3, MEDIUM=2, LOW=1)
 - Rollback coverage matrix for HIGH-risk changes
 - Untested change list with risk levels and evidence
 - Scope mismatch analysis (unit test on integration behavior)
 - Verdict justification with threshold comparisons
+
+→ See `.claude/resources/output-micro-signal-format.md` for micro-signal format spec.

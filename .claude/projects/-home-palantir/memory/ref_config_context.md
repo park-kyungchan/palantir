@@ -162,17 +162,18 @@ Pruning test: "Would removing this cause Claude to make mistakes?" If not, cut i
 
 - Supplements CLAUDE.md (does NOT replace it)
 - All `.md` files auto-discovered recursively
-- Loading order: User-level (`~/.claude/rules/`) then Project-level (`./.claude/rules/`)
+- **Loading sequence**: `~/CLAUDE.md` → `./CLAUDE.md` → `./.claude/CLAUDE.md` → `~/.claude/rules/` → `./.claude/rules/` (rules load AFTER full CLAUDE.md chain)
 - Project rules have higher priority than user rules
 - Same priority as `.claude/CLAUDE.md`
-- Frontmatter field: `paths` (array of glob patterns for conditional loading)
+- **Only native frontmatter field**: `paths` (array of glob patterns for conditional loading)
 - Example: `paths: ["src/api/**/*.ts"]` only loads when working with those files
 - Brace expansion supported: `src/**/*.{ts,tsx}`
 - Symlinks supported (circular links handled gracefully)
 - Rules without `paths` frontmatter are loaded globally (unconditionally)
 - Survives compaction (re-injected automatically)
-- **Known Bug**: User-level rules (`~/.claude/rules/`) ignore `paths` field — always load globally
-- **Known Bug**: Project rules with `paths` may sometimes load globally regardless
+- **[UNVERIFIED — not in official docs]** User-level rules (`~/.claude/rules/`) may ignore `paths` field — needs empirical test
+- **[UNVERIFIED — not in official docs]** Project rules with `paths` may sometimes load globally regardless — needs empirical test
+- **[UNDOCUMENTED]** Agent Teams: official docs do NOT explicitly state whether Teammates load `.claude/rules/`. Confirmed: Teammates load CLAUDE.md. Rules loading by teammates: empirical test required.
 
 ### System Reminders
 

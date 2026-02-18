@@ -18,129 +18,72 @@ disable-model-invocation: false
 # Orchestrate — Behavioral (WHERE)
 
 ## Execution Model
-- **TRIVIAL**: Skip (orchestration simplified for trivial tiers).
-- **STANDARD**: Spawn 1 analyst. Systematic checkpoint identification across execution phases.
-- **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep checkpoint analysis with failure propagation awareness.
+- **TRIVIAL**: Skip — Lead places 1 implicit gate checkpoint at P6→P7 boundary.
+- **STANDARD**: Spawn 1 analyst (maxTurns:15). Domain boundaries only (P5→P6, P6→P7). Omit priority scoring.
+- **COMPLEX**: Spawn 1 analyst (maxTurns:25). Deep checkpoint analysis with priority scoring and failure propagation awareness across all wave boundaries.
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+P2+ Team mode only. See `.claude/resources/phase-aware-execution.md` for coordination protocol.
+Four-Channel output: Ch2 (disk file) + Ch3 (micro-signal → Lead) + Ch4 (P2P → downstream). See `.claude/resources/output-micro-signal-format.md`.
 
 ## Decision Points
 
 ### Checkpoint Type Selection
 When placing a checkpoint at a transition point:
-- **Wave boundary with downstream blockers** (fan-out >= 2): Use gate checkpoint. Blocks until all tasks PASS.
-- **Wave boundary with independent downstream**: Use aggregate checkpoint. Requires N-of-M tasks PASS.
-- **Non-boundary transition** (mid-wave handoff): Use monitor checkpoint. Logs only, does not block.
-- **Domain boundary** (P5->P6, P6->P7): Always gate checkpoint regardless of other factors.
+- **Wave boundary with downstream blockers** (fan-out >= 2): Use **gate** checkpoint. Blocks until all tasks PASS.
+- **Wave boundary with independent downstream**: Use **aggregate** checkpoint. Requires N-of-M tasks PASS.
+- **Non-boundary transition** (mid-wave handoff): Use **monitor** checkpoint. Logs only, does not block.
+- **Domain boundary** (P5→P6, P6→P7): Always **gate** checkpoint regardless of other factors.
 
 ### Checkpoint Density Control
 When checkpoint count exceeds 2 per wave boundary:
-- **If priority scores differ by >= 3**: Keep highest-priority only at that boundary. Merge others into monitor.
-- **If priority scores within 2**: Consolidate into single aggregate checkpoint covering both criteria.
+- **Priority scores differ >= 3**: Keep highest-priority only at that boundary. Merge others into monitor.
+- **Priority scores within 2**: Consolidate into single aggregate checkpoint covering both criteria.
 - **Maximum**: 1 gate + 1 monitor per wave boundary. Consolidate further if exceeded.
 
 ### Failure Escalation Depth
 When defining fail_action per checkpoint:
-- **Gate checkpoint FAIL**: Retry failed task (max 2 retries), then route to Lead for re-planning.
-- **Monitor checkpoint FAIL**: Log warning + continue. Flag in L2 for post-execution review.
-- **Aggregate checkpoint partial FAIL** (< N-of-M): Retry failed subset (max 1 retry), then escalate.
+- **Gate FAIL**: Retry failed task (max 2 retries), then route to Lead for re-planning.
+- **Monitor FAIL**: Log warning + continue. Flag in L2 for post-execution review.
+- **Aggregate partial FAIL** (< N-of-M): Retry failed subset (max 1 retry), then escalate.
 
 ## Methodology
 
+See `resources/methodology.md` for: DPS template details, tier-specific DPS variations, transition categories table, priority scoring formula, checkpoint criteria fields, and wave-checkpoint matrix example.
+
 ### 1. Read Verified Plan
-Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
-- Task list with execution phases and wave assignments
-- Dependency graph showing producer-consumer relationships
-- File change manifest per task
-- Risk assessment findings (if available from plan-verify)
+Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract: task list with wave assignments, dependency graph, file change manifest, risk assessment findings.
 
-For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  INCLUDE:
-    - Verified plan L3 content (task list, wave structure, dependency graph)
-    - Pipeline constraints: max 4 parallel teammates per wave, max 3 iterations per phase
-    - Phase-Aware execution model (P2+ requires SendMessage)
-  EXCLUDE:
-    - Other orchestrate dimension outputs (static, relational, impact)
-    - Historical rationale from plan-verify phases
-    - Full pipeline state beyond this task's scope
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Identify WHERE verification checkpoints should be placed in the execution flow. For each checkpoint: define pass/fail criteria, map to wave boundary, specify what data to check. Focus on critical transitions where failure propagation risk is highest."
-- **Constraints**: Read-only analysis. No modifications. Every checkpoint must have measurable criteria. Map each checkpoint to a specific wave boundary.
-- **Expected Output**: L1 YAML checkpoint schedule. L2 rationale per checkpoint with wave mapping.
-- **Delivery**: Write full result to `tasks/{team}/p5-orch-behavioral.md`. Send micro-signal to Lead via SendMessage: `PASS|checkpoints:{N}|ref:tasks/{team}/p5-orch-behavioral.md`.
-
-#### Step 1 Tier-Specific DPS Variations
-**TRIVIAL**: Skip — Lead places 1 implicit gate checkpoint between P6 execution and P7 verify.
-**STANDARD**: Single DPS to analyst. maxTurns:15. Place checkpoints at domain boundaries only (P5->P6, P6->P7). Omit priority scoring.
-**COMPLEX**: Full DPS as above. maxTurns:25. Deep checkpoint analysis with priority scoring and failure propagation awareness across all wave boundaries.
+Construct analyst DPS per `.claude/resources/dps-construction-guide.md`:
+- **Context**: Include verified plan L3 (task list, wave structure, dependency graph) + pipeline constraints (max 4 parallel per wave, max 3 phase iterations). Exclude other orchestrate dimension outputs and historical plan-verify rationale.
+- **Task**: Identify WHERE verification checkpoints should be placed. For each: define pass/fail criteria, map to wave boundary, specify data to check.
+- **Constraints**: Read-only. Every checkpoint must have measurable criteria. Map each to a specific wave boundary.
+- **Delivery**: Four-Channel. Ch2: `tasks/{team}/p5-orch-behavioral.md`. Ch3: `PASS|checkpoints:{N}|ref:tasks/{team}/p5-orch-behavioral.md`. Ch4 → orchestrate-coordinator: `READY|path:tasks/{team}/p5-orch-behavioral.md|fields:checkpoints,verification_criteria`.
 
 ### 2. Identify Critical Transition Points
-Scan the execution flow for points where verification adds the most value:
-
-#### Transition Categories
-| Category | Description | Example |
-|----------|-------------|---------|
-| Wave boundary | Between parallel execution waves | After Wave 6.1 code completes, before Wave 6.2 cascade |
-| Producer-consumer handoff | Data flows from one task to another | Implementer A outputs module, Implementer B imports it |
-| Domain boundary | Crossing from one pipeline domain to another | P5 orchestration -> P6 execution |
-| Critical path junction | Where multiple dependency chains converge | 3 parallel tasks feed into 1 integration task |
-| Risk mitigation point | After a task flagged as high-risk | After security-sensitive file modifications |
-
-#### Transition Priority Scoring
-For each transition point, score priority (1-5):
-- **Blast radius** (1-5): How many downstream tasks fail if this checkpoint is missed?
-- **Recoverability** (1-5 inverted): How hard is it to recover from undetected failure here?
-- **Frequency** (1-5): How often does this type of transition cause issues historically?
-- **Total**: Sum of 3 scores. Checkpoints with total >= 10 are mandatory.
+Scan the execution flow for wave boundaries, producer-consumer handoffs, domain boundaries, critical path junctions, and risk mitigation points. Score each transition for priority (blast radius + recoverability + frequency). Mandatory if total >= 10.
 
 ### 3. Define Checkpoint Criteria
-For each identified checkpoint, specify:
-
-| Field | Description | Example |
-|-------|-------------|---------|
-| checkpoint_id | Unique identifier | CP-01 |
-| location | Wave boundary or transition | After Wave 6.1, before Wave 6.2 |
-| criteria | Measurable pass/fail conditions | All implementer tasks report PASS |
-| data_checked | Specific artifacts to verify | File change manifest, test results |
-| pass_action | What happens on PASS | Proceed to next wave |
-| fail_action | What happens on FAIL | Retry failed task (max 3), then escalate |
+For each checkpoint: assign `checkpoint_id`, `location`, `criteria` (measurable), `data_checked`, `pass_action`, `fail_action`. See `resources/methodology.md` for full field definitions.
 
 #### Checkpoint Types
-- **Gate checkpoint**: Blocks downstream execution until PASS. Used at wave boundaries.
-- **Monitor checkpoint**: Logs status but does not block. Used for non-critical transitions.
-- **Aggregate checkpoint**: Requires N-of-M tasks to pass. Used for parallel wave completion.
+- **Gate**: Blocks downstream execution until PASS. For wave boundaries.
+- **Monitor**: Logs status but does not block. For non-critical transitions.
+- **Aggregate**: Requires N-of-M tasks to pass. For parallel wave completion.
 
 ### 4. Map Checkpoints to Wave Boundaries
-Align each checkpoint with a specific wave boundary in the execution schedule:
-- Every wave boundary should have at least 1 gate checkpoint
-- Wave boundaries with parallel task completion need aggregate checkpoints
-- Domain boundaries (P5->P6, P6->P7) should have gate checkpoints
-- Non-boundary checkpoints (mid-wave) should be monitor type only
-
-#### Wave-Checkpoint Matrix
-| Wave | Checkpoint | Type | Criteria Summary |
-|------|-----------|------|-----------------|
-| After Wave 5 | CP-01 | Gate | All 4 dimension skills PASS |
-| After Wave 5.5 | CP-02 | Gate | Coordinator produces valid execution plan |
-| After Wave 6.1 | CP-03 | Aggregate | N/N implementers report PASS |
-| After Wave 6.2 | CP-04 | Gate | Impact analysis complete |
+- Every wave boundary: at least 1 gate checkpoint.
+- Parallel task completion waves: aggregate checkpoint.
+- Domain boundaries (P5→P6, P6→P7): gate checkpoint.
+- Non-boundary (mid-wave): monitor type only.
 
 ### 5. Output Checkpoint Schedule
-Produce complete schedule with:
-- Ordered list of checkpoints by execution sequence
-- Wave mapping for each checkpoint
-- Pass/fail criteria with measurable conditions
-- Failure escalation path per checkpoint
-- Summary: total checkpoints, gate count, monitor count, aggregate count
+Ordered list by execution sequence with: wave mapping per checkpoint, measurable pass/fail criteria, failure escalation path per checkpoint, and summary counts (gate / monitor / aggregate).
 
 ## Failure Handling
+
+See `.claude/resources/failure-escalation-ladder.md` for D12 decision rules and failure output format.
 
 | Failure Type | Level | Action |
 |---|---|---|
@@ -150,36 +93,19 @@ Produce complete schedule with:
 | No wave boundaries in plan (cannot infer) | L3 Restructure | Route to plan-verify-coordinator for plan restructuring |
 | 3+ L2 failures or excessive checkpoint conflicts | L4 Escalate | AskUserQuestion with situation + options |
 
-### Verified Plan Data Missing
-- **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-behavioral.md`
-- **Route**: Back to plan-verify-coordinator for re-export
+**Verified Plan Data Missing**: Report `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-behavioral.md`. Route back to plan-verify-coordinator for re-export.
 
-### No Clear Wave Boundaries in Plan
-- **Cause**: Plan lacks explicit wave/phase structure
-- **Action**: Infer wave boundaries from dependency graph. Flag as assumption in L2.
-- **Route**: Continue with inferred boundaries. Orchestrate-coordinator will validate.
+**No Clear Wave Boundaries**: Infer from dependency graph. Flag as assumption in L2. Continue — orchestrate-coordinator will validate.
 
-### Excessive Checkpoints (>2 per wave boundary)
-- **Cause**: Over-analysis creating checkpoint overhead
-- **Action**: Consolidate to 1 gate + 1 monitor per boundary max. Merge redundant criteria.
+**Excessive Checkpoints (>2 per wave boundary)**: Consolidate to 1 gate + 1 monitor per boundary max. Merge redundant criteria.
 
 ## Anti-Patterns
 
-### DO NOT: Create Checkpoints Without Measurable Criteria
-"Check that everything looks good" is not a checkpoint. Every checkpoint must have specific, verifiable conditions (file exists, test passes, count matches).
-
-### DO NOT: Place Checkpoints Mid-Task
-Checkpoints belong at transitions BETWEEN tasks or waves, not during task execution. Mid-task checkpoints interfere with agent autonomy.
-
-### DO NOT: Make Every Checkpoint a Gate
-Gate checkpoints block execution. Overuse creates bottlenecks. Use monitor checkpoints for non-critical transitions.
-
-### DO NOT: Ignore the Failure Escalation Path
-Every checkpoint needs a defined action for FAIL. "Try again" is insufficient -- specify retry count, fallback, and escalation.
-
-### DO NOT: Skip Domain Boundary Checkpoints
-The P5->P6 and P6->P7 transitions are high-risk by nature. Always place gate checkpoints at domain boundaries.
+- **No measurable criteria**: "Check that everything looks good" is not a checkpoint. Every checkpoint must have specific, verifiable conditions (file exists, test passes, count matches).
+- **Mid-task checkpoints**: Checkpoints belong at transitions BETWEEN tasks or waves, not during task execution. Mid-task checkpoints interfere with agent autonomy.
+- **All gates**: Gate checkpoints block execution. Overuse creates bottlenecks. Use monitor for non-critical transitions.
+- **Missing fail_action**: Every checkpoint needs a defined action for FAIL — specify retry count, fallback, and escalation path.
+- **Skip domain boundaries**: The P5→P6 and P6→P7 transitions are high-risk by nature. Always gate at domain boundaries.
 
 ## Transitions
 
@@ -204,7 +130,7 @@ The P5->P6 and P6->P7 transitions are high-risk by nature. Always place gate che
 - Every wave boundary has at least 1 checkpoint
 - Every checkpoint has measurable pass/fail criteria
 - Every checkpoint has a defined failure escalation path
-- Domain boundaries (P5->P6, P6->P7) have gate checkpoints
+- Domain boundaries (P5→P6, P6→P7) have gate checkpoints
 - No mid-task checkpoints
 - Checkpoint count is proportional to plan complexity (not excessive)
 

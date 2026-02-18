@@ -30,11 +30,11 @@ argument-hint: "[focus-area]"
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+Runs outside the linear P0–P8 pipeline (homeostasis domain). Team mode applies when a team is active.
+- **Communication**: Four-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + Ch4 P2P). Homeostasis reports are terminal — no downstream P2P consumers.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+
+> For phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
 ## Decision Points
 
@@ -64,15 +64,13 @@ cc-reference cache exists? (memory/cc-reference/ has 5 files)
 
 ### 1. Research CC Native State
 Read cached reference: `memory/cc-reference/` (5 files: native-fields, context-loading, hook-events, arguments-substitution, skill-disambiguation).
-- If reference exists and is recent: use as ground truth (skip claude-code-guide spawn)
-- If reference outdated or focus-area requires new info: spawn claude-code-guide for delta only
-- Query focus: "What NEW native features exist since last verification date?"
-- Include focus-area from user arguments if provided
-- Update cc-reference files with any new findings
-- Compare against `memory/context-engineering.md` for decision history
+- Cache recent → use as ground truth; skip claude-code-guide spawn.
+- Cache outdated or focus-area requires new info → spawn claude-code-guide for delta only.
+- Include focus-area from `$ARGUMENTS` if provided. Update cache with new findings.
+- Compare against `memory/context-engineering.md` for decision history.
 
 ### 2. Self-Diagnose INFRA
-Scan all `.claude/` files systematically using the diagnostic category checklist. Spawn analyst agents for parallel scanning when the scope is full (no focus-area).
+Scan all `.claude/` files using the diagnostic category checklist below. Spawn analyst agents for parallel scanning when the scope is full.
 
 **Diagnostic Category Checklist:**
 
@@ -89,50 +87,15 @@ Scan all `.claude/` files systematically using the diagnostic category checklist
 | Constraint-implication | CC native constraint has unaddressed design implication in current INFRA | Read ref_*.md constraints → trace implication → verify INFRA compliance | HIGH |
 | Unverified CC claims | ref_*.md behavioral claims lack empirical file:line evidence | Read ref_*.md + classify claims by evidence presence | HIGH |
 
-**Category 9: Constraint-Implication Alignment**
-
-Traces each CC native constraint to its design implications and verifies current INFRA respects them:
-
-| CC Native Constraint | Design Implication | Verification Check |
-|---------------------|-------------------|-------------------|
-| No shared memory between agents | Information must be explicitly communicated; external file refs are phantom dependencies | Verify no skill/agent assumes implicit context sharing. Check all cross-agent data has explicit delivery mechanism (DPS inline, SendMessage, or disk+path). |
-| Agent ≠ skill context | Agent does not see skill L2 body; DPS must fully convey execution instructions | Verify DPS templates include all execution-critical info from skill L2 (Phase-Aware, error handling, output format). |
-| Lead compaction risk | Inter-phase routing state may be lost during auto-compaction | Verify PT metadata captures enough state for phase resumption. Check pipeline-resume can reconstruct from PT alone. |
-| SendMessage = text only | Cannot inject structured data into agent context; summary must be self-contained | Verify micro-signal formats contain enough context for Lead routing decisions without loading full disk output. |
-| Inbox = poll per API turn | No real-time coordination; teammate sees messages only on next turn | Verify no skill assumes synchronous teammate response. Check all coordination is async-compatible. |
-| Subagent 30K char limit | Background agent output truncated beyond 30K chars | Verify agents prioritize critical info first in output. Check large outputs use disk+path pattern. |
-
-For each row: Read the relevant ref_*.md for the constraint, then Grep/Read INFRA files to verify the check. Flag violations as HIGH severity.
-
-**Category 10: Unverified CC-Native Claims in Ref Cache**
-
-Detects behavioral claims in ref_*.md files that were codified without empirical verification:
-
-| Check | Method | What It Detects |
-|-------|--------|-----------------|
-| Behavioral verb scan | Grep ref_*.md for "persist", "survive", "trigger", "inject", "deliver", "auto-", "ephemeral", "transient" | Claims about CC runtime behavior |
-| Evidence presence | For each claim: check for file:line evidence or "Verified:" annotation | Unverified assertions presented as facts |
-| Cross-reference | Compare claim against actual filesystem state | Claims contradicted by current system state |
-
-For each unverified claim found: flag as HIGH severity with the claim text, source file:line, and suggested verification method (Glob/Read test to run via research-cc-verify).
-
-**Origin**: SendMessage "ephemeral" error (2026-02-17). Lead's reasoning-only judgment produced incorrect CC-native claim → propagated to 4 ref files before user caught it. Cost: full correction cycle. Prevention: this category + research-cc-verify Shift-Left gate.
+> For Category 9 constraint-implication detail table and Category 10 unverified-claim detection tables: read `resources/methodology.md`
 
 **Procedure:**
-- For focused scans: run only matching categories
-- For full scans: run all 10 categories
-- Each finding includes: ID, category, severity, file path, current value, expected value
-- Produce categorized finding list sorted by severity (CRITICAL first)
+- For focused scans: run only matching categories.
+- For full scans: run all 10 categories.
+- Each finding includes: ID, category, severity, file path, current value, expected value.
+- Produce categorized finding list sorted by severity (CRITICAL first).
 
-For STANDARD/COMPLEX tiers, construct the delegation prompt:
-- **Context** (D11 priority: cognitive focus > token efficiency):
-  INCLUDE: CC native field reference from cache (ref_*.md files). Diagnostic checklist with 10 categories. All .claude/ file paths within scan scope.
-  EXCLUDE: Agent-memory runtime data, pipeline history, other homeostasis skills' findings. Budget: context ≤30% of analyst context.
-- **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
-- **Constraints**: Read-only analyst agent. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config). maxTurns:20.
-- **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
-- **Delivery**: Write full result to `tasks/{team}/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|findings:{N}|ref:tasks/{team}/homeostasis-self-diagnose.md`.
-  If no team active, fallback to `/tmp/pipeline/homeostasis-self-diagnose.md`.
+> For DPS delegation template (Context INCLUDE/EXCLUDE/Budget, Task, Constraints, Output, Delivery): read `resources/methodology.md`
 
 ## Anti-Patterns
 
@@ -167,6 +130,11 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 | cc-reference cache unavailable AND claude-code-guide fails | (Abort) | `status: blocked`, reason: no ground truth |
 | Analyst maxTurns exhausted | (Partial) | `status: partial`, findings so far with coverage % |
 
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
+
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
+
 ## Failure Handling
 
 ### D12 Escalation Ladder
@@ -178,12 +146,6 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 | Analyst maxTurns exhausted or context polluted | L2 Respawn | Kill → fresh analyst with focused scan scope |
 | cc-reference cache corrupted and claude-code-guide fails | L3 Restructure | Rebuild cache from scratch, re-scope diagnosis |
 | 3+ L2 failures or no ground truth source available | L4 Escalate | AskUserQuestion with situation summary and options |
-
-| Failure Type | Severity | Route To | Blocking? | Resolution |
-|---|---|---|---|---|
-| cc-reference missing + guide fails | CRITICAL | Abort | Yes | No ground truth. Report `status: blocked`. |
-| Analyst maxTurns exhausted | MEDIUM | Partial | No | Report partial findings with coverage %. |
-| 0 issues found | INFO | Complete | N/A | INFRA is healthy. `findings_total: 0`. |
 
 ## Quality Gate
 - CC reference ground truth established (cache or live research)

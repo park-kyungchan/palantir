@@ -81,10 +81,12 @@ flows through **Skills** (methodology definitions) executed by **Agents** (tool 
  ▼
  PLAN (P3)                    PLAN-VERIFY (P4)           ORCHESTRATION (P5)
  ┌─────────────────┐          ┌─────────────────┐        ┌─────────────────┐
- │ decomposition    │──PASS──▶│ correctness  ∥   │──ALL──▶│ decompose       │
- │ interface        │         │ completeness ∥   │ PASS  │ assign          │
- │ strategy         │         │ robustness       │       │ verify          │
- └─────────────────┘          └─────────────────┘        └────────┬────────┘
+ │ static           │──PASS──▶│ static       ∥   │──ALL──▶│ static          │
+ │ behavioral       │         │ behavioral   ∥   │ PASS  │ behavioral      │
+ │ relational       │         │ relational       │       │ relational      │
+ │ impact           │         │ impact           │       │ impact          │
+ └─────────────────┘          │ coordinator      │        │ coordinator     │
+                              └─────────────────┘        └────────┬────────┘
                                                                   │
  ┌─────────────────────────────────────────────────────────────────┘
  │
@@ -174,9 +176,9 @@ Lead = Pure Orchestrator
 | P0 | Pre-Design | brainstorm, validate, feasibility | Lead + local agents |
 | P1 | Design | architecture, interface, risk | Lead + local agents |
 | P2 | Research | codebase, external, audit | Team infrastructure |
-| P3 | Plan | decomposition, interface, strategy | Team infrastructure |
-| P4 | Plan-Verify | correctness, completeness, robustness | Team infrastructure |
-| P5 | Orchestration | decompose, assign, verify | Team infrastructure |
+| P3 | Plan | static, behavioral, relational, impact | Team infrastructure |
+| P4 | Plan-Verify | static, behavioral, relational, impact, coordinator | Team infrastructure |
+| P5 | Orchestration | static, behavioral, relational, impact, coordinator | Team infrastructure |
 | P6 | Execution | code, infra, impact, cascade, review | Team infrastructure |
 | P7 | Verify | structure, content, consistency, quality, cc-feasibility | Team infrastructure |
 | P8 | Delivery | delivery-pipeline | Team infrastructure |
@@ -315,7 +317,7 @@ Six custom agents, each with a unique tool profile and color.
 
 ## 6. Skills
 
-33 skills across 10 domains. Each skill has L1 (routing frontmatter) and L2 (methodology body).
+40 skills across 10 domains. Each skill has L1 (routing frontmatter) and L2 (methodology body).
 
 ### Skill Inventory by Domain
 
@@ -325,9 +327,11 @@ Six custom agents, each with a unique tool profile and color.
  pre-design        │ P0    │ brainstorm, validate, feasibility              │   3
  design            │ P1    │ architecture, interface, risk                  │   3
  research          │ P2    │ codebase, external, audit                     │   3
- plan              │ P3    │ decomposition, interface, strategy             │   3
- plan-verify       │ P4    │ correctness, completeness, robustness          │   3
- orchestration     │ P5    │ decompose, assign, verify                     │   3
+ plan              │ P3    │ static, behavioral, relational, impact    │   4
+ plan-verify       │ P4    │ static, behavioral, relational, impact,   │   5
+                   │       │ coordinator                                │
+ orchestration     │ P5    │ static, behavioral, relational, impact,   │   5
+                   │       │ coordinator                                │
  execution         │ P6    │ code, infra, impact, cascade, review          │   5
  verify            │ P7    │ structure, content, consistency, quality,      │   5
                    │       │ cc-feasibility                                 │
@@ -336,7 +340,7 @@ Six custom agents, each with a unique tool profile and color.
  cross-cutting     │ X-cut │ delivery-pipeline, pipeline-resume,           │   3
                    │       │ task-management                                │
  ──────────────────┼───────┼────────────────────────────────────────────────┼──────
-                   │       │                                        TOTAL: │  33
+                   │       │                                        TOTAL: │  40
 ```
 
 ### Skill Routing Flags
@@ -436,33 +440,37 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt with:
 | 7 | research-codebase | research | P2 | /research-codebase | Yes | analyst |
 | 8 | research-external | research | P2 | /research-external | Yes | researcher |
 | 9 | research-audit | research | P2 | /research-audit | Yes | analyst |
-| 10 | plan-decomposition | plan | P3 | /plan-decomposition | Yes | analyst |
-| 11 | plan-interface | plan | P3 | /plan-interface | Yes | analyst |
-| 12 | plan-strategy | plan | P3 | /plan-strategy | Yes | analyst |
-| 13 | plan-verify-correctness | plan-verify | P4 | /plan-verify-correctness | Yes | analyst |
-| 14 | plan-verify-completeness | plan-verify | P4 | /plan-verify-completeness | Yes | analyst |
-| 15 | plan-verify-robustness | plan-verify | P4 | /plan-verify-robustness | Yes | analyst |
-| 16 | orchestration-decompose | orchestration | P5 | /orchestration-decompose | Yes | Lead-direct |
-| 17 | orchestration-assign | orchestration | P5 | /orchestration-assign | Yes | Lead-direct |
-| 18 | orchestration-verify | orchestration | P5 | /orchestration-verify | Yes | Lead-direct |
-| 19 | execution-code | execution | P6 | /execution-code | Yes | implementer |
-| 20 | execution-infra | execution | P6 | /execution-infra | Yes | infra-implementer |
-| 21 | execution-impact | execution | P6 | No | Yes | analyst |
-| 22 | execution-cascade | execution | P6 | No | Yes | implementer |
-| 23 | execution-review | execution | P6 | /execution-review | Yes | analyst |
-| 24 | verify-structure | verify | P7 | /verify-structure | Yes | analyst |
-| 25 | verify-content | verify | P7 | /verify-content | Yes | analyst |
-| 26 | verify-consistency | verify | P7 | /verify-consistency | Yes | analyst |
-| 27 | verify-quality | verify | P7 | /verify-quality | Yes | analyst |
-| 28 | verify-cc-feasibility | verify | P7 | /verify-cc-feasibility | Yes | researcher |
-| 29 | manage-infra | homeostasis | X | /manage-infra | Yes | analyst |
-| 30 | manage-skills | homeostasis | X | /manage-skills | Yes | analyst |
-| 31 | manage-codebase | homeostasis | X | /manage-codebase | Yes | analyst |
-| 32 | self-diagnose | homeostasis | X | /self-diagnose | Yes | analyst |
-| 33 | self-implement | homeostasis | X | /self-implement | Yes | infra-implementer |
-| 34 | delivery-pipeline | cross-cutting | P8 | /delivery-pipeline | No | delivery-agent |
-| 35 | pipeline-resume | cross-cutting | X | /pipeline-resume | No | Lead-direct |
-| 36 | task-management | cross-cutting | X | /task-management | No | pt-manager |
+| 10 | plan-static | plan | P3 | /plan-static | Yes | analyst |
+| 11 | plan-behavioral | plan | P3 | /plan-behavioral | Yes | analyst |
+| 12 | plan-relational | plan | P3 | /plan-relational | Yes | analyst |
+| 13 | plan-impact | plan | P3 | /plan-impact | Yes | analyst |
+| 14 | plan-verify-static | plan-verify | P4 | /plan-verify-static | Yes | analyst |
+| 15 | plan-verify-behavioral | plan-verify | P4 | /plan-verify-behavioral | Yes | analyst |
+| 16 | plan-verify-relational | plan-verify | P4 | /plan-verify-relational | Yes | analyst |
+| 17 | plan-verify-impact | plan-verify | P4 | /plan-verify-impact | Yes | analyst |
+| 18 | plan-verify-coordinator | plan-verify | P4 | /plan-verify-coordinator | Yes | analyst |
+| 19 | orchestrate-static | orchestration | P5 | /orchestrate-static | Yes | Lead-direct |
+| 20 | orchestrate-behavioral | orchestration | P5 | /orchestrate-behavioral | Yes | Lead-direct |
+| 21 | orchestrate-relational | orchestration | P5 | /orchestrate-relational | Yes | Lead-direct |
+| 22 | orchestrate-impact | orchestration | P5 | /orchestrate-impact | Yes | Lead-direct |
+| 23 | orchestrate-coordinator | orchestration | P5 | /orchestrate-coordinator | Yes | Lead-direct |
+| 24 | execution-code | execution | P6 | /execution-code | Yes | implementer |
+| 25 | execution-infra | execution | P6 | /execution-infra | Yes | infra-implementer |
+| 26 | execution-impact | execution | P6 | No | Yes | analyst |
+| 27 | execution-cascade | execution | P6 | No | Yes | implementer |
+| 28 | execution-review | execution | P6 | /execution-review | Yes | analyst |
+| 29 | verify-structural-content | verify | P7 | /verify-structural-content | Yes | analyst |
+| 30 | verify-consistency | verify | P7 | /verify-consistency | Yes | analyst |
+| 31 | verify-quality | verify | P7 | /verify-quality | Yes | analyst |
+| 32 | verify-cc-feasibility | verify | P7 | /verify-cc-feasibility | Yes | researcher |
+| 33 | manage-infra | homeostasis | X | /manage-infra | Yes | analyst |
+| 34 | manage-skills | homeostasis | X | /manage-skills | Yes | analyst |
+| 35 | manage-codebase | homeostasis | X | /manage-codebase | Yes | analyst |
+| 36 | self-diagnose | homeostasis | X | /self-diagnose | Yes | analyst |
+| 37 | self-implement | homeostasis | X | /self-implement | Yes | infra-implementer |
+| 38 | delivery-pipeline | cross-cutting | P8 | /delivery-pipeline | No | delivery-agent |
+| 39 | pipeline-resume | cross-cutting | X | /pipeline-resume | No | Lead-direct |
+| 40 | task-management | cross-cutting | X | /task-management | No | pt-manager |
 
 ---
 
@@ -775,15 +783,20 @@ Persistent knowledge storage per agent, auto-loaded at startup.
  │   ├── research-codebase/SKILL.md       P2
  │   ├── research-external/SKILL.md       P2
  │   ├── research-audit/SKILL.md          P2
- │   ├── plan-decomposition/SKILL.md      P3
- │   ├── plan-interface/SKILL.md          P3
- │   ├── plan-strategy/SKILL.md           P3
- │   ├── plan-verify-correctness/SKILL.md P4
- │   ├── plan-verify-completeness/SKILL.md P4
- │   ├── plan-verify-robustness/SKILL.md  P4
- │   ├── orchestration-decompose/SKILL.md P5
- │   ├── orchestration-assign/SKILL.md    P5
- │   ├── orchestration-verify/SKILL.md    P5
+ │   ├── plan-static/SKILL.md             P3
+ │   ├── plan-behavioral/SKILL.md         P3
+ │   ├── plan-relational/SKILL.md         P3
+ │   ├── plan-impact/SKILL.md             P3
+ │   ├── plan-verify-static/SKILL.md      P4
+ │   ├── plan-verify-behavioral/SKILL.md  P4
+ │   ├── plan-verify-relational/SKILL.md  P4
+ │   ├── plan-verify-impact/SKILL.md      P4
+ │   ├── plan-verify-coordinator/SKILL.md P4
+ │   ├── orchestrate-static/SKILL.md      P5
+ │   ├── orchestrate-behavioral/SKILL.md  P5
+ │   ├── orchestrate-relational/SKILL.md  P5
+ │   ├── orchestrate-impact/SKILL.md      P5
+ │   ├── orchestrate-coordinator/SKILL.md P5
  │   ├── execution-code/SKILL.md          P6
  │   ├── execution-infra/SKILL.md         P6
  │   ├── execution-impact/SKILL.md        P6
