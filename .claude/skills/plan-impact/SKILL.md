@@ -8,6 +8,10 @@ description: >-
   from research-coordinator audit-impact L3 propagation paths via
   $ARGUMENTS. Produces execution sequence with wave groups and
   checkpoints, and sequencing rationale for plan-verify-impact.
+  On FAIL (HIGH uncontained propagation), routes back to
+  plan-impact with additional path data. DPS needs
+  research-coordinator audit-impact L3 propagation paths. Exclude
+  static, behavioral, and relational dimension data.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -131,18 +135,42 @@ Produce the complete execution sequence:
 - Efficiency: 1 - (parallel_time / sequential_time)
 
 **DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context**: Paste audit-impact L3 content (propagation paths, impact classification, blast radius estimates). Include pipeline tier, total task count, and task list from plan-static if available.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE:
+    - research-coordinator audit-impact L3 from `tasks/{team}/p2-coordinator-audit-impact.md`
+    - Pipeline tier and iteration count from PT
+    - Task list from plan-static if available (for wave alignment)
+  EXCLUDE:
+    - Other plan dimension outputs (unless direct dependency for wave grouping)
+    - Full research evidence detail (use L3 summaries only)
+    - Pre-design and design conversation history
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Group tasks into parallel execution waves (max 4 per wave) based on propagation containment. Insert checkpoints between waves with gate conditions. Define containment strategy per propagation path (isolation/ordered/blast-limit/rollback). Calculate parallel efficiency metric."
 - **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on sequencing and containment, not teammate assignment.
 - **Expected Output**: L1 YAML with wave_count, checkpoint_count, parallel_efficiency, groups[] and checkpoints[]. L2 sequencing rationale with containment strategy per path.
-- **Delivery**: Write full result to `/tmp/pipeline/p3-plan-impact.md`. Send micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:/tmp/pipeline/p3-plan-impact.md`.
+- **Delivery**: Write full result to `tasks/{team}/p3-plan-impact.md`. Send micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:tasks/{team}/p3-plan-impact.md`.
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Linear sequence (1-2 groups). No propagation risk. Single final checkpoint only. Output inline.
 **STANDARD**: Spawn analyst (maxTurns: 15). Systematic grouping across 3-8 tasks. Checkpoints after DIRECT propagation waves only. Skip efficiency metric if ≤ 3 waves.
 **COMPLEX**: Full DPS above. Deep multi-wave analysis across 9+ tasks with comprehensive containment and checkpoint boundaries.
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-impact: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to research-coordinator with propagation path gaps)
+- Iteration 2: relaxed mode (proceed with documented coverage gaps, flag in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error or timeout during wave grouping | L0 Retry | Re-invoke same agent, same DPS |
+| Wave assignment incomplete or propagation containment off-direction | L1 Nudge | SendMessage with refined propagation scope constraints |
+| Agent stuck on topological sort or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
+| Wave structure broken or task count exceeds capacity requiring restructure | L3 Restructure | Modify wave plan, redefine containment boundaries |
+| Strategic ambiguity on checkpoint density or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Missing audit-impact L3 input | CRITICAL | research-coordinator | Yes | Cannot sequence without propagation data. Request re-run. |
@@ -203,6 +231,8 @@ status: complete|partial
 wave_count: 0
 checkpoint_count: 0
 parallel_efficiency: 0.0
+pt_signal: "metadata.phase_signals.p3_plan_impact"
+signal_format: "{STATUS}|groups:{N}|checkpoints:{N}|ref:tasks/{team}/p3-plan-impact.md"
 groups:
   - wave: 1
     tasks: []

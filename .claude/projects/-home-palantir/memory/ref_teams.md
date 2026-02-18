@@ -1,6 +1,6 @@
 # Agent Teams — Architecture, Coordination & Task Sharing
 
-> Verified: 2026-02-17 via claude-code-guide team investigation
+> Verified: 2026-02-18 via claude-code-guide team investigation
 
 ---
 
@@ -283,3 +283,5 @@ Delegate mode restricts the lead to coordination-only tools: spawning, messaging
 - **Token cost**: ~7x in plan mode. Use Sonnet for teammates
 - **Delegate mode bug ([#25037](https://github.com/anthropics/claude-code/issues/25037))**: When lead enables delegate mode, teammates inherit restricted tool access -- they lose Read, Write, Edit, Bash, Glob, Grep. Workaround: Do NOT use delegate permissionMode. Enforce "Lead NEVER edits" via CLAUDE.md convention instead.
 - **Inbox delivery bug ([#23415](https://github.com/anthropics/claude-code/issues/23415), tmux)**: On macOS tmux backend, teammates may fail to establish messaging layer. Messages sit unread indefinitely. Workaround: Export `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in shell init (`.zshrc`) instead of only in `settings.json`.
+- **Bedrock/Vertex/Foundry env propagation** (RESOLVED in CC 2.1.45, [#23561](https://github.com/anthropics/claude-code/issues/23561)): tmux-spawned teammates now correctly inherit API provider environment variables. Previously, teammates on Bedrock/Vertex/Foundry would fail because env vars were not propagated to tmux processes.
+- **Task tool crash** (RESOLVED in CC 2.1.45, [#22087](https://github.com/anthropics/claude-code/issues/22087)): Backgrounded agents no longer crash with `ReferenceError` on completion.

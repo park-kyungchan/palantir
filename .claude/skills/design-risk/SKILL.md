@@ -8,7 +8,14 @@ description: >-
   Reads from design-architecture component structure and ADRs,
   plus design-interface API and error contracts. Produces risk
   matrix with mitigations and risk narrative for research-codebase
-  and research-external.
+  and research-external. RPN thresholds: >=50 critical (mandatory
+  mitigation), 25-49 high, 10-24 medium, <10 low. TRIVIAL:
+  Lead-direct, 2-3 risks. STANDARD: 1 analyst FMEA (maxTurns:
+  20). COMPLEX: 2-4 analysts split security/performance/
+  reliability. Runs parallel with design-interface. On FAIL
+  (unmitigable risk discovered), routes to Lead for D12 L4
+  escalation to user. DPS needs design-architecture ADRs and
+  design-interface contracts. Exclude raw feasibility data.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -162,6 +169,14 @@ For each high-RPN risk, verify:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
+| RPN scoring inconsistency or superficial analysis | L1 Nudge | SendMessage with calibration guide and re-scoring request |
+| Background analyst exhausted turns | L2 Respawn | Kill → fresh analyst focused on critical-path components only |
+| Critical security finding requiring architecture restructure | L3 Restructure | Route to design-architecture with vulnerability details and redesign recommendation |
+| Unmitigable architectural risk after D12 L0-L3, pipeline blocked | L4 Escalate | AskUserQuestion with risk summary, options to redesign or accept with documented risk |
+
 ### Architecture Output Insufficient for Risk Analysis
 - **Cause**: design-architecture didn't define components in enough detail
 - **Action**: Route back to design-architecture with specific questions about component interactions and data flows
@@ -227,6 +242,8 @@ Low-RPN risks should still be documented. Conditions change -- a "rare" risk may
 | Architecture insufficient | design-architecture | Specific questions about components/data flow |
 | Security finding | design-architecture | Vulnerability details + redesign recommendation |
 | Partial analysis | plan-strategy (continue) | Completed risk data + unanalyzed component list |
+
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 
 ## Quality Gate
 - Every component has ≥1 failure mode analyzed

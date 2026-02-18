@@ -8,7 +8,11 @@ description: >-
   AI can auto-invoke. Reads from .claude/ directory including
   agents, skills, settings.json, hooks, and CLAUDE.md. Produces
   health report with scores, orphan count, drift count, and
-  weighted health score percentage, plus repair recommendations.
+  weighted health score percentage for self-diagnose category
+  input and Lead repair routing. On FAIL (scan cannot complete),
+  Lead applies L0 retry; 3+ failures escalate to L4.
+  DPS needs CLAUDE.md declared counts and .claude/ filesystem
+  paths. Exclude pipeline history and agent-memory data.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -43,11 +47,14 @@ Scan entire `.claude/` directory:
 - Read CLAUDE.md for declared counts
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
-- **Context**: Expected component layout: agents in `.claude/agents/`, skills in `.claude/skills/*/SKILL.md`, hooks in `.claude/hooks/`, settings at `.claude/settings.json`, CLAUDE.md at `.claude/CLAUDE.md`. Include current declared counts from CLAUDE.md (agents: 6, skills: 44).
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE: Current declared counts from CLAUDE.md (agents: 6, skills: 44). Expected component layout: agents in `.claude/agents/`, skills in `.claude/skills/*/SKILL.md`, hooks in `.claude/hooks/`, settings at `.claude/settings.json`, CLAUDE.md at `.claude/CLAUDE.md`.
+  EXCLUDE: Pipeline history, agent-memory runtime data, other homeostasis skills' internal findings. Budget: context field ≤30% of analyst context.
 - **Task**: "Scan entire .claude/ directory. Count agents, skills, hooks. Read settings.json for validity. Compare filesystem counts against CLAUDE.md declarations. Find orphaned files (unreferenced agents, skills without SKILL.md, hooks not in settings). Find configuration drift (settings referencing nonexistent files, CLAUDE.md version mismatch)."
 - **Constraints**: Read-only. Use Glob for discovery, Read for content. No modifications. Report findings with severity classification.
 - **Expected Output**: L1 YAML health report with component counts, orphans, drift_items. L2 narrative with repair recommendations.
-- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-infra.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|health:{score}|drift:{N}|ref:/tmp/pipeline/homeostasis-manage-infra.md`.
+- **Delivery**: Write full result to `tasks/{team}/homeostasis-manage-infra.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|health:{score}|drift:{N}|ref:tasks/{team}/homeostasis-manage-infra.md`.
+  If no team active, fallback to `/tmp/pipeline/homeostasis-manage-infra.md`.
 
 ### 2. Check Count Consistency
 Compare filesystem counts against CLAUDE.md declarations:
@@ -171,6 +178,17 @@ Some drift findings span multiple component types. Detect and report these as un
 Report cross-component drift as: `"[CROSS] settings+hooks: settings.json references nonexistent hook .claude/hooks/missing.sh"`. The `[CROSS]` prefix helps Lead distinguish these from single-component findings.
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| File read error, tool timeout | L0 Retry | Re-invoke same analyst with same DPS |
+| Analyst output missing component categories | L1 Nudge | SendMessage with refined scan scope |
+| Analyst stuck or maxTurns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Multiple component types simultaneously unreadable | L3 Restructure | Split into targeted scans per component type |
+| 3+ L2 failures or scan structurally blocked | L4 Escalate | AskUserQuestion with situation summary and options |
+
 - **Unfixable issues detected**: Report findings with severity classification but do NOT auto-fix; await user approval
 - **Scan cannot complete** (e.g., file read errors): Report partial results with coverage percentage in L1
 - **Safety**: Never auto-delete or auto-fix without explicit rationale per finding
@@ -257,6 +275,8 @@ domain: homeostasis
 skill: manage-infra
 status: healthy|degraded|critical
 health_score: 87          # percentage, see Health Score Calculation
+pt_signal: "metadata.phase_signals.homeostasis"
+signal_format: "{STATUS}|health:{score}|drift:{N}|ref:tasks/{team}/homeostasis-manage-infra.md"
 trigger: post-pipeline|post-modification|periodic|post-rsi
 components:
   agents: {count: 6, expected: 6, orphans: 0, score: 3}

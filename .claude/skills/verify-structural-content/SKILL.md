@@ -8,7 +8,15 @@ description: >-
   modification. Reads from execution-review PASS verdict and
   implementation artifacts. Produces structure and content scores
   per file for verify-consistency on PASS, or routes back to
-  execution-infra on FAIL.
+  execution-infra on FAIL. On FAIL, routes file path + error
+  location + suggested fix to execution-infra. Scores 0-100 per
+  file: structure (YAML parseability, required fields, naming,
+  directory compliance) + content (utilization %, orchestration
+  key presence, body section presence, L1/L2 format). TRIVIAL:
+  Lead-direct on 1-3 files. STANDARD: 1 analyst maxTurns 25.
+  COMPLEX: 2 analysts — structural vs content split. DPS context:
+  Glob results + CLAUDE.md declared counts. Exclude L2 body
+  content, non-.claude/ files, source code outside skills/agents/.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -241,11 +249,14 @@ Produce unified report with per-file results showing both dimensions:
 - Missing body sections listed per file with required vs optional classification
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt (DPS) for each analyst with:
-- **Context**: List of all discovered files from Step 1 (Glob results). Include expected directory structure, common YAML errors checklist, target thresholds (description >80% of 1024, required orchestration keys WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY), and body section requirements per skill type.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  - INCLUDE: Glob results — complete list of discovered .claude/ files. CLAUDE.md declared counts (agents: 6, skills count, hooks: 14). Common YAML errors checklist (tab/space mixing, missing colons, unclosed quotes, pipe scalar errors). Target thresholds: description >80% of 1024 chars, all 5 orchestration keys required (WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY). Body section requirements per skill type (pipeline/verify/homeostasis/cross-cutting). File paths within this analyst's ownership boundary.
+  - EXCLUDE: L2 body content (check section headings only, not content quality). Non-.claude/ source files. Historical rationale for thresholds. Other analyst's partial results when in 2-analyst split mode.
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: "For each file: (1) Read and parse YAML between --- markers, check required fields present, (2) Verify naming conventions (lowercase-hyphen for agents/dirs, SKILL.md uppercase for files), (3) Check directory structure (no orphans, no empty dirs), (4) Measure description char count and utilization %, (5) Check for WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY keys in description, (6) Verify body has Execution Model, Methodology, Quality Gate, Output sections. Report per-file PASS/FAIL with structure+content scores."
 - **Constraints**: Read-only. Use Read to examine each file. No modifications. YAML validation is heuristic (no parser tool). Do NOT attempt to fix any issues found.
 - **Expected Output**: L1 YAML with total_files, structure_pass, content_pass, findings[]. L2 per-file combined integrity report with structure score + content score.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage format: `"{STATUS}|files:{total_files}|pass:{structure_pass}|ref:tasks/{team}/p7-structural-content.md"`. L2 detail stays in agent context.
 
 ---
 
@@ -288,6 +299,16 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 ---
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error or timeout during scan | L0 Retry | Re-invoke analyst with same DPS and file list |
+| Analyst output missing scores or incomplete file coverage | L1 Nudge | SendMessage with refined scope + scoring rubric reminder |
+| Analyst exhausted turns, context polluted mid-scan | L2 Respawn | Kill analyst → spawn fresh with refined DPS and reduced scope |
+| Tier misclassification discovered mid-scan (structural/content split wrong) | L3 Restructure | Reclassify tier → resplit analyst ownership by structural vs content |
+| 3+ L2 failures or verify pipeline strategy unclear | L4 Escalate | AskUserQuestion with situation summary + options |
 
 ### Severity Classification
 
@@ -336,6 +357,8 @@ Same as Combined Scoring verdict logic (Step 4): FAIL → execution-infra (block
 
 ---
 
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
+
 ## Quality Gate
 
 ### Pass Criteria
@@ -369,6 +392,8 @@ status: PASS|FAIL
 total_files: 0
 structure_pass: 0
 content_pass: 0
+pt_signal: "metadata.phase_signals.p7_structural_content"
+signal_format: "{STATUS}|files:{total_files}|pass:{structure_pass}|ref:tasks/{team}/p7-structural-content.md"
 avg_utilization_pct: 0
 below_threshold_count: 0
 missing_keys_count: 0

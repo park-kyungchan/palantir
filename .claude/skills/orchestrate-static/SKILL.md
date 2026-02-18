@@ -8,7 +8,8 @@ description: >-
   plan-verify-coordinator complete with all PASS. Reads from
   plan-verify-coordinator verified plan L3 via $ARGUMENTS.
   Produces task-agent matrix with splits count and assignment
-  rationale for orchestrate-coordinator.
+  rationale for orchestrate-coordinator. Model:sonnet for all spawns. MCP tasks require general-purpose subagent_type. Teammates when P2P coordination needed.
+  On FAIL, Lead applies D12 escalation. DPS needs plan-verify-coordinator verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -55,11 +56,20 @@ Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
 - Complexity estimates per task
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste verified plan L3 content. Include Agent profile reference: analyst=B(Read,Glob,Grep,Write), researcher=C(+WebSearch,WebFetch,context7,tavily), implementer=D(+Edit,Bash), infra-implementer=E(+Edit,Write for .claude/). Include delivery-agent=F and pt-manager=G as fork-only (not assignable).
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  INCLUDE:
+    - Verified plan L3 content (task list, dependencies, file assignments)
+    - Agent profile reference: analyst=B(Read,Glob,Grep,Write), researcher=C(+WebSearch,WebFetch,context7,tavily), implementer=D(+Edit,Bash), infra-implementer=E(+Edit,Write for .claude/)
+    - delivery-agent=F and pt-manager=G are fork-only (not assignable)
+  EXCLUDE:
+    - Other orchestrate dimension outputs (behavioral, relational, impact)
+    - Historical rationale from plan-verify phases
+    - Full pipeline state beyond this task's scope
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "For each task: identify tool requirements, match to best agent profile, verify no capability gaps. Handle multi-capability tasks by splitting. Produce task-agent assignment matrix."
 - **Constraints**: Read-only analysis. No modifications. Use Agent L1 PROFILE tags for matching. Flag ambiguous matches.
 - **Expected Output**: L1 YAML task-agent matrix. L2 rationale per assignment with capability evidence.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-static.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|agents:{N}|ref:/tmp/pipeline/p5-orch-static.md`.
+- **Delivery**: Write full result to `tasks/{team}/p5-orch-static.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|agents:{N}|ref:tasks/{team}/p5-orch-static.md`.
 
 #### Step 1 Tier-Specific DPS Variations
 **TRIVIAL**: Skip — Lead assigns agent inline from task description (typically 1 implementer or 1 infra-implementer).
@@ -113,9 +123,17 @@ Produce matrix with:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Assignment incomplete or capability gap ambiguous | L1 Nudge | SendMessage with refined capability criteria |
+| Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Unassignable task that cannot be split | L3 Restructure | Route to orchestrate-coordinator as architectural blocker |
+| 3+ L2 failures or scope beyond defined agent profiles | L4 Escalate | AskUserQuestion with situation + options |
+
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:/tmp/pipeline/p5-orch-static.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-static.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### Unassignable Task (No Agent Match)
@@ -184,6 +202,8 @@ assignments:
     tools_required: []
     files: []
     confidence: HIGH|MEDIUM|LOW
+pt_signal: "metadata.phase_signals.p5_orchestrate_static"
+signal_format: "PASS|tasks:{N}|agents:{N}|splits:{N}|ref:tasks/{team}/p5-orch-static.md"
 ```
 
 ### L2

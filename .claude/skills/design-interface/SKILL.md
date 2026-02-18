@@ -4,10 +4,21 @@ description: >-
   Specifies inter-component API contracts and error boundaries.
   Defines function signatures, data types, protocols, and error
   propagation rules per boundary. Use after design-architecture
-  produces component structure, parallel with design-risk. Reads
-  from design-architecture component structure, module boundaries,
-  and data flow. Produces interface registry with protocols and
-  per-boundary specs for design-risk.
+  produces component structure; design-risk runs after both
+  design-architecture AND design-interface complete. Reads from
+  design-architecture component structure, module boundaries, and
+  data flow. Produces interface registry with protocols and
+  per-boundary specs consumed by design-risk. Protocol options:
+  direct call (sync), file-based (async pipeline), Task API
+  (cross-agent), hook-based (event). For .claude/ INFRA prefer
+  file-based or hook-based. TRIVIAL: Lead-direct, informal
+  listing. STANDARD: 1 analyst (maxTurns: 20). COMPLEX: 2-4
+  analysts by boundary cluster. Runs parallel with design-risk
+  (both depend on design-architecture). On FAIL (incompatible
+  interface requirements), routes back to design-architecture for
+  boundary re-evaluation. DPS needs design-architecture component
+  list and module boundaries. Exclude ADR rationale and rejected
+  patterns.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -149,6 +160,14 @@ Determine which components must be implemented first:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
+| Analyst defined incomplete or conflicting interface contracts | L1 Nudge | SendMessage with corrected component boundary context |
+| Background analyst exhausted turns (too many boundaries) | L2 Respawn | Kill → fresh analyst with reduced boundary set |
+| Circular interface dependencies requiring architecture restructure | L3 Restructure | Extract shared type, route to design-architecture for boundary revision |
+| Architecture output fundamentally insufficient for any interface definition | L4 Escalate | AskUserQuestion to return to design-architecture with specific gap questions |
+
 ### Architecture Output Insufficient
 - **Cause**: design-architecture didn't define component boundaries clearly enough for interface specification
 - **Action**: Route back to design-architecture with specific questions about component interactions
@@ -212,6 +231,8 @@ Interfaces should be minimal and sufficient for current requirements. Adding "ex
 | Circular interfaces | design-architecture | Cycle details |
 | External API unknown | research-external | API name + known information |
 | Analyst incomplete | Self (second pass) | Remaining boundaries |
+
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 
 ## Quality Gate
 - Every component boundary has defined interface contract

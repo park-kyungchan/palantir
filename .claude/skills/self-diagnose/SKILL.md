@@ -2,13 +2,17 @@
 name: self-diagnose
 description: >-
   Diagnoses INFRA health against CC native state across 10
-  categories including unverified CC-native claims detection. Reads cc-reference cache and scans .claude/ files.
+  categories including unverified CC-native claims detection.
+  Reads cc-reference cache and scans .claude/ files.
   Diagnosis only, does not fix. Paired with self-implement. Use
   when user invokes for INFRA health audit, after CC updates, or
   before releases. Reads from cc-reference cache ref_*.md files
   for ground truth and manage-infra health findings. Produces
   findings list with severity counts and diagnostic report with
-  file:line evidence for self-implement.
+  file:line evidence for self-implement. On FAIL (scan error or
+  cc-reference unavailable), Lead applies L0 retry; 2+ failures
+  escalate to L4. DPS needs cc-reference cache ref_*.md files
+  and .claude/ file paths. Exclude agent-memory runtime data.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[focus-area]"
@@ -121,11 +125,14 @@ For each unverified claim found: flag as HIGH severity with the claim text, sour
 - Produce categorized finding list sorted by severity (CRITICAL first)
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt:
-- **Context**: All .claude/ file paths. CC native field reference from cache. Diagnostic checklist with 10 categories.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE: CC native field reference from cache (ref_*.md files). Diagnostic checklist with 10 categories. All .claude/ file paths within scan scope.
+  EXCLUDE: Agent-memory runtime data, pipeline history, other homeostasis skills' findings. Budget: context ≤30% of analyst context.
 - **Task**: For each category, scan all relevant files. Record findings with file:line evidence. Classify severity per the checklist.
 - **Constraints**: Read-only analyst agent. No modifications. Grep scope limited to .claude/. Exclude agent-memory/ (historical, not active config). maxTurns:20.
 - **Expected Output**: L1 YAML with findings_total, findings_by_severity, findings[]. L2 markdown with per-category analysis.
-- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|findings:{N}|ref:/tmp/pipeline/homeostasis-self-diagnose.md`.
+- **Delivery**: Write full result to `tasks/{team}/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|findings:{N}|ref:tasks/{team}/homeostasis-self-diagnose.md`.
+  If no team active, fallback to `/tmp/pipeline/homeostasis-self-diagnose.md`.
 
 ## Anti-Patterns
 
@@ -161,6 +168,17 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 | Analyst maxTurns exhausted | (Partial) | `status: partial`, findings so far with coverage % |
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| File read error, tool timeout on specific files | L0 Retry | Re-invoke same analyst with same DPS |
+| Analyst output missing specific diagnostic categories | L1 Nudge | SendMessage with category-specific scan instructions |
+| Analyst maxTurns exhausted or context polluted | L2 Respawn | Kill → fresh analyst with focused scan scope |
+| cc-reference cache corrupted and claude-code-guide fails | L3 Restructure | Rebuild cache from scratch, re-scope diagnosis |
+| 3+ L2 failures or no ground truth source available | L4 Escalate | AskUserQuestion with situation summary and options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | cc-reference missing + guide fails | CRITICAL | Abort | Yes | No ground truth. Report `status: blocked`. |
@@ -182,6 +200,8 @@ domain: homeostasis
 skill: self-diagnose
 status: complete|partial|blocked
 cc_reference_source: cache|delta|full|none
+pt_signal: "metadata.phase_signals.homeostasis"
+signal_format: "{STATUS}|findings:{N}|severity_high:{N}|ref:tasks/{team}/homeostasis-self-diagnose.md"
 findings_total: 0
 findings_by_severity:
   critical: 0

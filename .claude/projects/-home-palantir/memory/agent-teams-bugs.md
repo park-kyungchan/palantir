@@ -103,3 +103,20 @@
 - Severity: HIGH (summarized context로 작업 시 품질 저하 직결)
 - Layer: 1 partial / 2 full solution
 - Discovered: Lead Architecture Redesign Phase 6 execution (2026-02-11)
+
+## RESOLVED in CC 2.1.45 (2026-02-18)
+
+### Agent Teams Bedrock/Vertex/Foundry Failure (#23561)
+- **Problem**: tmux-spawned teammates failed on Bedrock, Vertex, and Foundry because API provider environment variables were not propagated to tmux processes
+- **Fix**: CC now propagates API provider environment variables to tmux-spawned processes
+- **Version**: CC 2.1.45
+
+### Task Tool (Backgrounded Agents) Crash (#22087)
+- **Problem**: Backgrounded agents crashed with `ReferenceError` on completion
+- **Fix**: Completion handler properly handles reference resolution
+- **Version**: CC 2.1.45
+
+### Sandbox macOS Temp File Error (#21654)
+- **Problem**: "operation not permitted" errors when writing temporary files on macOS
+- **Fix**: Uses correct per-user temp directory
+- **Version**: CC 2.1.45

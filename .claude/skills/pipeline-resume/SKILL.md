@@ -5,9 +5,15 @@ description: >-
   interruption. Categorizes work tasks, determines resume point,
   and re-spawns agents with PT context. Use when session continues
   after interruption and PT exists with metadata.current_phase
-  set. Reads from Task API including PT and work tasks, plus git
-  branch state. Produces resume state with phases and task counts,
-  and recovery report with resume rationale for Lead.
+  set. Reads from PERMANENT task phase_signals and tasks/{team}/
+  output files, plus git branch state. Produces resume context
+  for the interrupted skill with phase-by-phase recovery report
+  and resume rationale for Lead. Restores DPS v5 context including
+  MCP directives and P2P COMM_PROTOCOL state.
+  On FAIL (corrupted PT or missing phase artifacts), Lead L4
+  escalation with recovery options presented to user.
+  DPS needs PT current_phase, tier, phase_signals, and git branch.
+  Exclude completed task details and inter-phase output content.
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[resume-from-phase]"
@@ -89,7 +95,7 @@ Execute recovery:
 - **Task**: "Reconstruct pipeline state: categorize all work tasks by phase and status, identify contradictions, determine resume point, validate git branch matches PT expectations."
 - **Constraints**: analyst agent (read-only, no Bash). maxTurns: 15 (STANDARD), 20 (COMPLEX). Do not modify any tasks or files.
 - **Expected Output**: L1 YAML with `resume_phase`, `completed_tasks`, `failed_tasks`, `contradictions`. L2 recovery report with phase-by-phase status matrix.
-- **Delivery**: SendMessage to Lead: `PASS|resume:{phase}|tasks:{completed}/{total}|ref:/tmp/pipeline/pipeline-resume.md`
+- **Delivery**: SendMessage to Lead: `PASS|resume:{phase}|tasks:{completed}/{total}|ref:tasks/{team}/pipeline-resume.md`
 
 #### Analyst Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. No analyst spawn — just TaskList + TaskGet inline.
@@ -147,6 +153,13 @@ Pipeline may have been interrupted multiple times. Check PT metadata for `resume
   - Checkpoint: commit partial work more frequently to reduce per-resume reconstruction cost.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Task API tool error during state reconstruction | L0 Retry | Re-invoke analyst with same DPS |
+| Incomplete reconstruction output or off-direction | L1 Nudge | SendMessage with targeted reconstruction context |
+| Analyst exhausted turns or contradictions unresolvable | L2 Respawn | Kill → fresh analyst with deep reconstruction DPS |
+| Corrupted PT or missing phase artifacts | L4 Escalate | AskUserQuestion with recovery options |
 
 ### No PERMANENT Task Found
 - **Cause**: Pipeline was never properly initialized (PT creation skipped or failed), or PT was accidentally completed/deleted.
@@ -276,6 +289,8 @@ total_tasks: 0
 completed_tasks: 0
 in_progress_tasks: 0
 pending_tasks: 0
+pt_signal: "metadata.phase_signals.cross-cutting"
+signal_format: "{STATUS}|resume:{phase}|tasks:{completed}/{total}|ref:tasks/{team}/pipeline-resume.md"
 ```
 
 ### L2

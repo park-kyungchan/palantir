@@ -9,7 +9,13 @@ description: >-
   orchestrate-coordinator unified execution plan L3 with code
   task assignments and DPS prompts. Produces file change manifest
   with per-implementer status and implementation summary for
-  execution-impact and execution-review.
+  execution-impact and execution-review. All spawns model:sonnet.
+  Atomic commit per task with pre-commit backpressure. P2P
+  SendMessage for producer→consumer handoffs. On FAIL, routes to
+  execution-review with partial manifest and retry count. DPS
+  needs orchestrate-coordinator task_id/files/dependencies +
+  plan-interface contracts verbatim. Exclude ADR rationale and
+  rejected alternatives.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -59,7 +65,10 @@ For each task group in the matrix:
 - Create Task with `subagent_type: implementer`
 
 Construct each delegation prompt with:
-- **Context**: Paste the exact task row from orchestration-verify matrix (task_id, description, assigned files). Include interface contracts verbatim: function signatures, data types, return values, error types from plan-interface output. If PT exists, include PT subject and acceptance criteria.
+- **Context (D11 — cognitive focus first)**:
+  - INCLUDE: Exact task row from orchestration-verify matrix (task_id, description, assigned files). Interface contracts verbatim from plan-interface: function signatures, data types, return values, error types. PT subject and acceptance criteria.
+  - EXCLUDE: Other implementers' task details. ADR rationale (pass WHAT decisions, not WHY). Full pipeline state beyond this task group. Rejected design alternatives.
+  - Budget: Context field ≤ 30% of implementer effective context.
 - **Task**: List exact file paths to create/modify. For each file, specify: what function/class/method to implement, what behavior it should exhibit, what tests to satisfy. Reference existing patterns: "Follow the pattern in `<existing_file>:<line_range>` for consistency."
 - **Constraints**: Scope limited to non-.claude/ application source files only. Do NOT modify .claude/ files, test fixtures, or unrelated modules. If a dependency file needs changes, report it — do not modify files outside your assignment.
 - **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed), and `blockers` (array, empty if none). Provide L2 markdown summarizing what was implemented, key decisions made, and any deviations from the plan.
@@ -112,7 +121,22 @@ After all implementers complete:
 
 **SRC Integration**: After consolidation, Lead should route to execution-impact for dependency analysis before proceeding to execution-review. SubagentStop hook will inject SRC IMPACT ALERT into Lead's context when implementers finish.
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.execution_code: N` in PT before each invocation
+- Iteration 1-2: strict mode (FAIL → return to execution-review for re-assessment)
+- Iteration 3+: auto-PASS with documented gaps; escalate to L4 if critical findings remain
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error, implementer spawn timeout | L0 Retry | Re-invoke same implementer with same DPS |
+| Implementer output incomplete or off-scope | L1 Nudge | SendMessage with corrected constraints or scope |
+| Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS |
+| File ownership conflict or dependency broken between task groups | L3 Restructure | Reassign files, reorder task graph, split tasks |
+| All implementers failed after L2, architectural issue suspected | L4 Escalate | AskUserQuestion with situation summary + options |
+
 - **Retries exhausted (3 per implementer)**: Set task `status: failed`, include `blockers` array with error details and last attempt output
 - **Partial completion**: Set skill `status: partial`, include completed tasks in manifest alongside failed ones
 - **Routing**: Route to execution-review with FAIL status -- review assesses if partial results are usable
@@ -192,6 +216,8 @@ tasks:
     implementer: ""
     files: []
     status: complete|in-progress|failed
+pt_signal: "metadata.phase_signals.p6_code"
+signal_format: "{STATUS}|files:{N}|implementers:{N}|ref:tasks/{team}/p6-code.md"
 ```
 
 ### L2

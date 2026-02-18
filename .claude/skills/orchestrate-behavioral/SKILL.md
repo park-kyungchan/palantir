@@ -8,7 +8,9 @@ description: >-
   plan-verify-coordinator complete with all PASS. Reads from
   plan-verify-coordinator verified plan L3 via $ARGUMENTS.
   Produces checkpoint schedule with type counts and rationale
-  per checkpoint for orchestrate-coordinator.
+  per checkpoint for orchestrate-coordinator. On FAIL, Lead
+  applies D12 escalation. DPS needs plan-verify-coordinator
+  verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -59,11 +61,20 @@ Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
 - Risk assessment findings (if available from plan-verify)
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste verified plan L3 content. Include pipeline constraints: max 4 parallel teammates per wave, max 3 iterations per phase, Phase-Aware execution model (P2+ requires SendMessage).
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  INCLUDE:
+    - Verified plan L3 content (task list, wave structure, dependency graph)
+    - Pipeline constraints: max 4 parallel teammates per wave, max 3 iterations per phase
+    - Phase-Aware execution model (P2+ requires SendMessage)
+  EXCLUDE:
+    - Other orchestrate dimension outputs (static, relational, impact)
+    - Historical rationale from plan-verify phases
+    - Full pipeline state beyond this task's scope
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Identify WHERE verification checkpoints should be placed in the execution flow. For each checkpoint: define pass/fail criteria, map to wave boundary, specify what data to check. Focus on critical transitions where failure propagation risk is highest."
 - **Constraints**: Read-only analysis. No modifications. Every checkpoint must have measurable criteria. Map each checkpoint to a specific wave boundary.
 - **Expected Output**: L1 YAML checkpoint schedule. L2 rationale per checkpoint with wave mapping.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-behavioral.md`. Send micro-signal to Lead via SendMessage: `PASS|checkpoints:{N}|ref:/tmp/pipeline/p5-orch-behavioral.md`.
+- **Delivery**: Write full result to `tasks/{team}/p5-orch-behavioral.md`. Send micro-signal to Lead via SendMessage: `PASS|checkpoints:{N}|ref:tasks/{team}/p5-orch-behavioral.md`.
 
 #### Step 1 Tier-Specific DPS Variations
 **TRIVIAL**: Skip — Lead places 1 implicit gate checkpoint between P6 execution and P7 verify.
@@ -131,9 +142,17 @@ Produce complete schedule with:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Checkpoint incomplete or criteria unmeasurable | L1 Nudge | SendMessage with refined wave boundary constraints |
+| Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| No wave boundaries in plan (cannot infer) | L3 Restructure | Route to plan-verify-coordinator for plan restructuring |
+| 3+ L2 failures or excessive checkpoint conflicts | L4 Escalate | AskUserQuestion with situation + options |
+
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:/tmp/pipeline/p5-orch-behavioral.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-behavioral.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### No Clear Wave Boundaries in Plan
@@ -206,6 +225,8 @@ checkpoints:
     type: gate|monitor|aggregate
     criteria: ""
     fail_action: ""
+pt_signal: "metadata.phase_signals.p5_orchestrate_behavioral"
+signal_format: "PASS|checkpoints:{N}|gates:{N}|ref:tasks/{team}/p5-orch-behavioral.md"
 ```
 
 ### L2

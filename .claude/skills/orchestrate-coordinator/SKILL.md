@@ -11,7 +11,7 @@ description: >-
   matrix, orchestrate-behavioral checkpoint schedule,
   orchestrate-relational DPS specs, and orchestrate-impact wave
   schedule. Produces L1 index and L2 summary for Lead, L3
-  execution-plan for execution-code and execution-infra.
+  execution-plan for execution-code and execution-infra. Enforces DPS v5 with MCP_DIRECTIVES and COMM_PROTOCOL. All spawns model:sonnet. Plan-first gate for COMPLEX tier. On FAIL (execution plan inconsistency), Lead applies D12 escalation. DPS needs all four orchestrate dimension outputs. Exclude plan-verify raw data.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -60,17 +60,26 @@ Load outputs from all 4 parallel orchestrate-* skills:
 
 | Dimension | Skill | Output File | Key Data |
 |-----------|-------|-------------|----------|
-| WHO | orchestrate-static | `/tmp/pipeline/p5-orch-static.md` | Task-agent assignment matrix |
-| WHERE | orchestrate-behavioral | `/tmp/pipeline/p5-orch-behavioral.md` | Checkpoint schedule |
-| HOW | orchestrate-relational | `/tmp/pipeline/p5-orch-relational.md` | DPS handoff specs |
-| WHEN | orchestrate-impact | `/tmp/pipeline/p5-orch-impact.md` | Wave capacity schedule |
+| WHO | orchestrate-static | `tasks/{team}/p5-orch-static.md` | Task-agent assignment matrix |
+| WHERE | orchestrate-behavioral | `tasks/{team}/p5-orch-behavioral.md` | Checkpoint schedule |
+| HOW | orchestrate-relational | `tasks/{team}/p5-orch-relational.md` | DPS handoff specs |
+| WHEN | orchestrate-impact | `tasks/{team}/p5-orch-impact.md` | Wave capacity schedule |
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste all 4 dimension outputs. Include tiered output structure: L1 (index.md = routing metadata), L2 (summary.md = narrative for Lead), L3 (execution-plan.md = full spawn instructions for P6). Include platform constraints: max 4 teammates per wave, SendMessage protocol for agent completion.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  INCLUDE:
+    - All 4 dimension outputs (WHO/WHEN/HOW/WHERE from orchestrate-static/impact/relational/behavioral)
+    - Tiered output structure: L1 (index.md = routing metadata), L2 (summary.md = narrative for Lead), L3 (execution-plan.md = full spawn instructions for P6)
+    - Platform constraints: max 4 teammates per wave, SendMessage protocol for agent completion
+  EXCLUDE:
+    - plan-verify raw data (only dimension dimension outputs needed)
+    - Historical rationale from pre-design and design phases
+    - Full pipeline state beyond orchestration scope
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Merge the 4 dimension outputs into a unified execution plan. For each task, consolidate: WHO runs it (agent type from static), WHEN it executes (wave from impact), HOW it gets/sends data (DPS from relational), WHERE it is verified (checkpoint from behavioral). Cross-validate: agent has right tools for its wave tasks, handoff ordering matches wave sequence, checkpoints align with wave boundaries. Produce L1 index, L2 summary, L3 execution plan."
-- **Constraints**: Read-only analysis on inputs. Write tiered output to `/tmp/pipeline/p5-coordinator/`. Every task must appear in unified plan. Every cross-validation check must have explicit PASS/FAIL.
-- **Expected Output**: Three files in `/tmp/pipeline/p5-coordinator/`: index.md (L1), summary.md (L2), execution-plan.md (L3).
-- **Delivery**: Write tiered output to `/tmp/pipeline/p5-coordinator/`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|waves:{N}|handoffs:{N}|ref:/tmp/pipeline/p5-coordinator/index.md`.
+- **Constraints**: Read-only analysis on inputs. Write tiered output to `tasks/{team}/p5-coordinator-{file}.md`. Every task must appear in unified plan. Every cross-validation check must have explicit PASS/FAIL.
+- **Expected Output**: Three files: `tasks/{team}/p5-coordinator-index.md` (L1), `tasks/{team}/p5-coordinator-summary.md` (L2), `tasks/{team}/p5-coordinator-execution-plan.md` (L3).
+- **Delivery**: Write tiered output to `tasks/{team}/p5-coordinator-{file}.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|waves:{N}|handoffs:{N}|ref:tasks/{team}/p5-coordinator-index.md`.
 
 #### Step 1 Tier-Specific DPS Variations
 **TRIVIAL**: Skip — Lead produces inline execution plan (1-2 tasks, no cross-validation needed).
@@ -94,12 +103,12 @@ task:
   inputs:
     - dps_id: DPS-01
       from_task: T0
-      path: /tmp/pipeline/p6-input-schema.md
+      path: tasks/{team}/p6-input-schema.md
       format: yaml
   outputs:
     - dps_id: DPS-02
       to_task: T3
-      path: /tmp/pipeline/p6-auth-module.md
+      path: tasks/{team}/p6-auth-module.md
       format: markdown
   # WHERE (from behavioral)
   checkpoint: CP-02
@@ -202,9 +211,17 @@ The L3 file must contain ALL information needed to spawn teammates:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| One or more dimension outputs missing (transient) | L0 Retry | Re-invoke after missing dimension skill re-exports |
+| Cross-validation check incomplete or merge ambiguous | L1 Nudge | SendMessage with refined conflict resolution constraints |
+| Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Cross-validation FAIL unresolvable without plan restructure | L3 Restructure | Route to affected dimension skill(s) for redesign |
+| 3+ L2 failures or task coverage mismatch unresolvable | L4 Escalate | AskUserQuestion with situation + options |
+
 ### One or More Dimension Outputs Missing
 - **Cause**: A parallel orchestrate-* skill failed or has not completed
-- **Action**: Report FAIL. Signal: `FAIL|reason:missing-{dimension}|ref:/tmp/pipeline/p5-coordinator/index.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:missing-{dimension}|ref:tasks/{team}/p5-coordinator-index.md`
 - **Route**: Lead re-invokes the failed dimension skill
 
 ### Cross-Validation FAIL (Any Check)
@@ -234,7 +251,7 @@ The L3 must contain COMPLETE DPS prompts for each task. P6 execution skills shou
 When dimension outputs disagree, silently picking one side creates hidden inconsistencies. Every conflict must be resolved explicitly and documented in L2.
 
 ### DO NOT: Create L3 Without Handoff Paths
-Every inter-task data dependency must have a concrete `/tmp/pipeline/` path in the L3. Tasks reading from undefined paths will fail at execution.
+Every inter-task data dependency must have a concrete `tasks/{team}/` path in the L3. Tasks reading from undefined paths will fail at execution.
 
 ### DO NOT: Skip Agent-Wave Validation
 A wave with 5 agents will fail. A wave where analyst is assigned a Bash-requiring task will fail. Agent-wave fit is the most critical cross-validation check.
@@ -247,10 +264,10 @@ If any cross-validation check FAILs, do NOT produce an L3 execution plan. A part
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| orchestrate-static | Task-agent assignment matrix (WHO) | L1 YAML + L2 rationale at `/tmp/pipeline/p5-orch-static.md` |
-| orchestrate-behavioral | Checkpoint schedule (WHERE) | L1 YAML + L2 rationale at `/tmp/pipeline/p5-orch-behavioral.md` |
-| orchestrate-relational | DPS handoff specs (HOW) | L1 YAML + L2 chain at `/tmp/pipeline/p5-orch-relational.md` |
-| orchestrate-impact | Wave capacity schedule (WHEN) | L1 YAML + L2 timeline at `/tmp/pipeline/p5-orch-impact.md` |
+| orchestrate-static | Task-agent assignment matrix (WHO) | L1 YAML + L2 rationale at `tasks/{team}/p5-orch-static.md` |
+| orchestrate-behavioral | Checkpoint schedule (WHERE) | L1 YAML + L2 rationale at `tasks/{team}/p5-orch-behavioral.md` |
+| orchestrate-relational | DPS handoff specs (HOW) | L1 YAML + L2 chain at `tasks/{team}/p5-orch-relational.md` |
+| orchestrate-impact | Wave capacity schedule (WHEN) | L1 YAML + L2 timeline at `tasks/{team}/p5-orch-impact.md` |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |

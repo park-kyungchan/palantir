@@ -8,7 +8,14 @@ description: >-
   completeness is unverified. Reads from pre-design-brainstorm
   structured requirements with tier estimate. Produces
   completeness verdict for pre-design-feasibility on PASS, or
-  gap report back to pre-design-brainstorm on FAIL.
+  gap report back to pre-design-brainstorm on FAIL. Strictness:
+  strict by default (all 5 dimensions PASS), relaxed after 2
+  iterations (4 of 5 PASS), auto-PASS at iteration 3. TRIVIAL:
+  Lead-direct. STANDARD: 1 analyst (maxTurns: 15). COMPLEX: 2
+  analysts split functional vs non-functional. DPS needs
+  brainstorm L1 requirements list and tier estimate. Exclude
+  user conversation history. Loops with pre-design-brainstorm
+  (max 3 iterations per D15).
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -128,6 +135,12 @@ Priority: {critical | recommended | nice-to-have}
 - If any FAIL → report gaps to Lead for re-brainstorm
 - Max 3 iterations before proceeding with documented gaps
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.validate: N` in PT before each invocation
+- Iteration 1-2: strict mode (FAIL → return to pre-design-brainstorm for re-questioning)
+- Iteration 3: relaxed mode (proceed with documented gaps, flag in phase_signals)
+- Max iterations: 3
+
 #### Iteration Tracking
 | Iteration | Dimensions Checked | PASS | FAIL | Action |
 |-----------|-------------------|------|------|--------|
@@ -141,6 +154,14 @@ Decision at iteration boundary:
 - After iteration 3: Auto-PASS (max iterations reached)
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
+| Analyst finds wrong or off-direction gaps | L1 Nudge | SendMessage with corrected completeness matrix context |
+| Background analyst exhausted turns | L2 Respawn | Kill → fresh analyst with reduced requirement set |
+| Brainstorm output missing or malformed, cannot validate | L3 Restructure | Re-invoke brainstorm first, do not validate against empty input |
+| All 5 dimensions FAIL after 3 iterations (task fundamentally unclear) | L4 Escalate | AskUserQuestion with options to clarify or abandon |
 
 ### Brainstorm Output Missing or Malformed
 - **Cause**: pre-design-brainstorm didn't produce structured L1/L2 output
@@ -207,6 +228,8 @@ Analysts must receive the COMPLETE requirements document, not a summary. Validat
 | Non-critical dimension FAIL (iter 3) | pre-design-feasibility (proceed) | Requirements + documented gaps |
 | Brainstorm output missing | Lead (re-invoke brainstorm) | Error details |
 | All dimensions FAIL | pre-design-brainstorm (deep exploration) | Full 5-dimension gap report |
+
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 
 ## Quality Gate
 - Completeness matrix has explicit PASS/FAIL per dimension

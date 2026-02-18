@@ -9,7 +9,11 @@ description: >-
   existing behaviors, research-external known issues and
   workarounds, and design-architecture change scope. Produces
   behavior change summary and prediction report with risk matrix
-  for research-coordinator.
+  for research-coordinator. On FAIL, Lead applies D12 escalation
+  ladder. DPS needs research-codebase behavior patterns and
+  file:line evidence, research-external known issues, and
+  design-architecture change scope. Exclude other audit dimension
+  results (static/relational/impact) and pre-design history.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -23,7 +27,7 @@ disable-model-invocation: false
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-behavioral.md`, sends micro-signal: `PASS|changes:{N}|risks:{N}|ref:/tmp/pipeline/p2-audit-behavioral.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p2-audit-behavioral.md`, sends micro-signal: `PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral.md`.
 
 ## Decision Points
 
@@ -107,11 +111,14 @@ Produce final output with:
 ### Delegation Prompt Specification
 
 #### COMPLEX Tier (2 parallel analysts)
-- **Context**: Paste research-codebase L1/L2 behavior patterns. Paste research-external L2 known issues. Paste design-architecture L1 `components[]` with change scope. Assign subsystem: `{subsystem_name}`.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+    INCLUDE: research-codebase L1/L2 behavior patterns; research-external L2 known issues and quirks; design-architecture L1 components[] with change scope; assigned subsystem {subsystem_name}.
+    EXCLUDE: Other audit dimensions' results (static/relational/impact); pre-design conversation history; full pipeline state (P2 phase only).
+    Budget: Context field ≤ 30% of teammate effective context.
 - **Task**: "Identify all behavior-bearing components within assigned subsystem. For each: document current behavior (file:line), predict side effects and regressions from design changes, classify risk (HIGH/MEDIUM/LOW) with evidence from both current code and design decisions."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). Scope to assigned subsystem only. No prescriptive recommendations. maxTurns: 25.
 - **Expected Output**: L1 YAML: total_changes, risk_high/medium/low, conflicts. L2: per-component behavior change table, side effect inventory, regression risk matrix.
-- **Delivery**: SendMessage to Lead: `PASS|changes:{N}|risks:{N}|ref:/tmp/pipeline/p2-audit-behavioral.md`
+- **Delivery**: SendMessage to Lead: `PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral.md`
 
 #### STANDARD Tier (single analyst)
 Same as COMPLEX but single analyst covering all components. No subsystem partitioning.
@@ -120,6 +127,14 @@ Same as COMPLEX but single analyst covering all components. No subsystem partiti
 Lead-direct inline. Read 1-2 behavior-bearing files, note obvious risk. No formal DPS.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error during behavior analysis | L0 Retry | Re-invoke same analyst, same scope |
+| Incomplete predictions or off-scope analysis | L1 Nudge | SendMessage with refined component scope |
+| Analyst exhausted turns, context polluted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Subsystem scope conflict between parallel analysts | L3 Restructure | Modify subsystem boundaries, reassign components |
+| Design conflict requiring strategic decision, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### No Behavior-Bearing Components Found
 - **Cause**: Design changes only affect static content (documentation, configuration values)
@@ -192,6 +207,8 @@ predictions:
     change_type: side_effect|regression
     risk: HIGH|MEDIUM|LOW
     design_decision: ""
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral.md"
 ```
 
 ### L2

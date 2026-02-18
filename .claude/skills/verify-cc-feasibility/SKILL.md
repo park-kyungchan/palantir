@@ -3,12 +3,23 @@ name: verify-cc-feasibility
 description: >-
   Validates CC native field compliance via cc-reference cache.
   Checks frontmatter fields against CC native field lists.
-  Terminal verify stage that gates delivery pipeline. Use after
-  verify-quality PASS or after skill/agent creation or
-  frontmatter modification. Reads from verify-quality routing
-  quality confirmation and execution-infra frontmatter changes.
-  Produces native compliance per file for delivery-pipeline on
-  all PASS, or routes back to execution-infra on FAIL.
+  Terminal verify stage: fourth of four sequential stages,
+  gates delivery pipeline. Use after verify-quality PASS or
+  after skill/agent creation or frontmatter modification. Reads
+  from verify-quality routing quality confirmation and
+  execution-infra frontmatter changes. Produces native
+  compliance per file for delivery-pipeline on all PASS, or
+  routes back to execution-infra on FAIL. On FAIL, routes file
+  path + non-native field name + recommended removal to
+  execution-infra. Validates skills against skill native field
+  table, agents against agent native field table. Primary source:
+  cc-reference cache (memory/cc-reference/native-fields.md).
+  Supplementary: claude-code-guide if cache stale >30 days.
+  TRIVIAL: Lead-direct on 1-2 files. STANDARD: 1 analyst
+  maxTurns 25. COMPLEX: 1 analyst + claude-code-guide for
+  unknown fields. DPS context: extracted frontmatter fields +
+  cc-reference native field tables. Exclude L2 body content,
+  non-.claude/ source files, and historical field rationale.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -157,11 +168,14 @@ Scope determination:
 Flag any field NOT in the skill or agent tables above as non-native. Ensure you are checking against the correct table for the file type (skill fields for SKILL.md, agent fields for agent .md files).
 
 For STANDARD/COMPLEX tiers, construct the DPS delegation prompt for each analyst:
-- **Context**: All frontmatter fields extracted from target files. Include the full native field tables above. Include the known non-native field list. Include the cc-reference cache path for the analyst to read directly.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  - INCLUDE: Extracted frontmatter field names and values per target file. Full native field tables (skill + agent). Known non-native field list. cc-reference cache path (memory/cc-reference/native-fields.md). File paths within this analyst's ownership boundary.
+  - EXCLUDE: L2 body content (only frontmatter between `---` markers). Historical rationale for field removal decisions. Other teammates' task details. Non-.claude/ source files.
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: "Compare each extracted field against the native field lists. Flag any field NOT in the native list as non-native. For each native field, validate value type correctness (booleans, enums, strings, lists). If questionable fields found: read cc-reference cache at `memory/cc-reference/native-fields.md` for latest reference. Report per-file status."
-- **Constraints**: Read-only analysis. No file modifications. Use cc-reference cache as primary validation source (NOT claude-code-guide spawn -- that is Lead's decision, not the analyst's). Do not remove or rename fields. Do not check L2 body content.
+- **Constraints**: Read-only analysis. No file modifications. Use cc-reference cache as primary validation source (NOT claude-code-guide spawn — that is Lead's decision, not the analyst's). Do not remove or rename fields. Do not check L2 body content.
 - **Expected Output**: L1 YAML with `non_native_fields` count, `findings[]` array (file, field, status, reason). L2 markdown compliance report with per-file breakdown.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage format: `"{STATUS}|files:{total_files}|non_native:{non_native_fields}|ref:tasks/{team}/p7-cc-feasibility.md"`. L2 detail stays in agent context.
 
 ### 3. Validate Field Values
 
@@ -227,6 +241,16 @@ The compliance report must clearly separate:
 Aggregate verdict: PASS only if zero blocking findings across all files.
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error reading frontmatter files | L0 Retry | Re-invoke analyst with same DPS and file list |
+| Analyst report missing files or UNKNOWN fields unresolved | L1 Nudge | SendMessage with clarified field scope + cc-reference cache path |
+| Analyst exhausted turns before completing validation, context polluted | L2 Respawn | Kill analyst → spawn fresh with reduced file batch |
+| cc-reference cache stale and claude-code-guide unavailable simultaneously | L3 Restructure | Route cache refresh to execution-infra before proceeding |
+| 3+ L2 failures or field validity strategically ambiguous after guide check | L4 Escalate | AskUserQuestion with situation summary + options |
 
 ### Failure Summary Table
 
@@ -330,6 +354,8 @@ After execution-infra completes fixes routed from cc-feasibility:
 - If FAIL on re-check: route back to execution-infra (max 3 iterations per pipeline rules)
 - After 3 failed iterations: escalate to Lead for manual intervention
 
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
+
 ## Quality Gate
 
 CC feasibility verification PASSES only when ALL of the following are true:
@@ -354,6 +380,8 @@ Quality gate FAILS if ANY of the following are true:
 domain: verify
 skill: cc-feasibility
 status: PASS|FAIL|SKIP
+pt_signal: "metadata.phase_signals.p7_cc_feasibility"
+signal_format: "{STATUS}|files:{total_files}|non_native:{non_native_fields}|ref:tasks/{team}/p7-cc-feasibility.md"
 total_files: 0
 non_native_fields: 0
 value_type_errors: 0

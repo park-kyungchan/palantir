@@ -8,7 +8,9 @@ description: >-
   plan-verify-coordinator complete with all PASS. Reads from
   plan-verify-coordinator verified plan L3 via $ARGUMENTS.
   Produces wave schedule with critical path length and wave
-  visualization with DAG for orchestrate-coordinator.
+  visualization with DAG for orchestrate-coordinator. On FAIL,
+  Lead applies D12 escalation. DPS needs plan-verify-coordinator
+  verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -58,11 +60,20 @@ Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
 - Phase structure (if pre-defined in plan)
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste verified plan L3 content. Include platform constraint: max 4 teammates per wave (CC Agent Teams limit). Include wave scheduling principles: dependency-respecting, load-balanced, minimize total waves.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  INCLUDE:
+    - Verified plan L3 content (task list, dependency graph, complexity estimates)
+    - Platform constraint: max 4 teammates per wave (CC Agent Teams hard limit)
+    - Wave scheduling principles: dependency-respecting, load-balanced, minimize total waves
+  EXCLUDE:
+    - Other orchestrate dimension outputs (static, behavioral, relational)
+    - Historical rationale from plan-verify phases
+    - Full pipeline state beyond this task's scope
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Build execution DAG from task dependencies. Group tasks into waves: each wave has max 4 parallel tasks, all dependencies satisfied by prior waves. Balance load across waves (avoid 1-task waves where possible). Compute critical path. Output wave capacity schedule."
 - **Constraints**: Read-only analysis. No modifications. Hard limit: max 4 parallel tasks per wave. Soft goal: minimize total wave count. Never violate dependency ordering.
 - **Expected Output**: L1 YAML wave schedule. L2 wave visualization with load metrics and critical path.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-impact.md`. Send micro-signal to Lead via SendMessage: `PASS|waves:{N}|max_parallel:{N}|ref:/tmp/pipeline/p5-orch-impact.md`.
+- **Delivery**: Write full result to `tasks/{team}/p5-orch-impact.md`. Send micro-signal to Lead via SendMessage: `PASS|waves:{N}|max_parallel:{N}|ref:tasks/{team}/p5-orch-impact.md`.
 
 #### Step 1 Tier-Specific DPS Variations
 **TRIVIAL**: Skip — Lead assigns sequential execution (1-2 tasks, no wave scheduling needed).
@@ -153,14 +164,22 @@ Produce complete schedule with:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Wave schedule incomplete or dependency order ambiguous | L1 Nudge | SendMessage with refined capacity constraints |
+| Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Cycle in DAG unresolvable without plan restructure | L3 Restructure | Route to plan-verify-coordinator for dependency redesign |
+| 3+ L2 failures or DAG unschedulable within wave limits | L4 Escalate | AskUserQuestion with situation + options |
+
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:/tmp/pipeline/p5-orch-impact.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-impact.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### Cycle Detected in DAG
 - **Cause**: Circular dependency between tasks
-- **Action**: Report FAIL with cycle path. Signal: `FAIL|reason:cycle-detected|ref:/tmp/pipeline/p5-orch-impact.md`
+- **Action**: Report FAIL with cycle path. Signal: `FAIL|reason:cycle-detected|ref:tasks/{team}/p5-orch-impact.md`
 - **Route**: Back to plan-verify-coordinator for dependency restructuring
 
 ### Capacity Overflow (>4 Tasks All Eligible)
@@ -233,6 +252,8 @@ waves:
     task_count: 0
     file_count: 0
     agent_types: []
+pt_signal: "metadata.phase_signals.p5_orchestrate_impact"
+signal_format: "PASS|waves:{N}|max_parallel:{N}|ref:tasks/{team}/p5-orch-impact.md"
 ```
 
 ### L2

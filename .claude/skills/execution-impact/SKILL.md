@@ -10,7 +10,11 @@ description: >-
   manifest, and research-coordinator audit-impact L3 predicted
   paths. Produces impact report with cascade flag for
   execution-cascade if recommended and always for
-  execution-review.
+  execution-review. On FAIL (analyst exhausted), defaults
+  cascade_recommended: false and routes to execution-review with
+  partial impact data. DPS needs execution-code/infra manifests
+  + audit-impact L3 predictions. Exclude implementation details
+  beyond file paths and change summaries.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -92,7 +96,10 @@ Also check for codebase-map.md at `.claude/agent-memory/analyst/codebase-map.md`
 Spawn analyst agent with `subagent_type: analyst`, `maxTurns: 30`.
 
 Construct the delegation prompt with:
-- **Context**: Paste the complete file change manifest — each changed file path and a one-line summary of what changed (e.g., "renamed function X to Y", "added field Z to frontmatter"). If audit-impact L3 predictions are available, paste them as the primary predicted propagation paths to verify first. If codebase-map.md exists and is fresh, paste its `refd_by` entries as supplementary hints.
+- **Context (D11 — cognitive focus first)**:
+  - INCLUDE: Complete file change manifest — each changed file path and one-line summary of what changed. Audit-impact L3 predictions (paste as primary predicted propagation paths to verify first). Codebase-map.md `refd_by` entries if available and fresh (supplementary hints only).
+  - EXCLUDE: Implementation detail beyond file paths and change summaries. Full pipeline state. Design rationale and ADR history. Other phases' outputs.
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: **Predicted-first pattern**: (1) For each changed file, first verify predicted impacts from audit-impact L3 — grep each predicted dependent to confirm the reference still exists and classify as `predicted_confirmed`. (2) Then grep for unpredicted additional impacts using pattern `<basename_without_extension>` scoped to `.claude/` directory, glob `*.{md,json,sh}`. Record newly found dependents as `newly_discovered`. (3) For each match, record a structured evidence triple: `{dependent_file, line_number, matching_content}`. (4) Classify each dependent as DIRECT (hop_count: 1) or TRANSITIVE (hop_count: 2). If no audit-impact L3 predictions available, fall back to full grep scan (legacy path).
 - **Constraints**: Read-only analysis — do NOT modify any files. Grep scope limited to `.claude/` directory. Exclude: `.git/`, `node_modules/`, `agent-memory/` (except codebase-map.md), `*.log`. Max 30 turns — if approaching limit, report partial results for files already analyzed rather than rushing remaining files.
 - **Expected Output**: Return a structured impact report: for each changed file, list its dependents with `{file, type: DIRECT|TRANSITIVE, hop_count: 1|2, reference_pattern, evidence: "file:line:content"}`. End with a summary: total dependents found, DIRECT count, TRANSITIVE count, and cascade recommendation (true if any DIRECT dependents exist).
@@ -175,6 +182,15 @@ Generate L1 YAML and L2 markdown:
 - Pipeline continues regardless — partial data is better than no data
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Grep timeout or analyst turn limit hit | L0 Retry | Re-invoke same analyst with same DPS |
+| Partial analysis — key files not analyzed | L1 Nudge | SendMessage with narrowed scope or additional predictions context |
+| Analyst context exhausted or stuck in loop | L2 Respawn | Kill → fresh analyst with refined DPS and reduced file scope |
+| Codebase-map stale AND grep incomplete, cascade decision uncertain | L3 Restructure | Split analysis into smaller batches, re-sequence with manage-codebase first |
+| Systematic grep failure, tool unavailable, or 3+ L2 failures | L4 Escalate | AskUserQuestion with situation summary + options |
+
 - **Analyst maxTurns exhausted / all greps fail**: Set `status: partial`, `confidence: low` in L1 output
 - **Cascade default on failure**: `cascade_recommended: false` (conservative -- no cascade without evidence)
 - **Routing**: Pipeline continues to execution-review regardless; impact analysis is informational, not blocking
@@ -258,6 +274,8 @@ newly_discovered: 0
 prediction_available: true|false
 cascade_recommended: true|false
 cascade_rationale: ""
+pt_signal: "metadata.phase_signals.p6_impact"
+signal_format: "{STATUS}|cascade:{true|false}|confidence:{level}|ref:tasks/{team}/p6-impact.md"
 ```
 
 ### L2

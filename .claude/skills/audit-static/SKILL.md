@@ -9,7 +9,12 @@ description: >-
   patterns and file inventory, research-external community
   constraints, and design-architecture component structure.
   Produces dependency summary and DAG with hotspot analysis for
-  research-coordinator.
+  research-coordinator. On FAIL, Lead applies D12 escalation
+  ladder. DPS needs research-codebase file inventory and local
+  patterns, research-external dependency constraints, and
+  design-architecture component list. Exclude other audit
+  dimension results (behavioral/relational/impact) and
+  pre-design conversation history.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -23,7 +28,7 @@ disable-model-invocation: false
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-static.md`, sends micro-signal: `PASS|deps:{N}|hotspots:{N}|ref:/tmp/pipeline/p2-audit-static.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p2-audit-static.md`, sends micro-signal: `PASS|deps:{N}|hotspots:{N}|ref:tasks/{team}/p2-audit-static.md`.
 
 ## Decision Points
 
@@ -96,11 +101,14 @@ Produce final output with:
 ### Delegation Prompt Specification
 
 #### COMPLEX Tier (2 parallel analysts)
-- **Context**: Paste research-codebase L1 `pattern_inventory` + file list. Paste research-external L2 dependency constraints. Paste design-architecture L1 `components[]` for scoping. Assign directory scope: `{scope_dirs}`.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+    INCLUDE: research-codebase L1 pattern_inventory + file list; research-external L2 dependency constraints; design-architecture L1 components[] for scoping; assigned directory scope {scope_dirs}.
+    EXCLUDE: Other audit dimensions' results (behavioral/relational/impact); pre-design conversation history; full pipeline state (P2 phase only).
+    Budget: Context field ≤ 30% of teammate effective context.
 - **Task**: "Map all file-to-file import/reference chains within assigned directory scope. Build dependency DAG with edge weights. Identify hotspot files (>3 connections). Report complete edge list with file:line evidence for every edge."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). Scope to assigned directories only. Exclude node_modules/, .git/, build artifacts. maxTurns: 25.
 - **Expected Output**: L1 YAML: total_nodes, total_edges, hotspot_count, cycle_count, coverage_percent. L2: full DAG edges, hotspot table sorted by connections, cycle report.
-- **Delivery**: SendMessage to Lead: `PASS|deps:{N}|hotspots:{N}|ref:/tmp/pipeline/p2-audit-static.md`
+- **Delivery**: SendMessage to Lead: `PASS|deps:{N}|hotspots:{N}|ref:tasks/{team}/p2-audit-static.md`
 
 #### STANDARD Tier (single analyst)
 Same as COMPLEX but single analyst with full codebase scope. No directory partitioning.
@@ -109,6 +117,14 @@ Same as COMPLEX but single analyst with full codebase scope. No directory partit
 Lead-direct inline. Grep 1-2 files for imports, note edges. No formal DPS.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Grep/Glob tool error or scan timeout | L0 Retry | Re-invoke same analyst, same scope |
+| Incomplete dependency scan, missing files in graph | L1 Nudge | SendMessage with refined file scope |
+| Analyst exhausted turns before full graph built | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Multi-analyst scope conflict or partition overlap | L3 Restructure | Modify scope partition, reassign directories |
+| Strategic ambiguity on scope definition, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### No Dependencies Found
 - **Cause**: Codebase has no inter-file references (single-file project or fully decoupled)
@@ -181,6 +197,8 @@ hotspots:
     fan_in: 0
     fan_out: 0
     risk: HIGH|MEDIUM|LOW
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|deps:{N}|hotspots:{N}|ref:tasks/{team}/p2-audit-static.md"
 ```
 
 ### L2

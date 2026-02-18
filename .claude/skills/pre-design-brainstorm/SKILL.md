@@ -7,6 +7,15 @@ description: >-
   skills. Reads from user request as raw unstructured input.
   Produces requirement list with tier estimate and requirement
   document with open questions for pre-design-validate.
+  AskUserQuestion is Lead-direct only — analysts handle
+  categorization and synthesis (Steps 1, 2, 4, 5). TRIVIAL:
+  Lead-direct, 2-3 questions. STANDARD: 1 background analyst
+  (maxTurns: 10). COMPLEX: 2-4 analysts split by dimension
+  (scope, constraints, integration, edge-cases). On FAIL (user
+  unresponsive or conflicting requirements), Lead applies D12
+  escalation. DPS needs user requirements as raw input. Exclude
+  pipeline history and technical constraints. Loops with
+  pre-design-validate (max 3 iterations per D15).
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "[topic]"
@@ -155,7 +164,21 @@ Tier classification feeds directly into:
 Combine all gathered information into structured output.
 Flag unresolved items as open questions with rationale.
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.brainstorm: N` in PT before each invocation
+- Iteration 1-2: strict mode (FAIL from validate → return here, re-question user)
+- Iteration 3: relaxed mode (proceed with documented gaps, flag in phase_signals)
+- Max iterations: 3
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
+| User gives vague or incomplete answers | L1 Nudge | Rephrase question, provide concrete examples |
+| Background analyst exhausted turns | L2 Respawn | Kill → fresh analyst with narrower scope |
+| 3+ question rounds with no convergence, scope keeps expanding | L3 Restructure | Pare scope, remove optional dimensions, synthesize best-effort |
+| User unresponsive or fundamentally unclear task after D12 L0-L3 | L4 Escalate | AskUserQuestion with concrete scope options |
 
 ### User Provides No Useful Answers
 - **Cause**: User responds with "I don't know" or "whatever you think is best" to all questions
@@ -221,6 +244,8 @@ Tier classification must reference specific evidence: file count, module count, 
 | User unresponsive | pre-design-validate (with assumptions) | Best-effort requirements + open questions |
 | Out of CC scope | pre-design-validate -> feasibility | Requirements with infeasibility notes |
 | Contradictory requirements | Self (re-ask) | Contradiction details for user resolution |
+
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 
 ## Quality Gate
 - All 4 dimensions have ≥1 requirement

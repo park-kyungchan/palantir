@@ -7,9 +7,14 @@ description: >-
   audit-behavioral, and audit-impact. Use after research-codebase
   and research-external complete. Reads from research-codebase
   file inventory, research-external pattern constraints, and
-  design-architecture component boundaries. Produces relationship
-  summary and integrity report with link evidence for
-  research-coordinator.
+  design-interface API contracts. Produces relationship summary
+  and integrity report with link evidence for
+  research-coordinator. On FAIL, Lead applies D12 escalation
+  ladder. DPS needs research-codebase file inventory and naming
+  conventions, research-external relationship constraints, and
+  design-interface API contracts. Exclude static dependency
+  graph, behavioral predictions, and pre-design conversation
+  history.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -23,7 +28,7 @@ disable-model-invocation: false
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-relational.md`, sends micro-signal: `PASS|relations:{N}|broken:{N}|ref:/tmp/pipeline/p2-audit-relational.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p2-audit-relational.md`, sends micro-signal: `PASS|relations:{N}|broken:{N}|ref:tasks/{team}/p2-audit-relational.md`.
 
 ## Decision Points
 
@@ -113,12 +118,15 @@ Produce final output with:
 ### Delegation Prompt Specification
 
 #### COMPLEX Tier (2 analysts: map + validate)
-- **Context**: Paste research-codebase L1 file inventory + naming conventions. Paste research-external L2 relationship constraints. Paste design-interface L1 `interfaces[]`.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+    INCLUDE: research-codebase L1 file inventory + naming conventions; research-external L2 relationship constraints; design-interface L1 interfaces[].
+    EXCLUDE: Other audit dimensions' results (static/behavioral/impact); pre-design conversation history; full pipeline state (P2 phase only).
+    Budget: Context field ≤ 30% of teammate effective context.
 - **Task (Analyst-1 Mapper)**: "Map all INPUT_FROM/OUTPUT_TO, Receives From/Sends To, import, and API contract relationships across all files. Record each as source->target with type and file:line evidence."
 - **Task (Analyst-2 Validator)**: "Read Analyst-1 relationship map. Verify bidirectional consistency for every edge. Classify issues: consistent/asymmetric/orphan/stale. Report integrity percentage."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). No inferred relationships. maxTurns: 25 each.
 - **Expected Output**: L1 YAML: total_relations, consistent/asymmetric/orphan/broken counts, integrity_percent. L2: relationship graph, consistency matrix, issues table.
-- **Delivery**: SendMessage to Lead: `PASS|relations:{N}|broken:{N}|ref:/tmp/pipeline/p2-audit-relational.md`
+- **Delivery**: SendMessage to Lead: `PASS|relations:{N}|broken:{N}|ref:tasks/{team}/p2-audit-relational.md`
 
 #### STANDARD Tier (single analyst)
 Single analyst performs both mapping and validation in one pass. maxTurns: 25.
@@ -127,6 +135,14 @@ Single analyst performs both mapping and validation in one pass. maxTurns: 25.
 Lead-direct inline. Check 1-2 files for declared relationships. No formal DPS.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error during relationship scan | L0 Retry | Re-invoke same analyst, same scope |
+| Incomplete chain mapping, missing files in graph | L1 Nudge | SendMessage with refined file scope |
+| Analyst exhausted turns before full validation | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Multi-analyst mapping/validation scope conflict | L3 Restructure | Modify analyst boundaries, reassign relationship sets |
+| Strategic ambiguity on relationship scope, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### No Relationship Declarations Found
 - **Cause**: Codebase has no cross-file relationship declarations (monolithic file or no metadata)
@@ -200,6 +216,8 @@ issues:
     target: ""
     type: asymmetric|orphan|broken|stale
     severity: HIGH|MEDIUM|LOW
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|relations:{N}|broken:{N}|ref:tasks/{team}/p2-audit-relational.md"
 ```
 
 ### L2

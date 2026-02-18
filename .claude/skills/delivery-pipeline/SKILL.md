@@ -1,12 +1,19 @@
 ---
 name: delivery-pipeline
 description: >-
-  Delivers pipeline results via structured git commit, MEMORY.md
-  archive, and PT completion. User confirmation required before
-  git commit. Pipeline terminal skill. Use after verify domain
-  complete with all 4 stages PASS and no outstanding FAIL. Reads
-  from verify-cc-feasibility all 4 verify stages PASS confirmed.
-  Produces git commit, MEMORY.md archive, and PT status DELIVERED.
+  [P8·Cross-Cutting·Terminal] Delivers pipeline results via
+  structured git commit, MEMORY.md archive, and PT completion.
+  User confirmation required before git commit. Pipeline terminal
+  skill. Use after verify domain complete with all 4 stages PASS
+  and no outstanding FAIL. Reads from verify-cc-feasibility (main
+  pipeline) or self-implement (homeostasis path) with all-PASS
+  confirmed. Produces git commit, MEMORY.md archive, and PT status
+  DELIVERED. On FAIL (pre-commit hook failure or user rejection),
+  Lead retries L0 or applies D12 escalation. DPS needs
+  verify-cc-feasibility all-PASS confirmation + PT metadata for
+  commit message. Exclude detailed verify findings beyond PASS
+  status. delivery-agent memory:none — full context required in
+  DPS (D11 exception: include all).
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[commit-message]"
@@ -113,7 +120,13 @@ With user confirmation:
 ### Delivery-Agent Spawn DPS
 Since delivery-agent has `memory: none`, Lead must provide ALL context in the spawn prompt. The agent has zero access to prior conversation history.
 
-- **Context**: Verify all-PASS summary (all 4 stage verdicts), pipeline tier classification, complete changed file list with paths, PT task ID, current branch name, key architecture decisions from the pipeline, and commit message from `$ARGUMENTS` if provided.
+- **Context**:
+
+  > **D11 Exception**: delivery-agent operates with `memory: none`. Unlike other skills where D11 context distribution filters noise, delivery-pipeline DPS must include ALL context. Rationale: terminal skill with user-confirmation gate — complete context prevents back-and-forth that delays delivery.
+
+  INCLUDE: verify all-PASS summary (all 4 stage verdicts), pipeline tier classification, complete changed file list with paths, PT task ID, current branch name, key architecture decisions from the pipeline, commit message from `$ARGUMENTS` if provided, MEMORY.md current state summary for Read-Merge-Write.
+
+  EXCLUDE: per-stage verify findings detail beyond PASS/FAIL verdict, rejected design alternatives, historical rationale for prior-phase decisions.
 - **Task**: "Consolidate pipeline results. Generate commit message using conventional commit format. Update MEMORY.md using Read-Merge-Write pattern. Stage files with `git add [specific files]`. Create commit after user confirmation. Mark PT DELIVERED via TaskUpdate."
 - **Constraints**: NO `git add -A` or `git add .`. Must use AskUserQuestion for confirmation before git commit. Must TaskUpdate PT only after commit succeeds (not before). Must use individual file staging. Never include sensitive files (.env, credentials, secrets).
 - **Expected Output**: L1 YAML with `commit_hash`, `files_changed`, `pt_status`. L2 delivery summary with commit message, archive entries, and any warnings.
@@ -143,6 +156,14 @@ If any required check fails, do not spawn delivery-agent. Route to the appropria
 - **Full cleanup**: Remove /tmp/ artifacts, team files, and intermediate plan/design files that are fully captured in the commit and MEMORY.md. Use when intermediate files would create noise in the working directory.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Pre-commit hook failure (lint, format) | L0 Retry | Auto-fix via hook feedback, re-attempt commit |
+| MEMORY.md archive format error | L1 Nudge | SendMessage with corrected archive format |
+| delivery-agent exhausted turns or commit tool failure | L2 Respawn | Kill → fresh delivery-agent with refined DPS |
+| PT metadata stale or verify status contradicted | L3 Restructure | Re-run verify stage before delivery |
+| User rejects commit or strategic scope concern | L4 Escalate | AskUserQuestion with situation + options |
 
 ### Verify Domain Has Outstanding FAIL
 - **Cause**: One or more of the 5 verify stages did not pass. Delivery was invoked prematurely.
@@ -266,6 +287,8 @@ status: delivered
 commit_hash: ""
 files_changed: 0
 pt_status: DELIVERED
+pt_signal: "metadata.phase_signals.p8_delivery"
+signal_format: "{STATUS}|commit:{hash}|files:{N}|ref:tasks/{team}/p8-delivery.md"
 ```
 
 ### L2

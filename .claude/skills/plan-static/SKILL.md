@@ -8,6 +8,10 @@ description: >-
   from research-coordinator audit-static L3 dependency graph via
   $ARGUMENTS. Produces task list with dependency edges and
   complexity, and cluster rationale for plan-verify-static.
+  On FAIL (coverage <85% or HIGH orphans), routes back to
+  plan-static with refined research context. DPS needs
+  research-coordinator audit-static L3 dependency graph. Exclude
+  behavioral, relational, and impact dimension data.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -95,18 +99,41 @@ Build the final task graph:
 - Calculate parallelism potential (tasks per wave)
 
 **DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context**: Paste audit-static L3 content (dependency graph, module boundaries, coupling metrics). Include pipeline tier and total file count.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE:
+    - research-coordinator audit-static L3 from `tasks/{team}/p2-coordinator-audit-static.md`
+    - Pipeline tier and iteration count from PT
+  EXCLUDE:
+    - Other plan dimension outputs (unless dependency)
+    - Full research evidence detail (use L3 summaries only)
+    - Pre-design and design conversation history
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Identify dependency clusters in the file graph. Group files into tasks (1-4 files each, SRP). Assign file ownership (non-overlapping). Map inter-task dependency edges. Identify critical path. Estimate per-task complexity (T/S/C)."
 - **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with task_count, tasks[] (id, files, complexity, depends_on, cluster). L2 task descriptions with cluster rationale and critical path visualization.
-- **Delivery**: Write full result to `/tmp/pipeline/p3-plan-static.md`. Send micro-signal to Lead: `PASS|tasks:{N}|deps:{N}|ref:/tmp/pipeline/p3-plan-static.md`.
+- **Delivery**: Write full result to `tasks/{team}/p3-plan-static.md`. Send micro-signal to Lead: `PASS|tasks:{N}|deps:{N}|ref:tasks/{team}/p3-plan-static.md`.
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Flat file list (1-2 files), assign each to single task. No cluster analysis needed. Output inline.
 **STANDARD**: Spawn analyst (maxTurns: 15). Simplified cluster identification across 3-8 files. Single-pass grouping. Skip critical path if ≤ 3 tasks.
 **COMPLEX**: Full DPS above. Deep multi-cluster analysis, cross-module boundaries, full critical path.
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-static: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to research-coordinator with dependency graph gaps)
+- Iteration 2: relaxed mode (proceed with documented coverage gaps, flag in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error or timeout during cluster analysis | L0 Retry | Re-invoke same agent, same DPS |
+| Dependency graph incomplete or cluster output off-direction | L1 Nudge | SendMessage with refined scope constraints |
+| Agent stuck on cycle detection or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
+| Task graph structure broken or scope shift requires replanning | L3 Restructure | Modify task graph, redefine clusters |
+| Strategic ambiguity on decomposition scope or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Missing audit-static L3 input | CRITICAL | research-coordinator | Yes | Cannot decompose without dependency graph. Request re-run. |
@@ -166,6 +193,8 @@ status: complete|partial
 task_count: 0
 total_files: 0
 critical_path_length: 0
+pt_signal: "metadata.phase_signals.p3_plan_static"
+signal_format: "{STATUS}|tasks:{N}|critical_path:{N}|ref:tasks/{team}/p3-plan-static.md"
 tasks:
   - id: ""
     files: []

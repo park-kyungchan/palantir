@@ -5,10 +5,17 @@ description: >-
   spawn pt-manager agent, light ops Lead-direct. Exactly 1 PT
   per pipeline. Use at any phase: pipeline start for PT creation,
   plan ready for batch tasks, execution for status updates, commit
-  done for PT completion. Reads from pipeline context including
-  tier, phase, requirements, and architecture decisions. Produces
-  PT lifecycle events, work task batches, and ASCII status
-  visualization.
+  done for PT completion. Reads from PERMANENT task tier, phase,
+  requirements, and architecture decisions for all pipeline
+  operations. Produces PT lifecycle events and work task batches
+  consumed by all pipeline skills. ASCII status visualization on
+  demand. Teammates self-claim via TaskList loop. Cross-session
+  sharing via CLAUDE_CODE_TASK_LIST_ID env.
+  On FAIL (Task API error or duplicate PT), Lead retries L0 with
+  same DPS. On persistent failure (3+ L0 retries), Lead L4
+  escalation with pipeline state summary.
+  DPS needs PERMANENT task ID, current phase, and operation type.
+  Exclude completed task details and cross-phase rationale.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[action] [args]"
@@ -159,7 +166,7 @@ Key rules:
 - **문제**: `metadata.problem` — 기존 상태의 무엇이 불충분한가
 - **개선/결과/계획**: `metadata.improvement` — 이 작업이 어떻게 개선하는가
 - Status labels: 진행중, 완료, 대기, 실패
-- **Delivery**: pt-manager sends micro-signal to Lead via SendMessage: `{STATUS}|action:{type}|tasks:{N}|ref:/tmp/pipeline/task-management.md`.
+- **Delivery**: pt-manager sends micro-signal to Lead via SendMessage: `{STATUS}|action:{type}|tasks:{N}|ref:tasks/{team}/task-management.md`.
 
 ### 6. PT Completion
 
@@ -179,7 +186,7 @@ Key rules:
 - **Task**: "[Specific operation]: Create PT with structured metadata, OR update PT with phase results via Read-Merge-Write, OR batch create work tasks from plan output with dependency chains, OR generate ASCII pipeline visualization."
 - **Constraints**: pt-manager agent. Tools: Read, Glob, Grep, Write, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion. No Edit/Bash. maxTurns: 15 (STANDARD), 25 (COMPLEX).
 - **Expected Output**: L1 YAML with `action`, `pt_id`, `task_count`. L2 action summary or ASCII visualization.
-- **Delivery**: SendMessage to Lead: `PASS|action:{type}|tasks:{N}|ref:/tmp/pipeline/task-management.md`
+- **Delivery**: SendMessage to Lead: `PASS|action:{type}|tasks:{N}|ref:tasks/{team}/task-management.md`
 
 #### PT-Manager Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Single TaskUpdate inline. No pt-manager spawn.
@@ -200,6 +207,14 @@ Key rules:
 - **No dependencies**: Tasks are fully independent. No `addBlockedBy` needed. Used for parallel analysis tasks in P0-P1 phases.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Task API tool error or timeout | L0 Retry | Re-invoke pt-manager with same DPS |
+| Duplicate PT detected or partial metadata | L1 Nudge | SendMessage with deduplication context |
+| pt-manager exhausted turns or stuck | L2 Respawn | Kill → fresh pt-manager with refined DPS |
+| Circular dependency or batch scope shift | L3 Restructure | Modify task graph, break cycle, reassign files |
+| 3+ L2 failures or PT unrecoverable | L4 Escalate | AskUserQuestion with pipeline state options |
 
 ### Duplicate PT Detection
 - **Cause**: PT creation attempted when one already exists (e.g., pipeline-resume created a new PT without checking, or two pipeline starts raced).
@@ -281,6 +296,8 @@ skill: task-management
 action: create-pt|update-pt|batch-create|visualize|complete-pt
 pt_id: ""
 task_count: 0
+pt_signal: "metadata.phase_signals.cross-cutting"
+signal_format: "{STATUS}|action:{type}|tasks:{N}|ref:tasks/{team}/task-management.md"
 ```
 
 ### L2

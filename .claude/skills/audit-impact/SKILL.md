@@ -9,7 +9,11 @@ description: >-
   research-codebase file inventory, research-external constraints,
   and design-risk risk matrix. Produces impact summary and
   propagation analysis for research-coordinator, and Shift-Left
-  predicted paths for execution-impact.
+  predicted paths for execution-impact. On FAIL, Lead applies
+  D12 escalation ladder. DPS needs research-codebase file
+  inventory and dependency patterns, research-external propagation
+  constraints, and design-risk risk matrix. Exclude relational
+  integrity data, behavioral predictions, and pre-design history.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -23,12 +27,12 @@ disable-model-invocation: false
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p2-audit-impact.md`, sends micro-signal: `PASS|direct:{N}|transitive:{N}|ref:/tmp/pipeline/p2-audit-impact.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p2-audit-impact.md`, sends micro-signal: `PASS|direct:{N}|transitive:{N}|ref:tasks/{team}/p2-audit-impact.md`.
 
 ## Shift-Left Pattern
 This skill produces L3 output that is reused by execution-impact in P6. The predicted propagation paths from P2 become the baseline for P6's actual impact verification. This avoids redundant analysis: P2 predicts, P6 validates predictions against real changes.
 
-The L3 output is stored at `/tmp/pipeline/p2-audit-impact.md` and passed to execution-impact via `$ARGUMENTS` in the plan phase.
+The L3 output is stored at `tasks/{team}/p2-audit-impact.md` and passed to execution-impact via `$ARGUMENTS` in the plan phase.
 
 ## Decision Points
 
@@ -121,12 +125,15 @@ Produce final output with:
 ### Delegation Prompt Specification
 
 #### COMPLEX Tier (2 sequential analysts)
-- **Context**: Paste research-codebase L1 file inventory + dependency patterns. Paste research-external L2 change propagation constraints. Paste design-risk L1 risk matrix with change points.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+    INCLUDE: research-codebase L1 file inventory + dependency patterns; research-external L2 change propagation constraints; design-risk L1 risk matrix with change points.
+    EXCLUDE: Other audit dimensions' results (static/behavioral/relational); pre-design conversation history; full pipeline state (P2 phase only).
+    Budget: Context field ≤ 30% of teammate effective context.
 - **Task (Analyst-1 DIRECT)**: "From each design change point, trace all 1-hop DIRECT impacts: files that import, reference, or configure the changed component. Record each path with file:line evidence."
 - **Task (Analyst-2 TRANSITIVE)**: "Read Analyst-1 DIRECT edge list. Trace 2-3 hop TRANSITIVE chains from each directly impacted file. Cap at 3 hops. Record full chain with per-hop evidence."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). No recommendations. Cap transitive at 3 hops. maxTurns: 25 each.
 - **Expected Output**: L1 YAML: direct_count, transitive_count, severity distribution, maintenance/scalability risk. L2: propagation path table, risk matrix, Shift-Left handoff data.
-- **Delivery**: SendMessage to Lead: `PASS|direct:{N}|transitive:{N}|ref:/tmp/pipeline/p2-audit-impact.md`
+- **Delivery**: SendMessage to Lead: `PASS|direct:{N}|transitive:{N}|ref:tasks/{team}/p2-audit-impact.md`
 
 #### STANDARD Tier (single analyst)
 Single analyst traces both DIRECT and TRANSITIVE in one pass. maxTurns: 25.
@@ -135,6 +142,14 @@ Single analyst traces both DIRECT and TRANSITIVE in one pass. maxTurns: 25.
 Lead-direct inline. Check 1-2 change points for obvious dependents. No formal DPS.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error during propagation trace | L0 Retry | Re-invoke same analyst, same scope |
+| Incomplete path tracing or off-scope analysis | L1 Nudge | SendMessage with refined change point scope |
+| Analyst exhausted turns tracing chains | L2 Respawn | Kill → fresh analyst with refined DPS |
+| DIRECT-TRANSITIVE analyst handoff broken (COMPLEX) | L3 Restructure | Merge into single analyst or re-partition chain sets |
+| Strategic ambiguity on hop depth or scope, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### No Propagation Paths Found
 - **Cause**: Design changes are entirely self-contained with no external dependencies
@@ -213,6 +228,8 @@ propagation:
     hops: 1
     severity: CRITICAL|HIGH|MEDIUM|LOW
     terminal: ""
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|direct:{N}|transitive:{N}|ref:tasks/{team}/p2-audit-impact.md"
 ```
 
 ### L2

@@ -7,8 +7,13 @@ description: >-
   after pipeline execution, major codebase changes, or periodic
   maintenance. AI can auto-invoke. Reads from .claude/ directory
   files via structural reference scanning. Produces
-  codebase-map.md file and map health report with entries count,
-  mode, and staleness metrics.
+  codebase-map.md and map health report with entries count,
+  mode, and staleness metrics for self-diagnose structural
+  analysis. On FAIL (scan timeout or map corruption), Lead
+  applies L0 retry; 3+ failures escalate to L4.
+  DPS needs changed file list from pipeline execution and
+  current codebase-map.md. Exclude historical rationale and
+  full pipeline state.
 user-invocable: true
 argument-hint: "[full|incremental]"
 disable-model-invocation: false
@@ -65,11 +70,14 @@ Spawn analyst agent with `subagent_type: analyst`, `maxTurns: 30`:
 6. **Write complete map** to `.claude/agent-memory/analyst/codebase-map.md`
 
 **Full Generation DPS** (STANDARD/COMPLEX tiers):
-- **Context**: Scope paths from Scope Boundary section. Exclusion list. Reference detection patterns above.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE: Scope paths from Scope Boundary section. Exclusion list. Reference detection patterns above.
+  EXCLUDE: Pipeline history, agent-memory runtime data, other homeostasis skills' findings. Budget: context ≤30% of analyst context.
 - **Task**: "Enumerate all .claude/ files within scope filters. For each file, grep for structural references to other tracked files. Build bidirectional refs and calculate hotspot scores. Write complete codebase-map.md."
 - **Constraints**: analyst agent, maxTurns:30. Write output to `.claude/agent-memory/analyst/codebase-map.md` only. Max 150 entries / 300 lines.
 - **Expected Output**: L1 YAML with entries count, mode: full-generation, hotspot distribution. Complete codebase-map.md file per map schema.
-- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:full|ref:/tmp/pipeline/homeostasis-manage-codebase.md`.
+- **Delivery**: Write full result to `tasks/{team}/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:full|ref:tasks/{team}/homeostasis-manage-codebase.md`.
+  If no team active, fallback to `/tmp/pipeline/homeostasis-manage-codebase.md`.
 
 ### 3. Incremental Update
 For each changed file from pipeline execution:
@@ -83,11 +91,14 @@ For each changed file from pipeline execution:
 7. **Set `updated` date** to today for all modified entries
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste the list of changed files from pipeline execution (from Lead's context or SRC log). Include the current codebase-map.md content (or relevant entries for changed files). Include scope filters and exclusion list.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE: Changed file list from pipeline execution (from Lead's context or SRC log). Current codebase-map.md content (relevant entries for changed files). Scope filters and exclusion list.
+  EXCLUDE: Pipeline history, full pipeline state, other homeostasis skills' findings. Budget: context ≤30% of analyst context.
 - **Task**: "For each changed file: (1) Re-scan refs by grepping content for references to other tracked files, (2) Update refd_by bidirectionally, (3) Handle new files (add entry), deleted files (remove entry), renames (old→new). Recalculate hotspot scores. Set updated date."
 - **Constraints**: Write output to `.claude/agent-memory/analyst/codebase-map.md` only. Follow the existing map schema. Stay within 150 entries / 300 lines.
 - **Expected Output**: L1 YAML with entries updated/added/removed counts, mode: incremental-update. Updated codebase-map.md file.
-- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:{mode}|ref:/tmp/pipeline/homeostasis-manage-codebase.md`.
+- **Delivery**: Write full result to `tasks/{team}/homeostasis-manage-codebase.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|entries:{N}|mode:{mode}|ref:tasks/{team}/homeostasis-manage-codebase.md`.
+  If no team active, fallback to `/tmp/pipeline/homeostasis-manage-codebase.md`.
 
 ### 4. Staleness Detection
 For each existing entry in the map:
@@ -167,6 +178,17 @@ updated: {YYYY-MM-DD}
 - NOT part of current SRC implementation scope
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Filesystem scan timeout or partial read | L0 Retry | Re-invoke same analyst with same DPS |
+| Analyst output missing hotspot scoring or bidirectional refs | L1 Nudge | SendMessage with refined reference detection patterns |
+| Analyst stuck, map corrupted on repeated attempts | L2 Respawn | Kill → fresh analyst with force-full mode DPS |
+| Map size limit exceeded and incremental fails repeatedly | L3 Restructure | Switch to targeted scan by scope segment, prune aggressively |
+| 3+ L2 failures or scan structurally blocked | L4 Escalate | AskUserQuestion with situation summary and options |
+
 - **Map corrupted**: Delete and regenerate from scratch (full scan)
 - **Map exceeds 300 lines**: Prune lowest-hotspot, oldest-updated entries
 - **Filesystem scan timeout**: Produce partial map with `status: partial`
@@ -231,6 +253,8 @@ domain: homeostasis
 skill: manage-codebase
 status: complete|partial
 mode: full-generation|incremental-update|staleness-check
+pt_signal: "metadata.phase_signals.homeostasis"
+signal_format: "{STATUS}|entries:{N}|mode:{mode}|ref:tasks/{team}/homeostasis-manage-codebase.md"
 entries: 0
 stale_entries_removed: 0
 new_entries_added: 0

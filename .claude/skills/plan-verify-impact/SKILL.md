@@ -10,6 +10,10 @@ description: >-
   L3 propagation paths. Produces containment verdict and
   path-checkpoint mapping with gap classification for
   plan-verify-coordinator.
+  On FAIL, routes back to plan-impact with verified gap
+  evidence. DPS needs plan-impact output and
+  research-coordinator audit-impact L3. Exclude other verify
+  dimension results.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -25,7 +29,7 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the execution
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-impact.md`, sends micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:/tmp/pipeline/p4-pv-impact.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-impact.md`, sends micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md`.
 
 ## Decision Points
 
@@ -45,11 +49,14 @@ Path count determines spawn parameters.
 ## Methodology
 
 ### Analyst Delegation DPS
-- **Context**: Paste plan-impact L1 execution sequence (phases[], checkpoints[], rollback_boundaries[]). Paste research-coordinator audit-impact L3 propagation paths (paths[], origin, chain[], severity, depth).
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  - INCLUDE: plan-impact L1 execution sequence (phases[], checkpoints[], rollback_boundaries[]); research-coordinator audit-impact L3 propagation paths (paths[], origin, chain[], severity, depth); file paths within this agent's ownership boundary
+  - EXCLUDE: other verify dimension results (static/behavioral/relational); historical rationale for plan-impact decisions; full pipeline state beyond P3-P4; rejected sequencing alternatives
+  - Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Map each propagation path to intercepting checkpoints. Verify checkpoint position (before terminal node) and criteria match (tests for specific propagation type). Classify gaps as UNMITIGATED, LATE, or INSUFFICIENT. Flag circular paths requiring dual checkpoints."
 - **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed propagation paths.
 - **Expected Output**: L1 YAML: total_paths, contained_count, unmitigated_count, late_checkpoint_count, verdict, findings[]. L2: containment matrix with path evidence.
-- **Delivery**: SendMessage to Lead: `PASS|paths:{N}|unmitigated:{N}|ref:/tmp/pipeline/p4-pv-impact.md`
+- **Delivery**: SendMessage to Lead: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md`
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Verify each propagation path has an intercepting checkpoint inline. No criteria validation.
@@ -133,7 +140,21 @@ Produce final verdict with evidence:
 - Total unmitigated count > 3 regardless of severity, OR
 - >50% of paths lack containment (systematic checkpoint gap)
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-verify-impact: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to plan-impact with gap evidence)
+- Iteration 2: relaxed mode (proceed with risk flags, document gaps in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Audit-impact L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
+| Containment matrix incomplete or paths unverified | L1 Nudge | SendMessage with refined context |
+| Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
+| Propagation graph stale or circular path detected | L3 Restructure | Modify task graph, reassign files |
+| Unresolvable containment gap, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### Audit-Impact L3 Not Available
 - **Cause**: research-coordinator did not produce audit-impact L3 output.
@@ -224,6 +245,8 @@ findings:
     path: ""
     severity: HIGH|MEDIUM|LOW
     evidence: ""
+pt_signal: "metadata.phase_signals.p4_verify_impact"
+signal_format: "{STATUS}|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md"
 ```
 
 ### L2

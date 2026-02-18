@@ -2,21 +2,22 @@
 name: evaluation-criteria
 description: >-
   Establishes weighted evaluation criteria via structured user
-  dialogue using CDST 4-phase methodology (Define-Calibrate-
-  Score-Synthesize). Recommends criteria sets with reasoning,
-  user selects and refines via AskUserQuestion. Criteria evolve
-  across P2 research and P3 plan phases as understanding
-  deepens. Anti-pattern guard: prevents post-hoc rationalization,
-  equal-weight defaults, undefined anchors, and frozen criteria.
-  Use at P2 entry when pipeline requires evaluation, comparison,
-  analysis, or selection of alternatives. First P2 skill invoked
-  before research-codebase and research-external to set decision
-  framework upfront. Reads from user requirements, domain
-  context, and pipeline tier from PERMANENT task. Produces
-  criteria specification with criterion names, H/M/L weights,
-  0/10 score anchors, pass/fail threshold, and optional golden
-  example for downstream research scoring, plan decision
-  framework, and execution evaluation rubric.
+  dialogue using CDST 4-phase methodology. Use at P2 entry
+  when pipeline requires evaluation, comparison, analysis, or
+  selection of alternatives. First P2 skill invoked before
+  research-codebase and research-external to set decision
+  framework upfront. Anti-pattern guard: prevents post-hoc
+  rationalization, equal-weight defaults, and undefined anchors.
+  Reads from user requirements, domain context, and pipeline
+  tier from PERMANENT task. Produces criteria spec with H/M/L
+  weights, 0-10 score anchors, pass/fail threshold, and golden
+  example for research-codebase and research-external scoring,
+  plan-* decision framework, and execution-review rubric.
+  On FAIL (user rejects all criteria or cannot converge),
+  Lead re-invokes with refined domain context. DPS needs
+  user requirements summary and pipeline tier from PERMANENT
+  task. Exclude full pipeline state and technical
+  implementation detail.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -101,7 +102,9 @@ Run after P2 research skills return initial findings (STANDARD/COMPLEX only). Le
 > "Calibration found [issue]. Recommended adjustment: [change]. Approve?"
 
 **COMPLEX calibration DPS** — Spawn analyst with:
-- **Context**: Current criteria spec YAML (from DEFINE). Research findings from research-codebase/external L1 summaries.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  - INCLUDE: Current criteria spec YAML (from DEFINE). Research findings from research-codebase and research-external L1 summaries. Pipeline tier.
+  - EXCLUDE: Full P2 audit outputs. Pre-design conversation history. Other pipeline phase data.
 - **Task**: "Stress-test each criterion against research findings. For each: (1) apply 0-anchor and 10-anchor to a concrete finding, (2) check MECE against other criteria, (3) run sensitivity analysis on H-weight criteria. Report issues found."
 - **Constraints**: Read-only analysis. maxTurns: 15. Do not modify criteria — report findings only.
 - **Expected Output**: Per-criterion validation result (PASS/ISSUE), MECE matrix, sensitivity flags.
@@ -138,6 +141,8 @@ evaluation_criteria:
     Document: what would flip the verdict? (ADR-style rationale)
   version: 1
   phase: define|calibrate|final
+  pt_signal: "metadata.phase_signals.p2_criteria"
+  signal_format: "PASS|criteria:{N}|phase:{phase}|ref:tasks/{team}/p2-evaluation-criteria.md"
 ```
 
 Store in PT metadata under `evaluation_criteria` key via task-management skill.
@@ -188,6 +193,14 @@ Before executing, Lead checks PT metadata for existing `evaluation_criteria`:
 - **Key present, phase=calibrate or final**: Already calibrated. Skip unless user explicitly requests re-evaluation.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| AskUserQuestion timeout or user unavailable | L0 Retry | Re-invoke same AskUserQuestion round |
+| User provides partial criteria, criteria incomplete | L1 Nudge | SendMessage to user with refined options presentation |
+| Calibration analyst exhausted turns | L2 Respawn | Kill → fresh analyst with full criteria spec and research findings |
+| MECE violation unresolvable, criteria conflict with domain | L3 Restructure | Re-invoke DEFINE with revised objective scope |
+| User rejects all criteria after 3 rounds, 3+ L2 failures | L4 Escalate | AskUserQuestion with decision deadlock summary and alternatives |
 
 ### Severity Classification
 
@@ -287,6 +300,8 @@ max_score: 0
 has_golden_example: false
 phase: define|calibrate|final
 version: 1
+pt_signal: "metadata.phase_signals.p2_criteria"
+signal_format: "PASS|criteria:{N}|phase:{phase}|ref:tasks/{team}/p2-evaluation-criteria.md"
 criteria:
   - name: ""
     weight: H|M|L
