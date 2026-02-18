@@ -1,6 +1,6 @@
 # Model Configuration, MCP & Plugins
 
-> Verified: 2026-02-17 via claude-code-guide team investigation
+> Verified: 2026-02-18 via claude-code-guide team investigation
 
 ---
 
@@ -9,7 +9,8 @@
 | Model | Strengths | Cost | Use Case |
 |-------|-----------|------|----------|
 | Opus 4.6 | Highest capability, deep reasoning | Highest | Complex architecture, multi-file changes |
-| Sonnet 4.5 | Good balance of capability and speed | Medium | General development, most tasks |
+| Sonnet 4.6 | Fast, high capability | Medium | General development, most tasks |
+| Sonnet 4.5 | Previous generation Sonnet | Medium | Legacy, use Sonnet 4.6 |
 | Haiku 4.5 | Fast, cost-efficient | Lowest | Simple tasks, hook evaluation |
 
 ### Claude Opus 4.6
@@ -21,6 +22,13 @@
 - **Adaptive thinking**: `thinking: {type: "adaptive"}` recommended. `budget_tokens` DEPRECATED.
 - **Fast mode**: research preview. `speed: "fast"`, beta header `fast-mode-2026-02-01`, 2.5x speed, 6x cost ($30/$150 per MTok)
 - **Data residency**: `inference_geo: "global"|"us"`, US-only = 1.1x pricing
+
+### Claude Sonnet 4.6
+
+- **Model ID**: `claude-sonnet-4-6` (launched 2026-02-18)
+- **Context**: 200K tokens
+- **Max output**: 128K tokens
+- **Replaces**: Sonnet 4.5 as default Sonnet model
 
 ### Effort Parameter (GA)
 
@@ -37,8 +45,8 @@
 
 | Alias | Behavior |
 |-------|----------|
-| `default` | Account-dependent (Max/Pro = Opus 4.6, API = Sonnet 4.5) |
-| `sonnet` | Latest Sonnet (currently 4.5) |
+| `default` | Account-dependent (Max/Pro = Opus 4.6, API = Sonnet 4.6) |
+| `sonnet` | Latest Sonnet (currently 4.6) |
 | `opus` | Latest Opus (currently 4.6) |
 | `haiku` | Fast, efficient Haiku |
 | `sonnet[1m]` | Sonnet with 1M context (API only) |
@@ -59,7 +67,8 @@
 | Model | Input | Output | Cache Hit |
 |-------|-------|--------|-----------|
 | Opus 4.6 | $5 | $25 | $0.50 |
-| Sonnet 4.5 | $3 | $15 | $0.30 |
+| Sonnet 4.6 | $3 | $15 | $0.30 |
+| Sonnet 4.5 (legacy) | $3 | $15 | $0.30 |
 | Haiku 4.5 | $1 | $5 | $0.10 |
 
 - **Batch**: 50% discount

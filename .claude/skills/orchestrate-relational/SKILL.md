@@ -8,7 +8,9 @@ description: >-
   plan-verify-coordinator complete with all PASS. Reads from
   plan-verify-coordinator verified plan L3 via $ARGUMENTS.
   Produces DPS specs with chain completeness flag and data flow
-  chain with gap report for orchestrate-coordinator.
+  chain with gap report for orchestrate-coordinator. DPS contracts include MCP_DIRECTIVES (WHEN/WHY/WHAT) and COMM_PROTOCOL (P2P handoff targets) per DPS v5. On FAIL, Lead
+  applies D12 escalation. DPS needs plan-verify-coordinator
+  verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -59,11 +61,20 @@ Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
 - File change manifest per task
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context**: Paste verified plan L3 content. Include SendMessage protocol. Include DPS reference: each handoff needs producer task, consumer task, file path, format, fields, validation.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  INCLUDE:
+    - Verified plan L3 content (task list, producer-consumer edges, file assignments)
+    - SendMessage protocol for status-signal handoffs
+    - DPS reference: each handoff needs producer task, consumer task, file path, format, fields, validation
+  EXCLUDE:
+    - Other orchestrate dimension outputs (static, behavioral, impact)
+    - Historical rationale from plan-verify phases
+    - Full pipeline state beyond this task's scope
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Identify ALL inter-task data dependencies. For each, define a DPS (Data-Passing Specification) with: producer task, consumer task, handoff file path, data format, required fields, validation rules. Validate chain completeness: every consumer input has a producer, no dangling inputs."
-- **Constraints**: Read-only analysis. No modifications. Use `/tmp/pipeline/` as base path for handoff files. Every DPS must be fully specified.
+- **Constraints**: Read-only analysis. No modifications. Use `tasks/{team}/` as base path for handoff files. Every DPS must be fully specified.
 - **Expected Output**: L1 YAML DPS specs. L2 handoff chain visualization with data flow.
-- **Delivery**: Write full result to `/tmp/pipeline/p5-orch-relational.md`. Send micro-signal to Lead via SendMessage: `PASS|handoffs:{N}|ref:/tmp/pipeline/p5-orch-relational.md`.
+- **Delivery**: Write full result to `tasks/{team}/p5-orch-relational.md`. Send micro-signal to Lead via SendMessage: `PASS|handoffs:{N}|ref:tasks/{team}/p5-orch-relational.md`.
 
 #### Step 1 Tier-Specific DPS Variations
 **TRIVIAL**: Skip — Lead defines handoffs inline (typically 0-1 handoffs for single-module tasks).
@@ -95,7 +106,7 @@ DPS-{N}:
   producer: {task_id}
   consumer: {task_id}
   handoff:
-    path: /tmp/pipeline/{phase}-{skill}-{artifact}.md
+    path: tasks/{team}/{phase}-{skill}-{artifact}.md
     format: yaml|json|markdown
     fields:
       - name: {field}
@@ -107,7 +118,7 @@ DPS-{N}:
 ```
 
 #### Path Convention
-All handoff files follow the pattern: `/tmp/pipeline/{phase}-{skill}-{artifact}.{ext}`
+All handoff files follow the pattern: `tasks/{team}/{phase}-{skill}-{artifact}.{ext}`
 - Phase: p5, p6, p7, p8
 - Skill: abbreviated skill name
 - Artifact: descriptive name (e.g., task-matrix, checkpoint-schedule)
@@ -148,14 +159,22 @@ Produce complete handoff specification with:
 - Ordered list of DPS entries by execution sequence
 - Chain completeness verdict (PASS if no dangling inputs)
 - Format consistency report
-- Path registry (all `/tmp/pipeline/` paths used)
+- Path registry (all `tasks/{team}/` paths used)
 - Summary: total handoffs, format distribution, dangling count
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| DPS incomplete or handoff path ambiguous | L1 Nudge | SendMessage with refined path convention constraints |
+| Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
+| Dangling inputs unresolvable without plan restructure | L3 Restructure | Route to orchestrate-coordinator as chain design blocker |
+| 3+ L2 failures or circular chains unresolvable | L4 Escalate | AskUserQuestion with situation + options |
+
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:/tmp/pipeline/p5-orch-relational.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-relational.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### Dangling Input Detected
@@ -214,7 +233,7 @@ A producer outputting JSON and consumer expecting YAML will fail silently. Alway
 - Every DPS has concrete path, format, and fields
 - No dangling inputs (every consumer input has a producer)
 - No circular handoff chains
-- Path convention followed (/tmp/pipeline/ prefix)
+- Path convention followed (tasks/{team}/ prefix)
 - Format consistency between producer output and consumer input
 - Producer wave precedes consumer wave in all DPS entries
 
@@ -235,6 +254,8 @@ handoffs:
     path: ""
     format: yaml|json|markdown
     fields: []
+pt_signal: "metadata.phase_signals.p5_orchestrate_relational"
+signal_format: "PASS|handoffs:{N}|chain_complete:{bool}|ref:tasks/{team}/p5-orch-relational.md"
 ```
 
 ### L2

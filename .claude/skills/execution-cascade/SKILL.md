@@ -8,7 +8,11 @@ description: >-
   invoked if cascade is false. Reads from execution-impact DIRECT
   dependent files with classification. Produces cascade result
   with iteration details and update log with convergence evidence
-  for execution-review.
+  for execution-review. On non-convergence (3 iterations
+  exhausted), routes to execution-review with partial status,
+  warnings, and unresolved file list. DPS needs execution-impact
+  DIRECT dependents with evidence + root cause change summary.
+  Exclude TRANSITIVE dependents and full pipeline history.
 user-invocable: false
 disable-model-invocation: true
 ---
@@ -69,7 +73,10 @@ For each iteration (max 3):
 - Select agent type: `implementer` for source files, `infra-implementer` for `.claude/` files
 
 Construct each delegation prompt with:
-- **Context**: Paste the root cause: which file changed and what was modified (e.g., "renamed function X to Y in `src/auth.ts`"). Include the evidence line from execution-impact L2: exact grep match `{dependent_file:line_number:matching_content}`. For `.claude/` files, include relevant cc-reference field specifications.
+- **Context (D11 — cognitive focus first)**:
+  - INCLUDE: Root cause summary — which file changed and what was modified (e.g., "renamed function X to Y in `src/auth.ts`"). Evidence line from execution-impact L2: exact grep match `{dependent_file:line_number:matching_content}`. For `.claude/` files: relevant cc-reference field specifications.
+  - EXCLUDE: TRANSITIVE dependents (cascade updates DIRECT only). Full cascade iteration history. Full pipeline state beyond this iteration's dependent file list.
+  - Budget: Context field ≤ 30% of implementer effective context.
 - **Task**: "Update references in `<dependent_file>` to match the change in `<root_cause_file>`. Look for pattern `<reference_pattern>` and update to reflect `<new_value>`. After updating, grep the file to verify no stale references to the old pattern remain."
 - **Constraints**: Scope limited to assigned dependent files only — do NOT modify root cause file or other dependents. implementer has Bash (can test); infra-implementer has Edit/Write only (no Bash). maxTurns: 30.
 - **Expected Output**: Report as L1 YAML: `files_changed` (array), `status` (complete|failed), `verification` (grep confirms no stale references). L2: before/after for each updated reference.
@@ -171,6 +178,14 @@ When max 3 iterations reached without convergence:
 6. Delivery (P8) commit message notes "partial cascade convergence"
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error, implementer spawn timeout | L0 Retry | Re-invoke same implementer with same DPS |
+| Implementer output incomplete or stale references remain | L1 Nudge | SendMessage with corrected reference pattern or updated scope |
+| Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS and root cause context |
+| Cascade scope conflict or circular dependency blocks iteration | L3 Restructure | Reorder dependent file processing, break cycle, reassign ownership |
+| All implementers failed in iteration after L2, or 3+ iterations non-convergent | L4 Escalate | AskUserQuestion with situation summary + options |
 
 ### Impact Report Missing or Empty
 - **Cause**: execution-impact did not produce an impact report, or report contains no dependents
@@ -296,6 +311,8 @@ iteration_details:
     new_impacts_detected: 0
 warnings:
   - ""
+pt_signal: "metadata.phase_signals.p6_cascade"
+signal_format: "{STATUS}|iterations:{N}|converged:{true|false}|ref:tasks/{team}/p6-cascade.md"
 ```
 
 ### L2

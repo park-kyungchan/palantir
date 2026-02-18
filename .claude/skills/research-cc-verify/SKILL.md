@@ -10,6 +10,10 @@ description: >-
   CC-native investigation produces behavioral claims, before ref cache
   update. Reads from investigation findings with CC-native claims.
   Produces verification verdict with per-claim evidence for Lead routing.
+  On FAIL (claim unverifiable or filesystem access denied), flags claim as
+  UNVERIFIED and routes back to source skill. Never auto-approve unverifiable
+  claims. DPS needs specific CC-native claims with file paths to verify.
+  Exclude pipeline context — verify agent needs only the claim list.
 user-invocable: true
 disable-model-invocation: false
 argument-hint: "[claim-source or investigation-context]"
@@ -129,13 +133,24 @@ Per-claim verdict table with evidence, gate decision, and recommended actions fo
 - **COMPLEX**: 10+ claims, cross-subsystem verification. Multiple analysts, parallel.
 
 ### DPS for Analyst Spawn
-- **Context**: List of CC-native claims with categories. Include expected file paths and verification patterns.
+- **Context** (D11 priority: cognitive focus > token efficiency): List of CC-native claims with categories.
+  - INCLUDE: Specific claims to verify with expected file paths and verification patterns. Claim category (FILESYSTEM/PERSISTENCE/STRUCTURE/CONFIG/BEHAVIORAL/BUG).
+  - EXCLUDE: Pipeline context and phase history. Other teammates' task details. Design rationale and ADRs. Full pipeline state.
+  - Budget: Context field ≤ 30% of effective context budget.
 - **Task**: "Verify each claim empirically via file inspection. For each claim: Glob/Read the expected path, compare actual content against claimed behavior, produce PASS/FAIL/NEEDS-REVIEW verdict with file:line evidence."
 - **Constraints**: analyst agent. Read-only operations. No file modification. No Bash.
 - **Expected Output**: Per-claim verdict table with evidence.
-- **Delivery**: SendMessage to Lead (P2+) or direct output (P0-P1).
+- **Delivery**: Write full output to tasks/{team}/p2-cc-verify.md. Send micro-signal to Lead via SendMessage: "PASS|claims:{total}|fail:{n}|ref:tasks/{team}/p2-cc-verify.md".
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error, filesystem read timeout, single claim inaccessible | L0 Retry | Re-invoke same analyst, same claim list |
+| Incomplete verdicts or off-scope evidence returned | L1 Nudge | SendMessage with refined file paths or narrower claim scope |
+| Analyst exhausted turns or context polluted across many claims | L2 Respawn | Kill → fresh analyst with remaining unverified claim list |
+| Claim list too large for single analyst, cross-subsystem scope | L3 Restructure | Split by category (FILESYSTEM/PERSISTENCE/STRUCTURE/CONFIG), reassign to parallel analysts |
+| 3+ L2 failures or systematic filesystem access denied for all claims | L4 Escalate | AskUserQuestion with blocked claims and options |
 
 ### Claim Fails Verification
 - **Cause**: Empirical evidence contradicts CC-native claim
@@ -206,6 +221,8 @@ claims_total: 0
 claims_pass: 0
 claims_fail: 0
 claims_review: 0
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|claims:{total}|fail:{n}|ref:tasks/{team}/p2-cc-verify.md"
 ```
 
 ### L2

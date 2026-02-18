@@ -9,6 +9,13 @@ description: >-
   Reads from pre-design-validate validated requirements. Produces
   feasibility verdict for design-architecture on PASS, or routes
   back to pre-design-brainstorm for scope re-negotiation on FAIL.
+  TRIVIAL: Lead-direct, cc-reference cache only. STANDARD: 1
+  researcher (maxTurns: 20), cc-reference + claude-code-guide.
+  COMPLEX: 2 researchers split core CC vs MCP/plugin capabilities.
+  DPS needs validate-confirmed requirements and cc-reference cache
+  path (memory/cc-reference/). Exclude brainstorm conversation
+  history. Loops with pre-design-brainstorm on FAIL (max 3
+  iterations per D15).
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -164,6 +171,13 @@ For each infeasible/partial item:
 - Any infeasible without alternative → FAIL, return to brainstorm for scope reduction
 - Max 3 revision iterations
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.feasibility: N` in PT before each invocation
+- Before invoking: TaskGet PT → read `metadata.iterations.feasibility` → increment → TaskUpdate PT
+- Iteration 1-2: strict mode (infeasible without alternative → FAIL → return to pre-design-brainstorm)
+- Iteration 3: relaxed mode (proceed with documented infeasible items, flag in phase_signals)
+- Max iterations: 3
+
 **Terminal FAIL**: After 3 brainstorm→validate→feasibility iterations without resolution, report FAIL to Lead with all infeasible items listed. Lead escalates to user via AskUserQuestion:
 
 ```
@@ -257,6 +271,8 @@ All infeasible
 | cc-reference + claude-code-guide both unavailable | self-diagnose (refresh cc-reference) | Stale cache details, missing file paths |
 | CC Feasibility FAIL (critical infeasible, no alternatives) | pre-design-brainstorm | Infeasible items list with scope reduction request, iteration count |
 | Partial verdicts with low confidence | design-architecture (proceed with risk flags) | Partial report with risk markers, `poc_recommended: true` items |
+
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 
 ## Quality Gate
 - Every requirement has explicit feasibility verdict (feasible/partial/infeasible)

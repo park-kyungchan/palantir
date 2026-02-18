@@ -10,6 +10,10 @@ description: >-
   research-coordinator audit-relational L3 relationship graph.
   Produces integrity verdict and consistency matrix with gap
   analysis for plan-verify-coordinator.
+  On FAIL, routes back to plan-relational with verified gap
+  evidence. DPS needs plan-relational output and
+  research-coordinator audit-relational L3. Exclude other verify
+  dimension results.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -25,7 +29,7 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that interface con
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-relational.md`, sends micro-signal: `PASS|contracts:{N}|asymmetric:{N}|ref:/tmp/pipeline/p4-pv-relational.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-relational.md`, sends micro-signal: `PASS|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-relational.md`.
 
 ## Decision Points
 
@@ -45,11 +49,14 @@ Graph size determines spawn parameters.
 ## Methodology
 
 ### Analyst Delegation DPS
-- **Context**: Paste plan-relational L1 interface contracts (contracts[], producer, consumer, data_type, direction). Paste research-coordinator audit-relational L3 relationship graph (edges[], source, target, type, bidirectional flag).
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  - INCLUDE: plan-relational L1 interface contracts (contracts[], producer, consumer, data_type, direction); research-coordinator audit-relational L3 relationship graph (edges[], source, target, type, bidirectional flag); file paths within this agent's ownership boundary
+  - EXCLUDE: other verify dimension results (static/behavioral/impact); historical rationale for plan-relational decisions; full pipeline state beyond P3-P4; rejected contract alternatives
+  - Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Cross-reference contract inventory against relationship inventory. Verify bidirectional consistency for each edge. Identify asymmetric contracts (one-direction only), missing contracts (no coverage), and orphan contracts (no matching relationship). Classify gaps by severity."
 - **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed relationship edges.
 - **Expected Output**: L1 YAML: contract_count, relationship_count, asymmetric_count, missing_count, orphan_count, verdict, findings[]. L2: consistency matrix with gap analysis.
-- **Delivery**: SendMessage to Lead: `PASS|contracts:{N}|asymmetric:{N}|ref:/tmp/pipeline/p4-pv-relational.md`
+- **Delivery**: SendMessage to Lead: `PASS|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-relational.md`
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Verify each relationship edge has a contract entry inline. No bidirectional check needed.
@@ -131,7 +138,21 @@ Produce final verdict with evidence:
 - Any HIGH-severity missing contract (cross-boundary relationship without interface), OR
 - Total gap count > 5 (systematic contract coverage failure)
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-verify-relational: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to plan-relational with gap evidence)
+- Iteration 2: relaxed mode (proceed with risk flags, document gaps in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Audit-relational L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
+| Consistency matrix incomplete or relationships unverified | L1 Nudge | SendMessage with refined context |
+| Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
+| Relationship graph stale or plan-audit scope diverged | L3 Restructure | Modify task graph, reassign files |
+| Strategic contract model conflict, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### Audit-Relational L3 Not Available
 - **Cause**: research-coordinator did not produce audit-relational L3 output.
@@ -221,6 +242,8 @@ findings:
     edge: ""
     severity: HIGH|MEDIUM
     evidence: ""
+pt_signal: "metadata.phase_signals.p4_verify_relational"
+signal_format: "{STATUS}|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-relational.md"
 ```
 
 ### L2

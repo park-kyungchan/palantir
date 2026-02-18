@@ -23,11 +23,21 @@
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-### Environment: Claude Code CLI (2026-02-13)
-- **Claude Code CLI (tmux)**: Agent Teams multi-instance. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
-- teammateMode: tmux (settings.json)
+### Environment: Claude Code CLI (2026-02-18)
+- **Claude Code CLI (in-process)**: Agent Teams in-process mode. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
+- teammateMode: in-process (settings.json)
 
-## Current INFRA State (v11.1-health, 2026-02-17)
+### MCP Server Config [RESOLVED 2026-02-18]
+- Root cause: CC reads MCP from `.claude.json`, not `settings.json`. Fix applied, 5/5 connected, in-process 4/4 PASS.
+- Details: `memory/mcp-diagnosis.md`
+
+### Verification-First Rule (2026-02-18)
+- **Anti-pattern**: Modifying documentation based on unverified claims, even when "correcting" previous errors
+- **Rule**: Corrections are also claims. External docs/community sources contradicting current conclusions do NOT exempt from empirical verification
+- **Pattern**: Observe → Hypothesize → Test → Verify → THEN document
+- **Trigger**: Any time Lead is about to update CLAUDE.md, ref cache, or MEMORY.md with behavioral claims
+
+## Current INFRA State (v11.1-health, 2026-02-18)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
@@ -112,11 +122,19 @@ CC runtime 5건 실증 검증 후 3-wave 수리. 72%→94% health. PR #59 (da232
 - Wave 3: manage-skills phantom refs (4 skills)
 - Net: 57 files, +92/-503
 
-### ECC Integration + Evaluation Criteria -- IN PROGRESS (2026-02-17)
+### ECC Integration + Evaluation Criteria -- DONE (2026-02-18)
 - ECC plugin pruned: 43→12 items (4 agents, 3 commands, 5 skills). scope: user.
-- 7 rules promoted to `~/.claude/rules/` (common/ 6 + typescript/ 1).
+- 13 rules promoted to `~/everything-claude-code/.claude/rules/` (common/ 8 + typescript/ 5).
 - New skill: `evaluation-criteria` (P2 research domain, CDST methodology, Lead-direct).
 - CLAUDE.md §5 Agent Teams section enhanced with isolation/shared table, file-based architecture detail.
+- ECC upstream PR: affaan-m/everything-claude-code#245 (prune 530+ files, -111K lines).
+
+### CC 2.1.45 INFRA Reflection -- DONE (2026-02-18)
+- Sonnet 4.6 added to R7 (model ID: claude-sonnet-4-6, aliases updated)
+- 3 bugs RESOLVED: #23561 (Agent Teams Bedrock/Vertex tmux env), #22087 (Task tool crash), #21654 (macOS sandbox)
+- +spinnerTipsOverride setting (R2), --add-dir enabledPlugins support (R2)
+- Skill subagent compaction fix + budget 2% scaling confirmed (R4)
+- 6 files, 15 edits, all verified dates → 2026-02-18
 
 ### L2 Body Design -- COMPLETE (2026-02-15)
 All 44 INFRA skills L2 bodies CE/PE optimized. PR #53 merged to main.
@@ -129,9 +147,17 @@ All 44 INFRA skills L2 bodies CE/PE optimized. PR #53 merged to main.
 - Claude Web/App verification prompt generated: `tmp/claude-web-verification-prompt.md`
 - Next: crowd_works 10 skills L2 CE/PE optimization (6/10 over 375-line budget)
 
+### Math Portfolio Pipeline -- RESTART FROM P2 (2026-02-18)
+COMPLEX tier (P0→P8). Freewheelin (MathFlat) 정수론 문제은행 포트폴리오.
+- **Previous P0-P3 artifacts**: `~/tmp/math-portfolio-handoff/` (5 files + HANDOFF.md)
+- **Restart**: P2 Research부터 fresh context. New PT needed.
+- **MCP**: 5/5 connected, tmux+in-process 양쪽 4/4 PASS.
+- **.claude/ cleanup**: 2026-02-18 전면 정리 (tasks/todos/teams/sessions/debug/cache 등 ~175MB 삭제)
+
 ## Session History
 
-Branch: `main`. Latest commit: da232ba (pending new commit for ECC + evaluation-criteria).
+Branch: `main`. Latest commit: 583de23.
+- 583de23: ECC integration + evaluation-criteria skill + CLAUDE.md §5 enhancement, PR #60
 - da232ba: Health repair — CC runtime verified, 57 files, PR #59
 - 59cae35: Merge branch 'infra' (cc-reference + MEMORY.md into main)
 - 9e35a4c: MEMORY.md L2 Body Design COMPLETE
@@ -153,7 +179,7 @@ Branch: `main`. Latest commit: da232ba (pending new commit for ECC + evaluation-
 - `memory/ref_skills.md` -- R4: Skill frontmatter, $ARGUMENTS, shell preprocessing, disambiguation, budget
 - `memory/ref_agents.md` -- R5: Agent fields, permissionMode, memory config, subagent comparison
 - `memory/ref_teams.md` -- R6: Agent Teams coordination, task sharing, inbox messaging
-- `memory/ref_model_integration.md` -- R7: Model config, cost benchmarks, MCP, plugins
+- `memory/ref_model_integration.md` -- R7: Model config (Opus 4.6 + Sonnet 4.6), cost benchmarks, MCP, plugins
 - `memory/ref_community.md` -- R8: 10 post-Opus 4.6 community tools
 
 ### Project History & Domain
@@ -163,3 +189,4 @@ Branch: `main`. Latest commit: da232ba (pending new commit for ECC + evaluation-
 - `memory/ontology-pls.md` -- Ontology PLS full handoff (30+ connected docs, AD-1~AD-13)
 - `memory/meta-cognition-infra.md` -- Meta-Cognition INFRA Update handoff (14 decisions)
 - `memory/context-engineering.md` -- CC native field reference, context loading order, critical findings
+- `memory/mcp-diagnosis.md` -- MCP server startup failure diagnosis (3/4 fail), propagation OK, root cause TBD

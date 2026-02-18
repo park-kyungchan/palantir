@@ -9,7 +9,13 @@ description: >-
   from pre-design-feasibility approved requirements and CC
   capability mappings, plus research-coordinator feedback in
   COMPLEX tier. Produces component list with dependencies and
-  ADRs for design-interface and design-risk.
+  ADRs for design-interface and design-risk. TRIVIAL: Lead-direct,
+  no formal ADR. STANDARD: 1 analyst (maxTurns: 20). COMPLEX:
+  2-4 analysts by module boundary. On FAIL (conflicting
+  requirements or infeasible architecture), routes back to
+  pre-design-brainstorm for scope renegotiation. DPS needs
+  feasibility-confirmed requirements only. Exclude rejected
+  alternatives and raw user conversation.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -132,6 +138,14 @@ Map how data moves between components:
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
+| Analyst produced incomplete or inconsistent components | L1 Nudge | SendMessage with specific missing components and scope |
+| Background analyst exhausted turns or errored | L2 Respawn | Kill → fresh analyst with narrower module scope |
+| Circular dependencies or conflicting module boundaries requiring restructure | L3 Restructure | Extract shared dependency, revise component graph |
+| Requirements too vague for any architecture after D12 L0-L3 | L4 Escalate | AskUserQuestion to clarify scope or return to brainstorm |
+
 ### Requirements Too Vague for Architecture
 - **Cause**: Pre-design output lacks specificity for component identification
 - **Action**: Route back to pre-design-validate with specific questions (e.g., "Is feature X synchronous or asynchronous?")
@@ -198,6 +212,8 @@ For TRIVIAL/STANDARD tiers, this skill runs in P0-P1 with local agents only — 
 | Analyst failed/partial | Self (re-spawn narrower scope) | Completed components + remaining scope |
 | Circular dependencies | Self (restructure) | Cycle details |
 | Novel pattern detected | research-external | Pattern details for validation |
+
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 
 ## Quality Gate
 - Every component has clear SRP

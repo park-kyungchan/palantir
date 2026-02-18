@@ -8,7 +8,11 @@ description: >-
   with findings ready for implementation. Reads from self-diagnose
   categorized findings with severity and evidence. Produces
   improvement manifest and implementation report for
-  delivery-pipeline and manage-infra.
+  delivery-pipeline and manage-infra. On FAIL (implementation
+  breaks existing INFRA), routes back to self-diagnose for
+  re-diagnosis. DPS needs self-diagnose findings with file:line
+  evidence and cc-reference native field lists. Exclude pipeline
+  state and other homeostasis skills' data.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -58,11 +62,14 @@ Spawn infra-implementer agents in parallel waves:
 - Max 2 infra-implementers per wave to avoid file conflicts
 
 Construct each delegation prompt with:
-- **Context**: Specific findings for this wave with severity and category. CC native field reference from cc-reference cache. For description edits, include current character count and the 1024-char limit.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE: Specific findings for this wave with severity, category, and file:line evidence. CC native field reference from cc-reference cache. For description edits, include current character count and the 1024-char limit.
+  EXCLUDE: Other waves' findings, pipeline state, manage-infra internal data. Budget: context ≤30% of implementer context.
 - **Task**: For each file, specify exact change: "Remove field X from Y.md", "Change value A to B in Z/SKILL.md", etc. Provide target value where possible.
 - **Constraints**: Write and Edit tools only — no Bash. Files in this wave must not overlap with other concurrent infra-implementers. Only modify files listed in findings.
 - **Expected Output**: L1 YAML with files_changed, findings_fixed, status. L2 with per-file change log: finding ID, what changed, before→after.
-- **Delivery**: Write full result to `/tmp/pipeline/homeostasis-self-implement.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|fixed:{N}|deferred:{N}|ref:/tmp/pipeline/homeostasis-self-implement.md`.
+- **Delivery**: Write full result to `tasks/{team}/homeostasis-self-implement.md`. Send micro-signal to Lead via SendMessage: `{STATUS}|fixed:{N}|deferred:{N}|ref:tasks/{team}/homeostasis-self-implement.md`.
+  If no team active, fallback to `/tmp/pipeline/homeostasis-self-implement.md`.
 
 Await infra-implementer result via SendMessage (P2+) or TaskOutput (standalone). If a wave fails, re-spawn with corrected instructions (max 1 retry per wave).
 
@@ -87,7 +94,8 @@ Spawn infra-implementer for memory updates:
 - **Task**: Update memory/context-engineering.md with new findings. Update MEMORY.md session history with cycle summary.
 - **Constraints**: Edit tool only — modify existing sections, don't restructure.
 - **Expected Output**: L1 YAML with files_updated, status. L2 with change summary.
-- **Delivery**: SendMessage to Lead: `PASS|files:{N}|ref:/tmp/pipeline/homeostasis-self-implement-records.md`.
+- **Delivery**: Write full result to `tasks/{team}/homeostasis-self-implement-records.md`. Send micro-signal to Lead via SendMessage: `PASS|files:{N}|ref:tasks/{team}/homeostasis-self-implement-records.md`.
+  If no team active, fallback to `/tmp/pipeline/homeostasis-self-implement-records.md`.
 
 ### 5. Commit
 Lead-direct via Bash tool, or route to /delivery-pipeline:
@@ -133,6 +141,17 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 | Infra-implementer wave failure (after retry) | (Continue) | Failed findings deferred |
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error or file write timeout in implementer wave | L0 Retry | Re-invoke same infra-implementer with same DPS |
+| Implementer output missing files or incomplete change log | L1 Nudge | SendMessage with refined finding list and explicit per-file instructions |
+| Implementer stuck, context polluted, or maxTurns exhausted | L2 Respawn | Kill → fresh infra-implementer with reduced wave scope |
+| Non-overlapping constraint violated or parallel conflict detected | L3 Restructure | Regroup findings into non-conflicting waves, reassign file ownership |
+| 3+ L2 failures on same wave or budget overflow unresolvable | L4 Escalate | AskUserQuestion with situation summary and options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Budget overflow detected | HIGH | Fix | Yes | Must resolve before commit |
@@ -156,6 +175,8 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 domain: homeostasis
 skill: self-implement
 status: complete|partial|blocked
+pt_signal: "metadata.phase_signals.homeostasis"
+signal_format: "{STATUS}|fixed:{N}|deferred:{N}|ref:tasks/{team}/homeostasis-self-implement.md"
 iteration_count: 0
 findings_received: 0
 findings_fixed: 0

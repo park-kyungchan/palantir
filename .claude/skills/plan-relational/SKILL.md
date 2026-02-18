@@ -8,6 +8,10 @@ description: >-
   audit-relational L3 relationship graph via $ARGUMENTS and
   design-interface API contracts. Produces contract registry with
   gap counts and per-task contracts for plan-verify-relational.
+  On FAIL (HIGH asymmetric gaps), routes back to plan-relational
+  with integrity evidence. DPS needs research-coordinator
+  audit-relational L3 relationships and design-interface
+  contracts. Exclude static, behavioral, and impact data.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -120,18 +124,42 @@ Produce the complete contract registry:
 - Coverage metrics: (relationships with contracts / total relationships) * 100
 
 **DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context**: Paste audit-relational L3 content (relationship graph, shared types, data flows). Paste design-interface L1 (API contracts). Include pipeline tier and total relationship count.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE:
+    - research-coordinator audit-relational L3 from `tasks/{team}/p2-coordinator-audit-relational.md`
+    - design-interface API contracts (L1 interfaces[] summary only)
+    - Pipeline tier and iteration count from PT
+  EXCLUDE:
+    - Other plan dimension outputs (unless direct dependency)
+    - Full research evidence detail (use L3 summaries only)
+    - Pre-design and design conversation history
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "For each relationship in the audit graph: define producer OUTPUT contract and consumer INPUT contract. Verify bidirectional consistency (type, field, naming, timing). Specify validation rules per contract. Flag gaps where audit relationships have no design contract. Calculate coverage metric."
 - **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Cross-reference audit and design artifacts.
 - **Expected Output**: L1 YAML with contract_count, gap_count, consistency_score, coverage_percent, contracts[]. L2 per-task contracts with validation rules and gap analysis.
-- **Delivery**: Write full result to `/tmp/pipeline/p3-plan-relational.md`. Send micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:/tmp/pipeline/p3-plan-relational.md`.
+- **Delivery**: Write full result to `tasks/{team}/p3-plan-relational.md`. Send micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:tasks/{team}/p3-plan-relational.md`.
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. 1-2 task boundaries. Path-only contracts (file references). No formal validation rules needed.
 **STANDARD**: Spawn analyst (maxTurns: 15). Typed contracts for 3-8 boundaries. Type + field consistency checks. Skip edge-case validation.
 **COMPLEX**: Full DPS above. Full schema contracts across 9+ boundaries with bidirectional verification and validation rules.
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-relational: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to research-coordinator with relationship graph gaps)
+- Iteration 2: relaxed mode (proceed with documented coverage gaps, flag in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error or timeout during contract generation | L0 Retry | Re-invoke same agent, same DPS |
+| Contract output incomplete or missing bidirectional coverage | L1 Nudge | SendMessage with refined relationship scope constraints |
+| Agent stuck on schema analysis or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
+| Contract boundaries conflict with task structure or design-interface mismatch | L3 Restructure | Modify contract scope, request design-interface clarification |
+| Strategic ambiguity on contract formality level or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Missing audit-relational L3 input | CRITICAL | research-coordinator | Yes | Cannot define contracts without relationship graph. Request re-run. |
@@ -193,6 +221,8 @@ contract_count: 0
 gap_count: 0
 consistency_score: 0
 coverage_percent: 0
+pt_signal: "metadata.phase_signals.p3_plan_relational"
+signal_format: "{STATUS}|contracts:{N}|gaps:{N}|ref:tasks/{team}/p3-plan-relational.md"
 contracts:
   - producer: ""
     consumer: ""

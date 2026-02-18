@@ -9,6 +9,9 @@ description: >-
   with file assignments and research-coordinator audit-static L3
   dependency graph. Produces coverage verdict with metrics and
   coverage matrix with evidence for plan-verify-coordinator.
+  On FAIL, routes back to plan-static with verified gap evidence.
+  DPS needs plan-static output and research-coordinator
+  audit-static L3. Exclude other verify dimension results.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -24,7 +27,7 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the task deco
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-static.md`, sends micro-signal: `PASS|coverage:{pct}|orphans:{N}|ref:/tmp/pipeline/p4-pv-static.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-static.md`, sends micro-signal: `PASS|coverage:{pct}|orphans:{N}|ref:tasks/{team}/p4-pv-static.md`.
 
 ## Decision Points
 
@@ -44,11 +47,14 @@ Graph size determines spawn parameters.
 ## Methodology
 
 ### Analyst Delegation DPS
-- **Context**: Paste plan-static L1 task breakdown (task IDs, file assignments, depends_on[]). Paste research-coordinator audit-static L3 dependency graph (DAG nodes, edges, hotspot metrics).
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  - INCLUDE: plan-static L1 task breakdown (task IDs, file assignments, depends_on[]); research-coordinator audit-static L3 dependency graph (DAG nodes, edges, hotspot metrics); file paths within this agent's ownership boundary
+  - EXCLUDE: other verify dimension results (behavioral/relational/impact); historical rationale for plan-static decisions; full pipeline state beyond P3-P4; rejected task decomposition alternatives
+  - Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Cross-reference plan file set against dependency file set. Identify orphan files (unassigned), missing dependency edges (unsequenced), and partial coverage. Compute coverage percentage and classify all gaps by severity."
 - **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed dependency graph nodes.
 - **Expected Output**: L1 YAML: coverage_percent, orphan_count, missing_edge_count, verdict, findings[]. L2: coverage matrix with file:line evidence.
-- **Delivery**: SendMessage to Lead: `PASS|coverage:{pct}|orphans:{N}|ref:/tmp/pipeline/p4-pv-static.md`
+- **Delivery**: SendMessage to Lead: `PASS|coverage:{pct}|orphans:{N}|ref:tasks/{team}/p4-pv-static.md`
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Count plan files vs dependency files inline. If all dependency files present, PASS. No matrix needed.
@@ -121,7 +127,21 @@ Produce final verdict with evidence:
 - Any HIGH-severity orphan file (hub file missing from plan), OR
 - Any HIGH-severity missing edge (direct import not reflected in task ordering)
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-verify-static: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to plan-static with gap evidence)
+- Iteration 2: relaxed mode (proceed with risk flags, document gaps in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Audit-static L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
+| Analyst output incomplete or coverage matrix partial | L1 Nudge | SendMessage with refined context |
+| Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
+| Audit-static data stale or plan-static scope changed | L3 Restructure | Modify task graph, reassign files |
+| Strategic gap in dependency model, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### Audit-Static L3 Not Available
 - **Cause**: research-coordinator did not produce audit-static L3 output.
@@ -205,6 +225,8 @@ findings:
     file: ""
     severity: HIGH|MEDIUM|LOW
     evidence: ""
+pt_signal: "metadata.phase_signals.p4_verify_static"
+signal_format: "{STATUS}|coverage:{pct}|orphans:{N}|ref:tasks/{team}/p4-pv-static.md"
 ```
 
 ### L2

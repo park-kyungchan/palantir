@@ -8,7 +8,16 @@ description: >-
   PASS or after routing failures requiring investigation. Reads
   from verify-consistency relationship integrity confirmation.
   Produces quality scores per file for verify-cc-feasibility on
-  PASS, or routes back to execution-infra on FAIL.
+  PASS, or routes back to execution-infra on FAIL. On FAIL,
+  routes bottom-5 skills with scores and improvement instructions
+  to execution-infra. Weighted scoring: WHEN specificity 30% +
+  METHODOLOGY concreteness 30% + OUTPUT completeness 20% +
+  utilization 20%. TRIVIAL: Lead-direct spot check. STANDARD: 1
+  analyst full scoring audit. COMPLEX: 2 analysts — WHEN/
+  METHODOLOGY vs OUTPUT/utilization. DPS context: all skill
+  description texts + scoring rubric. Exclude L2 body content,
+  cross-skill consistency checks (verify-consistency domain),
+  and non-.claude/ files.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -110,11 +119,14 @@ WHEN clause present?
 If disambiguation test fails (answer is NO) → score capped at 50 regardless of other factors.
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst with:
-- **Context**: All skill descriptions (paste each description text). Include scoring rubric: Specificity (0-100): 100=exact trigger with upstream skill name, 50=vague condition, 0=missing. Concreteness (0-100): 100=numbered steps with tool/agent refs, 50=generic steps, 0=no methodology. Completeness (0-100): 100=L1+L2 defined, 50=partial, 0=missing.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  - INCLUDE: All skill description texts (paste each). Scoring rubric (Specificity/Concreteness/Completeness 0-100). Routing failure context if investigating. File paths within this analyst's ownership boundary.
+  - EXCLUDE: L2 body content (not part of routing scoring). Cross-skill consistency data (verify-consistency domain). Other teammates' task details. Full pipeline state beyond current file set.
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: "Score each skill across 4 dimensions: WHEN specificity, METHODOLOGY concreteness, OUTPUT FORMAT completeness, description utilization (>80%). Produce combined score per skill. Rank all skills. Identify bottom 5 for priority improvement."
 - **Constraints**: Read-only. No modifications. Score objectively using the rubric.
 - **Expected Output**: L1 YAML with avg_score, findings[] (file, score, issues). L2 quality rankings and improvement suggestions.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage format: `"{STATUS}|files:{total_files}|avg_score:{avg_score}|ref:tasks/{team}/p7-quality.md"`. L2 detail stays in agent context.
 
 ### 2. Evaluate METHODOLOGY Concreteness
 
@@ -225,6 +237,16 @@ bottom_5:
 
 ## Failure Handling
 
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error reading descriptions | L0 Retry | Re-invoke analyst with same DPS and rubric |
+| Analyst scoring incomplete, bottom-5 list missing | L1 Nudge | SendMessage with rubric reminder and remaining file list |
+| Analyst exhausted turns before full scoring, context polluted | L2 Respawn | Kill analyst → spawn fresh with reduced file batch |
+| Routing failure investigation requires restructuring analyst split | L3 Restructure | Separate WHEN/METHODOLOGY analyst from OUTPUT/utilization analyst |
+| 3+ L2 failures or scoring rubric ambiguous for cross-cutting skills | L4 Escalate | AskUserQuestion with situation summary + options |
+
 ### FAIL Conditions
 
 | Condition | Threshold | Severity | Route To |
@@ -313,6 +335,8 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | Missing METHODOLOGY numbers | execution-infra | Skill path + current methodology text |
 | Missing output template | execution-infra | Skill path + expected output structure |
 
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
+
 ## Quality Gate
 
 - Average quality score >75/100 across all verified files
@@ -329,6 +353,8 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 domain: verify
 skill: quality
 status: PASS|FAIL
+pt_signal: "metadata.phase_signals.p7_quality"
+signal_format: "{STATUS}|files:{total_files}|avg_score:{avg_score}|ref:tasks/{team}/p7-quality.md"
 total_files: 0
 avg_score: 0
 dimension_averages:

@@ -10,6 +10,11 @@ description: >-
   design-interface API contracts, and design-risk risk areas.
   Produces pattern inventory with evidence for audit skills,
   plus CC-native claims for research-cc-verify gate.
+  On FAIL (scan timeout or pattern conflict), Lead retries L0 with
+  narrower scope. After 2 failures, L2 respawn with refined DPS.
+  DPS needs design-architecture component list, design-interface API
+  contracts, design-risk risk areas. Exclude pre-design conversation
+  history and rejected alternatives.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -36,7 +41,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Scope**: Explicit directory/file glob patterns to search. For COMPLEX, assign non-overlapping areas per analyst (e.g., analyst-1: `src/`, analyst-2: `.claude/`).
 - **Constraints**: Read-only analysis. No file modifications. Use Glob → Grep → Read sequence systematically.
 - **Expected Output**: Pattern inventory as structured list: pattern name, file:line location, relevance (high/medium/low), reusability assessment. Anti-patterns with specific file:line locations.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Delivery**: Write full output to tasks/{team}/p2-codebase.md. Send micro-signal to Lead via SendMessage: "PASS|patterns:{count}|ref:tasks/{team}/p2-codebase.md".
 
 Use tools systematically:
 1. **Glob** for file discovery: `**/*.md`, `**/*.ts`, specific paths
@@ -56,16 +61,19 @@ Lead performs these steps inline using its own tool access. Suitable when the se
 > Task: Explore [codebase area] to validate [all architecture decisions]. For each decision, find existing patterns, conventions, and reusable components. Report all findings with file:line references.
 > Constraints: Read-only. Glob -> Grep -> Read sequence. maxTurns: 25.
 > Expected Output: Pattern inventory (name, file:line, relevance, reusability) + anti-patterns with locations.
-> Delivery: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
+> Delivery: Write output to tasks/{team}/p2-codebase.md. Send micro-signal to Lead via SendMessage: "PASS|patterns:{count}|ref:tasks/{team}/p2-codebase.md".
 
 Single analyst receives all research questions. Lead consolidates output directly into research-audit input format.
 
 **COMPLEX DPS** -- 2-4 analysts with partitioned scope:
-> Context: [Paste ONLY the architecture decisions relevant to THIS analyst's scope]
+> Context (D11 priority: cognitive focus > token efficiency):
+>   INCLUDE: Architecture decisions for this analyst's scope (design-architecture component list, design-interface contracts, design-risk risk areas for this scope). File paths within assigned directory.
+>   EXCLUDE: Other analysts' scope areas. Pre-design conversation history. Rejected design alternatives. Full pipeline state.
+>   Budget: Context field ≤ 30% of effective context budget.
 > Task: Explore [specific directory subtree, e.g., `src/auth/`] to validate [subset of architecture decisions]. Report findings with file:line references.
 > Constraints: Read-only. Stay within assigned directory scope. maxTurns: 25. If your findings reference files outside your scope, note the cross-reference with file path and reason -- another analyst will cover that area.
 > Expected Output: Pattern inventory for your scope + cross-reference notes for consolidation.
-> Delivery: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
+> Delivery: Write output to tasks/{team}/p2-codebase.md. Send micro-signal to Lead via SendMessage: "PASS|patterns:{count}|ref:tasks/{team}/p2-codebase.md".
 
 Lead must merge outputs from all analysts, resolving cross-references and deduplicating patterns found independently by multiple analysts. Cross-reference resolution is Lead's responsibility, not the analysts'.
 
@@ -181,6 +189,14 @@ Normal flow: research findings go to research-audit, then to plan. But one scena
 
 ## Failure Handling
 
+| Failure Type | Level | Action |
+|---|---|---|
+| Scan timeout, tool error, permission denied | L0 Retry | Re-invoke same analyst, same DPS |
+| Incomplete findings or off-scope patterns returned | L1 Nudge | SendMessage with narrower scope or refined search questions |
+| Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh analyst with refined DPS and narrower directory scope |
+| Pattern conflict breaks ADR assumptions, scope shift discovered | L3 Restructure | Split scope, modify task graph, reassign directory boundaries |
+| 3+ L2 failures or fundamental ADR contradiction requiring design revision | L4 Escalate | AskUserQuestion with contradiction evidence and options |
+
 ### Severity Classification
 
 | Failure | Severity | Blocking? | Route |
@@ -284,6 +300,8 @@ novel_decisions:
 uncovered_areas:
   - area: ""
     reason: "analyst maxTurns exhausted"
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|patterns:{count}|cc_claims:{n}|ref:tasks/{team}/p2-codebase.md"
 ```
 
 ### L2

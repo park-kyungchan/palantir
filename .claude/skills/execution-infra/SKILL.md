@@ -9,7 +9,11 @@ description: >-
   orchestrate-coordinator unified execution plan L3 with infra
   task assignments and .claude/ file paths. Produces infra change
   manifest and config change summary for execution-impact and
-  execution-review.
+  execution-review. All spawns model:sonnet. On FAIL, routes to
+  execution-review with partial infra manifest and schema
+  violations noted. DPS needs orchestrate-coordinator infra
+  task_id/files/change_type + CC native fields ref. Exclude
+  source code context and non-.claude/ implementation details.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -71,7 +75,10 @@ For each infra task group:
 - Create Task with `subagent_type: infra-implementer`
 
 Construct each delegation prompt with:
-- **Context**: List exact `.claude/` file paths to modify (e.g., `.claude/skills/foo/SKILL.md`, `.claude/agents/bar.md`). For frontmatter changes, specify which YAML fields to add/modify/remove and their exact values. Reference CC native field list at `.claude/projects/-home-palantir/memory/ref_agents.md` (Section 2: Frontmatter Fields) for valid fields.
+- **Context (D11 — cognitive focus first)**:
+  - INCLUDE: Exact `.claude/` file paths to modify. For frontmatter changes: which YAML fields to add/modify/remove with exact values. CC native fields ref at `.claude/projects/-home-palantir/memory/ref_agents.md` Section 2.
+  - EXCLUDE: Source code implementation details. Other infra-implementers' task details. Historical rationale for field choices. Non-.claude/ pipeline context.
+  - Budget: Context field ≤ 30% of infra-implementer effective context.
 - **Task**: For each file, describe the precise change: "In `.claude/skills/X/SKILL.md`, update the `description` field to include INPUT_FROM/OUTPUT_TO references" or "Add `model: haiku` to `.claude/agents/Y.md` frontmatter." For description edits, provide the new text or the specific substring to replace.
 - **Constraints**: Write and Edit tools only — NO Bash (cannot run shell commands, cannot validate by execution). Cannot delete files. Skill `description` field max 1024 characters (count before writing). YAML frontmatter must remain valid. Settings.json must remain valid JSON. Do not introduce non-native frontmatter fields.
 - **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed). Provide L2 markdown listing each file modified, what changed (before→after for field values), and any issues encountered.
@@ -122,7 +129,22 @@ After all infra-implementers complete:
 - Build unified infra change manifest
 - Report to execution-review for validation
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.execution_infra: N` in PT before each invocation
+- Iteration 1-2: strict mode (FAIL → return to execution-review for re-assessment)
+- Iteration 3+: auto-PASS with documented gaps; escalate to L4 if critical findings remain
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error, write failure, file lock | L0 Retry | Re-invoke same infra-implementer with same DPS |
+| YAML invalid or non-native fields introduced | L1 Nudge | SendMessage with CC native fields ref + correction instruction |
+| Schema corruption or context exhausted | L2 Respawn | Kill → fresh infra-implementer with original file content + corrective DPS |
+| Settings.json corrupted, blocking all infra changes | L3 Restructure | Restore from backup, reassign settings.json as last sequential task |
+| All retries failed, architectural schema conflict | L4 Escalate | AskUserQuestion with situation summary + options |
+
 - **Retries exhausted**: Set skill `status: failed`, report failed files and error details in `blockers` array
 - **Partial changes applied**: Route to execution-review for assessment of partial infra state
 - **No changes possible** (e.g., schema conflict, invalid target): Report to Lead for alternative approach or manual intervention
@@ -196,6 +218,8 @@ skill: infra
 status: complete|in-progress|failed
 files_changed: 0
 implementers: 0
+pt_signal: "metadata.phase_signals.p6_infra"
+signal_format: "{STATUS}|files:{N}|implementers:{N}|ref:tasks/{team}/p6-infra.md"
 ```
 
 ### L2

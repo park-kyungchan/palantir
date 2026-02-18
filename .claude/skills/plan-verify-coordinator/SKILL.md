@@ -12,7 +12,9 @@ description: >-
   plan-verify-relational integrity verdict, and
   plan-verify-impact containment verdict. Produces L1 index and
   L2 summary for Lead, L3 per-dimension files for orchestrate
-  skills.
+  skills. On FAIL (cross-dimension inconsistency), Lead applies
+  D12 escalation. DPS needs all four plan-verify dimension
+  verdicts. Exclude individual plan dimension detail.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -28,7 +30,7 @@ Note: P4 validates PLANS (pre-execution). This coordinator merges dimension-spec
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes tiered output to `/tmp/pipeline/p4-coordinator/`, sends micro-signal: `PASS|dimensions:4|cross_issues:{N}|ref:/tmp/pipeline/p4-coordinator/index.md`.
+- **Delivery**: Agent writes tiered output to `tasks/{team}/p4-coordinator-*.md`, sends micro-signal: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{team}/p4-coordinator-index.md`.
 
 ## Decision Points
 
@@ -49,11 +51,14 @@ Incomplete verifier output determines coordinator behavior.
 ## Methodology
 
 ### Coordinator Delegation DPS
-- **Context**: Paste 4 dimension verifier outputs: pv-static (coverage verdict, orphans), pv-behavioral (test coverage, rollback coverage), pv-relational (contract integrity, asymmetric/missing counts), pv-impact (containment verdict, unmitigated paths). Include L1 YAML metrics and L2 evidence summaries.
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  - INCLUDE: all four plan-verify dimension L1 verdicts (pv-static coverage verdict, orphans; pv-behavioral test coverage, rollback coverage; pv-relational contract integrity, asymmetric/missing counts; pv-impact containment verdict, unmitigated paths) with L1 YAML metrics and L2 evidence summaries; file paths within this agent's ownership boundary
+  - EXCLUDE: individual plan dimension detail (plan-static, plan-behavioral, plan-relational, plan-impact outputs); historical rationale for dimension decisions; full pipeline state beyond P4; dimension-internal methodology
+  - Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Consolidate 4 dimension verdicts. Perform 4 cross-dimension checks: (a) dependency-sequence, (b) contract-boundary, (c) rollback-checkpoint, (d) requirement traceability. Produce tiered output: L1 index.md, L2 summary.md, L3 per-dimension annotated files."
 - **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:25 (STANDARD) or 35 (COMPLEX). Do NOT re-evaluate individual dimensions.
-- **Expected Output**: L1: `/tmp/pipeline/p4-coordinator/index.md` (verdict, routing). L2: `/tmp/pipeline/p4-coordinator/summary.md` (cross-dim findings). L3: 4 files `verify-{dim}.md` with cross-dimension annotations.
-- **Delivery**: SendMessage to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:/tmp/pipeline/p4-coordinator/index.md`
+- **Expected Output**: L1: `tasks/{team}/p4-coordinator-index.md` (verdict, routing). L2: `tasks/{team}/p4-coordinator-summary.md` (cross-dim findings). L3: 4 files `tasks/{team}/p4-coordinator-verify-{dim}.md` with cross-dimension annotations.
+- **Delivery**: SendMessage to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{team}/p4-coordinator-index.md`
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. If all 4 PASS with zero findings, merge verdicts inline. Write minimal L1 index only.

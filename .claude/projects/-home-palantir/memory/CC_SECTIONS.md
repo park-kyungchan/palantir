@@ -14,7 +14,7 @@
 | R4 | `ref_skills.md` | Skill field validation, invocation issues, routing | Frontmatter fields, $ARGUMENTS, shell preprocessing, L1 budget (drop order opaque), disambiguation, Skills API, agentskills.io spec, 500-line soft limit, **context:fork FIXED (CC 2.1)**, non-native fields (metadata/compatibility) |
 | R5 | `ref_agents.md` | Agent field validation, spawning, subagent limits | Agent fields, permissionMode, memory config (auto-adds Read/Write/Edit), subagent comparison, 30K output cap, hooks augment globals, BUG-005 (MEMORY.md dual injection), Stop→SubagentStop confirmed |
 | R6 | `ref_teams.md` | Agent Teams coordination, task sharing | File-based channels (both persistent on disk), inbox messaging (append-only, auto-deliver on turn), task DAG with file-lock concurrency, heartbeat 5min, plan approval workflow, **delegate mode (Shift+Tab)**, physical file structure, atomic write mechanism, hook-based pseudo-shared memory, design rationale, known limitations + BUG-025037 |
-| R7 | `ref_model_integration.md` | Model selection, cost tuning, MCP/plugin setup, **commands/ legacy** | Effort levels, cost benchmarks, MCP server types, tool search, **plugin manifest/LSP/marketplace/lifecycle**, commands/ vs skills/, Opus 4.6, fast mode 6x, 128K output |
+| R7 | `ref_model_integration.md` | Model selection, cost tuning, MCP/plugin setup, **commands/ legacy** | Effort levels, cost benchmarks, MCP server types, tool search, **plugin manifest/LSP/marketplace/lifecycle**, commands/ vs skills/, Opus 4.6, Sonnet 4.6, fast mode 6x, 128K output |
 | R8 | `ref_community.md` | External tool evaluation, community patterns | agnix linter, claude-flow, superpowers, 10 post-Opus 4.6 community tools |
 
 ## Routing Shortcuts

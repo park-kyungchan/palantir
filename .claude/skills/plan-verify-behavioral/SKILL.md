@@ -10,6 +10,10 @@ description: >-
   research-coordinator audit-behavioral L3 behavior predictions.
   Produces test coverage verdict with weighted metrics and
   coverage matrices for plan-verify-coordinator.
+  On FAIL, routes back to plan-behavioral with verified gap
+  evidence. DPS needs plan-behavioral output and
+  research-coordinator audit-behavioral L3. Exclude other verify
+  dimension results.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -25,7 +29,7 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that the test stra
 
 ## Phase-Aware Execution
 - **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `/tmp/pipeline/p4-pv-behavioral.md`, sends micro-signal: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:/tmp/pipeline/p4-pv-behavioral.md`.
+- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-behavioral.md`, sends micro-signal: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md`.
 
 ## Decision Points
 
@@ -45,11 +49,14 @@ Prediction count determines spawn parameters.
 ## Methodology
 
 ### Analyst Delegation DPS
-- **Context**: Paste plan-behavioral L1 test strategy (tests[], rollbacks[], risk classifications). Paste research-coordinator audit-behavioral L3 behavior predictions (predictions[], change types, risk levels).
+- **Context (D11 priority: cognitive focus > token efficiency)**:
+  - INCLUDE: plan-behavioral L1 test strategy (tests[], rollbacks[], risk classifications); research-coordinator audit-behavioral L3 behavior predictions (predictions[], change types, risk levels); file paths within this agent's ownership boundary
+  - EXCLUDE: other verify dimension results (static/relational/impact); historical rationale for plan-behavioral decisions; full pipeline state beyond P3-P4; rejected test strategy alternatives
+  - Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "Cross-reference test inventory against prediction inventory. Verify assertion type match, scope match, and rollback trigger completeness for all HIGH-risk changes. Compute weighted coverage using risk weights HIGH=3, MEDIUM=2, LOW=1."
 - **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:20 (STANDARD) or 30 (COMPLEX). Verify only listed predictions.
 - **Expected Output**: L1 YAML: test_coverage_percent, weighted_coverage_percent, rollback_coverage_percent, verdict, findings[]. L2: test/rollback coverage matrices.
-- **Delivery**: SendMessage to Lead: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:/tmp/pipeline/p4-pv-behavioral.md`
+- **Delivery**: SendMessage to Lead: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md`
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. Verify each predicted change has a test entry inline. No rollback check needed.
@@ -124,7 +131,21 @@ Produce final verdict with evidence:
 - Rollback coverage < 75% for HIGH-risk changes, OR
 - Any HIGH-risk change has neither test nor rollback trigger
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-verify-behavioral: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to plan-behavioral with gap evidence)
+- Iteration 2: relaxed mode (proceed with risk flags, document gaps in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Audit-behavioral L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
+| Test coverage matrix incomplete or predictions unverified | L1 Nudge | SendMessage with refined context |
+| Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
+| Prediction set scope changed or behavioral model stale | L3 Restructure | Modify task graph, reassign files |
+| Strategic test coverage ambiguity, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 ### Audit-Behavioral L3 Not Available
 - **Cause**: research-coordinator did not produce audit-behavioral L3 output.
@@ -217,6 +238,8 @@ findings:
     prediction_id: ""
     risk: HIGH|MEDIUM|LOW
     evidence: ""
+pt_signal: "metadata.phase_signals.p4_verify_behavioral"
+signal_format: "{STATUS}|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md"
 ```
 
 ### L2

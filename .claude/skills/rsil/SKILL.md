@@ -2,15 +2,19 @@
 name: rsil
 description: >-
   Executes the Recursive Self-Improvement Loop as meta-level homeostasis
-  coordinator. Detects INFRA bottlenecks via self-diagnose and manage-infra
-  health scoring, researches community patterns via external search and
-  codebase analysis, curates improvements with priority scoring, and routes
-  to self-implement for application. Coordinates the full detect-research-
-  curate-apply-verify-track cycle. User-invocable at any time or triggered
-  when bottlenecks detected during pipeline execution. Reads from
-  self-diagnose findings, manage-infra health report, and external research
-  outputs. Produces improvement plan with prioritized pattern list and
-  implementation sequence for self-implement execution.
+  coordinator. Triggered when self-diagnose severity_counts HIGH>=3 OR
+  manage-infra health_score<80%, or user-invocable at any time. Detects
+  INFRA bottlenecks via self-diagnose and manage-infra health scoring,
+  researches community patterns via external search and codebase analysis,
+  curates improvements with priority scoring, and routes to self-implement
+  for application. Coordinates the full detect-research-curate-apply-
+  verify-track cycle. Reads from self-diagnose findings, manage-infra
+  health report, and external research outputs. Produces improvement plan
+  with prioritized pattern list and implementation sequence for
+  self-implement. On FAIL (health regression detected in Step 5), halts
+  cycle and Lead applies L4 escalation for manual review. DPS needs
+  self-diagnose L1 severity_counts and manage-infra health_score. Exclude
+  raw evidence detail and full pipeline state.
 user-invocable: true
 argument-hint: "[focus-area]"
 disable-model-invocation: false
@@ -216,9 +220,9 @@ Validate that improvements actually improved system health:
 Record RSIL cycle results for cross-session continuity:
 
 **6a. PT Metadata Update**
-- If PT exists: update `metadata.rsil_cycles` with cycle results
-- Record: cycle number, health delta, patterns applied, patterns deferred
-- Record: timestamp, focus-area, trigger source
+- If PT exists: update `metadata.iterations.rsil: N` with current cycle count (D15 canonical field)
+- Record cycle results in `metadata.phase_signals.homeostasis`: `"{STATUS}|health_delta:{N}|patterns:{N}|ref:tasks/{team}/homeostasis-rsil.md"`
+- Record: health delta, patterns applied, patterns deferred, focus-area, trigger source
 
 **6b. MEMORY.md Update**
 - Update MEMORY.md INFRA State section with new health score
@@ -234,6 +238,12 @@ Record RSIL cycle results for cross-session continuity:
 - Cycle summary (1-paragraph narrative)
 - Metrics: health_before, health_after, delta, patterns_applied, patterns_deferred
 - Next cycle recommendations
+
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.rsil: N` in PT before each RSIL invocation
+- Iteration 1-2: strict mode (FAIL in Step 5 → halt cycle, manual review required)
+- Iteration 3: relaxed mode (proceed with documented gaps, flag in phase_signals)
+- Max iterations: 3 per pipeline session. On exceed: auto-PASS with deferred backlog documented.
 
 ## Anti-Patterns
 
@@ -283,6 +293,17 @@ Each cycle must complete Step 5 (Verify) before starting the next cycle. Stackin
 | Health regression detected in Step 5 | (Halt) | Regression details, manual review required |
 
 ## Failure Handling
+
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Transient tool error during research or health check | L0 Retry | Re-invoke same agent with same DPS |
+| Research output incomplete or self-diagnose missing categories | L1 Nudge | SendMessage with focused query or category list |
+| Agent exhausted turns or context polluted mid-cycle | L2 Respawn | Kill → fresh agent with reduced scope DPS |
+| self-implement non-convergence or parallel conflict across waves | L3 Restructure | Regroup patterns into smaller non-conflicting waves |
+| Health regression after Step 5 or 3+ L2 failures | L4 Escalate | AskUserQuestion with regression details and options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | self-diagnose unavailable | CRITICAL | Abort | Yes | Cannot detect without diagnosis. Report `status: blocked`. |
@@ -306,6 +327,9 @@ Each cycle must complete Step 5 (Verify) before starting the next cycle. Stackin
 ```yaml
 domain: homeostasis
 skill: rsil
+status: complete|partial|blocked|halted
+pt_signal: "metadata.phase_signals.homeostasis"
+signal_format: "{STATUS}|health_delta:{N}|patterns:{N}|ref:tasks/{team}/homeostasis-rsil.md"
 cycle: 1
 trigger: user|auto|pipeline-failure
 focus_area: all|hooks|skills|agents|budget|file-io
@@ -317,8 +341,10 @@ patterns_researched: 0
 patterns_applied: 0
 patterns_deferred: 0
 cc_claims_verified: 0
-status: complete|partial|blocked|halted
 ```
+
+**Channel 2 output file**: Write full L1+L2 result to `tasks/{team}/homeostasis-rsil.md`.
+If no team active, fallback to `/tmp/pipeline/homeostasis-rsil.md`.
 
 ### L2
 - **Step 1 Results**: Bottleneck list with sources, categories, and severities

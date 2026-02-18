@@ -8,7 +8,11 @@ description: >-
   research-coordinator audit-behavioral L3 behavior predictions
   via $ARGUMENTS. Produces test and rollback inventory, and
   per-change test cases with rollback procedures for
-  plan-verify-behavioral.
+  plan-verify-behavioral. On FAIL (untested HIGH behavior),
+  routes back to plan-behavioral with additional predictions.
+  DPS needs research-coordinator audit-behavioral L3 behavior
+  predictions. Exclude static, relational, and impact dimension
+  data.
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -113,18 +117,42 @@ Produce the complete behavioral strategy:
 - Coverage metrics: behavior changes covered / total predicted
 
 **DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context**: Paste audit-behavioral L3 content (behavior predictions, side effects, dependency chains). Include pipeline tier, total predicted changes count, and task list from plan-static if available.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  INCLUDE:
+    - research-coordinator audit-behavioral L3 from `tasks/{team}/p2-coordinator-audit-behavioral.md`
+    - Pipeline tier and iteration count from PT
+    - Task list from plan-static if available (for checkpoint alignment)
+  EXCLUDE:
+    - Other plan dimension outputs (unless direct dependency for checkpoint mapping)
+    - Full research evidence detail (use L3 summaries only)
+    - Pre-design and design conversation history
+  Budget: Context field ≤ 30% of teammate effective context
 - **Task**: "For each predicted behavior change: define test case (subject, pre/post condition, type, priority P0-P3). For P0/P1 changes: define rollback trigger (condition, detection, blast radius, scope). Map checkpoints to task chain. Calculate coverage metrics."
 - **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on prescriptive strategy, not test implementation.
 - **Expected Output**: L1 YAML with test_count, rollback_count, checkpoint_count, coverage_percent, tests[] and rollbacks[]. L2 per-change test cases and rollback procedures.
-- **Delivery**: Write full result to `/tmp/pipeline/p3-plan-behavioral.md`. Send micro-signal to Lead: `PASS|tests:{N}|rollbacks:{N}|ref:/tmp/pipeline/p3-plan-behavioral.md`.
+- **Delivery**: Write full result to `tasks/{team}/p3-plan-behavioral.md`. Send micro-signal to Lead: `PASS|tests:{N}|rollbacks:{N}|ref:tasks/{team}/p3-plan-behavioral.md`.
 
 #### Tier-Specific DPS Variations
 **TRIVIAL**: Lead-direct. 1-2 obvious behavior changes. Inline test specification, skip rollback if no P0/P1 changes.
 **STANDARD**: Spawn analyst (maxTurns: 15). Systematic test cases for 3-8 changes. Rollback for P0/P1 only. Skip checkpoint mapping if ≤ 3 tasks.
 **COMPLEX**: Full DPS above. Deep chain analysis, cascading rollback design, full checkpoint mapping across 9+ changes.
 
+### Iteration Tracking (D15)
+- Lead manages `metadata.iterations.plan-behavioral: N` in PT before each invocation
+- Iteration 1: strict mode (FAIL → return to research-coordinator with behavior prediction gaps)
+- Iteration 2: relaxed mode (proceed with documented coverage gaps, flag in phase_signals)
+- Max iterations: 2
+
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error or timeout during test case generation | L0 Retry | Re-invoke same agent, same DPS |
+| Test/rollback strategy incomplete or missing P0/P1 coverage | L1 Nudge | SendMessage with refined behavior prediction scope |
+| Agent stuck on chain analysis or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
+| Task chain structure broken or rollback scoping requires plan-static clarification | L3 Restructure | Modify task graph, request boundary clarification |
+| Strategic ambiguity on risk classification or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
+
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Missing audit-behavioral L3 input | CRITICAL | research-coordinator | Yes | Cannot define tests without behavior predictions. Request re-run. |
@@ -185,6 +213,8 @@ test_count: 0
 rollback_count: 0
 checkpoint_count: 0
 coverage_percent: 0
+pt_signal: "metadata.phase_signals.p3_plan_behavioral"
+signal_format: "{STATUS}|tests:{N}|rollbacks:{N}|ref:tasks/{team}/p3-plan-behavioral.md"
 tests:
   - id: ""
     behavior_change: ""

@@ -5,7 +5,7 @@
 2. Skill L1 descriptions → loaded in system-reminder as part of Skill tool definition
 3. SessionStart hooks → `hookSpecificOutput.additionalContext` injected into context
 4. Agent L1 descriptions → loaded in Task tool definition
-5. SubagentStart hooks → `hookSpecificOutput.additionalContext` injected into spawned agent
+5. SubagentStart hooks → `hookSpecificOutput.additionalContext` injected into spawned instance (teammate/subagent)
 6. Conversation messages → user + assistant turns
 
 ## Skill Native Fields (Verified 2026-02-14)

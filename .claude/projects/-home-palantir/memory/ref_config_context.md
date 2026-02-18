@@ -1,6 +1,6 @@
 # Configuration, Context & Session
 
-> Verified: 2026-02-17 via claude-code-guide team investigation
+> Verified: 2026-02-18 via claude-code-guide team investigation
 
 ---
 
@@ -87,6 +87,7 @@ Shell-level env vars take precedence over `env` object in settings.json. Pre-exi
 | `showTurnDuration` | boolean | `true` | Show turn duration messages |
 | `skipDangerousModePermissionPrompt` | boolean | `false` | Suppress bypass warning |
 | `spinnerTipsEnabled` | boolean | `true` | Show tips in spinner |
+| `spinnerTipsOverride` | object | — | Custom spinner tips: `{tips: string[], excludeDefault?: boolean}` |
 | `spinnerVerbs` | object | — | Customize spinner verbs |
 | `statusLine` | object | — | Custom status line script |
 | `teammateMode` | string | `"auto"` | Agent team display: auto/in-process/tmux |
@@ -128,6 +129,7 @@ Full chain: managed policy → user → project → local → subdirectory (on-d
 - Injected into system prompt on **every single API request** — permanently consumes context tokens
 - Survives compaction (re-injected automatically)
 - `--add-dir` requires `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1`
+- `--add-dir` directories also provide `enabledPlugins` and `extraKnownMarketplaces` from their settings (CC 2.1.45+)
 - Max recommended: keep total under 2000 tokens for efficiency
 - Progressive disclosure: keep CLAUDE.md lean, move details to reference files
 - Progressive disclosure equation: CLAUDE.md (always loaded) + Skills (on-demand) + Supporting files (on-demand from skills)

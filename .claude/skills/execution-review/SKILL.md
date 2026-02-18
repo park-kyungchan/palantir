@@ -10,7 +10,12 @@ description: >-
   execution-impact impact report, execution-cascade cascade
   results, and design domain specs. Produces review verdict with
   severity breakdown for verify domain on PASS, or routes back
-  to execution-code/infra on FAIL.
+  to execution-code/infra on FAIL. On fix loop non-convergence
+  (3 iterations), routes to plan-relational for contract
+  revision, blocking delivery. DPS needs execution-code/infra
+  manifests + design-architecture/interface L2 specs. Exclude
+  cascade iteration details beyond warnings[] and full ADR
+  history.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -62,7 +67,10 @@ Gather outputs from execution-code and execution-infra:
 
 ### 2. Stage 1 — Spec Review
 Spawn analyst for design compliance check. Construct the delegation prompt with:
-- **Context**: Paste execution-code/infra L1 `files_changed[]` manifest (file paths and change type). Paste design-architecture L2 (component decisions relevant to changed files) and design-interface L2 (contract specifications for affected interfaces). If cascade ran, include execution-cascade L1 `status` and `warnings[]`.
+- **Context (D11 — cognitive focus first)**:
+  - INCLUDE: execution-code/infra L1 `files_changed[]` manifest (file paths and change type). Design-architecture L2 (component decisions relevant to changed files). Design-interface L2 (contract specifications for affected interfaces). If cascade ran: execution-cascade L1 `status` and `warnings[]` only.
+  - EXCLUDE: Cascade iteration details beyond `warnings[]`. Full ADR history. Other phases' outputs not needed for compliance check.
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: "Review each changed file against the provided design specs. For each file: (1) verify it implements the correct architecture component, (2) check interface contracts match design-interface signatures exactly, (3) flag any deviations with severity classification."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). Review only the listed changed files — do not explore the entire codebase.
 - **Expected Output**: Per-file compliance verdict (PASS/FAIL) with file:line references for deviations. Severity: critical (spec violation), high (interface mismatch), medium (pattern deviation), low (style issue).
@@ -84,7 +92,10 @@ Spawn analyst for design compliance check. Construct the delegation prompt with:
 
 ### 3. Stage 2 — Code Quality Review
 Spawn analyst for code quality assessment. Construct the delegation prompt with:
-- **Context**: Paste execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Include Stage 1 findings summary received via SendMessage (Stage 1 analyst sends review findings via SendMessage; Lead uses that summary to inform Stage 2 scope). If research-codebase findings exist, include relevant convention patterns.
+- **Context (D11 — cognitive focus first)**:
+  - INCLUDE: execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Stage 1 findings summary received via SendMessage. Relevant convention patterns from research-codebase if available.
+  - EXCLUDE: Design-architecture and design-interface L2 full content (covered by Stage 1). Cascade history. Full pipeline state.
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: "Review code quality for each changed file. For each file check: (1) coding patterns match existing codebase conventions, (2) error handling covers failure modes from design-risk assessment, (3) no security vulnerabilities (OWASP top 10: injection, XSS, auth bypass), (4) no obvious performance regressions."
 - **Constraints**: Read-only analysis (analyst agent, no Bash). Focus on implementation quality — spec compliance is already covered by Stage 1.
 - **Expected Output**: Per-file quality findings with file:line locations. Categorize each as: required fix (blocking merge) vs suggestion (non-blocking). Security findings always classified as critical severity.
@@ -138,6 +149,14 @@ If critical or high findings exist:
 - Iteration 3 re-review: Same scope as iteration 2. If still finding blocking issues: the problem is likely in the design, not the implementation.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Tool error, reviewer spawn timeout | L0 Retry | Re-invoke same analyst with same DPS |
+| Reviewer output incomplete or coverage gaps | L1 Nudge | SendMessage with narrowed scope or focused file list |
+| Reviewer exhausted turns or context polluted | L2 Respawn | Kill → fresh analyst with refined DPS focused on pending files |
+| Fix loop non-convergent after 2 iterations or scope conflict between reviewers | L3 Restructure | Reassign review scope, separate spec vs quality reviews, re-stage |
+| Fix loop exhausted (3 iterations), architectural contract conflict suspected | L4 Escalate | AskUserQuestion with situation summary + options |
 
 ### All Reviewers Fail to Complete
 - **Cause**: maxTurns exhausted, analyst stuck in loop
@@ -235,6 +254,8 @@ reviewers:
     verdict: PASS|FAIL
     findings: 0
 total_findings: 0
+pt_signal: "metadata.phase_signals.p6_review"
+signal_format: "{STATUS}|findings:{N}|severity:{critical|high}|ref:tasks/{team}/p6-review.md"
 ```
 
 ### L2

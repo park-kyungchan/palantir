@@ -11,6 +11,11 @@ description: >-
   choices, design-interface API contracts, and design-risk risk
   areas. Produces community pattern matrix with source URLs for
   audit skills, plus CC-native claims for research-cc-verify gate.
+  Requires general-purpose subagent_type for MCP ToolSearch access.
+  On FAIL (MCP unavailable or no verified results), pauses for MCP
+  health check. NO_FALLBACK: never substitute WebSearch for MCP tools.
+  DPS needs design-architecture technology choices, design-risk risk
+  areas. Exclude internal codebase patterns (research-codebase handles those).
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -33,12 +38,15 @@ From architecture decisions, list items needing community-sourced evidence:
 
 ### 2. Search Community Discussions
 For STANDARD/COMPLEX tiers, construct the delegation prompt for each researcher with:
-- **Context**: Paste the technical decisions list from Step 1 with specific questions needing community validation. Include design-architecture L1 `components[]` and relevant ADRs.
+- **Context** (D11 priority: cognitive focus > token efficiency): Paste the technical decisions list from Step 1 with specific questions needing community validation. Include design-architecture L1 `components[]` and relevant ADRs.
+  - INCLUDE: Technology choices and risk areas from design domain. Specific research questions per dependency.
+  - EXCLUDE: Internal codebase patterns (research-codebase handles those). Pre-design conversation history. Rejected technology alternatives.
+  - Budget: Context field ≤ 30% of effective context budget.
 - **Task**: "Search post-Opus-4.6 community discussions for [assigned topic list]. For each topic: (1) find GitHub Issues/Discussions with verified solutions, (2) search forums for practical patterns and workarounds, (3) identify known constraints not in official docs, (4) check for post-release behavioral changes. Use WebSearch first for GitHub Issues, tavily for broader forum coverage, WebFetch for specific GitHub threads."
 - **Scope**: Explicit list of topics assigned to this researcher. For COMPLEX, split by technology domain.
 - **Constraints**: Web-enabled research only (WebSearch, WebFetch, tavily). No file modifications. Cite all sources with full URLs. Prioritize verified/reproducible findings.
 - **Expected Output**: Per-topic entry: topic, pattern found, verification status (verified/anecdotal/unconfirmed), source URL, practical impact, confidence rating.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Delivery**: Write full output to tasks/{team}/p2-external.md. Send micro-signal to Lead via SendMessage: "PASS|validated:{count}|ref:tasks/{team}/p2-external.md".
 
 Priority order for community research:
 1. **WebSearch** for GitHub Issues/Discussions (most targeted)
@@ -140,6 +148,15 @@ When spawning multiple researchers, define explicit coordination protocol:
 - **Conflict resolution**: If two researchers report conflicting information about the same technology (possible when domains overlap at boundaries), Lead flags the conflict and either: (a) spawns a third researcher to arbitrate, or (b) escalates to research-audit with both findings marked `confidence: conflicted`.
 
 ## Failure Handling
+
+| Failure Type | Level | Action |
+|---|---|---|
+| MCP tool error, timeout, single dependency fails | L0 Retry | Re-invoke same researcher, same dependency list |
+| Incomplete research or off-topic findings returned | L1 Nudge | SendMessage with refined dependency scope or narrower questions |
+| Researcher exhausted turns or context polluted | L2 Respawn | Kill → fresh researcher with remaining dependency list |
+| MCP unavailable, tool chain broken for critical dependency | L3 Restructure | Split by tool availability, serialize with fallback constraints |
+| 3+ L2 failures or critical dependency unvalidatable after all tools | L4 Escalate | AskUserQuestion with gap summary and options |
+
 - **Web tools fail** (WebSearch/WebFetch/context7/tavily): Set per-dependency `status: issue`, note tool failure in L2
 - **All research fails**: Set skill status to `partial`, forward gaps to research-audit for consolidation
 - **Routing**: research-audit receives gaps and may recommend design revision if critical dependencies unvalidated
@@ -250,6 +267,8 @@ dependencies:
     status: validated|issue|unknown
     source: ""
 cc_native_claims: 0
+pt_signal: "metadata.phase_signals.p2_research"
+signal_format: "PASS|validated:{count}|cc_claims:{n}|ref:tasks/{team}/p2-external.md"
 ```
 
 ### L2

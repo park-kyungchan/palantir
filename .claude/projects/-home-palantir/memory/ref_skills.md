@@ -1,6 +1,6 @@
 # Skill System — Fields, Invocation & Routing
 
-> Verified: 2026-02-17 via claude-code-guide team investigation
+> Verified: 2026-02-18 via claude-code-guide team investigation
 
 ---
 
@@ -91,6 +91,7 @@ Key: Subagents do NOT inherit skills from parent — must be listed explicitly i
 6. `$ARGUMENTS` substituted in L2 body
 7. Skill executes (only ONE skill active at a time)
 8. After completion: L2 body removed, L1 description remains
+- **Bug fix (CC 2.1.45)**: Skills invoked by subagents no longer incorrectly appear in main session context after compaction
 
 ---
 
@@ -189,6 +190,7 @@ OUTPUT_FORMAT: L1 format, L2 format.
 ### Budget Math
 
 - Total budget: `max(context_window × 2%, 16000)` chars. Override via env var `SLASH_COMMAND_TOOL_CHAR_BUDGET`
+- Budget scaling confirmed in CC 2.1.45: "Skill character budget now scales with context window (2% of context)"
 - Per-skill recommendation: ≤1024 chars (self-imposed for zero truncation)
 - When exceeded: skills become **invisible** to the agent (completely hidden)
 - **Drop order is UNDOCUMENTED** — not FIFO, not alphabetical. Algorithm is opaque (GitHub #13099)

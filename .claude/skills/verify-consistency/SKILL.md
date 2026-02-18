@@ -8,7 +8,16 @@ description: >-
   edits. Reads from verify-structural-content structural and
   content integrity confirmation. Produces relationship matrix
   with consistency status for verify-quality on PASS, or routes
-  back to execution-infra on FAIL.
+  back to execution-infra on FAIL. On FAIL, routes source skill,
+  target skill, and missing direction to execution-infra. Builds
+  directed reference graph from INPUT_FROM/OUTPUT_TO keys. Flags
+  unidirectional references, unauthorized backward phase
+  references, and CLAUDE.md count drift. TRIVIAL: Lead-direct
+  on 2-3 files. STANDARD: 1 analyst. COMPLEX: 2 analysts —
+  bidirectionality split from phase sequence. DPS context: all
+  skill descriptions with INPUT_FROM/OUTPUT_TO extracted +
+  CLAUDE.md counts. Exclude L2 body cross-references, FAIL
+  route exceptions already documented as exempt.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -90,11 +99,14 @@ for each skill in .claude/skills/*/SKILL.md:
 ```
 
 For STANDARD/COMPLEX tiers, construct the DPS delegation prompt:
-- **Context**: All 40 skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md counts (agents: 6, skills: 40, domains: 8+5+2). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify. Coordinator skills (research-coordinator, plan-verify-coordinator, orchestrate-coordinator) create valid indirect bidirectional links.
+- **Context** (D11 priority: cognitive focus > token efficiency):
+  - INCLUDE: All skill descriptions with INPUT_FROM/OUTPUT_TO extracted. CLAUDE.md declared counts (agents: 6, skills count, domains breakdown). Phase sequence: pre-design, design, research, plan, plan-verify, orchestration, execution, verify. Coordinator pattern documentation (research-coordinator, plan-verify-coordinator, orchestrate-coordinator create valid indirect links). Cross-cutting exemption list (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement). File paths within this analyst's ownership boundary.
+  - EXCLUDE: L2 body cross-references (only check description-level INPUT_FROM/OUTPUT_TO). Full pipeline state beyond current file set. Historical rationale for skill relationships. FAIL route exceptions already documented as exempt (these are inherently unidirectional).
+  - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: Build directed reference graph. Check bidirectionality (A->B implies B->A). Check phase sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
 - **Constraints**: Read-only. No modifications. Cross-cutting skills (manage-*, delivery, pipeline-resume, task-management, self-diagnose, self-implement) exempt from phase sequence.
 - **Expected Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph + phase sequence validation.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage format: `"{STATUS}|relationships:{relationships_checked}|violations:{inconsistencies}|ref:tasks/{team}/p7-consistency.md"`. L2 detail stays in agent context.
 
 ### 2. Verify Bidirectionality
 
@@ -197,6 +209,16 @@ Severity classification for findings:
 
 ## Failure Handling
 
+### D12 Escalation Ladder
+
+| Failure Type | Level | Action |
+|---|---|---|
+| Analyst tool error reading skill descriptions | L0 Retry | Re-invoke analyst with same DPS |
+| Reference graph incomplete or bidirectionality check missed files | L1 Nudge | SendMessage with corrected file list + exemption documentation |
+| Analyst stuck on circular dependency resolution, turns exhausted | L2 Respawn | Kill analyst → spawn fresh with reduced scope per domain |
+| Count mismatch reveals filesystem/CLAUDE.md structural divergence | L3 Restructure | Route count fixes to execution-infra before consistency check proceeds |
+| 3+ L2 failures or graph construction strategy unclear | L4 Escalate | AskUserQuestion with situation summary + options |
+
 | Failure Type | Action | Route | Data Passed |
 |--------------|--------|-------|-------------|
 | Bidirectionality violation | FAIL | execution-infra | `{ source, target, direction, missing_reverse }` |
@@ -266,6 +288,8 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | Phase sequence violation | execution-infra (or Lead for FAIL route assessment) | Violating reference pair with phase numbers |
 | CLAUDE.md count drift | execution-infra | Expected vs actual per component type |
 
+> **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
+
 ## Quality Gate
 
 - All INPUT_FROM/OUTPUT_TO references are bidirectional (or documented as exempt)
@@ -281,6 +305,8 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 domain: verify
 skill: consistency
 status: PASS|FAIL
+pt_signal: "metadata.phase_signals.p7_consistency"
+signal_format: "{STATUS}|relationships:{relationships_checked}|violations:{inconsistencies}|ref:tasks/{team}/p7-consistency.md"
 relationships_checked: 0
 inconsistencies: 0
 bidirectionality_violations: 0
