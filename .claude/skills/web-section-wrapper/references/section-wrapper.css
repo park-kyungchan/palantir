@@ -1,0 +1,208 @@
+/* =============================================================
+   web-section-wrapper — section-wrapper.css
+   Reusable page section container with scroll-reveal entrance
+   and optional glass morphism background.
+
+   Requires: web-design-tokens/references/tokens.css
+   Composes with: web-card-grid, web-gap-matrix, web-stat-dashboard, etc.
+
+   Animation strategy:
+   - Primary:  CSS scroll-driven (Chrome/Edge/Safari) via @supports guard
+   - Fallback: IntersectionObserver (Firefox) — section-wrapper.js adds .section-wrapper--visible
+   ============================================================= */
+
+/* ── Section outer wrapper ── */
+.section-wrapper {
+  width: 100%;
+  padding: 5rem 2rem;
+  position: relative;
+
+  @media (max-width: 768px) {
+    padding: 3rem 1.5rem;
+  }
+}
+
+/* ── Glass morphism background variant ── */
+/* Degrades gracefully — no fallback needed (solid background shows instead) */
+.section-wrapper--glass {
+  @supports (backdrop-filter: blur(1px)) {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* ── Dark override (for light-mode parent pages) ── */
+.section-wrapper--dark {
+  background: var(--surface-dark, rgba(10, 10, 20, 0.95));
+  color: var(--text-primary, #fff);
+}
+
+/* ── Max-width inner container ── */
+.section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── Narrow variant for text-heavy content ── */
+.section-wrapper--narrow .section-inner {
+  max-width: 800px;
+}
+
+/* ── Section header block ── */
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+/* ── Eyebrow label ── */
+.section-eyebrow {
+  font-size: 0.8rem;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+
+  /* Hide on very narrow screens */
+  @media (max-width: 360px) {
+    display: none;
+  }
+}
+
+/* ── Section title with gradient underline ── */
+.section-title {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  margin-bottom: 0.75rem;
+  display: inline-block; /* Required: contains ::after underline to text width */
+  position: relative;
+}
+
+/* Gradient underline — reveals from left on scroll-reveal */
+.section-title::after {
+  content: '';
+  display: block;
+  height: 3px;
+  margin-top: 0.4rem;
+  background: linear-gradient(
+    90deg,
+    var(--neon-cyan, #00f5ff),
+    var(--neon-magenta, #ff00e6)
+  );
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Section subtitle ── */
+.section-subtitle {
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  max-width: 60ch;
+  margin: 0.5rem auto 0;
+  line-height: 1.6;
+}
+
+/* ── Content body slot ── */
+.section-body {
+  width: 100%;
+}
+
+/* =============================================================
+   Scroll-reveal animation
+   ============================================================= */
+
+/* ── Fallback start state (IntersectionObserver path) ── */
+/* section-wrapper.js adds .section-wrapper--visible when section enters viewport */
+.section-header {
+  opacity: 1; /* Default: visible (progressive enhancement — no JS, no CSS SDA) */
+  transform: translateY(0);
+}
+
+/* JS activates start state after confirming no CSS scroll-driven support */
+.section-wrapper--js-ready .section-header {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.section-wrapper--visible .section-header {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Gradient underline reveals when section becomes visible */
+.section-wrapper--visible .section-title::after {
+  transform: scaleX(1);
+}
+
+/* ── Primary: CSS Scroll-Driven Animation (Chrome/Edge/Safari) ── */
+/* Overrides fallback JS states entirely in supporting browsers.   */
+@supports (animation-timeline: view()) {
+  /* Reset JS fallback states so JS is a no-op in modern browsers */
+  .section-wrapper--js-ready .section-header {
+    opacity: 1;
+    transform: translateY(0);
+    transition: none;
+  }
+
+  @keyframes section-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* CRITICAL: animation-timeline MUST come AFTER animation shorthand */
+  .section-header {
+    animation: section-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 10% entry 40%;
+  }
+
+  /* Gradient underline reveal via scroll-driven animation */
+  @keyframes underline-reveal {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+
+  .section-title::after {
+    transition: none; /* Disable JS-path transition; CSS SDA takes over */
+    animation: underline-reveal linear both;
+    animation-timeline: view(.section-header);
+    animation-range: entry 20% entry 50%;
+  }
+}
+
+/* ── prefers-reduced-motion: skip all reveal animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .section-header {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .section-wrapper--js-ready .section-header {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .section-title::after {
+    animation: none;
+    transition: none;
+    transform: scaleX(1); /* Show underline immediately */
+  }
+}

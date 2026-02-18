@@ -1,0 +1,78 @@
+<!--
+  web-section-wrapper — section-wrapper.html
+  Reusable page section container with scroll-reveal and nav-dot integration.
+
+  Compose with:
+  - web-nav-dots: set data-section-id matching the nav-dot data-target
+  - web-card-grid, web-gap-matrix, web-stat-dashboard, etc.: paste into .section-body
+
+  Requirements:
+  - section-wrapper.css + section-wrapper.js loaded
+  - web-design-tokens/references/tokens.css loaded
+  - Optional: web-nav-dots/references/floating-nav-dots.js (for active tracking)
+
+  Variants:
+  - .section-wrapper--glass   — glass morphism background
+  - .section-wrapper--dark    — explicit dark override for light-mode pages
+  - .section-wrapper--narrow  — max-width 800px for text-heavy content
+-->
+
+<!--
+  data-section-id: Must match data-target in your .nav-dot[data-target] element.
+  aria-labelledby: Points to the h2 inside for accessible section labeling.
+  Replace "projects" with a unique kebab-case ID for each section.
+-->
+<section
+  class="section-wrapper"
+  data-section-id="projects"
+  aria-labelledby="projects-title"
+>
+
+  <div class="section-inner">
+
+    <!--
+      Section header block.
+      Remove entirely if using a different heading approach or placing a heading
+      inside the organism (e.g., web-card-grid provides its own .card-grid-header).
+    -->
+    <header class="section-header">
+
+      <!-- Optional eyebrow label (category, date, or short descriptor) -->
+      <p class="section-eyebrow">Section Label</p>
+
+      <!--
+        Section title with gradient underline.
+        id must match aria-labelledby on the parent <section>.
+        JS scroll-reveal adds .section-wrapper--visible which scales the
+        ::after underline from 0 to 1.
+      -->
+      <h2 class="section-title" id="projects-title">Section Heading</h2>
+
+      <!-- Optional subtitle / description text -->
+      <p class="section-subtitle">
+        A brief description of what this section contains.
+      </p>
+
+    </header><!-- /.section-header -->
+
+    <!--
+      Content slot — paste any organism block here.
+      Examples:
+        - web-card-grid:       <div class="card-grid" role="list">...</div>
+        - web-gap-matrix:      <div class="gap-matrix">...</div>
+        - web-stat-dashboard:  <div class="stat-grid">...</div>
+        - web-split-layout:    <div class="split-layout">...</div>
+        - custom content
+    -->
+    <div class="section-body">
+
+      <!-- Replace this placeholder with your organism content -->
+      <p style="color: var(--text-secondary, rgba(255,255,255,0.5));">
+        Section content goes here.
+      </p>
+
+    </div><!-- /.section-body -->
+
+  </div><!-- /.section-inner -->
+
+</section>

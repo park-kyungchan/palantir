@@ -1,0 +1,56 @@
+<!-- =============================================================
+     web-stat-dashboard — stat-dashboard.html
+     Animated counter grid with icon badges, glass cards, trends
+     Prerequisites: tokens.css, glass-card.css, icon-badge.css
+     ============================================================= -->
+
+<!--
+  USAGE (data attributes):
+    data-columns="3"     — grid columns: 2 | 3 (default) | 4
+    data-animate="true"  — enable countUp on scroll: true (default) | false
+    data-stats="[...]"   — JSON array of stat objects
+
+  STAT JSON shape:
+    { "icon": "🏆", "value": 94, "label": "Health Score", "suffix": "%", "trend": "up" }
+    { "icon": "⚙️", "value": 48, "label": "Skills",       "suffix": "",  "trend": null }
+
+  TREND values: "up" | "down" | null
+-->
+
+<section class="stat-dashboard"
+  data-columns="3"
+  data-animate="true"
+  data-stats='[
+    { "icon": "🏆", "value": 94,  "label": "INFRA Health",    "suffix": "%",  "trend": "up"   },
+    { "icon": "⚙️", "value": 48,  "label": "Skills Built",    "suffix": "",   "trend": "up"   },
+    { "icon": "🤖", "value": 6,   "label": "Agent Profiles",  "suffix": "",   "trend": null   },
+    { "icon": "🔗", "value": 5,   "label": "MCP Servers",     "suffix": "",   "trend": "up"   },
+    { "icon": "📦", "value": 149, "label": "Files Changed",   "suffix": "",   "trend": null   },
+    { "icon": "✅", "value": 22,  "label": "Findings Fixed",  "suffix": "",   "trend": "up"   }
+  ]'>
+
+  <!-- JS will generate .stat-card elements from data-stats JSON -->
+  <!-- Fallback: static markup below (visible if JS disabled) -->
+
+  <div class="stat-card glass-card-static" aria-label="INFRA Health: 94%">
+    <div class="icon-badge icon-badge--lg" data-accent="cyan" data-animate>🏆</div>
+    <div class="stat-value" data-target="94" data-suffix="%">94%</div>
+    <div class="stat-label">INFRA Health</div>
+    <div class="stat-trend stat-trend--up" aria-label="Trending up">▲</div>
+  </div>
+
+  <div class="stat-card glass-card-static" aria-label="Skills Built: 48">
+    <div class="icon-badge icon-badge--lg" data-accent="purple" data-animate>⚙️</div>
+    <div class="stat-value" data-target="48" data-suffix="">48</div>
+    <div class="stat-label">Skills Built</div>
+    <div class="stat-trend stat-trend--up" aria-label="Trending up">▲</div>
+  </div>
+
+  <div class="stat-card glass-card-static" aria-label="Agent Profiles: 6">
+    <div class="icon-badge icon-badge--lg" data-accent="magenta" data-animate>🤖</div>
+    <div class="stat-value" data-target="6" data-suffix="">6</div>
+    <div class="stat-label">Agent Profiles</div>
+  </div>
+
+</section>
+<!-- /.stat-dashboard -->

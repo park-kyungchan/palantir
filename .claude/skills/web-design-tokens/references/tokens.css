@@ -1,0 +1,234 @@
+/* =============================================================
+   web-design-tokens — tokens.css
+   Foundation CSS custom properties for all web-* template skills
+   ============================================================= */
+
+/* ──────────────────────────────────────────────────────────────
+   @property — Registered custom properties (Baseline 2025)
+   Enable smooth gradient and angle animations via CSS transitions
+   ────────────────────────────────────────────────────────────── */
+
+@property --bg-angle {
+  inherits: false;
+  initial-value: 0deg;
+  syntax: "<angle>";
+}
+
+@property --glow-intensity {
+  inherits: false;
+  initial-value: 0.3;
+  syntax: "<number>";
+}
+
+@property --aurora-hue {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --shine-color {
+  syntax: "<color>";
+  initial-value: oklch(70% 0.3 240);
+  inherits: false;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   :root — Design Tokens (Dark / Neon — default theme)
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+
+  /* --- Background --- */
+  --bg-deep:          #0a0a1e;                        /* oklch(9% 0.03 265) */
+  --bg-surface:       rgba(17, 25, 40, 0.75);
+  --bg-deep-oklch:    oklch(9% 0.03 265);
+
+  /* --- Glass --- */
+  --glass-bg:         rgba(17, 25, 40, 0.75);
+  --glass-bg-solid:   rgba(10, 10, 30, 0.92);
+  --glass-border:     rgba(255, 255, 255, 0.125);
+  --glass-blur:       blur(16px) saturate(180%);
+
+  /* --- Neon Accent Palette --- */
+  --neon-cyan:        #00ffff;                        /* oklch(91% 0.19 194) */
+  --neon-magenta:     #ff00ff;                        /* oklch(70% 0.32 302) */
+  --neon-green:       #2ecc71;                        /* oklch(75% 0.2 142)  */
+  --neon-purple:      #bc13fe;                        /* oklch(58% 0.28 300) */
+  --neon-red:         #e74c3c;                        /* oklch(58% 0.21 25)  */
+  --neon-orange:      #f39c12;                        /* oklch(75% 0.17 72)  */
+
+  /* oklch equivalents (perceptually uniform) */
+  --neon-cyan-ok:     oklch(91% 0.19 194);
+  --neon-magenta-ok:  oklch(70% 0.32 302);
+  --neon-green-ok:    oklch(75% 0.20 142);
+  --neon-purple-ok:   oklch(58% 0.28 300);
+
+  /* --- Text --- */
+  --text-primary:     #ecf0f1;                        /* oklch(95% 0.01 200) */
+  --text-secondary:   rgba(255, 255, 255, 0.7);
+  --text-muted:       rgba(255, 255, 255, 0.45);
+
+  /* --- color-mix utilities (Baseline 2025) --- */
+  --neon-cyan-glass:  color-mix(in oklch, var(--neon-cyan) 15%, transparent);
+  --neon-cyan-border: color-mix(in oklch, var(--neon-cyan) 40%, transparent);
+  --neon-purple-glass:color-mix(in oklch, var(--neon-purple) 15%, transparent);
+
+  /* --- Typography --- */
+  --font-heading:     'Inter', 'Noto Sans KR', sans-serif;
+  --font-body:        'Noto Sans KR', 'Inter', sans-serif;
+  --font-mono:        'Courier New', 'Consolas', monospace;
+
+  /* --- Spacing Scale --- */
+  --space-xs:   0.25rem;   /*  4px */
+  --space-sm:   0.5rem;    /*  8px */
+  --space-md:   1rem;      /* 16px */
+  --space-lg:   1.5rem;    /* 24px */
+  --space-xl:   2rem;      /* 32px */
+  --space-2xl:  3rem;      /* 48px */
+  --space-3xl:  4rem;      /* 64px */
+  --space-section: 6rem;   /* 96px — section vertical padding */
+
+  /* --- Layout --- */
+  --container-max:    1100px;
+  --container-wide:   1280px;
+  --radius-sm:        0.5rem;
+  --radius-md:        1rem;
+  --radius-lg:        1.5rem;
+  --radius-pill:      9999px;
+
+  /* --- Animation Easing --- */
+  --ease-smooth:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce:      cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo:    cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Animation Duration --- */
+  --duration-fast:    200ms;
+  --duration-normal:  400ms;
+  --duration-slow:    800ms;
+  --duration-reveal:  1200ms;
+
+  /* --- Shadows / Glow --- */
+  --glow-cyan:    0 0 20px rgba(0, 255, 255, 0.3);
+  --glow-purple:  0 0 20px rgba(188, 19, 254, 0.3);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* --- interpolate-size (Baseline: Chrome 129+, progressive) --- */
+  interpolate-size: allow-keywords;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Theme Variant: Light
+   Override by adding class="theme-light" on <html> or <body>
+   ────────────────────────────────────────────────────────────── */
+
+.theme-light {
+  --bg-deep:          #f0f4ff;
+  --bg-surface:       rgba(255, 255, 255, 0.85);
+  --glass-bg:         rgba(255, 255, 255, 0.75);
+  --glass-bg-solid:   rgba(240, 244, 255, 0.95);
+  --glass-border:     rgba(0, 0, 0, 0.1);
+  --text-primary:     #1a1a2e;
+  --text-secondary:   rgba(26, 26, 46, 0.7);
+  --text-muted:       rgba(26, 26, 46, 0.45);
+  --glow-cyan:    0 0 20px rgba(0, 200, 220, 0.25);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 100, 0.1);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Palette Variant: Minimal (muted, desaturated)
+   Override by adding data-palette="minimal" on :root / body
+   ────────────────────────────────────────────────────────────── */
+
+[data-palette="minimal"] {
+  --neon-cyan:     #64b5c0;
+  --neon-magenta:  #b07ab0;
+  --neon-green:    #6aab8a;
+  --neon-purple:   #8a6aab;
+  --neon-red:      #ab6a6a;
+  --neon-orange:   #ab8a6a;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Palette Variant: Warm (earth tones)
+   Override by adding data-palette="warm" on :root / body
+   ────────────────────────────────────────────────────────────── */
+
+[data-palette="warm"] {
+  --neon-cyan:     #f4a261;
+  --neon-magenta:  #e76f51;
+  --neon-green:    #2a9d8f;
+  --neon-purple:   #e9c46a;
+  --neon-red:      #e63946;
+  --neon-orange:   #f4a261;
+  --bg-deep:       #1a0a00;
+  --bg-surface:    rgba(30, 15, 5, 0.85);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Aurora Background Helper
+   Usage: <div class="aurora-bg" aria-hidden="true"></div>
+   ────────────────────────────────────────────────────────────── */
+
+@keyframes aurora-shift { to { --aurora-hue: 360deg; } }
+
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%,
+      oklch(70% 0.25 calc(240 + var(--aurora-hue))) 0%,
+      transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 70%,
+      oklch(65% 0.30 calc(300 + var(--aurora-hue))) 0%,
+      transparent 60%),
+    oklch(9% 0.03 265);
+  filter: blur(40px);
+  opacity: 0.7;
+  animation: aurora-shift 8s linear infinite;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Glass Card Variants
+   ────────────────────────────────────────────────────────────── */
+
+@keyframes spin-border { to { --bg-angle: 360deg; } }
+
+/* Animated conic-gradient border (uses @property --bg-angle) */
+.glass-card {
+  animation: spin-border 4s linear infinite;
+  background:
+    linear-gradient(to bottom, var(--glass-bg-solid), var(--glass-bg-solid)) padding-box,
+    conic-gradient(from var(--bg-angle), #0ff, #f0f, #0f0, #0ff) border-box;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+/* Static glass (no animation, lower performance cost) */
+.glass-card-static {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Cyan-tinted glass */
+.glass-card-cyan {
+  background: var(--glass-bg);
+  border: 1px solid var(--neon-cyan-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glow-cyan);
+}

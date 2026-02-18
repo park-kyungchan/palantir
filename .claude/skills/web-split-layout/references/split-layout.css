@@ -1,0 +1,285 @@
+/* =============================================================
+   web-split-layout — split-layout.css
+   Sticky-left / scrolling-right two-column layout
+   Requires: tokens.css (web-design-tokens)
+   Optional: glass-card.css for panel glass styling
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Container
+   ────────────────────────────────────────────────────────────── */
+
+.split-layout {
+  display: grid;
+  grid-template-columns: 2fr 3fr;   /* default: 40-60 */
+  gap: var(--space-2xl, 3rem);
+  align-items: start;
+  max-width: var(--container-wide, 1280px);
+  margin: 0 auto;
+  padding: var(--space-section, 6rem) var(--space-xl, 2rem);
+  container-type: inline-size;
+
+  /* ── Ratio variants ── */
+  &[data-ratio="50-50"] { grid-template-columns: 1fr 1fr; }
+  &[data-ratio="30-70"] { grid-template-columns: 3fr 7fr; }
+  &[data-ratio="40-60"] { grid-template-columns: 2fr 3fr; }
+
+  /* ── Sticky swap: right side sticky ── */
+  &[data-sticky="right"] {
+    .split-left  { position: static; }
+    .split-right { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .split-left  { overflow-y: auto; }
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Left panel (sticky)
+   ────────────────────────────────────────────────────────────── */
+
+.split-left {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+
+  /* Scrollbar: hidden but functional */
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+
+  /* If glass-card.css loaded, inherits glass-card-static styles */
+  padding: var(--space-xl, 2rem);
+}
+
+.split-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 1.5rem);
+  height: 100%;
+}
+
+.split-left-icon {
+  display: flex;
+  align-items: center;
+}
+
+.split-left-heading {
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 700;
+  color: var(--neon-cyan, #00ffff);
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.split-left-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  line-height: 1.7;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Table of contents (scroll-linked navigation)
+   ────────────────────────────────────────────────────────────── */
+
+.split-toc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 0.5rem);
+  margin-top: auto;
+}
+
+.split-toc-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 0.5rem);
+  text-decoration: none;
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  font-size: 0.8125rem;
+  padding: var(--space-xs, 0.25rem) 0;
+  transition: color var(--duration-fast, 200ms) var(--ease-smooth);
+
+  &:hover {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  }
+
+  &.is-active {
+    color: var(--neon-cyan, #00ffff);
+
+    .split-toc-dot {
+      background: var(--neon-cyan, #00ffff);
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+      transform: scale(1.4);
+    }
+  }
+}
+
+.split-toc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--glass-border, rgba(255, 255, 255, 0.125));
+  flex-shrink: 0;
+  transition:
+    background var(--duration-fast, 200ms),
+    box-shadow var(--duration-fast, 200ms),
+    transform var(--duration-fast, 200ms) var(--ease-bounce);
+}
+
+.split-toc-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Scroll progress bar (right-panel progress inside left panel)
+   ────────────────────────────────────────────────────────────── */
+
+.split-progress-wrap {
+  height: 2px;
+  background: var(--glass-border, rgba(255, 255, 255, 0.125));
+  border-radius: var(--radius-pill, 9999px);
+  overflow: hidden;
+  margin-top: auto;
+}
+
+.split-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    var(--neon-cyan, #00ffff),
+    var(--neon-magenta, #ff00ff)
+  );
+  transition: width 0.1s linear;
+  border-radius: var(--radius-pill, 9999px);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Right panel (scrollable)
+   ────────────────────────────────────────────────────────────── */
+
+.split-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl, 3rem);
+  padding-bottom: var(--space-section, 6rem);
+}
+
+.split-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 1rem);
+}
+
+.split-section-heading {
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  color: var(--text-primary, #ecf0f1);
+}
+
+.split-section-body {
+  font-size: 1rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  line-height: 1.8;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Mobile — stack layout (≤768px)
+   ────────────────────────────────────────────────────────────── */
+
+@container (max-width: 768px) {
+  .split-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl, 2rem);
+  }
+
+  .split-left {
+    position: static;
+    height: auto;
+  }
+
+  .split-toc { display: none; }
+  .split-progress-wrap { display: none; }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Mobile tabs (data-mobile="tabs") — JS toggles visibility
+   ────────────────────────────────────────────────────────────── */
+
+.split-tabs-nav {
+  display: none;
+  gap: var(--space-sm, 0.5rem);
+  margin-bottom: var(--space-xl, 2rem);
+}
+
+@container (max-width: 768px) {
+  .split-layout[data-mobile="tabs"] {
+    .split-tabs-nav { display: flex; }
+
+    .split-left,
+    .split-right {
+      display: none;
+
+      &.is-tab-active { display: block; }
+    }
+  }
+}
+
+.split-tab-btn {
+  flex: 1;
+  padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+  border-radius: var(--radius-sm, 0.5rem);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.125));
+  background: var(--glass-bg, rgba(17, 25, 40, 0.75));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--duration-fast, 200ms) var(--ease-smooth);
+
+  &.is-active {
+    border-color: var(--neon-cyan, #00ffff);
+    color: var(--neon-cyan, #00ffff);
+    background: color-mix(in oklch, var(--neon-cyan, #00ffff) 8%, var(--glass-bg));
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Entrance animation helpers (initial state, JS applies)
+   ────────────────────────────────────────────────────────────── */
+
+.split-left[data-animate],
+.split-right[data-animate] {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   prefers-reduced-motion
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .split-left[data-animate],
+  .split-right[data-animate] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .split-progress-bar {
+    transition: none;
+  }
+
+  .split-toc-dot {
+    transition: none;
+  }
+}

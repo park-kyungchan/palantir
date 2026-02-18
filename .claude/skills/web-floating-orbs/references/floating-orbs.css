@@ -1,0 +1,103 @@
+/* =============================================================
+   web-floating-orbs — floating-orbs.css
+   Ambient floating background orbs with radial gradients.
+   Requires: web-design-tokens/references/tokens.css
+
+   Design notes:
+   - pointer-events: none — zero interaction overhead
+   - z-index: -1 — renders behind all content
+   - blur(100px) is GPU-composited via filter
+   - For low-end devices: reduce blur or lower opacity
+   ============================================================= */
+
+.bg-orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.25;
+}
+
+/* ── Orb 1: Purple — top-left ── */
+.bg-orb--1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    var(--neon-purple, #bc13fe) 0%,
+    transparent 70%
+  );
+  top: -5%;
+  left: -5%;
+  animation: float-1 20s ease-in-out infinite;
+}
+
+/* ── Orb 2: Cyan — center-right ── */
+.bg-orb--2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle,
+    var(--neon-cyan, #00ffff) 0%,
+    transparent 70%
+  );
+  top: 30%;
+  right: -8%;
+  animation: float-2 24s ease-in-out infinite;
+}
+
+/* ── Orb 3: Magenta — bottom-center ── */
+.bg-orb--3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    var(--neon-magenta, #ff00ff) 0%,
+    transparent 70%
+  );
+  bottom: 10%;
+  left: 20%;
+  animation: float-3 22s ease-in-out infinite;
+}
+
+/* =============================================================
+   Float keyframe animations — subtle organic movement
+   Each variant uses a distinct translate + scale path.
+   ============================================================= */
+
+@keyframes float-1 {
+  0%,  100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(80px, 60px) scale(1.1); }
+  66%       { transform: translate(-40px, 100px) scale(0.9); }
+}
+
+@keyframes float-2 {
+  0%,  100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-60px, -80px) scale(1.15); }
+  66%       { transform: translate(50px, 40px) scale(0.95); }
+}
+
+@keyframes float-3 {
+  0%,  100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(70px, -50px) scale(1.05); }
+  66%       { transform: translate(-80px, -30px) scale(1.1); }
+}
+
+/* ── Count variant: 2 orbs (hide orb--3) ── */
+.bg-orbs--2 .bg-orb--3 {
+  display: none;
+}
+
+/* ── prefers-reduced-motion: pause all animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .bg-orb {
+    animation: none;
+  }
+}

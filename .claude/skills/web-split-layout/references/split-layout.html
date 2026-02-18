@@ -1,0 +1,102 @@
+<!-- =============================================================
+     web-split-layout — split-layout.html
+     Sticky-left / scrolling-right two-column layout
+     Prerequisites: tokens.css, (optional) glass-card.css
+     ============================================================= -->
+
+<!--
+  USAGE:
+    data-ratio="40-60"   — left:right column ratio (40-60 | 50-50 | 30-70)
+    data-sticky="left"   — which side is sticky (left | right)
+    data-mobile="stack"  — mobile behavior (stack | tabs)
+-->
+<section class="split-layout" data-ratio="40-60" data-sticky="left" data-mobile="stack">
+
+  <!-- ── Left Panel (sticky by default) ─────────────────────── -->
+  <aside class="split-left glass-card-static">
+    <div class="split-panel-body">
+
+      <!-- Optional: icon / thumbnail -->
+      <div class="split-left-icon">
+        <div class="icon-badge icon-badge--lg" data-accent="cyan">📋</div>
+      </div>
+
+      <!-- Navigation / summary content -->
+      <h2 class="split-left-heading">Section Overview</h2>
+      <p class="split-left-desc">
+        Navigation and summary content lives here. This panel stays fixed
+        while the right panel scrolls.
+      </p>
+
+      <!-- Scroll-linked section list (optional) -->
+      <nav class="split-toc" aria-label="Section navigation">
+        <a class="split-toc-item" data-section="section-1" href="#section-1">
+          <span class="split-toc-dot"></span>
+          <span class="split-toc-label">Introduction</span>
+        </a>
+        <a class="split-toc-item" data-section="section-2" href="#section-2">
+          <span class="split-toc-dot"></span>
+          <span class="split-toc-label">Key Features</span>
+        </a>
+        <a class="split-toc-item" data-section="section-3" href="#section-3">
+          <span class="split-toc-dot"></span>
+          <span class="split-toc-label">Results</span>
+        </a>
+        <a class="split-toc-item" data-section="section-4" href="#section-4">
+          <span class="split-toc-dot"></span>
+          <span class="split-toc-label">Conclusion</span>
+        </a>
+      </nav>
+
+      <!-- Scroll progress indicator for right panel -->
+      <div class="split-progress-wrap" aria-hidden="true">
+        <div class="split-progress-bar"></div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ── Right Panel (scrollable) ────────────────────────────── -->
+  <div class="split-right">
+
+    <article class="split-section" id="section-1" data-section="section-1">
+      <h3 class="split-section-heading">Introduction</h3>
+      <p class="split-section-body">
+        Your scrollable content goes here. Each <code>.split-section</code> block is
+        tracked by IntersectionObserver, which highlights the matching TOC item in
+        the left panel when the section enters the viewport.
+      </p>
+    </article>
+
+    <article class="split-section" id="section-2" data-section="section-2">
+      <h3 class="split-section-heading">Key Features</h3>
+      <p class="split-section-body">
+        Content for section 2. The sticky panel remains fixed at the top of the
+        viewport as you scroll past this content.
+      </p>
+    </article>
+
+    <article class="split-section" id="section-3" data-section="section-3">
+      <h3 class="split-section-heading">Results</h3>
+      <p class="split-section-body">
+        Content for section 3. Add as many <code>.split-section</code> blocks as
+        you need — each gets tracked independently.
+      </p>
+    </article>
+
+    <article class="split-section" id="section-4" data-section="section-4">
+      <h3 class="split-section-heading">Conclusion</h3>
+      <p class="split-section-body">
+        Content for section 4. The scroll progress bar in the left panel reflects
+        how far through the right panel the user has scrolled.
+      </p>
+    </article>
+
+  </div>
+  <!-- /.split-right -->
+
+</section>
+<!-- /.split-layout -->
+
+<!-- ── Mobile tab fallback (rendered only when data-mobile="tabs") ── -->
+<!-- JS creates .split-tabs-nav above the container when mobile:tabs mode activates -->

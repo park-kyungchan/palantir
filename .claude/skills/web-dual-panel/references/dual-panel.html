@@ -1,0 +1,82 @@
+<!-- =============================================================
+     web-dual-panel — dual-panel.html
+     Two-column glass card layout: icon + title + description + list
+     Prerequisites: tokens.css, glass-card.css, icon-badge.css
+     ============================================================= -->
+
+<!--
+  USAGE (data attributes on .dual-panel):
+    data-layout="side-by-side"    — layout: side-by-side (default) | stacked
+    data-comparison               — enable comparison slider handle
+    data-panels="[...]"           — JSON array of 2 panel objects (see SKILL.md)
+-->
+
+<div class="dual-panel"
+     data-layout="side-by-side"
+     data-panels='[
+       {
+         "icon": "🔍",
+         "accent": "cyan",
+         "title": "Before: Manual Process",
+         "description": "Time-consuming, error-prone approach with no audit trail.",
+         "items": [
+           "Slow iteration cycles",
+           "No reproducibility",
+           "High maintenance cost",
+           "Manual dependency tracking"
+         ]
+       },
+       {
+         "icon": "⚡",
+         "accent": "green",
+         "title": "After: Agent Pipeline",
+         "description": "Automated, self-healing INFRA with full observability.",
+         "items": [
+           "10× faster delivery",
+           "Deterministic output",
+           "Self-healing INFRA",
+           "Automatic dependency resolution"
+         ]
+       }
+     ]'>
+
+  <!-- JS builds from data-panels JSON — static fallback below -->
+
+  <!-- Panel 1 -->
+  <div class="panel-card glass-card-static" aria-label="Before: Manual Process">
+    <div class="panel-header">
+      <div class="icon-badge icon-badge--lg" data-accent="cyan" data-animate>🔍</div>
+      <h3 class="panel-title">Before: Manual Process</h3>
+    </div>
+    <p class="panel-description">
+      Time-consuming, error-prone approach with no audit trail.
+    </p>
+    <ul class="panel-list" aria-label="Challenges">
+      <li class="panel-list-item">Slow iteration cycles</li>
+      <li class="panel-list-item">No reproducibility</li>
+      <li class="panel-list-item">High maintenance cost</li>
+      <li class="panel-list-item">Manual dependency tracking</li>
+    </ul>
+  </div>
+  <!-- /.panel-card -->
+
+  <!-- Panel 2 -->
+  <div class="panel-card glass-card-static" aria-label="After: Agent Pipeline">
+    <div class="panel-header">
+      <div class="icon-badge icon-badge--lg" data-accent="green" data-animate>⚡</div>
+      <h3 class="panel-title">After: Agent Pipeline</h3>
+    </div>
+    <p class="panel-description">
+      Automated, self-healing INFRA with full observability.
+    </p>
+    <ul class="panel-list" aria-label="Benefits">
+      <li class="panel-list-item panel-list-item--positive">10× faster delivery</li>
+      <li class="panel-list-item panel-list-item--positive">Deterministic output</li>
+      <li class="panel-list-item panel-list-item--positive">Self-healing INFRA</li>
+      <li class="panel-list-item panel-list-item--positive">Automatic dependency resolution</li>
+    </ul>
+  </div>
+  <!-- /.panel-card -->
+
+</div>
+<!-- /.dual-panel -->

@@ -1,0 +1,81 @@
+<!-- chip.html — Chip / Tag Component Markup
+     Requires: web-design-tokens (tokens.css)
+     Requires: chip.css
+     Optional: chip.js (for interactive filter)
+-->
+
+<!-- ============================================================
+     VARIANT 1: Default Chips — outlined, muted background
+     Use for: keyword tags, category labels, non-interactive labels
+     ============================================================ -->
+<div class="hero-chips">
+  <span class="chip">Tag One</span>
+  <span class="chip">Tag Two</span>
+  <span class="chip">Tag Three</span>
+  <span class="chip">Another Tag</span>
+  <span class="chip">More Tags</span>
+</div>
+
+
+<!-- ============================================================
+     VARIANT 2: Colored Chips — neon accent borders
+     Use for: highlighted tags, active filters, categorized labels
+     ============================================================ -->
+<div class="hero-chips">
+  <span class="chip chip--cyan">Cyan Tag</span>
+  <span class="chip chip--magenta">Magenta Tag</span>
+  <span class="chip chip--green">Green Tag</span>
+  <span class="chip chip--purple">Purple Tag</span>
+</div>
+
+
+<!-- ============================================================
+     VARIANT 3: Filled Chips — solid glass background
+     Use for: strong emphasis, status indicators
+     ============================================================ -->
+<div class="hero-chips">
+  <span class="chip chip--filled">Filled Default</span>
+  <span class="chip chip--filled chip--cyan">Filled Cyan</span>
+  <span class="chip chip--filled chip--magenta">Filled Magenta</span>
+</div>
+
+
+<!-- ============================================================
+     INTERACTIVE FILTER GROUP
+     - Add data-filter-group on container
+     - Add data-filter-value on each chip
+     - chip.js emits 'chipfilter' custom event on selection
+     - chip--active class applied by JS
+     ============================================================ -->
+<div class="hero-chips" data-filter-group="skills" data-align="left">
+  <span class="chip chip--cyan chip--active" data-filter-value="all">All</span>
+  <span class="chip" data-filter-value="math">Math</span>
+  <span class="chip" data-filter-value="physics">Physics</span>
+  <span class="chip" data-filter-value="chemistry">Chemistry</span>
+</div>
+
+<!-- Listen for filter events -->
+<!--
+<script>
+  document.querySelector('[data-filter-group="skills"]')
+    .addEventListener('chipfilter', (e) => {
+      console.log('Selected filter:', e.detail.value);
+      // Filter your content based on e.detail.value
+    });
+</script>
+-->
+
+
+<!-- ============================================================
+     MIXED — Default + Colored in same container
+     Common pattern for hero section keyword clouds
+     ============================================================ -->
+<div class="hero-chips">
+  <span class="chip chip--cyan">Claude Code</span>
+  <span class="chip chip--magenta">Agent Teams</span>
+  <span class="chip">수학교육 4년</span>
+  <span class="chip chip--green">LaTeX/JSONL</span>
+  <span class="chip">수리논술</span>
+  <span class="chip">PM/PL</span>
+  <span class="chip chip--purple">Opus 4.6</span>
+</div>

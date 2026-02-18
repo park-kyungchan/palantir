@@ -1,0 +1,87 @@
+<!-- glass-card.html — Glass Card Component Markup
+     Requires: web-design-tokens (tokens.css + reset.css)
+     Requires: glass-card.css
+     Optional: glass-card.js (for tilt effect)
+-->
+
+<!-- ============================================================
+     VARIANT 1: Animated Conic-Gradient Border (.glass-card)
+     - @property --bg-angle spins conic-gradient border
+     - Use for hero cards, featured items, primary CTA
+     ============================================================ -->
+<div class="glass-card" data-tilt>
+  <div class="glass-card-body">
+    <h3 class="glass-card-title">Card Title</h3>
+    <p class="glass-card-desc">Card description text goes here. Supports any content.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     VARIANT 2: Static Frosted Glass (.glass-card-static)
+     - No animation — lower performance cost
+     - Use for lists, grids, secondary cards
+     ============================================================ -->
+<div class="glass-card-static" data-tilt>
+  <div class="glass-card-body">
+    <h3 class="glass-card-title">Static Card</h3>
+    <p class="glass-card-desc">Frosted glass without border animation.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     VARIANT 3: Cyan Accent Glow (.glass-card-cyan)
+     - Cyan border + box-shadow glow
+     - Use for data cards, stats, highlighted information
+     ============================================================ -->
+<div class="glass-card-cyan" data-tilt>
+  <div class="glass-card-body">
+    <h3 class="glass-card-title">Cyan Card</h3>
+    <p class="glass-card-desc">Cyan glow border for accent highlighting.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     WITH ICON HEADER (all variants support this pattern)
+     ============================================================ -->
+<div class="glass-card-static" data-tilt>
+  <div class="glass-card-icon" aria-hidden="true">
+    <!-- Inline SVG or emoji -->
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 8v4l3 3"/>
+    </svg>
+  </div>
+  <div class="glass-card-body">
+    <h3 class="glass-card-title">Icon Card</h3>
+    <p class="glass-card-desc">Card with icon header for feature highlights.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     GRID LAYOUT — 3-column responsive
+     ============================================================ -->
+<div class="glass-card-grid">
+  <div class="glass-card-static" data-tilt>
+    <div class="glass-card-body">
+      <h3 class="glass-card-title">Feature 1</h3>
+      <p class="glass-card-desc">Description.</p>
+    </div>
+  </div>
+  <div class="glass-card-static" data-tilt>
+    <div class="glass-card-body">
+      <h3 class="glass-card-title">Feature 2</h3>
+      <p class="glass-card-desc">Description.</p>
+    </div>
+  </div>
+  <div class="glass-card-static" data-tilt>
+    <div class="glass-card-body">
+      <h3 class="glass-card-title">Feature 3</h3>
+      <p class="glass-card-desc">Description.</p>
+    </div>
+  </div>
+</div>

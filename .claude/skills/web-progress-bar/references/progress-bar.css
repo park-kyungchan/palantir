@@ -1,0 +1,230 @@
+/* progress-bar.css — Animated Progress / Gap Bar Component
+   Requires: web-design-tokens (tokens.css)
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Gap Matrix Container
+   ────────────────────────────────────────────────────────────── */
+
+.gap-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Row — label + track + tag
+   ────────────────────────────────────────────────────────────── */
+
+.gap-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Label — left side text
+   ────────────────────────────────────────────────────────────── */
+
+.gap-label {
+  flex-shrink: 0;
+  width: 140px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: right;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+
+  @media (max-width: 500px) {
+    width: 100px;
+    font-size: 0.72rem;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Track — background rail
+   ────────────────────────────────────────────────────────────── */
+
+.gap-bar-track {
+  flex: 1;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Fill — animated bar (JS sets width from 0% to data-value%)
+   CSS transition handles the animation duration
+   ────────────────────────────────────────────────────────────── */
+
+.gap-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  width: 0%; /* JS sets this to data-value% on scroll entry */
+  transition: width var(--duration-reveal, 1200ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  position: relative;
+
+  /* Green variant */
+  &.green {
+    background: linear-gradient(
+      90deg,
+      rgba(46, 204, 113, 0.6),
+      rgba(46, 204, 113, 0.3)
+    );
+  }
+
+  /* Cyan variant */
+  &.cyan {
+    background: linear-gradient(
+      90deg,
+      rgba(0, 255, 255, 0.5),
+      rgba(0, 255, 255, 0.2)
+    );
+  }
+
+  /* Magenta variant */
+  &.magenta {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 0, 255, 0.5),
+      rgba(255, 0, 255, 0.2)
+    );
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Target Line — dashed vertical marker
+   JS positions via style="left: {data-target}%"
+   ────────────────────────────────────────────────────────────── */
+
+.gap-bar-target {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 0;
+  border-right: 2px dashed rgba(255, 255, 255, 0.4);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Percentage text — inside track, right-aligned
+   JS updates this during counter animation
+   ────────────────────────────────────────────────────────────── */
+
+.gap-bar-pct {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Status Tag — pill at row end
+   ────────────────────────────────────────────────────────────── */
+
+.gap-tag {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill, 9999px);
+
+  /* No gap (green) */
+  &.none {
+    background: rgba(46, 204, 113, 0.15);
+    color: var(--neon-green, #2ecc71);
+  }
+
+  /* Medium gap (cyan) */
+  &.medium {
+    background: rgba(0, 255, 255, 0.15);
+    color: var(--neon-cyan, #00ffff);
+  }
+
+  /* High gap (magenta) */
+  &.high {
+    background: rgba(255, 0, 255, 0.15);
+    color: var(--neon-magenta, #ff00ff);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   CSS Scroll-Driven Animation (optional mode)
+   Activated when JS adds .scroll-driven class to .gap-matrix
+   @supports guard — Firefox falls back to IntersectionObserver
+   ────────────────────────────────────────────────────────────── */
+
+@supports (animation-timeline: view()) {
+  .gap-matrix.scroll-driven .gap-bar-fill {
+    /* Override JS-driven transition with CSS scroll-driven */
+    transition: none;
+    animation: fill-bar linear forwards;
+    animation-timeline: view();
+    animation-range: entry 10% entry 90%;
+  }
+
+  .gap-matrix.scroll-driven .gap-bar-fill.green {
+    --bar-target-width: var(--data-value, 70%);
+
+    @keyframes fill-bar {
+      from { width: 0%; }
+      to   { width: var(--bar-target-width); }
+    }
+  }
+}
+
+/* NOTE: Full CSS Scroll-Driven for progress-bar requires per-instance
+   CSS custom properties (--data-value) to be set inline by JS or HTML.
+   The JS in progress-bar.js detects @supports and sets these properties. */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Highlight state (for linked deep-dive panels)
+   Add .gap-row-highlight via JS when related section is active
+   ────────────────────────────────────────────────────────────── */
+
+.gap-row.gap-row-highlight {
+  z-index: 5;
+  transition:
+    box-shadow var(--duration-normal, 400ms) ease,
+    transform var(--duration-normal, 400ms) var(--ease-bounce, cubic-bezier(0.34, 1.56, 0.64, 1));
+  transform: scaleX(1.02) scaleY(1.06);
+
+  & .gap-bar-fill {
+    filter: brightness(1.5);
+
+    &.green { box-shadow: 0 0 14px rgba(46, 204, 113, 0.4); }
+    &.cyan  { box-shadow: 0 0 14px rgba(0, 255, 255, 0.4); }
+    &.magenta { box-shadow: 0 0 14px rgba(255, 0, 255, 0.4); }
+  }
+
+  & .gap-label {
+    color: var(--neon-cyan, #00ffff);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   prefers-reduced-motion — no animation, show final value
+   JS also checks this and skips counter animation.
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gap-bar-fill {
+    transition: none;
+  }
+}

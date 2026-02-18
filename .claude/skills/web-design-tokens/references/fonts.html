@@ -1,0 +1,54 @@
+<!--
+  web-design-tokens — fonts.html
+  Copy the relevant blocks into your HTML <head> element.
+  All resources use preconnect for optimal load performance.
+-->
+
+<!-- =========================================================
+     Block 1: Google Fonts (Inter + Noto Sans KR)
+     Required for --font-heading and --font-body tokens
+     ========================================================= -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Sans+KR:wght@100..900&display=swap"
+  rel="stylesheet"
+>
+
+<!-- =========================================================
+     Block 2: KaTeX (Math rendering — optional)
+     Include when the page contains mathematical expressions.
+     Version pinned to 0.16.11 (stable as of 2026-02).
+     ========================================================= -->
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+  crossorigin="anonymous"
+>
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+  crossorigin="anonymous"
+></script>
+<!-- Optional: auto-render for $...$ and $$...$$ delimiters -->
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  crossorigin="anonymous"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$',  right: '$',  display: false}
+    ]
+  })"
+></script>
+
+<!-- =========================================================
+     Block 3: Meta tags — recommended boilerplate
+     ========================================================= -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Color scheme — tells browser to use dark UI chrome -->
+<meta name="color-scheme" content="dark light">
+<!-- Theme color — browser tab and mobile address bar tint -->
+<meta name="theme-color" content="#0a0a1e">

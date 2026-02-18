@@ -1,0 +1,162 @@
+/* ============================================================
+   web-icon-badge — icon-badge.css
+   Dependency: tokens.css (web-design-tokens) loaded first
+   ============================================================ */
+
+/* ── @property registration (Baseline 2025) ─────────────────── */
+@property --badge-glow-intensity {
+  syntax: "<number>";
+  initial-value: 0.3;
+  inherits: false;
+}
+
+/* ── Base component ──────────────────────────────────────────── */
+.icon-badge {
+  /* Size default: md (56px) */
+  --badge-size:      56px;
+  --badge-icon-size: 28px;
+  --badge-radius:    50%;
+  --badge-border-w:  2px;
+  --badge-accent:    var(--neon-cyan);
+
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           var(--badge-size);
+  height:          var(--badge-size);
+  border-radius:   var(--badge-radius);
+  flex-shrink:     0;
+
+  /* Glass background */
+  background:      color-mix(in oklch, var(--badge-accent) 8%, var(--glass-bg));
+  border:          var(--badge-border-w) solid color-mix(in oklch, var(--badge-accent) 35%, transparent);
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+  }
+
+  /* Glow via box-shadow */
+  box-shadow:
+    0 0 12px color-mix(in oklch, var(--badge-accent) 25%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 10%, transparent);
+
+  /* Hover scale */
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    --badge-glow-intensity var(--duration-fast) var(--ease-smooth);
+
+  cursor: default;
+
+  /* Typography for emoji / text */
+  font-size:   calc(var(--badge-size) * 0.44);
+  line-height: 1;
+  color:       var(--badge-accent);
+
+  /* Inner SVG sizing */
+  & svg {
+    width:        var(--badge-icon-size);
+    height:       var(--badge-icon-size);
+    stroke:       var(--badge-accent);
+    fill:         none;
+    stroke-width: 1.5;
+    flex-shrink:  0;
+  }
+
+  /* Inner image sizing */
+  & img {
+    width:         var(--badge-icon-size);
+    height:        var(--badge-icon-size);
+    border-radius: 50%;
+    object-fit:    cover;
+  }
+
+  &:hover {
+    --badge-glow-intensity: 0.5;
+    transform: scale(1.08);
+    box-shadow:
+      0 0 24px color-mix(in oklch, var(--badge-accent) 45%, transparent),
+      inset 0 1px 0 color-mix(in oklch, white 12%, transparent);
+  }
+}
+
+/* ── Size variants ───────────────────────────────────────────── */
+.icon-badge--sm {
+  --badge-size:      40px;
+  --badge-icon-size: 20px;
+}
+
+.icon-badge--md {
+  --badge-size:      56px;  /* matches base — explicit alias */
+  --badge-icon-size: 28px;
+}
+
+.icon-badge--lg {
+  --badge-size:      72px;
+  --badge-icon-size: 36px;
+}
+
+.icon-badge--xl {
+  --badge-size:      96px;
+  --badge-icon-size: 48px;
+}
+
+/* ── Glow intensified variant ────────────────────────────────── */
+.icon-badge--glow {
+  box-shadow:
+    0 0 28px color-mix(in oklch, var(--badge-accent) 50%, transparent),
+    0 0 60px color-mix(in oklch, var(--badge-accent) 20%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 15%, transparent);
+
+  &:hover {
+    box-shadow:
+      0 0 40px color-mix(in oklch, var(--badge-accent) 65%, transparent),
+      0 0 80px color-mix(in oklch, var(--badge-accent) 30%, transparent),
+      inset 0 1px 0 color-mix(in oklch, white 18%, transparent);
+  }
+}
+
+/* ── Magenta glow variant ────────────────────────────────────── */
+.icon-badge--glow-magenta {
+  --badge-accent: var(--neon-magenta);
+}
+
+/* ── Color accent data-attribute overrides ───────────────────── */
+.icon-badge[data-accent="green"]  { --badge-accent: var(--neon-green);  }
+.icon-badge[data-accent="orange"] { --badge-accent: var(--neon-orange); }
+.icon-badge[data-accent="red"]    { --badge-accent: var(--neon-red);    }
+.icon-badge[data-accent="purple"] { --badge-accent: var(--neon-purple); }
+.icon-badge[data-accent="cyan"]   { --badge-accent: var(--neon-cyan);   }
+
+/* ── Entrance animation (WAAPI-triggered via JS) ─────────────── */
+/* Initial hidden state applied by JS before WAAPI runs */
+.icon-badge[data-animate] {
+  opacity: 0;
+  transform: translateY(12px) scale(0.85);
+}
+
+/* State after animation completes (JS removes initial state) */
+.icon-badge[data-animate].icon-badge--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .icon-badge {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+
+  .icon-badge[data-animate] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── @supports guard for backdrop-filter (applied via nesting) ─ */
+/* Already handled inline above via @supports block */

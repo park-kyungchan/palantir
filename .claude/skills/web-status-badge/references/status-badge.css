@@ -1,0 +1,111 @@
+/* ============================================================
+   web-status-badge — status-badge.css
+   Pure CSS status indicator. No JavaScript required.
+   Dependency: tokens.css (web-design-tokens) loaded first
+   ============================================================ */
+
+/* ── @keyframes pulse ring ───────────────────────────────────── */
+@keyframes pulse-ring {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklch, var(--dot-color) 60%, transparent);
+  }
+  70% {
+    box-shadow:
+      0 0 0 6px color-mix(in oklch, var(--dot-color) 0%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklch, var(--dot-color) 0%, transparent);
+  }
+}
+
+/* ── Base component ──────────────────────────────────────────── */
+.status-badge {
+  --dot-size:    8px;
+  --dot-color:   oklch(75% 0.20 142);  /* default: green / active */
+  --pulse-speed: 1.5s;
+
+  display:     inline-flex;
+  align-items: center;
+  gap:         0.4em;
+  font-size:   0.82rem;
+  font-weight: 600;
+  font-family: var(--font-heading, sans-serif);
+  color:       var(--text-secondary, rgba(255,255,255,0.7));
+  line-height: 1;
+  white-space: nowrap;
+
+  /* Animated dot via ::before pseudo-element */
+  &::before {
+    content:       '';
+    display:       inline-block;
+    width:         var(--dot-size);
+    height:        var(--dot-size);
+    border-radius: 50%;
+    background:    var(--dot-color);
+    flex-shrink:   0;
+    animation:     pulse-ring var(--pulse-speed) ease-out infinite;
+    aria-hidden:   true;
+  }
+}
+
+/* ── Status variants ─────────────────────────────────────────── */
+
+/* active — green */
+.status-badge--active {
+  --dot-color: oklch(75% 0.20 142);
+  color: oklch(75% 0.20 142);
+}
+
+/* warning — orange */
+.status-badge--warning {
+  --dot-color: oklch(75% 0.17 72);
+  color: oklch(75% 0.17 72);
+}
+
+/* error — red */
+.status-badge--error {
+  --dot-color: oklch(58% 0.21 25);
+  color: oklch(58% 0.21 25);
+  --pulse-speed: 0.8s;  /* faster pulse for errors */
+}
+
+/* info — cyan */
+.status-badge--info {
+  --dot-color: oklch(91% 0.19 194);
+  color: oklch(91% 0.19 194);
+}
+
+/* neutral — gray/muted */
+.status-badge--neutral {
+  --dot-color: oklch(55% 0.01 0);
+  color: var(--text-muted, rgba(255,255,255,0.45));
+
+  &::before {
+    animation: none;  /* no pulse for neutral */
+  }
+}
+
+/* ── No-pulse modifier ───────────────────────────────────────── */
+.status-badge--no-pulse::before {
+  animation: none;
+}
+
+/* ── Size variants ───────────────────────────────────────────── */
+.status-badge--sm {
+  --dot-size: 6px;
+  font-size:  0.72rem;
+}
+
+.status-badge--lg {
+  --dot-size: 10px;
+  font-size:  0.95rem;
+}
+
+/* ── Reduced motion: disable pulse ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .status-badge::before {
+    animation: none;
+  }
+}

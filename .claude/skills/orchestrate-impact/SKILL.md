@@ -145,6 +145,20 @@ Optimize wave assignments for efficiency:
 | Total files | 4-10 | >12 (context pressure) |
 | Max task complexity | MEDIUM | HIGH (bottleneck risk) |
 | Agent type diversity | 1-2 types | 4 types (coordination overhead) |
+| Estimated token cost | wave_count × avg_agents × ~200k | > 1M tokens total |
+
+#### Pipeline Cost Estimation
+After wave scheduling, compute estimated total pipeline cost:
+```
+Cost estimate:
+  Waves: {N}
+  Avg agents per wave: {N}
+  Est. tokens per agent: ~200k (Sonnet session)
+  Total estimated: {waves × avg_agents × 200k} tokens
+  Lead overhead: ~200k tokens
+  Grand total: {sum} tokens
+```
+Include in L2 output. Flag if grand total exceeds 1.5M tokens (3-agent-team equivalent).
 
 #### Critical Path Analysis
 Compute the longest path through the DAG:
@@ -153,6 +167,37 @@ Compute the longest path through the DAG:
 3. Slack = latest start - earliest start
 4. Critical path = tasks with slack = 0
 5. Report critical path length (number of waves on critical path)
+
+### 4.5. Dependency Chain Depth Analysis
+Analyze serial dependency chains for scheduling bottlenecks:
+
+#### Chain Depth Metrics
+| Metric | Formula | Warning Threshold |
+|--------|---------|-------------------|
+| Max chain depth | Longest path in DAG (node count) | > total_waves / 2 |
+| Serialization ratio | max_chain_depth / total_tasks | > 0.5 (most tasks serialized) |
+| Parallelism efficiency | total_tasks / (wave_count × avg_tasks_per_wave) | < 0.6 |
+
+#### Bottleneck Detection
+For each serial chain of depth >= 3:
+1. **Identify the chain**: List task sequence T_a → T_b → T_c → ...
+2. **Measure fan-in/fan-out**: Does the chain bottleneck wider parallel work?
+3. **Assess splittability**: Can any task in the chain be split to increase parallelism?
+4. **Recommend**: If serialization ratio > 0.5, include RESTRUCTURE_HINT in L2 output with:
+   - Which chain(s) are bottlenecks
+   - Which task(s) could be split (by file count, by logical sub-module)
+   - Expected wave reduction from the split
+
+#### Chain Analysis Output
+Include in L2:
+```
+Serial Chains:
+  Chain 1: T2 → T5 → T8 (depth: 3, files: 12)
+    Bottleneck: T5 (6 files, HIGH complexity)
+    Splittable: Yes — T5a (files 1-3) + T5b (files 4-6), saves 1 wave
+  Chain 2: T1 → T3 (depth: 2, files: 5)
+    Bottleneck: None (short chain, acceptable)
+```
 
 ### 5. Output Wave Capacity Schedule
 Produce complete schedule with:

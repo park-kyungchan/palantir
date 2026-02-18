@@ -1,0 +1,167 @@
+/* =============================================================
+   web-card-grid — card-grid.css
+   Responsive card grid with CSS scroll-driven stagger reveal.
+
+   Requires: web-design-tokens/references/tokens.css
+   Composes: web-glass-card/references/glass-card.css
+
+   Animation strategy:
+   - Primary:  CSS scroll-driven (Chrome/Edge/Safari) via @supports guard
+   - Fallback: IntersectionObserver (Firefox) — card-grid.js adds .is-visible
+   ============================================================= */
+
+/* ── Section layout ── */
+.card-grid-section {
+  width: 100%;
+  padding: 5rem 2rem;
+
+  @media (max-width: 768px) {
+    padding: 3rem 1.5rem;
+  }
+}
+
+/* ── Max-width container ── */
+.card-grid-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── Optional section header ── */
+.card-grid-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+/* Eyebrow (reusable .section-eyebrow token from web-design-tokens) */
+.card-grid-header .section-eyebrow {
+  font-size: 0.8rem;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+/* Section title */
+.card-grid-header .section-title {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  font-family: var(--font-heading, 'Inter', sans-serif);
+}
+
+/* ── Grid container ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--card-min-width, 280px), 1fr)
+  );
+  gap: var(--grid-gap, 1.5rem);
+
+  @media (max-width: 768px) {
+    --grid-gap: 1rem;
+  }
+}
+
+/* ── Centered variant: prevents lone card stretching to full width ── */
+.card-grid--centered {
+  justify-content: center;
+}
+
+/* ── Compact variant ── */
+.card-grid--compact {
+  --grid-gap: 0.75rem;
+  --card-min-width: 220px;
+}
+
+/* ── Grid item ── */
+[data-grid-item] {
+  container-type: inline-size; /* Container Queries: cards adapt to own width */
+}
+
+/* ── Intrinsic card content adaptation via Container Queries ── */
+@container (max-width: 300px) {
+  .glass-card-body {
+    padding: 1rem;
+  }
+}
+
+/* =============================================================
+   Scroll-reveal animation
+   ============================================================= */
+
+/* ── Fallback start state (applies when CSS scroll-driven NOT supported) ── */
+/* card-grid.js adds .is-visible when IntersectionObserver triggers.        */
+/* Without .is-visible, item is hidden. Without JS, items stay visible.     */
+[data-grid-item] {
+  opacity: 1; /* Default: visible (progressive enhancement) */
+  transform: translateY(0);
+}
+
+/* JS adds .card-grid--js-ready on .card-grid to activate start states      */
+/* This prevents flash of hidden content when JS is slow to load.           */
+.card-grid--js-ready [data-grid-item] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+  transition-delay: var(--item-delay, 0ms);
+}
+
+.card-grid--js-ready [data-grid-item].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Primary: CSS Scroll-Driven Animation (Chrome/Edge/Safari) ── */
+/* Overrides fallback JS states entirely in supporting browsers.   */
+@supports (animation-timeline: view()) {
+  /* Reset JS fallback states so JS is a no-op in modern browsers */
+  .card-grid--js-ready [data-grid-item] {
+    opacity: 1;
+    transform: translateY(0);
+    transition: none;
+  }
+
+  @keyframes grid-item-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* CRITICAL: animation-timeline MUST come AFTER animation shorthand */
+  [data-grid-item] {
+    animation: grid-item-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+
+  /* Horizontal stagger within rows using nth-child                    */
+  /* Assumes max 4 columns. Stagger resets per row via modular pattern */
+  [data-grid-item]:nth-child(4n + 2) { animation-delay: 80ms; }
+  [data-grid-item]:nth-child(4n + 3) { animation-delay: 160ms; }
+  [data-grid-item]:nth-child(4n + 4) { animation-delay: 240ms; }
+}
+
+/* ── prefers-reduced-motion: skip all reveal animations ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-grid-item] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .card-grid--js-ready [data-grid-item] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

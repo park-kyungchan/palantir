@@ -1,0 +1,149 @@
+/* =============================================================
+   web-design-tokens — reset.css
+   Base reset, body defaults, and accessibility foundation
+   Copy this block before all other styles in every web-* template.
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Box Model Reset
+   ────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Root / Scroll
+   ────────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Body Defaults
+   ────────────────────────────────────────────────────────────── */
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Heading Font Family
+   ────────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Media Reset
+   ────────────────────────────────────────────────────────────── */
+
+img, video, svg {
+  display: block;
+  max-width: 100%;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Interactive Elements
+   ────────────────────────────────────────────────────────────── */
+
+button, a {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  font-family: inherit;
+}
+
+/* Visible focus ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Accessibility: Reduced Motion
+   WCAG 2.1 §2.3.3 compliance
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable scroll-driven animations (no @supports guard needed — shorthand reset above covers it) */
+  .aurora-bg {
+    animation: none;
+  }
+
+  .glass-card {
+    animation: none;
+    border: 2px solid var(--glass-border);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Utility: Screen Reader Only
+   ────────────────────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Utility: Section Layout
+   Common section wrapper pattern for all web-* templates
+   ────────────────────────────────────────────────────────────── */
+
+.section {
+  position: relative;
+  padding: var(--space-section) var(--space-xl);
+}
+
+.section-inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.section-inner--wide {
+  max-width: var(--container-wide);
+  margin: 0 auto;
+}

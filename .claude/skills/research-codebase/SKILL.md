@@ -185,7 +185,7 @@ Normal flow: research findings go to research-audit, then to plan. But one scena
 - **Example**: ADR says "use event-driven architecture" but codebase has synchronous request-response patterns in 90%+ of modules with no event infrastructure.
 - **Threshold**: Contradiction must be (a) fundamental (not surface-level naming differences), (b) widespread (>70% of relevant codebase), and (c) costly to overcome (not a simple refactor).
 - **Action**: Add `escalate_to_design: true` in L1 output with `escalation_reason` in L2. Route to design-architecture for ADR revision before continuing to plan.
-- **Non-escalation**: If the contradiction is localized (<30% of codebase) or easily overridden, report it as a finding but do not escalate. Let plan-strategy handle the migration approach.
+- **Non-escalation**: If the contradiction is localized (<30% of codebase) or easily overridden, report it as a finding but do not escalate. Let plan-behavioral handle the migration approach.
 
 ## Failure Handling
 
@@ -211,7 +211,7 @@ Normal flow: research findings go to research-audit, then to plan. But one scena
 All failure types route to the 4 audit skills (audit-static, audit-behavioral, audit-relational, audit-impact) regardless of severity. Each audit receives the full findings and extracts its dimensional subset. The only exception is the conditional escalation for fundamental ADR contradictions -- see Decision Points: When to Escalate to Design.
 
 ### Pipeline Impact
-Research failures are non-blocking. Missing codebase evidence increases the risk rating in plan-strategy but does not halt the pipeline. The rationale: absence of evidence is not evidence of absence. A pattern may exist but be difficult to find, or the codebase area may genuinely be novel territory.
+Research failures are non-blocking. Missing codebase evidence increases the risk rating in plan-behavioral but does not halt the pipeline. The rationale: absence of evidence is not evidence of absence. A pattern may exist but be difficult to find, or the codebase area may genuinely be novel territory.
 
 ## Anti-Patterns
 
