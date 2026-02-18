@@ -1,0 +1,82 @@
+/* =============================================================
+   web-scroll-progress — scroll-progress.css
+   Fixed-top scroll progress bar.
+   Requires: web-design-tokens/references/tokens.css
+
+   Progressive enhancement:
+   - Modern (Chrome 115+/Edge 115+/Safari 26+): CSS scroll-driven animation
+   - Firefox fallback: JS width update (scroll-progress.js)
+   - prefers-reduced-motion: hidden entirely
+
+   CRITICAL: animation-timeline MUST be declared AFTER animation shorthand.
+   ============================================================= */
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;          /* Default: JS fallback sets this */
+  height: 3px;
+  z-index: 1000;
+  pointer-events: none;
+
+  /* Neon gradient (default) */
+  background: linear-gradient(
+    90deg,
+    var(--neon-cyan, #00ffff),
+    var(--neon-magenta, #ff00ff),
+    var(--neon-green, #2ecc71)
+  );
+
+  /* JS fallback transition (overridden by @supports block) */
+  transition: width 0.1s linear;
+}
+
+/* ── Height variants ── */
+.scroll-progress--thin  { height: 2px; }
+.scroll-progress--thick { height: 4px; }
+
+/* ── Gradient variants ── */
+.scroll-progress--mono {
+  background: var(--neon-cyan, #00ffff);
+}
+
+/* =============================================================
+   CSS Scroll-Driven Animation (Chrome 115+, Edge 115+, Safari 26+)
+   @supports guard ensures Firefox uses JS fallback.
+
+   CRITICAL ORDER:
+   1. animation shorthand (sets name + duration + easing)
+   2. animation-timeline AFTER shorthand (spec requirement)
+   3. transform-origin for left-to-right growth
+   ============================================================= */
+
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    /* Reset: use transform instead of width for GPU compositing */
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+
+    /* Step 1: animation shorthand */
+    animation: scroll-grow linear both;
+
+    /* Step 2: animation-timeline AFTER shorthand (required by spec) */
+    animation-timeline: scroll();
+
+    /* Remove JS fallback transition */
+    transition: none;
+  }
+
+  @keyframes scroll-grow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+}
+
+/* ── prefers-reduced-motion: hide entirely ── */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-progress {
+    display: none;
+  }
+}

@@ -1,0 +1,148 @@
+/* =============================================================
+   web-stat-dashboard — stat-dashboard.css
+   Animated counter grid: glass cards + icon badges + trends
+   Requires: tokens.css, glass-card.css, icon-badge.css
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Grid container
+   ────────────────────────────────────────────────────────────── */
+
+.stat-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);   /* default: 3 columns */
+  gap: var(--space-lg, 1.5rem);
+  container-type: inline-size;
+
+  &[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
+  &[data-columns="4"] { grid-template-columns: repeat(4, 1fr); }
+
+  /* Responsive: 2-col at ≤600px, 1-col at ≤380px */
+  @container (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @container (max-width: 380px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Stat card
+   Uses glass-card-static as base (class applied in HTML/JS)
+   ────────────────────────────────────────────────────────────── */
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-sm, 0.5rem);
+  padding: var(--space-xl, 2rem) var(--space-lg, 1.5rem);
+  position: relative;
+
+  /* Entrance: initial hidden state (JS applies WAAPI) */
+  &[data-pending-animation] {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Counter value
+   ────────────────────────────────────────────────────────────── */
+
+.stat-value {
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary, #ecf0f1);
+  letter-spacing: -0.02em;
+
+  /* Gradient text */
+  background: linear-gradient(
+    135deg,
+    var(--neon-cyan, #00ffff),
+    var(--neon-magenta, #ff00ff)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* When counting (JS sets class) — show plain color during tween */
+.stat-value.is-counting {
+  background: none;
+  -webkit-text-fill-color: unset;
+  color: var(--neon-cyan, #00ffff);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Label
+   ────────────────────────────────────────────────────────────── */
+
+.stat-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Trend indicator
+   ────────────────────────────────────────────────────────────── */
+
+.stat-trend {
+  position: absolute;
+  top: var(--space-sm, 0.5rem);
+  right: var(--space-md, 1rem);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-trend--up {
+  color: var(--neon-green, #2ecc71);
+  text-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
+}
+
+.stat-trend--down {
+  color: var(--neon-red, #e74c3c);
+  text-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Stagger animation helpers
+   CSS sibling-index() fallback — JS injects --card-index
+   ────────────────────────────────────────────────────────────── */
+
+/* Progressive enhancement: sibling-index() (Chrome, Safari) */
+@supports (animation-delay: calc(sibling-index() * 1ms)) {
+  .stat-card {
+    animation-delay: calc(sibling-index() * 80ms);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   prefers-reduced-motion
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card[data-pending-animation] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .stat-value {
+    /* No counting animation — show final value */
+  }
+}

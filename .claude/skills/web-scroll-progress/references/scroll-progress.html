@@ -1,0 +1,29 @@
+<!-- ============================================================
+   web-scroll-progress — HTML Structure
+   Fixed-top scroll progress bar.
+
+   Usage:
+   1. Place as first child of <body>
+   2. Include scroll-progress.css (handles modern CSS scroll-driven)
+   3. Include scroll-progress.js (Firefox fallback only)
+
+   The id="scroll-progress" is required for the JS fallback.
+   In modern browsers (Chrome/Edge/Safari), CSS handles everything.
+
+   Height variants (add class):
+   - Default: 3px
+   - .scroll-progress--thin: 2px
+   - .scroll-progress--thick: 4px
+
+   Gradient variants (add class):
+   - Default: neon (cyan → magenta → green)
+   - .scroll-progress--mono: solid cyan
+   ============================================================ -->
+
+<div class="scroll-progress"
+     id="scroll-progress"
+     role="progressbar"
+     aria-label="Page scroll progress"
+     aria-valuemin="0"
+     aria-valuemax="100"
+     aria-valuenow="0"></div>

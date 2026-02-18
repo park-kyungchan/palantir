@@ -1,0 +1,91 @@
+<!--
+  web-card-grid — card-grid.html
+  Responsive card grid composing web-glass-card atoms.
+
+  Compose with:
+  - web-glass-card: replace placeholder .glass-card blocks with actual card markup
+  - web-section-wrapper: wrap this entire block inside .section-body
+
+  Requirements:
+  - card-grid.css + card-grid.js loaded
+  - web-design-tokens/references/tokens.css loaded
+  - web-glass-card/references/glass-card.css loaded (for .glass-card styles)
+-->
+
+<!--
+  STANDALONE USAGE: include section header inside the grid section.
+  If using web-section-wrapper, remove .card-grid-section and .card-grid-inner
+  and paste only .card-grid[role="list"] into .section-body.
+-->
+<section class="card-grid-section" aria-labelledby="card-grid-title">
+
+  <div class="card-grid-inner">
+
+    <!-- Optional section header — remove if section-wrapper provides heading -->
+    <header class="card-grid-header">
+      <p class="section-eyebrow">Section Label</p>
+      <h2 class="section-title" id="card-grid-title">Section Heading</h2>
+    </header>
+
+    <!--
+      Card grid container.
+      Each direct child should have [data-grid-item] for scroll-reveal stagger.
+      role="list" pairs with role="listitem" on each card for screen readers.
+    -->
+    <div class="card-grid" role="list">
+
+      <!--
+        COMPOSITION: web-glass-card atoms
+        Replace these placeholder blocks with actual .glass-card markup from /web-glass-card.
+        Keep [data-grid-item] and role="listitem" attributes on the wrapper article.
+        container-type: inline-size is set on [data-grid-item] in CSS for container queries.
+      -->
+
+      <article class="glass-card" role="listitem" data-grid-item>
+        <div class="glass-card-body">
+          <!-- Insert card content here -->
+          <h3 class="glass-card-title">Card Title</h3>
+          <p class="glass-card-text">Card description text.</p>
+        </div>
+      </article>
+
+      <article class="glass-card" role="listitem" data-grid-item>
+        <div class="glass-card-body">
+          <h3 class="glass-card-title">Card Title</h3>
+          <p class="glass-card-text">Card description text.</p>
+        </div>
+      </article>
+
+      <article class="glass-card" role="listitem" data-grid-item>
+        <div class="glass-card-body">
+          <h3 class="glass-card-title">Card Title</h3>
+          <p class="glass-card-text">Card description text.</p>
+        </div>
+      </article>
+
+      <article class="glass-card" role="listitem" data-grid-item>
+        <div class="glass-card-body">
+          <h3 class="glass-card-title">Card Title</h3>
+          <p class="glass-card-text">Card description text.</p>
+        </div>
+      </article>
+
+      <article class="glass-card" role="listitem" data-grid-item>
+        <div class="glass-card-body">
+          <h3 class="glass-card-title">Card Title</h3>
+          <p class="glass-card-text">Card description text.</p>
+        </div>
+      </article>
+
+      <article class="glass-card" role="listitem" data-grid-item>
+        <div class="glass-card-body">
+          <h3 class="glass-card-title">Card Title</h3>
+          <p class="glass-card-text">Card description text.</p>
+        </div>
+      </article>
+
+    </div><!-- /.card-grid -->
+
+  </div><!-- /.card-grid-inner -->
+
+</section>

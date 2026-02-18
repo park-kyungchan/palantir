@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>web-gap-matrix — Reference</title>
+  <link rel="stylesheet" href="../../web-design-tokens/references/tokens.css">
+  <link rel="stylesheet" href="../../web-progress-bar/references/progress-bar.css">
+  <link rel="stylesheet" href="gap-matrix.css">
+  <script defer src="gap-matrix.js"></script>
+  <style>
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      padding: 2rem;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+
+  <section class="gap-matrix-section">
+
+    <div class="gap-matrix" id="gap-matrix" data-animate="true" data-show-targets="true">
+
+      <div class="gap-category">
+        <button class="gap-category-header" aria-expanded="true" aria-controls="cat-technical">
+          <span class="gap-category-title">Technical Skills</span>
+          <span class="gap-category-count">3 items</span>
+          <span class="gap-category-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="gap-category-body" id="cat-technical">
+
+          <div class="gap-row"
+               data-value="72" data-target="90"
+               data-color="cyan" data-tag="medium"
+               data-label="LaTeX Typesetting"
+               data-tooltip="Needs practice with complex expressions">
+            <span class="gap-label">LaTeX Typesetting</span>
+            <div class="gap-bar-track">
+              <div class="gap-bar-fill cyan"></div>
+              <div class="gap-bar-target"></div>
+              <span class="gap-bar-pct">0%</span>
+            </div>
+            <span class="gap-tag medium">Medium</span>
+            <div class="gap-row-tooltip" role="tooltip">
+              <span class="tooltip-name">LaTeX Typesetting</span>
+              Needs practice with complex expressions
+            </div>
+          </div>
+
+          <div class="gap-row"
+               data-value="45" data-target="85"
+               data-color="magenta" data-tag="high"
+               data-label="Proof Writing"
+               data-tooltip="Core skill gap — prioritize this semester">
+            <span class="gap-label">Proof Writing</span>
+            <div class="gap-bar-track">
+              <div class="gap-bar-fill magenta"></div>
+              <div class="gap-bar-target"></div>
+              <span class="gap-bar-pct">0%</span>
+            </div>
+            <span class="gap-tag high">High</span>
+            <div class="gap-row-tooltip" role="tooltip">
+              <span class="tooltip-name">Proof Writing</span>
+              Core skill gap — prioritize this semester
+            </div>
+          </div>
+
+          <div class="gap-row"
+               data-value="88" data-target="90"
+               data-color="green" data-tag="none"
+               data-label="Problem Solving"
+               data-tooltip="On track — minor polish needed">
+            <span class="gap-label">Problem Solving</span>
+            <div class="gap-bar-track">
+              <div class="gap-bar-fill green"></div>
+              <div class="gap-bar-target"></div>
+              <span class="gap-bar-pct">0%</span>
+            </div>
+            <span class="gap-tag none">On Track</span>
+            <div class="gap-row-tooltip" role="tooltip">
+              <span class="tooltip-name">Problem Solving</span>
+              On track — minor polish needed
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="gap-category">
+        <button class="gap-category-header" aria-expanded="true" aria-controls="cat-foundations">
+          <span class="gap-category-title">Mathematical Foundations</span>
+          <span class="gap-category-count">2 items</span>
+          <span class="gap-category-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="gap-category-body" id="cat-foundations">
+
+          <div class="gap-row"
+               data-value="60" data-target="80"
+               data-color="cyan" data-tag="medium"
+               data-label="Number Theory"
+               data-tooltip="Prime factorization and modular arithmetic need work">
+            <span class="gap-label">Number Theory</span>
+            <div class="gap-bar-track">
+              <div class="gap-bar-fill cyan"></div>
+              <div class="gap-bar-target"></div>
+              <span class="gap-bar-pct">0%</span>
+            </div>
+            <span class="gap-tag medium">Medium</span>
+            <div class="gap-row-tooltip" role="tooltip">
+              <span class="tooltip-name">Number Theory</span>
+              Prime factorization and modular arithmetic need work
+            </div>
+          </div>
+
+          <div class="gap-row"
+               data-value="92" data-target="85"
+               data-color="green" data-tag="none"
+               data-label="Algebra"
+               data-tooltip="Exceeds target — strong foundation">
+            <span class="gap-label">Algebra</span>
+            <div class="gap-bar-track">
+              <div class="gap-bar-fill green"></div>
+              <div class="gap-bar-target"></div>
+              <span class="gap-bar-pct">0%</span>
+            </div>
+            <span class="gap-tag none">On Track</span>
+            <div class="gap-row-tooltip" role="tooltip">
+              <span class="tooltip-name">Algebra</span>
+              Exceeds target — strong foundation
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+</body>
+</html>

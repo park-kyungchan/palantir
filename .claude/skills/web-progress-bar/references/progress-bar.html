@@ -1,0 +1,132 @@
+<!-- progress-bar.html — Animated Progress Bar Component Markup
+     Requires: web-design-tokens (tokens.css)
+     Requires: progress-bar.css
+     Requires: progress-bar.js (for animation trigger)
+-->
+
+<!-- ============================================================
+     SINGLE ROW — Basic usage
+     data-value: fill percentage (0-100)
+     data-target: optional dashed target line (0-100, omit to hide)
+     data-color: green | cyan | magenta
+     data-tag: none | medium | high (omit to hide tag)
+     ============================================================ -->
+<div class="gap-row"
+     data-value="75"
+     data-target="90"
+     data-color="green"
+     data-tag="none"
+     role="progressbar"
+     aria-valuenow="0"
+     aria-valuemin="0"
+     aria-valuemax="100"
+     aria-label="Progress label">
+  <span class="gap-label">Progress Label</span>
+  <div class="gap-bar-track">
+    <div class="gap-bar-fill green" style="width: 0%"></div>
+    <div class="gap-bar-target" style="left: 90%" aria-hidden="true"></div>
+    <span class="gap-bar-pct" aria-hidden="true">0%</span>
+  </div>
+  <span class="gap-tag none">없음</span>
+</div>
+
+
+<!-- ============================================================
+     FULL GAP MATRIX — Multiple rows with labels
+     Wrap in .gap-matrix for consistent spacing
+     ============================================================ -->
+<div class="gap-matrix" id="gap-matrix">
+
+  <!-- Green: Strong area / no gap -->
+  <div class="gap-row"
+       data-value="90"
+       data-target="90"
+       data-color="green"
+       data-tag="none"
+       role="progressbar"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+       aria-label="수학 기초 역량">
+    <span class="gap-label">수학 기초 역량</span>
+    <div class="gap-bar-track">
+      <div class="gap-bar-fill green" style="width: 0%"></div>
+      <div class="gap-bar-target" style="left: 90%" aria-hidden="true"></div>
+      <span class="gap-bar-pct" aria-hidden="true">0%</span>
+    </div>
+    <span class="gap-tag none">없음</span>
+  </div>
+
+  <!-- Cyan: Moderate area / medium gap -->
+  <div class="gap-row"
+       data-value="65"
+       data-target="90"
+       data-color="cyan"
+       data-tag="medium"
+       role="progressbar"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+       aria-label="LaTeX 실무 능력">
+    <span class="gap-label">LaTeX 실무</span>
+    <div class="gap-bar-track">
+      <div class="gap-bar-fill cyan" style="width: 0%"></div>
+      <div class="gap-bar-target" style="left: 90%" aria-hidden="true"></div>
+      <span class="gap-bar-pct" aria-hidden="true">0%</span>
+    </div>
+    <span class="gap-tag medium">보통</span>
+  </div>
+
+  <!-- Magenta: Gap area / high gap -->
+  <div class="gap-row"
+       data-value="30"
+       data-target="85"
+       data-color="magenta"
+       data-tag="high"
+       role="progressbar"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+       aria-label="수리논술 출제 경험">
+    <span class="gap-label">출제 경험</span>
+    <div class="gap-bar-track">
+      <div class="gap-bar-fill magenta" style="width: 0%"></div>
+      <div class="gap-bar-target" style="left: 85%" aria-hidden="true"></div>
+      <span class="gap-bar-pct" aria-hidden="true">0%</span>
+    </div>
+    <span class="gap-tag high">높음</span>
+  </div>
+
+  <!-- No tag, no target — minimal usage -->
+  <div class="gap-row"
+       data-value="55"
+       data-color="cyan"
+       role="progressbar"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+       aria-label="PM 운영 경험">
+    <span class="gap-label">PM 운영</span>
+    <div class="gap-bar-track">
+      <div class="gap-bar-fill cyan" style="width: 0%"></div>
+      <span class="gap-bar-pct" aria-hidden="true">0%</span>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     CSS SCROLL-DRIVEN ANIMATION MODE
+     Add data-scroll-driven="true" on .gap-matrix to opt in.
+     JS detects @supports (animation-timeline: view()) and applies
+     scroll-driven class. Falls back to IntersectionObserver in Firefox.
+     ============================================================ -->
+<div class="gap-matrix" id="gap-matrix-sda" data-scroll-driven="true">
+  <div class="gap-row"
+       data-value="80"
+       data-color="green"
+       data-tag="none"
+       role="progressbar"
+       aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+       aria-label="Scroll-driven example">
+    <span class="gap-label">SDA Example</span>
+    <div class="gap-bar-track">
+      <div class="gap-bar-fill green" style="width: 0%"></div>
+      <span class="gap-bar-pct" aria-hidden="true">0%</span>
+    </div>
+    <span class="gap-tag none">없음</span>
+  </div>
+</div>

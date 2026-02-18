@@ -1,0 +1,60 @@
+<!-- ============================================================
+     web-icon-badge — HTML Reference Snippets
+     Dependency: tokens.css must be loaded first
+     ============================================================ -->
+
+<!-- ── Basic (default md size, emoji) ─────────────────────────── -->
+<div class="icon-badge">🚀</div>
+
+<!-- ── Size variants ───────────────────────────────────────────── -->
+<div class="icon-badge icon-badge--sm">⚡</div>
+<div class="icon-badge icon-badge--md">🎯</div>  <!-- default -->
+<div class="icon-badge icon-badge--lg">💎</div>
+<div class="icon-badge icon-badge--xl">🔮</div>
+
+<!-- ── Glow on ──────────────────────────────────────────────────── -->
+<div class="icon-badge icon-badge--lg icon-badge--glow">🌟</div>
+
+<!-- ── Magenta glow variant ─────────────────────────────────────── -->
+<div class="icon-badge icon-badge--glow-magenta">🔮</div>
+
+<!-- ── Color accent overrides ───────────────────────────────────── -->
+<div class="icon-badge" data-accent="green">✅</div>
+<div class="icon-badge" data-accent="orange">⚠️</div>
+<div class="icon-badge" data-accent="red">❌</div>
+<div class="icon-badge" data-accent="purple">🔮</div>
+
+<!-- ── SVG inline content ────────────────────────────────────────── -->
+<div class="icon-badge icon-badge--lg">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+       aria-hidden="true">
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+  </svg>
+</div>
+
+<!-- ── Image content ─────────────────────────────────────────────── -->
+<div class="icon-badge icon-badge--xl">
+  <img src="avatar.png" alt="User avatar" loading="lazy">
+</div>
+
+<!-- ── With entrance animation (WAAPI, requires icon-badge.js) ───── -->
+<div class="icon-badge icon-badge--lg" data-animate>📊</div>
+
+<!-- ── Cursor-follow glow (requires icon-badge.js) ──────────────── -->
+<div class="icon-badge icon-badge--xl" data-cursor-glow>💎</div>
+
+<!-- ── Stat card integration example ────────────────────────────── -->
+<div class="glass-card-static" style="padding: 2rem; text-align: center; max-width: 200px;">
+  <div class="icon-badge icon-badge--lg" data-animate>📊</div>
+  <p style="font-size: 2rem; font-weight: 800; color: var(--neon-cyan); margin: 0.5rem 0;">94%</p>
+  <p style="font-size: 0.85rem; color: var(--text-secondary);">Health Score</p>
+</div>
+
+<!-- ── Feature grid row example ──────────────────────────────────── -->
+<div style="display: flex; gap: 1.5rem; align-items: center; padding: 1rem 0;">
+  <div class="icon-badge icon-badge--md">🧩</div>
+  <div>
+    <p style="font-weight: 700; color: var(--text-primary);">Composable Design</p>
+    <p style="font-size: 0.85rem; color: var(--text-secondary);">Each atom combines freely.</p>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+<!-- ============================================================
+     web-code-block — HTML Reference Snippets
+     Dependency: tokens.css (web-design-tokens) + code-block.css
+     Optional: code-block.js for copy + auto-highlight
+     ============================================================ -->
+
+<!-- ── Minimal (no extras) ───────────────────────────────────── -->
+<div class="code-block">
+  <pre><code>console.log('hello world');</code></pre>
+</div>
+
+<!-- ── With language label ───────────────────────────────────── -->
+<div class="code-block" data-language="javascript">
+  <pre><code>const greet = (name) => `Hello, ${name}!`;
+console.log(greet('Claude'));</code></pre>
+</div>
+
+<!-- ── With copy button (requires code-block.js) ─────────────── -->
+<div class="code-block" data-language="bash" data-copy>
+  <pre><code>npm install && npm run dev</code></pre>
+</div>
+
+<!-- ── With line numbers ─────────────────────────────────────── -->
+<div class="code-block" data-language="json" data-line-numbers>
+  <pre><code>{
+  "name": "my-project",
+  "version": "1.0.0",
+  "type": "module"
+}</code></pre>
+</div>
+
+<!-- ── All features: language + copy + line numbers ──────────── -->
+<div class="code-block" data-language="css" data-copy data-line-numbers>
+  <pre><code>.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-md);
+}</code></pre>
+</div>
+
+<!-- ── HTML example ──────────────────────────────────────────── -->
+<div class="code-block" data-language="html" data-copy>
+  <pre><code>&lt;div class="glass-card-static"&gt;
+  &lt;h2&gt;Title&lt;/h2&gt;
+  &lt;p&gt;Glass morphism card&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+</div>
+
+<!-- ── Terminal / command output variant ─────────────────────── -->
+<div class="code-block code-block--terminal" data-language="bash">
+  <pre><code>$ npm run build
+
+  vite build
+
+  ✓ 1842 modules transformed.
+  dist/index.html      0.46 kB
+  dist/assets/main.js  89.12 kB
+
+  ✓ built in 1.23s</code></pre>
+</div>
+
+<!-- ── Inline code (not a full block) ────────────────────────── -->
+<p style="color: var(--text-secondary); font-size: 0.9rem;">
+  Use the <code class="code-inline">backdrop-filter</code> property for glass effects.
+</p>
+
+<!-- ── Manual syntax highlighting (no JS) ────────────────────── -->
+<div class="code-block" data-language="javascript">
+  <pre><code><span class="hl-keyword">const</span> x = <span class="hl-number">42</span>;
+<span class="hl-keyword">function</span> greet() {
+  <span class="hl-keyword">return</span> <span class="hl-string">'hello'</span>; <span class="hl-comment">// greeting</span>
+}</code></pre>
+</div>

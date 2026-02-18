@@ -1,0 +1,70 @@
+<!-- =============================================================
+     web-cta-section — cta-section.html
+     Call-to-action section: gradient headline + buttons
+     Prerequisites: tokens.css (web-design-tokens)
+     ============================================================= -->
+
+<!--
+  USAGE (data attributes on .cta-section):
+    data-headline="Ready to build?"     — heading text
+    data-description="..."              — paragraph text
+    data-primary-btn="Get Started"      — primary button label
+    data-secondary-btn="Learn More"     — secondary button label (omit to hide)
+    class="cta-section--glass"          — optional glass morphism background
+    class="cta-section--aurora"         — optional aurora orb background
+    data-particles                      — enable particle burst on primary click
+-->
+
+<section class="cta-section cta-section--glass" aria-labelledby="cta-heading">
+
+  <!-- Optional: aurora orbs (uncomment for .cta-section--aurora variant) -->
+  <!-- <div class="cta-aurora-orb cta-aurora-orb--1" aria-hidden="true"></div> -->
+  <!-- <div class="cta-aurora-orb cta-aurora-orb--2" aria-hidden="true"></div> -->
+
+  <div class="cta-inner">
+
+    <!-- Heading with gradient text -->
+    <h2 class="cta-heading" id="cta-heading">
+      Ready to build something
+      <span class="cta-heading-gradient">extraordinary?</span>
+    </h2>
+
+    <!-- Supporting description -->
+    <p class="cta-description">
+      Join forward-thinking teams using Agent Teams to ship faster with confidence.
+      Start with a free tier — no credit card required.
+    </p>
+
+    <!-- Chip tags (optional social proof) -->
+    <div class="cta-chips" aria-label="Key features">
+      <span class="chip chip--filled">✓ INFRA 94% Health</span>
+      <span class="chip chip--filled">✓ 48 Skills</span>
+      <span class="chip chip--filled">✓ 6 Agents</span>
+    </div>
+
+    <!-- Button group -->
+    <div class="cta-btn-group" role="group" aria-label="Call to action">
+
+      <button class="cta-btn-primary cta-btn-magnetic"
+              type="button"
+              data-particles
+              aria-label="Get started now">
+        Get Started
+        <span class="cta-btn-arrow" aria-hidden="true">→</span>
+      </button>
+
+      <a class="cta-btn-secondary"
+         href="#"
+         role="button"
+         aria-label="Learn more about our product">
+        Learn More
+      </a>
+
+    </div>
+    <!-- /.cta-btn-group -->
+
+  </div>
+  <!-- /.cta-inner -->
+
+</section>
+<!-- /.cta-section -->

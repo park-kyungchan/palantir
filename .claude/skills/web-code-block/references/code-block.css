@@ -1,0 +1,165 @@
+/* ============================================================
+   web-code-block — code-block.css
+   Dependency: tokens.css (web-design-tokens) loaded first
+   ============================================================ */
+
+/* ── Base container ──────────────────────────────────────────── */
+.code-block {
+  position:      relative;
+  background:    rgba(0, 0, 0, 0.45);
+  border:        1px solid color-mix(in oklch, var(--neon-cyan) 15%, transparent);
+  border-radius: var(--radius-sm, 0.5rem);
+  overflow:      hidden;
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: blur(4px) saturate(120%);
+    -webkit-backdrop-filter: blur(4px) saturate(120%);
+  }
+
+  /* Header bar (language label + copy button) */
+  &::before {
+    content:         attr(data-language);
+    display:         block;
+    padding:         0.35rem 0.85rem;
+    font-family:     var(--font-mono, monospace);
+    font-size:       0.65rem;
+    font-weight:     700;
+    letter-spacing:  0.08em;
+    text-transform:  uppercase;
+    color:           var(--neon-cyan, #00ffff);
+    background:      color-mix(in oklch, var(--neon-cyan) 6%, rgba(0,0,0,0.3));
+    border-bottom:   1px solid color-mix(in oklch, var(--neon-cyan) 12%, transparent);
+  }
+
+  /* No header if no language set */
+  &:not([data-language])::before {
+    display: none;
+  }
+
+  /* Scrollable code area */
+  & pre {
+    margin:          0;
+    padding:         1rem 1.1rem;
+    overflow-x:      auto;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--neon-cyan) 25%, transparent) transparent;
+  }
+
+  & code {
+    display:      block;
+    font-family:  var(--font-mono, 'Courier New', monospace);
+    font-size:    0.8rem;
+    line-height:  1.65;
+    color:        var(--text-secondary, rgba(255,255,255,0.7));
+    white-space:  pre;
+    tab-size:     2;
+  }
+}
+
+/* ── Line numbers ────────────────────────────────────────────── */
+.code-block[data-line-numbers] {
+  & code {
+    counter-reset: line-number;
+
+    & .line,
+    & span[data-line] {
+      display:         flex;
+      align-items:     flex-start;
+      counter-increment: line-number;
+
+      &::before {
+        content:       counter(line-number);
+        display:       inline-block;
+        min-width:     2.2em;
+        padding-right: 1.2em;
+        color:         var(--text-muted, rgba(255,255,255,0.3));
+        font-size:     0.75rem;
+        user-select:   none;
+        flex-shrink:   0;
+        text-align:    right;
+      }
+    }
+  }
+}
+
+/* ── Copy button (injected by JS) ───────────────────────────── */
+.code-block__copy-btn {
+  position:      absolute;
+  top:           0.3rem;
+  right:         0.5rem;
+  background:    transparent;
+  border:        1px solid color-mix(in oklch, var(--neon-cyan) 25%, transparent);
+  border-radius: var(--radius-sm, 0.5rem);
+  padding:       0.2rem 0.5rem;
+  cursor:        pointer;
+  font-family:   var(--font-mono, monospace);
+  font-size:     0.65rem;
+  color:         color-mix(in oklch, var(--neon-cyan) 70%, white);
+  transition:    background var(--duration-fast, 200ms) ease,
+                 color var(--duration-fast, 200ms) ease;
+
+  &:hover {
+    background: color-mix(in oklch, var(--neon-cyan) 10%, transparent);
+    color:      var(--neon-cyan, #00ffff);
+  }
+
+  &.copied {
+    color:   var(--neon-green, #2ecc71);
+    border-color: color-mix(in oklch, var(--neon-green) 25%, transparent);
+  }
+}
+
+/* ── Syntax highlight classes ────────────────────────────────── */
+.hl-keyword  { color: var(--neon-cyan,    #00ffff); }
+.hl-string   { color: var(--neon-orange,  #f39c12); }
+.hl-comment  { color: var(--text-muted,   rgba(255,255,255,0.35)); font-style: italic; }
+.hl-number   { color: var(--neon-green,   #2ecc71); }
+.hl-property { color: var(--neon-magenta, #ff00ff); }
+
+/* ── Inline code (non-block context) ────────────────────────── */
+code.code-inline {
+  font-family:   var(--font-mono, monospace);
+  font-size:     0.85em;
+  color:         var(--neon-cyan, #00ffff);
+  background:    color-mix(in oklch, var(--neon-cyan) 8%, transparent);
+  border:        1px solid color-mix(in oklch, var(--neon-cyan) 20%, transparent);
+  border-radius: 3px;
+  padding:       0.1em 0.35em;
+}
+
+/* ── Terminal variant ────────────────────────────────────────── */
+.code-block--terminal {
+  background: rgba(0, 0, 0, 0.7);
+
+  &::before {
+    content:          'terminal';
+    color:            var(--neon-green, #2ecc71);
+    background:       rgba(0, 0, 0, 0.5);
+    border-bottom-color: color-mix(in oklch, var(--neon-green) 15%, transparent);
+  }
+
+  & code {
+    color: oklch(85% 0.12 142);
+  }
+}
+
+/* ── Scrollbar styling (webkit) ──────────────────────────────── */
+.code-block pre::-webkit-scrollbar {
+  height: 4px;
+}
+
+.code-block pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-block pre::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--neon-cyan) 25%, transparent);
+  border-radius: 2px;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .code-block__copy-btn {
+    transition: none;
+  }
+}

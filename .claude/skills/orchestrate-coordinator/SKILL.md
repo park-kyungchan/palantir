@@ -166,6 +166,38 @@ For each checkpoint, verify it aligns with a wave boundary:
 - No duplicate task assignments (same task in multiple waves)
 - No orphaned tasks (task with no agent, no wave, or no handoff)
 
+### 3.5. Scheduling Efficiency Analysis + Feedback Loop
+After cross-validation, analyze the unified plan for scheduling inefficiency:
+
+#### Efficiency Checks
+| Check | Condition | Action |
+|-------|-----------|--------|
+| Long serial chain | max_chain_depth > wave_count / 2 | Generate RESTRUCTURE_HINT for plan-static |
+| Single-task waves | > 1 wave with only 1 task (non-final) | Suggest task splitting to orchestrate-static |
+| Low parallelism | avg tasks/wave < 2 for total > 6 tasks | Flag underutilization, suggest re-decomposition |
+| Cost overrun | wave_count × 3 agents × ~200k > budget | Flag cost concern with wave consolidation options |
+
+#### RESTRUCTURE_HINT Format
+When inefficiency detected, include in L2 output:
+```yaml
+restructure_hints:
+  - type: chain_bottleneck
+    chain: [T2, T5, T8]
+    bottleneck_task: T5
+    suggestion: "Split T5 into T5a (files 1-3) + T5b (files 4-6)"
+    expected_improvement: "Reduces wave count by 1, saves ~200k tokens"
+  - type: underutilization
+    wave: W3
+    task_count: 1
+    suggestion: "Split T8 into T8a + T8b to fill W3 capacity"
+```
+
+**Feedback Route**: Lead reads RESTRUCTURE_HINTs from L2. If any HIGH-priority hint exists, Lead may:
+1. Route back to plan-static for re-decomposition (L1 Nudge)
+2. Route to orchestrate-static for smart splits (L1 Nudge)
+3. Accept current plan with documented inefficiency (proceed)
+Decision is Lead's tactical choice per D12 escalation rules.
+
 ### 4. Produce L1 Index + L2 Summary for Lead
 Write routing-level output for Lead consumption:
 
@@ -292,7 +324,7 @@ If any cross-validation check FAILs, do NOT produce an L3 execution plan. A part
 - Cross-validation Check C (checkpoint-wave alignment): PASS or WARN only
 - Cross-validation Check D (task coverage completeness): PASS
 - L3 execution plan contains complete spawn instructions for every task
-- L3 handoff paths are all concrete `/tmp/pipeline/` paths
+- L3 handoff paths are all concrete tasks/{team}/ paths
 - No wave exceeds 4 parallel tasks
 
 ## Output
@@ -312,8 +344,8 @@ cross_validation:
   checkpoint_alignment: PASS|FAIL|WARN
   task_coverage: PASS|FAIL
 files:
-  l2_summary: /tmp/pipeline/p5-coordinator/summary.md
-  l3_execution_plan: /tmp/pipeline/p5-coordinator/execution-plan.md
+  l2_summary: tasks/{team}/p5-coordinator-summary.md
+  l3_execution_plan: tasks/{team}/p5-coordinator-execution-plan.md
 ```
 
 ### L2 (summary.md)

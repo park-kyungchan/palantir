@@ -1,0 +1,48 @@
+<!-- ============================================================
+   web-floating-orbs — HTML Structure
+   Ambient floating background orbs. Decorative only.
+
+   Usage:
+   1. Place as first child of <body>, before all content
+   2. Include floating-orbs.css
+   3. Include floating-orbs.js ONLY if using parallax mode
+
+   Parallax mode:
+   Add data-parallax="true" to .bg-orbs to activate mouse parallax.
+   Requires floating-orbs.js to be included.
+
+   Count variants (add class to .bg-orbs):
+   - Default: 3 orbs (bg-orbs has no variant class)
+   - .bg-orbs--2: 2 orbs (hides orb--3)
+   - 4 orbs: add .bg-orb--4 manually with custom background
+
+   aria-hidden="true" is required — orbs are purely decorative.
+   ============================================================ -->
+
+<!-- 3-orb default configuration -->
+<div class="bg-orbs" aria-hidden="true">
+  <!-- Orb 1: Purple — top-left, 600×600px, 20s float -->
+  <div class="bg-orb bg-orb--1"></div>
+
+  <!-- Orb 2: Cyan — center-right, 500×500px, 24s float -->
+  <div class="bg-orb bg-orb--2"></div>
+
+  <!-- Orb 3: Magenta — bottom-center, 400×400px, 22s float -->
+  <div class="bg-orb bg-orb--3"></div>
+</div>
+
+<!--
+  Parallax mode example:
+  <div class="bg-orbs" data-parallax="true" aria-hidden="true">
+    <div class="bg-orb bg-orb--1"></div>
+    <div class="bg-orb bg-orb--2"></div>
+    <div class="bg-orb bg-orb--3"></div>
+  </div>
+
+  2-orb example (hides orb--3):
+  <div class="bg-orbs bg-orbs--2" aria-hidden="true">
+    <div class="bg-orb bg-orb--1"></div>
+    <div class="bg-orb bg-orb--2"></div>
+    <div class="bg-orb bg-orb--3"></div>
+  </div>
+-->

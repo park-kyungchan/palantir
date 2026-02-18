@@ -1,0 +1,93 @@
+/* =============================================================
+   web-nav-dots — nav-dots.css
+   Fixed section navigation dots for single-page scrolling sites.
+   Requires: web-design-tokens/references/tokens.css
+
+   Sections to customize:
+   - .nav-dots: position (right default), z-index, gap
+   - .nav-dots--left: left-side variant
+   - .nav-dot: size, border, transition
+   - .nav-dot.active: glow color (uses --neon-cyan)
+   - .nav-dot::after: tooltip label style
+   ============================================================= */
+
+.nav-dots {
+  position: fixed;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 999;
+
+  /* ── Left-position variant ── */
+  &.nav-dots--left {
+    right: auto;
+    left: 1.5rem;
+
+    & .nav-dot::after {
+      right: auto;
+      left: 20px;
+    }
+  }
+
+  /* ── Hide on mobile ── */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.nav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast, 200ms) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--duration-fast, 200ms) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-fast, 200ms) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+  position: relative;
+
+  /* ── Active state: glow + fill ── */
+  &.active {
+    background: var(--neon-cyan, #00ffff);
+    border-color: var(--neon-cyan, #00ffff);
+    box-shadow: 0 0 8px var(--neon-cyan, #00ffff);
+  }
+
+  /* ── Hover tooltip label ── */
+  &::after {
+    content: attr(data-label);
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    font-size: 0.7rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    opacity: 0;
+    transition: opacity var(--duration-fast, 200ms) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+    pointer-events: none;
+    /* Prevent tooltip from appearing when data-label is absent */
+    /* empty string is falsy but attr() returns "" — handled by opacity: 0 default */
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+  }
+
+  /* ── Keyboard focus indicator ── */
+  &:focus-visible {
+    outline: 2px solid var(--neon-cyan, #00ffff);
+    outline-offset: 3px;
+  }
+
+  /* ── Hover scale ── */
+  &:hover {
+    transform: scale(1.4);
+  }
+}

@@ -1,0 +1,247 @@
+/* =============================================================
+   web-hero-section — hero-section.css
+   Full-viewport hero organism.
+   Requires: web-design-tokens/references/tokens.css
+   Composes: web-chip/references/chip.css (for .chip pill styles)
+             web-floating-orbs/references/floating-orbs.css (for .bg-orbs)
+
+   Animation notes:
+   - Entrance via JS WAAPI (hero-section.js adds visible state)
+   - CSS handles scroll-indicator bounce + gradient text
+   - View Transitions: hero-title named for morph transitions
+   ============================================================= */
+
+/* ── Section layout ── */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  overflow: hidden;
+
+  /* Left-align variant */
+  &.hero-section--left {
+    align-items: flex-start;
+    text-align: left;
+
+    & .hero-chips,
+    & .hero-cta {
+      justify-content: flex-start;
+    }
+
+    & .hero-subtitle {
+      margin-left: 0;
+    }
+  }
+}
+
+/* ── Hero content wrapper ── */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  width: 100%;
+}
+
+/* ── Eyebrow label ── */
+.hero-eyebrow {
+  font-size: 0.875rem;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  letter-spacing: 1.5px;
+  margin-bottom: 1rem;
+
+  /* JS entrance: starts hidden */
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* ── Gradient animated headline ── */
+.hero-title {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+
+  /* Gradient text */
+  background: linear-gradient(
+    135deg,
+    var(--neon-cyan, #00ffff),
+    var(--neon-magenta, #ff00ff),
+    var(--neon-green, #2ecc71)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.25));
+
+  /* View Transitions API: named element for morph on navigation */
+  view-transition-name: hero-title;
+
+  /* JS entrance: starts hidden */
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* ── Subtitle ── */
+.hero-subtitle {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  line-height: 1.7;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+
+  /* JS entrance: starts hidden */
+  opacity: 0;
+  transform: translateY(15px);
+}
+
+/* ── Chip tag row ── */
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+
+  /* JS entrance: starts hidden */
+  opacity: 0;
+}
+
+/* ── CTA buttons ── */
+.hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+
+  /* JS entrance: starts hidden */
+  opacity: 0;
+  transform: translateY(10px);
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.hero-cta-primary {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    var(--neon-cyan, #00ffff),
+    var(--neon-magenta, #ff00ff)
+  );
+  color: var(--bg-base, #0a0a1e);
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  }
+}
+
+.hero-cta-secondary {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #fff);
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 255, 255, 0.4);
+  }
+}
+
+/* ── Scroll-down indicator ── */
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  z-index: 1;
+
+  /* JS entrance: starts hidden */
+  opacity: 0;
+
+  /* Arrow via ::after */
+  &::after {
+    content: '';
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-right: 2px solid var(--neon-cyan, #00ffff);
+    border-bottom: 2px solid var(--neon-cyan, #00ffff);
+    transform: rotate(45deg);
+    opacity: 0.6;
+  }
+
+  /* Focus style for keyboard users */
+  &:focus-visible {
+    outline: 2px solid var(--neon-cyan, #00ffff);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+}
+
+.hero-scroll-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  letter-spacing: 1px;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+}
+
+/* ── Bounce animation (applied by JS after entrance) ── */
+@keyframes hero-indicator-bounce {
+  0%,  100% { transform: translateX(-50%) translateY(0); }
+  50%        { transform: translateX(-50%) translateY(8px); }
+}
+
+.hero-scroll-indicator.hero-scroll-indicator--bouncing {
+  animation: hero-indicator-bounce 2s ease-in-out infinite;
+}
+
+/* ── prefers-reduced-motion: skip all entrance animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .hero-eyebrow,
+  .hero-title,
+  .hero-subtitle,
+  .hero-chips,
+  .hero-cta,
+  .hero-scroll-indicator {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero-scroll-indicator.hero-scroll-indicator--bouncing {
+    animation: none;
+  }
+
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    transition: none;
+  }
+}

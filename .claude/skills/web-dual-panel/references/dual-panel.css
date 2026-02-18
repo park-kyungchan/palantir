@@ -1,0 +1,248 @@
+/* =============================================================
+   web-dual-panel — dual-panel.css
+   Two-column glass card panel layout
+   Requires: tokens.css, glass-card.css, icon-badge.css
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Grid wrapper
+   ────────────────────────────────────────────────────────────── */
+
+.dual-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;  /* default: equal halves */
+  gap: var(--space-lg, 1.5rem);
+  align-items: start;              /* top-align; JS forces equal height */
+  container-type: inline-size;
+
+  /* Side-by-side (default) */
+  &[data-layout="side-by-side"] {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Stacked variant */
+  &[data-layout="stacked"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Panel card (extends glass-card-static)
+   ────────────────────────────────────────────────────────────── */
+
+.panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 1rem);
+  padding: var(--space-xl, 2rem);
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+
+  /* Entrance: initial hidden state (WAAPI sets fill:forwards) */
+  &[data-pending-animation] {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* Subtle top border accent (uses first-child/last-child to set color) */
+.panel-card:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-cyan, #00ffff), transparent);
+  border-radius: inherit inherit 0 0;
+}
+
+.panel-card:last-child::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-green, #2ecc71), transparent);
+  border-radius: inherit inherit 0 0;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Panel header
+   ────────────────────────────────────────────────────────────── */
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 1rem);
+}
+
+.panel-title {
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary, #ecf0f1);
+  margin: 0;
+  line-height: 1.25;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Panel description
+   ────────────────────────────────────────────────────────────── */
+
+.panel-description {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  margin: 0;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Panel list
+   ────────────────────────────────────────────────────────────── */
+
+.panel-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 0.375rem);
+  flex: 1;  /* pushes list to fill remaining height */
+}
+
+.panel-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.65));
+
+  /* Bullet marker */
+  &::before {
+    content: '·';
+    flex-shrink: 0;
+    color: var(--text-tertiary, rgba(255, 255, 255, 0.35));
+    font-weight: 700;
+    margin-top: 0.05em;
+  }
+
+  /* Entrance: JS sets opacity per item with staggered delay */
+  &[data-pending-animation] {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+/* Positive variant — green bullet + lighter text */
+.panel-list-item--positive {
+  color: var(--text-primary, rgba(255, 255, 255, 0.85));
+
+  &::before {
+    content: '✓';
+    color: var(--neon-green, #2ecc71);
+    font-size: 0.75em;
+    font-weight: 700;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Comparison slider (optional) — JS injects .dual-panel-slider
+   ────────────────────────────────────────────────────────────── */
+
+.dual-panel[data-comparison] {
+  position: relative;
+  overflow: hidden;
+
+  .panel-card:first-child {
+    clip-path: inset(0 50% 0 0);   /* initial 50/50 reveal */
+    transition: clip-path 0s;      /* JS controls transition during drag */
+  }
+
+  .panel-card:last-child {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    border-radius: inherit;
+  }
+}
+
+.dual-panel-slider {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 3px;
+  height: 100%;
+  background: var(--neon-cyan, #00ffff);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.7);
+  cursor: ew-resize;
+  z-index: 10;
+  transform: translateX(-50%);
+
+  /* Drag handle knob */
+  &::after {
+    content: '⇔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg, rgba(0, 0, 0, 0.6));
+    border: 1px solid var(--neon-cyan, #00ffff);
+    border-radius: 50%;
+    color: var(--neon-cyan, #00ffff);
+    font-size: 0.875rem;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+    user-select: none;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Responsive — stack at ≤600px
+   ────────────────────────────────────────────────────────────── */
+
+@container (max-width: 600px) {
+  .dual-panel {
+    grid-template-columns: 1fr;
+  }
+
+  /* Disable comparison slider on mobile */
+  .dual-panel[data-comparison] {
+    overflow: visible;
+
+    .panel-card:first-child {
+      clip-path: none;
+    }
+
+    .panel-card:last-child {
+      position: static;
+    }
+
+    .dual-panel-slider {
+      display: none;
+    }
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   prefers-reduced-motion
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-card[data-pending-animation],
+  .panel-list-item[data-pending-animation] {
+    opacity: 1;
+    transform: none;
+  }
+}

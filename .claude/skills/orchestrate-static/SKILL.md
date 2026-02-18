@@ -106,6 +106,25 @@ When a task needs capabilities from multiple agent profiles:
 - **Document the split**: Include original task ID and split rationale
 - **Never assign multi-capability tasks to a single agent**
 
+#### Parallelism-Optimized Splitting
+Beyond tool-boundary splits, consider splitting for scheduling efficiency:
+
+| Split Trigger | Condition | Action |
+|---------------|-----------|--------|
+| File count split | Task has > 6 files AND files are logically groupable | Split into 2+ sub-tasks of ~3 files each |
+| Complexity split | Task estimated HIGH complexity AND has 2+ independent sub-modules | Split by sub-module boundary |
+| Dependency chain split | Task is bottleneck in serial chain (from orchestrate-impact feedback) | Split to enable parallel execution of sub-parts |
+
+**Split Decision Rule**: Only split if:
+1. Sub-tasks are independently executable (no inter-dependency within the split)
+2. Each sub-task maps to the SAME agent type (otherwise use multi-capability split)
+3. Split produces net parallelism gain (saves >= 1 wave)
+
+**DO NOT split** if:
+- Task has < 4 files (too small to benefit)
+- Files are tightly coupled (shared state, circular imports)
+- Split would create more coordination overhead than parallelism savings
+
 ### 4. Verify No Capability Mismatches
 Cross-check every assignment:
 - Agent has ALL tools the task requires (not just some)

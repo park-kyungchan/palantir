@@ -1,0 +1,176 @@
+/* chip.css — Pill / Tag Chip Component
+   Requires: web-design-tokens (tokens.css)
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   Container: hero-chips flex-wrap
+   ────────────────────────────────────────────────────────────── */
+
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+
+  /* Left-align override via data attribute */
+  &[data-align="left"] {
+    justify-content: flex-start;
+  }
+
+  &[data-align="right"] {
+    justify-content: flex-end;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   VARIANT 1: Default Chip — outlined, muted background
+   ────────────────────────────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 1rem;
+  border-radius: var(--radius-pill, 9999px);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast, 200ms) ease,
+    border-color var(--duration-fast, 200ms) ease,
+    color var(--duration-fast, 200ms) ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--text-primary, #ecf0f1);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   VARIANT 2: Filled Chip — stronger background
+   ────────────────────────────────────────────────────────────── */
+
+.chip--filled {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary, #ecf0f1);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   VARIANT 3: Colored Chips — neon accent borders + tint
+   ────────────────────────────────────────────────────────────── */
+
+/* Cyan */
+.chip--cyan {
+  border-color: color-mix(in oklch, var(--neon-cyan, #00ffff) 40%, transparent);
+  background: color-mix(in oklch, var(--neon-cyan, #00ffff) 8%, transparent);
+  color: var(--neon-cyan, #00ffff);
+
+  &:hover {
+    background: color-mix(in oklch, var(--neon-cyan, #00ffff) 15%, transparent);
+    border-color: color-mix(in oklch, var(--neon-cyan, #00ffff) 60%, transparent);
+  }
+}
+
+/* Magenta */
+.chip--magenta {
+  border-color: color-mix(in oklch, var(--neon-magenta, #ff00ff) 40%, transparent);
+  background: color-mix(in oklch, var(--neon-magenta, #ff00ff) 8%, transparent);
+  color: var(--neon-magenta, #ff00ff);
+
+  &:hover {
+    background: color-mix(in oklch, var(--neon-magenta, #ff00ff) 15%, transparent);
+    border-color: color-mix(in oklch, var(--neon-magenta, #ff00ff) 60%, transparent);
+  }
+}
+
+/* Green */
+.chip--green {
+  border-color: color-mix(in oklch, var(--neon-green, #2ecc71) 40%, transparent);
+  background: color-mix(in oklch, var(--neon-green, #2ecc71) 8%, transparent);
+  color: var(--neon-green, #2ecc71);
+
+  &:hover {
+    background: color-mix(in oklch, var(--neon-green, #2ecc71) 15%, transparent);
+    border-color: color-mix(in oklch, var(--neon-green, #2ecc71) 60%, transparent);
+  }
+}
+
+/* Purple */
+.chip--purple {
+  border-color: color-mix(in oklch, var(--neon-purple, #bc13fe) 40%, transparent);
+  background: color-mix(in oklch, var(--neon-purple, #bc13fe) 8%, transparent);
+  color: var(--neon-purple, #bc13fe);
+
+  &:hover {
+    background: color-mix(in oklch, var(--neon-purple, #bc13fe) 15%, transparent);
+    border-color: color-mix(in oklch, var(--neon-purple, #bc13fe) 60%, transparent);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Interactive State: Active (applied by chip.js)
+   ────────────────────────────────────────────────────────────── */
+
+.chip--active {
+  cursor: pointer;
+}
+
+/* Active state for colored chips */
+.chip--active.chip--cyan {
+  background: color-mix(in oklch, var(--neon-cyan, #00ffff) 18%, transparent);
+  border-color: var(--neon-cyan, #00ffff);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.25);
+}
+
+.chip--active.chip--magenta {
+  background: color-mix(in oklch, var(--neon-magenta, #ff00ff) 18%, transparent);
+  border-color: var(--neon-magenta, #ff00ff);
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.25);
+}
+
+.chip--active.chip--green {
+  background: color-mix(in oklch, var(--neon-green, #2ecc71) 18%, transparent);
+  border-color: var(--neon-green, #2ecc71);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
+}
+
+/* Active state for default chip */
+.chip.chip--active:not([class*="chip--cyan"]):not([class*="chip--magenta"]):not([class*="chip--green"]):not([class*="chip--purple"]) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--text-primary, #ecf0f1);
+  cursor: pointer;
+}
+
+/* Clickable indicator for interactive chips */
+[data-filter-group] .chip {
+  cursor: pointer;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   prefers-reduced-motion — disable transitions
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .chip {
+    transition: none;
+  }
+}

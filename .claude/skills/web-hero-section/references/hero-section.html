@@ -1,0 +1,77 @@
+<!--
+  web-hero-section — hero-section.html
+  Full-viewport hero section with gradient title, subtitle, chip tags, scroll indicator.
+
+  Compose with:
+  - web-floating-orbs: paste .bg-orbs block as first child of .hero-section
+  - web-chip: .chip class used here (requires chip.css for pill styles)
+
+  Requirements:
+  - hero-section.css + hero-section.js loaded
+  - web-design-tokens/references/tokens.css loaded
+  - Optional: web-chip/references/chip.css (for .chip pill styles)
+  - Optional: web-floating-orbs/references/floating-orbs.css + floating-orbs.js
+-->
+
+<section class="hero-section" id="hero" aria-label="Hero section">
+
+  <!--
+    COMPOSITION: Floating Orb Background (from web-floating-orbs)
+    Paste the bg-orbs block here as first child. Add data-parallax="true"
+    on .bg-orbs for mouse parallax (requires floating-orbs.js).
+
+    <div class="bg-orbs" data-parallax="true" aria-hidden="true">
+      <div class="bg-orb bg-orb--1"></div>
+      <div class="bg-orb bg-orb--2"></div>
+      <div class="bg-orb bg-orb--3"></div>
+    </div>
+  -->
+
+  <div class="hero-content">
+
+    <!-- Optional eyebrow label (company / role / location) -->
+    <p class="hero-eyebrow">Company Name &middot; Role Title &middot; Location</p>
+
+    <!--
+      Gradient animated headline.
+      view-transition-name: hero-title — enables morph on page navigation
+      via document.startViewTransition()
+    -->
+    <h1 class="hero-title">Your Page Headline Here</h1>
+
+    <!-- Supporting description text -->
+    <p class="hero-subtitle">
+      A brief description of what this page is about and what the user
+      will discover as they scroll down.
+    </p>
+
+    <!--
+      COMPOSITION: Chip tags (from web-chip)
+      Replace .chip elements with your tags. Requires chip.css for pill styles.
+    -->
+    <div class="hero-chips" role="list" aria-label="Tags">
+      <span class="chip" role="listitem">Tag One</span>
+      <span class="chip" role="listitem">Tag Two</span>
+      <span class="chip" role="listitem">Tag Three</span>
+      <span class="chip" role="listitem">Tag Four</span>
+      <span class="chip" role="listitem">Tag Five</span>
+    </div>
+
+    <!-- Optional CTA buttons — remove if not needed -->
+    <div class="hero-cta">
+      <a href="#content" class="hero-cta-primary">Get Started</a>
+      <a href="#about" class="hero-cta-secondary">Learn More</a>
+    </div>
+
+  </div>
+
+  <!--
+    Scroll-down indicator — absolute bottom center.
+    JS adds bounce animation after entrance sequence.
+    Remove entire block if scroll-indicator: false.
+  -->
+  <div class="hero-scroll-indicator" aria-hidden="true">
+    <span class="hero-scroll-label">Scroll to explore</span>
+  </div>
+
+</section>

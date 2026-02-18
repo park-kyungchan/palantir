@@ -1,0 +1,228 @@
+/* glass-card.css — Glass Morphism Card Component
+   Requires: web-design-tokens (tokens.css)
+   Depends on: @property --bg-angle (declared in tokens.css)
+   ============================================================= */
+
+
+/* ──────────────────────────────────────────────────────────────
+   @property registration (fallback if tokens.css not loaded)
+   Tokens.css declares this; safe to duplicate — last write wins.
+   ────────────────────────────────────────────────────────────── */
+
+@property --bg-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Keyframe: Border spin animation
+   ────────────────────────────────────────────────────────────── */
+
+@keyframes spin-border {
+  to { --bg-angle: 360deg; }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   VARIANT 1: Animated Conic-Gradient Border
+   Uses padding-box / border-box background trick.
+   The @property --bg-angle enables smooth conic-gradient rotation.
+   ────────────────────────────────────────────────────────────── */
+
+.glass-card {
+  animation: spin-border 4s linear infinite;
+  background:
+    linear-gradient(
+      to bottom,
+      var(--glass-bg-solid, rgba(10, 10, 30, 0.92)),
+      var(--glass-bg-solid, rgba(10, 10, 30, 0.92))
+    ) padding-box,
+    conic-gradient(
+      from var(--bg-angle),
+      var(--neon-cyan, #00ffff),
+      var(--neon-magenta, #ff00ff),
+      var(--neon-green, #2ecc71),
+      var(--neon-cyan, #00ffff)
+    ) border-box;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md, 1rem);
+
+  /* backdrop-filter with @supports guard */
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  /* Fallback for browsers without backdrop-filter */
+  @supports not (backdrop-filter: blur(1px)) {
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(10, 10, 30, 0.96),
+        rgba(10, 10, 30, 0.96)
+      ) padding-box,
+      conic-gradient(
+        from var(--bg-angle),
+        var(--neon-cyan, #00ffff),
+        var(--neon-magenta, #ff00ff),
+        var(--neon-green, #2ecc71),
+        var(--neon-cyan, #00ffff)
+      ) border-box;
+  }
+
+  /* Tilt: preserve-3d required for transform-style */
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.1s ease;
+
+  &:hover {
+    transition: none; /* Remove for responsive tilt feel */
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   VARIANT 2: Static Frosted Glass
+   No animation — lower GPU cost. Best for grids and lists.
+   ────────────────────────────────────────────────────────────── */
+
+.glass-card-static {
+  background: var(--glass-bg, rgba(17, 25, 40, 0.75));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.125));
+  border-radius: var(--radius-md, 1rem);
+  box-shadow: var(--shadow-glass, 0 8px 32px rgba(0, 0, 0, 0.4));
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  &:hover {
+    transition: none;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   VARIANT 3: Cyan Accent Glow
+   Colored border + glow shadow. Use for data/stats cards.
+   ────────────────────────────────────────────────────────────── */
+
+.glass-card-cyan {
+  background: var(--glass-bg, rgba(17, 25, 40, 0.75));
+  border: 1px solid var(--neon-cyan-border, rgba(0, 255, 255, 0.25));
+  border-radius: var(--radius-md, 1rem);
+  box-shadow: var(--glow-cyan, 0 0 20px rgba(0, 255, 255, 0.3));
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  &:hover {
+    transition: none;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Card Body — inner content padding
+   ────────────────────────────────────────────────────────────── */
+
+.glass-card-body {
+  padding: 1.5rem;
+}
+
+.glass-card-title {
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--neon-cyan, #00ffff);
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.glass-card-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  line-height: 1.6;
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Card Icon — circular icon container
+   ────────────────────────────────────────────────────────────── */
+
+.glass-card-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 0 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.05);
+  color: var(--neon-cyan, #00ffff);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   Grid Layout Helper — 3-column responsive
+   ────────────────────────────────────────────────────────────── */
+
+.glass-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  container-type: inline-size;
+
+  @container (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
+
+  @container (min-width: 701px) and (max-width: 960px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
+   prefers-reduced-motion — disable spin animation
+   Tilt JS also checks this before adding listeners.
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card {
+    animation: none;
+    /* Show solid border as fallback */
+    background:
+      linear-gradient(
+        to bottom,
+        var(--glass-bg-solid, rgba(10, 10, 30, 0.92)),
+        var(--glass-bg-solid, rgba(10, 10, 30, 0.92))
+      ) padding-box,
+      linear-gradient(
+        to right,
+        var(--neon-cyan, #00ffff),
+        var(--neon-magenta, #ff00ff)
+      ) border-box;
+  }
+
+  .glass-card,
+  .glass-card-static,
+  .glass-card-cyan {
+    will-change: auto;
+    transform-style: flat;
+    transition: none;
+  }
+}
