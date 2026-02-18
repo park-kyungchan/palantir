@@ -166,7 +166,7 @@ When spawning multiple researchers, define explicit coordination protocol:
 
 | Failure | Severity | Blocking? | Lead Route |
 |---------|----------|-----------|------------|
-| All tools fail for critical dependency | HIGH | No (increases risk) | research-audit with `status: issue`, flag in plan-strategy risk section |
+| All tools fail for critical dependency | HIGH | No (increases risk) | research-audit with `status: issue`, flag in plan-behavioral risk section |
 | Version incompatibility detected | HIGH | Conditional | design-architecture if incompatibility affects core component; otherwise research-audit with alternative recommendation |
 | License incompatibility detected | HIGH | Yes | design-architecture for technology replacement decision |
 | Only community sources found (no official docs) | MEDIUM | No | research-audit with `confidence: low`, note source quality in L2 |

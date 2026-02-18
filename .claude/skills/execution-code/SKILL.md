@@ -14,7 +14,7 @@ description: >-
   SendMessage for producer→consumer handoffs. On FAIL, routes to
   execution-review with partial manifest and retry count. DPS
   needs orchestrate-coordinator task_id/files/dependencies +
-  plan-interface contracts verbatim. Exclude ADR rationale and
+  plan-relational contracts verbatim. Exclude ADR rationale and
   rejected alternatives.
 user-invocable: true
 disable-model-invocation: true
@@ -30,7 +30,7 @@ disable-model-invocation: true
 ## Decision Points
 
 ### Tier Classification for Code Execution
-Lead determines tier based on orchestration-verify output:
+Lead determines tier based on orchestrate-coordinator output:
 - **TRIVIAL indicators**: Single task in matrix, 1-2 files assigned, no inter-file dependencies, simple change type (rename, config update, string change)
 - **STANDARD indicators**: 2-3 tasks in matrix, 3-6 files across 1-2 modules, some interface dependencies between tasks, moderate change type (new function, API endpoint, component)
 - **COMPLEX indicators**: 4+ tasks in matrix, 7+ files across 3+ modules, circular or deep dependency chains, architectural change type (new module, refactor, migration)
@@ -42,22 +42,22 @@ Lead determines tier based on orchestration-verify output:
 
 ### Input Validation Before Proceeding
 Before spawning implementers, verify:
-1. orchestration-verify L1 shows `status: PASS` — never execute from FAIL orchestration
+1. orchestrate-coordinator L1 shows `status: PASS` — never execute from FAIL orchestration
 2. Task-teammate matrix has complete file assignments (no empty `files[]` arrays)
 3. Interface contracts exist for all cross-task dependencies
 4. No file appears in multiple task assignments (ownership conflict)
 
-If any validation fails: route back to orchestration-verify with specific failure reason.
+If any validation fails: route back to orchestrate-coordinator with specific failure reason.
 
 ### Parallel vs Sequential Spawning
 - **Parallel** (default for STANDARD/COMPLEX): When implementer task groups have no shared files and no producer-consumer dependency
-- **Sequential**: When Task B depends on Task A's output file (e.g., Task A creates a module, Task B imports from it). Sequence determined by plan-interface dependency order.
+- **Sequential**: When Task B depends on Task A's output file (e.g., Task A creates a module, Task B imports from it). Sequence determined by plan-relational dependency order.
 - **Mixed**: In COMPLEX tier, spawn independent groups in parallel, then sequential groups after dependencies complete.
 
 ## Methodology
 
 ### 1. Read Validated Assignments
-Load orchestration-verify PASS report and task-teammate matrix.
+Load orchestrate-coordinator PASS report and task-teammate matrix.
 Extract file assignments, dependency order, and interface contracts per implementer.
 
 ### 2. Spawn Implementers
@@ -66,7 +66,7 @@ For each task group in the matrix:
 
 Construct each delegation prompt with:
 - **Context (D11 — cognitive focus first)**:
-  - INCLUDE: Exact task row from orchestration-verify matrix (task_id, description, assigned files). Interface contracts verbatim from plan-interface: function signatures, data types, return values, error types. PT subject and acceptance criteria.
+  - INCLUDE: Exact task row from orchestrate-coordinator matrix (task_id, description, assigned files). Interface contracts verbatim from plan-relational: function signatures, data types, return values, error types. PT subject and acceptance criteria.
   - EXCLUDE: Other implementers' task details. ADR rationale (pass WHAT decisions, not WHY). Full pipeline state beyond this task group. Rejected design alternatives.
   - Budget: Context field ≤ 30% of implementer effective context.
 - **Task**: List exact file paths to create/modify. For each file, specify: what function/class/method to implement, what behavior it should exhibit, what tests to satisfy. Reference existing patterns: "Follow the pattern in `<existing_file>:<line_range>` for consistency."
@@ -89,7 +89,7 @@ Construct each delegation prompt with:
 - maxTurns: 25 (moderate scope)
 
 **COMPLEX DPS Additions:**
-- Context: Include architecture summary from design-architecture L2. Include interface contracts from plan-interface for ALL cross-boundary interactions. Include dependency order from plan-strategy.
+- Context: Include architecture summary from design-architecture L2. Include interface contracts from plan-relational for ALL cross-boundary interactions. Include dependency order from plan-behavioral.
 - Task: Describe component-level goals. Reference test suites: "All tests in `tests/auth/` must pass after changes."
 - Constraints: Own files only. Use interface contracts as boundaries — do not reach into other implementers' file assignments.
 - maxTurns: 30 (full scope, may need exploration)
@@ -145,7 +145,7 @@ After all implementers complete:
 ## Anti-Patterns
 
 ### DO NOT: Spawn Without Interface Contracts
-Never spawn an implementer for a task that has cross-file dependencies without providing interface contracts from plan-interface. The implementer will guess at interfaces, creating integration bugs that are expensive to fix in execution-review.
+Never spawn an implementer for a task that has cross-file dependencies without providing interface contracts from plan-relational. The implementer will guess at interfaces, creating integration bugs that are expensive to fix in execution-review.
 
 ### DO NOT: Overlap File Ownership
 Never assign the same file to multiple implementers. This creates merge conflicts that neither implementer can resolve. If a file needs changes from multiple tasks, assign it to one implementer and provide the combined requirements.
@@ -176,8 +176,8 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
 | orchestrate-coordinator | Unified execution plan with code task assignments | L1 YAML: `tasks[].{task_id, implementer, files[], dependencies[]}` |
-| plan-interface | Interface contracts for cross-task boundaries | L2 markdown: function signatures, data types, error contracts |
-| plan-strategy | Execution sequence and parallel groups | L2 markdown: dependency graph, parallel opportunities |
+| plan-relational | Interface contracts for cross-task boundaries | L2 markdown: function signatures, data types, error contracts |
+| plan-behavioral | Execution sequence and parallel groups | L2 markdown: dependency graph, parallel opportunities |
 | design-architecture | Component structure (for COMPLEX DPS context) | L2 markdown: module boundaries, data flow |
 
 ### Sends To
@@ -186,15 +186,15 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | execution-impact | File change manifest | Always (even if partial). SRC hook auto-triggers. |
 | execution-review | Implementation artifacts + L1/L2 per implementer | After all implementers complete (or max retries hit) |
 | verify domain | Completed implementation artifacts | After execution-review PASS |
-| orchestration-verify | Error report | If assignment is invalid (missing files, ownership conflict) |
+| orchestrate-coordinator | Error report | If assignment is invalid (missing files, ownership conflict) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
 | All implementers failed | execution-review (FAIL) | Failed task details, error logs, last attempt output |
 | Partial completion | execution-review (PASS with warnings) | Completed + failed task separation |
-| Assignment invalid | orchestration-verify | Specific validation failure reason |
-| Interface contract mismatch | plan-interface | Mismatched contract details from implementer report |
+| Assignment invalid | orchestrate-coordinator | Specific validation failure reason |
+| Interface contract mismatch | plan-relational | Mismatched contract details from implementer report |
 
 ## Quality Gate
 - All assigned files have been modified/created

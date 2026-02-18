@@ -57,7 +57,7 @@ When evaluating handoff chain integrity:
 Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
 - Task list with IDs, descriptions, file assignments
 - Dependency graph (producer-consumer edges)
-- Interface contracts from plan-interface (if available in L3)
+- Interface contracts from plan-relational (if available in L3)
 - File change manifest per task
 
 For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:

@@ -37,13 +37,13 @@
 - **Pattern**: Observe → Hypothesize → Test → Verify → THEN document
 - **Trigger**: Any time Lead is about to update CLAUDE.md, ref cache, or MEMORY.md with behavioral claims
 
-## Current INFRA State (v11.1-health, 2026-02-18)
+## Current INFRA State (v11.3+web, 2026-02-18)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
-| CLAUDE.md | v11.0 | 55L | Protocol-only + §2.1 CE + 45 skills (10 pipeline + 5 homeostasis + 2 cross-cutting) |
+| CLAUDE.md | v11.0 | 55L | Protocol-only + §2.0 Phase Defs + §2.1 CE + 45 pipeline + 20 web-design skills |
 | Agents | v10.9+CE | 6 files | All 6 have Completion Protocol section (SendMessage on task completion) |
-| Skills | v11.1+eval | 56 dirs | 46 INFRA + 10 crowd_works. All 44 L1+L2 CE/PE optimized + evaluation-criteria (new). Budget: ~48,000/56,000 (14% headroom) |
+| Skills | v11.3+web | 78 dirs | 48 INFRA + 20 web-design + 10 crowd_works. Budget: ~56,000/56,000 |
 | Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
 | Hooks | 14 scripts | ~420L | 8 global lifecycle events + 2 agent-scoped SRC hooks + 4 PreToolUse guards |
 | Conventions | DELETED | 0L | Content distributed: agent bodies (SendMessage), CLAUDE.md §2.1 (isolation), skill L2 (output) |
@@ -94,25 +94,8 @@ Context Engineering RSI Loop: 3 iterations, 22/22 findings resolved. Health 3/10
 - Iter 3 (729157d): 6 homeostasis Phase-Aware + Delivery + CE optimization (A/B/D/F)
 - 10/10 gap: micro-signal format runtime validation pending (next COMPLEX pipeline)
 
-### Phase Efficiency Optimization -- COMPLETE (2026-02-15)
-4-dimension pattern + L1 CE/PE bulk optimization. Two phases:
-- **Pilot** (6 agents): +19 new, -8 deleted, +11 net. 44 INFRA + 7 crowd_works = 51 total.
-- **L1 CE/PE** (4 teammates T1-T4): All 44 INFRA L1 descriptions optimized.
-  - Canonical structure: `[Phase·Domain·Role] UniqueVerb` → WHEN → DOMAIN → INPUT_FROM → OUTPUT_TO → METHODOLOGY
-  - 44 unique verbs, zero within-domain collisions
-  - conventions.md: +SendMessage signal format, +error taxonomy (4 types), +checkpoint micro-format
-  - 3 stale refs fixed (design-architecture, design-interface, design-risk)
-  - 3 DMI:true flags (brainstorm, task-management, pipeline-resume) — self-diagnose already false
-  - Budget: 47 auto-loaded skills = 44,138 chars / 48,000 budget (8% headroom)
-  - 10 over-1024 skills trimmed → 0 INFRA violations
-
-### Meta-Cognition INFRA Update -- Largely Implemented (2026-02-14)
-Core ideas from meta-cognition brainstorming have been implemented in v10:
-- CLAUDE.md Protocol-Only transition: DONE (55L)
-- Homeostasis System: DONE (manage-infra + manage-codebase + self-diagnose + self-implement + rsil + 4 verify-*)
-- Self-describing components (frontmatter routing): DONE (45 skills with full L1/L2)
-Remaining: Enhanced Frontmatter v2 (routing/meta_cognition blocks) NOT adopted -- using native fields only.
-Details: `memory/meta-cognition-infra.md`
+### Phase Efficiency + Meta-Cognition -- DONE (2026-02-15)
+L1 CE/PE bulk (44 skills), 4-dimension pattern, CLAUDE.md protocol-only (55L), homeostasis system (5 skills), self-describing frontmatter routing. Details: `memory/meta-cognition-infra.md`
 
 ### INFRA Health Repair -- DONE (2026-02-17)
 CC runtime 5건 실증 검증 후 3-wave 수리. 72%→94% health. PR #59 (da232ba).
@@ -136,27 +119,33 @@ CC runtime 5건 실증 검증 후 3-wave 수리. 72%→94% health. PR #59 (da232
 - Skill subagent compaction fix + budget 2% scaling confirmed (R4)
 - 6 files, 15 edits, all verified dates → 2026-02-18
 
-### L2 Body Design -- COMPLETE (2026-02-15)
-All 44 INFRA skills L2 bodies CE/PE optimized. PR #53 merged to main.
-- 11 batches (B1-B9+B10a+B10b), 3 waves, 50 files, +2930/-1110
-- DMI:true→false: brainstorm, task-management, pipeline-resume
-- Budget: 48,000→56,000 (SLASH_COMMAND_TOOL_CHAR_BUDGET)
-- All 44: DPS 5-field, tier DPS, Decision Points, maxTurns, Anti-Patterns >=3, Transitions 3 tables
-- cc-reference cache-first rule added to CLAUDE.md §3
-- 6 memory files force-added to git (3 cc-reference + 3 topic files)
-- Claude Web/App verification prompt generated: `tmp/claude-web-verification-prompt.md`
-- Next: crowd_works 10 skills L2 CE/PE optimization (6/10 over 375-line budget)
+### L2 Body Design -- DONE (2026-02-15)
+44 INFRA skills L2 CE/PE optimized. PR #53. Budget: 48K→56K. All 44: DPS 5-field, tier DPS, Decision Points, maxTurns, Anti-Patterns >=3.
+
+### D11-D17 Skill Patch -- DONE (2026-02-18)
+48 INFRA skills patched. PR #61 (b3cecb2). D17 path migration, D12 escalation, D11 context, D15 iteration. +manage-skill, +walkthrough.
+
+### Web Design Template Skills -- DONE (2026-02-18)
+20 web-* skills extracted from portfolio.html. 3-layer architecture: Foundation (1) + Atoms (9) + Organisms (10).
+- Foundation: `web-design-tokens` (oklch, @property, glass morphism, 3 palette variants)
+- Atoms: glass-card, chip, progress-bar, nav-dots, scroll-progress, floating-orbs, icon-badge, status-badge, code-block
+- Organisms: hero-section, card-grid, section-wrapper, split-layout, stat-dashboard, cta-section, dual-panel, gap-matrix, deep-dive, pipeline-steps
+- Modern CSS/JS: oklch, CSS Scroll-Driven Animation, WAAPI, Container Queries, IntersectionObserver
+- Agent Teams pipeline: 6 teammates (atoms-a/b, orgs-b/c, orch-enhance), 11 tasks, OOM crash recovery
+- orchestrate-* 5-GAP enhancement + CLAUDE.md §2.0 Phase Definitions added
+- Stale reference fix: plan-strategy→plan-behavioral, plan-interface→plan-relational, plan-decomposition→plan-static (9 files)
+- Commit: 66e0cae (75 files, +9,983/-153)
 
 ### Math Portfolio Pipeline -- RESTART FROM P2 (2026-02-18)
 COMPLEX tier (P0→P8). Freewheelin (MathFlat) 정수론 문제은행 포트폴리오.
 - **Previous P0-P3 artifacts**: `~/tmp/math-portfolio-handoff/` (5 files + HANDOFF.md)
 - **Restart**: P2 Research부터 fresh context. New PT needed.
-- **MCP**: 5/5 connected, tmux+in-process 양쪽 4/4 PASS.
-- **.claude/ cleanup**: 2026-02-18 전면 정리 (tasks/todos/teams/sessions/debug/cache 등 ~175MB 삭제)
 
 ## Session History
 
-Branch: `main`. Latest commit: 583de23.
+Branch: `main`. Latest commit: 66e0cae.
+- 66e0cae: 20 web design template skills + orchestrate-* GAP fixes + CLAUDE.md §2.0 + stale ref fix
+- b3cecb2: D11-D17 design decision patches across 48 INFRA skills + cleanup, PR #61
 - 583de23: ECC integration + evaluation-criteria skill + CLAUDE.md §5 enhancement, PR #60
 - da232ba: Health repair — CC runtime verified, 57 files, PR #59
 - 59cae35: Merge branch 'infra' (cc-reference + MEMORY.md into main)

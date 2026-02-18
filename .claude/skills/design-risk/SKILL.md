@@ -42,7 +42,7 @@ disable-model-invocation: false
 ### RPN Threshold for Mitigation
 Not all risks need mitigation plans:
 - **RPN >= 50**: Critical -- mandatory mitigation, checkpoint in execution plan
-- **RPN 25-49**: High -- mitigation recommended, documented in plan-strategy
+- **RPN 25-49**: High -- mitigation recommended, documented in plan-behavioral
 - **RPN 10-24**: Medium -- acknowledged, monitored during execution
 - **RPN < 10**: Low -- documented for awareness only
 
@@ -200,7 +200,7 @@ For each high-RPN risk, verify:
 ### Analyst Exhausted Turns
 - **Cause**: Too many components for thorough FMEA in allocated turns
 - **Action**: Report partial FMEA. Set `status: partial`. Focus completed analysis on critical-path components.
-- **Routing**: plan-strategy can use partial risk data (better than none)
+- **Routing**: plan-behavioral can use partial risk data (better than none)
 
 ## Anti-Patterns
 
@@ -241,7 +241,7 @@ Low-RPN risks should still be documented. Conditions change -- a "rare" risk may
 |-------------|----------|-------------|
 | Architecture insufficient | design-architecture | Specific questions about components/data flow |
 | Security finding | design-architecture | Vulnerability details + redesign recommendation |
-| Partial analysis | plan-strategy (continue) | Completed risk data + unanalyzed component list |
+| Partial analysis | plan-behavioral (continue) | Completed risk data + unanalyzed component list |
 
 > **D17 Note**: P0-P1 local mode — Lead reads output directly via TaskOutput. 3-channel protocol applies P2+ only.
 

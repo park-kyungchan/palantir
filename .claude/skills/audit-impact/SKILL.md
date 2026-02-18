@@ -172,7 +172,7 @@ Lead-direct inline. Check 1-2 change points for obvious dependents. No formal DP
 Transitive impact beyond 3 hops is speculative. Cap analysis at 3 hops and note potential deep impacts without tracing further. Deep chain analysis is diminishing returns.
 
 ### DO NOT: Recommend Mitigations
-Impact audit describes what will be affected and how severely. It does not prescribe how to mitigate the impact. Mitigation strategies belong to plan-strategy. Keep findings descriptive.
+Impact audit describes what will be affected and how severely. It does not prescribe how to mitigate the impact. Mitigation strategies belong to plan-behavioral. Keep findings descriptive.
 
 ### DO NOT: Confuse Impact with Dependency
 audit-static maps structural dependencies (what references what). audit-impact traces change propagation (if X changes, what breaks). A dependency exists even when nothing changes. Impact analysis is change-triggered.

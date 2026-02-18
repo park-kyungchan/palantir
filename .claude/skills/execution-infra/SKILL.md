@@ -28,7 +28,7 @@ disable-model-invocation: true
 ## Decision Points
 
 ### Tier Classification for Infra Execution
-Lead determines tier based on orchestration-verify output:
+Lead determines tier based on orchestrate-coordinator output:
 - **TRIVIAL indicators**: Single .claude/ file change, simple field update (e.g., update a description, change a model field), no cross-file references affected
 - **STANDARD indicators**: 2-4 .claude/ files across same directory (e.g., 3 skills in same domain), related changes that share a pattern (e.g., adding INPUT_FROM to multiple skills)
 - **COMPLEX indicators**: 5+ .claude/ files across multiple directories (skills + agents + settings + hooks), structural changes (new skill creation, agent rewiring, hook modification)
@@ -40,13 +40,13 @@ Lead determines tier based on orchestration-verify output:
 
 ### Input Validation Before Proceeding
 Before spawning infra-implementers, verify:
-1. orchestration-verify L1 shows `status: PASS` for infra assignments
+1. orchestrate-coordinator L1 shows `status: PASS` for infra assignments
 2. All target file paths exist (for modifications) or parent directories exist (for creation)
 3. For frontmatter changes: verify field names against CC native fields list (.claude/projects/-home-palantir/memory/ref_agents.md, Section 2: Frontmatter Fields)
 4. For settings.json changes: verify the JSON key path exists or is a valid new addition
 5. No .claude/ file appears in multiple infra-implementer assignments
 
-If validation fails: route back to orchestration-verify with specific failure reason.
+If validation fails: route back to orchestrate-coordinator with specific failure reason.
 
 ### Parallel vs Sequential Infra Spawning
 - **Parallel** (default): When infra-implementers modify non-overlapping files in different .claude/ subdirectories
@@ -67,7 +67,7 @@ Files outside `.claude/` MUST route to execution-code instead. This boundary is 
 ## Methodology
 
 ### 1. Read Validated Assignments
-Load orchestration-verify PASS report for infra tasks.
+Load orchestrate-coordinator PASS report for infra tasks.
 Extract .claude/ file assignments: agents, skills, settings, hooks, CLAUDE.md.
 
 ### 2. Spawn Infra-Implementers
@@ -184,7 +184,7 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
 | orchestrate-coordinator | Unified execution plan with infra task assignments | L1 YAML: `tasks[].{task_id, files[], change_type}` |
-| plan-interface | Interface contracts for infra components (if applicable) | L2 markdown: field specifications, schema requirements |
+| plan-relational | Interface contracts for infra components (if applicable) | L2 markdown: field specifications, schema requirements |
 | design-architecture | Component structure for new skill/agent creation | L2 markdown: domain assignment, routing requirements |
 
 ### Sends To
@@ -200,7 +200,7 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | YAML frontmatter corruption | Re-spawn infra-implementer with corrective prompt | Original file content + error location |
 | JSON settings corruption | Re-spawn infra-implementer with JSON fix prompt | Original settings.json backup + error details |
 | Schema non-compliance (non-native fields) | Re-spawn with CC native fields reference | List of non-native fields to remove |
-| File not found (target doesn't exist) | orchestration-verify | Missing file path, expected location |
+| File not found (target doesn't exist) | orchestrate-coordinator | Missing file path, expected location |
 | All retries failed | execution-review (FAIL) | Failed tasks, error logs, impact assessment |
 
 ## Quality Gate

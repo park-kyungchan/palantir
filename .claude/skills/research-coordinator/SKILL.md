@@ -40,10 +40,10 @@ The coordinator produces three tiers of output with different consumers:
 |------|------|----------|-----------|
 | L1 | `tasks/{team}/p2-coordinator-index.md` | Lead | Always (routing decisions) |
 | L2 | `tasks/{team}/p2-coordinator-summary.md` | Lead | When routing needs detail |
-| L3 | `tasks/{team}/p2-coordinator-static.md` | plan-decomposition | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p2-coordinator-behavioral.md` | plan-strategy | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p2-coordinator-relational.md` | plan-interface | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p2-coordinator-impact.md` | plan-strategy, execution-impact | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{team}/p2-coordinator-static.md` | plan-static | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{team}/p2-coordinator-behavioral.md` | plan-behavioral | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{team}/p2-coordinator-relational.md` | plan-relational | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{team}/p2-coordinator-impact.md` | plan-impact, execution-impact | Via $ARGUMENTS, Lead never reads |
 
 This tiered design prevents Lead context bloat: Lead only reads L1 (compact index) and L2 (summary) while plan-phase skills receive detailed L3 data directly via `$ARGUMENTS` injection.
 
@@ -153,25 +153,25 @@ Keep L2 under 200 lines. It should inform Lead's routing, not replace L3 detail.
 ### 5. Produce L3 Per-Dimension Files
 Four L3 files, each containing the full detail for one audit dimension plus relevant compound patterns:
 
-**`p2-coordinator-static.md`** (for plan-decomposition):
+**`p2-coordinator-static.md`** (for plan-static):
 - Full dependency DAG from audit-static
 - Hotspot analysis with all connected files
 - Compound patterns involving static dimension
 - Recommended decomposition constraints (e.g., "do not split hotspot X across tasks")
 
-**`p2-coordinator-behavioral.md`** (for plan-strategy):
+**`p2-coordinator-behavioral.md`** (for plan-behavioral):
 - Full behavior prediction table from audit-behavioral
 - Risk classification with all evidence
 - Compound patterns involving behavioral dimension
 - Recommended strategy constraints (e.g., "sequence task Y before Z to manage regression risk")
 
-**`p2-coordinator-relational.md`** (for plan-interface):
+**`p2-coordinator-relational.md`** (for plan-relational):
 - Full relationship graph from audit-relational
 - Integrity issues with all evidence
 - Compound patterns involving relational dimension
 - Recommended interface constraints (e.g., "verify A->B contract before implementing C")
 
-**`p2-coordinator-impact.md`** (for plan-strategy + execution-impact):
+**`p2-coordinator-impact.md`** (for plan-impact + execution-impact):
 - Full propagation path table from audit-impact
 - Shift-Left data for execution-impact (P6)
 - Compound patterns involving impact dimension
@@ -247,9 +247,10 @@ L1 index must stay compact for Lead context budget. Move any detail beyond summa
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | Lead | L1 index.md + L2 summary.md | Always (terminal P2 skill) |
-| plan-decomposition | L3 `tasks/{team}/p2-coordinator-static.md` | Via $ARGUMENTS (Lead passes path) |
-| plan-strategy | L3 `tasks/{team}/p2-coordinator-behavioral.md` + `p2-coordinator-impact.md` | Via $ARGUMENTS (Lead passes paths) |
-| plan-interface | L3 `tasks/{team}/p2-coordinator-relational.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-static | L3 `tasks/{team}/p2-coordinator-static.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-behavioral | L3 `tasks/{team}/p2-coordinator-behavioral.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-relational | L3 `tasks/{team}/p2-coordinator-relational.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-impact | L3 `tasks/{team}/p2-coordinator-impact.md` | Via $ARGUMENTS (Lead passes path) |
 | execution-impact | L3 `tasks/{team}/p2-coordinator-impact.md` (Shift-Left data) | Via $ARGUMENTS in plan phase |
 
 ### Failure Routes

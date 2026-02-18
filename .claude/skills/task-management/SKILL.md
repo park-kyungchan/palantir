@@ -263,7 +263,7 @@ TeamDelete removes `~/.claude/tasks/{team-name}/` entirely — including PT task
 |-------------|---------------|--------|
 | (User invocation) | Task management action request | `$ARGUMENTS` text: action + args (e.g., "create-pt SRC", "visualize") |
 | (Any pipeline phase) | Phase completion requiring PT update | Lead routes with phase results for PT metadata merge |
-| plan-decomposition | Task breakdown requiring batch creation | L1 YAML: task list with files, dependencies, priorities |
+| plan-static | Task breakdown requiring batch creation | L1 YAML: task list with files, dependencies, priorities |
 | delivery-pipeline | Pipeline completion requiring PT close | L1 YAML: `commit_hash`, `status: delivered` |
 
 ### Sends To
