@@ -25,10 +25,10 @@ disable-model-invocation: false
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+Runs in P2+ Team mode. See `.claude/resources/phase-aware-execution.md` for full protocol.
+- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers).
 - **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **P2P Self-Coordination**: Read upstream outputs from `tasks/{team}/` via $ARGUMENTS. Send P2P signals to downstream consumers.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
@@ -45,48 +45,29 @@ When audit relationships have no matching design-interface contract.
 - **Design missing**: Define minimal contract from audit relationship alone. Flag as `unverified: true`.
 - **Design contradicts audit**: Flag inconsistency. Route to design-interface for reconciliation.
 
+See `resources/methodology.md` for full gap classification rubric.
+
 ## Methodology
 
 ### 1. Read Audit-Relational L3 and Design-Interface Contracts
-Load two inputs:
-- **Audit-relational L3** (via `$ARGUMENTS`): Contains relationship graph between files (imports, exports, shared types, event flows, data passing patterns)
+Load two inputs via `$ARGUMENTS`:
+- **Audit-relational L3**: Relationship graph (imports, exports, shared types, event flows, data passing)
 - **Design-interface contracts** (from P1): API-level contracts defined during design phase
 
-Cross-reference audit relationships against design contracts:
-- Relationships WITH matching design contracts: refine and formalize at task level
-- Relationships WITHOUT design contracts: flag as design gaps, define minimal contracts
-- Design contracts WITHOUT matching relationships: flag as potentially stale or speculative
-
+Cross-reference: relationships WITH matching contracts → refine; WITHOUT → flag design gap; contracts WITHOUT relationships → flag stale.
 Validate both inputs exist. If audit-relational L3 is absent, route to Failure Handling.
 
 ### 2. Define Per-Task INPUT/OUTPUT Contracts
-For each task boundary identified in the relationship graph, define:
-
-**Producer contract (OUTPUT):**
-- What the task produces (file, data structure, export, event)
-- Exact format specification (types, fields, schema)
-- Location (file path, export name, event channel)
-- Guarantees (non-null fields, valid ranges, completeness)
-
-**Consumer contract (INPUT):**
-- What the task expects to receive
-- Required fields and their types
-- Optional fields with defaults
-- Error handling when contract is violated
-
-Contract formality levels (match to tier):
-| Tier | Formality | Example |
-|------|-----------|---------|
-| TRIVIAL | Path-only | "Task A creates `src/auth.ts`, Task B imports from it" |
-| STANDARD | Typed | "Task A exports `UserModel {id: string, name: string}`, Task B requires `UserModel.id`" |
-| COMPLEX | Full schema | Complete interface with validation rules, edge cases, versioning |
+For each task boundary in the relationship graph, define producer OUTPUT contract and consumer INPUT contract.
+Contract formality matches tier (path-only / typed / full schema).
+See `resources/methodology.md` for contract specification format, tier formality table, and producer-consumer pairing algorithm.
 
 ### 3. Verify Bidirectional Consistency
-For every contract, verify that producer and consumer agree:
-- **Type match**: Producer output type matches consumer expected input type
-- **Field coverage**: Consumer required fields are all present in producer output
-- **Naming consistency**: Both sides use the same identifier names (no aliasing mismatches)
-- **Timing**: Producer completes before consumer needs the data (dependency ordering)
+For every contract, verify producer and consumer agree:
+- **Type match**: Producer output type assignable to consumer input type
+- **Field coverage**: All consumer required fields present in producer output
+- **Naming consistency**: Same identifier names on both sides (no aliasing mismatches)
+- **Timing**: Producer task precedes consumer in dependency chain
 
 Consistency check matrix:
 | Check | Pass Condition | Fail Action |
@@ -94,55 +75,21 @@ Consistency check matrix:
 | Type match | Producer type assignable to consumer type | Flag as incompatible contract |
 | Field coverage | All consumer required fields in producer output | Flag missing fields |
 | Naming | Same identifiers on both sides | Flag naming mismatch |
-| Timing | Producer task precedes consumer in dependency chain | Flag ordering violation |
+| Timing | Producer task precedes consumer | Flag ordering violation |
 
 Record all failures. A single bidirectional inconsistency is a blocking finding.
+**FAIL condition**: Any HIGH asymmetric gap (producer defines output with no consumer claim, or consumer requires field not in any producer) triggers FAIL routing back to plan-relational with integrity evidence.
 
 ### 4. Specify Data Formats and Validation Rules
-For each contract, define validation rules that execution agents can use:
-- **Structural validation**: JSON schema, TypeScript interface, or equivalent
-- **Semantic validation**: Business rules (e.g., "user.email must be valid format")
-- **Boundary validation**: Min/max values, string length limits, array size bounds
-- **Error contract**: What happens when validation fails (throw, default, log)
-
-Validation rule template:
-```
-Contract: {producer_task} -> {consumer_task}
-Validation:
-  structural: {type/schema definition}
-  semantic: {business rule list}
-  boundary: {min/max/length constraints}
-  on_violation: throw|default:{value}|log_and_continue
-```
+For each contract, define structural, semantic, boundary, and error-contract validation rules.
+See `resources/methodology.md` for the validation rule template.
 
 ### 5. Output Interface Contract Specification
-Produce the complete contract registry:
-- All per-task INPUT/OUTPUT contracts
-- Bidirectional consistency results
-- Validation rules per contract
-- Gap analysis: relationships without contracts, contracts without relationships
-- Coverage metrics: (relationships with contracts / total relationships) * 100
-
-**DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context** (D11 priority: cognitive focus > token efficiency):
-  INCLUDE:
-    - research-coordinator audit-relational L3 from `tasks/{team}/p2-coordinator-audit-relational.md`
-    - design-interface API contracts (L1 interfaces[] summary only)
-    - Pipeline tier and iteration count from PT
-  EXCLUDE:
-    - Other plan dimension outputs (unless direct dependency)
-    - Full research evidence detail (use L3 summaries only)
-    - Pre-design and design conversation history
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "For each relationship in the audit graph: define producer OUTPUT contract and consumer INPUT contract. Verify bidirectional consistency (type, field, naming, timing). Specify validation rules per contract. Flag gaps where audit relationships have no design contract. Calculate coverage metric."
-- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Cross-reference audit and design artifacts.
-- **Expected Output**: L1 YAML with contract_count, gap_count, consistency_score, coverage_percent, contracts[]. L2 per-task contracts with validation rules and gap analysis.
-- **Delivery**: Write full result to `tasks/{team}/p3-plan-relational.md`. Send micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:tasks/{team}/p3-plan-relational.md`.
-
-#### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. 1-2 task boundaries. Path-only contracts (file references). No formal validation rules needed.
-**STANDARD**: Spawn analyst (maxTurns: 15). Typed contracts for 3-8 boundaries. Type + field consistency checks. Skip edge-case validation.
-**COMPLEX**: Full DPS above. Full schema contracts across 9+ boundaries with bidirectional verification and validation rules.
+Produce the complete contract registry: all per-task INPUT/OUTPUT contracts, bidirectional consistency results, validation rules, gap analysis, and coverage metric.
+**Gap thresholds**: gap_count 0 = PASS; 1-5 = partial; >5 = FAIL (route to research-coordinator).
+DPS template (COMPLEX analyst spawn, tier variations, D17 Four-Channel delivery): see `resources/methodology.md`.
+See `.claude/resources/dps-construction-guide.md` for DPS v5 field order.
+See `.claude/resources/output-micro-signal-format.md` for Ch3/Ch4 signal formats.
 
 ### Iteration Tracking (D15)
 - Lead manages `metadata.iterations.plan-relational: N` in PT before each invocation
@@ -152,37 +99,39 @@ Produce the complete contract registry:
 
 ## Failure Handling
 
+See `.claude/resources/failure-escalation-ladder.md` for L0–L4 level definitions.
+
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error or timeout during contract generation | L0 Retry | Re-invoke same agent, same DPS |
 | Contract output incomplete or missing bidirectional coverage | L1 Nudge | SendMessage with refined relationship scope constraints |
 | Agent stuck on schema analysis or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
-| Contract boundaries conflict with task structure or design-interface mismatch | L3 Restructure | Modify contract scope, request design-interface clarification |
-| Strategic ambiguity on contract formality level or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
+| Contract boundaries conflict with task structure | L3 Restructure | Modify contract scope, request design-interface clarification |
+| Strategic ambiguity on contract formality or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Missing audit-relational L3 input | CRITICAL | research-coordinator | Yes | Cannot define contracts without relationship graph. Request re-run. |
-| Missing design-interface contracts | MEDIUM | Complete with gaps | No | Define minimal contracts from audit relationships alone. Flag as unverified. |
-| Bidirectional inconsistency found | HIGH | Self (re-analyze) | No | Document inconsistency. If design-sourced: route to design-interface. If audit-sourced: accept audit as ground truth. |
-| No relationships in audit (isolated files) | LOW | Complete normally | No | No contracts needed for isolated files. `contract_count: 0`. |
+| Missing design-interface contracts | MEDIUM | Complete with gaps | No | Define minimal contracts from audit alone. Flag as unverified. |
+| Bidirectional inconsistency found | HIGH | Self (re-analyze) | No | Document inconsistency. If design-sourced: route to design-interface. |
+| No relationships in audit (isolated files) | LOW | Complete normally | No | No contracts needed. `contract_count: 0`. |
 
 ## Anti-Patterns
 
 ### DO NOT: Define Contracts Without Audit Evidence
-Every contract must trace back to a relationship in the audit-relational L3. Speculative contracts (based on assumed relationships) create false dependencies and mislead execution agents.
+Every contract must trace back to a relationship in the audit-relational L3. Speculative contracts create false dependencies.
 
 ### DO NOT: Ignore Design-Interface Contracts
-Design-interface contracts from P1 are the architectural intent. Audit relationships are the codebase reality. Both must be reconciled. Ignoring design contracts produces plans that drift from architecture.
+Design-interface contracts are the architectural intent. Audit relationships are the codebase reality. Both must be reconciled.
 
 ### DO NOT: Create One-Directional Contracts
-Every contract must define BOTH producer output AND consumer input. A contract that only specifies "Task A produces X" without specifying "Task B expects X with fields Y, Z" is incomplete and unverifiable.
+Every contract must define BOTH producer output AND consumer input. A contract without consumer input spec is incomplete and unverifiable.
 
 ### DO NOT: Over-Specify Internal Task Contracts
-For files within the same task (same agent context), formal contracts are unnecessary overhead. Only specify contracts at cross-task boundaries where different agents handle producer and consumer.
+For files within the same task (same agent context), formal contracts are unnecessary. Only specify at cross-task boundaries.
 
 ### DO NOT: Skip Validation Rules
-Contracts without validation rules are aspirational, not enforceable. Every contract must include at least structural validation (type match) to be useful during execution review.
+Contracts without validation rules are aspirational, not enforceable. Every contract needs at least structural validation.
 
 ## Transitions
 

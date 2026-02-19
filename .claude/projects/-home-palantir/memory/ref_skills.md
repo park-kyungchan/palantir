@@ -93,16 +93,48 @@ Key: Subagents do NOT inherit skills from parent — must be listed explicitly i
 8. After completion: L2 body removed, L1 description remains
 - **Bug fix (CC 2.1.45)**: Skills invoked by subagents no longer incorrectly appear in main session context after compaction
 
----
+## 3.5 Progressive Disclosure — 3-Stage Architecture (Verified 2026-02-19)
 
-## 3.5 Content Guidelines
+> **5K token limit is NOT enforced. No truncation of individual SKILL.md files.** But 3 real operational problems emerge from oversized L2 bodies.
 
-- Keep SKILL.md body under **500 lines** (soft recommendation, NOT hard limit — files exceeding 500 lines will still load)
-- Body token budget: under **5,000 tokens** recommended (community guidance, not official threshold)
-- References should be **one level deep** from SKILL.md (no nested references)
+### The 3 Stages
+
+| Stage | Name | What Loads | When | Token Cost |
+|-------|------|-----------|------|-----------|
+| **1** | Metadata (Discovery) | YAML frontmatter only (name + description) | Always, at session start | Minimal (~200 tokens per skill) |
+| **2** | Instructions (Activation) | **ALL `.md` files** in skill ROOT directory | When Claude determines skill is relevant (invoked) | Full content (~5K tokens recommended) |
+| **3** | Resources (Execution) | Files in `scripts/` and `resources/` subdirectories | On-demand, only when accessed via Read/Bash | Zero until accessed |
+
+```
+.claude/skills/{skill-name}/
+├── SKILL.md              ← Stage 1 (frontmatter) + Stage 2 (body)
+├── companion.md          ← ⚠️ ALSO Stage 2 — loaded WITH SKILL.md
+└── resources/            ← Stage 3 (on-demand only)
+    ├── methodology.md    ← Zero cost until Read
+    ├── dps-template.md   ← Zero cost until Read
+    └── examples.md       ← Zero cost until Read
+```
+
+> [!WARNING]
+> Companion `.md` files in skill root directory are **Stage 2** — they load WITH the skill, NOT on-demand. To achieve Stage 3 on-demand loading, files MUST be placed in `resources/` or `scripts/` subdirectories.
+
+### 3 Real Problems with Oversized L2
+
+| # | Problem | Mechanism | Severity |
+|---|---|---|---|
+| 1 | **Skill List Truncation** | With 92+ skills, list truncates to ~36 — "Showing 36 of 92 skills due to token limits." Lead loses 60% routing visibility. Each skill's L1 description contributes to this threshold. | HIGH |
+| 2 | **Compaction Evaporation** | Large L2 → faster context consumption → earlier auto-compaction trigger (~55K tokens). Compaction summary does NOT preserve skill procedures (known bug). Agent stops following skill rules after compaction. | HIGH |
+| 3 | **`/context` Display Confusion** | Shows full SKILL.md token count regardless of progressive disclosure. Minor UX issue. | LOW |
+
+### Content Guidelines
+
+- Keep SKILL.md body under **500 lines** (official recommendation — split to `resources/` when exceeding)
+- Body token budget: under **~5,000 tokens** recommended (NOT enforced — no truncation, but affects Skill List and compaction)
+- References in `resources/` should be **one level deep** (no nested subdirectories)
 - For reference files >100 lines, include a table of contents at top
 - Including "ultrathink" anywhere in skill content enables extended thinking
 - Prompt caching: changing skills list in API `container` breaks prompt cache
+- **Detail files in `resources/`** consume zero tokens until explicitly accessed — this is the primary budget management mechanism
 
 ---
 

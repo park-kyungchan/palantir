@@ -27,115 +27,67 @@ disable-model-invocation: false
 ## Phase-Aware Execution
 
 This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream consumers). Lead receives status only, not full data.
 - **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **P2P Self-Coordination**: Read upstream outputs directly from `tasks/{team}/` files via $ARGUMENTS path. Send P2P signals to downstream consumers.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
 
 ### Risk Level Escalation
 When predicted behavior changes show concentrated risk.
-- **High-risk pipeline**: If > 3 P0 behavior changes predicted. Flag to Lead, recommend staged execution.
-- **Moderate-risk**: If 1-3 P0 changes OR > 5 P1 changes. Standard rollback planning with checkpoints.
-- **Low-risk**: If 0 P0 and ≤ 2 P1 changes. Lightweight strategy, minimal checkpoints.
+- **High-risk pipeline**: > 3 P0 behavior changes predicted → flag to Lead, recommend staged execution.
+- **Moderate-risk**: 1-3 P0 OR > 5 P1 changes → standard rollback planning with checkpoints.
+- **Low-risk**: 0 P0 and ≤ 2 P1 changes → lightweight strategy, minimal checkpoints.
 
 ### Rollback Strategy Selection
 When choosing between rollback approaches for P0/P1 changes.
-- **Atomic revert**: If changes within task are tightly coupled (shared state). Always for P0 risks.
-- **Selective revert**: If changes are isolated within task (no shared state). P1 risks with clear boundaries.
-- **Forward fix**: If change is additive and partial success is acceptable. P2-P3 only.
+- **Atomic revert**: Tightly coupled changes (shared state). Always for P0 risks.
+- **Selective revert**: Isolated changes within task (no shared state). P1 risks with clear boundaries.
+- **Forward fix**: Additive, partial success acceptable. P2-P3 only.
 
 ## Methodology
 
 ### 1. Read Audit-Behavioral L3 (Behavior Predictions)
-Load the audit-behavioral L3 file path provided via `$ARGUMENTS`. This file contains:
+Load the audit-behavioral L3 file path provided via `$ARGUMENTS`. Validate input contains:
 - Predicted behavior changes per modified file/function
 - Side effect analysis (what breaks when X changes)
 - Behavior dependency chains (change A triggers behavior change B)
 
-Validate the input exists and contains behavior predictions. If absent, route to Failure Handling (Missing Audit Input).
+If absent, route to Failure Handling (Missing Audit Input).
 
 ### 2. Define Test Cases Per Predicted Behavior Change
-For each predicted behavior change from the audit:
-- **Test subject**: Which function/module/endpoint behavior changes
-- **Pre-condition**: Current behavior (IS state from audit)
-- **Post-condition**: Expected new behavior (SHOULD state)
-- **Test type**: Unit / integration / end-to-end (based on scope)
-- **Verification method**: Assertion, output comparison, manual check
+For each predicted behavior change: define subject, pre-condition (IS state), post-condition (SHOULD state), test type (unit/integration/e2e), and verification method. Full format: `resources/methodology.md` → Per-Behavior Test Case Format.
 
-Test case granularity rules:
-- One test case per discrete behavior change (not per file)
-- If a single file change produces multiple behavior changes, create separate test cases
-- Group related test cases into test suites aligned with task boundaries from plan-static
+Priority classification (P0-P3 table): `resources/methodology.md` → Priority Classification Table.
+- P0 (Critical): block pipeline on fail; P1 (High): pause dependents; P2-P3: continue.
+- **Untested-HIGH FAIL**: any P0/P1 change without a test case → quality gate fails.
 
-Priority classification:
-| Priority | Criteria | Action if Fails |
-|----------|----------|----------------|
-| P0 (Critical) | Core business logic change | Block pipeline, immediate rollback |
-| P1 (High) | Integration behavior change | Pause dependent tasks, assess |
-| P2 (Normal) | Additive behavior (new feature) | Continue, fix in next iteration |
-| P3 (Low) | Cosmetic/logging behavior change | Note and continue |
+One test case per discrete behavior change. Group into suites aligned with plan-static task boundaries.
 
-### 3. Design Rollback Triggers for Each Risk
-For each behavior change with risk (P0 and P1 priority):
-- **Trigger condition**: What observable failure activates rollback
-- **Detection method**: How the failure is detected (test failure, runtime error, metric threshold)
-- **Blast radius**: Which other components are affected if this change fails
-- **Rollback scope**: Minimal set of changes to revert
+### 3. Design Rollback Triggers for Each P0/P1 Risk
+For each P0/P1 behavior change define:
+- **Trigger condition**: observable failure that activates rollback
+- **Detection method**: test failure, runtime error, or metric threshold
+- **Blast radius**: which other components are affected
+- **Rollback scope**: minimal set of changes to revert
 
-Rollback strategy types:
-- **Atomic revert**: Revert all files in the task. Simple but coarse.
-- **Selective revert**: Revert only the failing change within a task. Fine-grained but requires isolated changes.
-- **Forward fix**: Do not revert; instead apply a corrective change. Best for additive changes that partially succeed.
-
-Selection heuristic:
-- P0 risks: Always atomic revert (safety over efficiency)
-- P1 risks: Selective revert if changes are isolated, atomic if coupled
-- P2-P3 risks: Forward fix preferred (non-blocking)
+Strategy selection heuristic: P0 → atomic revert; P1 → selective if isolated, atomic if coupled; P2-P3 → forward fix. Full strategy type table: `resources/methodology.md` → Rollback Strategy Types.
 
 ### 4. Map Checkpoints to Task Dependency Chain
-Align rollback checkpoints with the task structure from plan-static:
-- Insert checkpoint AFTER each task that contains a P0 or P1 behavior change
-- Checkpoint verifies: all test cases for that task pass before dependents proceed
-- If a task has no P0/P1 changes, no checkpoint needed (flow-through)
+Insert checkpoint after each task containing a P0 or P1 behavior change. Checkpoint verifies all P0/P1 test cases for that task pass before dependents proceed. Full checkpoint format: `resources/methodology.md` → Checkpoint Protocol Format.
 
-Checkpoint protocol:
-```
-Checkpoint C-{N} (after Task T-{M}):
-  Gate: All P0/P1 test cases for T-{M} pass
-  On pass: Release dependent tasks
-  On fail: Trigger rollback for T-{M}, pause dependents
-  Timeout: 5 minutes (treat as fail if exceeded)
-```
+If a task has no P0/P1 changes, no checkpoint (flow-through).
 
 ### 5. Output Test/Rollback Strategy
-Produce the complete behavioral strategy:
-- Test case inventory with priority classifications
-- Rollback trigger definitions per risk
-- Checkpoint placement mapped to task chain
-- Coverage metrics: behavior changes covered / total predicted
+Produce complete behavioral strategy: test case inventory, rollback triggers, checkpoint placements, coverage metric (changes with tests / total predicted × 100).
 
-**DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context** (D11 priority: cognitive focus > token efficiency):
-  INCLUDE:
-    - research-coordinator audit-behavioral L3 from `tasks/{team}/p2-coordinator-audit-behavioral.md`
-    - Pipeline tier and iteration count from PT
-    - Task list from plan-static if available (for checkpoint alignment)
-  EXCLUDE:
-    - Other plan dimension outputs (unless direct dependency for checkpoint mapping)
-    - Full research evidence detail (use L3 summaries only)
-    - Pre-design and design conversation history
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "For each predicted behavior change: define test case (subject, pre/post condition, type, priority P0-P3). For P0/P1 changes: define rollback trigger (condition, detection, blast radius, scope). Map checkpoints to task chain. Calculate coverage metrics."
-- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on prescriptive strategy, not test implementation.
-- **Expected Output**: L1 YAML with test_count, rollback_count, checkpoint_count, coverage_percent, tests[] and rollbacks[]. L2 per-change test cases and rollback procedures.
-- **Delivery**: Write full result to `tasks/{team}/p3-plan-behavioral.md`. Send micro-signal to Lead: `PASS|tests:{N}|rollbacks:{N}|ref:tasks/{team}/p3-plan-behavioral.md`.
+**DPS — Analyst Spawn Template**: `resources/methodology.md` → DPS Templates.
 
 #### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. 1-2 obvious behavior changes. Inline test specification, skip rollback if no P0/P1 changes.
-**STANDARD**: Spawn analyst (maxTurns: 15). Systematic test cases for 3-8 changes. Rollback for P0/P1 only. Skip checkpoint mapping if ≤ 3 tasks.
-**COMPLEX**: Full DPS above. Deep chain analysis, cascading rollback design, full checkpoint mapping across 9+ changes.
+**TRIVIAL**: Lead-direct. 1-2 obvious changes. Inline test spec. Skip rollback if no P0/P1 changes.
+**STANDARD**: Spawn analyst (maxTurns: 15). Test cases for 3-8 changes. Rollback for P0/P1 only. Skip checkpoint mapping if ≤ 3 tasks.
+**COMPLEX**: Full DPS. Deep chain analysis, cascading rollback, full checkpoint mapping across 9+ changes.
 
 ### Iteration Tracking (D15)
 - Lead manages `metadata.iterations.plan-behavioral: N` in PT before each invocation
@@ -156,26 +108,16 @@ Produce the complete behavioral strategy:
 | Failure Type | Severity | Route To | Blocking? | Resolution |
 |---|---|---|---|---|
 | Missing audit-behavioral L3 input | CRITICAL | research-coordinator | Yes | Cannot define tests without behavior predictions. Request re-run. |
-| No behavior changes predicted (empty audit) | LOW | Complete normally | No | Empty strategy is valid for static-only changes. `test_count: 0`. |
-| Behavior chain too deep to analyze (>10 levels) | MEDIUM | Self (truncate) | No | Analyze top 10 levels, document truncation. `status: partial`. |
+| No behavior changes predicted (empty audit) | LOW | Complete normally | No | Empty strategy valid for static-only changes. `test_count: 0`. |
+| Behavior chain too deep (>10 levels) | MEDIUM | Self (truncate) | No | Analyze top 10 levels, document truncation. `status: partial`. |
 | Cannot determine rollback scope for coupled changes | HIGH | plan-static | No | Request task boundary clarification. Use atomic revert as fallback. |
 
 ## Anti-Patterns
 
-### DO NOT: Invent Behavior Changes Not in Audit
-This skill is prescriptive based on audit findings. If the audit did not predict a behavior change, do not speculate about it. Missing predictions are an upstream gap in audit-behavioral.
-
-### DO NOT: Write Test Implementation Code
-Define WHAT to test and HOW to verify, not the actual test code. Test implementation belongs in the execution phase. This skill produces test specifications, not test scripts.
-
-### DO NOT: Skip Rollback Planning for P0/P1 Changes
-Every P0 and P1 behavior change must have a defined rollback trigger. Proceeding without rollback for critical changes creates unrecoverable pipeline failures.
-
-### DO NOT: Place Checkpoints After Every Task
-Only tasks containing P0 or P1 behavior changes need checkpoints. Over-checkpointing adds synchronization overhead without proportional safety benefit.
-
-### DO NOT: Assume All Behavior Changes Are Independent
-Behavior dependency chains from the audit mean that rolling back change A may also require rolling back change B. Always check the chain before defining rollback scope.
+1. **DO NOT invent behavior changes not in audit** — missing predictions are an upstream gap in audit-behavioral, not scope for speculation.
+2. **DO NOT write test implementation code** — define WHAT to test and HOW to verify; actual test code belongs in execution phase.
+3. **DO NOT skip rollback planning for P0/P1** — every HIGH change must have a defined rollback trigger or pipeline recovery is unrecoverable.
+4. **DO NOT over-checkpoint** — only tasks with P0/P1 changes need checkpoints; over-checkpointing adds synchronization overhead without proportional safety benefit.
 
 ## Transitions
 
@@ -198,9 +140,9 @@ Behavior dependency chains from the audit mean that rolling back change A may al
 ## Quality Gate
 - Every predicted behavior change has at least one test case
 - All P0/P1 changes have defined rollback triggers
-- Checkpoints aligned with task boundaries
+- Checkpoints aligned with task boundaries from plan-static
 - No orphaned rollbacks (every rollback references a valid trigger)
-- Coverage metric calculated: (changes with tests / total predicted changes) * 100
+- Coverage metric calculated: (changes with tests / total predicted) × 100
 
 ## Output
 

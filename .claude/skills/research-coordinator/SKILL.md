@@ -23,18 +23,13 @@ disable-model-invocation: false
 # Research — Coordinator (Cross-Audit Consolidation)
 
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Inline consolidation of minimal audit outputs (≤2 dimensions with ≤5 findings each). No agent spawn. maxTurns: 0.
-- **STANDARD**: Spawn analyst (maxTurns:30). Read all 4 audit outputs, cross-reference, produce tiered output.
-- **COMPLEX**: Spawn analyst (maxTurns:35). Larger audit outputs require more turns for cross-referencing. Single analyst to maintain cross-dimensional coherence.
+- **TRIVIAL**: Lead-direct. Inline consolidation of minimal audit outputs (≤2 dimensions, ≤5 findings each). No agent spawn. maxTurns: 0.
+- **STANDARD**: Spawn analyst (maxTurns: 30). Read all 4 audit outputs, cross-reference, produce tiered output.
+- **COMPLEX**: Spawn analyst (maxTurns: 35). Larger audit outputs require more turns for cross-referencing. Single analyst maintains cross-dimensional coherence.
 
-Note: Always single analyst regardless of tier. Cross-dimensional pattern discovery requires one agent seeing all four dimensions simultaneously. Splitting across agents loses the consolidation benefit.
-
-## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes results to `tasks/{team}/`: `p2-coordinator-index.md`, `p2-coordinator-summary.md`, `p2-coordinator-static.md`, `p2-coordinator-behavioral.md`, `p2-coordinator-relational.md`, `p2-coordinator-impact.md`. Sends micro-signal: `PASS|dimensions:4|patterns:{N}|ref:tasks/{team}/p2-coordinator-index.md`.
+> Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
 ## Tiered Output Architecture
-The coordinator produces three tiers of output with different consumers:
 
 | Tier | File | Consumer | When Read |
 |------|------|----------|-----------|
@@ -45,157 +40,41 @@ The coordinator produces three tiers of output with different consumers:
 | L3 | `tasks/{team}/p2-coordinator-relational.md` | plan-relational | Via $ARGUMENTS, Lead never reads |
 | L3 | `tasks/{team}/p2-coordinator-impact.md` | plan-impact, execution-impact | Via $ARGUMENTS, Lead never reads |
 
-This tiered design prevents Lead context bloat: Lead only reads L1 (compact index) and L2 (summary) while plan-phase skills receive detailed L3 data directly via `$ARGUMENTS` injection.
-
 ## Decision Points
 
 ### Consolidation Depth
-Based on audit dimension count and total findings.
-- **≤2 dimensions, ≤5 findings each**: Lead-direct inline consolidation (TRIVIAL). No agent spawn.
+- **≤2 dimensions, ≤5 findings each**: Lead-direct inline consolidation (TRIVIAL).
 - **3-4 dimensions, ≤20 total findings**: Single analyst, standard cross-reference. maxTurns: 30.
 - **4 dimensions, >20 total findings**: Single analyst, extended cross-reference. maxTurns: 35.
-- **Default**: Single analyst, maxTurns: 30 (STANDARD tier).
 
 ### Partial Dimension Handling
-- **1-2 dimensions missing**: Proceed with available data. Mark gaps in L1 index. Compound patterns limited.
+- **1-2 dimensions missing**: Proceed with available data. Mark gaps in L1 index.
 - **3-4 dimensions missing**: FAIL. Insufficient data for meaningful consolidation. Route to Lead.
 
 ## Methodology
 
 ### 1. Read All Audit Outputs
-Read the 4 audit output files from `tasks/{team}/`:
-- `p2-audit-static.md` -- dependency graph, hotspots, cycles
-- `p2-audit-behavioral.md` -- behavior predictions, risk classifications
-- `p2-audit-relational.md` -- relationship graph, integrity issues
-- `p2-audit-impact.md` -- propagation paths, maintenance/scalability risk
-
-For each audit, extract:
-- Key metrics (counts, percentages, risk levels)
-- Primary findings (top findings by severity)
-- Coverage status (complete, partial, empty)
-
-If any audit output is missing or marked partial, note it as a gap. Do not block on partial inputs -- consolidate what is available.
+Read 4 audit output files from `tasks/{team}/`: `p2-audit-static.md`, `p2-audit-behavioral.md`, `p2-audit-relational.md`, `p2-audit-impact.md`. Extract key metrics (counts, risk levels), primary findings (top by severity), and coverage status. Missing or partial outputs are gaps — do not block; consolidate what is available.
 
 ### 2. Cross-Reference Dimensions
-Discover compound patterns that individual audits cannot detect:
+Discover compound patterns spanning multiple dimensions:
+- **Dependency + Behavior**: Hotspot files (audit-static) with HIGH behavioral risk (audit-behavioral) → critical nodes.
+- **Relationship + Impact**: Broken relationships (audit-relational) on high-severity propagation paths (audit-impact) → integrity risks.
+- **Static + Relational Consistency**: High fan-in files (audit-static) missing from relationship declarations (audit-relational) → undeclared dependencies.
+- **Behavioral + Impact Compound**: Predicted regressions (audit-behavioral) on TRANSITIVE paths (audit-impact) → cascading regression risks.
 
-**Dependency + Behavior Intersection**:
-- Hotspot files (audit-static) that also have HIGH behavioral risk (audit-behavioral)
-- These are critical nodes: structurally central AND behaviorally fragile
-
-**Relationship + Impact Intersection**:
-- Broken relationships (audit-relational) along high-severity propagation paths (audit-impact)
-- These are integrity risks: the system's declared relationships are unreliable exactly where changes will propagate
-
-**Static + Relational Consistency**:
-- Files with high fan-in (audit-static) but missing from relationship declarations (audit-relational)
-- These are undeclared dependencies: structurally coupled but not semantically acknowledged
-
-**Behavioral + Impact Compound Risk**:
-- Components with predicted regressions (audit-behavioral) on TRANSITIVE propagation paths (audit-impact)
-- These are cascading regression risks: a behavioral change that ripples through multiple hops
-
-For each compound pattern, document:
-- Which dimensions intersect and how
-- Which files/components are involved
-- Compound severity (typically higher than either individual finding)
-- Evidence from both dimensions (file:line references)
+> Cross-dimensional pattern discovery heuristics and conflict resolution algorithm: read `resources/methodology.md`
 
 ### 2.5. Aggregate CC-Native Claims
+Collect all `[CC-CLAIM]` tagged items from research-codebase and research-external outputs. Deduplicate, categorize by type (FILESYSTEM, PERSISTENCE, STRUCTURE, CONFIG, BEHAVIORAL), and priority-rank (PERSISTENCE highest). Include in L2 with routing recommendation for research-cc-verify.
 
-Collect all `[CC-CLAIM]` tagged items from research-codebase and research-external outputs:
+> Claim deduplication protocol and priority ranking detail: read `resources/methodology.md`
 
-1. **Scan** both research outputs for `[CC-CLAIM]` markers
-2. **Deduplicate** claims that appear in both sources (same behavioral assertion, different evidence)
-3. **Categorize** by type: FILESYSTEM, PERSISTENCE, STRUCTURE, CONFIG, BEHAVIORAL
-4. **Priority rank** by verification importance:
-   - PERSISTENCE claims → highest priority (hardest to verify, most costly if wrong)
-   - CONFIG/STRUCTURE → medium priority (file-based verification straightforward)
-   - BEHAVIORAL → lowest priority (may require deeper investigation beyond file inspection)
+### 3–5. Produce Tiered Output (L1, L2, L3)
+Produce 6 files: L1 compact YAML index (≤30 lines), L2 executive summary (≤200 lines), and 4 L3 per-dimension files. L1 drives Lead routing. L2 supplements routing decisions. L3 files carry complete per-dimension data plus compound patterns for plan-phase skills.
 
-Include aggregated claims in L2 summary with routing recommendation: "Route to research-cc-verify before ref cache update if cc_native_claims > 0."
-
-### 3. Produce L1 Index
-The L1 index is what Lead always reads. Keep it compact and routing-focused.
-
-Content:
-```yaml
-domain: research
-skill: coordinator
-status: PASS|PARTIAL|FAIL
-dimensions_received: 4
-dimensions_complete: 0
-compound_patterns: 0
-overall_risk: HIGH|MEDIUM|LOW
-critical_findings: 0
-audit_summary:
-  static: {status, hotspots, cycles}
-  behavioral: {status, high_risks, conflicts}
-  relational: {status, broken, integrity_pct}
-  impact: {status, critical_paths, maintenance_risk}
-routing_recommendation: ""
-```
-
-The `routing_recommendation` field tells Lead which plan-phase skills need special attention based on findings.
-
-### 4. Produce L2 Summary
-The L2 summary is what Lead reads when routing decisions need more context than L1 provides.
-
-Content:
-- Executive summary: 3-5 sentences covering overall research health
-- Compound pattern highlights: top 3 compound patterns with brief descriptions
-- Risk distribution: how many HIGH/MEDIUM/LOW findings across all dimensions
-- Gap report: any missing or partial audit dimensions
-- Routing guidance: which plan-* skills need which L3 files and why
-
-Keep L2 under 200 lines. It should inform Lead's routing, not replace L3 detail.
-
-### 5. Produce L3 Per-Dimension Files
-Four L3 files, each containing the full detail for one audit dimension plus relevant compound patterns:
-
-**`p2-coordinator-static.md`** (for plan-static):
-- Full dependency DAG from audit-static
-- Hotspot analysis with all connected files
-- Compound patterns involving static dimension
-- Recommended decomposition constraints (e.g., "do not split hotspot X across tasks")
-
-**`p2-coordinator-behavioral.md`** (for plan-behavioral):
-- Full behavior prediction table from audit-behavioral
-- Risk classification with all evidence
-- Compound patterns involving behavioral dimension
-- Recommended strategy constraints (e.g., "sequence task Y before Z to manage regression risk")
-
-**`p2-coordinator-relational.md`** (for plan-relational):
-- Full relationship graph from audit-relational
-- Integrity issues with all evidence
-- Compound patterns involving relational dimension
-- Recommended interface constraints (e.g., "verify A->B contract before implementing C")
-
-**`p2-coordinator-impact.md`** (for plan-impact + execution-impact):
-- Full propagation path table from audit-impact
-- Shift-Left data for execution-impact (P6)
-- Compound patterns involving impact dimension
-- Recommended sequencing constraints based on propagation paths
-
-### Delegation Prompt Specification (Coordinator Pattern)
-
-#### COMPLEX Tier (single analyst, extended turns)
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  - INCLUDE: Paths to 4 audit outputs (`tasks/{team}/p2-audit-static.md`, `tasks/{team}/p2-audit-behavioral.md`, `tasks/{team}/p2-audit-relational.md`, `tasks/{team}/p2-audit-impact.md`). Missing/partial dimension status. Output path prefix (`tasks/{team}/p2-coordinator-{file}.md`).
-  - EXCLUDE: Individual claim evidence from audit L2 bodies. Historical rationale for audit findings. Full pipeline state beyond P2 audit results.
-- **Task**: "Read all available audit dimension outputs. Extract key metrics and top findings from each. Cross-reference dimensions for compound patterns (dependency+behavior, relationship+impact, static+relational, behavioral+impact intersections). Produce 6 files: `tasks/{team}/p2-coordinator-index.md` (L1 compact YAML), `tasks/{team}/p2-coordinator-summary.md` (L2, <200 lines, executive overview + routing guidance), and 4x L3 files `tasks/{team}/p2-coordinator-static.md`, `tasks/{team}/p2-coordinator-behavioral.md`, `tasks/{team}/p2-coordinator-relational.md`, `tasks/{team}/p2-coordinator-impact.md` with full data + compound patterns."
-- **Constraints**: Read-only consolidation (analyst agent, no Bash). No new Grep/Glob research. L1 index ≤30 YAML lines. L2 ≤200 lines. maxTurns: 35.
-- **Expected Output**: 6 files in `tasks/{team}/`: `p2-coordinator-index.md` (L1), `p2-coordinator-summary.md` (L2), `p2-coordinator-static.md`, `p2-coordinator-behavioral.md`, `p2-coordinator-relational.md`, `p2-coordinator-impact.md` (L3). L1: status, dimensions, compound patterns, overall risk, routing recommendation. L2: executive summary, highlights, risk distribution, gap report. L3: complete per-dimension data with cross-referenced compound patterns.
-- **Delivery**: SendMessage to Lead: `PASS|dimensions:4|patterns:{N}|ref:tasks/{team}/p2-coordinator-index.md`
-
-#### STANDARD Tier (single analyst, standard turns)
-Same structure as COMPLEX. maxTurns: 30. Fewer compound pattern intersections expected.
-
-#### TRIVIAL Tier
-Lead-direct inline consolidation. Merge ≤2 dimension summaries into single output file. No tiered output hierarchy.
-
-#### Partial Dimension Failure
-If 1-2 audit dimensions are missing: proceed with available data. L1 marks missing dimensions. L3 files only created for available dimensions. Compound patterns involving missing dimensions noted as gaps in L2.
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
+> L3 format templates, deduplication protocol, DPS template, deferred spawn pattern: read `resources/methodology.md`
 
 ## Failure Handling
 
@@ -207,31 +86,18 @@ If 1-2 audit dimensions are missing: proceed with available data. L1 marks missi
 | Dimension output structurally incompatible | L3 Restructure | Modify L3 format contract, re-run affected dimension |
 | 2+ dimensions persistently failing, 3+ L2 failures | L4 Escalate | AskUserQuestion with dimension status summary |
 
-### Missing Audit Outputs
-- **1-2 audits missing**: Proceed with available dimensions. Mark missing dimensions in L1. Compound patterns involving missing dimensions are not discoverable -- note this as a gap.
-- **3-4 audits missing**: FAIL. Insufficient data for meaningful consolidation. Route to Lead for audit re-execution.
-- **Route**: Lead with list of missing audits and their expected output locations
-
-### Contradictory Cross-Dimensional Findings
-- **Cause**: Two audit dimensions produce conflicting assessments of the same component
-- **Action**: Document both perspectives in L2 with evidence from each dimension. Do not auto-resolve.
-- **Route**: Lead for disposition (may require re-running one audit with refined scope)
-
-### Output Directory Not Writable
-- **Cause**: `tasks/{team}/p2-coordinator-{file}.md` path not writable
-- **Action**: FAIL with filesystem error details
-- **Route**: Lead for infrastructure resolution
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
 
 ### DO NOT: Filter Out Low-Severity Findings in L3
-L3 files should contain complete dimension data. Low-severity findings in one dimension may become high-severity when combined with findings from another dimension in plan-phase analysis. Preserve all data.
+L3 files must contain complete dimension data. Low-severity findings in one dimension may become high-severity when combined with another dimension in plan-phase analysis.
 
 ### DO NOT: Add New Research in Coordinator
-Coordinator consolidates existing audit findings. If a gap is discovered during consolidation, note it as a gap recommendation in L2. Do not perform new Grep/Glob/Read analysis to fill the gap.
+Coordinator consolidates existing audit findings only. Gaps discovered during consolidation are noted as gap recommendations in L2 — do not perform new Grep/Glob/Read to fill them.
 
 ### DO NOT: Bloat L1 Index
-L1 index must stay compact for Lead context budget. Move any detail beyond summary metrics and routing recommendation to L2 or L3. If L1 exceeds 30 lines of YAML, it is too large.
+L1 must stay compact for Lead context budget. Any detail beyond summary metrics and routing recommendation belongs in L2 or L3. If L1 exceeds 30 YAML lines, it is too large.
 
 ## Transitions
 
@@ -260,6 +126,9 @@ L1 index must stay compact for Lead context budget. Move any detail beyond summa
 | Cross-dimensional contradiction | Lead | Both findings with dimension sources |
 | Output directory error | Lead | Filesystem error details |
 
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
+
 ## Quality Gate
 - All available audit dimensions ingested and represented in output
 - Compound patterns documented with evidence from both contributing dimensions
@@ -268,7 +137,7 @@ L1 index must stay compact for Lead context budget. Move any detail beyond summa
 - L3 files contain complete per-dimension data plus relevant compound patterns
 - Missing dimensions explicitly noted in L1 and L2
 - No new research performed (consolidation only)
-- CC-native behavioral claims from research dimensions aggregated and flagged for verification
+- CC-native behavioral claims aggregated and flagged for research-cc-verify
 - All 6 output files written to `tasks/{team}/p2-coordinator-{file}.md`
 
 ## Output

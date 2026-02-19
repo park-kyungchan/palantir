@@ -31,28 +31,28 @@ disable-model-invocation: true
 
 ### Tier Classification for Code Execution
 Lead determines tier based on orchestrate-coordinator output:
-- **TRIVIAL indicators**: Single task in matrix, 1-2 files assigned, no inter-file dependencies, simple change type (rename, config update, string change)
-- **STANDARD indicators**: 2-3 tasks in matrix, 3-6 files across 1-2 modules, some interface dependencies between tasks, moderate change type (new function, API endpoint, component)
-- **COMPLEX indicators**: 4+ tasks in matrix, 7+ files across 3+ modules, circular or deep dependency chains, architectural change type (new module, refactor, migration)
+- **TRIVIAL**: Single task in matrix, 1-2 files, no inter-file deps, simple change type
+- **STANDARD**: 2-3 tasks, 3-6 files across 1-2 modules, some interface deps, moderate change type
+- **COMPLEX**: 4+ tasks, 7+ files across 3+ modules, deep dependency chains, architectural change type
 
 ### Spawn vs Lead-Direct Decision
-- **Lead-direct** (no spawn): Only for TRIVIAL tier when Lead already has the exact code change in context (e.g., from a previous implementer's completion summary). Requires: file path known, change < 20 lines, no test required.
-- **Spawn implementer** (default): All other cases. Even simple changes benefit from implementer's Bash access for testing.
-- **Never Lead-direct**: Changes requiring `npm test`, `pytest`, compilation, or any build step — Lead has no Bash.
+- **Lead-direct** (no spawn): TRIVIAL only — exact change already in context, file path known, < 20 lines, no test required.
+- **Spawn implementer** (default): All other cases. Changes requiring `npm test`, `pytest`, compilation, or any build step always spawn.
+- **Never Lead-direct**: Anything requiring Bash — Lead has no Bash.
 
 ### Input Validation Before Proceeding
-Before spawning implementers, verify:
-1. orchestrate-coordinator L1 shows `status: PASS` — never execute from FAIL orchestration
-2. Task-teammate matrix has complete file assignments (no empty `files[]` arrays)
+Before spawning, verify:
+1. orchestrate-coordinator L1 shows `status: PASS`
+2. Task-teammate matrix has complete file assignments (no empty `files[]`)
 3. Interface contracts exist for all cross-task dependencies
-4. No file appears in multiple task assignments (ownership conflict)
+4. No file appears in multiple task assignments
 
-If any validation fails: route back to orchestrate-coordinator with specific failure reason.
+If any fails: route back to orchestrate-coordinator with specific failure reason.
 
 ### Parallel vs Sequential Spawning
-- **Parallel** (default for STANDARD/COMPLEX): When implementer task groups have no shared files and no producer-consumer dependency
-- **Sequential**: When Task B depends on Task A's output file (e.g., Task A creates a module, Task B imports from it). Sequence determined by plan-relational dependency order.
-- **Mixed**: In COMPLEX tier, spawn independent groups in parallel, then sequential groups after dependencies complete.
+- **Parallel** (default STANDARD/COMPLEX): No shared files and no producer-consumer dependency.
+- **Sequential**: Task B depends on Task A's output file. Determined by plan-relational dependency order.
+- **Mixed** (COMPLEX): Spawn independent groups in parallel; sequential groups after dependencies complete.
 
 ## Methodology
 
@@ -61,70 +61,33 @@ Load orchestrate-coordinator PASS report and task-teammate matrix.
 Extract file assignments, dependency order, and interface contracts per implementer.
 
 ### 2. Spawn Implementers
-For each task group in the matrix:
-- Create Task with `subagent_type: implementer`
+For each task group in the matrix, create Task with `subagent_type: implementer`.
 
 Construct each delegation prompt with:
-- **Context (D11 — cognitive focus first)**:
-  - INCLUDE: Exact task row from orchestrate-coordinator matrix (task_id, description, assigned files). Interface contracts verbatim from plan-relational: function signatures, data types, return values, error types. PT subject and acceptance criteria.
-  - EXCLUDE: Other implementers' task details. ADR rationale (pass WHAT decisions, not WHY). Full pipeline state beyond this task group. Rejected design alternatives.
-  - Budget: Context field ≤ 30% of implementer effective context.
-- **Task**: List exact file paths to create/modify. For each file, specify: what function/class/method to implement, what behavior it should exhibit, what tests to satisfy. Reference existing patterns: "Follow the pattern in `<existing_file>:<line_range>` for consistency."
-- **Constraints**: Scope limited to non-.claude/ application source files only. Do NOT modify .claude/ files, test fixtures, or unrelated modules. If a dependency file needs changes, report it — do not modify files outside your assignment.
-- **Expected Output**: Report completion as L1 YAML with `files_changed` (array of paths), `status` (complete|failed), and `blockers` (array, empty if none). Provide L2 markdown summarizing what was implemented, key decisions made, and any deviations from the plan.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+- **Context (D11)**: INCLUDE: task row from coordinator matrix, interface contracts from plan-relational verbatim, PT acceptance criteria. EXCLUDE: other implementers' tasks, ADR rationale, full pipeline state, rejected alternatives. Budget ≤ 30% of implementer context.
+- **Task**: List exact file paths. Specify function/class/method to implement, behavior, tests to satisfy. Reference existing patterns by `file:line_range`.
+- **Constraints**: Non-.claude/ source files only. Report (don't fix) issues in unassigned files.
+- **Expected Output**: L1 YAML: `files_changed[]`, `status`, `blockers[]`. L2 markdown: implementation summary, key decisions, deviations.
+- **Delivery (Four-Channel)**: Ch2: `tasks/{team}/p6-{task_id}-output.md`. Ch3 micro-signal to Lead. Ch4 P2P READY signal to COMM_PROTOCOL NOTIFY targets.
 
-#### Tier-Specific DPS Variations
-
-**TRIVIAL DPS Additions:**
-- Context: Include full file content (small files, fits in context). No need for line range references.
-- Task: Specify exact diff: "Change line X from `old` to `new`". Include expected test command: "Run `npm test -- --grep 'test name'` to verify."
-- Constraints: Single file only. If change requires touching a second file, escalate to STANDARD.
-- maxTurns: 15 (small scope, quick completion expected)
-
-**STANDARD DPS Additions:**
-- Context: Include file headers and relevant functions (not full files). Reference line ranges: "See `src/auth.ts:45-80` for the existing pattern."
-- Task: Describe behavior change, not exact diff. Let implementer decide implementation approach within interface contracts.
-- Constraints: Scope limited to assigned files only. Report (don't fix) issues in unassigned files.
-- maxTurns: 25 (moderate scope)
-
-**COMPLEX DPS Additions:**
-- Context: Include architecture summary from design-architecture L2. Include interface contracts from plan-relational for ALL cross-boundary interactions. Include dependency order from plan-behavioral.
-- Task: Describe component-level goals. Reference test suites: "All tests in `tests/auth/` must pass after changes."
-- Constraints: Own files only. Use interface contracts as boundaries — do not reach into other implementers' file assignments.
-- maxTurns: 30 (full scope, may need exploration)
+> For tier-specific DPS content (TRIVIAL/STANDARD/COMPLEX maxTurns and context rules): read `resources/methodology.md`
 
 ### 3. Monitor Progress
-During implementation:
-- Receive implementer completion summary via SendMessage
-- Track files_changed count against expected
-- If implementer reports blocker: assess and provide guidance
+- Receive Ch3 micro-signals from implementers (status only, not full data)
+- Track `files_changed` count against expected from L3 execution plan
+- **Sequential deps**: COMM_PROTOCOL AWAIT/NOTIFY enables self-coordination — Lead does NOT relay data between waves
 
-#### Monitoring Heuristics
-- **Healthy progress**: Implementer reports files_changed incrementally, no blockers
-- **Stalled**: No L1 update after maxTurns/2 — read L2 for status, consider guidance message
-- **Blocked on dependency**: Implementer reports blocker referencing another implementer's file — hold this implementer, accelerate the dependency
-- **Scope creep detected**: Implementer modifying files outside assignment — send correction via new spawn, reference constraint in original DPS
-- **Test failures**: Implementer reports test failures — check if test expectations match design-interface contracts; if contract mismatch, escalate to plan revision rather than forcing implementer to work around incorrect contract
+> For monitoring heuristics (healthy/stalled/blocked/scope-creep/test-failure patterns): read `resources/methodology.md`
 
 ### 4. Handle Failures
-If an implementer fails or produces incorrect output:
-- Read their L2 for error details
-- Provide corrected instructions via new spawn
-- Max 3 retry iterations per implementer
+Read implementer L2 for error details. Provide corrected instructions via new spawn. Max 3 retry iterations per implementer.
 
 ### 5. Consolidate Results
-After all implementers complete:
-- Collect L1 YAML from each implementer
-- Build unified file change manifest
-- Report to execution-review for validation
-
-**SRC Integration**: After consolidation, Lead should route to execution-impact for dependency analysis before proceeding to execution-review. SubagentStop hook will inject SRC IMPACT ALERT into Lead's context when implementers finish.
+Collect L1 YAML from each implementer. Build unified file change manifest. Check SubagentStop hook SRC IMPACT ALERT. Route to execution-impact, then execution-review.
 
 ### Iteration Tracking (D15)
-- Lead manages `metadata.iterations.execution_code: N` in PT before each invocation
-- Iteration 1-2: strict mode (FAIL → return to execution-review for re-assessment)
-- Iteration 3+: auto-PASS with documented gaps; escalate to L4 if critical findings remain
+- `metadata.iterations.execution_code: N` in PT before each invocation
+- Iter 1-2: strict (FAIL → execution-review re-assessment). Iter 3+: auto-PASS with gaps; L4 if critical.
 - Max iterations: 2
 
 ## Failure Handling
@@ -134,41 +97,41 @@ After all implementers complete:
 | Tool error, implementer spawn timeout | L0 Retry | Re-invoke same implementer with same DPS |
 | Implementer output incomplete or off-scope | L1 Nudge | SendMessage with corrected constraints or scope |
 | Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS |
-| File ownership conflict or dependency broken between task groups | L3 Restructure | Reassign files, reorder task graph, split tasks |
-| All implementers failed after L2, architectural issue suspected | L4 Escalate | AskUserQuestion with situation summary + options |
+| File ownership conflict or dependency broken | L3 Restructure | Reassign files, reorder task graph, split tasks |
+| All implementers failed after L2, architectural issue | L4 Escalate | AskUserQuestion with situation summary + options |
 
-- **Retries exhausted (3 per implementer)**: Set task `status: failed`, include `blockers` array with error details and last attempt output
-- **Partial completion**: Set skill `status: partial`, include completed tasks in manifest alongside failed ones
-- **Routing**: Route to execution-review with FAIL status -- review assesses if partial results are usable
-- **Pipeline impact**: Non-blocking. Pipeline continues with partial results; review decides if rework needed
+- **Retries exhausted**: Set task `status: failed`, include `blockers[]` with error details and last attempt output
+- **Partial completion**: Set skill `status: partial`; route to execution-review — review decides if rework needed
+- **Pipeline impact**: Non-blocking. Pipeline continues with partial results.
+
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
 
 ### DO NOT: Spawn Without Interface Contracts
-Never spawn an implementer for a task that has cross-file dependencies without providing interface contracts from plan-relational. The implementer will guess at interfaces, creating integration bugs that are expensive to fix in execution-review.
+Never spawn for cross-file dependency tasks without plan-relational interface contracts. Implementer will guess at interfaces — integration bugs are expensive to fix in execution-review.
 
 ### DO NOT: Overlap File Ownership
-Never assign the same file to multiple implementers. This creates merge conflicts that neither implementer can resolve. If a file needs changes from multiple tasks, assign it to one implementer and provide the combined requirements.
+Never assign the same file to multiple implementers. If a file needs changes from multiple tasks, assign to one implementer with combined requirements.
 
 ### DO NOT: Retry Infinitely
-Max 3 retry iterations per implementer. After 3 failures on the same task, the issue is likely architectural (wrong approach, missing dependency, incorrect interface). Route to execution-review for assessment rather than spawning a 4th implementer.
+Max 3 iterations per implementer. After 3 failures, the issue is likely architectural — route to execution-review, not a 4th implementer.
 
 ### DO NOT: Mix Code and Infra
-Never assign .claude/ files to a code implementer. Code implementers have Bash but lack the INFRA context. Route .claude/ changes to execution-infra exclusively.
+Never assign .claude/ files to a code implementer. Route .claude/ changes to execution-infra exclusively.
 
 ### DO NOT: Skip SRC Integration
-After consolidation, always check for SubagentStop hook's SRC IMPACT ALERT. Skipping execution-impact means cascade-worthy changes slip through undetected.
+Always check for SubagentStop hook's SRC IMPACT ALERT after consolidation. Skipping execution-impact lets cascade-worthy changes slip through.
 
-### DO NOT: Use `run_in_background: true` for Dependent Tasks
-Background implementers can't receive mid-task guidance. Use background only for independent tasks where no mid-execution course correction is expected.
+### DO NOT: Background Dependent Tasks
+Background implementers can't receive mid-task guidance. Use background only for independent tasks.
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+P2+ Team mode. Four-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers). Sequential deps use COMM_PROTOCOL AWAIT/NOTIFY — Lead is NOT in the data path. No overlapping file edits with parallel agents.
+
+> Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
 
 ## Transitions
 
@@ -178,7 +141,7 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | orchestrate-coordinator | Unified execution plan with code task assignments | L1 YAML: `tasks[].{task_id, implementer, files[], dependencies[]}` |
 | plan-relational | Interface contracts for cross-task boundaries | L2 markdown: function signatures, data types, error contracts |
 | plan-behavioral | Execution sequence and parallel groups | L2 markdown: dependency graph, parallel opportunities |
-| design-architecture | Component structure (for COMPLEX DPS context) | L2 markdown: module boundaries, data flow |
+| design-architecture | Component structure (COMPLEX DPS context only) | L2 markdown: module boundaries, data flow |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
@@ -195,6 +158,9 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 | Partial completion | execution-review (PASS with warnings) | Completed + failed task separation |
 | Assignment invalid | orchestrate-coordinator | Specific validation failure reason |
 | Interface contract mismatch | plan-relational | Mismatched contract details from implementer report |
+
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
 - All assigned files have been modified/created

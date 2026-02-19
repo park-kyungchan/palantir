@@ -25,9 +25,7 @@ disable-model-invocation: false
 - **STANDARD**: Spawn analyst (maxTurns:25). Map design changes to existing behaviors. Predict side effects.
 - **COMPLEX**: Spawn 2 analysts scoped by subsystem (maxTurns:25 each). Each predicts behavior changes within assigned component boundaries.
 
-## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `tasks/{team}/p2-audit-behavioral.md`, sends micro-signal: `PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral.md`.
+> Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
 ## Decision Points
 
@@ -36,95 +34,33 @@ Based on design-architecture change scope breadth.
 - **≤5 behavior-bearing components**: Single analyst covers all. maxTurns: 20.
 - **6-15 components**: Single analyst, prioritize by risk. maxTurns: 25.
 - **>15 components**: Spawn 2 analysts scoped by subsystem. maxTurns: 25 each.
-- **Default**: Single analyst (STANDARD tier).
 
-### Risk Escalation Threshold
-- **Conservative (escalate at MEDIUM)**: When design changes affect error handling or fallback paths.
-- **Standard (escalate at HIGH only)**: Default for most changes.
+### Risk Classification
+- **HIGH**: Breaks observable behavior, no fallback, affects multiple downstream components. Block implementation if unmitigated.
+- **MEDIUM**: Detectable change, fallback exists or single-component impact. Include regression test in plan.
+- **LOW**: Minor change, easily reversible, limited blast radius. Note in plan only.
+
+> Detailed scoring rubrics, pattern taxonomy, regression risk formula: read `resources/methodology.md`
 
 ## Methodology
 
 ### 1. Ingest Wave 1 Findings
-Read research-codebase L1/L2 to extract:
-- Existing runtime behaviors (hook execution order, event handling, file processing flows)
-- Current error handling patterns and their expected behavior
-- State management patterns (configuration loading, caching, persistence)
-
-Read research-external L2 for:
-- Known issues and workarounds in external dependencies
-- Documented behavioral quirks that design changes might interact with
-
-Read design-architecture L1/L2 for:
-- Which components are being added, modified, or removed
-- Architecture decisions that change existing control flow
+Read research-codebase L1/L2 for existing runtime behaviors, error handling, and state management patterns. Read research-external L2 for known issues and behavioral quirks. Read design-architecture L1/L2 for component modifications and ADRs.
 
 ### 2. Identify Behavior-Bearing Components
-A behavior-bearing component is any file/module whose execution produces observable effects:
-- **Control flow**: Files that determine execution order (hooks, routers, dispatchers)
-- **State mutation**: Files that read/write configuration, cache, or persistent state
-- **External interaction**: Files that call external services, tools, or MCP servers
-- **Error handling**: Files with try/catch, error propagation, or fallback logic
-
-For each component, document:
-- Current behavior (what it does now, with file:line reference)
-- Design change affecting it (which architecture decision modifies this component)
-- Overlap zone: where current behavior and design change intersect
+Tag control flow, state mutation, external interaction, and error handling files. For each: document current behavior (file:line), the design change affecting it, and the overlap zone.
 
 ### 3. Predict Side Effects and Regressions
-For each affected behavior-bearing component, predict:
-
-**Side Effects** (new behaviors introduced by the design change):
-- What new behavior will this component exhibit?
-- Which other components will be affected by this new behavior?
-- Is the side effect intended by the architecture decision or unintended?
-
-**Regressions** (existing behaviors that may break):
-- Which current behavior is at risk of breaking?
-- What is the regression mechanism? (removed dependency, changed interface, altered timing)
-- Is the regression detectable during implementation or only at runtime?
-
-Evidence requirement: Every prediction must reference both the current behavior (file:line) and the design decision (ADR or component spec) that creates the risk.
+Per component: predict new behaviors (side effects) and at-risk behaviors (regressions). Evidence requirement: current code file:line AND triggering design decision (ADR reference).
 
 ### 4. Classify Risk Levels
-Apply risk classification to each prediction:
+Apply HIGH/MEDIUM/LOW criteria from Decision Points. Risk factors that increase severity: high fan-in, no test coverage, error-handling paths, multiple interacting design decisions at the same component.
 
-| Risk Level | Criteria | Action Guidance |
-|-----------|---------|-----------------|
-| HIGH | Breaks existing observable behavior, no fallback exists, affects multiple downstream components | Must be addressed in plan phase. Block implementation if unmitigated. |
-| MEDIUM | Changes behavior in detectable ways, fallback exists or impact is contained to one component | Document in plan. Implementation should include regression test. |
-| LOW | Minor behavioral change, easily reversible, limited blast radius | Note in plan. No special handling required. |
+### 5. Report Predictions
+Produce per-component behavior change table, side effect inventory, regression risk matrix (HIGH first), cross-component interaction warnings, and summary statistics (total changes, H/M/L distribution).
 
-Risk factors that increase severity:
-- Component is a hotspot (high fan-in from audit-static perspective)
-- No existing test coverage for the affected behavior
-- Change affects error handling or fallback paths
-- Multiple design decisions interact at the same component
-
-### 5. Report Predictions and Risk Classification
-Produce final output with:
-- Per-component behavior change table with current vs predicted behavior
-- Side effect inventory with intended/unintended classification
-- Regression risk matrix sorted by risk level (HIGH first)
-- Cross-component interaction warnings (when multiple predictions affect the same downstream)
-- Summary: total changes predicted, risk distribution (HIGH/MEDIUM/LOW counts)
-
-### Delegation Prompt Specification
-
-#### COMPLEX Tier (2 parallel analysts)
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-    INCLUDE: research-codebase L1/L2 behavior patterns; research-external L2 known issues and quirks; design-architecture L1 components[] with change scope; assigned subsystem {subsystem_name}.
-    EXCLUDE: Other audit dimensions' results (static/relational/impact); pre-design conversation history; full pipeline state (P2 phase only).
-    Budget: Context field ≤ 30% of teammate effective context.
-- **Task**: "Identify all behavior-bearing components within assigned subsystem. For each: document current behavior (file:line), predict side effects and regressions from design changes, classify risk (HIGH/MEDIUM/LOW) with evidence from both current code and design decisions."
-- **Constraints**: Read-only analysis (analyst agent, no Bash). Scope to assigned subsystem only. No prescriptive recommendations. maxTurns: 25.
-- **Expected Output**: L1 YAML: total_changes, risk_high/medium/low, conflicts. L2: per-component behavior change table, side effect inventory, regression risk matrix.
-- **Delivery**: SendMessage to Lead: `PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral.md`
-
-#### STANDARD Tier (single analyst)
-Same as COMPLEX but single analyst covering all components. No subsystem partitioning.
-
-#### TRIVIAL Tier
-Lead-direct inline. Read 1-2 behavior-bearing files, note obvious risk. No formal DPS.
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
+> Detailed scoring rubrics, DPS template, edge case handling: read `resources/methodology.md`
 
 ## Failure Handling
 
@@ -136,31 +72,18 @@ Lead-direct inline. Read 1-2 behavior-bearing files, note obvious risk. No forma
 | Subsystem scope conflict between parallel analysts | L3 Restructure | Modify subsystem boundaries, reassign components |
 | Design conflict requiring strategic decision, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
-### No Behavior-Bearing Components Found
-- **Cause**: Design changes only affect static content (documentation, configuration values)
-- **Action**: Report `changes: 0, risks: 0`. This is valid for documentation-only changes.
-- **Route**: research-coordinator with empty prediction set
-
-### Design Scope Too Broad
-- **Cause**: Architecture decisions affect many components, analyst cannot cover all within turn budget
-- **Action**: Prioritize HIGH-risk components. Report partial coverage with uncovered component list.
-- **Route**: research-coordinator with partial flag
-
-### Conflicting Predictions
-- **Cause**: Two design decisions create contradictory behavior predictions for the same component
-- **Action**: Document both predictions. Flag as design conflict requiring resolution.
-- **Route**: research-coordinator with conflict flag for escalation
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
 
 ### DO NOT: Prescribe Solutions
-Behavioral audit predicts what will happen, not what should be done about it. Statements like "refactor component X to avoid regression" are plan-phase work. Report the prediction and let plan skills determine the response.
+Behavioral audit predicts outcomes, not remedies. Statements like "refactor component X to avoid regression" are plan-phase work — report the prediction only.
 
 ### DO NOT: Predict Without Evidence
-Every prediction must cite both the current behavior (file:line) and the design decision creating the change. Speculation without grounding in concrete code or architecture decisions is not a valid prediction.
+Every prediction must cite current behavior (file:line) AND the design decision creating the change. Speculation without concrete code or ADR grounding is not a valid prediction.
 
 ### DO NOT: Conflate Static and Behavioral Analysis
-Import chains and file dependencies are audit-static's domain. Behavioral audit focuses on runtime effects: what happens when code executes, not which files reference which. If you find a dependency issue, note it for audit-static cross-reference but do not analyze it here.
+Import chains and file dependencies belong to audit-static. Focus on runtime effects only. Note dependency issues for audit-static cross-reference but do not analyze them here.
 
 ## Transitions
 
@@ -182,6 +105,9 @@ Import chains and file dependencies are audit-static's domain. Behavioral audit 
 | No behavior-bearing components | research-coordinator | Empty prediction set with explanation |
 | Analyst exhausted | research-coordinator | Partial predictions + uncovered component list |
 | Design conflict detected | research-coordinator | Conflicting predictions with both ADR references |
+
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
 - Every prediction cites current behavior (file:line) AND triggering design decision (ADR)

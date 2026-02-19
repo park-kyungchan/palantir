@@ -1,6 +1,6 @@
 # Agent System — Fields, Spawning & Subagents
 
-> Verified: 2026-02-17 via claude-code-guide team investigation
+> Verified: 2026-02-17 (initial) · 2026-02-19 (Task tool spawn + official fields re-verified via claude-code-guide)
 
 ---
 
@@ -38,20 +38,24 @@ You are a code reviewer. Never modify files, only analyze and report.
 
 ## 2. Frontmatter Fields
 
+> Source: official Anthropic docs (https://docs.anthropic.com/en/docs/claude-code/sub-agents), re-verified 2026-02-19.
+
+**Native fields (officially documented):**
+
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| name | string | yes | none | Agent identifier for subagent_type matching |
-| description | string | yes | none | L1 profile. Loaded in Task tool definition |
-| tools | list | no | all | Tool allowlist (explicit = ONLY these) |
-| disallowedTools | list | no | none | Tool denylist. If both specified, tools wins |
-| model | enum | no | inherit | Values: sonnet, opus, haiku |
-| permissionMode | enum | no | default | See table below |
-| maxTurns | number | no | unlimited | One turn = one agentic loop iteration |
-| skills | list | no | none | FULL L1+L2 content preloaded at startup |
-| mcpServers | list | no | none | MCP server access config |
-| hooks | object | no | none | Agent-scoped hooks |
-| memory | enum | no | (omit) | Values: user, project, local. Omit field for no memory. |
-| color | string | no | none | UI color coding |
+| `name` | string | **yes** | — | Agent identifier. Matched by `subagent_type` in Task tool call. Use lowercase + hyphens. |
+| `description` | string | **yes** | — | Routing intelligence — when to delegate to this agent. Auto-loaded in Task tool definition (L1 profile). |
+| `tools` | list | no | all | Tool allowlist. If specified, agent gets ONLY these tools. If omitted, inherits ALL tools from parent. |
+| `disallowedTools` | list | no | none | Tool denylist. Removed from inherited or specified list. If both `tools` + `disallowedTools` specified, `tools` wins. |
+| `model` | enum | no | inherit | Values: `sonnet`, `opus`, `haiku`, `inherit`. `inherit` = same model as parent session. |
+| `permissionMode` | enum | no | default | See table below. |
+| `maxTurns` | number | no | unlimited | Max agentic loop iterations before agent stops. |
+| `skills` | list | no | none | **Subagents only.** FULL L1+L2 content injected at startup. Subagents do NOT inherit project skills automatically — must list explicitly. **Teammates do NOT need this field**: Teammates auto-load ALL project skills' L1 (same as Lead session). If `skills` is set on a Teammate, it causes L1 double-load (auto + explicit) and wastes context budget. |
+| `mcpServers` | object | no | none | MCP servers for this agent. Each entry: server name (referencing pre-configured) or inline definition. |
+| `hooks` | object | no | none | Agent-scoped lifecycle hooks. Augments (does not override) global hooks. |
+| `memory` | enum | no | (omit) | Values: `user`, `project`, `local`. Omit field entirely to disable memory. |
+| `color` | string | no | none | **Not in official frontmatter spec table. Observed in official examples only.** UI color hint. Functionally supported but treat as unofficial. |
 
 ### Tools Field — Advanced Syntax
 
@@ -59,6 +63,23 @@ You are a code reviewer. Never modify files, only analyze and report.
 - `Task(agent_type)` restricts which subagents can be spawned: `Task(worker, researcher)`
 - `Task` without parentheses: allow spawning any subagent type
 - Omitting `Task` entirely: agent cannot spawn subagents
+
+**VERIFIED 2026-02-19 (WSL2 tmux, actual spawn test)**:
+- A Teammate that has `Task` in its `tools` CAN call `Task({subagent_type: "analyst"})` to spawn a custom `.claude/agents/analyst.md` as a regular subagent (no `team_name`).
+- The spawned agent loads its `.md` frontmatter correctly — tools, model, body all applied as defined.
+- The "No nested teams" official docs restriction = prohibits `TeamCreate` + `Task(team_name=X)` only. It does NOT block `Task(subagent_type=Y)` without `team_name`.
+- Built-in `general-purpose` has all tools including `Task` → can act as mid-tier orchestrator spawning custom agents.
+- **Spawn capability matrix (verified)**:
+
+| Agent | Has Task tool | Can spawn subagents |
+|-------|--------------|---------------------|
+| `general-purpose` (built-in) | ✅ (all tools) | ✅ |
+| `analyst` (custom) | ❌ (explicit CANNOT) | ❌ |
+| `implementer` (custom) | ❌ (explicit CANNOT) | ❌ |
+| `researcher` (custom) | ❌ (explicit CANNOT) | ❌ |
+| `infra-implementer` (custom) | ❌ (explicit CANNOT) | ❌ |
+
+To enable a custom agent to spawn subagents: add `Task` or `Task(allowed_type)` to its `tools` field.
 - MCP tools: `mcp__servername__toolname`
 - When `memory` is enabled: Read, Write, Edit are auto-added to tools regardless of tools field
 - **IMPORTANT**: When `memory` is enabled, Read, Write, Edit are auto-added to tools regardless of explicit `tools` field. This means agent tool isolation is partially broken for memory-enabled agents — they always have file manipulation capability.
@@ -148,22 +169,59 @@ Background subagent outputs truncated to 30,000 characters. Full output written 
 
 ---
 
-## 5. Our Usage Pattern
+## 5. Our Usage Pattern (v2 — 2026-02-19)
 
-- All 6 agents: name, description, tools (explicit allowlist), maxTurns
-- 4 agents: memory: project (analyst, researcher, implementer, infra-implementer)
-  - When memory enabled: Read, Write, Edit auto-added to tools (regardless of explicit tools field)
-- 2 agents: model: haiku (pt-manager, delivery-agent)
-- 2 agents: hooks (implementer, infra-implementer: PostToolUse + PostToolUseFailure)
-- Note: `Stop` hooks in agent frontmatter auto-convert to `SubagentStop` events (confirmed)
-- Note: Agent-scoped hooks AUGMENT global hooks (both fire). Hooks cleaned up when agent finishes.
-- 0 agents: permissionMode, skills, mcpServers, disallowedTools
+> 7 agents total (v2 rebuild): `analyst`, `researcher`, `coordinator` ★NEW, `implementer`, `infra-implementer`, `delivery-agent`, `pt-manager`.
+> 
+> **Design principles:**
+> - Teammate agents: `skills` field REMOVED (Teammates auto-load all project skills' L1)
+> - Subagent agents (pt-manager, delivery-agent): `skills` field KEPT (Subagents need explicit)
+> - Coordinator: `Task(analyst, researcher)` for Sub-Orchestrator pattern
+> - Researcher: MCP-only enforcement via dual hooks (WebSearch/WebFetch blocked)
+> - Body minimized: Completion Protocol moved to CLAUDE.md, body = Core Rules only
+
+| Field | Agents using it | Notes |
+|-------|----------------|-------|
+| `name` + `description` + `tools` + `maxTurns` + `color` | All 7 | Base fields present in every agent |
+| `skills` | **2/7** (pt-manager, delivery-agent only) | Subagent-only field. Removed from Teammate agents to prevent L1 double-load. |
+| `memory: project` | 5 (analyst, researcher, coordinator, implementer, infra-implementer) | Auto-adds Read/Write/Edit to tools. Teammates only. |
+| `model: haiku` | 2 (pt-manager, delivery-agent) | Others inherit (sonnet from Lead) |
+| `hooks` | **4/7** | implementer + infra-impl: PostToolUse/Failure (file-change). researcher: PreToolUse (WebSearch block) + PostToolUseFailure (MCP stop). |
+| `Task` in tools | **1/7** (coordinator) | `Task(analyst, researcher)` — Sub-Orchestrator pattern. |
+| `permissionMode` | 0 | Not used (BUG #25037 — delegate mode breaks teammates) |
+| `mcpServers` | 0 | Not used; MCP configured at project level in `.claude.json` |
+| `disallowedTools` | 0 | Not used; explicit `tools` allowlist preferred |
+
+### Agent Taxonomy (v2)
+
+| Agent | Role | Mode | Task tool | skills | hooks |
+|-------|------|------|-----------|--------|-------|
+| `analyst` | Dimension analysis worker | Teammate | ❌ | ❌ | ❌ |
+| `researcher` | MCP-powered research worker | Teammate | ❌ | ❌ | ✅ MCP enforce |
+| `coordinator` ★ | Sub-Orchestrator / synthesis | Teammate | ✅ `Task(analyst, researcher)` | ❌ | ❌ |
+| `implementer` | Source code implementation | Teammate | ❌ | ❌ | ✅ file-change |
+| `infra-implementer` | .claude/ file implementation | Teammate | ❌ | ❌ | ✅ file-change |
+| `pt-manager` | Task lifecycle (fork) | Subagent | Task API (create/update) | ✅ | ❌ |
+| `delivery-agent` | Terminal delivery (fork) | Subagent | Task API (update only) | ✅ | ❌ |
+
+### Researcher MCP Enforcement (v2)
+
+| Hook | Event | Matcher | Action |
+|------|-------|---------|--------|
+| `block-web-fallback.sh` | PreToolUse | WebSearch\|WebFetch | exit 2 → BLOCK tool call, stderr feedback |
+| `on-mcp-failure.sh` | PostToolUseFailure | mcp__* | additionalContext → STOP directive (tavily/context7 = critical, sequential-thinking = non-critical) |
+
+**Key behavioral notes:**
+- `Stop` hooks in agent frontmatter auto-convert to `SubagentStop` events (confirmed)
+- Agent-scoped hooks AUGMENT global hooks (both fire for same event). Cleaned up when agent finishes.
+- `memory` enabled → Read, Write, Edit auto-added to tools (bypasses explicit `tools` field — partial isolation break)
+- **Coordinator Sub-Orchestrator**: spawns analyst/researcher as subagents (not teammates). No nested teams. Subagent result ≤30K chars injected into coordinator's context.
 
 ---
 
 ## 6. Agent Communication Protocol (Custom Convention)
 
-Our agents use a dual-mode completion protocol embedded in each agent body. This is NOT CC native — it's our custom convention on top of CC's file-based coordination.
+Our agents use a dual-mode completion protocol defined in CLAUDE.md (Four-Channel Handoff Protocol). Agent .md body contains role-specific Core Rules only — Completion Protocol is NOT duplicated in agent body.
 
 ### CC Native Ground Truth
 
@@ -185,5 +243,5 @@ No shared memory. No sockets/pipes/IPC. Everything is file I/O. "Automatic messa
 
 ### Agent Categories
 
-- **Dual-mode** (4 agents): analyst, researcher, implementer, infra-implementer — can run in both Local and Team mode
-- **Team-only** (2 agents): delivery-agent, pt-manager — always run in P2+ Team mode
+- **Dual-mode** (5 agents): analyst, researcher, coordinator, implementer, infra-implementer — can run in both Local and Team mode
+- **Subagent-only** (2 agents): delivery-agent, pt-manager — run as context:fork subagents

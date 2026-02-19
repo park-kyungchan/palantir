@@ -1,0 +1,14 @@
+{
+  "session_id": "aa48454d-d6ff-4c6f-beec-ea24f9d5515a",
+  "started_at": "2026-02-18T14:18:07Z",
+  "agents_spawned": [
+    {
+      "type": "infra-implementer",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T14:18:07Z"
+    }
+  ],
+  "tasks_completed": [],
+  "src_impacts": []
+}

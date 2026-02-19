@@ -26,9 +26,9 @@ disable-model-invocation: false
 ## Phase-Aware Execution
 
 This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
+- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream consumers). Lead receives status only, not full data.
 - **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+- **P2P Self-Coordination**: Read upstream outputs directly from `tasks/{team}/` files via $ARGUMENTS path. Send P2P signals to downstream consumers.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
@@ -48,70 +48,38 @@ When deciding checkpoint frequency between waves.
 ## Methodology
 
 ### 1. Read Audit-Impact L3 (Propagation Paths)
-Load the audit-impact L3 file path provided via `$ARGUMENTS`. This file contains:
-- Change propagation paths (which files are affected when file X changes)
-- Impact classification: DIRECT (1-hop import/reference) vs TRANSITIVE (2+ hops)
-- Propagation risk scores per path (likelihood of cascading failure)
-- Blast radius estimates per change point
-
-Validate the input exists and contains propagation data. If absent, route to Failure Handling (Missing Audit Input).
+Load the audit-impact L3 file path from `$ARGUMENTS`. Validate input contains propagation paths, DIRECT/TRANSITIVE classification, risk scores, and blast radius estimates. If absent, route to Failure Handling (Missing Audit Input).
+See: `resources/methodology.md §Depth Calculation Steps` for blast radius scoring.
 
 ### 2. Define Parallel Execution Groups (Max 4 Per Wave)
-Group tasks into parallel execution waves based on propagation containment:
-
-**Grouping principles:**
-- Tasks whose changes do NOT propagate to each other can run in parallel
-- Tasks whose changes DO propagate must be sequenced (producer before consumer)
-- Maximum 4 tasks per parallel wave (teammate capacity constraint)
-- Minimize total wave count (optimize for speed while respecting safety)
-
-**Group formation algorithm:**
-1. Identify tasks with zero incoming propagation (root changes) -- these form Wave 1
-2. For remaining tasks, identify those whose ALL propagation sources are in completed waves
-3. Group eligible tasks into the next wave (max 4 per wave)
-4. Repeat until all tasks assigned to a wave
+Group tasks into parallel execution waves based on propagation containment. Tasks with zero incoming propagation form Wave 1; subsequent waves contain tasks whose all sources are in completed waves.
 
 **Propagation-safe parallelism check:**
 | Condition | Parallel Safe? | Reason |
-|-----------|---------------|--------|
+|-----------|----------------|--------|
 | No propagation path between tasks | Yes | Independent changes |
 | DIRECT propagation, same direction | No | Must sequence producer -> consumer |
 | TRANSITIVE propagation only | Conditional | Safe if intermediate is stable |
 | Bidirectional propagation | No | Must merge into same wave or sequence |
 
+See: `resources/methodology.md §Wave Construction Format` for group formation algorithm and wave output format.
+
 ### 3. Set Checkpoint Boundaries Between Waves
-Insert verification checkpoints between waves to contain propagation failures:
+Insert verification checkpoints between waves to contain propagation failures.
 
 **Checkpoint placement rules:**
 - ALWAYS insert checkpoint after a wave containing high-risk propagation sources
 - ALWAYS insert checkpoint before a wave that depends on multiple prior waves
 - OPTIONAL checkpoint between low-risk sequential waves (speed vs safety tradeoff)
 
-**Checkpoint protocol:**
-```
-Checkpoint CP-{N} (after Wave {M}):
-  Verify: All Wave {M} changes are stable (no test failures, no unexpected side effects)
-  Gate: Propagation targets of Wave {M} changes are unaffected OR expected
-  On pass: Release Wave {M+1}
-  On fail: Rollback Wave {M}, assess propagation damage
-  Timeout: 5 minutes
-```
-
-**Checkpoint density by tier:**
-| Tier | Checkpoint Frequency | Rationale |
-|------|---------------------|-----------|
-| TRIVIAL | After final wave only | Low propagation risk |
-| STANDARD | After waves with DIRECT propagation | Moderate containment |
-| COMPLEX | After every wave with high-risk sources | Maximum containment |
+See: `resources/methodology.md §Checkpoint Schedule Format` for gate condition protocol.
 
 ### 4. Plan Propagation Containment Strategy
 For each identified propagation path, define containment:
-
-**Containment strategies:**
-- **Isolation**: Change is self-contained. No propagation path exits the task. Safest.
-- **Ordered propagation**: Change propagates but in a controlled, sequenced manner. Consumer wave starts after producer checkpoint passes.
-- **Blast radius limiting**: Change has wide propagation but impact is bounded. Define the boundary explicitly (which files are "inside" and "outside" blast radius).
-- **Rollback trigger**: Define what observable failure indicates uncontained propagation. Link to plan-behavioral rollback strategy for response.
+- **Isolation**: Change is self-contained. No propagation path exits the task.
+- **Ordered propagation**: Change propagates in a controlled, sequenced manner. Consumer wave starts after producer checkpoint passes.
+- **Blast radius limiting**: Change has wide propagation but impact is bounded. Define boundary explicitly.
+- **Rollback trigger**: Define observable failure indicating uncontained propagation. Link to plan-behavioral rollback strategy.
 
 **Containment classification per propagation path:**
 | Path Type | Containment | Action |
@@ -123,37 +91,9 @@ For each identified propagation path, define containment:
 | Circular propagation | Merge + isolate | Merge tasks into same wave, isolate wave |
 
 ### 5. Output Execution Sequence with Checkpoints
-Produce the complete execution sequence:
-- Wave assignments with task lists and parallel groupings
-- Checkpoint placements with gate conditions
-- Containment strategy per propagation path
-- Metrics: total waves, parallel efficiency, containment coverage
+Produce wave assignments, checkpoint placements, containment strategy per propagation path, and parallel efficiency metric (1 - parallel_time/sequential_time).
 
-**Parallel efficiency metric:**
-- Sequential time: Sum of all task durations across all waves
-- Parallel time: Sum of max-task-duration per wave
-- Efficiency: 1 - (parallel_time / sequential_time)
-
-**DPS -- Analyst Spawn Template (COMPLEX):**
-- **Context** (D11 priority: cognitive focus > token efficiency):
-  INCLUDE:
-    - research-coordinator audit-impact L3 from `tasks/{team}/p2-coordinator-audit-impact.md`
-    - Pipeline tier and iteration count from PT
-    - Task list from plan-static if available (for wave alignment)
-  EXCLUDE:
-    - Other plan dimension outputs (unless direct dependency for wave grouping)
-    - Full research evidence detail (use L3 summaries only)
-    - Pre-design and design conversation history
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Group tasks into parallel execution waves (max 4 per wave) based on propagation containment. Insert checkpoints between waves with gate conditions. Define containment strategy per propagation path (isolation/ordered/blast-limit/rollback). Calculate parallel efficiency metric."
-- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on sequencing and containment, not teammate assignment.
-- **Expected Output**: L1 YAML with wave_count, checkpoint_count, parallel_efficiency, groups[] and checkpoints[]. L2 sequencing rationale with containment strategy per path.
-- **Delivery**: Write full result to `tasks/{team}/p3-plan-impact.md`. Send micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:tasks/{team}/p3-plan-impact.md`.
-
-#### Tier-Specific DPS Variations
-**TRIVIAL**: Lead-direct. Linear sequence (1-2 groups). No propagation risk. Single final checkpoint only. Output inline.
-**STANDARD**: Spawn analyst (maxTurns: 15). Systematic grouping across 3-8 tasks. Checkpoints after DIRECT propagation waves only. Skip efficiency metric if ≤ 3 waves.
-**COMPLEX**: Full DPS above. Deep multi-wave analysis across 9+ tasks with comprehensive containment and checkpoint boundaries.
+See: `resources/methodology.md §DPS Templates` for TRIVIAL/STANDARD/COMPLEX analyst spawn templates.
 
 ### Iteration Tracking (D15)
 - Lead manages `metadata.iterations.plan-impact: N` in PT before each invocation
@@ -181,19 +121,19 @@ Produce the complete execution sequence:
 ## Anti-Patterns
 
 ### DO NOT: Sequence Without Propagation Evidence
-Execution order must be justified by propagation paths from audit-impact, not by intuition or file naming. "Do database first" is not valid unless the audit shows propagation from database changes to downstream consumers.
+Execution order must be justified by propagation paths from audit-impact, not by intuition or file naming.
 
 ### DO NOT: Exceed 4 Tasks Per Wave
-The teammate capacity constraint is absolute. If more than 4 independent tasks exist, split them into multiple sequential waves even if they are propagation-safe in parallel.
+The teammate capacity constraint is absolute. Split into multiple sequential waves even if propagation-safe in parallel.
 
 ### DO NOT: Skip Checkpoints Between High-Risk Waves
-Every wave containing a high-risk propagation source (DIRECT to 3+ targets, or any TRANSITIVE path) must be followed by a checkpoint. Skipping checkpoints for speed creates uncontained blast radius.
+Every wave containing a high-risk source (DIRECT to 3+ targets, or any TRANSITIVE path) must be followed by a checkpoint.
 
 ### DO NOT: Merge Propagation Containment with Rollback Strategy
-Containment defines BOUNDARIES (where propagation stops). Rollback defines RESPONSE (what to do when containment fails). These are complementary concerns. Containment is this skill; rollback is plan-behavioral.
+Containment defines BOUNDARIES. Rollback defines RESPONSE. Containment is this skill; rollback is plan-behavioral.
 
 ### DO NOT: Optimize for Speed Over Safety on COMPLEX Tiers
-For COMPLEX pipelines, containment coverage takes priority over parallel efficiency. It is acceptable to have lower efficiency if containment is comprehensive.
+Containment coverage takes priority over parallel efficiency for COMPLEX pipelines.
 
 ## Transitions
 
@@ -249,3 +189,10 @@ checkpoints:
 - Checkpoint placement rationale
 - Propagation containment strategy per path
 - Parallel efficiency analysis
+
+## Resources
+- `resources/methodology.md` — Depth calculation steps, wave construction format, checkpoint schedule format, DPS templates
+- `.claude/resources/phase-aware-execution.md` — Team mode, Four-Channel Protocol, task tracking
+- `.claude/resources/failure-escalation-ladder.md` — L0–L4 escalation definitions and triggers
+- `.claude/resources/dps-construction-guide.md` — DPS v5 template, D11 context distribution
+- `.claude/resources/output-micro-signal-format.md` — Ch1–Ch4 signal formats and examples

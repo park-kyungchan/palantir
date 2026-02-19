@@ -1,0 +1,50 @@
+{
+  "session_id": "aa48454d-d6ff-4c6f-beec-ea24f9d5515a",
+  "started_at": "2026-02-18T12:12:05Z",
+  "agents_spawned": [
+    {
+      "type": "analyst",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:12:05Z"
+    },
+    {
+      "type": "analyst",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:12:41Z"
+    },
+    {
+      "type": "Explore",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:19:21Z"
+    },
+    {
+      "type": "Explore",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:19:28Z"
+    },
+    {
+      "type": "Explore",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:19:34Z"
+    },
+    {
+      "type": "Explore",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:19:41Z"
+    },
+    {
+      "type": "infra-implementer",
+      "name": "unknown",
+      "team": "no-team",
+      "spawned_at": "2026-02-18T12:26:30Z"
+    }
+  ],
+  "tasks_completed": [],
+  "src_impacts": []
+}

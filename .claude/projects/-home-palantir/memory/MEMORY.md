@@ -23,9 +23,9 @@
 - Lead outputs ASCII visualization when updating orchestration-plan.md or reporting state
 - Include: phase pipeline, workstream progress bars, teammate status, key metrics
 
-### Environment: Claude Code CLI (2026-02-18)
-- **Claude Code CLI (in-process)**: Agent Teams in-process mode. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
-- teammateMode: in-process (settings.json)
+### Environment: Claude Code CLI (2026-02-19 verified)
+- **Claude Code CLI (tmux)**: Agent Teams tmux mode. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
+- teammateMode: tmux (settings.json) — verified 2026-02-19 via actual spawn test
 
 ### MCP Server Config [RESOLVED 2026-02-18]
 - Root cause: CC reads MCP from `.claude.json`, not `settings.json`. Fix applied, 5/5 connected, in-process 4/4 PASS.
@@ -37,23 +37,26 @@
 - **Pattern**: Observe → Hypothesize → Test → Verify → THEN document
 - **Trigger**: Any time Lead is about to update CLAUDE.md, ref cache, or MEMORY.md with behavioral claims
 
-## Current INFRA State (v11.3+web, 2026-02-18)
+## Current INFRA State (v12.0+PDA, 2026-02-19)
 
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
 | CLAUDE.md | v11.0 | 55L | Protocol-only + §2.0 Phase Defs + §2.1 CE + 45 pipeline + 20 web-design skills |
-| Agents | v10.9+CE | 6 files | All 6 have Completion Protocol section (SendMessage on task completion) |
-| Skills | v11.3+web | 78 dirs | 48 INFRA + 20 web-design + 10 crowd_works. Budget: ~56,000/56,000 |
+| Agents | v10.9+CE | 8 files | +coordinator.md +agent-organizer.md. All 6 INFRA have Completion Protocol |
+| Skills | v12.0+PDA | 79 dirs | 49 INFRA + 20 web-design + 10 crowd_works. Budget: ~56,000/56,000 |
+| Resources | 6 files | shared | .claude/resources/: phase-aware-execution, dps-construction-guide, failure-escalation-ladder, output-micro-signal-format, transitions-template, quality-gate-checklist |
 | Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
-| Hooks | 14 scripts | ~420L | 8 global lifecycle events + 2 agent-scoped SRC hooks + 4 PreToolUse guards |
+| Hooks | 16 scripts | ~420L | +block-web-fallback.sh +on-mcp-failure.sh |
 | Conventions | DELETED | 0L | Content distributed: agent bodies (SendMessage), CLAUDE.md §2.1 (isolation), skill L2 (output) |
 | Agent Memory | -- | 7 files | +rsi-ce-diagnosis.md (342L, CE health 3/10→~7/10) |
 
-### Architecture (v10 Native Optimization)
+### Architecture (v12 3-Stage Progressive Disclosure)
+- **Stage 1 (Metadata)**: YAML frontmatter — auto-loaded at session start (discovery)
+- **Stage 2 (Instructions)**: L2 body ≤200L — loaded on invocation (activation)
+- **Stage 3 (Resources)**: `resources/methodology.md` — zero token cost until Read (execution)
+- **Shared resources**: `.claude/resources/` — 6 protocol files linked from all skills
 - **Routing**: Skill L1 auto-loaded in system-reminder, Agent L1 auto-loaded in Task tool definition
-- **L1 (frontmatter)**: WHEN/DOMAIN/INPUT_FROM/OUTPUT_TO/METHODOLOGY -- routing intelligence, 1024 chars max
-- **L2 (body)**: Execution Model + Methodology (5 steps) + Quality Gate + Output -- loaded on invocation
-- **CLAUDE.md**: Protocol-only (55L), zero routing data -- all routing via auto-loaded metadata
+- **CLAUDE.md**: Protocol-only (55L), zero routing data — all routing via auto-loaded metadata
 - **Lead**: Pure Orchestrator, never edits files directly, routes via skills+agents
 
 ### Pipeline Tiers
@@ -136,6 +139,16 @@ CC runtime 5건 실증 검증 후 3-wave 수리. 72%→94% health. PR #59 (da232
 - Stale reference fix: plan-strategy→plan-behavioral, plan-interface→plan-relational, plan-decomposition→plan-static (9 files)
 - Commit: 66e0cae (75 files, +9,983/-153)
 
+### 3-Stage PDA Optimization -- DONE (2026-02-19)
+44 INFRA SKILL.md ≤200L + 44 resources/methodology.md + 6 shared .claude/resources/. Commit ab8c885.
+- All 9 phase domains: Pre-Design(3), Design(3), Research(8), Plan(4), Plan-Verify(5), Orchestrate(5), Execution(5), Verify(3+1pilot), Homeostasis(5), Cross-cutting(3)
+- RSI loop: self-diagnose scan (81% health) + manage-skill 400L→184L fix
+- New skill: doing-like-agent-teams (`context:fork` + coordinator, single-session COMPLEX-tier mirror; resources/methodology.md: P0→P8 DPS templates + state file + recovery)
+- 138 files, +11,757/-7,615
+
+### RSIL Pilot — verify-ui-* SRP Skills DONE (2026-02-19)
+28 findings (9H/8M/11L). Wave 1: 6 files — added Execution Model, Methodology DPS, Transitions, D17 to all 5 verify-ui-* skills + browser-verifier.md. Wave 2: rsil/SKILL.md (Lead RECEIVE anti-pattern), rsil/resources/methodology.md (Lead Anti-Patterns table), CLAUDE.md §3 (scope note: TaskOutput(block:true) = Data Relay Tax). Key insight: Data Relay Tax applies in ALL modes (DLAT, RSIL, pipeline, direct). Health: 28 findings resolved.
+
 ### Math Portfolio Pipeline -- RESTART FROM P2 (2026-02-18)
 COMPLEX tier (P0→P8). Freewheelin (MathFlat) 정수론 문제은행 포트폴리오.
 - **Previous P0-P3 artifacts**: `~/tmp/math-portfolio-handoff/` (5 files + HANDOFF.md)
@@ -143,8 +156,9 @@ COMPLEX tier (P0→P8). Freewheelin (MathFlat) 정수론 문제은행 포트폴�
 
 ## Session History
 
-Branch: `main`. Latest commit: 66e0cae.
-- 66e0cae: 20 web design template skills + orchestrate-* GAP fixes + CLAUDE.md §2.0 + stale ref fix
+Branch: `main`. Latest commit: ab8c885.
+- ab8c885: 3-Stage PDA for 44 INFRA skills + doing-like-agent-teams skill (138 files)
+- c892d93: PR #62 — 20 web design template skills + stale ref fix + MEMORY.md archive
 - b3cecb2: D11-D17 design decision patches across 48 INFRA skills + cleanup, PR #61
 - 583de23: ECC integration + evaluation-criteria skill + CLAUDE.md §5 enhancement, PR #60
 - da232ba: Health repair — CC runtime verified, 57 files, PR #59

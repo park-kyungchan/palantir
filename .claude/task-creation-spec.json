@@ -1,0 +1,49 @@
+{
+  "operation": "batch-create",
+  "pt": {
+    "subject": "[PERMANENT] INFRA + Math Portfolio Enhancement",
+    "description": "type:PT\ntier:COMPLEX\nphase:P6\n---\nPipeline tracking two workstreams:\n\n1. INFRA: Agent system updates\n   - CLAUDE.md: AskUserQuestion mandate + DLAT spawn rule\n   - researcher.md: GitHub MCP tools + sonnet model\n   - delivery-agent.md + pt-manager.md: sonnet upgrade + sequential-thinking\n   - doing-like-agent-teams SKILL.md: team_name clarification\n\n2. Math Portfolio: ~/math-question-bank web design + blueprint\n   - Web design: Option A (full redesign), B (partial), or C (new section only)\n   - Blueprint: Option A (methodology page), B (more content), C (export), or D (new feature)\n\nAcceptance criteria:\n- INFRA changes committed to main branch\n- math-question-bank fully redesigned and blueprint features complete",
+    "activeForm": "INFRA + Math Portfolio 파이프라인 진행 중",
+    "metadata": {
+      "type": "permanent",
+      "tier": "COMPLEX",
+      "current_phase": "P6",
+      "commit_status": "pending",
+      "workstreams": ["infra", "math-portfolio"],
+      "references": [],
+      "user_directives": []
+    }
+  },
+  "work_tasks": [
+    {
+      "id": "T-1",
+      "subject": "Update CLAUDE.md — AskUserQuestion mandate + DLAT spawn rule",
+      "description": "type:work\nphase:P6\ndomain:execution\nskill:execution-infra\nagent:infra-implementer\nfiles:.claude/CLAUDE.md\npriority:high\n---\nAdd two new rules to CLAUDE.md §1.1 (Lead section):\n\n1. AskUserQuestion mandate: Lead MUST use AskUserQuestion tool for ALL user-facing questions. Inline text-only questions are prohibited.\n\n2. DLAT spawn rule: When invoking doing-like-agent-teams skill, ALL subsequent agent spawns MUST set:\n   - run_in_background: true\n   - context: fork\n   - NO team_name field (single-session mode, not multi-session teams)\n\nImpact: Ensures consistent user question tracking + clarifies single-session vs. multi-session spawning patterns",
+      "activeForm": "CLAUDE.md 업데이트 중"
+    },
+    {
+      "id": "T-2",
+      "subject": "Update researcher.md — GitHub MCP tools + sonnet model",
+      "description": "type:work\nphase:P6\ndomain:execution\nskill:execution-infra\nagent:infra-implementer\nfiles:.claude/agents/researcher.md\npriority:high\n---\nUpdate researcher agent profile:\n\n1. Add GitHub read-only MCP tools to tools list:\n   - github__search_repositories\n   - github__get_repository\n   - github__search_code\n   - github__get_file_contents\n   - github__get_issues\n   - github__search_issues\n   - github__get_pull_requests\n   - github__get_commits\n   - github__get_user_repos\n\n2. Update model field: haiku → sonnet\n\n3. Expand description to mention GitHub capability\n\n4. Verify tool source hierarchy\n\nImpact: Enables rich GitHub research queries (repo search, code patterns, issue discovery), improves response quality with Sonnet model",
+      "activeForm": "researcher.md 업데이트 중"
+    },
+    {
+      "id": "T-3",
+      "subject": "Update delivery-agent.md + pt-manager.md — model: sonnet + sequential-thinking",
+      "description": "type:work\nphase:P6\ndomain:execution\nskill:execution-infra\nagent:infra-implementer\nfiles:.claude/agents/delivery-agent.md,.claude/agents/pt-manager.md\npriority:high\n---\nUpdate both agent profiles:\n\n1. delivery-agent.md:\n   - Change model: haiku → sonnet\n   - Add mcp__sequential-thinking__sequentialthinking to tools list\n\n2. pt-manager.md:\n   - Verify model is sonnet (should already be)\n   - Verify sequential-thinking is in tools list (should already be)\n   - If already compliant, mark as reviewed\n\nImpact: Improves reasoning capability for complex delivery decisions + task orchestration, enables sequential reasoning patterns",
+      "activeForm": "delivery-agent.md, pt-manager.md 업데이트 중"
+    },
+    {
+      "id": "T-4",
+      "subject": "Update doing-like-agent-teams SKILL.md — clarify team_name not needed in single-session",
+      "description": "type:work\nphase:P6\ndomain:execution\nskill:execution-infra\nagent:infra-implementer\nfiles:.claude/skills/doing-like-agent-teams/SKILL.md\npriority:medium\n---\nAdd explicit clarification section in SKILL.md L2 body:\n\n1. team_name field clarification:\n   - team_name is NOT required in single-session (DLAT) mode\n   - team_name is ONLY for multi-session tmux Agent Teams mode\n\n2. Single-session subagent pattern:\n   - Fire-and-forget workers (no inbox, no P2P messaging)\n   - Spawned with run_in_background:true + context:fork\n   - No team_name field\n\n3. Update SKILL.md examples to show both patterns:\n   - Example 1: Single-session DLAT (no team_name)\n   - Example 2: Multi-session teams (with team_name, TeamCreate)\n\nImpact: Prevents confusion about when to use team_name, clarifies single-session vs. multi-session execution models",
+      "activeForm": "SKILL.md team_name 규칙 문서화 중"
+    },
+    {
+      "id": "T-5",
+      "subject": "Math Portfolio: web design + blueprint completion [BLOCKED PENDING USER DECISION]",
+      "description": "type:work\nphase:P0\ndomain:pre-design\nworkspace:~/math-question-bank\npriority:medium\n---\nBLOCKED: Awaiting user strategic decisions on two dimensions.\n\nDimension 1 — WEB DESIGN SCOPE:\n- Option A: Full portfolio redesign (matching crowd_works web-design-* skills)\n- Option B: Partial redesign (hero section + grid sections only)\n- Option C: New math-specific section only (no existing redesign)\n\nDimension 2 — BLUEPRINT COMPLETION:\n- Option A: Complete methodology/philosophy page\n- Option B: Expand content (more problem types, solution strategies)\n- Option C: Export functionality (PDF, JSON blueprints)\n- Option D: New interactive feature (solver, calculator, game)\n\nOnce user decisions received via AskUserQuestion, route to appropriate P0→P8 pipeline task.",
+      "activeForm": "Math 포트폴리오 파이프라인 대기 중"
+    }
+  ]
+}

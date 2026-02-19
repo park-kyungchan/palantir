@@ -17,17 +17,17 @@ disable-model-invocation: false
 # Orchestrate — Static (WHO)
 
 ## Execution Model
-- **TRIVIAL**: Skip (orchestration simplified for trivial tiers).
-- **STANDARD**: Spawn 1 analyst. Systematic agent-task matching using Agent L1 profiles.
-- **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep capability analysis with multi-capability task splitting.
+- **TRIVIAL**: Skip — Lead assigns agent inline from task description.
+- **STANDARD**: Spawn 1 analyst (maxTurns:15). Systematic agent-task matching using Agent L1 profiles. Omit confidence scoring.
+- **COMPLEX**: Spawn 1 analyst (maxTurns:25). Deep capability analysis with multi-capability task splitting and per-assignment confidence.
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+Runs in P2+ Team mode only. See `.claude/resources/phase-aware-execution.md` for team mode routing and compaction recovery.
+
+- **Communication**: Four-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + Ch4 P2P to consumers).
+- **Input**: Read plan-verify-coordinator L3 output directly from `$ARGUMENTS` path.
+- **File ownership**: Only modify `tasks/{team}/p5-orch-static.md`. No overlapping edits with parallel agents.
 
 ## Decision Points
 
@@ -35,95 +35,38 @@ This skill runs in P2+ Team mode only. Agent Teams coordination applies:
 When task tool requirements match multiple agent profiles:
 - **Single exact match** (1 profile has all required tools): Assign directly. Confidence: HIGH.
 - **Multiple matches** (2+ profiles satisfy requirements): Prefer MORE CAPABLE profile (D > C > B). Confidence: MEDIUM.
-- **No single match** (task needs tools from 2+ profiles): Split into sub-tasks. If unsplittable (< 2 logical units), escalate to orchestrate-coordinator as architectural blocker.
+- **No single match** (task needs tools from 2+ profiles): Split into sub-tasks. If unsplittable (<2 logical units), escalate to orchestrate-coordinator as architectural blocker.
 
 ### Task Split Threshold
 When task spans `.claude/` and source files simultaneously:
-- **If >= 2 independent file groups**: Split into infra-implementer (E) + implementer (D) sub-tasks with dependency edge.
-- **If files are tightly coupled** (< 2 separable units): Flag as architectural blocker — single agent cannot safely cross the boundary.
+- **If >=2 independent file groups**: Split into infra-implementer (E) + implementer (D) sub-tasks with dependency edge.
+- **If tightly coupled** (<2 separable units): Flag as architectural blocker.
 
 ### Confidence Classification
 - **HIGH**: Exactly 1 matching profile, all tools covered, clear .claude/ vs source boundary.
-- **MEDIUM**: Multiple profiles could work, selected by priority rule, OR task description ambiguous.
-- **LOW**: Required split, OR agent has > 2 unused capabilities (over-provisioned).
+- **MEDIUM**: Multiple profiles eligible (selected by priority), OR task description ambiguous.
+- **LOW**: Required split, OR agent has >2 unused capabilities (over-provisioned).
 
 ## Methodology
 
 ### 1. Read Verified Plan
-Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract:
-- Task list with IDs, descriptions, file assignments
-- Dependency graph between tasks
-- Complexity estimates per task
+Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract task list with IDs, descriptions, file assignments, dependency graph, and complexity estimates.
 
-For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  INCLUDE:
-    - Verified plan L3 content (task list, dependencies, file assignments)
-    - Agent profile reference: analyst=B(Read,Glob,Grep,Write), researcher=C(+WebSearch,WebFetch,context7,tavily), implementer=D(+Edit,Bash), infra-implementer=E(+Edit,Write for .claude/)
-    - delivery-agent=F and pt-manager=G are fork-only (not assignable)
-  EXCLUDE:
-    - Other orchestrate dimension outputs (behavioral, relational, impact)
-    - Historical rationale from plan-verify phases
-    - Full pipeline state beyond this task's scope
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "For each task: identify tool requirements, match to best agent profile, verify no capability gaps. Handle multi-capability tasks by splitting. Produce task-agent assignment matrix."
-- **Constraints**: Read-only analysis. No modifications. Use Agent L1 PROFILE tags for matching. Flag ambiguous matches.
-- **Expected Output**: L1 YAML task-agent matrix. L2 rationale per assignment with capability evidence.
-- **Delivery**: Write full result to `tasks/{team}/p5-orch-static.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|agents:{N}|ref:tasks/{team}/p5-orch-static.md`.
-
-#### Step 1 Tier-Specific DPS Variations
-**TRIVIAL**: Skip — Lead assigns agent inline from task description (typically 1 implementer or 1 infra-implementer).
-**STANDARD**: Single DPS to analyst. maxTurns:15. Simplified matching without multi-capability splitting. Omit confidence scoring.
-**COMPLEX**: Full DPS as above. maxTurns:25. Deep capability analysis with multi-capability task splitting and per-assignment confidence.
+Construct DPS for analyst using D11 context filtering. See `resources/methodology.md §DPS Template` for full INCLUDE/EXCLUDE blocks and delivery format.
 
 ### 2. Extract Tool Requirements Per Task
-For each task, identify required capabilities:
-- **File modification**: Which files? `.claude/` files need infra-implementer (E), source files need implementer (D).
-- **Shell execution**: Tasks needing `npm test`, `pytest`, build commands require Bash (implementer D only).
-- **Web access**: External doc lookup, API validation require WebSearch/WebFetch (researcher C only).
-- **Read-only analysis**: Review, audit, planning tasks need Read+Glob+Grep (analyst B sufficient).
+For each task, identify required capabilities and apply the decision tree:
 
-#### Agent Selection Decision Tree
-For each task, check requirements in priority order:
-1. **Modifies `.claude/` files?** -> infra-implementer (E)
-2. **Requires shell commands?** (build, test, deploy) -> implementer (D)
-3. **Requires web access?** (fetch docs, search APIs) -> researcher (C)
-4. **Read + analyze + write only?** -> analyst (B)
-5. **Ambiguous?** -> Prefer MORE CAPABLE profile (D > C > B > E for general tasks)
+1. **Modifies `.claude/` files?** → infra-implementer (E)
+2. **Requires shell commands?** (build, test, deploy) → implementer (D)
+3. **Requires web access?** (fetch docs, search APIs) → researcher (C)
+4. **Read + analyze + write only?** → analyst (B)
+5. **Ambiguous?** → Prefer MORE CAPABLE profile (D > C > B > E for general tasks)
 
 ### 3. Match Tasks to Agent Profiles
-Build assignment matrix:
+Build assignment matrix: task ID, required tools, agent type, confidence level, file list. For multi-capability tasks, split into sub-tasks each matching a single profile. Add dependency edges between sub-tasks. See `resources/methodology.md §Assignment Matrix Format` for table format and split notation.
 
-| Task ID | Description | Required Tools | Agent Type | Confidence |
-|---------|-------------|---------------|------------|------------|
-| T1 | ... | Edit, Bash | implementer | HIGH |
-| T2 | ... | Edit, Write (.claude/) | infra-implementer | HIGH |
-
-#### Multi-Capability Task Handling
-When a task needs capabilities from multiple agent profiles:
-- **Split the task**: Create sub-tasks, each matching a single agent profile
-- **Add dependency edge**: Consumer sub-task depends on producer sub-task
-- **Document the split**: Include original task ID and split rationale
-- **Never assign multi-capability tasks to a single agent**
-
-#### Parallelism-Optimized Splitting
-Beyond tool-boundary splits, consider splitting for scheduling efficiency:
-
-| Split Trigger | Condition | Action |
-|---------------|-----------|--------|
-| File count split | Task has > 6 files AND files are logically groupable | Split into 2+ sub-tasks of ~3 files each |
-| Complexity split | Task estimated HIGH complexity AND has 2+ independent sub-modules | Split by sub-module boundary |
-| Dependency chain split | Task is bottleneck in serial chain (from orchestrate-impact feedback) | Split to enable parallel execution of sub-parts |
-
-**Split Decision Rule**: Only split if:
-1. Sub-tasks are independently executable (no inter-dependency within the split)
-2. Each sub-task maps to the SAME agent type (otherwise use multi-capability split)
-3. Split produces net parallelism gain (saves >= 1 wave)
-
-**DO NOT split** if:
-- Task has < 4 files (too small to benefit)
-- Files are tightly coupled (shared state, circular imports)
-- Split would create more coordination overhead than parallelism savings
+For parallelism-optimized splitting beyond tool boundaries, see `resources/methodology.md §Parallelism Splitting`.
 
 ### 4. Verify No Capability Mismatches
 Cross-check every assignment:
@@ -134,40 +77,26 @@ Cross-check every assignment:
 - No web-requiring task assigned to non-researcher
 
 ### 5. Output Task-Agent Assignment Matrix
-Produce matrix with:
-- Task ID, agent type, required tools, file list
-- Split tasks noted with parent task reference
-- Confidence level per assignment (HIGH/MEDIUM/LOW)
-- Summary counts: tasks per agent type, total unique agents needed
+Produce matrix with: task ID, agent type, required tools, file list, split tasks with parent task reference, confidence per assignment, summary counts (tasks per agent type, total unique agents needed).
 
 ## Failure Handling
 
+See `.claude/resources/failure-escalation-ladder.md` for D12 escalation levels (L0–L4).
+
 | Failure Type | Level | Action |
 |---|---|---|
-| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Plan L3 path empty or file missing | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
 | Assignment incomplete or capability gap ambiguous | L1 Nudge | SendMessage with refined capability criteria |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Unassignable task that cannot be split | L3 Restructure | Route to orchestrate-coordinator as architectural blocker |
 | 3+ L2 failures or scope beyond defined agent profiles | L4 Escalate | AskUserQuestion with situation + options |
 
-### Verified Plan Data Missing
-- **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-static.md`
-- **Route**: Back to plan-verify-coordinator for re-export
-
-### Unassignable Task (No Agent Match)
-- **Cause**: Task requires capabilities not in any single agent profile
-- **Action**: Split into sub-tasks. If unsplittable, flag as architectural blocker.
-- **Route**: If blocker, report to orchestrate-coordinator for escalation
-
-### Ambiguous Agent Match
-- **Cause**: Task could match 2+ agent types equally
-- **Action**: Apply decision tree priority. Document alternative in L2. Set confidence MEDIUM.
+For failure sub-case detail (plan missing, unassignable, ambiguous match), see `resources/methodology.md §Failure Sub-Cases`.
 
 ## Anti-Patterns
 
 ### DO NOT: Read Agent Definition Files
-Agent L1 PROFILE tags are already in the analyst's context (auto-loaded). Do NOT Glob/Read `.claude/agents/` -- this wastes turns.
+Agent L1 PROFILE tags are already in the analyst's context (auto-loaded). Do NOT Glob/Read `.claude/agents/` — this wastes turns.
 
 ### DO NOT: Assign delivery-agent or pt-manager
 These are fork agents for specific skills only. Never assign for general tasks.
@@ -179,6 +108,8 @@ Files in `.claude/` MUST go to infra-implementer. Source files MUST go to implem
 A task needing Bash AND WebSearch cannot be assigned to any single agent. Always split.
 
 ## Transitions
+
+See `.claude/resources/transitions-template.md` for standard transition format.
 
 ### Receives From
 | Source Skill | Data Expected | Format |
@@ -198,6 +129,9 @@ A task needing Bash AND WebSearch cannot be assigned to any single agent. Always
 | All tasks assigned | orchestrate-coordinator | Complete matrix (normal flow) |
 
 ## Quality Gate
+
+See `.claude/resources/quality-gate-checklist.md` for standard gates.
+
 - Every task assigned to exactly 1 agent type
 - Agent has ALL required tools for each assigned task
 - No `.claude/` file assigned to implementer
@@ -226,7 +160,7 @@ signal_format: "PASS|tasks:{N}|agents:{N}|splits:{N}|ref:tasks/{team}/p5-orch-st
 ```
 
 ### L2
-- Task-agent assignment rationale per task
+- Task-agent assignment rationale per task (see `resources/methodology.md §Assignment Matrix Format`)
 - Decision tree application evidence
 - Multi-capability task split documentation
 - Agent type distribution summary

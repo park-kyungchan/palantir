@@ -19,285 +19,110 @@ disable-model-invocation: false
 # Orchestrate — Coordinator
 
 ## Execution Model
-- **TRIVIAL**: Skip (orchestration simplified for trivial tiers).
-- **STANDARD**: Spawn 1 analyst. Systematic merge and cross-validation of 4 dimension outputs.
-- **COMPLEX**: Spawn 1 analyst with maxTurns:35. Deep cross-validation with conflict resolution and optimization.
+- **TRIVIAL**: Skip — Lead produces inline execution plan (1-2 tasks, no cross-validation needed).
+- **STANDARD**: Spawn 1 analyst (maxTurns:20). Merge and cross-validate 4 dimension outputs (Check A + D only).
+- **COMPLEX**: Spawn 1 analyst (maxTurns:35). Full cross-validation (all 4 checks), conflict resolution, optimization.
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Use SendMessage for result delivery to Lead. Write large outputs to disk.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **No shared memory**: Insights exist only in your context. Explicitly communicate findings.
+P5 — Team mode only. $ARGUMENTS receives 4 dimension file paths from Lead.
+- **Communication**: Four-Channel Protocol — Ch2 disk file + Ch3 micro-signal to Lead + Ch4 P2P to downstream.
+- **P2P Self-Coordination**: Read dimension outputs directly from `tasks/{team}/` via $ARGUMENTS paths.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+
+> Phase-aware routing: read `.claude/resources/phase-aware-execution.md`
+> DPS construction guide: read `.claude/resources/dps-construction-guide.md`
+> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
+> Detailed methodology: read `resources/methodology.md`
 
 ## Decision Points
 
 ### Merge Conflict Resolution Strategy
 When dimension outputs disagree on task attributes:
-- **Task in WHO but not WHEN** (static has it, impact doesn't): Add to earliest eligible wave. Impact adjusts.
-- **Task in WHEN but not WHO** (impact has it, static doesn't): Flag as unassigned. Route back to orchestrate-static.
+- **Task in WHO but not WHEN**: Add to earliest eligible wave. Impact adjusts.
+- **Task in WHEN but not WHO**: Flag as unassigned. Route back to orchestrate-static.
 - **Handoff references non-existent task**: Flag as dangling DPS. Route back to orchestrate-relational.
 - **Checkpoint at non-wave boundary**: Remap to nearest wave boundary. Behavioral adjusts.
 
+> Full conflict resolution table: read `resources/methodology.md`
+
 ### Cross-Validation Failure Severity
 When a cross-validation check fails:
-- **Check A FAIL (agent-wave fit)**: BLOCKING. Cannot produce L3. Route to orchestrate-static + orchestrate-impact for resolution.
-- **Check B FAIL (handoff order)**: BLOCKING. Cannot produce L3. Route to orchestrate-relational + orchestrate-impact for resolution.
-- **Check C WARN (checkpoint alignment)**: NON-BLOCKING. Remap checkpoint, document in L2. Produce L3 with warning.
-- **Check D FAIL (task coverage)**: BLOCKING. Cannot produce L3. Identify missing dimension and route back.
+
+| Check | Failure Severity | Action |
+|-------|-----------------|--------|
+| A: Agent-wave fit | BLOCKING | Cannot produce L3. Route to orchestrate-static + orchestrate-impact. |
+| B: Handoff-sequence order | BLOCKING | Cannot produce L3. Route to orchestrate-relational + orchestrate-impact. |
+| C: Checkpoint alignment | NON-BLOCKING (WARN) | Remap checkpoint, document in L2. Produce L3 with warning. |
+| D: Task coverage completeness | BLOCKING | Cannot produce L3. Identify missing dimension, route back. |
 
 ### L3 Output Completeness
-When producing L3 execution plan:
-- **All 4 checks PASS**: Produce full L3 with spawn DPS per task. Normal flow.
+- **All 4 checks PASS**: Produce full L3 with spawn DPS per task.
 - **Any BLOCKING check FAIL**: Do NOT produce L3. Report failure details in L1/L2 only.
-- **Only WARN checks (no FAIL)**: Produce L3 with warnings flagged. Include remediation notes in L2.
+- **Only WARN checks**: Produce L3 with warnings flagged and remediation notes in L2.
 
 ## Methodology
 
 ### 1. Read All 4 Dimension Outputs
-Load outputs from all 4 parallel orchestrate-* skills:
-
-| Dimension | Skill | Output File | Key Data |
-|-----------|-------|-------------|----------|
-| WHO | orchestrate-static | `tasks/{team}/p5-orch-static.md` | Task-agent assignment matrix |
-| WHERE | orchestrate-behavioral | `tasks/{team}/p5-orch-behavioral.md` | Checkpoint schedule |
-| HOW | orchestrate-relational | `tasks/{team}/p5-orch-relational.md` | DPS handoff specs |
-| WHEN | orchestrate-impact | `tasks/{team}/p5-orch-impact.md` | Wave capacity schedule |
-
-For STANDARD/COMPLEX tiers, construct the delegation prompt for the analyst with:
-- **Context (D11 priority: cognitive focus > token efficiency)**:
-  INCLUDE:
-    - All 4 dimension outputs (WHO/WHEN/HOW/WHERE from orchestrate-static/impact/relational/behavioral)
-    - Tiered output structure: L1 (index.md = routing metadata), L2 (summary.md = narrative for Lead), L3 (execution-plan.md = full spawn instructions for P6)
-    - Platform constraints: max 4 teammates per wave, SendMessage protocol for agent completion
-  EXCLUDE:
-    - plan-verify raw data (only dimension dimension outputs needed)
-    - Historical rationale from pre-design and design phases
-    - Full pipeline state beyond orchestration scope
-  Budget: Context field ≤ 30% of teammate effective context
-- **Task**: "Merge the 4 dimension outputs into a unified execution plan. For each task, consolidate: WHO runs it (agent type from static), WHEN it executes (wave from impact), HOW it gets/sends data (DPS from relational), WHERE it is verified (checkpoint from behavioral). Cross-validate: agent has right tools for its wave tasks, handoff ordering matches wave sequence, checkpoints align with wave boundaries. Produce L1 index, L2 summary, L3 execution plan."
-- **Constraints**: Read-only analysis on inputs. Write tiered output to `tasks/{team}/p5-coordinator-{file}.md`. Every task must appear in unified plan. Every cross-validation check must have explicit PASS/FAIL.
-- **Expected Output**: Three files: `tasks/{team}/p5-coordinator-index.md` (L1), `tasks/{team}/p5-coordinator-summary.md` (L2), `tasks/{team}/p5-coordinator-execution-plan.md` (L3).
-- **Delivery**: Write tiered output to `tasks/{team}/p5-coordinator-{file}.md`. Send micro-signal to Lead via SendMessage: `PASS|tasks:{N}|waves:{N}|handoffs:{N}|ref:tasks/{team}/p5-coordinator-index.md`.
-
-#### Step 1 Tier-Specific DPS Variations
-**TRIVIAL**: Skip — Lead produces inline execution plan (1-2 tasks, no cross-validation needed).
-**STANDARD**: Single DPS to analyst. maxTurns:20. Merge 4 dimensions with simplified cross-validation (Check A + D only). Produce L1+L2+L3.
-**COMPLEX**: Full DPS as above. maxTurns:35. Deep cross-validation with all 4 checks, conflict resolution, and optimization recommendations.
+Load WHO (orchestrate-static), WHERE (orchestrate-behavioral), HOW (orchestrate-relational), WHEN (orchestrate-impact) from $ARGUMENTS paths.
+> Dimension input table + tier-specific DPS variations: read `resources/methodology.md`
 
 ### 2. Merge Into Unified Plan
-For each task, create a unified record combining all 4 dimensions:
-
-```yaml
-task:
-  id: T1
-  description: "..."
-  # WHO (from static)
-  agent_type: implementer
-  tools_required: [Edit, Bash]
-  # WHEN (from impact)
-  wave: 1
-  dependencies: []
-  # HOW (from relational)
-  inputs:
-    - dps_id: DPS-01
-      from_task: T0
-      path: tasks/{team}/p6-input-schema.md
-      format: yaml
-  outputs:
-    - dps_id: DPS-02
-      to_task: T3
-      path: tasks/{team}/p6-auth-module.md
-      format: markdown
-  # WHERE (from behavioral)
-  checkpoint: CP-02
-  checkpoint_type: gate
-  checkpoint_criteria: "Test suite passes, module exports verified"
-```
-
-#### Merge Conflict Resolution
-When dimension outputs disagree:
-| Conflict Type | Resolution Rule | Priority |
-|---------------|----------------|----------|
-| Task in static but not in impact | Add to earliest eligible wave | Impact adjusts |
-| Task in impact but not in static | Flag as unassigned, route back to static | Static must fix |
-| Handoff references non-existent task | Flag as dangling DPS, route back to relational | Relational must fix |
-| Checkpoint at non-wave boundary | Remap to nearest wave boundary | Behavioral adjusts |
-| Agent type cannot run in assigned wave | Swap wave assignment or agent type | Impact + Static negotiate |
+For each task, create a unified record combining WHO/WHEN/HOW/WHERE fields. Resolve merge conflicts per Decision Points rules above.
+> Unified task record YAML format + conflict resolution table: read `resources/methodology.md`
 
 ### 3. Cross-Validate Consistency
-Run cross-dimensional validation checks:
+Run four checks (A: agent-wave fit, B: handoff-sequence order, C: checkpoint-wave alignment, D: task coverage). Report PASS/FAIL/WARN for each.
+> Full check tables with example rows: read `resources/methodology.md`
 
-#### Check A: Agent-Wave Fit
-For each wave, verify assigned agents can handle the tasks:
-- Agent type has required tools for all tasks in that wave
-- No agent type exceeds instance limit within a wave
-- Total agents in wave <= 4
+### 3.5. Scheduling Efficiency Analysis
+Detect long serial chains, single-task waves, low parallelism, cost overrun. Generate RESTRUCTURE_HINT in L2 for HIGH-priority inefficiencies. Lead decides: re-decompose, restructure, or accept with documented gaps.
+> Efficiency check table + RESTRUCTURE_HINT format: read `resources/methodology.md`
 
-| Wave | Agent Types | Instance Count | Tools Available | Tasks Covered | Status |
-|------|------------|---------------|-----------------|---------------|--------|
-| W1 | impl x2, analyst x1 | 3 | Edit,Bash,Read,Glob | T1,T2,T3 | PASS |
+### 4. Produce L1 Index + L2 Summary
+Write L1 (compact YAML with counts and validation status) and L2 (narrative with cross-validation results, conflicts, critical path, and recommendations for P6).
 
-#### Check B: Handoff-Sequence Order
-For each DPS handoff, verify producer wave precedes consumer wave:
-- Producer task wave < consumer task wave (strict ordering)
-- Handoff path exists before consumer needs it
-- No circular handoff chains
-
-| DPS ID | Producer (Wave) | Consumer (Wave) | Order Valid | Status |
-|--------|----------------|-----------------|-------------|--------|
-| DPS-01 | T1 (W1) | T3 (W2) | W1 < W2 | PASS |
-| DPS-02 | T4 (W2) | T2 (W1) | W2 > W1 | FAIL |
-
-#### Check C: Checkpoint-Wave Alignment
-For each checkpoint, verify it aligns with a wave boundary:
-- Gate checkpoints must be at wave completion boundaries
-- Aggregate checkpoints cover all tasks in the target wave
-- Monitor checkpoints can be anywhere but should be at meaningful transitions
-
-| Checkpoint | Location | Wave Boundary? | Type Valid | Status |
-|-----------|----------|---------------|------------|--------|
-| CP-01 | After W1 | Yes (W1->W2) | Gate | PASS |
-| CP-02 | Mid-W2 | No | Gate (should be monitor) | WARN |
-
-#### Check D: Task Coverage Completeness
-- Every task from the verified plan appears exactly once in the unified plan
-- No duplicate task assignments (same task in multiple waves)
-- No orphaned tasks (task with no agent, no wave, or no handoff)
-
-### 3.5. Scheduling Efficiency Analysis + Feedback Loop
-After cross-validation, analyze the unified plan for scheduling inefficiency:
-
-#### Efficiency Checks
-| Check | Condition | Action |
-|-------|-----------|--------|
-| Long serial chain | max_chain_depth > wave_count / 2 | Generate RESTRUCTURE_HINT for plan-static |
-| Single-task waves | > 1 wave with only 1 task (non-final) | Suggest task splitting to orchestrate-static |
-| Low parallelism | avg tasks/wave < 2 for total > 6 tasks | Flag underutilization, suggest re-decomposition |
-| Cost overrun | wave_count × 3 agents × ~200k > budget | Flag cost concern with wave consolidation options |
-
-#### RESTRUCTURE_HINT Format
-When inefficiency detected, include in L2 output:
-```yaml
-restructure_hints:
-  - type: chain_bottleneck
-    chain: [T2, T5, T8]
-    bottleneck_task: T5
-    suggestion: "Split T5 into T5a (files 1-3) + T5b (files 4-6)"
-    expected_improvement: "Reduces wave count by 1, saves ~200k tokens"
-  - type: underutilization
-    wave: W3
-    task_count: 1
-    suggestion: "Split T8 into T8a + T8b to fill W3 capacity"
-```
-
-**Feedback Route**: Lead reads RESTRUCTURE_HINTs from L2. If any HIGH-priority hint exists, Lead may:
-1. Route back to plan-static for re-decomposition (L1 Nudge)
-2. Route to orchestrate-static for smart splits (L1 Nudge)
-3. Accept current plan with documented inefficiency (proceed)
-Decision is Lead's tactical choice per D12 escalation rules.
-
-### 4. Produce L1 Index + L2 Summary for Lead
-Write routing-level output for Lead consumption:
-
-**L1 (index.md)**: Compact YAML with task counts, wave counts, handoff counts, validation status, and file references.
-
-**L2 (summary.md)**: Narrative summary with:
-- Unified plan overview (task count, wave count, agent distribution)
-- Cross-validation results (all 4 checks: PASS/FAIL/WARN)
-- Identified conflicts and resolutions
-- Critical path and bottleneck analysis
-- Recommendations for P6 execution
-
-### 5. Produce L3 Execution Plan for P6
-Write detailed execution plan that P6 skills can consume directly:
-
-**L3 (execution-plan.md)**: Complete spawn instructions per wave:
-```yaml
-waves:
-  - id: W1
-    parallel_count: 3
-    checkpoint: CP-01
-    tasks:
-      - id: T1
-        agent_type: implementer
-        spawn_prompt: |
-          Context: {what to include in DPS}
-          Task: {what to implement}
-          Constraints: {file ownership, interfaces}
-          Expected Output: {deliverables}
-          Delivery: {SendMessage signal format}
-        inputs: [{dps_id, path, format}]
-        outputs: [{dps_id, path, format}]
-        files: [file1.ts, file2.ts]
-```
-
-The L3 file must contain ALL information needed to spawn teammates:
-- Agent type per task
-- Complete DPS prompt content (context, task, constraints, output, delivery)
-- Input DPS references (what to read before starting)
-- Output DPS references (what to produce)
-- File ownership list
-- Checkpoint criteria for wave completion
+### 5. Produce L3 Execution Plan
+Write detailed per-wave spawn instructions with complete DPS prompts, COMM_PROTOCOL (NOTIFY/SIGNAL_FORMAT/AWAIT), input/output handoff references, file ownership, and checkpoint criteria.
+> L3 YAML format spec: read `resources/methodology.md`
 
 ## Failure Handling
 
 | Failure Type | Level | Action |
 |---|---|---|
-| One or more dimension outputs missing (transient) | L0 Retry | Re-invoke after missing dimension skill re-exports |
-| Cross-validation check incomplete or merge ambiguous | L1 Nudge | SendMessage with refined conflict resolution constraints |
+| Dimension output missing (transient) | L0 Retry | Re-invoke after missing dimension skill re-exports |
+| Cross-validation incomplete or merge ambiguous | L1 Nudge | SendMessage with refined conflict resolution constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
-| Cross-validation FAIL unresolvable without plan restructure | L3 Restructure | Route to affected dimension skill(s) for redesign |
+| Cross-validation FAIL unresolvable without restructure | L3 Restructure | Route to affected dimension skill(s) for redesign |
 | 3+ L2 failures or task coverage mismatch unresolvable | L4 Escalate | AskUserQuestion with situation + options |
-
-### One or More Dimension Outputs Missing
-- **Cause**: A parallel orchestrate-* skill failed or has not completed
-- **Action**: Report FAIL. Signal: `FAIL|reason:missing-{dimension}|ref:tasks/{team}/p5-coordinator-index.md`
-- **Route**: Lead re-invokes the failed dimension skill
-
-### Cross-Validation FAIL (Any Check)
-- **Cause**: Inconsistency between dimension outputs
-- **Action**: Attempt auto-resolution per merge conflict rules. If unresolvable, report FAIL with specific check and evidence.
-- **Route**: Lead re-invokes the relevant dimension skill(s) with correction guidance
-
-### Task Coverage Mismatch
-- **Cause**: Unified plan has different task count than verified plan
-- **Action**: Report exact discrepancy (missing tasks, extra tasks). FAIL if any task is missing.
-- **Route**: Identify which dimension dropped/added the task, route back to that dimension
-
-### Handoff-Sequence Order Violation
-- **Cause**: Producer in later wave than consumer
-- **Action**: Propose fix: move producer to earlier wave OR move consumer to later wave. Include both options with tradeoffs.
-- **Route**: Lead decides, orchestrate-impact re-schedules if needed
 
 ## Anti-Patterns
 
 ### DO NOT: Produce L3 Without Cross-Validation
-The L3 execution plan must be cross-validated before output. Skipping validation pushes errors to P6 execution where they are more expensive to fix.
+L3 must be cross-validated before output. Skipping pushes errors to P6 where they cost more to fix.
 
 ### DO NOT: Omit Spawn Prompt Content from L3
-The L3 must contain COMPLETE DPS prompts for each task. P6 execution skills should not need to reconstruct prompts from multiple sources. The coordinator is the single consolidation point.
+L3 must contain COMPLETE DPS prompts per task. P6 should not reconstruct prompts from multiple sources.
 
 ### DO NOT: Ignore Merge Conflicts
-When dimension outputs disagree, silently picking one side creates hidden inconsistencies. Every conflict must be resolved explicitly and documented in L2.
+Every conflict must be resolved explicitly and documented in L2. Silent resolution creates hidden inconsistencies.
 
 ### DO NOT: Create L3 Without Handoff Paths
-Every inter-task data dependency must have a concrete `tasks/{team}/` path in the L3. Tasks reading from undefined paths will fail at execution.
+Every inter-task dependency must have a concrete `tasks/{team}/` path. Tasks reading from undefined paths fail at execution.
 
 ### DO NOT: Skip Agent-Wave Validation
-A wave with 5 agents will fail. A wave where analyst is assigned a Bash-requiring task will fail. Agent-wave fit is the most critical cross-validation check.
+A wave with 5 agents will fail. Agent-wave fit is the most critical cross-validation check.
 
 ### DO NOT: Produce Partial L3
-If any cross-validation check FAILs, do NOT produce an L3 execution plan. A partial L3 misleads P6 into executing with known errors.
+If any BLOCKING check fails, do NOT produce an L3. A partial L3 misleads P6 into executing with known errors.
 
 ## Transitions
 
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| orchestrate-static | Task-agent assignment matrix (WHO) | L1 YAML + L2 rationale at `tasks/{team}/p5-orch-static.md` |
-| orchestrate-behavioral | Checkpoint schedule (WHERE) | L1 YAML + L2 rationale at `tasks/{team}/p5-orch-behavioral.md` |
+| orchestrate-static | Task-agent assignment matrix (WHO) | L1 YAML + L2 at `tasks/{team}/p5-orch-static.md` |
+| orchestrate-behavioral | Checkpoint schedule (WHERE) | L1 YAML + L2 at `tasks/{team}/p5-orch-behavioral.md` |
 | orchestrate-relational | DPS handoff specs (HOW) | L1 YAML + L2 chain at `tasks/{team}/p5-orch-relational.md` |
 | orchestrate-impact | Wave capacity schedule (WHEN) | L1 YAML + L2 timeline at `tasks/{team}/p5-orch-impact.md` |
 
@@ -314,7 +139,9 @@ If any cross-validation check FAILs, do NOT produce an L3 execution plan. A part
 | Missing dimension output | Lead (re-invoke failed skill) | Which dimension, error details |
 | Cross-validation FAIL | Lead (re-invoke relevant dimension) | Check ID, evidence, fix suggestion |
 | Task coverage mismatch | Lead (investigate discrepancy) | Missing/extra task list |
-| All checks PASS | execution-code / execution-infra | L3 execution plan (normal flow) |
+
+> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
 - All 4 dimension outputs loaded and parsed
@@ -324,7 +151,7 @@ If any cross-validation check FAILs, do NOT produce an L3 execution plan. A part
 - Cross-validation Check C (checkpoint-wave alignment): PASS or WARN only
 - Cross-validation Check D (task coverage completeness): PASS
 - L3 execution plan contains complete spawn instructions for every task
-- L3 handoff paths are all concrete tasks/{team}/ paths
+- L3 handoff paths are all concrete `tasks/{team}/` paths
 - No wave exceeds 4 parallel tasks
 
 ## Output
@@ -349,16 +176,7 @@ files:
 ```
 
 ### L2 (summary.md)
-- Unified plan overview with counts and distribution
-- Cross-validation results with evidence per check
-- Conflict resolutions and rationale
-- Critical path and execution timeline
-- Agent distribution across waves
-- Recommendations for P6 execution
+Narrative: unified plan overview, cross-validation results, conflict resolutions, critical path, agent distribution, recommendations for P6.
 
 ### L3 (execution-plan.md)
-- Per-wave spawn instructions with complete DPS prompts
-- Input/output handoff references per task
-- File ownership per task
-- Checkpoint criteria per wave boundary
-- Agent type and tool requirements per task
+Per-wave spawn instructions with complete DPS prompts, input/output handoff references, file ownership, checkpoint criteria, and agent tool requirements per task.
