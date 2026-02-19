@@ -233,3 +233,4 @@ This pattern reads `leadSessionId` from team config and compares against the hoo
 | input-modifier.sh | PreToolUse | Bash\|Edit\|Write | command | global | Co-author + file lock + path safety |
 | budget-monitor.sh | PreToolUse | (all) | command | global | Tool budget monitoring |
 | idle-quality-gate.sh | TeammateIdle | (all) | command | global | Teammate output verification |
+| block-taskoutput-relay.sh | PreToolUse | TaskOutput | command | global | Data Relay Tax guard — blocks TaskOutput(block:true) in Lead context (session_id guard) |
