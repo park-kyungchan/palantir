@@ -8,7 +8,7 @@ description: |
   CONSUMES: User request (domain scope), progress-track (weak areas for targeted refresh).
   PRODUCES: IC-01 command_pool → challenge-generate, IC-02 command_allowlist → latex-parse, canonical syntax → golden-correct. Persists reference-cache/{domain}.yaml.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[domain: math|physics|chemistry|biology]"
 ---
 

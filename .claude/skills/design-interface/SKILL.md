@@ -20,7 +20,7 @@ description: >-
   list and module boundaries. Exclude ADR rationale and rejected
   patterns.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Design — Interface

@@ -8,7 +8,7 @@ description: |
   CONSUMES: IC-10 trap_results (score, category_breakdown), IC-11 correction_report (corrections[], severity, badge).
   PRODUCES: IC-03 recommendation (next_difficulty, focus_rules R1-R5, weak_patterns[]) → challenge-generate. Persists progress.yaml.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[report|reset]"
 ---
 

@@ -17,7 +17,7 @@ description: >-
   user conversation history. Loops with pre-design-brainstorm
   (max 3 iterations per D15).
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Pre-Design — Validate

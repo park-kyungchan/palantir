@@ -16,7 +16,7 @@ description: >-
   full pipeline state.
 user-invocable: true
 argument-hint: "[full|incremental]"
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Manage — Codebase

@@ -21,7 +21,7 @@ description: >-
   cc-reference native field tables. Exclude L2 body content,
   non-.claude/ source files, and historical field rationale.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Verify — CC Feasibility

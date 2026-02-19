@@ -13,8 +13,8 @@ description: >-
   re-diagnosis. DPS needs self-diagnose findings with file:line
   evidence and cc-reference native field lists. Exclude pipeline
   state and other homeostasis skills' data.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Self-Implement — INFRA Fix Executor

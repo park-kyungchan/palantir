@@ -1,6 +1,7 @@
 ---
 name: web-status-badge
 description: "[Atom·WebDesign·Status] Provides inline status indicator with pulse animation, color-coded variants (active/warning/error/info/neutral), and optional label. Dot + text pattern with configurable pulse speed. Use for system status, availability indicators, or progress states. Pure CSS animation with prefers-reduced-motion support. References web-design-tokens."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[status:active|warning|error|info|neutral] [pulse:true|false] [label:text]"
 ---

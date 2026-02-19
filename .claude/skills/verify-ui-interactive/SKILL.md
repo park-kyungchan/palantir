@@ -8,7 +8,7 @@ description: >
 domain: verify
 model: sonnet
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Verify UI Interactive Elements

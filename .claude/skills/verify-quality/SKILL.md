@@ -19,7 +19,7 @@ description: >-
   cross-skill consistency checks (verify-consistency domain),
   and non-.claude/ files.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Verify — Quality

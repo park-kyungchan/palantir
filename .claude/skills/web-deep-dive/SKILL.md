@@ -1,6 +1,7 @@
 ---
 name: web-deep-dive
 description: "[Organism·WebDesign·Content] Generates a 4-level progressive accordion component with numbered badges, scroll-triggered entrance, and CSS expand/collapse transitions. Composes web-design-tokens. Click-to-deepen UX: L1 surface → L2 detail (cyan) → L3 evidence (cyan) → L4 action plan (magenta). IntersectionObserver drives lightOn reveal; ARIA and keyboard-accessible. Use for deep analysis panels, gap explanations, or layered content disclosure. References: portfolio.html."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[items:json] [animate:true|false] [start-level:0|1]"
 ---

@@ -8,7 +8,7 @@ description: |
   CONSUMES: qc-report (batch QC reports: batch_id, items[], summary, worker_stats), user invocation ($ARGUMENTS scope).
   PRODUCES: L1 YAML metrics dashboard, L2 per-worker accuracy + trend analysis → PM/PL (SLA reports), reference-build (dominant error patterns).
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[batch|trend|worker:id]"
 ---
 

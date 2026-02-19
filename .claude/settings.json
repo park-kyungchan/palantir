@@ -211,5 +211,6 @@
   "promptSuggestionEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "teammateMode": "tmux",
-  "model": "haiku"
+  "model": "opus",
+  "effortLevel": "high"
 }

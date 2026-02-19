@@ -5,7 +5,7 @@ description: >
   Uses context:fork to isolate coordinator subagent — coordinator runs P1-P5
   after Lead completes P0 (scan + dialogue). Background subagents instead of teammates.
   Teammates→background subagents (run_in_background:true). TeamCreate/SendMessage→
-  file-based coordination (OUTPUT_PATH). PT→session-local task tracking.
+  file-based coordination (persistent work directory). PT→session-local task tracking.
   Main context receives synthesis summaries only. Single session ALWAYS
   COMPLEX tier regardless of task size. Quality top priority over speed.
   WHEN: any multi-step work in a single session needing Agent Teams discipline.
@@ -18,107 +18,87 @@ output_to: Lead main context (synthesis summary + output file paths)
 
 # Doing Like Agent Teams
 
-Mirrors Agent Teams Mode in a single CC session. `context:fork` forks a coordinator subagent that manages the full pipeline. Main context (Lead) receives only final synthesis — all phase management stays isolated in coordinator's context.
+Mirrors Agent Teams Mode in a single CC session. `context:fork` forks a coordinator subagent that manages the full pipeline. Main context (Lead) receives only final synthesis.
 
-**Single session rule**: ALL work treated as COMPLEX tier (P0→P8 full pipeline). No shortcuts to TRIVIAL/STANDARD. Quality over speed.
+**Single session rule**: ALL work = COMPLEX tier (P0-P8 full pipeline). No shortcuts.
 
-## Single-Session Adaptation Map
-
-| Agent Teams | Single-Session Equivalent | Constraint |
-|-------------|--------------------------|------------|
-| Teammates (team mode) | Background subagents (`run_in_background:true`) | No P2P messaging between agents |
-| TeamCreate + task list | Session-local task tracking (coordinator manages) | No cross-session persistence |
-| SendMessage (P2P) | File-based handoff (OUTPUT_PATH) | Agents write results to files, coordinator reads |
-| Permanent Task (PT) | Coordinator maintains state in a session state file | Lost on compaction — save to disk frequently |
-| Lead orchestrates | Coordinator subagent orchestrates | Main context sees summaries only |
-| 4-channel protocol | 2-channel: file write (Ch2) + completion notification (Ch3) | No PT (Ch1) or P2P signal (Ch4) |
-
-## Execution Flow (context:fork)
+## Work Directory
 
 ```
-User invokes skill
-  → context:fork creates coordinator subagent
-  → Coordinator runs full COMPLEX pipeline:
+DLAT_BASE = ~/.claude/doing-like-agent-teams/projects/{project_slug}
 
-  P0 Pre-Design (Lead-direct):
-    1. Codebase scan: Glob/Grep/Read to map current completion state
-    2. User dialogue with accurate context ("X done, Y missing")
-    3. Spawn brainstorm/validate subagents only for genuinely open requirements
-    → synthesize → fork coordinator
-
-  P1 Design: spawn 3 background subagents (architecture/interface/risk)
-    → read outputs → synthesize → proceed
-
-  P2 Research: spawn parallel research subagents
-    → read outputs → audit subagents → synthesize → proceed
-
-  P3 Plan: spawn 4 dimension plan subagents (parallel)
-    → read outputs → synthesize → proceed
-
-  P4 Plan Verify: spawn 4+1 verify subagents (parallel + coordinator)
-    → read outputs → verify → proceed
-
-  P5 Orchestrate: spawn 4+1 orchestrate subagents
-    → read outputs → build execution plan → proceed
-
-  P6 Execution: spawn implementer/infra subagents per plan
-    → read outputs → proceed
-
-  P7 Verify: spawn verify subagents (structural/consistency/quality/feasibility)
-    → read outputs → gate decision → proceed
-
-  P8 Delivery: spawn delivery-agent subagent
-    → commit + archive
-
-  Coordinator writes final synthesis to /tmp/session-summary-{ts}.md
-  Returns summary path to Lead main context
+{DLAT_BASE}/
+  state.md                              # Pipeline state (compaction-resilient)
+  {agent_name}/                         # Per-agent output subdirectory
+    {phase}-{task}-{n}.md               # Individual task output
+  coordinator/                          # Coordinator synthesis outputs
+    {phase}-synthesis.md                # Phase synthesis
+  session-summary.md                    # Final pipeline summary
 ```
 
-> Role split: Lead owns P0 (scan + dialogue). Coordinator fork owns P1-P5.
-> Lead spawns implementers for P6 after reading coordinator's P5 output.
-> Lead spawns delivery-agent for P7-P8.
+**Path variables**: `DLAT_BASE`, `OUTPUT_PATH` (`{DLAT_BASE}/{agent_name}/{phase}-{task}-{n}.md`), `STATE_PATH` (`{DLAT_BASE}/state.md`).
+
+**Project slug**: Kebab-case from task description. Enables cross-session resume.
+
+**Directory initialization**: Lead creates dirs via Bash BEFORE forking coordinator (coordinator lacks Bash):
+```bash
+mkdir -p ~/.claude/doing-like-agent-teams/projects/{slug}/{analyst,researcher,coordinator,implementer,infra-implementer,delivery-agent}
+```
+
+## Execution Flow
+
+```
+User invokes skill → Lead runs P0 → Lead creates work dirs → context:fork coordinator
+
+Lead (P0 Pre-Design):
+  1. Codebase scan (Glob/Grep/Read) → map current state
+  2. User dialogue with accurate context
+  3. Spawn brainstorm/validate subagents for open requirements
+  4. Create work directory structure (Bash)
+  5. **P0 Gate — DLAT_BASE Verification** (MANDATORY):
+     - Verify: `ls {DLAT_BASE}/state.md` OR `ls {DLAT_BASE}/coordinator/`
+     - If NOT exists → BLOCK all spawns until directory is created
+     - Write initial `state.md` with project_slug and started timestamp
+  6. Fork coordinator with P0 synthesis + DLAT_BASE
+
+Coordinator (P1-P5):
+  P1 Design:     3 subagents (architecture/interface/risk) → synthesis
+  P2 Research:   parallel research subagents → synthesis
+  P3 Plan:       4 dimension subagents → synthesis
+  P4 Plan Verify: 4+1 verify subagents → synthesis
+  P5 Orchestrate: 4+1 orchestrate subagents → execution plan
+  → Returns P5 synthesis path to Lead
+
+Lead (P6-P8):
+  P6 Execution:  spawn implementer/infra subagents per P5 plan
+  P7 Verify:     spawn verify subagents → gate decision
+  P8 Delivery:   spawn delivery-agent → commit + archive
+```
 
 > Phase-aware routing: read `.claude/resources/phase-aware-execution.md`
-> Full phase protocol details: read `resources/methodology.md`
-
-## Coordinator State File
-
-Coordinator maintains `/tmp/dlat-state-{session}.md` throughout pipeline:
-```
-Session: {id}
-Current phase: P{N}
-Wave: {N}
-Completed phases: [P0, P1, ...]
-Output files: {phase: [path1, path2, ...]}
-Synthesis files: {phase: /tmp/dlat-{phase}-synthesis-{ts}.md}
-Failed subagents: []
-```
-Update after every wave. Survives subagent termination. Enables phase recovery.
-
-> State file format and recovery protocol: read `resources/methodology.md`
+> DPS templates + state file format: read `resources/methodology.md`
 
 ## Subagent Dispatch Protocol
 
-> All subagent spawns must use `run_in_background: true` + `context: "fork"`.
-> This is enforced in coordinator.md agent body (Subagent Spawn Protocol section).
-> N≥3 outputs → spawn synthesis subagent → only synthesis summary reaches coordinator context.
-> **Lead reads ONLY coordinator's final synthesis return. Individual domain subagent outputs NEVER enter Lead's context.**
+> All spawns: `run_in_background: true` + `context: "fork"` + `model: "sonnet"`.
+> Lead reads ONLY coordinator's final return. Individual subagent outputs NEVER enter Lead's context.
 
-For each phase:
-1. **Plan**: coordinator lists tasks → assigns agent profiles → names OUTPUT_PATHs
-2. **Dispatch**: spawn ALL independent tasks in parallel (`run_in_background:true`, `context:fork`, `model:"sonnet"`)
-3. **Collect**: wait for completion notifications → read each OUTPUT_PATH → quality check
-   - **≤2 outputs**: coordinator reads directly into context
-   - **≥3 outputs (any wave batch)**: spawn synthesis subagent (`run_in_background:true`, `context:fork`)
-     → `INPUT_FILES: [/tmp/dlat-{phase}-task-1.md, /tmp/dlat-{phase}-task-2.md, ...]`
-     → synthesis subagent consolidates batch → writes `/tmp/dlat-{phase}-synthesis-{ts}.md`
-     → coordinator reads synthesis file only (not raw outputs) → synthesis enters coordinator context
-4. **Synthesize**: write synthesis file path to state file → coordinator proceeds with synthesis as phase context
-5. **Gate**: if phase FAIL → apply D12 escalation within coordinator context
+Per phase:
+0. **Pre-spawn validation**: Verify `DLAT_BASE` directory exists. If not → execute `mkdir -p` first. Every OUTPUT_PATH in the DPS MUST be an absolute path starting with `{DLAT_BASE}/`.
+1. **Plan**: list tasks, assign agent profiles, name OUTPUT_PATHs
+2. **Dispatch**: spawn ALL independent tasks in parallel
+3. **Collect**: wait for notifications → quality check via OUTPUT_PATH read
+   - **<=2 outputs OR all files <=50 lines**: read directly
+   - **>=3 outputs with substantial content**: spawn synthesis subagent
+     → writes `{DLAT_BASE}/coordinator/{phase}-synthesis.md`
+     → coordinator reads synthesis only
+4. **Synthesize**: update state.md → proceed
+5. **Gate**: FAIL → D12 escalation
 
-**DPS requirement**: Every DPS must include:
+**DPS requirement** (every DPS must include):
 ```
-OUTPUT_PATH: /tmp/dlat-{phase}-{task}-{n}.md
+DLAT_BASE: ~/.claude/doing-like-agent-teams/projects/{project_slug}
+OUTPUT_PATH: {DLAT_BASE}/{agent_name}/{phase}-{task}-{n}.md
 Write your complete output to OUTPUT_PATH before finishing.
 ```
 
@@ -127,69 +107,70 @@ Write your complete output to OUTPUT_PATH before finishing.
 
 ## Wave Capacity
 
-- Max parallel subagents per wave: **5** (context + system limit)
-- Phases with >5 tasks: split into sub-waves (wave 1a, 1b, ...)
-- Coordinator never reads full subagent output in context — always via OUTPUT_PATH file read
-- If ≥3 output files per dependency group → spawn synthesis subagent with file path list (**per-wave synthesis coordinator pattern**)
+- Max parallel subagents per wave: **5**
+- Phases with >5 tasks: split into sub-waves
+- Coordinator reads from OUTPUT_PATH files, never from subagent return values
+- Synthesis subagent for >=3 substantial outputs per wave
 
 ## Failure Handling
 
-| Failure | Level | Coordinator Action |
-|---------|-------|-------------------|
-| Subagent empty output | L0 Retry | Re-spawn same DPS |
-| Output fails quality gate | L1 Nudge | Re-spawn with corrected DPS + failure reason |
-| Subagent OOM / compacted | L2 Respawn | Fresh spawn, narrower scope |
-| Phase gate FAIL | L3 Restructure | Revise task decomposition, re-run phase |
-| 3+ L2 failures same task | L4 Escalate | Write escalation to state file → return to Lead |
+| Failure | Level | Action |
+|---------|-------|--------|
+| Empty output | L0 Retry | Re-spawn same DPS |
+| Quality gate fail | L1 Nudge | Re-spawn with correction |
+| OOM / compacted | L2 Respawn | Narrower scope |
+| Phase gate FAIL | L3 Restructure | Revise decomposition |
+| 3+ L2 same task | L4 Escalate | Write to state.md → return to Lead |
 
 > Escalation ladder: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
 
-- **Skipping phases**: COMPLEX tier requires all P0-P8. No shortcutting to P6 direct.
-- **Lead as relay**: Main context reading wave outputs and re-embedding in next DPS. Coordinator handles this.
-- **Missing OUTPUT_PATH**: Subagent completes but coordinator cannot find result.
-- **Coordinator context bloat**: Coordinator reading 10+ full output files into context. Spawn synthesis subagent instead.
-- **No state file**: Coordinator loses pipeline state on compaction. Write state after every wave.
-- **No codebase scan before dialogue**: Skipping step 1 of P0 causes misaligned user questions (asking about already-complete features). Always scan completion state first.
-- **Same-file parallel edit**: Two subagents assigned to same file → corruption.
-- **Assuming P2P**: Subagents cannot SendMessage each other. All coordination via coordinator + files.
+- **Skipping phases**: COMPLEX tier requires all P0-P8.
+- **Lead as relay**: Main context reading wave outputs. Coordinator handles all inter-phase data.
+- **Coordinator context bloat**: Reading 10+ output files directly. Use synthesis subagent.
+- **No state updates**: State lost on compaction. Update state.md after every wave.
+- **Same-file parallel edit**: Two subagents on same file → corruption.
+- **Assuming P2P**: Subagents cannot message each other. Coordinator + files only.
+- **Writing to /tmp/** [BLOCK]: ALL outputs MUST use DLAT_BASE paths. `/tmp/` is volatile and causes data loss. If a subagent DPS lacks OUTPUT_PATH starting with DLAT_BASE, the DPS is INVALID — do not spawn.
 
 ## Transitions
 
 ### Receives From
 | Source | Data | Format |
 |--------|------|--------|
-| User | Task scope, requirements, success criteria | Natural language (skill invocation arguments) |
-| Previous partial run | State file | `/tmp/dlat-state-{session}.md` |
+| User | Task scope, requirements | Natural language |
+| Previous run | State file | `{DLAT_BASE}/state.md` |
 
 ### Sends To
 | Target | Data | Trigger |
 |--------|------|---------|
-| Background subagents | DPS with OUTPUT_PATH | Each phase wave dispatch |
-| Lead main context | Session summary path + stats | After P8 delivery |
+| Subagents | DPS with OUTPUT_PATH | Each wave dispatch |
+| Lead main context | Summary path + stats | After P8 |
 
-> D17 Note: Single-session 2-channel only (Ch2 OUTPUT_PATH files, Ch3 completion notification). Ch1 PT and Ch4 P2P not available.
+> 2-channel only: Ch2 (OUTPUT_PATH files) + Ch3 (completion notification).
 
 ## Quality Gate
 
-- [ ] ALL phases P0-P8 executed (COMPLEX tier, no shortcuts)
-- [ ] Every subagent spawn: run_in_background:true + context:fork (main context = orchestration only)
-- [ ] Every DPS includes OUTPUT_PATH
-- [ ] State file updated after each wave (compaction resilience)
+- [ ] ALL phases P0-P8 executed (no shortcuts)
+- [ ] DLAT_BASE directory created BEFORE first subagent spawn
+- [ ] No outputs written to /tmp/ — all in DLAT_BASE
+- [ ] Work dirs created by Lead (Bash) before coordinator fork
+- [ ] Every spawn: `run_in_background:true` + `context:fork` + `model:"sonnet"`
+- [ ] Every DPS includes DLAT_BASE and OUTPUT_PATH
+- [ ] State file updated after each wave
 - [ ] Max 5 parallel subagents per wave
-- [ ] Per-wave synthesis subagent used for ≥3 dependency-chain batch outputs
-- [ ] Coordinator writes synthesis (not raw file content) to main context return
-- [ ] All subagents spawned with `model: "sonnet"`
+- [ ] Synthesis subagent for >=3 substantial outputs per wave
+- [ ] Each agent writes ONLY to its own subdirectory
 
 ## Output
 
-### Coordinator returns to main context
 ```yaml
 session_summary:
   phases_completed: [P0, P1, ..., P8]
   total_subagents: N
   failed_tasks: []
-  state_file: /tmp/dlat-state-{session}.md
-  synthesis_file: /tmp/dlat-synthesis-{session}.md
+  work_directory: ~/.claude/doing-like-agent-teams/projects/{project_slug}
+  state_file: ~/.claude/doing-like-agent-teams/projects/{project_slug}/state.md
+  summary_file: ~/.claude/doing-like-agent-teams/projects/{project_slug}/session-summary.md
 ```

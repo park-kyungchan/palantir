@@ -1,6 +1,7 @@
 ---
 name: web-pipeline-steps
 description: "[Organism·WebDesign·Workflow] Renders a vertical numbered step card sequence with scroll-entrance animation, domain color-coding, and optional spotlight mode. Composes web-design-tokens + web-glass-card. Step headers show numbered badge (cyan/magenta/green by domain) + skill name + optional parallel badge. IntersectionObserver drives staggered translateY reveal; spotlight tracks active card during scroll. Use for pipeline diagrams, process walkthroughs, or methodology displays. References: portfolio.html"
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[steps:json] [domain:d0|d1|d2] [spotlight:true|false] [animate:true|false]"
 ---

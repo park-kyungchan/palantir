@@ -18,7 +18,7 @@ description: >-
   Glob results + CLAUDE.md declared counts. Exclude L2 body
   content, non-.claude/ files, source code outside skills/agents/.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Verify — Structural Content (Unified)

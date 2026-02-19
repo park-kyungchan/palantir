@@ -16,7 +16,7 @@ description: >-
   contracts, design-risk risk areas. Exclude pre-design conversation
   history and rejected alternatives.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Research — Codebase

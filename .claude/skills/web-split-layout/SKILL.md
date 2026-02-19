@@ -1,6 +1,7 @@
 ---
 name: web-split-layout
 description: "[Organism·WebDesign·Layout] Generates sticky-left scrolling-right split layout for side-by-side content presentation. Left panel stays fixed while right panel scrolls. Responsive: stacks vertically on mobile. Composes web-design-tokens + web-glass-card. Use for portfolio items, feature showcases, or comparison views. References: split-layout.html, split-layout.css, split-layout.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[ratio:40-60|50-50|30-70] [sticky:left|right] [mobile:stack|tabs]"
 ---

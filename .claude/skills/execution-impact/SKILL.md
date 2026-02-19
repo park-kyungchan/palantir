@@ -15,8 +15,8 @@ description: >-
   partial impact data. DPS needs execution-code/infra manifests
   + audit-impact L3 predictions. Exclude implementation details
   beyond file paths and change summaries.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Execution — Impact

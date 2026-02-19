@@ -6,8 +6,8 @@ description: |
   WHEN: After jsonl-validate AND latex-parse complete. Merge point in D1 validation core.
   CONSUMES: IC-06 golden_answer (challenge-generate, drill only), IC-07 validation_result (jsonl-validate), IC-08 parse_result (latex-parse).
   PRODUCES: Drill: IC-09 rendering_diff + IC-10 trap_results → golden-correct, progress-track. Production: IC-12 qc_rendering → qc-report.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Render Evaluate -- Dual-Mode Merge Point

@@ -1,6 +1,7 @@
 ---
 name: web-gap-matrix
 description: "[Organism·WebDesign·Analytics] Generates interactive horizontal bar chart matrix with category grouping, progress-bar atoms, gap tags, and target lines. Composes web-design-tokens + web-progress-bar + web-status-badge. IntersectionObserver triggers staggered fill animations. Use for gap analysis, skill assessment, or comparative metrics. References: gap-matrix.html, gap-matrix.css, gap-matrix.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[categories:json] [show-targets:true|false] [animate:true|false]"
 ---

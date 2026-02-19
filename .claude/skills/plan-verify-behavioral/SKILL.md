@@ -14,8 +14,8 @@ description: >-
   evidence. DPS needs plan-behavioral output and
   research-coordinator audit-behavioral L3. Exclude other verify
   dimension results.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan Verify — Behavioral Coverage

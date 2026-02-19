@@ -11,8 +11,8 @@ description: >-
   visualization with DAG for orchestrate-coordinator. On FAIL,
   Lead applies D12 escalation. DPS needs plan-verify-coordinator
   verified plan L3. Exclude other orchestrate dimension outputs.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Orchestrate — Impact (WHEN)

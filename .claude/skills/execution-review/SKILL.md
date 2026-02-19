@@ -17,7 +17,7 @@ description: >-
   cascade iteration details beyond warnings[] and full ADR
   history.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Execution — Review

@@ -1,6 +1,7 @@
 ---
 name: web-floating-orbs
 description: "[Atom·WebDesign·Ambient] Provides floating background orbs with radial gradients, blur filter, and CSS keyframe animations for ambient visual effect. Optional JS for mouse parallax response. Multiple orb configurations: purple, cyan, magenta. Use as page background decoration. pointer-events:none, z-index:-1. References web-design-tokens for colors."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[count:2|3|4] [parallax:true|false] [colors:neon|subtle|custom]"
 ---

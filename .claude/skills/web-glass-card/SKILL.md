@@ -1,6 +1,7 @@
 ---
 name: web-glass-card
 description: "[Atom·WebDesign·Card] Generates glass morphism card component with 3 variants: animated conic-gradient border, static frosted, cyan accent glow. Each includes self-contained JS for tilt hover effect via Web Animations API. Requires web-design-tokens foundation. References: glass-card.html (markup), glass-card.css (styles with @property animation), glass-card.js (3D tilt + glow)."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[variant:animated|static|cyan] [tilt:true|false]"
 ---

@@ -12,8 +12,8 @@ description: >-
   plan-static with refined research context. DPS needs
   research-coordinator audit-static L3 dependency graph. Exclude
   behavioral, relational, and impact dimension data.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan — Static Decomposition

@@ -1,6 +1,7 @@
 ---
 name: web-card-grid
 description: "[Organism·WebDesign·Grid] Renders responsive card grid composing web-glass-card atoms with CSS Grid auto-fill/minmax, Container Queries, and stagger-reveal entrance. CSS scroll-driven animation primary; IntersectionObserver JS fallback for Firefox. Use for portfolio, project showcase, or feature grid sections. References: card-grid.html, card-grid.css, card-grid.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[columns:2|3|4] [min-card-width:280px] [gap:sm|md|lg] [stagger:true|false]"
 ---

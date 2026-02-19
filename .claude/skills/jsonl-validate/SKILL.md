@@ -6,8 +6,8 @@ description: |
   WHEN: After trainee submits JSONL (drill) or worker/OCR output arrives (production). Mode from $ARGUMENTS or upstream.
   CONSUMES: challenge-generate (IC-04 challenge_spec, drill), image-preprocess (IC-13 preprocessed_input, production), User input (raw JSONL).
   PRODUCES: IC-07 validation_result → render-evaluate, drill errors → golden-correct, production verdict → qc-report. HITL queue when confidence < 0.8 (production).
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # D1 Shared Validation Core — JSONL Validate (Dual-Mode)

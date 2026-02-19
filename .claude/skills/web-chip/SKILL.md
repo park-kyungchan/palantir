@@ -1,6 +1,7 @@
 ---
 name: web-chip
 description: "[Atom·WebDesign·Tag] Generates pill-shaped tag/chip components in flex-wrap container. Variants: default (outlined), filled, colored (neon accents). Minimal JS for optional click-to-filter interaction. Requires web-design-tokens. References: chip.html (markup), chip.css (styles), chip.js (optional filter)."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[variant:default|filled|colored] [interactive:true|false]"
 ---
