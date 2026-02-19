@@ -14,8 +14,8 @@ description: >-
   file:line evidence, research-external known issues, and
   design-architecture change scope. Exclude other audit dimension
   results (static/relational/impact) and pre-design history.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Audit — Behavioral (Runtime Behavior Prediction)

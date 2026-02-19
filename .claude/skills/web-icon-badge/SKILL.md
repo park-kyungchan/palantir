@@ -1,6 +1,7 @@
 ---
 name: web-icon-badge
 description: "[Atom·WebDesign·Icon] Provides circular icon container with gradient border, inner glow, and hover scale effect. Configurable size (sm/md/lg/xl), supports emoji, SVG inline, or image. Glass morphism background with backdrop-filter. Use for feature highlights, stat indicators, or avatar placeholders. References web-design-tokens for colors and glass tokens."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[size:sm|md|lg|xl] [glow:true|false] [content:emoji|svg|img]"
 ---

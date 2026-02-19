@@ -17,7 +17,7 @@ description: >-
   DPS needs design-architecture technology choices, design-risk risk
   areas. Exclude internal codebase patterns (research-codebase handles those).
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Research — External

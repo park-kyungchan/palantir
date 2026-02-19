@@ -12,8 +12,8 @@ description: >-
   orchestrate-relational DPS specs, and orchestrate-impact wave
   schedule. Produces L1 index and L2 summary for Lead, L3
   execution-plan for execution-code and execution-infra. Enforces DPS v5 with MCP_DIRECTIVES and COMM_PROTOCOL. All spawns model:sonnet. Plan-first gate for COMPLEX tier. On FAIL (execution plan inconsistency), Lead applies D12 escalation. DPS needs all four orchestrate dimension outputs. Exclude plan-verify raw data.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Orchestrate — Coordinator

@@ -97,7 +97,12 @@ kc-palantir-*.json:Zone.Identifier
 .claude/plans/
 .claude/debug/
 .claude/projects/
+# Exception: memory files ARE version-controlled
+!.claude/projects/-home-palantir/memory/
 .claude/teams/
+
+# DLAT pipeline outputs (session-specific, not for version control)
+.claude/doing-like-agent-teams/
 
 # Cow runtime cache and sessions
 .cow/cache/

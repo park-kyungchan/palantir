@@ -12,8 +12,8 @@ description: >-
   On FAIL, routes back to plan-static with verified gap evidence.
   DPS needs plan-static output and research-coordinator
   audit-static L3. Exclude other verify dimension results.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan Verify — Static Coverage

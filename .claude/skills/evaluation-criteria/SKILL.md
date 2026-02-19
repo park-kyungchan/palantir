@@ -19,7 +19,7 @@ description: >-
   task. Exclude full pipeline state and technical
   implementation detail.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Research — Evaluation Criteria

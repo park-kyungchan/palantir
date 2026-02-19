@@ -1,6 +1,7 @@
 ---
 name: web-stat-dashboard
 description: "[Organism·WebDesign·Metrics] Generates animated counter grid with icon badges, glass cards, labels, and optional trend indicators. Staggered entrance animation. Composes web-design-tokens + web-glass-card + web-icon-badge. IntersectionObserver triggers countUp animation. Use for KPI displays, achievement counters, or statistics overview. References: stat-dashboard.html, stat-dashboard.css, stat-dashboard.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[stats:json] [columns:2|3|4] [animate:true|false]"
 ---

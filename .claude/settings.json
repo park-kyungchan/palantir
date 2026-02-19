@@ -153,6 +153,17 @@
         ]
       },
       {
+        "matcher": "TaskOutput",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/block-taskoutput-relay.sh",
+            "timeout": 5,
+            "statusMessage": "Checking for Data Relay Tax"
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
@@ -199,5 +210,7 @@
   "alwaysThinkingEnabled": true,
   "promptSuggestionEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "teammateMode": "tmux"
+  "teammateMode": "tmux",
+  "model": "opus",
+  "effortLevel": "high"
 }

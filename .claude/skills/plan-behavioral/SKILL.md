@@ -13,8 +13,8 @@ description: >-
   DPS needs research-coordinator audit-behavioral L3 behavior
   predictions. Exclude static, relational, and impact dimension
   data.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan — Behavioral Strategy

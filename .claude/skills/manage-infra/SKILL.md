@@ -14,7 +14,7 @@ description: >-
   DPS needs CLAUDE.md declared counts and .claude/ filesystem
   paths. Exclude pipeline history and agent-memory data.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Manage — INFRA

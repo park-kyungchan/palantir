@@ -1,6 +1,7 @@
 ---
 name: web-hero-section
 description: "[Organism·WebDesign·Hero] Generates full-viewport hero section with gradient animated title, subtitle, chip tags, scroll-down indicator, and floating orb background. Composes web-design-tokens + web-chip + web-floating-orbs atoms. Includes View Transitions API ready markup. Use as landing page entry point. References: hero-section.html, hero-section.css, hero-section.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[title:text] [subtitle:text] [chips:comma,separated] [scroll-indicator:true|false]"
 ---

@@ -1,6 +1,7 @@
 ---
 name: web-nav-dots
 description: "[Atom·WebDesign·Navigation] Provides fixed-position section navigation dots with active state glow, hover label tooltips, and smooth scroll. JS IntersectionObserver tracks active section. Hidden on mobile via media query. Use for single-page scrolling sites with multiple sections. References web-design-tokens for colors."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[position:right|left] [labels:true|false]"
 ---

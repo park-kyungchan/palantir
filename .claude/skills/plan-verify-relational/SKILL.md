@@ -14,8 +14,8 @@ description: >-
   evidence. DPS needs plan-relational output and
   research-coordinator audit-relational L3. Exclude other verify
   dimension results.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan Verify — Relational Integrity

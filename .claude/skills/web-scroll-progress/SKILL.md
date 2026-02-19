@@ -1,6 +1,7 @@
 ---
 name: web-scroll-progress
 description: "[Atom·WebDesign·Indicator] Provides fixed-top scroll progress bar with gradient fill tracking page scroll position. Two implementations: CSS-only scroll-driven animation (modern browsers) and JS scroll event fallback. Gradient: cyan to magenta to green. Use for long-form content pages. References web-design-tokens for colors."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[gradient:neon|mono|custom] [height:2px|3px|4px]"
 ---

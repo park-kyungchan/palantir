@@ -17,7 +17,7 @@ description: >-
   feasibility-confirmed requirements only. Exclude rejected
   alternatives and raw user conversation.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Design — Architecture

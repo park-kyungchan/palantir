@@ -8,7 +8,7 @@ description: |
   CONSUMES: IC-01 command_pool (commands[], escape_rules[], ocr_confusions[], trap_catalog[]), IC-03 recommendation (next_difficulty, focus_rules[], weak_patterns[]).
   PRODUCES: IC-04 challenge_spec → jsonl-validate, IC-05 expected_constructs → latex-parse, IC-06 golden_answer (hidden) → render-evaluate.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[topic] [difficulty:1-5]"
 ---
 

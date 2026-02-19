@@ -1,6 +1,7 @@
 ---
 name: web-cta-section
 description: "[Organism·WebDesign·Action] Generates call-to-action section with gradient headline, description text, primary and secondary action buttons, and glass morphism background. Scroll-reveal entrance. Composes web-design-tokens. Button hover effects with WAAPI glow. Use for conversion sections, contact prompts, or newsletter signups. References: cta-section.html, cta-section.css, cta-section.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[headline:text] [description:text] [primary-btn:text] [secondary-btn:text]"
 ---

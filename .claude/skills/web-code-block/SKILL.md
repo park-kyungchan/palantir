@@ -1,6 +1,7 @@
 ---
 name: web-code-block
 description: "[Atom·WebDesign·Content] Provides styled code display block with glass morphism background, line numbers, language label, and copy-to-clipboard button. Optional syntax highlighting via CSS classes. Monospace font with horizontal scroll. Use for code snippets, terminal output, or configuration examples. References web-design-tokens for glass and typography tokens."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[language:js|css|html|bash|json] [line-numbers:true|false] [copy:true|false]"
 ---

@@ -77,7 +77,7 @@ Scan all `.claude/` files using the diagnostic category checklist below. Spawn a
 | Category | Check | Tool | Severity if Failed |
 |---|---|---|---|
 | Field compliance | Non-native frontmatter fields present | Read + compare to native-fields.md | CRITICAL |
-| Routing integrity | `disable-model-invocation: true` on pipeline skills | Grep across skills/ | CRITICAL |
+| Routing integrity | `disable-model-invocation: false` on pipeline skills | Grep across skills/ | CRITICAL |
 | L1 budget | Total description chars exceed 32000 | Read all descriptions + sum chars | HIGH |
 | Hook validity | Shell scripts have correct shebang, exit codes, JSON output | Read each hook script | HIGH |
 | Agent memory config | `memory` field is valid enum for each agent | Read agents/*.md frontmatter | MEDIUM |

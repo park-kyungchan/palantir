@@ -16,8 +16,8 @@ description: >-
   audit-static L3 dependency graph, audit-behavioral L3 predictions,
   audit-relational L3 relationships, audit-impact L3 propagation
   paths. Exclude individual claim evidence detail.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Research — Coordinator (Cross-Audit Consolidation)

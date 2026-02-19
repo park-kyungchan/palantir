@@ -10,8 +10,8 @@ description: >-
   Produces task-agent matrix with splits count and assignment
   rationale for orchestrate-coordinator. Model:sonnet for all spawns. MCP tasks require general-purpose subagent_type. Teammates when P2P coordination needed.
   On FAIL, Lead applies D12 escalation. DPS needs plan-verify-coordinator verified plan L3. Exclude other orchestrate dimension outputs.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Orchestrate — Static (WHO)
