@@ -17,9 +17,10 @@ tools:
   - TaskCreate
   - TaskUpdate
   - AskUserQuestion
+  - mcp__sequential-thinking__sequentialthinking
 skills:
   - task-management
-model: haiku
+model: sonnet
 maxTurns: 20
 color: blue
 ---

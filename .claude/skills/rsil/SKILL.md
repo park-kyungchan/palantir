@@ -67,6 +67,7 @@ User specifies focus via `$ARGUMENTS`:
 - Pipeline failure in any phase
 - User reports recurring bottleneck or routing failure
 - Post-major-pipeline completion (proactive health maintenance)
+- ∴ Thinking reveals INFRA structural gap (ALWAYS ACTIVE — any mode, any pipeline, any phase)
 
 ### Tier Selection
 - **TRIVIAL**: ≤3 findings, all LOW/MEDIUM. No research needed.
@@ -78,7 +79,13 @@ User specifies focus via `$ARGUMENTS`:
 > For detailed sub-step procedures, output formats, and scoring formulas: read `resources/methodology.md`
 
 - **Step 1 — Detect**: Merge signals from self-diagnose (10 categories), manage-infra (health score), manage-codebase (dependency map), and ad-hoc user signals into a unified bottleneck list with source, category, severity, and evidence.
+
+> **Lead RECEIVE (Step 1)**: After analyst completes — read task notification summary ONLY (micro-signal). Do NOT call `TaskOutput(block:true)` to pull full analyst output into Lead context. Pass the analyst output file path to downstream implementers via `INPUT_FILES` or `$ARGUMENTS`. The analyst writes findings to a file; Lead passes the file path. This is mandatory — `TaskOutput(block:true)` is the single-session equivalent of the Data Relay Tax anti-pattern.
+
 - **Step 2 — Research**: Spawn researcher (external WebSearch) + analyst (codebase scan) in parallel. Tag all CC-native behavioral claims as `[CC-CLAIM]` → route to `research-cc-verify` before incorporating.
+
+> **Lead RECEIVE (Step 2)**: Same pattern — receive micro-signal from researcher/analyst subagents. Pass file paths. Never embed full outputs in downstream DPS.
+
 - **Step 3 — Curate**: Score patterns by `(impact×3 + feasibility×2) / effort`. Run cross-impact analysis (synergies, conflicts, dependencies). Group into Wave 1 (CRITICAL), Wave 2 (HIGH), Wave 3 (MEDIUM/LOW).
 - **Step 4 — Apply**: Delegate curated findings to `/self-implement`. self-implement spawns infra-implementers in waves (max 2 parallel, non-overlapping files). Max 3 convergence iterations per wave.
 - **Step 5 — Verify**: Re-invoke manage-infra for health_after. Compare health_before vs health_after. If regression detected → HALT cycle and escalate to L4.

@@ -37,6 +37,21 @@ Merge signals from three homeostasis sources into a unified bottleneck list.
 
 ---
 
+### Lead Anti-Patterns During RSIL Execution
+
+These patterns corrupt Lead's context window and defeat the purpose of the RSIL loop:
+
+| Anti-Pattern | Consequence | Correct Pattern |
+|---|---|---|
+| `TaskOutput(block:true)` for analyst result | Full analyst output (~30K chars) floods Lead context | Read only notification summary; pass file path to implementers |
+| `Read(findings_file)` in Lead context | Doubles the relay cost | Implementer reads findings file directly via `INPUT_FILES` |
+| Embedding findings in DPS as text | DPS size bloat; context burn | Pass `INPUT_FILES=[path]` in DPS; implementer reads directly |
+| Running RSIL during active pipeline | `.claude/` files being modified while pipeline reads them | Confirm no active pipeline before RSIL execution |
+
+**Canonical rule**: CLAUDE.md §3 "Data Relay Tax" applies to RSIL execution. RSIL is not exempt from its own protocols.
+
+---
+
 ## Step 2: Research — Detail
 
 For each bottleneck category, search for community solutions and best practices.

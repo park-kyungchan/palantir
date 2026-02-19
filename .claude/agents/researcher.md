@@ -5,8 +5,8 @@ description: |
   web search, context7 for library docs. WebSearch/WebFetch BLOCKED by hook.
   When MCP unavailable, STOPS and reports FAIL.
 
-  WHEN: Web research via MCP — tavily, context7. Library docs, API refs, pattern validation.
-  TOOLS: Read, Glob, Grep, Write, tavily, context7, sequential-thinking.
+  WHEN: Web research via MCP — tavily, context7, github. Library docs, API refs, GitHub repos/code/issues, pattern validation.
+  TOOLS: Read, Glob, Grep, Write, tavily, context7, github, sequential-thinking.
   CANNOT: Edit, Bash, Task, WebSearch (hook-blocked), WebFetch (hook-blocked).
 tools:
   - Read
@@ -17,6 +17,15 @@ tools:
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs
   - mcp__tavily__search
+  - mcp__github-mcp-server__search_repositories
+  - mcp__github-mcp-server__search_code
+  - mcp__github-mcp-server__get_file_contents
+  - mcp__github-mcp-server__search_issues
+  - mcp__github-mcp-server__get_issue
+  - mcp__github-mcp-server__list_issues
+  - mcp__github-mcp-server__list_commits
+  - mcp__github-mcp-server__get_pull_request
+  - mcp__github-mcp-server__list_pull_requests
 memory: project
 maxTurns: 20
 color: yellow
@@ -42,14 +51,15 @@ MCP-powered research worker. tavily for web search, context7 for library docs. W
 ## Research Methodology
 1. **Local first**: Check `~/.claude/projects/-home-palantir/memory/ref_*.md` cache for existing CC knowledge
 2. **context7**: For library/framework documentation — `resolve-library-id` → `query-docs`
-3. **tavily**: For web search — API docs, blog posts, GitHub issues, community patterns
-4. **Cross-validate**: Every finding needs ≥2 independent sources when possible
+3. **github**: For code search, issue tracking, repo exploration — `search_code`, `search_repositories`, `get_file_contents`
+4. **tavily**: For web search — API docs, blog posts, community patterns
+5. **Cross-validate**: Every finding needs ≥2 independent sources when possible
 
 ## Source Hierarchy
 | Priority | Source Type | Trust Level | Tool |
 |---|---|---|---|
 | 1 | Official docs (anthropic.com, docs.*) | High | context7 or tavily |
-| 2 | GitHub source code / issues | High | tavily |
+| 2 | GitHub source code / repos / issues | High | github MCP |
 | 3 | Local cc-reference cache (ref_*.md) | Medium-High | Read |
 | 4 | Blog posts / tutorials | Medium | tavily |
 | 5 | Forum posts / Discord / Reddit | Low | tavily |

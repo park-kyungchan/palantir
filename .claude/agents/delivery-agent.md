@@ -18,9 +18,10 @@ tools:
   - TaskGet
   - TaskUpdate
   - AskUserQuestion
+  - mcp__sequential-thinking__sequentialthinking
 skills:
   - delivery-pipeline
-model: haiku
+model: sonnet
 maxTurns: 20
 color: cyan
 ---

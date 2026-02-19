@@ -5,7 +5,7 @@
       "repo": "anthropics/claude-plugins-official"
     },
     "installLocation": "/home/palantir/.claude/plugins/marketplaces/claude-plugins-official",
-    "lastUpdated": "2026-02-18T17:05:18.331Z"
+    "lastUpdated": "2026-02-19T10:14:17.683Z"
   },
   "everything-claude-code": {
     "source": {
@@ -13,6 +13,6 @@
       "repo": "affaan-m/everything-claude-code"
     },
     "installLocation": "/home/palantir/.claude/plugins/marketplaces/everything-claude-code",
-    "lastUpdated": "2026-02-17T13:13:09.007Z"
+    "lastUpdated": "2026-02-19T09:37:01.676Z"
   }
 }

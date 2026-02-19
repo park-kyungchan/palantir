@@ -9,6 +9,7 @@
 > Skill L1 = routing intelligence (auto-loaded). Agent L1 = tool profile selection (auto-loaded).
 > Skill L2 body = methodology (loaded on invocation). Agent body = role identity (isolated context).
 > Lead NEVER edits files directly. All file changes through spawned teammates/subagents.
+> Lead MUST use the `AskUserQuestion` tool for ALL user-facing questions. Inline text-only questions are prohibited — they cannot be structured or tracked.
 > No routing data in CLAUDE.md — all routing via auto-loaded L1 metadata.
 > Skill frontmatter MUST contain only CC-native fields. Exclude any fields that the CC runtime ignores. Maximize routing intelligence within the `description` field.
 
@@ -19,6 +20,7 @@
 > OBSERVE (detect gaps/anomalies) → ANALYZE (compare current state vs. ideal state) → DECIDE (determine corrective action) → RECORD (persist to PT metadata) → IMPROVE (apply to next task/wave/pipeline).
 > Homeostasis (batch: self-diagnose + manage-infra) + Real-Time RSIL (continuous: per-task observation) = complete self-improvement system.
 > CC-native claims: empirical verification is mandatory (research-cc-verify gate). Inference-based judgment is prohibited. Corrections to existing claims are themselves new claims requiring verification.
+> **Thinking Capture Protocol** [ALWAYS ACTIVE]: ∴ Thinking is a live RSIL input stream. Every INFRA gap surfaced during thinking triggers: (1) RECORD in PT `metadata.thinking_insights[]` immediately, (2) ROUTE severity HIGH+ to next available RSIL wave — do not defer to pipeline end, (3) No task is "non-RSIL" — this cycle runs in every mode, every pipeline, every phase.
 
 ## 0. Language Policy
 - **User-facing conversation:** Korean only
@@ -85,6 +87,7 @@ Classified at P0 (Pre-Design). The tier determines which phases are traversed:
 - **All tiers — P2+ (RESEARCH through DELIVERY)**: Team infrastructure ONLY. Local subagents are PROHIBITED.
 - Lead MUST NOT use `TaskOutput` to read full teammate results. Lead receives Ch3 micro-signals for OBSERVE/ENFORCE; teammates exchange full data via Ch2 files + Ch4 P2P signals.
 - `AskUserQuestion` remains Lead-direct in all tiers (teammates and subagents cannot interact with the user).
+- **DLAT mode**: After invoking `doing-like-agent-teams`, ALL agent spawns MUST set `run_in_background: true` + `context: "fork"`. No exceptions. Lead reads ONLY the coordinator's final synthesis return — individual subagent outputs NEVER enter Lead's context directly.
 
 ## 3. Lead = Orchestration Intelligence
 - Routes via Skill L1 descriptions + Agent L1 tool profiles (both auto-loaded)
@@ -117,6 +120,8 @@ When Lead reads a teammate's full output and re-embeds it into another teammate'
    → Teammate-B reads tasks/{team}/output.md directly
    = Lead consumed ~200 tokens, all for orchestration decisions
 ```
+
+**Scope note — All modes, all contexts**: This anti-pattern applies in ALL execution modes: DLAT, RSIL homeostasis, standard pipeline, and direct skill invocation. `TaskOutput(block:true)` in single-session mode is the exact equivalent of reading a teammate's full output — it floods Lead context with subagent data. The correct pattern in all modes: receive only the notification summary (micro-signal), pass the output file path downstream, let the consuming agent read the file directly. DLAT's "Lead reads only coordinator synthesis" and this general rule are the same principle at different scopes.
 
 ### Team Lifecycle
 **Plan-First**: COMPLEX tier requires `/plan` mode (~10k tokens) before `TeamCreate`. A misdirected team wastes 500k+ tokens.

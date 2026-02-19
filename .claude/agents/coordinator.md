@@ -44,9 +44,14 @@ Upstream file count?
 
 When spawning subagents, construct a focused prompt:
 
+> **Always use `context: "fork"` and `run_in_background: true`** on every Task call.
+> These are non-negotiable: fork isolates output from coordinator context; background enables async dispatch.
+
 ```
 Task({
   subagent_type: "analyst",
+  context: "fork",
+  run_in_background: true,
   prompt: "Read these files and return L1 summary:\n
     Files: {file_1}, {file_2}, {file_3}\n
     Focus: {specific dimension or question}\n
