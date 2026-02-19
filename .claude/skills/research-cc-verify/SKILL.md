@@ -15,7 +15,7 @@ description: >-
   claims. DPS needs specific CC-native claims with file paths to verify.
   Exclude pipeline context — verify agent needs only the claim list.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[claim-source or investigation-context]"
 ---
 

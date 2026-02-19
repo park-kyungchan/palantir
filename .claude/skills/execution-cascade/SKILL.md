@@ -13,7 +13,7 @@ description: >-
   warnings, and unresolved file list. DPS needs execution-impact
   DIRECT dependents with evidence + root cause change summary.
   Exclude TRANSITIVE dependents and full pipeline history.
-user-invocable: false
+user-invocable: true
 disable-model-invocation: true
 ---
 

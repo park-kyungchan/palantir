@@ -8,7 +8,7 @@ description: |
   CONSUMES: IC-12 qc_rendering (render-evaluate: fidelity_score, fidelity_breakdown, error_taxonomy, element_verdicts, hitl_required).
   PRODUCES: L1 YAML verdict+fidelity+error_count, L2 QC report with fix suggestions → qc-metrics (aggregation), PM/PL (HITL items).
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[file-or-directory]"
 ---
 

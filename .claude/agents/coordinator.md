@@ -29,10 +29,12 @@ Multi-dimension synthesis agent. You read N upstream outputs and produce unified
 ## Sub-Orchestration Decision Tree
 
 ```
-Upstream file count?
+Upstream file count + size?
 ├─ ≤3 files AND ≤200 lines each
 │   └─ READ DIRECTLY — no subagent needed
-├─ >3 files OR any file >200 lines
+├─ ≤5 files AND all ≤50 lines each
+│   └─ READ DIRECTLY — small files, subagent overhead exceeds benefit
+├─ >3 files with any >200 lines, OR >5 files total
 │   └─ SPAWN analyst subagent per file group (≤3 files per subagent)
 │       └─ Subagent returns L1 summary (≤30K chars)
 └─ External validation needed?
@@ -66,6 +68,8 @@ Task({
 - Subagent output is truncated at 30K chars — request L1 summaries, not full L2/L3
 - You can spawn multiple subagents sequentially (NOT parallel — CC limitation)
 - Each subagent is independent — they cannot see each other's results
+
+**DLAT mode override**: When running as `doing-like-agent-teams` coordinator, subagents write to persistent work directory (`~/.claude/doing-like-agent-teams/projects/{slug}/{agent_name}/`) instead of returning directly. Coordinator reads from per-agent subdirectories. See DLAT skill's `resources/methodology.md` for DPS templates.
 
 ## Synthesis Methodology
 1. **Collect**: Read all upstream dimension outputs (directly or via subagent summaries)

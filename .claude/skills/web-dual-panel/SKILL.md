@@ -1,6 +1,7 @@
 ---
 name: web-dual-panel
 description: "[Organism·WebDesign·Layout] Generates two-column panel layout with glass cards containing icon-based content blocks. Equal-height columns with gap. Each panel supports icon badge, title, description, and list items. Composes web-design-tokens + web-glass-card + web-icon-badge. Use for feature comparisons, service tiers, or before/after layouts. References: dual-panel.html, dual-panel.css, dual-panel.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[layout:side-by-side|stacked] [panels:json]"
 ---

@@ -6,8 +6,8 @@ description: |
   WHEN: After JSONL submit (drill) or OCR/worker LaTeX extracted (production). Parallel with jsonl-validate.
   CONSUMES: jsonl-validate (extracted text), challenge-generate (IC-05 expected_constructs), reference-build (IC-02 command_allowlist), image-preprocess (flagged_artifacts).
   PRODUCES: IC-08 parse_result (mode-tagged) → render-evaluate, drill errors → golden-correct, production findings → qc-report.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Shared Validation Core — LaTeX Parse (Dual-Mode)

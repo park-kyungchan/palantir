@@ -6,8 +6,8 @@ description: |
   WHEN: After render-evaluate completes (IC-09 rendering_diff available). Pipeline A only.
   CONSUMES: IC-09 rendering_diff (render-evaluate), IC-06 golden_answer (challenge-generate), jsonl-validate (JSONL errors), latex-parse (LaTeX errors).
   PRODUCES: IC-11 correction_report (corrections[] FATAL-first, verification badge, golden_jsonl, summary) → progress-track.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Drill -- Golden Correct (Pipeline A Terminal)

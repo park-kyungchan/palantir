@@ -15,8 +15,8 @@ description: >-
   design-architecture component list. Exclude other audit
   dimension results (behavioral/relational/impact) and
   pre-design conversation history.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Audit — Static (Structural Dependencies)

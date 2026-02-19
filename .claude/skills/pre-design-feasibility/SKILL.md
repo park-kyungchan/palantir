@@ -17,7 +17,7 @@ description: >-
   history. Loops with pre-design-brainstorm on FAIL (max 3
   iterations per D15).
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Pre-Design — Feasibility

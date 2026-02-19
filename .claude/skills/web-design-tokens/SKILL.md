@@ -2,6 +2,7 @@
 name: web-design-tokens
 description: >-
   [Foundation·WebDesign·Tokens] Emits CSS custom properties, font imports, base reset, accessibility defaults, and animation easing system for all web-* template skills. Use when starting any web design project or page. Provides: oklch color palette with hex fallbacks, @property registered animations (bg-angle, aurora-hue, shine-color), glass morphism tokens, prefers-reduced-motion block, color-mix() utilities, and 3 palette variants (neon/minimal/warm). All web-* skills reference these tokens as layer-0 foundation. Output: 3 copy-paste files (tokens.css, reset.css, fonts.html). Theme overrides via .theme-light class or data-palette attribute.
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[theme:dark|light] [palette:neon|minimal|warm]"
 ---

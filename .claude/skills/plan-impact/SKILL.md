@@ -12,8 +12,8 @@ description: >-
   plan-impact with additional path data. DPS needs
   research-coordinator audit-impact L3 propagation paths. Exclude
   static, behavioral, and relational dimension data.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan — Impact Sequencing

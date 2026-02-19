@@ -17,7 +17,7 @@ description: >-
   escalation to user. DPS needs design-architecture ADRs and
   design-interface contracts. Exclude raw feasibility data.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Design — Risk

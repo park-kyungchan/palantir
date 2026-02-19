@@ -1,6 +1,7 @@
 ---
 name: web-progress-bar
 description: "[Atom·WebDesign·DataViz] Generates animated horizontal progress/gap bars with labels, percentage display, and status tags. 3 color variants (green/cyan/magenta). JS uses IntersectionObserver to trigger fill animation + animated counter on scroll-into-view. Optional CSS Scroll-Driven Animation mode. Requires web-design-tokens. References: progress-bar.html, progress-bar.css, progress-bar.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[color:green|cyan|magenta] [value:0-100] [target:0-100] [label:text]"
 ---

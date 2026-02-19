@@ -12,8 +12,8 @@ description: >-
   with integrity evidence. DPS needs research-coordinator
   audit-relational L3 relationships and design-interface
   contracts. Exclude static, behavioral, and impact data.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan — Relational Contracts

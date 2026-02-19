@@ -19,7 +19,7 @@ description: >-
   CLAUDE.md counts. Exclude L2 body cross-references, FAIL
   route exceptions already documented as exempt.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # Verify — Consistency

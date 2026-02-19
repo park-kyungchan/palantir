@@ -15,8 +15,8 @@ description: >-
   skills. On FAIL (cross-dimension inconsistency), Lead applies
   D12 escalation. DPS needs all four plan-verify dimension
   verdicts. Exclude individual plan dimension detail.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Plan Verify — Coordinator

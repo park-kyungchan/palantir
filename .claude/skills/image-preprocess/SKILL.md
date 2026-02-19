@@ -8,7 +8,7 @@ description: |
   CONSUMES: User (OCR output/image path via $ARGUMENTS), reference-build (OCR confusion patterns via IC-01 ocr_confusions).
   PRODUCES: IC-13 preprocessed_input (latex_content, confidence, flagged_artifacts, backslash_depth, quality_score, hitl_required) → jsonl-validate.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[image-path|ocr-output-path|latex-draft-path]"
 ---
 

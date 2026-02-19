@@ -14,8 +14,8 @@ description: >-
   inventory and dependency patterns, research-external propagation
   constraints, and design-risk risk matrix. Exclude relational
   integrity data, behavioral predictions, and pre-design history.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Audit — Impact (Change Propagation Analysis)

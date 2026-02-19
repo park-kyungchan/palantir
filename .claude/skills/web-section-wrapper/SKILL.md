@@ -1,6 +1,7 @@
 ---
 name: web-section-wrapper
 description: "[Organism·WebDesign·Section] Scaffolds reusable page section with scroll-reveal entrance, gradient-underline section title, and optional glass background variant. Provides data-section-id hook for web-nav-dots active tracking. Composes web-design-tokens. Use as content section container wrapping any organism or custom content. References: section-wrapper.html, section-wrapper.css, section-wrapper.js."
+disable-model-invocation: true
 user-invocable: true
 argument-hint: "[id:section-id] [label:eyebrow-text] [title:heading] [glass:true|false] [reveal:true|false]"
 ---

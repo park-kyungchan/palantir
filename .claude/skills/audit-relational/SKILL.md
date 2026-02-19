@@ -15,8 +15,8 @@ description: >-
   design-interface API contracts. Exclude static dependency
   graph, behavioral predictions, and pre-design conversation
   history.
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
+disable-model-invocation: true
 ---
 
 # Audit — Relational (Cross-File Relationship Integrity)
