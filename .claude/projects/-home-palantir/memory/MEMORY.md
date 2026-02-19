@@ -27,6 +27,12 @@
 - **Claude Code CLI (tmux)**: Agent Teams tmux mode. Reads CLAUDE.md as constitution. Full pipeline with spawned teammates.
 - teammateMode: tmux (settings.json) — verified 2026-02-19 via actual spawn test
 
+### TaskOutput 절대금지 (2026-02-19)
+- `TaskOutput` tool call is PERMANENTLY PROHIBITED for Lead
+- Violates Data Relay Tax: pulls full subagent output into Lead's context window
+- Pattern: `run_in_background:true` → automatic notification → Read output file excerpt if needed
+- CLAUDE.md §2.1 already contains this rule — was not being enforced
+
 ### MCP Server Config [RESOLVED 2026-02-18]
 - Root cause: CC reads MCP from `.claude.json`, not `settings.json`. Fix applied, 5/5 connected, in-process 4/4 PASS.
 - Details: `memory/mcp-diagnosis.md`
@@ -42,8 +48,8 @@
 | Component | Version | Size | Key Feature |
 |-----------|---------|------|-------------|
 | CLAUDE.md | v11.0 | 55L | Protocol-only + §2.0 Phase Defs + §2.1 CE + 45 pipeline + 20 web-design skills |
-| Agents | v10.9+CE | 8 files | +coordinator.md +agent-organizer.md. All 6 INFRA have Completion Protocol |
-| Skills | v12.0+PDA | 79 dirs | 49 INFRA + 20 web-design + 10 crowd_works. Budget: ~56,000/56,000 |
+| Agents | v10.9+CE | 9 files | +browser-verifier.md. All 6 INFRA have Completion Protocol |
+| Skills | v12.1 | 84 dirs | 54 INFRA + 20 web-design + 10 crowd_works. Budget: ~56,000/56,000 |
 | Resources | 6 files | shared | .claude/resources/: phase-aware-execution, dps-construction-guide, failure-escalation-ladder, output-micro-signal-format, transitions-template, quality-gate-checklist |
 | Settings | v11.0 | ~110L | SLASH_COMMAND_TOOL_CHAR_BUDGET: 56000 |
 | Hooks | 16 scripts | ~420L | +block-web-fallback.sh +on-mcp-failure.sh |
@@ -149,14 +155,15 @@ CC runtime 5건 실증 검증 후 3-wave 수리. 72%→94% health. PR #59 (da232
 ### RSIL Pilot — verify-ui-* SRP Skills DONE (2026-02-19)
 28 findings (9H/8M/11L). Wave 1: 6 files — added Execution Model, Methodology DPS, Transitions, D17 to all 5 verify-ui-* skills + browser-verifier.md. Wave 2: rsil/SKILL.md (Lead RECEIVE anti-pattern), rsil/resources/methodology.md (Lead Anti-Patterns table), CLAUDE.md §3 (scope note: TaskOutput(block:true) = Data Relay Tax). Key insight: Data Relay Tax applies in ALL modes (DLAT, RSIL, pipeline, direct). Health: 28 findings resolved.
 
-### Math Portfolio Pipeline -- RESTART FROM P2 (2026-02-18)
-COMPLEX tier (P0→P8). Freewheelin (MathFlat) 정수론 문제은행 포트폴리오.
-- **Previous P0-P3 artifacts**: `~/tmp/math-portfolio-handoff/` (5 files + HANDOFF.md)
-- **Restart**: P2 Research부터 fresh context. New PT needed.
+### Math Portfolio Pipeline -- P6 COMPLETE (2026-02-19)
+Concept taxonomy + blueprint system + D3 graphs delivered (PR #4, 81e1c25).
+- Next: 문제설계→문제해설 portfolio narrative (blueprint detail design intent section)
 
 ## Session History
 
-Branch: `main`. Latest commit: ab8c885.
+Branch: `main`. Latest commits: 20d5334 (INFRA), 81e1c25 (math-question-bank).
+- 20d5334: RSIL pilot — 5 verify-ui-* SRP skills + browser-verifier + Real-Time RSIL integration, PR #63
+- 81e1c25: math-portfolio — concept taxonomy + blueprint system + web redesign, PR #4
 - ab8c885: 3-Stage PDA for 44 INFRA skills + doing-like-agent-teams skill (138 files)
 - c892d93: PR #62 — 20 web design template skills + stale ref fix + MEMORY.md archive
 - b3cecb2: D11-D17 design decision patches across 48 INFRA skills + cleanup, PR #61

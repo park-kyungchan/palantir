@@ -85,7 +85,7 @@ Classified at P0 (Pre-Design). The tier determines which phases are traversed:
 - **TRIVIAL/STANDARD — P0-P1 (PRE-DESIGN + DESIGN)**: Lead uses local subagents (`run_in_background`). No Team infrastructure (no `TeamCreate`/`SendMessage`).
 - **COMPLEX — P0+ (all phases)**: Team infrastructure from pipeline start. `TeamCreate` at P0; `TaskCreate`/`TaskUpdate`/`SendMessage` throughout all phases. Local subagents (those spawned with `team_name` omitted) are PROHIBITED.
 - **All tiers — P2+ (RESEARCH through DELIVERY)**: Team infrastructure ONLY. Local subagents are PROHIBITED.
-- Lead MUST NOT use `TaskOutput` to read full teammate results. Lead receives Ch3 micro-signals for OBSERVE/ENFORCE; teammates exchange full data via Ch2 files + Ch4 P2P signals.
+- **TaskOutput PROHIBITED**: Lead MUST NEVER call `TaskOutput`. It floods Lead's context with subagent data (Data Relay Tax). Correct pattern: `run_in_background:true` → automatic completion notification → Read output file excerpt (micro-signal only) if needed. Teammates exchange full data via Ch2 files + Ch4 P2P signals.
 - `AskUserQuestion` remains Lead-direct in all tiers (teammates and subagents cannot interact with the user).
 - **DLAT mode**: After invoking `doing-like-agent-teams`, ALL agent spawns MUST set `run_in_background: true` + `context: "fork"`. No exceptions. Lead reads ONLY the coordinator's final synthesis return — individual subagent outputs NEVER enter Lead's context directly.
 
