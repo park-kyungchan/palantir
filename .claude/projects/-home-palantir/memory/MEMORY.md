@@ -6,94 +6,71 @@
 - User-facing conversation: Korean only
 - All technical artifacts: English only
 
-### Phase-Gated Skill Loading (2026-02-20) ← CRITICAL CE RULE
-- **Anti-pattern**: Reading ALL phase skills at once (P1+P2+P3 loaded together = context waste)
-- **Correct pattern**: Load ONLY current phase's skills → spawn → DONE → next phase
-- **Command**: `sed -n '/^---$/,/^---$/p' ~/.claude/skills/$skill/SKILL.md | head -20`
-- **Phase-to-domain mapping**: Use grep to find §2.0 Phase Definitions (see Pipeline Flow Reference)
-- Example: P1 → read `design-*` L1 only. P2 → read `research-*` + `audit-*` L1 only.
+### Empirical Verification Mandate (2026-02-20) ← CRITICAL
+- ALL INFRA decisions = empirical verification first
+- Pattern: Observe → Hypothesize → Test → Verify → THEN implement
+- Corrections are also claims → same verification required
+- Verified references: `~/.claude/references/` (NOT memory/ref_*.md — all deprecated)
 
-### Pipeline Flow Reference [ALWAYS READ BEFORE SPAWNING]
-- **Canonical source**: `~/.claude/CLAUDE.md` §2.0 Phase Definitions table (P0-P8 + skills per phase)
-- Before spawning: `grep -n "2.0 Phase Definitions" ~/.claude/CLAUDE.md` → get line N → `Read CLAUDE.md offset:N limit:20`
-- **P2 full skill set**: research-codebase, research-external, evaluation-criteria (FIRST), audit-static, audit-behavioral, audit-relational, audit-impact → research-coordinator
-- **evaluation-criteria runs FIRST** in P2, before research-codebase/external
+### Task API Verified Behavior (2026-02-20) ← CRITICAL
+- **metadata is WRITE-ONLY**: stored on disk, NOT returned by TaskGet or TaskList
+- TaskList returns: id, subject, status, owner, blockedBy
+- TaskGet returns: id, subject, status, description, blockedBy
+- Lead reads metadata via: `Read("~/.claude/tasks/{LIST_ID}/{id}.json")`
+- Full details: `~/.claude/references/task-api-verified.md`
+
+### Agent tools Field (2026-02-20) ← VERIFIED
+- `tools` field in agent .md IS enforced (agents get ONLY listed tools)
+- `Task(analyst, researcher)` syntax = SILENTLY DROPPED by runtime
+- Agents without `model` field inherit Lead's model (Opus = 10x cost)
 
 ### TaskOutput 절대금지 (2026-02-19)
 - `TaskOutput` tool call is PERMANENTLY PROHIBITED for Lead
 - Pattern: `run_in_background:true` → auto-notification → Read output file if needed
 
-### Skill Optimization Process (2026-02-07)
-- claude-code-guide agent research required for every skill optimization
-- Process: claude-code-guide research -> design doc -> SKILL.md -> validation -> commit
+### Lead Orchestration Intelligence = Description Engineering (2026-02-20) ← CORE
+- Lead's primary value = writing agent-optimized task descriptions
+- DPS = minimal (per-Agent profile: OBJECTIVE+PLAN or OBJECTIVE+READ+OUTPUT)
+- Description (TaskGet) = comprehensive, self-contained, dependency-aware
+- Agent body (stable) + DPS (task-unique) = no overlap, no waste
+- **DPS token = agent work token 감소** → minimize DPS, maximize agent working memory
+- Per-Agent DPS profiles: infra-impl OBJ+PLAN, analyst OBJ+READ+OUTPUT, coordinator OBJ+INPUT+OUTPUT
 
-### claude-code-guide Output Management (2026-02-11)
-- claude-code-guide agent has NO Write tool -> output stored only in volatile /tmp
-- Lead must read output immediately after completion — /tmp/ cleaned on timer
-- If lost: use `resume` parameter to retrieve from agent context
-
-### MCP Server Config [RESOLVED 2026-02-18]
-- CC reads MCP from `.claude.json`, not `settings.json`. Fix applied, 5/5 connected.
-
-### Verification-First Rule (2026-02-18)
-- Corrections are also claims. Empirical verification required before updating CLAUDE.md/MEMORY.md.
-- Pattern: Observe → Hypothesize → Test → Verify → THEN document
+### Phase-Gated Skill Loading (2026-02-20)
+- Load ONLY current phase's skills → spawn → DONE → next phase
+- Phase-to-domain: `~/.claude/CLAUDE.md` §2.0 Phase Definitions table
 
 ### CE Hooks (2026-02-20)
-- 4 runtime hooks optimize Grep/Read token consumption
-- `ce-pre-read-section-anchor.sh`: PreToolUse(Read) — section map for .md >100L (advisory, exit 0)
-- `ce-pre-grep-optimize.sh`: PreToolUse(Grep) — warn missing head_limit or path (advisory, exit 0)
-- `ce-post-grep-guard.sh`: PostToolUse(Grep) — warn >50 result lines (advisory, exit 0)
-- `ce-pre-grep-block.sh`: PreToolUse(Grep) — BLOCK Grep without path parameter (blocking, exit 2)
-- Registered in settings.json
+- 4 runtime hooks: ce-pre-read-section-anchor, ce-pre-grep-optimize, ce-post-grep-guard, ce-pre-grep-block (BLOCKING)
 
-## Current INFRA State (v14, 2026-02-20)
+## INFRA v15 COMPLETE (2026-02-20)
+- W1: Agent files (model:sonnet ×4, coordinator rework, delivery-agent fix, resource paths, coordinator MEMORY)
+- W2: DLAT SKILL.md + methodology.md (state.md→PT, DLAT_BASE→WORK_DIR, per-Agent DPS)
+- W3: CLAUDE.md §3-§5 + dps-construction-guide.md (PT 3-tier, DPS reform, metadata→description)
+- Skill audit: freewheelin deleted, pipeline-resume→disabled
+- Architecture: v15 = PT description as primary state + per-Agent DPS profiles + 3-Tier Data Access
 
-| Component | Version | Key Feature |
-|-----------|---------|-------------|
-| CLAUDE.md | v14 | 193L, Single-session architecture, Two-Channel Handoff [D17] |
-| Agents | v14 | 7 files, subagent-only model (no Teammate/AT) |
-| Skills | v13 | 87 dirs — added verify-coordinator, manage-codebase |
-| Resources | 6 files | .claude/resources/ +DPS Principles in dps-construction-guide |
-| Hooks | 20 scripts | +ce-pre-grep-block.sh (BLOCKING: exit 2, Grep without path) |
-| Rules | CE-optimized | 4,167 chars (was 5,299), legacy refs removed |
-
-### Architecture (v14 Single-Session)
-- All spawns: `run_in_background:true` + `context:fork` + `model:sonnet`
-- File coordination: subagents write to Work Directory → micro-signals → Lead reads
-- Two-Channel Handoff: Ch2 (output files) + Ch3 (micro-signals). No P2P messaging.
-- **Lead**: Pure Orchestrator, never edits files directly
-
-### Known Bugs
-| ID | Severity | Summary | Workaround |
-|----|----------|---------|------------|
-| BUG-001 | CRITICAL | `permissionMode: plan` blocks MCP tools | Always spawn with `mode: "default"` |
-| BUG-006 | MEDIUM | `allowed-tools` frontmatter NOT_ENFORCED (CC #18837) | Use `tools` in agent frontmatter |
-| BUG-007 | MEDIUM | Global hooks fire in ALL contexts | session_id guard in command hooks |
-
-Details: `memory/pipeline-bugs.md`
+### Key Decisions
+- D01: 3-Tier Data Access (TaskList/TaskGet/Read)
+- D02: metadata = Lead-only disk Read
+- D03: tool-level enforcement > DPS-level > prompt-level
+- D04: DPS에 Task API context 불필요 (tool 없는 agent에게는 noise)
+- D05: DLAT projects/ → tasks/{LIST_ID}/outputs/ 통합
+- D06: PT description = primary state, metadata = secondary (Read-only)
 
 ## Active Topics
 
-### Ontology Communication Protocol [ALWAYS ACTIVE]
-Active whenever Ontology/Foundry concepts arise. User = concept-level decision-maker.
-4-step pattern: **TEACH -> IMPACT ASSESS -> RECOMMEND -> ASK**
-
-### Math Portfolio
-- math-question-bank W4: P6 waves PASS, DB push pending (terminal: `pnpm --filter @freewheelin/db db:push`)
-- math-problem-design.html: DLAT in progress (P2 running, DLAT_BASE: `~/.claude/doing-like-agent-teams/projects/math-problem-design-portfolio/`)
+### Math Portfolio (PAUSED)
+- math-problem-design-v3.html MS version: PAUSED pending INFRA v15
+- math-question-bank W4: P6 PASS, DB push pending
 - Details: `memory/math-question-bank.md`
 
-## Topic Files Index
+### Ontology Communication Protocol [ALWAYS ACTIVE]
+4-step pattern: TEACH → IMPACT ASSESS → RECOMMEND → ASK
 
-### CC Architecture Reference
-- `memory/CC_SECTIONS.md` -- L1 (ALWAYS READ): routing shortcuts for all ref files
-- `memory/ref_hooks.md` -- R3: 14 hook events, I/O contract, exit codes
-- `memory/ref_skills.md` -- R4: Skill frontmatter, $ARGUMENTS, shell preprocessing
-- `memory/ref_agents.md` -- R5: Agent fields, permissionMode, subagent spawning patterns
-- `memory/ref_teams.md` -- R6: File-based coordination, Task API, Work Directory patterns
-- `memory/ref_model_integration.md` -- R7: Model config, cost benchmarks, MCP
-- `memory/pipeline-bugs.md` -- BUG-001~BUG-008 details and workarounds
-- `memory/math-question-bank.md` -- Math portfolio: D1-D24, W4 plan, DLAT_BASE refs
-- `memory/infrastructure-history.md` -- Full delivery history (INFRA, RSIL, etc.)
-- `memory/grep-optimization-handoff.md` -- Grep pattern audit + CE optimization results (2026-02-20)
+## Topic Files Index
+- `~/.claude/references/task-api-verified.md` — Task API empirical evidence
+- `memory/pipeline-bugs.md` — BUG-001~BUG-008
+- `memory/math-question-bank.md` — Math portfolio details
+- `memory/infrastructure-history.md` — Delivery history
+- `memory/grep-optimization-handoff.md` — Grep CE optimization

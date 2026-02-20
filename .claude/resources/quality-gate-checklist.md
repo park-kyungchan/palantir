@@ -10,7 +10,7 @@ Every skill output must satisfy:
 |---|---|---|---|
 | 1 | All findings have evidence | Every claim references `file:line` or source URL | ✅ All skills |
 | 2 | L1 micro-signal is valid | Parseable `STATUS\|metrics\|ref:path` format | ✅ All skills |
-| 3 | Output file exists | Written to `tasks/{work_dir}/{phase}-{skill}.md` | ✅ All skills |
+| 3 | Output file exists | Written to `{WORK_DIR}/{phase}-{skill}.md` | ✅ All skills |
 | 4 | Coverage reported | Scope completed vs total scope | ✅ Analysis skills |
 | 5 | No out-of-scope modifications | Agent stayed within tool and scope boundaries | ✅ All skills |
 | 6 | Failure handling applied | Failures documented with D12 level classification | ✅ On failure |

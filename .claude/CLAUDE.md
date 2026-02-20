@@ -117,33 +117,40 @@ Classified at P0 (Pre-Design). The tier determines which phases are traversed:
 
 ### Patterns
 - **Deferred Spawn** (cross-profile): Lead spawns N analysts → collects micro-signals → spawns coordinator with `$ARGUMENTS=[file paths]`. Coordinator reads files directly.
-- **Coordinator as Sub-Orchestrator**: Has `Task(analyst, researcher)` for Subagent→Subagent delegation.
+- **Coordinator as Synthesis Worker**: Reads N upstream outputs, produces unified cross-cutting analysis. No spawn capability.
 
 ### Spawn Rules [ALWAYS ACTIVE]
 - **Model**: `model: "sonnet"` for ALL subagents. Opus is reserved for Lead ONLY.
 - **MCP tasks**: ToolSearch auto-activates for all Sonnet 4+/Opus 4+ agents. No agent-type restriction. Use ToolSearch before any MCP tool call.
-- **ToolSearch-first**: Every DPS MUST include a WARNING block: "Call `ToolSearch` before invoking any MCP tool."
+- **ToolSearch-first**: MCP-using agents (researcher) call `ToolSearch` before any MCP tool. DPS does NOT need a WARNING block — agent body handles this.
 - **NO_FALLBACK**: If an MCP server is unavailable → pause the task. Never substitute `WebSearch`/`WebFetch` as a fallback.
 - **MCP_HEALTH**: An unhealthy MCP server blocks ALL MCP initialization. Remove the unhealthy server from `.claude.json` before proceeding.
 
-### CC Native Boundary Reference [ALWAYS ACTIVE]
-**Purpose**: Identify constraints governing all Lead decisions (routing, error handling, context management, tool selection).
-**Path**: `.claude/projects/-home-palantir/memory/`
-**L1**: `CC_SECTIONS.md` — per-section routing intelligence (always consult first).
-**L2**: `ref_*.md` — loaded on-demand when a WHEN condition in `CC_SECTIONS.md` matches (same pattern as Skill L2 invocation).
-
-**Rules**:
-- Before every operation: consult `CC_SECTIONS.md` to identify relevant CC-native constraints.
-- When making a decision related to a constraint: load the corresponding `ref_*.md` file (same pattern as Skill L2 invocation).
-- `claude-code-guide` skill: spawn ONLY for gaps that cannot be resolved by ref files.
+### Empirical Verification Mandate [ALWAYS ACTIVE]
+All INFRA optimization decisions MUST be based on empirical verification, not documentation claims or inference.
+- **Pattern**: Observe → Hypothesize → Test (spawn agent or direct tool call) → Verify output → THEN implement
+- **Corrections are also claims** — changing an existing rule requires the same verification as adding one.
+- **Verified references**: `~/.claude/references/` — only empirically confirmed findings.
+- **Anti-pattern**: Reading documentation and assuming behavior without runtime testing.
 
 ## 4. PERMANENT Task (PT)
 Single source of truth for the active pipeline. Exactly 1 PT exists per pipeline.
-- **Create**: At pipeline start (P0). Contains: tier classification, requirements, architecture decisions.
-- **Read**: Subagents call `TaskGet [PERMANENT]` for project context at spawn. Lead calls `TaskGet(PT)` after auto-compact for compaction recovery.
-- **Update**: Each phase completion adds results to PT metadata (Read-Merge-Write pattern).
-- **Complete**: Only at the final git commit (P8 delivery).
-- Managed via the `/task-management` skill (`pt-manager` agent).
+
+### 3-Tier Data Access Model
+| Tier | API | Returns | Use Case |
+|------|-----|---------|----------|
+| 1 | TaskList | subject, status, blockedBy | Coordination (Lead OBSERVE mode) |
+| 2 | TaskGet | + description | Knowledge recovery (compaction, agent context) |
+| 3 | Read (disk) | + metadata, activeForm, blocks | Orchestration detail (Lead-only) |
+
+### PT Lifecycle
+- **Create**: At P0. Subject = compressed summary. Description = pipeline state (requirements, decisions, phase status).
+- **Read**: Lead calls `TaskGet(PT)` for compaction recovery. Subagents receive context via DPS, not TaskGet.
+- **Update**: Each phase completion → `TaskUpdate(description: updated_state)`. Description is the primary state store.
+- **Complete**: Only at P8 delivery (final git commit).
+- **metadata**: Write-only via Task API. Stored on disk but NOT returned by TaskGet/TaskList. Lead reads via `Read("~/.claude/tasks/{LIST_ID}/{id}.json")` when needed.
+
+Managed via `/task-management` skill (`pt-manager` agent).
 
 ## 5. Lead Context Engineering Directives [ALWAYS ACTIVE]
 
@@ -154,7 +161,8 @@ Single source of truth for the active pipeline. Exactly 1 PT exists per pipeline
 - **Progressive Disclosure Principle**: CLAUDE.md (loaded 1× every call) → Skills L1 (auto-loaded) → Skills L2 (on-demand) → ref files (on-demand). CLAUDE.md must contain ONLY information needed for every decision.
 - **Cost Model**: Solo ≈ 200k tokens, 3 subagents ≈ 440k. Lead target: < 80% context usage.
 
-### DPS v5 Template: `WARNING → OBJECTIVE → CONTEXT → PLAN → MCP_DIRECTIVES → CRITERIA → OUTPUT → CONSTRAINTS`
+### Per-Agent DPS Profiles → resources/dps-construction-guide.md
+DPS = task-unique information ONLY. Agent body handles output format, scope rules, error handling. See methodology.md for per-Agent templates and token targets.
 
 ### Atomic Commit Pattern
 Each task = one atomic commit. Pre-commit hooks serve as quality backpressure: subagent attempts commit → hook fails → subagent self-corrects → subagent retries.
@@ -163,25 +171,25 @@ Each task = one atomic commit. Pre-commit hooks serve as quality backpressure: s
 Priority: Cognitive Focus > Token Efficiency > Progressive Disclosure > Strategic Asymmetry. Core: filter noise, not pump data.
 
 ### Re-planning Escalation Ladder [D12] → resources/failure-escalation-ladder.md
-L0 Retry → L1 Nudge → L2 Respawn → L3 Restructure → L4 Escalate (Human). Skip levels when appropriate. Never skip L4. Track in PT metadata: `metadata.escalations.{skill}: "L{N}|reason"`.
+L0 Retry → L1 Nudge → L2 Respawn → L3 Restructure → L4 Escalate (Human). Skip levels when appropriate. Never skip L4. Track in PT description under ## Escalations section.
 
 ### Active Strategy Questioning [D13]
 When strategic ambiguity is discovered (2+ valid interpretations, tier reclassification, arch conflicts, feasibility gaps, ext dep breaking changes), Lead asks Human via `AskUserQuestion` with 2-3 concrete options + recommendation.
 - Lead ASKS about strategy (what to build). Lead DECIDES tactics autonomously (how to build).
 - When in doubt: strategic → ask. Anti-pattern: asking about every decision (blocks pipeline).
-- Record in PT: `metadata.user_directives[]`. Propagate to affected DPS.
+- Record in PT description under ## User Directives section. Propagate to affected DPS.
 
 ### Iteration Tracking Protocol [D15]
-Storage: `metadata.iterations.{skill_name}: N` in PT. Protocol: TaskGet → increment → TaskUpdate → pass to skill via DPS.
+Storage: PT description under ## Iterations section. Protocol: TaskGet → read current count → TaskUpdate(description) → pass to skill via DPS.
 - Iteration 1-2: strict (return on FAIL). Iteration 3: relaxed (proceed with gaps). Iteration 3+: auto-PASS.
 - Max limits: brainstorm↔validate 3, feasibility 3, plan↔verify 2, execution 2.
-- Compaction-safe: iteration count lives in PT metadata (disk-persisted).
+- Compaction-safe: iteration count lives in PT description (TaskGet-accessible).
 
 ### Two-Channel Handoff Protocol [D17] → resources/output-micro-signal-format.md
 Lead accumulates only Ch3 micro-signals (~50-100 tokens each). Reads Ch2 files only when ENFORCE requires verification.
 
 ### Compaction Recovery Protocol
-- At every phase completion, Lead MUST update `metadata.phase_signals` in the PT. After an auto-compact event, Lead recovers pipeline history by calling `TaskGet(PT)`.
+- At every phase completion, Lead MUST update PT description with phase status. After an auto-compact event, Lead recovers pipeline history by calling `TaskGet(PT)` — description contains full pipeline state.
 - For large operations: process in minimal atomic units sequentially to minimize auto-compact risk.
 
 ### CC 2.1 Capabilities
@@ -190,6 +198,6 @@ Lead accumulates only Ch3 micro-signals (~50-100 tokens each). Reads Ch2 files o
 ### RSIL Mechanics (→ see INVIOLABLE block above for core cycle)
 - **Claim Flow**: Producer → Tagger (`[CC-CLAIM]`) → Verifier (`research-cc-verify`) → Codifier (`execution-infra`).
 - **Retroactive Audit**: `self-diagnose` Category 10 — detects unverified claims in the ref cache.
-- **Cross-Session Persistence**: Record findings in PT metadata + MEMORY.md. Skill lifecycle: optimize for efficiency over quantity.
+- **Cross-Session Persistence**: Record findings in PT description + MEMORY.md. Skill lifecycle: optimize for efficiency over quantity.
 
 ### Known Limitations → memory/pipeline-bugs.md

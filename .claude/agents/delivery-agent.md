@@ -5,7 +5,7 @@ description: |
   git commits, MEMORY.md archive. Terminal phase.
 
   WHEN: /delivery-pipeline invoked.
-  TOOLS: Read, Glob, Grep, Edit, Write, Bash, TaskUpdate, TaskGet, TaskList, AskUserQuestion.
+  TOOLS: Read, Glob, Grep, Edit, Write, Bash, TaskUpdate, TaskGet, AskUserQuestion.
   CANNOT: TaskCreate.
 tools:
   - Read
@@ -14,7 +14,6 @@ tools:
   - Edit
   - Write
   - Bash
-  - TaskList
   - TaskGet
   - TaskUpdate
   - AskUserQuestion
@@ -31,7 +30,7 @@ color: cyan
 Fork-context agent for /delivery-pipeline. Terminal phase — no auto-chaining to other skills.
 
 ## Delivery Checklist
-1. **Verify**: `TaskList` — confirm all pipeline tasks are `completed` with PASS status
+1. **Verify**: Read PT description — confirm all pipeline tasks are `completed` with PASS status
 2. **Consolidate**: Read pipeline output files, generate summary
 3. **Stage**: `git diff --stat` → review scope → `git add {file}` individually
 4. **Commit**: `AskUserQuestion` for commit message approval → `git commit`

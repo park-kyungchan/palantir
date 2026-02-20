@@ -5,7 +5,7 @@
 ## Micro-Signal Structure
 
 ```
-{STATUS}|{key1}:{value1}|{key2}:{value2}|ref:tasks/{work_dir}/{file}
+{STATUS}|{key1}:{value1}|{key2}:{value2}|ref:{WORK_DIR}/{file}
 ```
 
 - **STATUS**: `PASS`, `FAIL`, `PARTIAL`, `BLOCKED`
@@ -30,7 +30,7 @@ skill: {skill name}
 status: PASS|FAIL|PARTIAL
 # ... skill-specific metrics
 pt_signal: "metadata.phase_signals.{phase}_{domain}"
-signal_format: "{STATUS}|{metrics}|ref:tasks/{work_dir}/{file}"
+signal_format: "{STATUS}|{metrics}|ref:{WORK_DIR}/{file}"
 ```
 
 ## Token Budget

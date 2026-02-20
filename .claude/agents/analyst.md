@@ -13,6 +13,7 @@ tools:
   - Grep
   - Write
   - mcp__sequential-thinking__sequentialthinking
+model: sonnet
 memory: project
 maxTurns: 25
 color: magenta

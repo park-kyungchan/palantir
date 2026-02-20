@@ -3,7 +3,7 @@ name: doing-like-agent-teams
 description: >
   Core pipeline execution methodology. Lead orchestrates P0-P8 wave-by-wave
   using background subagents (run_in_background:true + context:fork).
-  File-based coordination via persistent work directory (DLAT_BASE).
+  File-based coordination via persistent work directory (WORK_DIR).
   PT as compaction-resilient context source for Lead and subagents.
   Coordinator = synthesis-only (N→1). COMPLEX tier always.
   Quality top priority over speed.
@@ -25,10 +25,9 @@ Core pipeline execution methodology for single-session architecture. Lead orches
 ## Work Directory
 
 ```
-DLAT_BASE = ~/.claude/doing-like-agent-teams/projects/{project_slug}
+WORK_DIR = ~/.claude/doing-like-agent-teams/projects/{project_slug}
 
-{DLAT_BASE}/
-  state.md                              # Pipeline state (compaction-resilient)
+{WORK_DIR}/
   {agent_name}/                         # Per-agent output subdirectory
     {phase}-{task}-{n}.md               # Individual task output
   coordinator/                          # Coordinator synthesis outputs
@@ -36,7 +35,7 @@ DLAT_BASE = ~/.claude/doing-like-agent-teams/projects/{project_slug}
   session-summary.md                    # Final pipeline summary
 ```
 
-**Path variables**: `DLAT_BASE`, `OUTPUT_PATH` (`{DLAT_BASE}/{agent_name}/{phase}-{task}-{n}.md`), `STATE_PATH` (`{DLAT_BASE}/state.md`).
+**Path variables**: `WORK_DIR`, `OUTPUT_PATH` (`{WORK_DIR}/{agent_name}/{phase}-{task}-{n}.md`).
 
 **Project slug**: Kebab-case from task description. Enables cross-session resume.
 
@@ -55,22 +54,21 @@ Lead (P0 Pre-Design):
   2. User dialogue with accurate context
   3. Spawn brainstorm/validate subagents for open requirements
   4. Create work directory structure (Bash)
-  5. **P0 Gate — DLAT_BASE Verification** (MANDATORY):
-     - Verify: `ls {DLAT_BASE}/state.md` OR `ls {DLAT_BASE}/coordinator/`
+  5. **P0 Gate — WORK_DIR Verification** (MANDATORY):
+     - Verify: `ls {WORK_DIR}/coordinator/`
      - If NOT exists → BLOCK all spawns until directory is created
-     - Write initial `state.md` with project_slug and started timestamp
 
 Lead (P1-P5) — Deferred Spawn Pattern [CLAUDE.md §3]:
   Per phase:
     1. Lead spawns N analysts in parallel (run_in_background:true + context:fork)
-       Each analyst: reads specific files → writes to {DLAT_BASE}/analyst/p{N}-{dim}.md
+       Each analyst: reads specific files → writes to {WORK_DIR}/analyst/p{N}-{dim}.md
     2. Lead receives N micro-signals (auto-notification)
     3. If N<=2 OR all outputs<=50L: Lead reads directly and decides
        If N>=3 with substantial content: Lead forks coordinator for synthesis
-         - Coordinator DPS: STATE_PATH ref + N file paths as $ARGS (DPS body ≤200 chars)
-         - Coordinator writes: {DLAT_BASE}/coordinator/p{N}-synthesis.md
+         - Coordinator DPS: PT_ID + N file paths as $ARGS (DPS body ≤200 chars)
+         - Coordinator writes: {WORK_DIR}/coordinator/p{N}-synthesis.md
          - Coordinator returns: "{STATUS}|ref:{p{N}-synthesis.md}"
-    4. Lead updates state.md → next phase
+    4. Lead updates PT → next phase
 
   P1 (Design):    3 analysts [architecture, interface, risk]
   P2 (Research):  ⚠ ALWAYS get canonical skill list via: grep -n "2.0 Phase Definitions" ~/.claude/CLAUDE.md
@@ -86,7 +84,7 @@ Lead (P1-P5) — Deferred Spawn Pattern [CLAUDE.md §3]:
   P5 (Orchestrate): 4 analysts [orchestrate-static, orchestrate-behavioral,
                     orchestrate-relational, orchestrate-impact]
                     → orchestrate-coordinator → Lead writes p5-execution-plan.md
-                    Writes: {DLAT_BASE}/coordinator/p5-execution-plan.md
+                    Writes: {WORK_DIR}/coordinator/p5-execution-plan.md
 
 Lead (P6-P8):
   P6 Execution:  spawn implementer/infra subagents per P5 plan
@@ -99,7 +97,7 @@ Lead (P6-P8):
 ```
 
 > Phase-aware routing: read `.claude/resources/phase-aware-execution.md`
-> DPS templates + state file format: read `resources/methodology.md`
+> DPS templates + work directory format: read `resources/methodology.md`
 
 ## Phase-Gated Skill Loading [CRITICAL — Context Engineering]
 
@@ -141,16 +139,16 @@ This prevents context inflation from skills that may not be used.
 > Lead reads ONLY coordinator's final return. Individual subagent outputs NEVER enter Lead's context.
 
 Per phase:
-0. **Pre-spawn validation**: Verify `DLAT_BASE` directory exists. If not → execute `mkdir -p` first. Every OUTPUT_PATH in the DPS MUST be an absolute path starting with `{DLAT_BASE}/`.
+0. **Pre-spawn validation**: Verify `WORK_DIR` directory exists. If not → execute `mkdir -p` first. Every OUTPUT_PATH in the DPS MUST be an absolute path starting with `{WORK_DIR}/`.
 1. **Plan**: list tasks, assign agent profiles, name OUTPUT_PATHs
 2. **Dispatch**: spawn ALL independent tasks in parallel
 3. **Collect**: wait for notifications → quality check via OUTPUT_PATH read
    - **<=2 outputs OR all files <=50 lines**: Lead reads directly
    - **>=3 outputs with substantial content**: Lead forks coordinator (synthesis only)
-     → Coordinator DPS: STATE_PATH + $ARGS=[file_paths] (body ≤200 chars, no content embed)
-     → Coordinator writes `{DLAT_BASE}/coordinator/{phase}-synthesis.md`
+     → Coordinator DPS: PT_ID + $ARGS=[file_paths] (body ≤200 chars, no content embed)
+     → Coordinator writes `{WORK_DIR}/coordinator/{phase}-synthesis.md`
      → Coordinator returns micro-signal → Lead reads synthesis file only if ENFORCE requires
-4. **Synthesize**: update state.md → proceed
+4. **Synthesize**: update PT → proceed
 5. **Gate**: FAIL → D12 escalation
 
 ## Coordinator DPS Pattern
@@ -158,25 +156,29 @@ Per phase:
 Coordinator is **synthesis-only** (N→1). Coordinator CANNOT spawn in parallel (CC limitation).
 Fork coordinator ONLY when N>=3 substantial analyst outputs need cross-cutting synthesis.
 
+### Per-Agent Minimal DPS Profiles
+
+**Analyst DPS (≤200 char body)**:
+```
+OBJECTIVE: {task description}
+CONTEXT: TaskGet(PT_ID) for project context
+INPUT: {files to read}
+OUTPUT_PATH: {WORK_DIR}/{agent_name}/{phase}-{task}-{n}.md
+Write output to OUTPUT_PATH. Return: "{STATUS}|ref:{OUTPUT_PATH}"
+```
+
 **Coordinator DPS (≤200 char body)**:
 ```
 OBJECTIVE: Synthesize P{N} outputs (N-to-1)
-STATE: Read {DLAT_BASE}/state.md for project context
-INPUT: $ARGUMENTS=[{DLAT_BASE}/analyst/p{N}-dim1.md, ...]
-OUTPUT_PATH: {DLAT_BASE}/coordinator/p{N}-synthesis.md
+CONTEXT: TaskGet(PT_ID) for project context
+INPUT: $ARGUMENTS=[{WORK_DIR}/analyst/p{N}-dim1.md, ...]
+OUTPUT_PATH: {WORK_DIR}/coordinator/p{N}-synthesis.md
 Write synthesis to OUTPUT_PATH. Return: "{STATUS}|ref:{OUTPUT_PATH}"
 ```
 
-**Why this limit**: Coordinator reads state.md directly for full context.
-DPS content duplication = coordinator context waste.
-Lead must NOT embed P0 findings in the DPS when state.md exists.
-
-**DPS requirement** (every DPS must include):
-```
-DLAT_BASE: ~/.claude/doing-like-agent-teams/projects/{project_slug}
-OUTPUT_PATH: {DLAT_BASE}/{agent_name}/{phase}-{task}-{n}.md
-Write your complete output to OUTPUT_PATH before finishing.
-```
+**Why minimal**: Every subagent reads PT directly for full project context.
+DPS content duplication = context waste. Pass references, not content.
+Lead must NOT embed phase findings in the DPS — subagents read PT directly.
 
 > DPS templates per phase: read `resources/methodology.md`
 > DPS construction guide: read `.claude/resources/dps-construction-guide.md`
@@ -197,7 +199,7 @@ Write your complete output to OUTPUT_PATH before finishing.
 
 ### Tight Coordinator Spawn
 - Spawn coordinator IMMEDIATELY after analyst wave completes
-- Do NOT update state.md BEFORE coordinator spawn
+- Do NOT update PT BEFORE coordinator spawn
 - This maximizes Sonnet cache reuse from analyst wave
 
 ### Model Separation = Cache Separation
@@ -294,7 +296,7 @@ Each work task includes:
 | Quality gate fail | L1 Nudge | Re-spawn with correction |
 | OOM / compacted | L2 Respawn | Narrower scope |
 | Phase gate FAIL | L3 Restructure | Revise decomposition |
-| 3+ L2 same task | L4 Escalate | Write to state.md → return to Lead |
+| 3+ L2 same task | L4 Escalate | Update PT → return to Lead |
 
 > Escalation ladder: read `.claude/resources/failure-escalation-ladder.md`
 
@@ -302,14 +304,14 @@ Each work task includes:
 
 - **Lead as relay**: Lead reading full wave outputs and embedding them in DPS. Pass OUTPUT_PATH references only.
 - **Coordinator context bloat**: Reading 10+ output files directly. Use synthesis subagent.
-- **No state updates**: State lost on compaction. Update state.md after every wave.
+- **No PT updates**: Context lost on compaction. Update PT after every wave.
 - **Same-file parallel edit**: Two subagents on same file → corruption.
 - **Coordinator as P1-P5 orchestrator** [BLOCK]: Coordinator = synthesis only (N→1).
   Coordinator CANNOT spawn in parallel (CC runtime constraint). Lead handles all wave
   orchestration. Fork coordinator ONLY for synthesis of >=3 substantial outputs.
-- **DPS content duplication**: Never embed state.md content in coordinator DPS.
-  Pass STATE_PATH reference. Coordinator reads it directly.
-- **Writing to /tmp/** [BLOCK]: ALL outputs MUST use DLAT_BASE paths. `/tmp/` is volatile and causes data loss. If a subagent DPS lacks OUTPUT_PATH starting with DLAT_BASE, the DPS is INVALID — do not spawn.
+- **DPS content duplication**: Never embed PT content in coordinator DPS.
+  Pass PT_ID reference. Coordinator calls TaskGet(PT_ID) directly.
+- **Writing to /tmp/** [BLOCK]: ALL outputs MUST use WORK_DIR paths. `/tmp/` is volatile and causes data loss. If a subagent DPS lacks OUTPUT_PATH starting with WORK_DIR, the DPS is INVALID — do not spawn.
 - **Phase-Gated violation** [BLOCK]: Loading P3/P4 skill L2 bodies while executing P2 = pure context waste. Load ONLY current phase's SKILL.md L1 frontmatters (sed head -20). Canonical skill list per phase: CLAUDE.md §2.0 Phase Definitions (grep -n "2.0 Phase Definitions" ~/.claude/CLAUDE.md).
 - **P2 skill count underestimate** [BLOCK]: P2 has 8 skills (not 2-3). Spawning only research-codebase + research-external misses all 4 audit dimensions (static/behavioral/relational/impact) and the mandatory research-coordinator synthesis. Always check CLAUDE.md §2.0 Phase Definitions (grep -n "2.0 Phase Definitions" ~/.claude/CLAUDE.md) for authoritative P2 skill list.
 - **evaluation-criteria order violation** [BLOCK]: evaluation-criteria MUST run FIRST in P2, before research-codebase and research-external. Its L1 frontmatter explicitly states this ordering requirement. Skipping it or running it in parallel with other P2 analysts violates P2 protocol.
@@ -321,7 +323,7 @@ Each work task includes:
 | Source | Data | Format |
 |--------|------|--------|
 | User | Task scope, requirements | Natural language |
-| Previous run | State file | `{DLAT_BASE}/state.md` |
+| Previous run | PT + work directory | `TaskGet(PT_ID)` + `{WORK_DIR}/` |
 
 ### Sends To
 | Target | Data | Trigger |
@@ -334,13 +336,13 @@ Each work task includes:
 ## Quality Gate
 
 - [ ] ALL phases P0-P8 executed (no shortcuts)
-- [ ] DLAT_BASE directory created BEFORE first subagent spawn
-- [ ] No outputs written to /tmp/ — all in DLAT_BASE
+- [ ] WORK_DIR directory created BEFORE first subagent spawn
+- [ ] No outputs written to /tmp/ — all in WORK_DIR
 - [ ] Work dirs created by Lead (Bash) before coordinator fork
 - [ ] Every spawn: `run_in_background:true` + `context:fork` + `model:"sonnet"`
-- [ ] Every DPS includes DLAT_BASE and OUTPUT_PATH
+- [ ] Every DPS includes WORK_DIR and OUTPUT_PATH
 - [ ] Every DPS instructs subagent to TaskGet(PT_ID) for project context
-- [ ] State file updated after each wave
+- [ ] PT updated after each wave
 - [ ] Max 5 parallel subagents per wave
 - [ ] Synthesis subagent for >=3 substantial outputs per wave
 - [ ] Each agent writes ONLY to its own subdirectory
@@ -353,6 +355,5 @@ session_summary:
   total_subagents: N
   failed_tasks: []
   work_directory: ~/.claude/doing-like-agent-teams/projects/{project_slug}
-  state_file: ~/.claude/doing-like-agent-teams/projects/{project_slug}/state.md
   summary_file: ~/.claude/doing-like-agent-teams/projects/{project_slug}/session-summary.md
 ```

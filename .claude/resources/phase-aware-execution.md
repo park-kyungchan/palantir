@@ -16,8 +16,8 @@
 All subagents (P0–P8) follow the same file-based output protocol:
 
 ### Standard Subagent (P0–P7)
-1. Agent writes full L2 output to `tasks/{work_dir}/{phase}-{skill}.md`
-2. Agent writes micro-signal as first line of output file: `{STATUS}|{key_metrics}|ref:tasks/{work_dir}/{file}`
+1. Agent writes full L2 output to `{WORK_DIR}/{phase}-{skill}.md`
+2. Agent writes micro-signal as first line of output file: `{STATUS}|{key_metrics}|ref:{WORK_DIR}/{file}`
 3. Lead reads output file on completion notification — detail file only if needed
 
 ### Fork Agent (P8)

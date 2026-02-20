@@ -1,17 +1,17 @@
 # Doing Like Agent Teams — Detailed Methodology
 
-> On-demand reference. DPS templates, state file format, synthesis DPS, recovery protocol.
+> On-demand reference. DPS templates, synthesis DPS, recovery protocol.
 
 ## Agent Subdirectory Map
 
 | Agent Profile | Subdirectory | Typical Phases |
 |---------------|-------------|----------------|
-| analyst | `{DLAT_BASE}/analyst/` | P1-P5, P7 |
-| researcher | `{DLAT_BASE}/researcher/` | P2 |
-| coordinator | `{DLAT_BASE}/coordinator/` | All (synthesis) |
-| implementer | `{DLAT_BASE}/implementer/` | P6 |
-| infra-implementer | `{DLAT_BASE}/infra-implementer/` | P6 |
-| delivery-agent | `{DLAT_BASE}/delivery-agent/` | P8 |
+| analyst | `{WORK_DIR}/analyst/` | P1-P5, P7 |
+| researcher | `{WORK_DIR}/researcher/` | P2 |
+| coordinator | `{WORK_DIR}/coordinator/` | All (synthesis) |
+| implementer | `{WORK_DIR}/implementer/` | P6 |
+| infra-implementer | `{WORK_DIR}/infra-implementer/` | P6 |
+| delivery-agent | `{WORK_DIR}/delivery-agent/` | P8 |
 
 ## Single-Session Adaptation Map
 
@@ -20,173 +20,150 @@
 | Teammates (team mode) | Background subagents (`run_in_background:true`) — no P2P |
 | TeamCreate + task list | Coordinator manages session-local tracking |
 | SendMessage (P2P) | File-based handoff via work directory |
-| `~/.claude/tasks/{team}/` | `{DLAT_BASE}/` |
-| Permanent Task (PT) | `{DLAT_BASE}/state.md` |
-| Lead orchestrates | Coordinator subagent orchestrates |
+| `~/.claude/tasks/{team}/` | `{WORK_DIR}/` |
+| Permanent Task (PT) | PT description (TaskGet-accessible) |
+| Lead orchestrates | Lead orchestrates, coordinator synthesizes (N→1) |
 | 4-channel protocol | 2-channel: file write (Ch2) + completion notification (Ch3) |
 
-## Common DPS Header
+## Per-Agent DPS Profiles
 
-Every phase DPS starts with this header. Per-phase templates below specify only the delta fields.
+DPS = task-unique information ONLY. Agent body already defines output format, read-before-edit rules, scope boundaries, and error handling. Duplicating these in DPS wastes agent context window.
 
+### Minimal DPS Templates
+
+**analyst / researcher (read-only agents)**:
 ```
-DLAT_BASE: {base_path}
-OUTPUT_PATH: {DLAT_BASE}/{agent_name}/{phase}-{task}-{n}.md
-Write complete output to OUTPUT_PATH. Create directory if needed.
-Format: YAML L1 header + Markdown L2.
-Constraints: maxTurns as specified. model: "sonnet".
+OBJECTIVE: {1 sentence — what to analyze/research}
+READ: {comma-separated full file paths}
+OUTPUT: {full output file path}
 ```
 
-**Validation**: Before spawning, Lead verifies:
-1. `DLAT_BASE` directory exists on disk
-2. `OUTPUT_PATH` starts with `DLAT_BASE/`
-3. Agent subdirectory exists (create if missing)
-If any check fails → create directory first, then spawn.
+**coordinator (synthesis agent)**:
+```
+OBJECTIVE: Synthesize P{N} {dimension list} (N-to-1)
+INPUT: [{path1}, {path2}, ...]
+OUTPUT: {full output file path}
+```
+
+**implementer / infra-implementer (edit agents)**:
+```
+OBJECTIVE: {what to implement/modify}
+PLAN:
+1. {file_path}: {specific change}
+2. {file_path}: {specific change}
+OUTPUT: {full output file path}
+[CRITERIA: {only for complex multi-section reworks}]
+[TEST: {test command, implementer only}]
+```
+
+**delivery-agent (terminal agent)**:
+```
+OBJECTIVE: Deliver pipeline results — {scope summary}
+CRITERIA: {what to commit, what to exclude}
+```
+
+### Token Targets
+
+| Agent | Max DPS Tokens | Rationale |
+|-------|----------------|-----------|
+| coordinator | 80 | Reads INPUT files for full context |
+| analyst | 100 | Reads files specified in READ |
+| researcher | 100 | Uses MCP tools for discovery |
+| delivery-agent | 100 | Reads PT for context |
+| implementer | 150 | PLAN needs step detail |
+| infra-implementer | 200 | PLAN may need old→new values |
 
 ## Per-Phase DPS Deltas
 
 ### P0 Pre-Design
 ```
-Context: [User requirements from $ARGUMENTS]
-Task: [brainstorm|validate|feasibility]
-OUTPUT_PATH: {DLAT_BASE}/analyst/p0-{task}-{n}.md
-Constraints: Read-only analysis. maxTurns: 20.
+OBJECTIVE: {brainstorm|validate|feasibility} for {project description}
+READ: {user requirements file or inline}
+OUTPUT: {WORK_DIR}/analyst/p0-{task}-{n}.md
 ```
 
 ### P1 Design
 ```
-Context: Read {DLAT_BASE}/coordinator/p0-synthesis.md for requirements.
-Task: [architecture|interface|risk]
-OUTPUT_PATH: {DLAT_BASE}/analyst/p1-{task}-{n}.md
-Constraints: Read-only analysis. maxTurns: 20.
+OBJECTIVE: {architecture|interface|risk} analysis
+READ: {WORK_DIR}/coordinator/p0-synthesis.md
+OUTPUT: {WORK_DIR}/analyst/p1-{task}-{n}.md
 ```
 
 ### P2 Research
 ```
-Context: Read {DLAT_BASE}/coordinator/p1-synthesis.md for architecture decisions.
-Task: [codebase|external|audit-static|audit-behavioral|audit-relational|audit-impact]
-OUTPUT_PATH: {DLAT_BASE}/{analyst|researcher}/p2-{task}-{n}.md
-Constraints: Read-only. Glob→Grep→Read sequence. maxTurns: 25.
+OBJECTIVE: {codebase|external|audit-*} research/audit
+READ: {WORK_DIR}/coordinator/p1-synthesis.md
+OUTPUT: {WORK_DIR}/{analyst|researcher}/p2-{task}-{n}.md
 ```
-Note: codebase/audit tasks → `analyst/`, external → `researcher/`.
 
 ### P3 Plan
 ```
-Context: Read {DLAT_BASE}/coordinator/p2-synthesis.md
-Task: [static|behavioral|relational|impact] dimension plan
-OUTPUT_PATH: {DLAT_BASE}/analyst/p3-{task}-{n}.md
-Constraints: Read-only. maxTurns: 25.
+OBJECTIVE: {static|behavioral|relational|impact} dimension plan
+READ: {WORK_DIR}/coordinator/p2-synthesis.md
+OUTPUT: {WORK_DIR}/analyst/p3-{task}-{n}.md
 ```
 
 ### P4 Plan Verify
 ```
-Context: Read {DLAT_BASE}/analyst/p3-{dimension}-{n}.md + {DLAT_BASE}/coordinator/p2-synthesis.md
-Task: Verify {dimension} dimension plan.
-OUTPUT_PATH: {DLAT_BASE}/analyst/p4-{task}-{n}.md
-Constraints: Analysis only. maxTurns: 20.
+OBJECTIVE: Verify {dimension} plan
+READ: {WORK_DIR}/analyst/p3-{dimension}-{n}.md, {WORK_DIR}/coordinator/p2-synthesis.md
+OUTPUT: {WORK_DIR}/analyst/p4-{task}-{n}.md
 ```
 
 ### P5 Orchestrate
 ```
-Context: Read {DLAT_BASE}/coordinator/p4-synthesis.md
-Task: [static|behavioral|relational|impact] orchestration dimension.
-OUTPUT_PATH: {DLAT_BASE}/analyst/p5-{task}-{n}.md
-Constraints: Analysis only. maxTurns: 20.
+OBJECTIVE: {dimension} orchestration
+READ: {WORK_DIR}/coordinator/p4-synthesis.md
+OUTPUT: {WORK_DIR}/analyst/p5-{task}-{n}.md
 ```
 
 ### P6 Execution
 ```
-Context: Read {DLAT_BASE}/coordinator/p5-synthesis.md
-Task: Implement [assigned tasks from plan].
-OUTPUT_PATH: {DLAT_BASE}/{implementer|infra-implementer}/p6-{task}-{n}.md (change manifest)
-Constraints: Edit only assigned files. maxTurns: 40.
+OBJECTIVE: Implement {assigned tasks from plan}
+PLAN:
+1. {file}: {change}
+OUTPUT: {WORK_DIR}/{implementer|infra-implementer}/p6-{task}-{n}.md
 ```
 
 ### P7 Verify
 ```
-Context: Read {DLAT_BASE}/coordinator/p6-synthesis.md
-Task: [structural-content|consistency|quality|cc-feasibility] verification.
-OUTPUT_PATH: {DLAT_BASE}/analyst/p7-{task}-{n}.md
-Constraints: Read-only scan. maxTurns: 25.
+OBJECTIVE: {structural-content|consistency|quality|cc-feasibility} verification
+READ: {WORK_DIR}/coordinator/p6-synthesis.md
+OUTPUT: {WORK_DIR}/analyst/p7-{task}-{n}.md
 ```
 
 ### P8 Delivery
 ```
-Context: P7 all-PASS confirmed. Read {DLAT_BASE}/state.md for session history.
-Task: Create git commit + archive session to MEMORY.md.
-OUTPUT_PATH: {DLAT_BASE}/delivery-agent/p8-delivery-{n}.md
-Constraints: User confirmation required before git operations.
+OBJECTIVE: Deliver pipeline results
+CRITERIA: P7 all-PASS confirmed. Commit scope: {file list}
+OUTPUT: {WORK_DIR}/delivery-agent/p8-delivery-{n}.md
 ```
 
 ## Synthesis Subagent DPS
 
 Use when >=3 substantial output files need consolidation:
 ```
-DLAT_BASE: {base_path}
-Context: Phase {N} complete. Read these files:
-  - {DLAT_BASE}/{agent1}/{file1}
-  - {DLAT_BASE}/{agent2}/{file2}
-  - {DLAT_BASE}/{agent3}/{file3}
-  [... up to 5 files per synthesis subagent]
-Task: Unified synthesis — (1) Key findings per file, (2) Cross-file patterns,
-  (3) Conflicts/gaps, (4) Recommendation for next phase.
-OUTPUT_PATH: {DLAT_BASE}/coordinator/p{N}-synthesis.md
-Constraints: Read-only. maxTurns: 15.
+OBJECTIVE: Synthesize P{N} outputs (N-to-1)
+INPUT: [{path1}, {path2}, ..., {pathN}]
+OUTPUT: {WORK_DIR}/coordinator/p{N}-synthesis.md
 ```
 
 For >5 files: split into groups of 3-5, spawn multiple synthesis subagents, then one meta-synthesis.
 
-## State File Format
-
-Located at `{DLAT_BASE}/state.md`. All paths relative to DLAT_BASE.
-
-**Creation timing**: Lead creates `state.md` at P0 Step 5, BEFORE forking coordinator. This file's existence serves as the DLAT_BASE initialization gate.
-
-```markdown
-# DLAT Session State
-session_id: {timestamp}
-project_slug: {slug}
-base_path: ~/.claude/doing-like-agent-teams/projects/{slug}
-started: {ISO date}
-current_phase: P{N}
-
-## Phases
-- [x] P0 Pre-Design → coordinator/p0-synthesis.md
-- [x] P1 Design → coordinator/p1-synthesis.md
-- [ ] P2 Research (in progress)
-
-## Active Wave
-- Wave 2a: [task descriptions]
-
-## Completed Output Files
-- P0/brainstorm: analyst/p0-brainstorm-1.md
-- P0/synthesis: coordinator/p0-synthesis.md
-- P1/architecture: analyst/p1-architecture-1.md
-- P1/synthesis: coordinator/p1-synthesis.md
-
-## Failed Tasks
-- (none)
-
-## Escalation Log
-- (none)
-```
-
-**Update frequency**: After every wave completion. Batch multiple sub-wave completions into a single Write when waves complete within the same coordinator turn.
-
 ## Recovery Protocol
 
 After compaction or session restart:
-1. Read `{DLAT_BASE}/state.md`
-2. Identify `current_phase` and last completed synthesis
-3. Verify synthesis files exist: `ls {DLAT_BASE}/coordinator/p*-synthesis.md`
+1. `TaskGet(PT)` — read PT description for pipeline state
+2. Identify current_phase and completed phases from PT
+3. Verify synthesis files exist: `ls {WORK_DIR}/coordinator/p*-synthesis.md`
 4. Resume from current phase using synthesis files as context
 5. Never re-run completed phases
 
-**Cross-session resume**: Same project_slug → read existing state.md → continue.
+**Cross-session resume**: Same TASK_LIST_ID → `TaskGet(PT)` → continue from last phase.
 
 ## Cleanup
 
 After successful P8 delivery, work directory is preserved for audit.
-- Archive: `mv {DLAT_BASE} {DLAT_BASE}-archived-{date}`
-- Clean: `rm -rf {DLAT_BASE}` (only after confirming git commit)
+- Archive: `mv {WORK_DIR} {WORK_DIR}-archived-{date}`
+- Clean: `rm -rf {WORK_DIR}` (only after confirming git commit)
 - Coordinator does NOT auto-delete — human decision.
