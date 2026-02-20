@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# PreToolUse:Grep hook — CE Pattern 3: Pattern Optimization
-# Purpose: Inject CE tips when Grep parameters may cause large result sets.
-#          Checks for: content mode without head_limit, and root/empty path searches.
-# Exit: Always 0 (advisory only, never blocks)
+# PreToolUse:Grep hook — CE Pattern 3: Content Mode Guard (BLOCKING)
+# Purpose: Block Grep calls with output_mode="content" that lack head_limit.
+#          Without head_limit, content mode can return thousands of lines and
+#          consume significant context window tokens.
+# Exit: 2 (BLOCK) when content mode + no head_limit | 0 (allow) otherwise
 
 set -uo pipefail
 
@@ -16,42 +17,16 @@ fi
 # Extract tool_input fields — exit 0 on any parse error
 OUTPUT_MODE=$(echo "$INPUT" | jq -r '.tool_input.output_mode // empty' 2>/dev/null) || exit 0
 HEAD_LIMIT=$(echo "$INPUT" | jq -r '.tool_input.head_limit // empty' 2>/dev/null) || exit 0
-SEARCH_PATH=$(echo "$INPUT" | jq -r '.tool_input.path // empty' 2>/dev/null) || exit 0
 
-TIPS=()
-
-# Check 1: content mode without head_limit
+# Only block when: output_mode is "content" AND head_limit is absent/zero/null
 if [[ "$OUTPUT_MODE" == "content" ]]; then
   if [[ -z "$HEAD_LIMIT" || "$HEAD_LIMIT" == "0" || "$HEAD_LIMIT" == "null" ]]; then
-    TIPS+=("CE Tip: Grep output_mode:\"content\" without head_limit may return large results and consume significant context tokens. Add head_limit (e.g., 20-50) to cap output.")
+    jq -n '{
+      "decision": "block",
+      "reason": "CE BLOCK: Grep output_mode:\"content\" requires head_limit to prevent context bloat. Add head_limit (e.g., head_limit: 20) to cap output. Example: {\"pattern\": \"...\", \"output_mode\": \"content\", \"head_limit\": 20}"
+    }'
+    exit 2
   fi
 fi
-
-# Check 2: root or empty path search
-if [[ -z "$SEARCH_PATH" || "$SEARCH_PATH" == "/" || "$SEARCH_PATH" == "." ]]; then
-  TIPS+=("CE Tip: Grep without a specific path searches the entire working directory. Specify a path (e.g., \"src/\", \"*.ts\") to narrow scope and reduce token consumption.")
-fi
-
-# Only output if we have tips
-if [[ ${#TIPS[@]} -eq 0 ]]; then
-  exit 0
-fi
-
-# Combine tips
-COMBINED_TIPS=""
-for tip in "${TIPS[@]}"; do
-  if [[ -n "$COMBINED_TIPS" ]]; then
-    COMBINED_TIPS="${COMBINED_TIPS} | ${tip}"
-  else
-    COMBINED_TIPS="$tip"
-  fi
-done
-
-jq -n --arg ctx "$COMBINED_TIPS" '{
-  "hookSpecificOutput": {
-    "hookEventName": "PreToolUse",
-    "additionalContext": $ctx
-  }
-}'
 
 exit 0

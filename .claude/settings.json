@@ -202,19 +202,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/palantir/.claude/hooks/ce-post-grep-guard.sh",
-            "timeout": 5,
-            "statusMessage": "CE: Checking grep result size"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",

@@ -117,6 +117,22 @@
 - Plans: `docs/plans/2026-02-09-cow-v2-design.md` (778L) + `cow-v2-implementation.md` (2498L)
 - Previous v1.0: Superseded (was c14d592, MCP server-centric, 53 files/7367L)
 
+## INFRA v15 — DELIVERED (2026-02-20)
+- PR: #69 (feat/infra-v15), squash merged — 29 files, 317+/2360- (net -2043L)
+- Pipeline: 4 waves (W1-W4), 10/10 tasks ALL PASS
+- Key deliverables:
+  - PT description-first: description = primary state store (replaces metadata + state.md)
+  - Per-Agent DPS profiles: minimal DPS templates with token targets (coordinator 80, analyst 100, implementer 150, infra-implementer 200)
+  - 3-Tier Data Access: TaskList (coordination) → TaskGet (knowledge) → Read disk (metadata, Lead-only)
+  - Coordinator demoted: Sub-Orchestrator → Synthesis Worker (removed silently-dropped Task() tools)
+  - All agents explicit model:sonnet (prevent Opus 10x cost inheritance)
+  - CLAUDE.md §3-§5 rewritten: Spawn Rules simplified, DPS v5→per-Agent profiles, all metadata→description
+  - dps-construction-guide.md fully rewritten with per-Agent templates
+  - DLAT SKILL.md + methodology.md: state.md→PT, DLAT_BASE→WORK_DIR
+  - freewheelin skill deleted, pipeline-resume disabled from auto-load
+  - 9 deprecated ref_*.md + CC_SECTIONS.md tombstoned
+- Decisions: D01-D06 (3-Tier Data Access, metadata=Lead-only, tool-level enforcement, PT description=primary)
+
 ## INFRA v14 — DELIVERED (2026-02-20)
 - Architecture: Single-session (removed Agent Teams/tmux multi-session)
 - CLAUDE.md: v14, 193L, "Pipeline Architecture v14" title, Two-Channel Handoff [D17]
