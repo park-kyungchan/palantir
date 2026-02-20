@@ -52,11 +52,11 @@
 | Permission escalation | Sub-agent with elevated perms | CC prevents this |
 
 ## DPS for Risk Analysts
-- **Context**: Design-architecture L1 (components) + design-interface L1 (interfaces). Environment: "CC CLI on WSL2, tmux Agent Teams, Opus 4.6."
+- **Context**: Design-architecture L1 (components) + design-interface L1 (interfaces). Environment: "CC CLI on WSL2, single-session pipeline, Opus 4.6."
 - **Task**: "FMEA per component. Score S/L/D (1-5). Security (OWASP) + performance analysis."
 - **Scope**: COMPLEX → analyst-1=failure modes, analyst-2=security+performance.
 - **Constraints**: Read-only. Sequential-thinking for calibrated scoring. maxTurns: 20.
-- **Delivery**: Lead reads via TaskOutput (P0-P1).
+- **Delivery**: Subagent writes to output file; Lead reads micro-signal then file (P0-P1).
 
 ## Mitigation Strategy Categories
 | Category | When | Example |

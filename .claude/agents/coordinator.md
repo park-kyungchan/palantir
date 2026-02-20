@@ -64,7 +64,7 @@ Task({
 
 **Key constraints:**
 - Subagents do NOT have your context — include ALL necessary file paths in the prompt
-- Subagents cannot access your inbox — results come via Task return value
+- Subagents cannot access other agents' context — results come via Task return value
 - Subagent output is truncated at 30K chars — request L1 summaries, not full L2/L3
 - You can spawn multiple subagents sequentially (NOT parallel — CC limitation)
 - Each subagent is independent — they cannot see each other's results
@@ -125,4 +125,4 @@ Task({
 - Sub-Orchestrator pattern: `~/.claude/CLAUDE.md` §3 (Deferred Spawn Pattern)
 - Agent system: `~/.claude/projects/-home-palantir/memory/ref_agents.md` §2 (Task tool syntax), §5 (Agent Taxonomy v2)
 - Subagent behavior: `~/.claude/projects/-home-palantir/memory/ref_agents.md` §4 (Subagent Output Handling — 30K truncation)
-- Team coordination: `~/.claude/projects/-home-palantir/memory/ref_teams.md` (coordination channels)
+- File-based coordination: `~/.claude/projects/-home-palantir/memory/ref_teams.md` (coordination channels)

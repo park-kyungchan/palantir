@@ -10,8 +10,7 @@ Loaded on-demand by research-cc-verify skill. Contains path lookup tables, evide
 
 | What to find | Path pattern | Tool |
 |---|---|---|
-| Agent inbox files | `~/.claude/teams/{name}/inboxes/{agent}.json` | Glob + Read |
-| Team config | `~/.claude/teams/{name}/config.json` | Read |
+| Subagent output files | `tasks/{work_dir}/*.md` | Glob + Read |
 | Task files | `~/.claude/tasks/{name}/*.json` | Glob |
 | Task file lock | `~/.claude/tasks/{name}/.lock` | Glob |
 | Skill files | `.claude/skills/{skill}/SKILL.md` | Glob |
@@ -25,7 +24,7 @@ Loaded on-demand by research-cc-verify skill. Contains path lookup tables, evide
 
 | What survives | Files to check | Verification method |
 |---|---|---|
-| Inbox after termination | `~/.claude/teams/{name}/inboxes/{agent}.json` | Read → check timestamps, message count |
+| Subagent output after completion | `tasks/{work_dir}/*.md` | Read → check file presence and content |
 | Task state after compaction | `~/.claude/tasks/{name}/*.json` | Read → check status + metadata fields |
 | PT metadata after compaction | Task JSON with `[PERMANENT]` tag | Read → check metadata.phase_signals |
 | Hook output after session | Hook output logs (if configured) | Read hook script + check output destination |
@@ -34,7 +33,7 @@ Loaded on-demand by research-cc-verify skill. Contains path lookup tables, evide
 
 | Claimed layout element | Verification glob | Expected result |
 |---|---|---|
-| Teams dir structure | `~/.claude/teams/*/` | Subdirs with config.json + inboxes/ |
+| Work dir structure | `tasks/{work_dir}/` | Output files from subagents |
 | Skills dir structure | `.claude/skills/*/SKILL.md` | One SKILL.md per skill dir |
 | Agent profiles dir | `.claude/agents/*.md` | All 7 profiles present |
 | Resources dir | `.claude/resources/*.md` | 6 shared resource files |
@@ -45,7 +44,6 @@ Loaded on-demand by research-cc-verify skill. Contains path lookup tables, evide
 
 | Setting | File | Field path | Valid values |
 |---|---|---|---|
-| teammateMode | `~/.claude/settings.json` | `env.CLAUDE_CODE_AGENT_TEAMS_MATE_MODE` | `tmux`, `in-process`, `auto` |
 | MCP servers | `.claude.json` | `mcpServers` | Object with server configs |
 | Task list ID | `~/.claude/settings.json` | `env.CLAUDE_CODE_TASK_LIST_ID` | string (team name) |
 | Skill budget | `~/.claude/settings.json` | `env.SLASH_COMMAND_TOOL_CHAR_BUDGET` | integer (chars) |
@@ -123,22 +121,22 @@ Use this table for each claim being verified:
 
 ### FILESYSTEM test
 ```
-Claim: "Inbox files stored at ~/.claude/teams/{name}/inboxes/{agent}.json"
-Test:  Glob("~/.claude/teams/*/inboxes/*.json")
-Check: Files matching pattern exist
+Claim: "Subagent output files written to tasks/{work_dir}/*.md"
+Test:  Glob("tasks/{work_dir}/*.md")
+Check: Files matching pattern exist after subagent completes
 PASS:  ≥1 file found at pattern
-FAIL:  No files found → claim may be wrong path
-NEEDS-REVIEW: No active team to generate inbox files
+FAIL:  No files found → claim may be wrong path or subagent failed to write
+NEEDS-REVIEW: No completed subagents to generate output files
 ```
 
 ### PERSISTENCE test
 ```
-Claim: "Inbox JSON persists after agent termination"
-Test:  Read ~/.claude/teams/{name}/inboxes/{agent}.json for a terminated agent
-Check: File exists, contains messages with timestamps before termination
-PASS:  Messages present with pre-termination timestamps
-FAIL:  File missing or empty → persistence claim false
-NEEDS-REVIEW: Cannot determine termination time; no terminated agents present
+Claim: "PT metadata persists after compaction"
+Test:  Read task JSON with [PERMANENT] tag → check metadata.phase_signals
+Check: metadata fields present and non-empty after compaction event
+PASS:  metadata.phase_signals populated with phase results
+FAIL:  metadata missing or empty → persistence claim false
+NEEDS-REVIEW: Cannot determine if compaction occurred; no PT present
 ```
 
 ### STRUCTURE test
@@ -164,7 +162,7 @@ NEEDS-REVIEW: Neither file has mcpServers (no MCP configured yet)
 
 ### BEHAVIORAL test
 ```
-Claim: "PostToolUse hook fires for all file writes by all teammates"
+Claim: "PostToolUse hook fires for all file writes by all subagents"
 Test:  Read ~/.claude/settings.json → hooks section
        Check hook event type: "PostToolUse"
        Check matcher: includes Write/Edit tools
@@ -172,7 +170,7 @@ Test:  Read ~/.claude/settings.json → hooks section
 Check: Hook is registered with correct event + matcher + executable script
 PASS:  All three checks pass
 FAIL:  Hook missing, wrong event type, or script not executable
-NEEDS-REVIEW: Hook present but cannot verify "all teammates" without live execution
+NEEDS-REVIEW: Hook present but cannot verify "all subagents" without live execution
 ```
 
 ### BUG test
@@ -180,7 +178,7 @@ NEEDS-REVIEW: Hook present but cannot verify "all teammates" without live execut
 Claim: "BUG-005: MEMORY.md double-injection causes 2× token cost"
 Test:  Read ~/.claude/settings.json → check if MEMORY.md in additionalContext
        Read MEMORY.md → count lines (>200 line limit means double-cost is amplified)
-       Check: Is bug ID in memory/agent-teams-bugs.md?
+       Check: Is bug ID in memory/pipeline-bugs.md?
 Check: Bug exists as documented, workaround (200-line limit) is enforced
 PASS:  MEMORY.md ≤200 lines; bug ID in bugs file
 NEEDS-REVIEW: Cannot verify token cost empirically without runtime measurement

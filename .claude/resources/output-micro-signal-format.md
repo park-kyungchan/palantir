@@ -1,11 +1,11 @@
 # Output Micro-Signal Format
 
-> Shared resource for all pipeline skills. Defines the L1 micro-signal format that agents send to Lead via SendMessage.
+> Shared resource for all pipeline skills. Defines the L1 micro-signal format that subagents write to their output files for Lead to read on completion.
 
 ## Micro-Signal Structure
 
 ```
-{STATUS}|{key1}:{value1}|{key2}:{value2}|ref:tasks/{team}/{file}
+{STATUS}|{key1}:{value1}|{key2}:{value2}|ref:tasks/{work_dir}/{file}
 ```
 
 - **STATUS**: `PASS`, `FAIL`, `PARTIAL`, `BLOCKED`
@@ -15,9 +15,9 @@
 ### Examples
 
 ```
-PASS|deps:12|hotspots:3|ref:tasks/team-alpha/p2-audit-static.md
-FAIL|level:L2|missing:cycle_detection|ref:tasks/team-alpha/p2-audit-static.md
-PARTIAL|coverage:75%|files:8/12|ref:tasks/team-alpha/p2-research-codebase.md
+PASS|deps:12|hotspots:3|ref:tasks/w3-pipeline/p2-audit-static.md
+FAIL|level:L2|missing:cycle_detection|ref:tasks/w3-pipeline/p2-audit-static.md
+PARTIAL|coverage:75%|files:8/12|ref:tasks/w3-pipeline/p2-research-codebase.md
 ```
 
 ## L1 YAML Structure (in detail file)
@@ -30,7 +30,7 @@ skill: {skill name}
 status: PASS|FAIL|PARTIAL
 # ... skill-specific metrics
 pt_signal: "metadata.phase_signals.{phase}_{domain}"
-signal_format: "{STATUS}|{metrics}|ref:tasks/{team}/{file}"
+signal_format: "{STATUS}|{metrics}|ref:tasks/{work_dir}/{file}"
 ```
 
 ## Token Budget

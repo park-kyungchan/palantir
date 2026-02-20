@@ -20,7 +20,7 @@ Referenced from SKILL.md to keep L2 body within 200-line budget.
 - Full pipeline state beyond P3-P4
 - Rejected test strategy alternatives
 
-**Budget:** DPS Context field ≤ 30% of teammate effective context.
+**Budget:** DPS Context field ≤ 30% of subagent effective context.
 
 ### Task Specification
 
@@ -31,7 +31,7 @@ Referenced from SKILL.md to keep L2 body within 200-line budget.
 **Expected Output:**
 - L1 YAML: `test_coverage_percent`, `weighted_coverage_percent`, `rollback_coverage_percent`, `verdict`, `findings[]`
 - L2: test/rollback coverage matrices
-- Delivery: `SendMessage` to Lead: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md`
+- Delivery: `file-based signal` to Lead: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{work_dir}/p4-pv-behavioral.md`
 
 ### Tier-Specific DPS Variations
 

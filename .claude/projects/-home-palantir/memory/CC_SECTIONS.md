@@ -13,7 +13,7 @@
 | R3 | `ref_hooks.md` | Hook creation, debugging, event handling | 14 events, 3 handler types (command/prompt/agent), I/O contract, exit codes, 6 scopes |
 | R4 | `ref_skills.md` | Skill field validation, invocation issues, routing | Frontmatter fields, $ARGUMENTS, shell preprocessing, L1 budget (drop order opaque), disambiguation, Skills API, agentskills.io spec, 500-line soft limit, **context:fork FIXED (CC 2.1)**, non-native fields (metadata/compatibility) |
 | R5 | `ref_agents.md` | Agent field validation, spawning, subagent limits | Agent fields, permissionMode, memory config (auto-adds Read/Write/Edit), subagent comparison, 30K output cap, hooks augment globals, BUG-005 (MEMORY.md dual injection), Stop→SubagentStop confirmed |
-| R6 | `ref_teams.md` | Agent Teams coordination, task sharing | File-based channels (both persistent on disk), inbox messaging (append-only, auto-deliver on turn), task DAG with file-lock concurrency, heartbeat 5min, plan approval workflow, **delegate mode (Shift+Tab)**, physical file structure, atomic write mechanism, hook-based pseudo-shared memory, design rationale, known limitations + BUG-025037 |
+| R6 | `ref_teams.md` | File-based coordination, Task API patterns, Work Directory setup | Task API (TaskCreate/TaskUpdate/TaskGet), Work Directory conventions, CLAUDE_CODE_TASK_LIST_ID cross-session sharing, task DAG with file-lock concurrency, micro-signal handoff patterns |
 | R7 | `ref_model_integration.md` | Model selection, cost tuning, MCP/plugin setup, **commands/ legacy** | Effort levels, cost benchmarks, MCP server types, tool search, **plugin manifest/LSP/marketplace/lifecycle**, commands/ vs skills/, Opus 4.6, Sonnet 4.6, fast mode 6x, 128K output |
 | R8 | `ref_community.md` | External tool evaluation, community patterns | agnix linter, claude-flow, superpowers, 10 post-Opus 4.6 community tools |
 
@@ -27,10 +27,9 @@
 | Hook failure diagnosis | R3 → R2 (hook context injection) |
 | Cost optimization | R7 (model/cost) |
 | Context management API | R2 (config + context editing) |
-| Agent Teams debugging | R6 → R2 (task sharing + context) |
+| Task API / Work Directory setup | R6 (coordination patterns) |
 | User CC architecture question | Relevant R-file, explain from reference |
 | Plugin/marketplace setup | R7 (plugin manifest, lifecycle, LSP) |
 | Rules/conditional loading | R2 (rules/ directory, paths frontmatter) |
 | Settings field lookup | R2 (complete settings reference table) |
 | Gap not covered | Spawn claude-code-guide agent |
-| Agent Teams architecture/file structure | R6 (teams architecture) |

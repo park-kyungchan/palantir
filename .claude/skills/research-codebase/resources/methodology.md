@@ -20,8 +20,8 @@ Task: Explore [codebase area] to validate [all architecture decisions]. For each
 Constraints: Read-only. Glob -> Grep -> Read sequence. maxTurns: 25.
 Expected Output: Pattern inventory (name, file:line, relevance, reusability) +
   anti-patterns with locations.
-Delivery: Write output to tasks/{team}/p2-codebase.md. Send micro-signal to Lead via
-  SendMessage: "PASS|patterns:{count}|ref:tasks/{team}/p2-codebase.md".
+Delivery: Write output to tasks/{work_dir}/p2-codebase.md. Send micro-signal to Lead via
+  file-based signal: "PASS|patterns:{count}|ref:tasks/{work_dir}/p2-codebase.md".
 ```
 Single analyst receives all research questions. Lead consolidates output into research-audit input.
 
@@ -38,8 +38,8 @@ Task: Explore [specific directory subtree] to validate [subset of architecture d
 Constraints: Read-only. Stay within assigned directory scope. maxTurns: 25. If findings reference
   files outside your scope, note with file path and reason -- another analyst covers that area.
 Expected Output: Pattern inventory for your scope + cross-reference notes for consolidation.
-Delivery: Write output to tasks/{team}/p2-codebase.md. Send micro-signal to Lead:
-  "PASS|patterns:{count}|ref:tasks/{team}/p2-codebase.md".
+Delivery: Write output to tasks/{work_dir}/p2-codebase.md. Send micro-signal to Lead:
+  "PASS|patterns:{count}|ref:tasks/{work_dir}/p2-codebase.md".
 ```
 Lead merges outputs from all analysts: resolve cross-references, deduplicate patterns. Cross-reference resolution is Lead's responsibility, not analysts'.
 

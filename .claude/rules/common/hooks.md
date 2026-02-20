@@ -1,30 +1,23 @@
 # Hooks System
 
-## Hook Types
+## Hook Events We Use
 
-- **PreToolUse**: Before tool execution (validation, parameter modification)
-- **PostToolUse**: After tool execution (auto-format, checks)
-- **Stop**: When session ends (final verification)
+- **PreToolUse**: Validate/block tool calls before execution (e.g., anti-rm-rf, anti-push-main)
+- **PostToolUse**: Run checks after tool execution (e.g., on-file-change formatting)
+- **Notification**: Triggered on agent notifications
+- **Stop**: Final verification when session ends
+- **SubagentStop**: When a spawned subagent completes
 
-## Auto-Accept Permissions
+## Configuration
 
-Use with caution:
-- Enable for trusted, well-defined plans
-- Disable for exploratory work
-- Never use dangerously-skip-permissions flag
-- Configure `allowedTools` in `~/.claude.json` instead
+- Hook scripts: `.claude/hooks/`
+- Permissions allow-list: `permissions.allow` in `~/.claude/settings.json`
+- Never use `--dangerously-skip-permissions` flag
 
-## TodoWrite Best Practices
+## Active Guards
 
-Use TodoWrite tool to:
-- Track progress on multi-step tasks
-- Verify understanding of instructions
-- Enable real-time steering
-- Show granular implementation steps
-
-Todo list reveals:
-- Out of order steps
-- Missing items
-- Extra unnecessary items
-- Wrong granularity
-- Misinterpreted requirements
+- `anti-rm-rf.sh` — blocks destructive rm commands
+- `anti-push-main.sh` — blocks force-push to main
+- `block-web-fallback.sh` — blocks WebSearch/WebFetch MCP fallback
+- `on-mcp-failure.sh` — pauses on MCP server failure
+- Session ID guard required in command hooks (BUG-007: global hooks fire in ALL contexts)

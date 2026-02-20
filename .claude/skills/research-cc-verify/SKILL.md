@@ -3,7 +3,7 @@ name: research-cc-verify
 description: >-
   Empirically verifies CC-native behavioral claims via actual file
   inspection before they enter cc-reference cache or CLAUDE.md directives.
-  Tests filesystem structure, inbox/task JSON persistence, configuration
+  Tests filesystem structure, task JSON persistence, configuration
   fields, and directory layouts. Shift-Left gate after claude-code-guide
   investigation or research-codebase CC-native findings. Prevents
   unverified assumptions from propagating downstream. Use after any
@@ -31,8 +31,7 @@ argument-hint: "[claim-source or investigation-context]"
 
 ## Phase-Aware Execution
 
-- **P0-P1 mode**: Lead-direct with local subagent (`run_in_background`). No Team infrastructure.
-- **P2+ mode**: Team agent. Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to research-coordinator). Update task status via `TaskUpdate`. Read upstream outputs from `tasks/{team}/`. Only modify files assigned to you.
+- **All modes**: Subagent (`run_in_background:true`, `context:fork`). Two-channel output — Ch2 (disk file) + Ch3 (micro-signal to Lead). Read upstream outputs from `tasks/{work_dir}/`. Only modify files assigned to you.
 
 ## Methodology
 
@@ -95,17 +94,17 @@ Per-claim verdict table with evidence, gate decision, and recommended actions fo
 - **COMPLEX**: 10+ claims, cross-subsystem. Multiple analysts, parallel by category.
 
 ### DPS for Analyst Spawn
-- **Context (D11)**: Specific claims with expected paths and categories. EXCLUDE pipeline history, other teammates' tasks, design rationale. Budget: ≤30% of effective context.
+- **Context (D11)**: Specific claims with expected paths and categories. EXCLUDE pipeline history, other subagents' tasks, design rationale. Budget: ≤30% of effective context.
 - **Task**: "Verify each claim via Glob/Read/Grep. Produce PASS/FAIL/NEEDS-REVIEW verdict with file:line evidence."
 - **Constraints**: `analyst` agent, read-only, no file modification, no Bash.
-- **Delivery (4-channel)**: Ch2 → `tasks/{team}/p2-cc-verify.md`. Ch3 → `"PASS|claims:{total}|fail:{n}|ref:tasks/{team}/p2-cc-verify.md"`. Ch4 → `"READY|path:tasks/{team}/p2-cc-verify.md|fields:claims,verdicts,feasibility_flags"` to research-coordinator.
+- **Delivery (2-channel)**: Ch2 → `tasks/{work_dir}/p2-cc-verify.md`. Ch3 → `"PASS|claims:{total}|fail:{n}|ref:tasks/{work_dir}/p2-cc-verify.md"`. Lead routes result to research-coordinator via file path.
 
 ## Failure Handling
 
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error, read timeout, single claim inaccessible | L0 Retry | Re-invoke same analyst, same claim list |
-| Incomplete verdicts or off-scope evidence | L1 Nudge | SendMessage with refined paths or narrower scope |
+| Incomplete verdicts or off-scope evidence | L1 Nudge | Respawn with refined DPS targeting refined paths or narrower scope |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh analyst with remaining unverified claims |
 | Claim list too large, cross-subsystem scope | L3 Restructure | Split by category, assign to parallel analysts |
 | 3+ L2 failures or filesystem access denied for all claims | L4 Escalate | AskUserQuestion with blocked claims and options |
@@ -118,7 +117,7 @@ Per-claim verdict table with evidence, gate decision, and recommended actions fo
 
 ## Anti-Patterns
 
-- **DO NOT skip "obvious" claims**: Every CC-native claim must be verified. The SendMessage "ephemeral" assumption cost 4 re-modified files.
+- **DO NOT skip "obvious" claims**: Every CC-native claim must be verified. The ephemeral message assumption cost 4 re-modified files.
 - **DO NOT skip PERSISTENCE claims**: Highest-value targets. Don't skip because they're harder to test.
 - **DO NOT write FAIL claims to ref cache**: Failed claims must be corrected or removed — never applied as-is.
 - **DO NOT treat NEEDS-REVIEW as PASS**: Unverifiable claims must be flagged explicitly in all downstream output.
@@ -147,7 +146,7 @@ Per-claim verdict table with evidence, gate decision, and recommended actions fo
 | Insufficient data | (Self — flag) | NEEDS-REVIEW with test details |
 | Contradictory evidence | claude-code-guide | Both evidence sets |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: use 2-channel protocol (Ch2 output file `tasks/{work_dir}/`, Ch3 micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -169,7 +168,7 @@ claims_pass: 0
 claims_fail: 0
 claims_review: 0
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|claims:{total}|fail:{n}|ref:tasks/{team}/p2-cc-verify.md"
+signal_format: "PASS|claims:{total}|fail:{n}|ref:tasks/{work_dir}/p2-cc-verify.md"
 ```
 
 ### L2

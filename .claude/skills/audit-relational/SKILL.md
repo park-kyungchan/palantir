@@ -64,7 +64,7 @@ If A's Sends To table lists B, B's Receives From table must list A.
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error during relationship scan | L0 | Re-invoke same analyst, same scope |
-| Incomplete chain mapping / missing files | L1 | SendMessage with refined file scope |
+| Incomplete chain mapping / missing files | L1 | Respawn with refined DPS targeting file scope |
 | Analyst exhausted turns before full validation | L2 | Kill → fresh analyst with refined DPS |
 | Multi-analyst scope conflict | L3 | Modify analyst boundaries, reassign relationship sets |
 | Strategic ambiguity / 3+ L2 failures | L4 | AskUserQuestion with options |
@@ -99,7 +99,7 @@ If A's Sends To table lists B, B's Receives From table must list A.
 | Analyst exhausted | research-coordinator | Partial graph + coverage percentage |
 | No relationships found | research-coordinator | Empty graph with explanation |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -128,7 +128,7 @@ issues:
     type: asymmetric|orphan|broken|stale
     severity: HIGH|MEDIUM|LOW
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|relations:{N}|broken:{N}|ref:tasks/{team}/p2-audit-relational.md"
+signal_format: "PASS|relations:{N}|broken:{N}|ref:{work_dir}/p2-audit-relational.md"
 ```
 
 ### L2

@@ -86,18 +86,18 @@ Spawn analyst (maxTurns: 15). Systematic grouping across 3-8 tasks. Checkpoints 
 ### COMPLEX — Analyst Spawn Template
 - **Context** (D11 priority: cognitive focus > token efficiency):
   INCLUDE:
-    - research-coordinator audit-impact L3 from `tasks/{team}/p2-coordinator-audit-impact.md`
+    - research-coordinator audit-impact L3 from `tasks/{work_dir}/p2-coordinator-audit-impact.md`
     - Pipeline tier and iteration count from PT
     - Task list from plan-static if available (for wave alignment)
   EXCLUDE:
     - Other plan dimension outputs (unless direct dependency for wave grouping)
     - Full research evidence detail (use L3 summaries only)
     - Pre-design and design conversation history
-  Budget: Context field ≤ 30% of teammate effective context
+  Budget: Context field ≤ 30% of subagent effective context
 - **Task**: "Group tasks into parallel execution waves (max 4 per wave) based on propagation containment. Insert checkpoints between waves with gate conditions. Define containment strategy per propagation path (isolation/ordered/blast-limit/rollback). Calculate parallel efficiency metric."
-- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on sequencing and containment, not teammate assignment.
+- **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20. Focus on sequencing and containment, not subagent assignment.
 - **Expected Output**: L1 YAML with wave_count, checkpoint_count, parallel_efficiency, groups[] and checkpoints[]. L2 sequencing rationale with containment strategy per path.
-- **Delivery (Four-Channel)**:
-  - Ch2: Write full result to `tasks/{team}/p3-plan-impact.md`
-  - Ch3 micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:tasks/{team}/p3-plan-impact.md`
-  - Ch4 P2P to plan-verify-impact teammate (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active
+- **Delivery (Two-Channel)**:
+  - Ch2: Write full result to `tasks/{work_dir}/p3-plan-impact.md`
+  - Ch3 micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:tasks/{work_dir}/p3-plan-impact.md`
+  - file-based output to plan-verify-impact subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active

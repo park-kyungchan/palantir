@@ -26,11 +26,10 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-Runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Four-Channel Protocol — Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal to Lead, Ch4 P2P to downstream consumers.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **P2P**: Homeostasis repairs are terminal — no downstream P2P consumers. Write to disk + micro-signal to Lead.
-- **File ownership**: Only modify files assigned to this wave. No overlapping edits with parallel agents.
+Runs via subagent:
+- **Communication**: Two-Channel protocol — Ch2 output file in work directory + Ch3 micro-signal to Lead.
+- **Output**: Homeostasis repairs are terminal — no downstream consumers. Write to disk + micro-signal to Lead.
+- **File ownership**: Only modify files assigned to this wave. No overlapping edits with parallel subagents.
 
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
@@ -119,7 +118,7 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 | Non-convergence after 3 iterations | (Terminate partial) | Remaining findings deferred |
 | Infra-implementer wave failure (after retry) | (Continue) | Failed findings deferred |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Failure Handling
@@ -127,7 +126,7 @@ Each cycle must verify previous cycle's fixes before adding new changes.
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error or file write timeout in implementer wave | L0 Retry | Re-invoke same infra-implementer with same DPS |
-| Implementer output missing files or incomplete change log | L1 Nudge | SendMessage with refined finding list and explicit per-file instructions |
+| Implementer output missing files or incomplete change log | L1 Nudge | Respawn with refined DPS targeting finding list and explicit per-file instructions |
 | Implementer stuck, context polluted, or maxTurns exhausted | L2 Respawn | Kill → fresh infra-implementer with reduced wave scope |
 | Non-overlapping constraint violated or parallel conflict detected | L3 Restructure | Regroup findings into non-conflicting waves, reassign file ownership |
 | 3+ L2 failures on same wave or budget overflow unresolvable | L4 Escalate | AskUserQuestion with situation summary and options |
@@ -158,7 +157,7 @@ domain: homeostasis
 skill: self-implement
 status: complete|partial|blocked
 pt_signal: "metadata.phase_signals.homeostasis"
-signal_format: "{STATUS}|fixed:{N}|deferred:{N}|ref:tasks/{team}/homeostasis-self-implement.md"
+signal_format: "{STATUS}|fixed:{N}|deferred:{N}|ref:{work_dir}/homeostasis-self-implement.md"
 iteration_count: 0
 findings_received: 0
 findings_fixed: 0

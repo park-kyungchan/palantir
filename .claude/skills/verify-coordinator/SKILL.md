@@ -31,10 +31,10 @@ disable-model-invocation: true
 Note: P7 validates EXECUTION OUTPUT (post-execution). This coordinator merges dimension verdicts and detects cross-dimension inconsistencies invisible to individual verifiers. It does NOT re-verify dimensions or override individual verdicts.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via Four-Channel Protocol.
-- **Ch2**: Agent writes tiered output to `tasks/{team}/p7-coordinator-*.md`.
-- **Ch3** micro-signal to Lead: `PASS|dims:4|issues:{N}|ref:tasks/{team}/p7-coordinator-index.md`.
-- **Ch4** P2P: not sent at this stage — Lead uses ch3 signal to route delivery-pipeline or execution domain.
+- **P2+ (background subagents)**: Spawn agent with `run_in_background:true`, `context:fork`. Agent delivers via Two-Channel Protocol.
+- **Ch2**: Agent writes tiered output to `tasks/{work_dir}/p7-coordinator-*.md`.
+- **Ch3** micro-signal to Lead: `PASS|dims:4|issues:{N}|ref:tasks/{work_dir}/p7-coordinator-index.md`.
+- Lead uses Ch3 signal to route delivery-pipeline or execution domain.
 
 > Phase-aware routing details: read `.claude/resources/phase-aware-execution.md`
 > DPS construction guide: read `.claude/resources/dps-construction-guide.md`
@@ -83,12 +83,12 @@ Individual verifiers check their own dimension. This coordinator checks BETWEEN 
 
 | Tier | File | Consumer | When Read |
 |------|------|----------|-----------|
-| L1 | `tasks/{team}/p7-coordinator-index.md` | Lead | Always (routing decisions) |
-| L2 | `tasks/{team}/p7-coordinator-summary.md` | Lead | When routing needs detail |
-| L3 | `tasks/{team}/p7-coordinator-structural.md` | execution-infra | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p7-coordinator-consistency.md` | execution-infra | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p7-coordinator-quality.md` | execution-review | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p7-coordinator-feasibility.md` | Lead (direct, blocks delivery) | On cc-feasibility FAIL only |
+| L1 | `tasks/{work_dir}/p7-coordinator-index.md` | Lead | Always (routing decisions) |
+| L2 | `tasks/{work_dir}/p7-coordinator-summary.md` | Lead | When routing needs detail |
+| L3 | `tasks/{work_dir}/p7-coordinator-structural.md` | execution-infra | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{work_dir}/p7-coordinator-consistency.md` | execution-infra | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{work_dir}/p7-coordinator-quality.md` | execution-review | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{work_dir}/p7-coordinator-feasibility.md` | Lead (direct, blocks delivery) | On cc-feasibility FAIL only |
 
 ## Failure Handling
 
@@ -139,7 +139,7 @@ Individual verifiers check their own dimension. This coordinator checks BETWEEN 
 | Cross-check HIGH severity | Specific execution skill | Cross-dimension finding with escalated severity, file locations |
 | All dimensions FAIL | execution-infra + execution-review (prioritized) | Comprehensive failure report with fix priority order |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -168,9 +168,9 @@ dimensions:
 cross_check_issues: 0
 delivery_blocker: false
 routing: delivery-pipeline|execution-infra|execution-review|Lead
-output_ref: tasks/{team}/p7-coordinator-index.md
+output_ref: tasks/{work_dir}/p7-coordinator-index.md
 pt_signal: "metadata.phase_signals.p7_verify"
-signal_format: "PASS|dims:4|issues:{N}|ref:tasks/{team}/p7-coordinator-index.md"
+signal_format: "PASS|dims:4|issues:{N}|ref:tasks/{work_dir}/p7-coordinator-index.md"
 ```
 
 ### L2
@@ -181,7 +181,7 @@ signal_format: "PASS|dims:4|issues:{N}|ref:tasks/{team}/p7-coordinator-index.md"
 - delivery_blocker flag explanation if set
 
 ### L3
-Files in `tasks/{team}/p7-coordinator-*.md`:
+Files in `tasks/{work_dir}/p7-coordinator-*.md`:
 - `p7-coordinator-structural.md`: Structural-content findings + cross-dimension annotations (for execution-infra)
 - `p7-coordinator-consistency.md`: Consistency findings + cross-dimension annotations (for execution-infra)
 - `p7-coordinator-quality.md`: Quality findings + cross-dimension annotations (for execution-review)

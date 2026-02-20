@@ -87,7 +87,7 @@ Core value (DIRECT dependency detection) is fully preserved in all modes. Partia
 | Failure Type | Level | Action |
 |---|---|---|
 | Grep timeout or analyst turn limit hit | L0 Retry | Re-invoke same analyst with same DPS |
-| Partial analysis — key files not analyzed | L1 Nudge | SendMessage with narrowed scope or additional predictions context |
+| Partial analysis — key files not analyzed | L1 Nudge | Respawn with refined DPS targeting narrowed scope or additional predictions context |
 | Analyst context exhausted or stuck in loop | L2 Respawn | Kill → fresh analyst with refined DPS and reduced file scope |
 | Codebase-map stale AND grep incomplete, cascade decision uncertain | L3 Restructure | Split into smaller batches, re-sequence with manage-codebase first |
 | Systematic grep failure, tool unavailable, or 3+ L2 failures | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -105,13 +105,12 @@ Core value (DIRECT dependency detection) is fully preserved in all modes. Partia
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Four-Channel Protocol — Ch1 (PT metadata), Ch2 (`tasks/{team}/p6-impact.md`), Ch3 (micro-signal to Lead), Ch4 (P2P to downstream consumers).
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **P2P**: Read upstream outputs directly from `tasks/{team}/` files via $ARGUMENTS. Send P2P signals to downstream consumers.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+This skill runs in Two-Channel protocol only. Single-session subagent execution:
+- **Subagent writes** output file to `tasks/{work_dir}/p6-impact.md`
+- **Ch3 micro-signal** to Lead with PASS/FAIL status
+- **Task tracking**: Subagent calls TaskUpdate on completion. File ownership: only modify assigned files.
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Transitions
@@ -165,7 +164,7 @@ prediction_available: true|false
 cascade_recommended: true|false
 cascade_rationale: ""
 pt_signal: "metadata.phase_signals.p6_impact"
-signal_format: "{STATUS}|cascade:{true|false}|confidence:{level}|ref:tasks/{team}/p6-impact.md"
+signal_format: "{STATUS}|cascade:{true|false}|confidence:{level}|ref:tasks/{work_dir}/p6-impact.md"
 ```
 
 ### L2

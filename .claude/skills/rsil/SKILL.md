@@ -40,7 +40,7 @@ RSIL is NOT a one-time pipeline. It is an always-active meta-level self-improvem
 
 Homeostasis mode — operates outside normal pipeline phases. Can be invoked at any time.
 - When invoked DURING an active pipeline: runs as a side-loop without disrupting main flow
-- Uses Team infrastructure (P2+ mode) with Four-Channel Protocol (D17)
+- Uses Team infrastructure (P2+ mode) with Two-Channel Protocol (D17)
 - **File I/O awareness**: Detect and improve file I/O bottlenecks (slow reads, redundant scans, stale caches)
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 - For phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
@@ -134,7 +134,7 @@ User specifies focus via `$ARGUMENTS`:
 | Failure Type | Level | Action |
 |---|---|---|
 | Transient tool error during research or health check | L0 Retry | Re-invoke same agent with same DPS |
-| Research output incomplete or self-diagnose missing categories | L1 Nudge | SendMessage with focused query or category list |
+| Research output incomplete or self-diagnose missing categories | L1 Nudge | Respawn with refined DPS targeting focused query or category list |
 | Agent exhausted turns or context polluted mid-cycle | L2 Respawn | Kill → fresh agent with reduced scope DPS |
 | self-implement non-convergence or parallel conflict | L3 Restructure | Regroup patterns into smaller non-conflicting waves |
 | Health regression after Step 5 or 3+ L2 failures | L4 Escalate | AskUserQuestion with regression details and options |
@@ -151,7 +151,7 @@ User specifies focus via `$ARGUMENTS`:
 
 ## Output
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (`tasks/{work_dir}/`) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ### L1
@@ -160,7 +160,7 @@ domain: homeostasis
 skill: rsil
 status: complete|partial|blocked|halted
 pt_signal: "metadata.phase_signals.homeostasis"
-signal_format: "{STATUS}|health_delta:{N}|patterns:{N}|ref:tasks/{team}/homeostasis-rsil.md"
+signal_format: "{STATUS}|health_delta:{N}|patterns:{N}|ref:tasks/{work_dir}/homeostasis-rsil.md"
 cycle: 1
 trigger: user|auto|pipeline-failure
 focus_area: all|hooks|skills|agents|budget|file-io
@@ -174,7 +174,7 @@ patterns_deferred: 0
 cc_claims_verified: 0
 ```
 
-**Channel 2 output file**: Write full L1+L2 result to `tasks/{team}/homeostasis-rsil.md`.
+**Channel 2 output file**: Write full L1+L2 result to `tasks/{work_dir}/homeostasis-rsil.md`.
 
 ### L2
 - Step 1: Bottleneck list with sources, categories, and severities

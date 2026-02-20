@@ -146,12 +146,12 @@ Serial Chains:
 
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-impact.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-impact.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### Cycle Detected in DAG
 - **Cause**: Circular dependency between tasks
-- **Action**: Report FAIL with cycle path. Signal: `FAIL|reason:cycle-detected|ref:tasks/{team}/p5-orch-impact.md`
+- **Action**: Report FAIL with cycle path. Signal: `FAIL|reason:cycle-detected|ref:tasks/{work_dir}/p5-orch-impact.md`
 - **Route**: Back to plan-verify-coordinator for dependency restructuring
 
 ### Capacity Overflow (>4 Tasks All Eligible)

@@ -26,9 +26,9 @@ disable-model-invocation: true
 Note: P4 validates PLANS (pre-execution). This skill verifies that the task decomposition structurally covers the dependency landscape. It does NOT verify implementation correctness.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-static.md`, sends micro-signal: `PASS|coverage:{pct}|orphans:{N}|ref:tasks/{team}/p4-pv-static.md`.
-- See [phase-aware-execution.md](../../resources/phase-aware-execution.md) for full phase protocol.
+- **Spawn**: Spawn agent (`run_in_background:true`, `context:fork`). Agent writes output to file.
+- **Delivery**: Agent writes result to `tasks/{work_dir}/p4-pv-static.md`, micro-signal: `PASS|coverage:{pct}|orphans:{N}|ref:tasks/{work_dir}/p4-pv-static.md`.
+- See `.claude/resources/phase-aware-execution.md` for full phase protocol.
 
 ## Decision Points
 
@@ -52,10 +52,10 @@ Full analyst DPS specification, per-step verification procedure (5 steps), cover
 → [resources/methodology.md](resources/methodology.md)
 
 **Shared resources** (load on demand):
-- [phase-aware-execution.md](../../resources/phase-aware-execution.md)
-- [failure-escalation-ladder.md](../../resources/failure-escalation-ladder.md)
-- [dps-construction-guide.md](../../resources/dps-construction-guide.md)
-- [output-micro-signal-format.md](../../resources/output-micro-signal-format.md)
+- `.claude/resources/phase-aware-execution.md`
+- `.claude/resources/failure-escalation-ladder.md`
+- `.claude/resources/dps-construction-guide.md`
+- `.claude/resources/output-micro-signal-format.md`
 
 ## Iteration Tracking (D15)
 - Lead manages `metadata.iterations.plan-verify-static: N` in PT before each invocation.
@@ -68,12 +68,12 @@ Full analyst DPS specification, per-step verification procedure (5 steps), cover
 | Failure Type | Level | Action |
 |---|---|---|
 | Audit-static L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
-| Analyst output incomplete or coverage matrix partial | L1 Nudge | SendMessage with refined context |
+| Analyst output incomplete or coverage matrix partial | L1 Nudge | Respawn with refined DPS targeting refined context |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
 | Audit-static data stale or plan-static scope changed | L3 Restructure | Modify task graph, reassign files |
 | Strategic gap in dependency model, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
 
-See [failure-escalation-ladder.md](../../resources/failure-escalation-ladder.md) for D12 decision rules and output format.
+See `.claude/resources/failure-escalation-ladder.md` for D12 decision rules and output format.
 
 **Special cases:**
 - **Audit-static L3 missing**: FAIL with `reason: missing_upstream`. Route to Lead for re-routing to research-coordinator.
@@ -143,7 +143,7 @@ findings:
     severity: HIGH|MEDIUM|LOW
     evidence: ""
 pt_signal: "metadata.phase_signals.p4_verify_static"
-signal_format: "{STATUS}|coverage:{pct}|orphans:{N}|ref:tasks/{team}/p4-pv-static.md"
+signal_format: "{STATUS}|coverage:{pct}|orphans:{N}|ref:tasks/{work_dir}/p4-pv-static.md"
 ```
 
 ### L2

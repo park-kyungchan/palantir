@@ -42,7 +42,6 @@ For agent-memory directories (.claude/agent-memory/*/):
 | Hook event references | For each hook command: check file path exists | File found in `.claude/hooks/` | CRITICAL |
 | Hook event matchers | For each matcher regex: validate it compiles | Valid regex pattern | WARNING |
 | model setting | Check value present and recognized | sonnet, opus, or haiku (aliases) | WARNING |
-| teammateMode | Check value | `tmux` (expected for Agent Teams) | INFO |
 | alwaysThinkingEnabled | Check value | `true` (expected for Opus 4.6) | INFO |
 
 For each failed check, record the finding with: check name, actual value, expected value, severity, and recommended fix.

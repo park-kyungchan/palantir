@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # TaskCompleted hook — quality gate + logging for pipeline tracking
-# Input: JSON on stdin with task_id, task_subject, task_description, teammate_name, team_name
+# Input: JSON on stdin with task_id, task_subject, task_description
 # Exit 2: blocks completion if quality checks fail (max 3 retries per task)
 # Exit 0: allows completion
 # RSIL-010: Upgraded from logging-only to quality gate
@@ -15,15 +15,13 @@ if command -v jq &>/dev/null; then
   TASK_ID=$(echo "$INPUT" | jq -r '.task_id // "unknown"')
   TASK_SUBJECT=$(echo "$INPUT" | jq -r '.task_subject // "unknown"')
   TASK_DESC=$(echo "$INPUT" | jq -r '.task_description // ""')
-  TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name // "unknown"')
-  TEAM=$(echo "$INPUT" | jq -r '.team_name // "unknown"')
+  TEAMMATE=$(echo "$INPUT" | jq -r '.agent_name // "unknown"')
 else
   SESSION_ID=$(echo "$INPUT" | grep -oE '"session_id"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "unknown")
   TASK_ID=$(echo "$INPUT" | grep -oE '"task_id"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "unknown")
   TASK_SUBJECT=$(echo "$INPUT" | grep -oE '"task_subject"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "unknown")
   TASK_DESC=$(echo "$INPUT" | grep -oE '"task_description"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "")
-  TEAMMATE=$(echo "$INPUT" | grep -oE '"teammate_name"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "unknown")
-  TEAM=$(echo "$INPUT" | grep -oE '"team_name"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "unknown")
+  TEAMMATE=$(echo "$INPUT" | grep -oE '"agent_name"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*:[[:space:]]*"//;s/"$//' || echo "unknown")
 fi
 
 LOGFILE="/tmp/task-completions-${SESSION_ID}.log"
@@ -83,7 +81,7 @@ fi
 rm -f "$RETRY_FILE"
 
 # Append completion record (preserved from original)
-echo "[$(date '+%H:%M:%S')] COMPLETED task=${TASK_ID} subject=\"${TASK_SUBJECT}\" by=${TEAMMATE} team=${TEAM}" >> "$LOGFILE"
+echo "[$(date '+%H:%M:%S')] COMPLETED task=${TASK_ID} subject=\"${TASK_SUBJECT}\" by=${TEAMMATE}" >> "$LOGFILE"
 
 # Pipeline state: record task completion event (preserved from original)
 STATE_FILE="/tmp/claude-pipeline-state.json"

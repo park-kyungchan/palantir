@@ -32,17 +32,17 @@ EXCLUDE:
   - Historical rationale from plan-verify phases
   - Full pipeline state beyond this task's scope
 
-Budget: Context field ≤ 30% of teammate effective context
+Budget: Context field ≤ 30% of subagent effective context
 ```
 
 **Task field**: "For each task: identify tool requirements, match to best agent profile, verify no capability gaps. Handle multi-capability tasks by splitting. Produce task-agent assignment matrix."
 
 **Constraints field**: Read-only analysis. No file modifications. Use Agent L1 PROFILE tags for matching. Flag ambiguous matches.
 
-**Delivery field**: Four-Channel output per D17:
-- Ch2: Write full result to `tasks/{team}/p5-orch-static.md`
-- Ch3: Micro-signal to Lead: `PASS|tasks:{N}|agents:{N}|ref:tasks/{team}/p5-orch-static.md`
-- Ch4: P2P to orchestrate-coordinator (if spawned): `READY|path:tasks/{team}/p5-orch-static.md|fields:task_agent_matrix,tool_requirements`
+**Delivery field**: Two-Channel output per D17:
+- Ch2: Write full result to `tasks/{work_dir}/p5-orch-static.md`
+- Ch3: Micro-signal to Lead: `PASS|tasks:{N}|agents:{N}|ref:tasks/{work_dir}/p5-orch-static.md`
+- Ch4: P2P to orchestrate-coordinator (if spawned): `READY|path:tasks/{work_dir}/p5-orch-static.md|fields:task_agent_matrix,tool_requirements`
 
 ## Assignment Matrix Format
 
@@ -86,7 +86,7 @@ Beyond tool-boundary splits, consider splitting for scheduling efficiency:
 
 ### Verified Plan Data Missing
 - **Cause**: `$ARGUMENTS` path is empty or plan-verify-coordinator L3 file not found
-- **Signal**: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-static.md`
+- **Signal**: `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-static.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### Unassignable Task (No Agent Match)

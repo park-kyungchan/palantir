@@ -40,7 +40,7 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt for each analyst wit
 - **Task**: "Explore [codebase area] to validate [architecture decisions]. Report all findings with file:line references."
 - **Constraints**: Read-only. Glob → Grep → Read sequence. maxTurns: 25. For COMPLEX, stay within assigned directory scope; cross-scope references get file path + reason, not investigation.
 - **Expected Output**: Pattern inventory (name, file:line, relevance, reusability) + anti-patterns. COMPLEX: include cross-reference notes for consolidation.
-- **Delivery (Four-Channel)**: Ch2: `tasks/{team}/p2-codebase.md`. Ch3 micro-signal to Lead: `"PASS|patterns:{count}|ref:tasks/{team}/p2-codebase.md"`. Ch4 P2P to research-coordinator: `"READY|path:tasks/{team}/p2-codebase.md|fields:patterns,file_refs,dependencies"`.
+- **Delivery (2-channel)**: Ch2: `tasks/{work_dir}/p2-codebase.md`. Ch3 micro-signal to Lead: `"PASS|patterns:{count}|ref:tasks/{work_dir}/p2-codebase.md"`. Lead passes file path to research-coordinator.
 
 Use tools systematically: 1. **Glob** (file discovery) → 2. **Grep** (pattern matching) → 3. **Read** (detailed analysis).
 
@@ -72,9 +72,9 @@ When codebase research discovers patterns related to CC runtime behavior (file s
 - **Verification need**: What empirical test would confirm/deny this claim
 
 ```
-[CC-CLAIM] PERSISTENCE: "Inbox JSON files persist after agent termination"
-Source: ~/.claude/teams/*/inboxes/*.json (observed files from terminated agents)
-Verification: Read inbox file for known-terminated agent, check message timestamps
+[CC-CLAIM] PERSISTENCE: "Task JSON files persist after subagent termination"
+Source: ~/.claude/ (observed task files from terminated subagents)
+Verification: Read task file for known-terminated subagent, check timestamps
 ```
 
 These tagged claims become input for research-cc-verify, which runs empirical verification before claims enter ref cache.
@@ -105,7 +105,7 @@ These tagged claims become input for research-cc-verify, which runs empirical ve
 | Failure Type | Level | Action |
 |---|---|---|
 | Scan timeout, tool error, permission denied | L0 Retry | Re-invoke same analyst, same DPS |
-| Incomplete findings or off-scope patterns returned | L1 Nudge | SendMessage with narrower scope or refined search questions |
+| Incomplete findings or off-scope patterns returned | L1 Nudge | Respawn with refined DPS targeting narrower scope or refined search questions |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh analyst with refined DPS and narrower directory scope |
 | Pattern conflict breaks ADR assumptions, scope shift discovered | L3 Restructure | Split scope, modify task graph, reassign directory boundaries |
 | 3+ L2 failures or fundamental ADR contradiction requiring design revision | L4 Escalate | AskUserQuestion with contradiction evidence and options |
@@ -124,7 +124,7 @@ These tagged claims become input for research-cc-verify, which runs empirical ve
 - **Evidence as recommendation**: Findings are descriptive. "Pattern X exists in 8/12 modules" is research. "Adopt pattern X" is design.
 
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: use 2-channel protocol (Ch2 output file `tasks/{work_dir}/`, Ch3 micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Transitions
@@ -184,7 +184,7 @@ uncovered_areas:
   - area: ""
     reason: "analyst maxTurns exhausted"
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|patterns:{count}|cc_claims:{n}|ref:tasks/{team}/p2-codebase.md"
+signal_format: "PASS|patterns:{count}|cc_claims:{n}|ref:tasks/{work_dir}/p2-codebase.md"
 ```
 
 ### L2

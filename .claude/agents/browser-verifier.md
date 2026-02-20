@@ -43,7 +43,6 @@ and behavioral correctness.
 
 ## Spawn Rules
 Always spawned with `run_in_background: true` + `context: "fork"`. No exceptions.
-Never spawned with `team_name` in single-session (DLAT) mode.
 
 ## Output Pattern
 Write verification report to the file path specified in DPS CONTEXT `output_path`:

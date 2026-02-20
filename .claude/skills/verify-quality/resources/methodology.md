@@ -46,12 +46,12 @@ If disambiguation test fails (answer is NO) → score capped at 50 regardless of
 For STANDARD/COMPLEX tiers, construct the delegation prompt with:
 - **Context** (D11 priority: cognitive focus > token efficiency):
   - INCLUDE: All skill description texts (paste each). Scoring rubric (Specificity/Concreteness/Completeness 0-100). Routing failure context if investigating. File paths within this analyst's ownership boundary.
-  - EXCLUDE: L2 body content (not part of routing scoring). Cross-skill consistency data (verify-consistency domain). Other teammates' task details. Full pipeline state beyond current file set.
+  - EXCLUDE: L2 body content (not part of routing scoring). Cross-skill consistency data (verify-consistency domain). Other subagents' task details. Full pipeline state beyond current file set.
   - Budget: Context field ≤ 30% of analyst effective context.
 - **Task**: "Score each skill across 4 dimensions: WHEN specificity, METHODOLOGY concreteness, OUTPUT FORMAT completeness, description utilization (>80%). Produce combined score per skill. Rank all skills. Identify bottom 5 for priority improvement."
 - **Constraints**: Read-only. No modifications. Score objectively using the rubric.
 - **Expected Output**: L1 YAML with avg_score, findings[] (file, score, issues). L2 quality rankings and improvement suggestions.
-- **Delivery**: Upon completion, send L1 summary to Lead via SendMessage format: `"{STATUS}|files:{total_files}|avg_score:{avg_score}|ref:tasks/{team}/p7-quality.md"`. L2 detail stays in agent context.
+- **Delivery**: Upon completion, send L1 summary to Lead via file-based signal format: `"{STATUS}|files:{total_files}|avg_score:{avg_score}|ref:tasks/{work_dir}/p7-quality.md"`. L2 detail stays in agent context.
 
 ---
 
@@ -158,7 +158,7 @@ domain: verify
 skill: quality
 status: PASS|FAIL
 pt_signal: "metadata.phase_signals.p7_quality"
-signal_format: "{STATUS}|files:{total_files}|avg_score:{avg_score}|ref:tasks/{team}/p7-quality.md"
+signal_format: "{STATUS}|files:{total_files}|avg_score:{avg_score}|ref:tasks/{work_dir}/p7-quality.md"
 total_files: 0
 avg_score: 0
 dimension_averages:

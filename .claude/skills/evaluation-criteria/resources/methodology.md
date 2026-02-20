@@ -32,7 +32,7 @@ evaluation_criteria:
   version: 1
   phase: define|calibrate|final
   pt_signal: "metadata.phase_signals.p2_criteria"
-  signal_format: "PASS|criteria:{N}|phase:{phase}|ref:tasks/{team}/p2-evaluation-criteria.md"
+  signal_format: "PASS|criteria:{N}|phase:{phase}|ref:tasks/{work_dir}/p2-evaluation-criteria.md"
 ```
 
 ## Tier-Specific DEFINE Behavior
@@ -51,7 +51,7 @@ evaluation_criteria:
 - **Task**: "Stress-test each criterion against research findings. For each: (1) apply 0-anchor and 10-anchor to a concrete finding, (2) check MECE against other criteria, (3) run sensitivity analysis on H-weight criteria. Report issues found."
 - **Constraints**: Read-only analysis. maxTurns: 15. Do not modify criteria — report findings only.
 - **Expected Output**: Per-criterion validation result (PASS/ISSUE), MECE matrix, sensitivity flags.
-- **Delivery**: Send L1 summary to Lead via SendMessage with: issues found count, MECE status, sensitivity flags.
+- **Delivery**: Send L1 summary to Lead via file-based signal with: issues found count, MECE status, sensitivity flags.
 
 ## Failure Severity Classification
 

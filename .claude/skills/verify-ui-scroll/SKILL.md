@@ -92,4 +92,4 @@ L2: Scroll positions tested, animation triggers count, screenshot IDs. PASS rout
 | verify-quality | PASS signal + scroll_positions_checked | On PASS |
 | execution-code | FAIL + screenshot_ids + animation_errors | On FAIL |
 
-> D17 Note: Ch1: `metadata.phase_signals.p7_verify-ui-scroll` · Ch2: `tasks/{team}/p7-verify-ui-scroll.md` · Ch3: micro-signal to Lead · Ch4: P2P to verify-quality on PASS
+> D17 Note: Ch2: `tasks/{work_dir}/p7-verify-ui-scroll.md` · Ch3: micro-signal to Lead

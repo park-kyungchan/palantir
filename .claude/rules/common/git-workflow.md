@@ -12,6 +12,11 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 
 Note: Attribution disabled globally via ~/.claude/settings.json.
 
+## Atomic Commits
+
+Each commit = one logical unit of work (one feature, one fix, one refactor).
+Do not bundle unrelated changes in a single commit.
+
 ## Pull Request Workflow
 
 When creating PRs:

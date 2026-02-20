@@ -25,10 +25,10 @@ For STANDARD/COMPLEX tiers, construct DPS for analyst. Read `~/.claude/resources
 
 ### DPS Specifics for CC Feasibility
 - **Context INCLUDE**: Extracted frontmatter fields+values per file. Native field tables from resources/. Known non-native list. cc-reference cache path. File paths in analyst's scope.
-- **Context EXCLUDE**: L2 body content. Historical field removal rationale. Other teammates' tasks. Non-.claude/ files.
+- **Context EXCLUDE**: L2 body content. Historical field removal rationale. Other subagents' tasks. Non-.claude/ files.
 - **Task**: "Compare each extracted field against native field lists. Flag non-native fields. Validate value types. Read cc-reference cache at `memory/cc-reference/native-fields.md` for latest reference. Report per-file status."
 - **Constraints**: Read-only. No file modifications. Use cc-reference cache as primary source (NOT claude-code-guide). maxTurns: 25.
-- **Delivery**: SendMessage: `"{STATUS}|files:{total_files}|non_native:{count}|ref:tasks/{team}/p7-cc-feasibility.md"`
+- **Delivery**: file-based signal: `"{STATUS}|files:{total_files}|non_native:{count}|ref:tasks/{work_dir}/p7-cc-feasibility.md"`
 
 ## Step 3: Validate Field Values
 
@@ -40,7 +40,7 @@ When a field is not clearly native or non-native:
 
 1. **Primary check**: Read `memory/cc-reference/native-fields.md`
 2. **Cross-reference check**: If field exists in OTHER table (agent field in skill), flag as "wrong file type"
-3. **Supplementary check**: If cache stale (>30 days), analyst sends verdict via SendMessage. Lead escalates to claude-code-guide only for ambiguous fields.
+3. **Supplementary check**: If cache stale (>30 days), analyst sends verdict via file-based signal. Lead escalates to claude-code-guide only for ambiguous fields.
 4. **Record verdict**: NATIVE, NON_NATIVE, WRONG_FILE_TYPE, or UNKNOWN
 
 If claude-code-guide spawned by Lead:

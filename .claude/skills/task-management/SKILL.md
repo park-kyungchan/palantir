@@ -9,7 +9,7 @@ description: >-
   requirements, and architecture decisions for all pipeline
   operations. Produces PT lifecycle events and work task batches
   consumed by all pipeline skills. ASCII status visualization on
-  demand. Teammates self-claim via TaskList loop. Cross-session
+  demand. Subagents self-select via TaskList loop. Cross-session
   sharing via CLAUDE_CODE_TASK_LIST_ID env.
   On FAIL (Task API error or duplicate PT), Lead retries L0 with
   same DPS. On persistent failure (3+ L0 retries), Lead L4
@@ -34,12 +34,12 @@ argument-hint: "[action] [args]"
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P). Lead receives status only, not full data.
+This skill runs in any pipeline mode. Coordination:
+- **Communication**: Two-channel protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead). Lead receives micro-signal only, not full data.
 - **Task tracking**: Update task status via TaskUpdate after completion.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel subagents.
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: use 2-channel protocol (Ch2 output file `tasks/{work_dir}/`, Ch3 micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Methodology
@@ -79,7 +79,7 @@ This enables compaction recovery: Lead calls `TaskGet(PT)` → reads `phase_sign
 > For work task metadata JSON template and dependency patterns: read `resources/methodology.md`
 
 ### 4. Real-Time Update Protocol
-Teammates update their assigned tasks during execution (in_progress → progress → completed/failed).
+Subagents update their assigned tasks during execution (in_progress → progress → completed/failed).
 
 > For status update event table: read `resources/methodology.md`
 
@@ -105,7 +105,7 @@ Teammates update their assigned tasks during execution (in_progress → progress
 ### PT-Manager Spawn DPS
 - **Context**: PT task ID, current pipeline phase, operation type (create/update/batch/visualize), plan domain output paths if batch creation.
 - **Constraints**: Tools: Read, Glob, Grep, Write, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion. No Edit/Bash.
-- **Delivery**: `SendMessage` to Lead: `PASS|action:{type}|tasks:{N}|ref:tasks/{team}/task-management.md`
+- **Delivery**: Write to output file + micro-signal to Lead: `PASS|action:{type}|tasks:{N}|ref:tasks/{work_dir}/task-management.md`
 
 **Tier-Specific DPS Variations**:
 - **TRIVIAL**: Lead-direct. Single TaskUpdate inline. No pt-manager spawn.
@@ -121,12 +121,12 @@ Teammates update their assigned tasks during execution (in_progress → progress
 | Failure Type | Level | Action |
 |---|---|---|
 | Task API tool error or timeout | L0 Retry | Re-invoke pt-manager with same DPS |
-| Duplicate PT detected or partial metadata | L1 Nudge | SendMessage with deduplication context |
+| Duplicate PT detected or partial metadata | L1 Nudge | Respawn with refined DPS targeting deduplication context |
 | pt-manager exhausted turns or stuck | L2 Respawn | Kill → fresh pt-manager with refined DPS |
 | Circular dependency or batch scope shift | L3 Restructure | Modify task graph, break cycle, reassign files |
 | 3+ L2 failures or PT unrecoverable | L4 Escalate | AskUserQuestion with pipeline state options |
 
-> For failure sub-cases (duplicate PT, circular deps, metadata corruption, stuck tasks, dead teammate): read `resources/methodology.md`
+> For failure sub-cases (duplicate PT, circular deps, metadata corruption, stuck tasks, stalled subagent): read `resources/methodology.md`
 
 > Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
@@ -147,8 +147,8 @@ Always verify the dependency graph is acyclic before adding `addBlockedBy`. A si
 ### DO NOT: Complete PT Before All Work Tasks Finish
 Always verify all `parent: {PT-id}` tasks are completed before marking PT completed.
 
-### DO NOT: TeamDelete Before PT Completion
-TeamDelete removes `~/.claude/tasks/{team-name}/` — including PT task files. **Correct sequence**: PT completed → agent shutdown → TeamDelete.
+### DO NOT: Delete Work Directory Before PT Completion
+Deleting `~/.claude/tasks/{team-name}/` removes PT task files. **Correct sequence**: PT completed → subagent shutdown → cleanup work directory.
 
 ## Transitions
 
@@ -191,7 +191,7 @@ action: create-pt|update-pt|batch-create|visualize|complete-pt
 pt_id: ""
 task_count: 0
 pt_signal: "metadata.phase_signals.cross-cutting"
-signal_format: "{STATUS}|action:{type}|tasks:{N}|ref:tasks/{team}/task-management.md"
+signal_format: "{STATUS}|action:{type}|tasks:{N}|ref:tasks/{work_dir}/task-management.md"
 ```
 
 ### L2

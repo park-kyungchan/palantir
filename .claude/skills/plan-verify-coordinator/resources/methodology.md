@@ -7,7 +7,7 @@
   file paths within this agent's ownership boundary
 - EXCLUDE: individual plan dimension detail; historical rationale; full pipeline state beyond P4;
   dimension-internal methodology
-- Budget: Context field ≤ 30% of teammate effective context
+- Budget: Context field ≤ 30% of subagent effective context
 
 **Task**: "Consolidate 4 dimension verdicts. Perform 4 cross-dimension checks: (a) dependency-sequence,
 (b) contract-boundary, (c) rollback-checkpoint, (d) requirement traceability. Produce tiered output:
@@ -16,9 +16,9 @@ L1 index.md, L2 summary.md, L3 per-dimension annotated files."
 **Constraints**: Analyst agent (Read-only, no Bash). maxTurns:25 (STANDARD) or 35 (COMPLEX).
 Do NOT re-evaluate individual dimensions.
 
-**Expected Output**: L1: `tasks/{team}/p4-coordinator-index.md` (verdict, routing).
-L2: `tasks/{team}/p4-coordinator-summary.md` (cross-dim findings).
-L3: 4 files `tasks/{team}/p4-coordinator-verify-{dim}.md` with cross-dimension annotations.
+**Expected Output**: L1: `tasks/{work_dir}/p4-coordinator-index.md` (verdict, routing).
+L2: `tasks/{work_dir}/p4-coordinator-summary.md` (cross-dim findings).
+L3: 4 files `tasks/{work_dir}/p4-coordinator-verify-{dim}.md` with cross-dimension annotations.
 
 ### Tier-Specific DPS Variations
 - **TRIVIAL**: Lead-direct. All 4 PASS with zero findings → merge verdicts inline. Write minimal L1 index only.
@@ -76,18 +76,18 @@ Verify combined plan verification covers all original requirements:
 ## Steps 3–5 — Output Production
 
 ### Step 3 — L1 Index (Lead routing)
-Write `tasks/{team}/p4-coordinator-index.md`:
+Write `tasks/{work_dir}/p4-coordinator-index.md`:
 - Overall verdict + per-dimension verdict summary (one line each)
 - Cross-dimension issue count + routing decision (PASS → orchestration | FAIL → specific plan-X)
 
 ### Step 4 — L2 Summary (Lead quality gate)
-Write `tasks/{team}/p4-coordinator-summary.md`:
+Write `tasks/{work_dir}/p4-coordinator-summary.md`:
 - Per-dimension metric summary table
 - Cross-dimension consistency findings + escalated findings
 - Routing recommendation with rationale
 
 ### Step 5 — L3 Per-Dimension Files (orchestrate-* input)
-Write `tasks/{team}/p4-coordinator-verify-{dim}.md` for each dimension:
+Write `tasks/{work_dir}/p4-coordinator-verify-{dim}.md` for each dimension:
 - Original verifier findings + cross-dimension annotations (escalations, mitigations)
 - Adjusted severity based on cross-checks
 

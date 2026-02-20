@@ -92,4 +92,4 @@ L2: Element count tested, state change results per element. PASS routes to verif
 | verify-quality | PASS signal + tested_count | On PASS |
 | execution-code | FAIL + failed_elements[] + screenshots | On FAIL |
 
-> D17 Note: Ch1: `metadata.phase_signals.p7_verify-ui-interactive` · Ch2: `tasks/{team}/p7-verify-ui-interactive.md` · Ch3: micro-signal to Lead · Ch4: P2P to verify-quality on PASS
+> D17 Note: Ch2: `tasks/{work_dir}/p7-verify-ui-interactive.md` · Ch3: micro-signal to Lead

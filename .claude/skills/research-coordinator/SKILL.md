@@ -33,12 +33,12 @@ disable-model-invocation: true
 
 | Tier | File | Consumer | When Read |
 |------|------|----------|-----------|
-| L1 | `tasks/{team}/p2-coordinator-index.md` | Lead | Always (routing decisions) |
-| L2 | `tasks/{team}/p2-coordinator-summary.md` | Lead | When routing needs detail |
-| L3 | `tasks/{team}/p2-coordinator-static.md` | plan-static | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p2-coordinator-behavioral.md` | plan-behavioral | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p2-coordinator-relational.md` | plan-relational | Via $ARGUMENTS, Lead never reads |
-| L3 | `tasks/{team}/p2-coordinator-impact.md` | plan-impact, execution-impact | Via $ARGUMENTS, Lead never reads |
+| L1 | `tasks/{work_dir}/p2-coordinator-index.md` | Lead | Always (routing decisions) |
+| L2 | `tasks/{work_dir}/p2-coordinator-summary.md` | Lead | When routing needs detail |
+| L3 | `tasks/{work_dir}/p2-coordinator-static.md` | plan-static | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{work_dir}/p2-coordinator-behavioral.md` | plan-behavioral | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{work_dir}/p2-coordinator-relational.md` | plan-relational | Via $ARGUMENTS, Lead never reads |
+| L3 | `tasks/{work_dir}/p2-coordinator-impact.md` | plan-impact, execution-impact | Via $ARGUMENTS, Lead never reads |
 
 ## Decision Points
 
@@ -54,7 +54,7 @@ disable-model-invocation: true
 ## Methodology
 
 ### 1. Read All Audit Outputs
-Read 4 audit output files from `tasks/{team}/`: `p2-audit-static.md`, `p2-audit-behavioral.md`, `p2-audit-relational.md`, `p2-audit-impact.md`. Extract key metrics (counts, risk levels), primary findings (top by severity), and coverage status. Missing or partial outputs are gaps — do not block; consolidate what is available.
+Read 4 audit output files from `tasks/{work_dir}/`: `p2-audit-static.md`, `p2-audit-behavioral.md`, `p2-audit-relational.md`, `p2-audit-impact.md`. Extract key metrics (counts, risk levels), primary findings (top by severity), and coverage status. Missing or partial outputs are gaps — do not block; consolidate what is available.
 
 ### 2. Cross-Reference Dimensions
 Discover compound patterns spanning multiple dimensions:
@@ -81,7 +81,7 @@ Produce 6 files: L1 compact YAML index (≤30 lines), L2 executive summary (≤2
 | Failure Type | Level | Action |
 |---|---|---|
 | Single dimension output missing or delayed | L0 Retry | Re-invoke missing dimension audit skill |
-| Cross-dimension inconsistency detected | L1 Nudge | SendMessage to affected dimension analyst with specific conflict |
+| Cross-dimension inconsistency detected | L1 Nudge | file-based handoff to affected dimension analyst with specific conflict |
 | Analyst exhausted turns during consolidation | L2 Respawn | Kill → fresh analyst with all 4 dimension outputs |
 | Dimension output structurally incompatible | L3 Restructure | Modify L3 format contract, re-run affected dimension |
 | 2+ dimensions persistently failing, 3+ L2 failures | L4 Escalate | AskUserQuestion with dimension status summary |
@@ -104,20 +104,20 @@ L1 must stay compact for Lead context budget. Any detail beyond summary metrics 
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| audit-static | Dependency graph, hotspots, cycles | L2 markdown at `tasks/{team}/p2-audit-static.md` |
-| audit-behavioral | Behavior predictions, risk classification | L2 markdown at `tasks/{team}/p2-audit-behavioral.md` |
-| audit-relational | Relationship graph, integrity issues | L2 markdown at `tasks/{team}/p2-audit-relational.md` |
-| audit-impact | Propagation paths, risk assessment | L2 markdown at `tasks/{team}/p2-audit-impact.md` |
+| audit-static | Dependency graph, hotspots, cycles | L2 markdown at `tasks/{work_dir}/p2-audit-static.md` |
+| audit-behavioral | Behavior predictions, risk classification | L2 markdown at `tasks/{work_dir}/p2-audit-behavioral.md` |
+| audit-relational | Relationship graph, integrity issues | L2 markdown at `tasks/{work_dir}/p2-audit-relational.md` |
+| audit-impact | Propagation paths, risk assessment | L2 markdown at `tasks/{work_dir}/p2-audit-impact.md` |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
 | Lead | L1 index.md + L2 summary.md | Always (terminal P2 skill) |
-| plan-static | L3 `tasks/{team}/p2-coordinator-static.md` | Via $ARGUMENTS (Lead passes path) |
-| plan-behavioral | L3 `tasks/{team}/p2-coordinator-behavioral.md` | Via $ARGUMENTS (Lead passes path) |
-| plan-relational | L3 `tasks/{team}/p2-coordinator-relational.md` | Via $ARGUMENTS (Lead passes path) |
-| plan-impact | L3 `tasks/{team}/p2-coordinator-impact.md` | Via $ARGUMENTS (Lead passes path) |
-| execution-impact | L3 `tasks/{team}/p2-coordinator-impact.md` (Shift-Left data) | Via $ARGUMENTS in plan phase |
+| plan-static | L3 `tasks/{work_dir}/p2-coordinator-static.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-behavioral | L3 `tasks/{work_dir}/p2-coordinator-behavioral.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-relational | L3 `tasks/{work_dir}/p2-coordinator-relational.md` | Via $ARGUMENTS (Lead passes path) |
+| plan-impact | L3 `tasks/{work_dir}/p2-coordinator-impact.md` | Via $ARGUMENTS (Lead passes path) |
+| execution-impact | L3 `tasks/{work_dir}/p2-coordinator-impact.md` (Shift-Left data) | Via $ARGUMENTS in plan phase |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
@@ -126,7 +126,7 @@ L1 must stay compact for Lead context budget. Any detail beyond summary metrics 
 | Cross-dimensional contradiction | Lead | Both findings with dimension sources |
 | Output directory error | Lead | Filesystem error details |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -138,7 +138,7 @@ L1 must stay compact for Lead context budget. Any detail beyond summary metrics 
 - Missing dimensions explicitly noted in L1 and L2
 - No new research performed (consolidation only)
 - CC-native behavioral claims aggregated and flagged for research-cc-verify
-- All 6 output files written to `tasks/{team}/p2-coordinator-{file}.md`
+- All 6 output files written to `tasks/{work_dir}/p2-coordinator-{file}.md`
 
 ## Output
 
@@ -172,7 +172,7 @@ audit_summary:
 routing_recommendation: ""
 cc_native_claims: 0
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|dims:4|claims:{N}|ref:tasks/{team}/p2-coordinator-index.md"
+signal_format: "PASS|dims:4|claims:{N}|ref:tasks/{work_dir}/p2-coordinator-index.md"
 ```
 
 ### L2 (summary.md)

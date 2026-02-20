@@ -84,7 +84,7 @@ No-dependency components → implement first. Break circular dependencies by ext
 | Failure Type | Level | Action |
 |---|---|---|
 | Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
-| Incomplete or conflicting contracts | L1 Nudge | SendMessage with corrected boundary context |
+| Incomplete or conflicting contracts | L1 Nudge | Respawn with refined DPS targeting corrected boundary context |
 | Analyst exhausted turns (too many boundaries) | L2 Respawn | Kill → fresh analyst with reduced boundary set |
 | Circular interface dependencies | L3 Restructure | Extract shared type, route to design-architecture for boundary revision |
 | Architecture fundamentally insufficient | L4 Escalate | AskUserQuestion with specific boundary gap questions |
@@ -115,7 +115,7 @@ No-dependency components → implement first. Break circular dependencies by ext
 | research-codebase | Interface patterns for codebase validation | P2 Wave 1 |
 | research-external | API contracts for community validation | P2 Wave 1 |
 
-> D17 Note: P0-P1 local mode — Lead reads via TaskOutput. 4-channel protocol applies P2+ only.
+> D17 Note: P0-P1 local mode — Lead reads via TaskOutput. 2-channel protocol applies P2+ only.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate

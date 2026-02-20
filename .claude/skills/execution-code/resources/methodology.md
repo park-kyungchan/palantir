@@ -51,7 +51,7 @@ For every implementer DPS Context field:
 | Signal | Pattern | Lead Action |
 |--------|---------|-------------|
 | **Healthy** | Implementer sends Ch3 micro-signal with incremental `files_changed`, no blockers | Continue monitoring |
-| **Stalled** | No micro-signal after `maxTurns/2` | `TaskGet` to check status; send guidance via `SendMessage` |
-| **Blocked on dep** | Implementer reports blocker on upstream output | Check if producer has completed via Ch3/Ch4. If COMM_PROTOCOL AWAIT is configured, consumer self-waits — Lead need not intervene. |
-| **Scope creep** | Implementer modifying files outside assignment | `SendMessage` correction referencing constraint in original DPS |
+| **Stalled** | No micro-signal after `maxTurns/2` | `TaskGet` to check status; send guidance via `file-based signal` |
+| **Blocked on dep** | Implementer reports blocker on upstream output | Check if producer has completed via Ch3 micro-signal. If file-based handoff spec AWAIT is configured, consumer self-waits — Lead need not intervene. |
+| **Scope creep** | Implementer modifying files outside assignment | `file-based signal` correction referencing constraint in original DPS |
 | **Test failures** | Implementer reports test failures | Check if expectations match design-interface contracts. If contract mismatch → escalate to plan revision, not implementer workaround. |

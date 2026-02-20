@@ -5,6 +5,7 @@ description: >-
   Modes: start | status | stop. Checks prerequisites, DB migration, port state.
 user-invocable: true
 argument-hint: "[start|status|stop]"
+disable-model-invocation: false
 ---
 
 ## FreeWheelin 개발환경 관리

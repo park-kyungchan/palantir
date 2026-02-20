@@ -91,7 +91,7 @@ Combined score = (specificity * 0.30) + (concreteness * 0.30) + (completeness * 
 | Failure Type | Level | Action |
 |---|---|---|
 | Analyst tool error reading descriptions | L0 Retry | Re-invoke analyst with same DPS and rubric |
-| Analyst scoring incomplete, bottom-5 list missing | L1 Nudge | SendMessage with rubric reminder and remaining file list |
+| Analyst scoring incomplete, bottom-5 list missing | L1 Nudge | Respawn with refined DPS targeting rubric reminder and remaining file list |
 | Analyst exhausted turns before full scoring, context polluted | L2 Respawn | Kill analyst → spawn fresh with reduced file batch |
 | Routing failure investigation requires restructuring analyst split | L3 Restructure | Separate WHEN/METHODOLOGY analyst from OUTPUT/utilization analyst |
 | 3+ L2 failures or scoring rubric ambiguous for cross-cutting skills | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -130,9 +130,9 @@ Combined score = (specificity * 0.30) + (concreteness * 0.30) + (completeness * 
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only:
-- **Communication**: Four-Channel Protocol — Ch2 disk file + Ch3 micro-signal to Lead + Ch4 P2P to consumers.
-- **Coordination**: TaskUpdate on completion. Read upstream outputs from `tasks/{team}/` files. File ownership: no overlapping edits.
+This skill runs via subagent:
+- **Communication**: Two-Channel protocol — Ch2 output file in work directory + Ch3 micro-signal to Lead.
+- **Coordination**: Read upstream outputs from work directory files. File ownership: no overlapping edits.
 
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
@@ -162,7 +162,7 @@ This skill runs in P2+ Team mode only:
 | Missing METHODOLOGY numbers | execution-infra | Skill path + current methodology text |
 | Missing output template | execution-infra | Skill path + expected output structure |
 
-> **D17 Note**: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> **D17 Note**: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 > Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
@@ -183,7 +183,7 @@ domain: verify
 skill: quality
 status: PASS|FAIL
 pt_signal: "metadata.phase_signals.p7_quality"
-signal_format: "{STATUS}|files:{N}|avg_score:{N}|ref:tasks/{team}/p7-quality.md"
+signal_format: "{STATUS}|files:{N}|avg_score:{N}|ref:{work_dir}/p7-quality.md"
 total_files: 0
 avg_score: 0
 ```

@@ -11,13 +11,13 @@ Construct the analyst delegation prompt using these four fields:
 ```
 INCLUDE:
   - Verified plan L3 content (task list, wave structure, dependency graph)
-  - Pipeline constraints: max 4 parallel teammates per wave, max 3 iterations per phase
-  - Phase-Aware execution model (P2+ requires SendMessage)
+  - Pipeline constraints: max 4 parallel subagents per wave, max 3 iterations per phase
+  - Phase-Aware execution model (P2+ requires file-based signal)
 EXCLUDE:
   - Other orchestrate dimension outputs (static, relational, impact)
   - Historical rationale from plan-verify phases
   - Full pipeline state beyond this task's scope
-Budget: Context field ≤ 30% of teammate effective context
+Budget: Context field ≤ 30% of subagent effective context
 ```
 
 **Task**
@@ -38,10 +38,10 @@ Map each checkpoint to a specific wave boundary.
 ```
 L1 YAML checkpoint schedule.
 L2 rationale per checkpoint with wave mapping.
-Delivery (Four-Channel):
-  Ch2: tasks/{team}/p5-orch-behavioral.md
-  Ch3 → Lead: "PASS|checkpoints:{N}|ref:tasks/{team}/p5-orch-behavioral.md"
-  Ch4 → orchestrate-coordinator: "READY|path:tasks/{team}/p5-orch-behavioral.md|fields:checkpoints,verification_criteria"
+Delivery (Two-Channel):
+  Ch2: tasks/{work_dir}/p5-orch-behavioral.md
+  Ch3 → Lead: "PASS|checkpoints:{N}|ref:tasks/{work_dir}/p5-orch-behavioral.md"
+  Ch4 → orchestrate-coordinator: "READY|path:tasks/{work_dir}/p5-orch-behavioral.md|fields:checkpoints,verification_criteria"
 ```
 
 ### Tier-Specific DPS Variations

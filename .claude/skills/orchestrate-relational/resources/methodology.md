@@ -11,7 +11,7 @@ When constructing the analyst DPS, apply D11 priority order (cognitive focus > t
 
 **INCLUDE in Context field:**
 - Verified plan L3 content: task list, producer-consumer edges, file assignments
-- SendMessage protocol for status-signal handoffs
+- file-based signal protocol for status-signal handoffs
 - DPS reference: each handoff needs producer task, consumer task, file path, format, fields, validation
 
 **EXCLUDE from Context field:**
@@ -19,7 +19,7 @@ When constructing the analyst DPS, apply D11 priority order (cognitive focus > t
 - Historical rationale from plan-verify phases
 - Full pipeline state beyond this task's scope
 
-**Budget:** Context field ≤ 30% of teammate effective context window.
+**Budget:** Context field ≤ 30% of subagent effective context window.
 
 ### Tier-Specific DPS Variations
 
@@ -51,14 +51,14 @@ When constructing the analyst DPS, apply D11 priority order (cognitive focus > t
 
 ---
 
-## Step 3: DPS Template Schema (COMM_PROTOCOL)
+## Step 3: DPS Template Schema (file-based handoff spec)
 
 ```
 DPS-{N}:
   producer: {task_id}
   consumer: {task_id}
   handoff:
-    path: tasks/{team}/{phase}-{skill}-{artifact}.md
+    path: tasks/{work_dir}/{phase}-{skill}-{artifact}.md
     format: yaml|json|markdown
     fields:
       - name: {field}
@@ -68,16 +68,16 @@ DPS-{N}:
       - rule: {description}
         check: {how to verify}
   comm_protocol:
-    notify: [{consumer_teammate_name}]       # Producer sends P2P signal to these teammates
-    signal_format: "READY|path:tasks/{team}/{file}|fields:{field_list}"
-    await: [{producer_teammate_name}]        # Consumer waits for P2P signal from these teammates
+    notify: [{consumer_subagent_name}]       # Producer sends file-based signal to these subagents
+    signal_format: "READY|path:tasks/{work_dir}/{file}|fields:{field_list}"
+    await: [{producer_subagent_name}]        # Consumer waits for file-based signal from these subagents
 ```
 
-**COMM_PROTOCOL is MANDATORY for every DPS entry in COMPLEX tier.** This enables the Four-Channel Protocol: producer writes to disk (Ch2), signals Lead (Ch3 micro-signal), and signals consumer directly (Ch4 P2P). Lead does NOT relay data between teammates.
+**file-based handoff spec is MANDATORY for every DPS entry in COMPLEX tier.** This enables the Two-Channel Protocol: producer writes to disk (Ch2), signals Lead (Ch3 micro-signal), and signals consumer directly (file-based output). Lead does NOT relay data between subagents.
 
 ### Path Convention
 
-All handoff files follow: `tasks/{team}/{phase}-{skill}-{artifact}.{ext}`
+All handoff files follow: `tasks/{work_dir}/{phase}-{skill}-{artifact}.{ext}`
 - Phase: p5, p6, p7, p8
 - Skill: abbreviated skill name
 - Artifact: descriptive name (e.g., task-matrix, checkpoint-schedule)
@@ -90,7 +90,7 @@ All handoff files follow: `tasks/{team}/{phase}-{skill}-{artifact}.{ext}`
 | Structured results (L1) | YAML | Machine-parseable, standard L1 format |
 | Narrative analysis (L2) | Markdown | Human-readable, supports tables |
 | Task lists | YAML | Structured with arrays |
-| Status signals | Micro-signal string | Minimal, follows SendMessage protocol |
+| Status signals | Micro-signal string | Minimal, follows file-based signal protocol |
 
 ---
 
@@ -122,7 +122,7 @@ Produce complete handoff specification with:
 - Ordered list of DPS entries by execution sequence
 - Chain completeness verdict (PASS if no dangling inputs)
 - Format consistency report
-- Path registry (all `tasks/{team}/` paths used)
+- Path registry (all `tasks/{work_dir}/` paths used)
 - Summary: total handoffs, format distribution, dangling count
 
 ---
@@ -131,7 +131,7 @@ Produce complete handoff specification with:
 
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
-- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-relational.md`
+- **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-relational.md`
 - **Route**: Back to plan-verify-coordinator for re-export
 
 ### Dangling Input Detected

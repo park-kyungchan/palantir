@@ -90,4 +90,4 @@ L2: Screenshot ID, element count, console error count. PASS routes to verify-qua
 | verify-quality | PASS signal + screenshot_id | On PASS |
 | execution-code | FAIL + screenshot_id + errors | On FAIL |
 
-> D17 Note: Ch1: `metadata.phase_signals.p7_verify-page-load` · Ch2: `tasks/{team}/p7-verify-page-load.md` · Ch3: micro-signal to Lead · Ch4: P2P to verify-quality on PASS
+> D17 Note: Ch2: `tasks/{work_dir}/p7-verify-page-load.md` · Ch3: micro-signal to Lead

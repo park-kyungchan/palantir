@@ -44,7 +44,7 @@ For STANDARD/COMPLEX tiers, construct delegation DPS with:
 - **Task**: "Search post-Opus-4.6 community discussions for [assigned topic list]. For each topic: find GitHub Issues/Discussions with verified solutions, search forums for practical patterns and workarounds, identify constraints not in official docs, check for post-release behavioral changes."
 - **Constraints**: Web-enabled research only (WebSearch, WebFetch, tavily). No file modifications. Cite all sources with full URLs. Prioritize verified/reproducible findings. `maxTurns: 25`.
 - **Output**: Per-topic — topic, pattern found, verification status (verified/anecdotal/unconfirmed), source URL, practical impact, confidence rating.
-- **Delivery**: Ch2: write to `tasks/{team}/p2-external.md`. Ch3 micro-signal to Lead: `"PASS|validated:{count}|ref:tasks/{team}/p2-external.md"`. Ch4 P2P to research-coordinator: `"READY|path:tasks/{team}/p2-external.md|fields:findings,source_urls,validations"`.
+- **Delivery**: Ch2: write to `{work_dir}/p2-external.md`. Ch3 micro-signal to Lead: `"PASS|validated:{count}|ref:{work_dir}/p2-external.md"`.
 
 Priority order: 1. **WebSearch** (GitHub Issues/Discussions) → 2. **tavily** (broader forum search) → 3. **WebFetch** (specific GitHub thread extraction).
 
@@ -102,7 +102,7 @@ Before spawning researchers, verify which tools are available in `settings.json`
 | Failure Type | Level | Action |
 |---|---|---|
 | MCP tool error, timeout, single dependency fails | L0 Retry | Re-invoke same researcher, same dependency list |
-| Incomplete research or off-topic findings | L1 Nudge | SendMessage with refined dependency scope or narrower questions |
+| Incomplete research or off-topic findings | L1 Nudge | Respawn with refined DPS targeting dependency scope or narrower questions |
 | Researcher exhausted turns or context polluted | L2 Respawn | Kill → fresh researcher with remaining dependency list |
 | MCP unavailable, tool chain broken for critical dependency | L3 Restructure | Split by tool availability, serialize with fallback constraints |
 | 3+ L2 failures or critical dependency unvalidatable | L4 Escalate | AskUserQuestion with gap summary and options |
@@ -147,7 +147,7 @@ Before spawning researchers, verify which tools are available in `settings.json`
 | All research fails | audit-* (all 4) | Partial results with `status: partial` and gap list |
 | Critical pattern unvalidated | design-architecture | Pattern details requiring architecture revision |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -175,7 +175,7 @@ dependencies:
     source: ""
 cc_native_claims: 0
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|validated:{count}|cc_claims:{n}|ref:tasks/{team}/p2-external.md"
+signal_format: "PASS|validated:{count}|cc_claims:{n}|ref:{work_dir}/p2-external.md"
 ```
 
 ### L2

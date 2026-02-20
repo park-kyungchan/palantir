@@ -71,7 +71,7 @@ Identify the critical path (longest blocking chain) and calculate per-wave paral
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error or timeout during cluster analysis | L0 Retry | Re-invoke same agent with same DPS |
-| Cluster output incomplete or off-direction | L1 Nudge | SendMessage with refined scope constraints |
+| Cluster output incomplete or off-direction | L1 Nudge | Respawn with refined DPS targeting refined scope constraints |
 | Agent stuck on cycle detection or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
 | Task graph structure broken or scope shift | L3 Restructure | Modify task graph, redefine clusters |
 | Strategic ambiguity or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -110,7 +110,7 @@ Identify the critical path (longest blocking chain) and calculate per-wave paral
 | Missing audit input | research-coordinator | Which L3 file is missing |
 | Unresolvable cycles | Lead (escalation) | Cycle details with file:line evidence |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -131,7 +131,7 @@ task_count: 0
 total_files: 0
 critical_path_length: 0
 pt_signal: "metadata.phase_signals.p3_plan_static"
-signal_format: "{STATUS}|tasks:{N}|critical_path:{N}|ref:tasks/{team}/p3-plan-static.md"
+signal_format: "{STATUS}|tasks:{N}|critical_path:{N}|ref:tasks/{work_dir}/p3-plan-static.md"
 tasks:
   - id: ""
     files: []

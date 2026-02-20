@@ -77,12 +77,12 @@ Construct each DPS with (D11 — cognitive focus first):
 - **EXCLUDE**: Source code details. Other implementers' tasks. Historical rationale. Non-.claude/ pipeline context.
 - **Task field**: Precise per-file change description with before→after for field values. Include one completed example for STANDARD/COMPLEX patterns.
 - **Constraints field**: Write/Edit tools only — no Bash. Cannot delete files. `description` ≤1024 chars. YAML/JSON must remain valid. No non-native frontmatter fields.
-- **Delivery (Four-Channel)**: Ch2 → `tasks/{team}/p6-infra-{task_id}-output.md`; Ch3 → micro-signal to Lead `"PASS|files:{N}|ref:tasks/{team}/p6-infra-{task_id}-output.md"`; Ch4 → P2P signal to COMM_PROTOCOL NOTIFY targets.
+- **Delivery (2-channel)**: Ch2 → `{work_dir}/p6-infra-{task_id}-output.md`; Ch3 → micro-signal to Lead `"PASS|files:{N}|ref:{work_dir}/p6-infra-{task_id}-output.md"`.
 
 > For tier-specific DPS variations (context inclusions, maxTurns per tier): read `resources/methodology.md`
 
 ### 3. Monitor Progress
-Receive infra-implementer completion summary via SendMessage.
+Read infra-implementer completion summary from output file.
 Verify YAML frontmatter remains valid. Track file count vs expected.
 
 > For monitoring heuristics table (schema violation, overflow, JSON corruption signals): read `resources/methodology.md`
@@ -107,7 +107,7 @@ Collect L1 YAML from each implementer. Build unified infra change manifest. Repo
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error, write failure, file lock | L0 Retry | Re-invoke same infra-implementer with same DPS |
-| YAML invalid or non-native fields | L1 Nudge | SendMessage with CC native fields ref + correction |
+| YAML invalid or non-native fields | L1 Nudge | Respawn with refined DPS targeting CC native fields ref + correction |
 | Schema corruption or context exhausted | L2 Respawn | Kill → fresh infra-implementer with original content + corrective DPS |
 | settings.json corrupted, blocking all infra | L3 Restructure | Restore from backup, reassign settings.json as last sequential task |
 | All retries failed, architectural schema conflict | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -138,9 +138,9 @@ Agent `memory` field (`project` vs `none`) affects context received. Changing fr
 
 ## Phase-Aware Execution
 
-P2+ Team mode only. Communication via Four-Channel Protocol (Ch2 disk + Ch3 micro-signal + Ch4 P2P). File ownership: only modify assigned files. No overlapping edits with parallel agents.
+All modes. Communication via 2-channel protocol (Ch2 disk + Ch3 micro-signal to Lead). File ownership: only modify assigned files. No overlapping edits with parallel subagents.
 
-> D17 Note: use 4-channel protocol — Ch1 PT metadata, Ch2 `tasks/{team}/`, Ch3 micro-signal to Lead, Ch4 P2P to consumers.
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
@@ -185,7 +185,7 @@ status: complete|in-progress|failed
 files_changed: 0
 implementers: 0
 pt_signal: "metadata.phase_signals.p6_infra"
-signal_format: "{STATUS}|files:{N}|implementers:{N}|ref:tasks/{team}/p6-infra.md"
+signal_format: "{STATUS}|files:{N}|implementers:{N}|ref:{work_dir}/p6-infra.md"
 ```
 
 ### L2

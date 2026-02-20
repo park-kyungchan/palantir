@@ -25,10 +25,10 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-Runs in P2+ Team mode. See `.claude/resources/phase-aware-execution.md` for full protocol.
-- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers).
+Runs in Two-Channel protocol. See `.claude/resources/phase-aware-execution.md` for full protocol.
+- **Communication**: Two-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead)
 - **Task tracking**: Update task status via TaskUpdate after completion.
-- **P2P Self-Coordination**: Read upstream outputs from `tasks/{team}/` via $ARGUMENTS. Send P2P signals to downstream consumers.
+- **P2P Self-Coordination**: Read upstream outputs from `tasks/{work_dir}/` via $ARGUMENTS. Send P2P signals to downstream consumers.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 ## Decision Points
@@ -87,9 +87,9 @@ See `resources/methodology.md` for the validation rule template.
 ### 5. Output Interface Contract Specification
 Produce the complete contract registry: all per-task INPUT/OUTPUT contracts, bidirectional consistency results, validation rules, gap analysis, and coverage metric.
 **Gap thresholds**: gap_count 0 = PASS; 1-5 = partial; >5 = FAIL (route to research-coordinator).
-DPS template (COMPLEX analyst spawn, tier variations, D17 Four-Channel delivery): see `resources/methodology.md`.
+DPS template (COMPLEX analyst spawn, tier variations, D17 Two-Channel delivery): see `resources/methodology.md`.
 See `.claude/resources/dps-construction-guide.md` for DPS v5 field order.
-See `.claude/resources/output-micro-signal-format.md` for Ch3/Ch4 signal formats.
+See `.claude/resources/output-micro-signal-format.md` for Ch2/Ch3 signal formats.
 
 ### Iteration Tracking (D15)
 - Lead manages `metadata.iterations.plan-relational: N` in PT before each invocation
@@ -104,7 +104,7 @@ See `.claude/resources/failure-escalation-ladder.md` for L0–L4 level definitio
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error or timeout during contract generation | L0 Retry | Re-invoke same agent, same DPS |
-| Contract output incomplete or missing bidirectional coverage | L1 Nudge | SendMessage with refined relationship scope constraints |
+| Contract output incomplete or missing bidirectional coverage | L1 Nudge | Respawn with refined DPS targeting refined relationship scope constraints |
 | Agent stuck on schema analysis or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
 | Contract boundaries conflict with task structure | L3 Restructure | Modify contract scope, request design-interface clarification |
 | Strategic ambiguity on contract formality or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -171,7 +171,7 @@ gap_count: 0
 consistency_score: 0
 coverage_percent: 0
 pt_signal: "metadata.phase_signals.p3_plan_relational"
-signal_format: "{STATUS}|contracts:{N}|gaps:{N}|ref:tasks/{team}/p3-plan-relational.md"
+signal_format: "{STATUS}|contracts:{N}|gaps:{N}|ref:tasks/{work_dir}/p3-plan-relational.md"
 contracts:
   - producer: ""
     consumer: ""

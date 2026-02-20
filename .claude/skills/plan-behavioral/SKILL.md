@@ -26,11 +26,10 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream consumers). Lead receives status only, not full data.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **P2P Self-Coordination**: Read upstream outputs directly from `tasks/{team}/` files via $ARGUMENTS path. Send P2P signals to downstream consumers.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+This skill runs in Two-Channel protocol only. Single-session subagent execution:
+- **Subagent writes** output file to `tasks/{work_dir}/p3-plan-behavioral.md`
+- **Ch3 micro-signal** to Lead with PASS/FAIL status
+- **Task tracking**: Subagent calls TaskUpdate on completion. File ownership: only modify assigned files.
 
 ## Decision Points
 
@@ -100,7 +99,7 @@ Produce complete behavioral strategy: test case inventory, rollback triggers, ch
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error or timeout during test case generation | L0 Retry | Re-invoke same agent, same DPS |
-| Test/rollback strategy incomplete or missing P0/P1 coverage | L1 Nudge | SendMessage with refined behavior prediction scope |
+| Test/rollback strategy incomplete or missing P0/P1 coverage | L1 Nudge | Respawn with refined DPS targeting refined behavior prediction scope |
 | Agent stuck on chain analysis or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
 | Task chain structure broken or rollback scoping requires plan-static clarification | L3 Restructure | Modify task graph, request boundary clarification |
 | Strategic ambiguity on risk classification or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -156,7 +155,7 @@ rollback_count: 0
 checkpoint_count: 0
 coverage_percent: 0
 pt_signal: "metadata.phase_signals.p3_plan_behavioral"
-signal_format: "{STATUS}|tests:{N}|rollbacks:{N}|ref:tasks/{team}/p3-plan-behavioral.md"
+signal_format: "{STATUS}|tests:{N}|rollbacks:{N}|ref:tasks/{work_dir}/p3-plan-behavioral.md"
 tests:
   - id: ""
     behavior_change: ""

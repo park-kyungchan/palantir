@@ -29,10 +29,10 @@ disable-model-invocation: true
 Note: P4 validates PLANS (pre-execution). This coordinator merges dimension-specific verdicts and checks for cross-dimension inconsistencies that individual verifiers cannot detect. It does NOT re-verify dimensions or override individual verdicts.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via Four-Channel Protocol.
-- **Ch2**: Agent writes tiered output to `tasks/{team}/p4-coordinator-*.md`.
-- **Ch3** micro-signal to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{team}/p4-coordinator-index.md`.
-- **Ch4** P2P: not sent at this stage — Lead uses Deferred Spawn to route orchestrate-* skills with $ARGUMENTS pointing to L3 files.
+- **P2+ (background subagents)**: Spawn agent with `run_in_background:true`, `context:fork`. Agent delivers via Two-Channel Protocol.
+- **Ch2**: Agent writes tiered output to `tasks/{work_dir}/p4-coordinator-*.md`.
+- **Ch3** micro-signal to Lead: `PASS|dimensions:4|cross_issues:{N}|ref:tasks/{work_dir}/p4-coordinator-index.md`.
+- Lead uses Deferred Spawn to route orchestrate-* skills with $ARGUMENTS pointing to L3 files.
 
 > Phase-aware routing details: read `.claude/resources/phase-aware-execution.md`
 > DPS construction guide: read `.claude/resources/dps-construction-guide.md`
@@ -110,7 +110,7 @@ Individual verifiers check their own dimension. This coordinator checks BETWEEN 
 | All dimensions FAIL | plan domain (prioritized) | Comprehensive failure report with fix priority order |
 | Conflicting plan assumptions | Lead | Conflict details between plan skills |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -137,7 +137,7 @@ dimensions:
 cross_check_issues: 0
 escalated_findings: 0
 routing: orchestration|plan-static|plan-behavioral|plan-relational|plan-impact
-output_ref: tasks/{team}/p4-coordinator-index.md
+output_ref: tasks/{work_dir}/p4-coordinator-index.md
 ```
 
 ### L2
@@ -147,7 +147,7 @@ output_ref: tasks/{team}/p4-coordinator-index.md
 - Routing decision with rationale
 
 ### L3
-Files in `tasks/{team}/p4-coordinator-*.md`:
+Files in `tasks/{work_dir}/p4-coordinator-*.md`:
 - `p4-coordinator-index.md`: Overall verdict, dimension summary, routing decision
 - `p4-coordinator-summary.md`: Cross-dimension analysis narrative
 - `p4-coordinator-verify-static.md`: Static findings + cross-dimension annotations

@@ -91,4 +91,4 @@ L2: Routes tested count, per-route PASS/FAIL with URL and title evidence. PASS r
 | verify-quality | PASS signal + routes_tested count | On PASS |
 | execution-code | FAIL + failed_routes[] + screenshots | On FAIL |
 
-> D17 Note: Ch1: `metadata.phase_signals.p7_verify-navigation-routing` · Ch2: `tasks/{team}/p7-verify-navigation-routing.md` · Ch3: micro-signal to Lead · Ch4: P2P to verify-quality on PASS
+> D17 Note: Ch2: `tasks/{work_dir}/p7-verify-navigation-routing.md` · Ch3: micro-signal to Lead

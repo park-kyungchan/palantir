@@ -29,8 +29,8 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 > See `.claude/resources/phase-aware-execution.md` for team routing rules.
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Write `tasks/{team}/p4-pv-impact.md`. Micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md`.
+- **Spawn**: Spawn agent (`run_in_background:true`, `context:fork`). Agent writes output to file.
+- **Delivery**: Write `tasks/{work_dir}/p4-pv-impact.md`. Micro-signal: `PASS|paths:{N}|unmitigated:{N}|ref:tasks/{work_dir}/p4-pv-impact.md`.
 
 ## Decision Points
 
@@ -90,7 +90,7 @@ Full gap classification rubric and record format: `resources/methodology.md`.
 | Failure Type | Level | Action |
 |---|---|---|
 | Audit-impact L3 missing, tool error, timeout | L0 Retry | Re-invoke same agent, same DPS |
-| Containment matrix incomplete or paths unverified | L1 Nudge | SendMessage with refined context |
+| Containment matrix incomplete or paths unverified | L1 Nudge | Respawn with refined DPS targeting refined context |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
 | Propagation graph stale or circular path detected | L3 Restructure | Modify task graph, reassign files |
 | Unresolvable containment gap, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -154,7 +154,7 @@ findings:
     severity: HIGH|MEDIUM|LOW
     evidence: ""
 pt_signal: "metadata.phase_signals.p4_verify_impact"
-signal_format: "{STATUS}|paths:{N}|unmitigated:{N}|ref:tasks/{team}/p4-pv-impact.md"
+signal_format: "{STATUS}|paths:{N}|unmitigated:{N}|ref:tasks/{work_dir}/p4-pv-impact.md"
 ```
 
 ### L2

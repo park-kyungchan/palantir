@@ -29,8 +29,8 @@ Note: P4 validates PLANS (pre-execution). This skill verifies that interface con
 symmetrically cover the relationship graph. It does NOT verify contract implementation correctness.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-relational.md`, sends micro-signal: `PASS|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-relational.md`.
+- **Spawn**: Spawn agent (`run_in_background:true`, `context:fork`). Agent writes output to file.
+- **Delivery**: Agent writes result to `tasks/{work_dir}/p4-pv-relational.md`, micro-signal: `PASS|contracts:{N}|asymmetric:{N}|ref:tasks/{work_dir}/p4-pv-relational.md`.
 
 > Ref: `.claude/resources/phase-aware-execution.md` — Phase-Aware agent spawn protocol
 
@@ -78,7 +78,7 @@ missing, and orphan gaps by severity. (5) Report integrity verdict with evidence
 | Failure Type | Level | Action |
 |---|---|---|
 | Audit-relational L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
-| Consistency matrix incomplete or relationships unverified | L1 Nudge | SendMessage with refined context |
+| Consistency matrix incomplete or relationships unverified | L1 Nudge | Respawn with refined DPS targeting refined context |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
 | Relationship graph stale or plan-audit scope diverged | L3 Restructure | Modify task graph, reassign files |
 | Strategic contract model conflict, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -145,7 +145,7 @@ findings:
     severity: HIGH|MEDIUM
     evidence: ""
 pt_signal: "metadata.phase_signals.p4_verify_relational"
-signal_format: "{STATUS}|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-relational.md"
+signal_format: "{STATUS}|contracts:{N}|asymmetric:{N}|ref:tasks/{work_dir}/p4-pv-relational.md"
 ```
 
 ### L2
@@ -156,4 +156,4 @@ signal_format: "{STATUS}|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-rel
 - Coverage statistics: covered/asymmetric/missing/orphan counts
 - Verdict justification with severity threshold comparisons
 
-> Ref: `.claude/resources/output-micro-signal-format.md` — Channel 1-4 signal formats
+> Ref: `.claude/resources/output-micro-signal-format.md` — Channel 2-3 signal formats

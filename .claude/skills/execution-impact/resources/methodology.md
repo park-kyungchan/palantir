@@ -104,7 +104,7 @@ Set confidence:
 
 ## Output L2 Detail
 
-The L2 markdown body of `tasks/{team}/p6-impact.md` must contain:
+The L2 markdown body of `tasks/{work_dir}/p6-impact.md` must contain:
 - Per-file dependency analysis with grep evidence (file:line:content) for each dependent
 - DIRECT vs TRANSITIVE classification rationale (why each dependent was classified as it was)
 - Predicted vs Discovered impact breakdown: predicted_confirmed count, newly_discovered count,

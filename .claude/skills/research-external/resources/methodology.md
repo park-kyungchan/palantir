@@ -24,8 +24,8 @@ Constraints: Web-enabled research only. No file modifications. Cite all sources 
   Prioritize verified/reproducible findings. maxTurns: 25.
 Expected Output: Per-topic entry: topic, pattern found, verification status, source URL,
   practical impact, confidence rating.
-Delivery: Write to tasks/{team}/p2-external.md. Send micro-signal to Lead:
-  "PASS|validated:{count}|ref:tasks/{team}/p2-external.md".
+Delivery: Write to tasks/{work_dir}/p2-external.md. Send micro-signal to Lead:
+  "PASS|validated:{count}|ref:tasks/{work_dir}/p2-external.md".
 ```
 
 ### COMPLEX — 2-4 Researchers with Non-Overlapping Lists

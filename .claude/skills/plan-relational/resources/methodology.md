@@ -60,14 +60,14 @@ Validation:
 
 **Context** (D11 priority: cognitive focus > token efficiency):
 - INCLUDE:
-  - research-coordinator audit-relational L3 from `tasks/{team}/p2-coordinator-audit-relational.md`
+  - research-coordinator audit-relational L3 from `tasks/{work_dir}/p2-coordinator-audit-relational.md`
   - design-interface API contracts (L1 interfaces[] summary only)
   - Pipeline tier and iteration count from PT
 - EXCLUDE:
   - Other plan dimension outputs (unless direct dependency)
   - Full research evidence detail (use L3 summaries only)
   - Pre-design and design conversation history
-- Budget: Context field ≤ 30% of teammate effective context
+- Budget: Context field ≤ 30% of subagent effective context
 
 **Task**: "For each relationship in the audit graph: define producer OUTPUT contract and consumer INPUT contract. Verify bidirectional consistency (type, field, naming, timing). Specify validation rules per contract. Flag gaps where audit relationships have no design contract. Calculate coverage metric."
 
@@ -75,12 +75,12 @@ Validation:
 
 **Expected Output**: L1 YAML with contract_count, gap_count, consistency_score, coverage_percent, contracts[]. L2 per-task contracts with validation rules and gap analysis.
 
-**Delivery (Four-Channel)**:
-- Ch2: Write full result to `tasks/{team}/p3-plan-relational.md`
-- Ch3 micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:tasks/{team}/p3-plan-relational.md`
-- Ch4 P2P to plan-verify-relational teammate (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active
+**Delivery (Two-Channel)**:
+- Ch2: Write full result to `tasks/{work_dir}/p3-plan-relational.md`
+- Ch3 micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:tasks/{work_dir}/p3-plan-relational.md`
+- file-based output to plan-verify-relational subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active
 
-See `.claude/resources/dps-construction-guide.md` for DPS v5 field order and COMM_PROTOCOL spec.
+See `.claude/resources/dps-construction-guide.md` for DPS v5 field order and file-based handoff spec spec.
 See `.claude/resources/output-micro-signal-format.md` for channel format and micro-signal examples.
 
 ### Tier-Specific Variations

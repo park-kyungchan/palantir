@@ -10,11 +10,11 @@ Traces each CC native constraint to its design implications and verifies current
 
 | CC Native Constraint | Design Implication | Verification Check |
 |---------------------|-------------------|-------------------|
-| No shared memory between agents | Information must be explicitly communicated; external file refs are phantom dependencies | Verify no skill/agent assumes implicit context sharing. Check all cross-agent data has explicit delivery mechanism (DPS inline, SendMessage, or disk+path). |
+| No shared memory between agents | Information must be explicitly communicated; external file refs are phantom dependencies | Verify no skill/agent assumes implicit context sharing. Check all cross-agent data has explicit delivery mechanism (DPS inline, file-based signal, or disk+path). |
 | Agent ≠ skill context | Agent does not see skill L2 body; DPS must fully convey execution instructions | Verify DPS templates include all execution-critical info from skill L2 (Phase-Aware, error handling, output format). |
 | Lead compaction risk | Inter-phase routing state may be lost during auto-compaction | Verify PT metadata captures enough state for phase resumption. Check pipeline-resume can reconstruct from PT alone. |
-| SendMessage = text only | Cannot inject structured data into agent context; summary must be self-contained | Verify micro-signal formats contain enough context for Lead routing decisions without loading full disk output. |
-| Inbox = poll per API turn | No real-time coordination; teammate sees messages only on next turn | Verify no skill assumes synchronous teammate response. Check all coordination is async-compatible. |
+| file-based signal = text only | Cannot inject structured data into agent context; summary must be self-contained | Verify micro-signal formats contain enough context for Lead routing decisions without loading full disk output. |
+| Inbox = poll per API turn | No real-time coordination; subagent sees messages only on next turn | Verify no skill assumes synchronous subagent response. Check all coordination is async-compatible. |
 | Subagent 30K char limit | Background agent output truncated beyond 30K chars | Verify agents prioritize critical info first in output. Check large outputs use disk+path pattern. |
 
 **Procedure:** For each row, Read the relevant ref_*.md for the constraint, then Grep/Read INFRA files to verify the check. Flag violations as HIGH severity.
@@ -33,7 +33,7 @@ Detects behavioral claims in ref_*.md files that were codified without empirical
 
 **For each unverified claim found:** flag as HIGH severity with the claim text, source file:line, and suggested verification method (Glob/Read test to run via research-cc-verify).
 
-**Origin:** SendMessage "ephemeral" error (2026-02-17). Lead's reasoning-only judgment produced incorrect CC-native claim → propagated to 4 ref files before user caught it. Cost: full correction cycle. Prevention: this category + research-cc-verify Shift-Left gate.
+**Origin:** file-based signal "ephemeral" error (2026-02-17). Lead's reasoning-only judgment produced incorrect CC-native claim → propagated to 4 ref files before user caught it. Cost: full correction cycle. Prevention: this category + research-cc-verify Shift-Left gate.
 
 ---
 
@@ -58,7 +58,7 @@ For each diagnostic category, scan all relevant files. Record findings with file
 L1 YAML with `findings_total`, `findings_by_severity`, `findings[]`. L2 markdown with per-category analysis.
 
 ### Delivery
-Write full result to `tasks/{team}/homeostasis-self-diagnose.md`. Send micro-signal to Lead via SendMessage:
+Write full result to `tasks/{work_dir}/homeostasis-self-diagnose.md`. Send micro-signal to Lead via file-based signal:
 ```
-{STATUS}|findings:{N}|severity_high:{N}|ref:tasks/{team}/homeostasis-self-diagnose.md
+{STATUS}|findings:{N}|severity_high:{N}|ref:tasks/{work_dir}/homeostasis-self-diagnose.md
 ```

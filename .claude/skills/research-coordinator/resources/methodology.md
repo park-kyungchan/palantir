@@ -33,7 +33,7 @@ audit_summary:
 routing_recommendation: ""
 cc_native_claims: 0
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|dims:4|claims:{N}|ref:tasks/{team}/p2-coordinator-index.md"
+signal_format: "PASS|dims:4|claims:{N}|ref:tasks/{work_dir}/p2-coordinator-index.md"
 ```
 
 ### p2-coordinator-summary.md (L2 — read by Lead when routing needs detail)
@@ -151,12 +151,12 @@ OBJECTIVE: Consolidate 4 audit dimension outputs into tiered coordinator output.
 
 CONTEXT (D11 — cognitive focus):
   INCLUDE:
-    - Paths to audit outputs: tasks/{team}/p2-audit-static.md,
-      tasks/{team}/p2-audit-behavioral.md,
-      tasks/{team}/p2-audit-relational.md,
-      tasks/{team}/p2-audit-impact.md
+    - Paths to audit outputs: tasks/{work_dir}/p2-audit-static.md,
+      tasks/{work_dir}/p2-audit-behavioral.md,
+      tasks/{work_dir}/p2-audit-relational.md,
+      tasks/{work_dir}/p2-audit-impact.md
     - Missing/partial dimension status (if any)
-    - Output path prefix: tasks/{team}/p2-coordinator-{file}.md
+    - Output path prefix: tasks/{work_dir}/p2-coordinator-{file}.md
   EXCLUDE:
     - Individual claim evidence detail from audit L2 bodies
     - Historical rationale for audit findings
@@ -166,12 +166,12 @@ TASK:
   Read all available audit dimension outputs. Extract key metrics and top findings
   from each. Cross-reference dimensions for compound patterns (see methodology.md for
   4 intersection types). Produce 6 files:
-    1. tasks/{team}/p2-coordinator-index.md (L1 compact YAML, ≤30 lines)
-    2. tasks/{team}/p2-coordinator-summary.md (L2, ≤200 lines)
-    3. tasks/{team}/p2-coordinator-static.md (L3)
-    4. tasks/{team}/p2-coordinator-behavioral.md (L3)
-    5. tasks/{team}/p2-coordinator-relational.md (L3)
-    6. tasks/{team}/p2-coordinator-impact.md (L3)
+    1. tasks/{work_dir}/p2-coordinator-index.md (L1 compact YAML, ≤30 lines)
+    2. tasks/{work_dir}/p2-coordinator-summary.md (L2, ≤200 lines)
+    3. tasks/{work_dir}/p2-coordinator-static.md (L3)
+    4. tasks/{work_dir}/p2-coordinator-behavioral.md (L3)
+    5. tasks/{work_dir}/p2-coordinator-relational.md (L3)
+    6. tasks/{work_dir}/p2-coordinator-impact.md (L3)
 
 CONSTRAINTS:
   - Read-only consolidation (no new Grep/Glob/Bash research)
@@ -180,7 +180,7 @@ CONSTRAINTS:
   - maxTurns: 35
 
 DELIVERY:
-  SendMessage to Lead: "PASS|dimensions:4|patterns:{N}|ref:tasks/{team}/p2-coordinator-index.md"
+  file-based handoff to Lead: "PASS|dimensions:4|patterns:{N}|ref:tasks/{work_dir}/p2-coordinator-index.md"
 ```
 
 ### STANDARD Tier
@@ -198,7 +198,7 @@ If 1-2 audit dimensions are missing: proceed with available data. L1 marks missi
 
 **Trigger**: >3 audit files each contain >20 findings — total data volume exceeds single-analyst context budget for cross-referencing.
 
-**Pattern**: Coordinator (spawned as teammate with `coordinator` profile) acts as Sub-Orchestrator:
+**Pattern**: Coordinator (spawned as subagent with `coordinator` profile) acts as Sub-Orchestrator:
 1. Coordinator spawns analyst subagents (one per audit dimension file group)
 2. Each analyst subagent reads its assigned audit file, extracts key metrics + top findings, returns ≤30K summary
 3. Coordinator synthesizes across subagent summaries → produces tiered output

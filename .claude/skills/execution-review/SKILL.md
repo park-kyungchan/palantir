@@ -88,7 +88,7 @@ If critical or high findings exist: route to execution-code/infra for fixes, re-
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error, reviewer spawn timeout | L0 Retry | Re-invoke same analyst with same DPS |
-| Reviewer output incomplete or coverage gaps | L1 Nudge | SendMessage with narrowed scope or focused file list |
+| Reviewer output incomplete or coverage gaps | L1 Nudge | Respawn with refined DPS targeting narrowed scope or focused file list |
 | Reviewer exhausted turns or context polluted | L2 Respawn | Kill → fresh analyst with refined DPS focused on pending files |
 | Fix loop non-convergent after 2 iterations or scope conflict | L3 Restructure | Reassign review scope, separate spec vs quality reviews, re-stage |
 | Fix loop exhausted (3 iterations), architectural contract conflict | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -106,13 +106,12 @@ If critical or high findings exist: route to execution-code/infra for fixes, re-
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream consumers). Lead receives status only, not full data.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **P2P Self-Coordination**: Read upstream outputs directly from `tasks/{team}/` files. Send P2P signals to downstream consumers.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+This skill runs in Two-Channel protocol only. Single-session subagent execution:
+- **Subagent writes** output file to `tasks/{work_dir}/p6-review.md`
+- **Ch3 micro-signal** to Lead with PASS/FAIL status
+- **Task tracking**: Subagent calls TaskUpdate on completion. File ownership: only modify assigned files.
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 > DPS construction guide: read `.claude/resources/dps-construction-guide.md`
@@ -165,7 +164,7 @@ reviewers:
     findings: 0
 total_findings: 0
 pt_signal: "metadata.phase_signals.p6_review"
-signal_format: "{STATUS}|findings:{N}|severity:{critical|high}|ref:tasks/{team}/p6-review.md"
+signal_format: "{STATUS}|findings:{N}|severity:{critical|high}|ref:tasks/{work_dir}/p6-review.md"
 ```
 
 ### L2

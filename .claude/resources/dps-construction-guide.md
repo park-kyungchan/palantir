@@ -10,7 +10,7 @@ Every DPS must contain exactly 4 fields:
 Context:
   INCLUDE: [data the agent NEEDS to see]
   EXCLUDE: [data to NEVER include — saves context budget]
-  Budget: "Context field ≤ 30% of teammate effective context"
+  Budget: "Context field ≤ 30% of subagent effective context"
 
 Task: |
   Precise, actionable instruction string.
@@ -57,5 +57,13 @@ Context field construction follows **D11 priority**: cognitive focus > token eff
 
 Always end DPS with delivery instruction:
 ```
-Delivery: SendMessage to Lead: "{STATUS}|{metrics}|ref:tasks/{team}/{file}"
+Delivery: Write micro-signal to output file: "{STATUS}|{metrics}|ref:tasks/{work_dir}/{file}"
+         Then write full L2 detail to: tasks/{work_dir}/{phase}-{skill}.md
 ```
+
+## DPS Principles (Mandatory)
+
+- **Self-Containment**: DPS must embed all info; spawned instance has zero parent context access.
+- **Output Cap**: 30K characters. Large results → write file + send path.
+- **File Ownership**: Parallel instances MUST NOT edit the same file.
+- **Input via File Reference**: Pass file paths via `$ARGUMENTS`, NOT content. Avoids data relay.

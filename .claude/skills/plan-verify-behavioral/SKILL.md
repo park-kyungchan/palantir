@@ -28,8 +28,8 @@ disable-model-invocation: true
 Note: P4 validates PLANS (pre-execution). This skill verifies that the test strategy adequately covers predicted behavior changes. It does NOT verify test implementation or execution results.
 
 ## Phase-Aware Execution
-- **P2+ (active Team)**: Spawn agent with `team_name` parameter. Agent delivers via SendMessage.
-- **Delivery**: Agent writes result to `tasks/{team}/p4-pv-behavioral.md`, sends micro-signal: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md`.
+- **Spawn**: Spawn agent (`run_in_background:true`, `context:fork`). Agent writes output to file.
+- **Delivery**: Agent writes result to `tasks/{work_dir}/p4-pv-behavioral.md`, micro-signal: `PASS|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{work_dir}/p4-pv-behavioral.md`.
 
 → See `.claude/resources/phase-aware-execution.md` for team spawn pattern detail.
 
@@ -56,7 +56,7 @@ Steps: (1) Build test inventory from plan-behavioral. (2) Build prediction inven
 
 → See `resources/methodology.md` for full analyst delegation DPS (INCLUDE/EXCLUDE lists, tier DPS), coverage matrix examples, rollback matrix examples, per-behavior scoring rubric, and edge case handling.
 
-→ See `.claude/resources/dps-construction-guide.md` for DPS v5 template (WARNING/OBJECTIVE/CONTEXT/PLAN/MCP_DIRECTIVES/COMM_PROTOCOL/CRITERIA/OUTPUT/CONSTRAINTS).
+→ See `.claude/resources/dps-construction-guide.md` for DPS v5 template (WARNING/OBJECTIVE/CONTEXT/PLAN/MCP_DIRECTIVES/CRITERIA/OUTPUT/CONSTRAINTS).
 
 ## Iteration Tracking (D15)
 - Lead manages `metadata.iterations.plan-verify-behavioral: N` in PT before each invocation.
@@ -69,7 +69,7 @@ Steps: (1) Build test inventory from plan-behavioral. (2) Build prediction inven
 | Failure Type | Level | Action |
 |---|---|---|
 | Audit-behavioral L3 missing, tool error, or timeout | L0 Retry | Re-invoke same agent, same DPS |
-| Test coverage matrix incomplete or predictions unverified | L1 Nudge | SendMessage with refined context |
+| Test coverage matrix incomplete or predictions unverified | L1 Nudge | Respawn with refined DPS targeting refined context |
 | Analyst exhausted turns or context polluted | L2 Respawn | Kill → fresh agent with refined DPS |
 | Prediction set scope changed or behavioral model stale | L3 Restructure | Modify task graph, reassign files |
 | Strategic test coverage ambiguity, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -147,7 +147,7 @@ findings:
     risk: HIGH|MEDIUM|LOW
     evidence: ""
 pt_signal: "metadata.phase_signals.p4_verify_behavioral"
-signal_format: "{STATUS}|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{team}/p4-pv-behavioral.md"
+signal_format: "{STATUS}|tested:{N}/{N}|rollbacks:{N}|ref:tasks/{work_dir}/p4-pv-behavioral.md"
 ```
 
 ### L2
