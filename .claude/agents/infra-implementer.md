@@ -14,6 +14,7 @@ tools:
   - Edit
   - Write
   - mcp__sequential-thinking__sequentialthinking
+model: sonnet
 memory: project
 maxTurns: 35
 color: red

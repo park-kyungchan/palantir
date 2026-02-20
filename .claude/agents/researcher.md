@@ -29,6 +29,7 @@ tools:
 memory: project
 maxTurns: 20
 color: yellow
+model: sonnet
 hooks:
   PreToolUse:
     - matcher: "WebSearch|WebFetch"

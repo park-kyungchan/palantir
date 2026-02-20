@@ -69,6 +69,12 @@ MOVE to resources/methodology.md:
 - Evidence template code block
 - Full PASS/CONDITIONAL_PASS/FAIL criteria with prose descriptions
 
+## Verified References Directory (2026-02-20)
+- `~/.claude/references/` — empirically verified findings only
+- `task-api-verified.md` — Task API field visibility, agent tool enforcement, model inheritance, metadata write-only behavior
+- Old `memory/ref_*.md` + `CC_SECTIONS.md` — all DEPRECATED (overwritten with single-line notice)
+- Do NOT reference `memory/ref_*.md` or `CC_SECTIONS.md` in any future edits — they are tombstoned
+
 ## Content Routing — execution-infra Pattern
 
 KEEP in SKILL.md (operational constraints):

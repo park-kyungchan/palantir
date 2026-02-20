@@ -15,6 +15,7 @@ tools:
   - Write
   - Bash
   - mcp__sequential-thinking__sequentialthinking
+model: sonnet
 memory: project
 maxTurns: 50
 color: green

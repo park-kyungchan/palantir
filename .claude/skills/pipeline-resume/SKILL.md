@@ -15,7 +15,7 @@ description: >-
   DPS needs PT current_phase, tier, phase_signals, and git branch.
   Exclude completed task details and inter-phase output content.
 user-invocable: true
-disable-model-invocation: false
+disable-model-invocation: true
 argument-hint: "[resume-from-phase]"
 ---
 
