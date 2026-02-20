@@ -4,8 +4,11 @@ description: >-
   Verifies CC native implementability per requirement by checking
   cc-reference cache or spawning claude-code-guide for gaps.
   Scores each requirement as feasible, partial, or infeasible.
-  Terminal pre-design skill. Use after pre-design-validate PASS
-  when requirements are complete but CC feasibility unconfirmed.
+  Applies CC constraint pre-check (concurrent subagent limit,
+  output cap, MEMORY.md limit, hook timeout, tool list, frontmatter
+  fields) before per-requirement feasibility scoring. Terminal
+  pre-design skill. Use after pre-design-validate PASS when
+  requirements are complete but CC feasibility unconfirmed.
   Reads from pre-design-validate validated requirements. Produces
   feasibility verdict for design-architecture on PASS, or routes
   back to pre-design-brainstorm for scope re-negotiation on FAIL.
@@ -65,6 +68,21 @@ All infeasible → Terminal FAIL → AskUserQuestion
 
 ## Methodology
 For detailed DPS, scoring rubric, and alternatives: Read `resources/methodology.md`
+
+### Step 0: CC Constraint Pre-Check (MANDATORY)
+Before assessing any requirement, validate against known CC hard limits:
+
+| Constraint | Limit | Check Method |
+|-----------|-------|-------------|
+| Concurrent subagents | max 7 | Count spawns in requirement |
+| Subagent output injection | 30K chars | Estimate output size |
+| MEMORY.md lines | 200L (BUG-005) | Count proposed additions |
+| Hook timeout | per-hook configurable | Check DPS hook specs |
+| Agent tools list | CC-native only | Grep for non-native tool names |
+| Skill frontmatter | CC-native fields only | ref_skills.md §2 field list |
+
+For each constraint violation found: mark requirement as `partial` with constraint as the limiting factor.
+No CC version detection available natively — use capability-detection: attempt operation, observe result.
 
 Summary:
 1. **Extract** technical requirements (file ops, shell, agents, MCP, hooks, skills)

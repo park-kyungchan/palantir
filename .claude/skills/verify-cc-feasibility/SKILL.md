@@ -1,25 +1,25 @@
 ---
 name: verify-cc-feasibility
 description: >-
-  Validates CC native field compliance via cc-reference cache.
-  Checks frontmatter fields against CC native field lists.
-  Terminal verify stage: fourth of four sequential stages,
-  gates delivery pipeline. Use after verify-quality PASS or
-  after skill/agent creation or frontmatter modification. Reads
-  from verify-quality routing quality confirmation and
-  execution-infra frontmatter changes. Produces native
-  compliance per file for delivery-pipeline on all PASS, or
-  routes back to execution-infra on FAIL. On FAIL, routes file
-  path + non-native field name + recommended removal to
-  execution-infra. Validates skills against skill native field
+  CC-INFRA-ONLY: validates CC native field compliance for .claude/
+  INFRA files via cc-reference cache. For general CC feasibility
+  research on non-INFRA artifacts, use research-cc-verify instead.
+  Checks .claude/ frontmatter fields against CC native field lists.
+  Terminal verify stage: fourth of four sequential stages, gates
+  delivery pipeline. Use after verify-quality PASS or after .claude/
+  skill/agent creation or frontmatter modification. Reads from
+  verify-quality routing quality confirmation and execution-infra
+  frontmatter changes. Produces native compliance per file for
+  delivery-pipeline on all PASS, or routes back to execution-infra
+  on FAIL. On FAIL, routes file path + non-native field name +
+  recommended removal. Validates skills against skill native field
   table, agents against agent native field table. Primary source:
-  cc-reference cache (memory/cc-reference/native-fields.md).
-  Supplementary: claude-code-guide if cache stale >30 days.
-  TRIVIAL: Lead-direct on 1-2 files. STANDARD: 1 analyst
-  maxTurns 25. COMPLEX: 1 analyst + claude-code-guide for
-  unknown fields. DPS context: extracted frontmatter fields +
-  cc-reference native field tables. Exclude L2 body content,
-  non-.claude/ source files, and historical field rationale.
+  cc-reference cache. Supplementary: claude-code-guide if cache
+  stale >30 days. TRIVIAL: Lead-direct on 1-2 files. STANDARD:
+  1 analyst maxTurns 25. COMPLEX: 1 analyst + claude-code-guide
+  for unknown fields. DPS context: extracted frontmatter fields +
+  cc-reference native field tables. Exclude L2 body content and
+  non-.claude/ source files.
 user-invocable: true
 disable-model-invocation: true
 ---

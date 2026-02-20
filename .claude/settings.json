@@ -164,6 +164,34 @@
         ]
       },
       {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/ce-pre-read-section-anchor.sh",
+            "timeout": 5,
+            "statusMessage": "CE: Injecting section map for large .md files"
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/ce-pre-grep-block.sh",
+            "timeout": 5,
+            "statusMessage": "CE: Blocking grep without path parameter"
+          },
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/ce-pre-grep-optimize.sh",
+            "timeout": 5,
+            "statusMessage": "CE: Checking grep parameters for context efficiency"
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
@@ -171,6 +199,19 @@
             "command": "/home/palantir/.claude/hooks/budget-monitor.sh",
             "timeout": 5,
             "statusMessage": "Monitoring tool budget"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/palantir/.claude/hooks/ce-post-grep-guard.sh",
+            "timeout": 5,
+            "statusMessage": "CE: Checking grep result size"
           }
         ]
       }
@@ -211,6 +252,5 @@
   "promptSuggestionEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "teammateMode": "tmux",
-  "model": "opus",
-  "effortLevel": "high"
+  "model": "sonnet"
 }
