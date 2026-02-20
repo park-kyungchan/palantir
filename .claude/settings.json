@@ -229,13 +229,8 @@
       }
     ]
   },
-  "enabledPlugins": {
-    "superpowers-developing-for-claude-code@superpowers-marketplace": true,
-    "superpowers@superpowers-marketplace": true,
-    "everything-claude-code@everything-claude-code": true
-  },
+  "enabledPlugins": {},
   "alwaysThinkingEnabled": true,
   "promptSuggestionEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "model": "sonnet"
+  "skipDangerousModePermissionPrompt": true
 }
