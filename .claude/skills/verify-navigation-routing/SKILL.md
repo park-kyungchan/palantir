@@ -5,7 +5,6 @@ description: >
   correct route loads (URL matches, page renders). Tests all navigation links
   end-to-end. Requires dev server. SRP: navigation routing correctness only.
   Use at P7 after implementation to confirm all routes are accessible.
-domain: verify
 model: sonnet
 user-invocable: true
 disable-model-invocation: true

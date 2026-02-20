@@ -1,19 +1,19 @@
 ---
 name: doing-like-agent-teams
-description: >
-  Core pipeline execution methodology. Lead orchestrates P0-P8 wave-by-wave
-  using background subagents (run_in_background:true + context:fork).
-  File-based coordination via persistent work directory (WORK_DIR).
-  PT as compaction-resilient context source for Lead and subagents.
-  Coordinator = synthesis-only (N→1). COMPLEX tier always.
-  Quality top priority over speed.
-  WHEN: any multi-step work needing structured pipeline execution.
+description: >-
+  Single-session pipeline execution methodology. Lead orchestrates P0-P8 phases
+  wave-by-wave using background subagents (run_in_background:true + context:fork +
+  model:sonnet). File-based coordination via persistent WORK_DIR. PT =
+  compaction-resilient context source. Coordinator = synthesis-only (N→1).
+  WHEN: any multi-step work requiring structured pipeline execution (P0-P8).
+  Reads from: user task scope + requirements (new run) or PT + WORK_DIR (resume).
+  Produces: WORK_DIR output tree, PT phase-state updates, session-summary.md.
+  On FAIL: D12 escalation (L0 retry → L4 human), record in PT ## Escalations.
+  DPS needs: PT_ID + OUTPUT_PATH + phase context. Coordinator: PT_ID + file paths.
+  Exclude: embedding output content in DPS — pass OUTPUT_PATH references only.
+  Constraint: COMPLEX tier always (P0-P8, no shortcuts). Quality over speed.
+user-invocable: true
 disable-model-invocation: false
-context: fork
-agent: coordinator
-domain: orchestration
-input_from: user (task scope + requirements)
-output_to: Lead main context (synthesis summary + output file paths)
 ---
 
 # Doing Like Agent Teams

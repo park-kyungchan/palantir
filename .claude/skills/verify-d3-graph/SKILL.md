@@ -5,7 +5,6 @@ description: >
   SVG renders with expected node and edge counts via JavaScript DOM queries. Tests
   TaxonomyGraph and BlueprintDependencyGraph. Requires dev server. SRP: D3 SVG
   graph structure validation only.
-domain: verify
 model: sonnet
 user-invocable: true
 disable-model-invocation: true

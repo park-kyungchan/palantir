@@ -5,7 +5,7 @@ description: >-
   scoring. Detects configuration drift, orphaned files, and
   cross-component inconsistencies. Use after .claude/
   modification, pipeline completion, or periodic health check.
-  AI can auto-invoke. Reads from .claude/ directory including
+  Reads from .claude/ directory including
   agents, skills, settings.json, hooks, and CLAUDE.md. Produces
   health report with scores, orphan count, drift count, and
   weighted health score percentage for self-diagnose category

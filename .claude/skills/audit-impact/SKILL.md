@@ -9,8 +9,10 @@ description: >-
   research-codebase file inventory, research-external constraints,
   and design-risk risk matrix. Produces impact summary and
   propagation analysis for research-coordinator, and Shift-Left
-  predicted paths for execution-impact. On FAIL, Lead applies
-  D12 escalation ladder. DPS needs research-codebase file
+  predicted paths for execution-impact. On FAIL (risk assessment
+  incomplete or severity miscategorization), Lead applies L0 retry
+  with narrower scope; 2+ failures escalate to L2. DPS needs
+  research-codebase file
   inventory and dependency patterns, research-external propagation
   constraints, and design-risk risk matrix. Exclude relational
   integrity data, behavioral predictions, and pre-design history.

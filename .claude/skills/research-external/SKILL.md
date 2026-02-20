@@ -1,7 +1,7 @@
 ---
 name: research-external
 description: >-
-  Collects community patterns via WebSearch and tavily. Filters
+  Collects community patterns via tavily MCP and WebSearch. Filters
   for verified and reproducible information, cross-references
   with official docs. Tags CC-native behavioral claims from
   community sources for shift-left verification. Parallel with

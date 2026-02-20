@@ -5,7 +5,6 @@ description: >
   Click each, verify state changes (text, class, URL). Reports element count tested
   and any failures. Requires dev server. Use at P7 to verify interactive components.
   SRP: interactive element testing only. Pair with verify-page-load for render check.
-domain: verify
 model: sonnet
 user-invocable: true
 disable-model-invocation: true

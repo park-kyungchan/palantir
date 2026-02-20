@@ -5,7 +5,6 @@ description: >
   read accessibility tree. Returns PASS/FAIL with element count, screenshot ID, and
   page title. Requires dev server running at base_url. Use at P7 for visual page
   render verification. Lead-direct or via browser-verifier agent.
-domain: verify
 model: sonnet
 user-invocable: true
 disable-model-invocation: true

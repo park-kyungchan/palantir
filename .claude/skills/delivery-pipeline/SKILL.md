@@ -1,7 +1,7 @@
 ---
 name: delivery-pipeline
 description: >-
-  [P8·Cross-Cutting·Terminal] Delivers pipeline results via
+  Delivers pipeline results via
   structured git commit, MEMORY.md archive, and PT completion.
   User confirmation required before git commit. Pipeline terminal
   skill. Use after verify domain complete with all 4 stages PASS

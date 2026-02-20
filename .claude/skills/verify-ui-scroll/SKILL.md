@@ -5,7 +5,6 @@ description: >
   position to verify scroll-triggered animations (RevealOnScroll, StaggerChildren,
   progress bar). Reports which sections appeared on scroll. Requires dev server.
   SRP: scroll behavior and entrance animations only.
-domain: verify
 model: sonnet
 user-invocable: true
 disable-model-invocation: true

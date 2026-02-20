@@ -9,8 +9,9 @@ description: >-
   patterns and file inventory, research-external community
   constraints, and design-architecture component structure.
   Produces dependency summary and DAG with hotspot analysis for
-  research-coordinator. On FAIL, Lead applies D12 escalation
-  ladder. DPS needs research-codebase file inventory and local
+  research-coordinator. On FAIL (dependency graph incomplete or
+  circular references detected), Lead applies L0 retry with narrower
+  scope; 2+ failures escalate to L2. DPS needs research-codebase file inventory and local
   patterns, research-external dependency constraints, and
   design-architecture component list. Exclude other audit
   dimension results (behavioral/relational/impact) and

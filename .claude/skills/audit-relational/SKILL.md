@@ -9,8 +9,10 @@ description: >-
   file inventory, research-external pattern constraints, and
   design-interface API contracts. Produces relationship summary
   and integrity report with link evidence for
-  research-coordinator. On FAIL, Lead applies D12 escalation
-  ladder. DPS needs research-codebase file inventory and naming
+  research-coordinator. On FAIL (cross-component contract gaps or
+  orphaned interfaces), Lead applies L0 retry with narrower scope;
+  2+ failures escalate to L2. DPS needs research-codebase file
+  inventory and naming
   conventions, research-external relationship constraints, and
   design-interface API contracts. Exclude static dependency
   graph, behavioral predictions, and pre-design conversation

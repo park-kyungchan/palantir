@@ -9,8 +9,10 @@ description: >-
   existing behaviors, research-external known issues and
   workarounds, and design-architecture change scope. Produces
   behavior change summary and prediction report with risk matrix
-  for research-coordinator. On FAIL, Lead applies D12 escalation
-  ladder. DPS needs research-codebase behavior patterns and
+  for research-coordinator. On FAIL (state machine coverage below
+  threshold or missing edge cases), Lead applies L0 retry with
+  narrower scope; 2+ failures escalate to L2. DPS needs
+  research-codebase behavior patterns and
   file:line evidence, research-external known issues, and
   design-architecture change scope. Exclude other audit dimension
   results (static/relational/impact) and pre-design history.
