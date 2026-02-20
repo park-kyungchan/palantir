@@ -7,7 +7,7 @@
 | Level | Name | Trigger | Action | Context Cost |
 |---|---|---|---|---|
 | L0 | Retry | Tool error, transient failure | Re-invoke same agent, same scope | Minimal |
-| L1 | Nudge | Incomplete output, partial results | SendMessage with refined instructions | Low (~200 tokens) |
+| L1 | Nudge | Incomplete output, partial results | Respawn with refined DPS instructions targeting gaps | Low (~200 tokens) |
 | L2 | Respawn | Agent exhausted turns, systematic failure | Kill agent → spawn fresh with refined DPS | Medium (new agent context) |
 | L3 | Restructure | Multi-agent conflict, scope overlap | Modify task partition, reassign | High (replanning) |
 | L4 | Escalate | 3+ L2 failures, strategic ambiguity | AskUserQuestion with options | Blocks pipeline |
@@ -18,7 +18,7 @@
 IF tool_error AND retry_count < 2:
   → L0: Retry same agent
 ELIF partial_output AND missing_sections ≤ 2:
-  → L1: Nudge with "complete sections: {list}"
+  → L1: Respawn with DPS targeting "complete sections: {list}"
 ELIF agent_exhausted_turns OR output_quality < threshold:
   → L2: Respawn with:
     - Narrowed scope (if original was too broad)
@@ -52,5 +52,5 @@ route_to: "{next skill or Lead}"
 > [!IMPORTANT]
 > For Lead autonomous operation (no user), L4 escalation is NOT available. Instead:
 > - L4 → mark pipeline as BLOCKED
-> - Write failure report to `tasks/{team}/pipeline-blocked.md`
+> - Write failure report to `tasks/pipeline-blocked.md`
 > - Stop pipeline progression — do NOT guess user intent

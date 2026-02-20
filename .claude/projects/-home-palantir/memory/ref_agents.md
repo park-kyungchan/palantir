@@ -49,9 +49,9 @@ You are a code reviewer. Never modify files, only analyze and report.
 | `tools` | list | no | all | Tool allowlist. If specified, agent gets ONLY these tools. If omitted, inherits ALL tools from parent. |
 | `disallowedTools` | list | no | none | Tool denylist. Removed from inherited or specified list. If both `tools` + `disallowedTools` specified, `tools` wins. |
 | `model` | enum | no | inherit | Values: `sonnet`, `opus`, `haiku`, `inherit`. `inherit` = same model as parent session. |
-| `permissionMode` | enum | no | default | See table below. |
+| `permissionMode` | enum | no | default | See table below. NOTE: `delegate` mode is AT-only (deprecated). Always use `default`. |
 | `maxTurns` | number | no | unlimited | Max agentic loop iterations before agent stops. |
-| `skills` | list | no | none | **Subagents only.** FULL L1+L2 content injected at startup. Subagents do NOT inherit project skills automatically — must list explicitly. **Teammates do NOT need this field**: Teammates auto-load ALL project skills' L1 (same as Lead session). If `skills` is set on a Teammate, it causes L1 double-load (auto + explicit) and wastes context budget. |
+| `skills` | list | no | none | FULL L1+L2 content injected at startup for listed skills. Subagents do NOT inherit project skills automatically — must list explicitly if needed. |
 | `mcpServers` | object | no | none | MCP servers for this agent. Each entry: server name (referencing pre-configured) or inline definition. |
 | `hooks` | object | no | none | Agent-scoped lifecycle hooks. Augments (does not override) global hooks. |
 | `memory` | enum | no | (omit) | Values: `user`, `project`, `local`. Omit field entirely to disable memory. |
@@ -64,10 +64,9 @@ You are a code reviewer. Never modify files, only analyze and report.
 - `Task` without parentheses: allow spawning any subagent type
 - Omitting `Task` entirely: agent cannot spawn subagents
 
-**VERIFIED 2026-02-19 (WSL2 tmux, actual spawn test)**:
-- A Teammate that has `Task` in its `tools` CAN call `Task({subagent_type: "analyst"})` to spawn a custom `.claude/agents/analyst.md` as a regular subagent (no `team_name`).
+**VERIFIED 2026-02-19 (subagent spawn test)**:
+- A subagent that has `Task` in its `tools` CAN call `Task({subagent_type: "analyst"})` to spawn a custom `.claude/agents/analyst.md` as a nested subagent.
 - The spawned agent loads its `.md` frontmatter correctly — tools, model, body all applied as defined.
-- The "No nested teams" official docs restriction = prohibits `TeamCreate` + `Task(team_name=X)` only. It does NOT block `Task(subagent_type=Y)` without `team_name`.
 - Built-in `general-purpose` has all tools including `Task` → can act as mid-tier orchestrator spawning custom agents.
 - **Spawn capability matrix (verified)**:
 
@@ -88,10 +87,10 @@ To enable a custom agent to spawn subagents: add `Task` or `Task(allowed_type)` 
 
 | Value | Behavior |
 |-------|----------|
-| default | Normal permission flow (inherits project settings) |
+| default | Normal permission flow (inherits project settings) — **use this** |
 | acceptEdits | Auto-accept file edits, still ask for Bash |
 | dontAsk | Auto-deny permission prompts (explicitly allowed tools still work) |
-| delegate | Coordination-only mode (agent teams only) |
+| delegate | Coordination-only mode — Agent Teams only, deprecated in v14 |
 | bypassPermissions | Skip all permission checks (dangerous) |
 | plan | Read-only + plan-only. WARNING: blocks MCP tools (BUG-001) |
 
@@ -130,19 +129,20 @@ Lines 201+ silently truncated.
 
 ---
 
-## 4. Subagent vs Agent Teams Teammate
+## 4. Subagent Properties (v14)
 
-| Property | Subagent | Agent Teams Teammate |
-|----------|----------|---------------------|
-| **Context** | Independent (separate from main) | Independent (own window) |
-| **Lifetime** | Terminates when task completes | Persists; can go idle; explicit shutdown |
-| **Communication** | Returns summary to parent | Inbox messaging + shared task list |
-| **Concurrency** | Up to 7 simultaneous | No hard limit (cost is practical limit) |
-| **Result delivery** | Up to 30,000 chars injected; excess to disk | SendMessage text; no injection |
-| **Context inheritance** | No parent conversation | No lead conversation |
-| **Shared context** | CLAUDE.md, MCP servers, skills | CLAUDE.md, MCP servers, skills |
-| **Cost** | Lower (results summarized) | Higher (full Claude instance each) |
-| **Best for** | Focused tasks, result-only | Complex work needing discussion |
+In v14 single-session architecture, all spawned agents are subagents. Agent Teams (Teammates) are removed.
+
+| Property | Value |
+|----------|-------|
+| **Context** | Independent (isolated from Lead conversation) |
+| **Lifetime** | Terminates when task completes |
+| **Communication** | Writes output files; Lead reads micro-signals |
+| **Concurrency** | Up to 7 simultaneous (`run_in_background:true`) |
+| **Result delivery** | Up to 30,000 chars injected; excess written to disk with file path reference |
+| **Context inheritance** | No parent conversation; receives CLAUDE.md + task prompt |
+| **Cost** | ~200K tokens per subagent solo; 3 subagents ≈ 440K total |
+| **Spawn params** | `run_in_background:true`, `context:fork`, `model:sonnet` (always) |
 
 ### Built-in Subagent Types
 
@@ -169,40 +169,41 @@ Background subagent outputs truncated to 30,000 characters. Full output written 
 
 ---
 
-## 5. Our Usage Pattern (v2 — 2026-02-19)
+## 5. Our Usage Pattern (v14 — 2026-02-20)
 
-> 7 agents total (v2 rebuild): `analyst`, `researcher`, `coordinator` ★NEW, `implementer`, `infra-implementer`, `delivery-agent`, `pt-manager`.
-> 
+> 7 agents total: `analyst`, `researcher`, `coordinator`, `implementer`, `infra-implementer`, `delivery-agent`, `pt-manager`.
+> All run as subagents (`run_in_background:true`, `context:fork`, `model:sonnet`).
+>
 > **Design principles:**
-> - Teammate agents: `skills` field REMOVED (Teammates auto-load all project skills' L1)
-> - Subagent agents (pt-manager, delivery-agent): `skills` field KEPT (Subagents need explicit)
+> - All agents are subagents — no Teammate/AT distinction
+> - `skills` field: only for agents that need explicit skill injection (pt-manager, delivery-agent)
 > - Coordinator: `Task(analyst, researcher)` for Sub-Orchestrator pattern
 > - Researcher: MCP-only enforcement via dual hooks (WebSearch/WebFetch blocked)
-> - Body minimized: Completion Protocol moved to CLAUDE.md, body = Core Rules only
+> - Body minimized: Core Rules only; Completion Protocol in CLAUDE.md
 
 | Field | Agents using it | Notes |
 |-------|----------------|-------|
 | `name` + `description` + `tools` + `maxTurns` + `color` | All 7 | Base fields present in every agent |
-| `skills` | **2/7** (pt-manager, delivery-agent only) | Subagent-only field. Removed from Teammate agents to prevent L1 double-load. |
-| `memory: project` | 5 (analyst, researcher, coordinator, implementer, infra-implementer) | Auto-adds Read/Write/Edit to tools. Teammates only. |
+| `skills` | **2/7** (pt-manager, delivery-agent) | Subagents need explicit skill injection |
+| `memory: project` | 5 (analyst, researcher, coordinator, implementer, infra-implementer) | Auto-adds Read/Write/Edit to tools |
 | `model: haiku` | 2 (pt-manager, delivery-agent) | Others inherit (sonnet from Lead) |
 | `hooks` | **4/7** | implementer + infra-impl: PostToolUse/Failure (file-change). researcher: PreToolUse (WebSearch block) + PostToolUseFailure (MCP stop). |
 | `Task` in tools | **1/7** (coordinator) | `Task(analyst, researcher)` — Sub-Orchestrator pattern. |
-| `permissionMode` | 0 | Not used (BUG #25037 — delegate mode breaks teammates) |
+| `permissionMode` | 0 | Not used; always spawn with `mode: "default"` |
 | `mcpServers` | 0 | Not used; MCP configured at project level in `.claude.json` |
 | `disallowedTools` | 0 | Not used; explicit `tools` allowlist preferred |
 
-### Agent Taxonomy (v2)
+### Agent Taxonomy (v14)
 
-| Agent | Role | Mode | Task tool | skills | hooks |
-|-------|------|------|-----------|--------|-------|
-| `analyst` | Dimension analysis worker | Teammate | ❌ | ❌ | ❌ |
-| `researcher` | MCP-powered research worker | Teammate | ❌ | ❌ | ✅ MCP enforce |
-| `coordinator` ★ | Sub-Orchestrator / synthesis | Teammate | ✅ `Task(analyst, researcher)` | ❌ | ❌ |
-| `implementer` | Source code implementation | Teammate | ❌ | ❌ | ✅ file-change |
-| `infra-implementer` | .claude/ file implementation | Teammate | ❌ | ❌ | ✅ file-change |
-| `pt-manager` | Task lifecycle (fork) | Subagent | Task API (create/update) | ✅ | ❌ |
-| `delivery-agent` | Terminal delivery (fork) | Subagent | Task API (update only) | ✅ | ❌ |
+| Agent | Role | Task tool | skills | hooks |
+|-------|------|-----------|--------|-------|
+| `analyst` | Dimension analysis worker | ❌ | ❌ | ❌ |
+| `researcher` | MCP-powered research worker | ❌ | ❌ | ✅ MCP enforce |
+| `coordinator` | Sub-Orchestrator / synthesis | ✅ `Task(analyst, researcher)` | ❌ | ❌ |
+| `implementer` | Source code implementation | ❌ | ❌ | ✅ file-change |
+| `infra-implementer` | .claude/ file implementation | ❌ | ❌ | ✅ file-change |
+| `pt-manager` | Task lifecycle (fork) | Task API (create/update) | ✅ | ❌ |
+| `delivery-agent` | Terminal delivery (fork) | Task API (update only) | ✅ | ❌ |
 
 ### Researcher MCP Enforcement (v2)
 
@@ -215,33 +216,27 @@ Background subagent outputs truncated to 30,000 characters. Full output written 
 - `Stop` hooks in agent frontmatter auto-convert to `SubagentStop` events (confirmed)
 - Agent-scoped hooks AUGMENT global hooks (both fire for same event). Cleaned up when agent finishes.
 - `memory` enabled → Read, Write, Edit auto-added to tools (bypasses explicit `tools` field — partial isolation break)
-- **Coordinator Sub-Orchestrator**: spawns analyst/researcher as subagents (not teammates). No nested teams. Subagent result ≤30K chars injected into coordinator's context.
+- **Coordinator Sub-Orchestrator**: spawns analyst/researcher as nested subagents. Subagent result ≤30K chars injected into coordinator's context.
 
 ---
 
-## 6. Agent Communication Protocol (Custom Convention)
+## 6. Agent Communication Protocol (v14)
 
-Our agents use a dual-mode completion protocol defined in CLAUDE.md (Four-Channel Handoff Protocol). Agent .md body contains role-specific Core Rules only — Completion Protocol is NOT duplicated in agent body.
+All agents use the Two-Channel Handoff Protocol defined in CLAUDE.md [D17]. Agent .md body contains role-specific Core Rules only.
 
-### CC Native Ground Truth
+### CC Native Coordination (v14)
 
-Only 2 coordination channels exist:
-1. **Task JSON files** (`~/.claude/tasks/{team-name}/N.json`) — state: pending → in_progress → completed
-2. **Inbox JSON** (`~/.claude/teams/{team-name}/inboxes/{agent-id}.json`) — SendMessage writes entries
+Only 2 coordination mechanisms used:
+1. **Task JSON files** (Task API: TaskCreate/TaskUpdate/TaskGet) — state: pending → in_progress → completed
+2. **Work Directory files** — subagents write output; Lead reads micro-signals (Ch3) then Ch2 files on ENFORCE
 
-No shared memory. No sockets/pipes/IPC. Everything is file I/O. "Automatic message delivery" = inbox check on each API turn, not OS push.
+No inbox. No SendMessage. No P2P messaging. Everything is file I/O.
 
-### Our Dual-Mode Protocol
+### Completion Protocol
 
-| Aspect | Local Mode (P0-P1) | Team Mode (P2+) |
-|--------|-------------------|-----------------|
-| Detection | SendMessage NOT available | SendMessage available |
-| Result delivery | Write to disk path from DPS | TaskUpdate + SendMessage to Lead |
-| Large outputs | Full output in disk file | Disk file + path reference in SendMessage |
-| Failure reporting | Error in disk output | FAIL status via SendMessage |
-| Completion signal | Parent reads via TaskOutput | Idle notification auto-sent to Lead |
-
-### Agent Categories
-
-- **Dual-mode** (5 agents): analyst, researcher, coordinator, implementer, infra-implementer — can run in both Local and Team mode
-- **Subagent-only** (2 agents): delivery-agent, pt-manager — run as context:fork subagents
+| Aspect | All Subagents (v14) |
+|--------|---------------------|
+| Result delivery | Write to Work Directory path specified in DPS |
+| Large outputs | Full output in disk file; micro-signal contains file path |
+| Failure reporting | FAIL micro-signal + error details in output file |
+| Completion signal | Lead receives auto-notification (run_in_background) |

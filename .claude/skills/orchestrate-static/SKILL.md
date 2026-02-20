@@ -8,7 +8,7 @@ description: >-
   plan-verify-coordinator complete with all PASS. Reads from
   plan-verify-coordinator verified plan L3 via $ARGUMENTS.
   Produces task-agent matrix with splits count and assignment
-  rationale for orchestrate-coordinator. Model:sonnet for all spawns. MCP tasks require general-purpose subagent_type. Teammates when P2P coordination needed.
+  rationale for orchestrate-coordinator. Model:sonnet for all spawns. MCP tasks require general-purpose subagent_type. Subagents for all spawns.
   On FAIL, Lead applies D12 escalation. DPS needs plan-verify-coordinator verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: true
 disable-model-invocation: true
@@ -23,11 +23,11 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-Runs in P2+ Team mode only. See `.claude/resources/phase-aware-execution.md` for team mode routing and compaction recovery.
+Runs in Two-Channel protocol only. See `.claude/resources/phase-aware-execution.md` for team mode routing and compaction recovery.
 
-- **Communication**: Four-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + Ch4 P2P to consumers).
+- **Communication**: Two-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + file-based output).
 - **Input**: Read plan-verify-coordinator L3 output directly from `$ARGUMENTS` path.
-- **File ownership**: Only modify `tasks/{team}/p5-orch-static.md`. No overlapping edits with parallel agents.
+- **File ownership**: Only modify `tasks/{work_dir}/p5-orch-static.md`. No overlapping edits with parallel agents.
 
 ## Decision Points
 
@@ -86,7 +86,7 @@ See `.claude/resources/failure-escalation-ladder.md` for D12 escalation levels (
 | Failure Type | Level | Action |
 |---|---|---|
 | Plan L3 path empty or file missing | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
-| Assignment incomplete or capability gap ambiguous | L1 Nudge | SendMessage with refined capability criteria |
+| Assignment incomplete or capability gap ambiguous | L1 Nudge | Respawn with refined DPS targeting refined capability criteria |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Unassignable task that cannot be split | L3 Restructure | Route to orchestrate-coordinator as architectural blocker |
 | 3+ L2 failures or scope beyond defined agent profiles | L4 Escalate | AskUserQuestion with situation + options |
@@ -156,7 +156,7 @@ assignments:
     files: []
     confidence: HIGH|MEDIUM|LOW
 pt_signal: "metadata.phase_signals.p5_orchestrate_static"
-signal_format: "PASS|tasks:{N}|agents:{N}|splits:{N}|ref:tasks/{team}/p5-orch-static.md"
+signal_format: "PASS|tasks:{N}|agents:{N}|splits:{N}|ref:tasks/{work_dir}/p5-orch-static.md"
 ```
 
 ### L2

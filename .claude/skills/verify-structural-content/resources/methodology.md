@@ -187,7 +187,7 @@ Budget: Context field ≤ 30% of analyst effective context.
 
 **Expected Output**: L1 YAML with total_files, structure_pass, content_pass, findings[]. L2 per-file combined integrity report with structure score + content score.
 
-**Delivery**: Micro-signal to Lead: `"{STATUS}|files:{total_files}|pass:{structure_pass}|ref:tasks/{team}/p7-structural-content.md"`.
+**Delivery**: Micro-signal to Lead: `"{STATUS}|files:{total_files}|pass:{structure_pass}|ref:tasks/{work_dir}/p7-structural-content.md"`.
 
 ---
 

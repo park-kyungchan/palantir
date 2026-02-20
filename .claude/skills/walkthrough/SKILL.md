@@ -272,7 +272,7 @@ Before finishing, verify:
 
 ## Failure Handling
 
-Walkthrough is a user-facing utility skill. Lead applies escalation directly (no teammate involved).
+Walkthrough is a user-facing utility skill. Lead applies escalation directly (no subagent involved).
 
 | Failure Type | Level | Action |
 |---|---|---|
@@ -283,7 +283,7 @@ Walkthrough is a user-facing utility skill. Lead applies escalation directly (no
 
 ## Pipeline Protocol
 
-Walkthrough is a user-facing utility skill. D17 3-channel handoff protocol is not applicable — walkthrough does not produce pipeline artifacts, PT signals, or SendMessage micro-signals. No upstream/downstream skill dependencies. No PT required.
+Walkthrough is a user-facing utility skill. D17 3-channel handoff protocol is not applicable — walkthrough does not produce pipeline artifacts, PT signals, or file-based signal micro-signals. No upstream/downstream skill dependencies. No PT required.
 
 ## References
 

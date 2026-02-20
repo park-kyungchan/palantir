@@ -87,7 +87,7 @@ For each high-RPN risk: mitigation strategy, detection mechanism, fallback plan.
 | Failure Type | Level | Action |
 |---|---|---|
 | Analyst tool error, timeout | L0 Retry | Re-invoke same analyst, same DPS |
-| RPN scoring inconsistency or superficial analysis | L1 Nudge | SendMessage with calibration guide and re-scoring request |
+| RPN scoring inconsistency or superficial analysis | L1 Nudge | Respawn with refined DPS targeting calibration guide and re-scoring request |
 | Analyst exhausted turns | L2 Respawn | Kill → fresh analyst focused on critical-path components only |
 | Critical security finding requiring architecture restructure | L3 Restructure | Route to design-architecture with vulnerability details |
 | Unmitigable architectural risk after L0-L3 | L4 Escalate | AskUserQuestion: risk summary + redesign vs accept options |
@@ -118,7 +118,7 @@ For each high-RPN risk: mitigation strategy, detection mechanism, fallback plan.
 | research-codebase | Risk areas needing codebase validation | Always |
 | research-external | Risk areas for community pattern validation | P2 Wave 1 |
 
-> D17 Note: P0-P1 local mode — Lead reads via TaskOutput. 4-channel protocol applies P2+ only.
+> D17 Note: P0-P1 local mode — Lead reads via TaskOutput. 2-channel protocol applies P2+ only.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate

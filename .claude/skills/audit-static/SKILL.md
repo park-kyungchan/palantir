@@ -74,7 +74,7 @@ For DPS construction guide: Read `~/.claude/resources/dps-construction-guide.md`
 - **Context EXCLUDE**: Other audit dimensions; pre-design history; full pipeline state.
 - **Task**: "Map all import/reference chains within assigned directories. Build DAG with edge weights. Identify hotspots (>3 connections). Report with file:line evidence."
 - **Constraints**: Read-only (analyst). Scope to assigned dirs only. maxTurns: 25.
-- **Delivery**: `PASS|deps:{N}|hotspots:{N}|ref:tasks/{team}/p2-audit-static.md`
+- **Delivery**: `PASS|deps:{N}|hotspots:{N}|ref:tasks/{work_dir}/p2-audit-static.md`
 
 ## Failure Handling
 For D12 escalation ladder: Read `~/.claude/resources/failure-escalation-ladder.md`
@@ -104,7 +104,7 @@ Read-only audit. Document broken imports as findings, do not fix.
 
 ## Phase-Aware Execution
 For shared protocol: Read `~/.claude/resources/phase-aware-execution.md`
-Runs in P2 Team mode. Writes to `tasks/{team}/p2-audit-static.md`. Micro-signal: `PASS|deps:{N}|hotspots:{N}|ref:...`
+Runs in P2 Team mode. Writes to `tasks/{work_dir}/p2-audit-static.md`. Micro-signal: `PASS|deps:{N}|hotspots:{N}|ref:...`
 
 ## Transitions
 
@@ -152,7 +152,7 @@ hotspots:
     fan_out: 0
     risk: HIGH|MEDIUM|LOW
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|deps:{N}|hotspots:{N}|ref:tasks/{team}/p2-audit-static.md"
+signal_format: "PASS|deps:{N}|hotspots:{N}|ref:tasks/{work_dir}/p2-audit-static.md"
 ```
 
 ### L2

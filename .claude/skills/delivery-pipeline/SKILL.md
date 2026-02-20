@@ -42,7 +42,7 @@ Before any delivery action:
 > delivery-agent has `memory: none` — Lead MUST include verify verdict summary in the spawn prompt.
 
 ### 2. Consolidate Pipeline Results
-Gather outputs from all completed pipeline domains (pre-design through execution). Read Ch2 output files from `tasks/{team}/` directly.
+Gather outputs from all completed pipeline domains (pre-design through execution). Read Ch2 output files from `tasks/{work_dir}/` directly.
 
 ### 3. Generate Commit Message
 Build structured commit message using conventional commit format (`type(scope): summary`). Use `$ARGUMENTS` as commit title if provided; otherwise synthesize from PT description and key decisions.
@@ -96,7 +96,7 @@ Before spawning delivery-agent, Lead must verify all required checks. If any fai
 | Failure Type | Level | Action |
 |---|---|---|
 | Pre-commit hook failure (lint, format) | L0 Retry | Auto-fix via hook feedback, re-attempt commit |
-| MEMORY.md archive format error | L1 Nudge | SendMessage with corrected archive format |
+| MEMORY.md archive format error | L1 Nudge | Respawn with refined DPS targeting corrected archive format |
 | delivery-agent exhausted turns or commit tool failure | L2 Respawn | Kill → fresh delivery-agent with refined DPS |
 | PT metadata stale or verify status contradicted | L3 Restructure | Re-run verify stage before delivery |
 | User rejects commit or strategic scope concern | L4 Escalate | AskUserQuestion with situation + options |
@@ -120,7 +120,7 @@ Before spawning delivery-agent, Lead must verify all required checks. If any fai
 
 **DO NOT: Archive Implementation Details in MEMORY.md** — session entries are 3-5 lines max; code snippets, diffs, and agent logs belong in topic files, not MEMORY.md.
 
-**DO NOT: Call TeamDelete Before PT Completion** — correct order: `TaskUpdate(PT, completed)` → agent shutdown → `TeamDelete`. Reversed order makes PT unreachable. (Incident: 2026-02-17)
+**DO NOT: Complete PT Before Final Verification** — correct order: verify all outputs → `TaskUpdate(PT, completed)` → session cleanup. Premature PT completion creates false delivery history.
 
 ## Transitions
 
@@ -145,7 +145,7 @@ Before spawning delivery-agent, Lead must verify all required checks. If any fai
 | Agent exceeds maxTurns | Lead-direct or re-spawn delivery-agent | Partial completion status, remaining steps |
 | User rejects commit | execution-code or execution-infra | User feedback on what to change |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -189,7 +189,7 @@ commit_hash: ""
 files_changed: 0
 pt_status: DELIVERED
 pt_signal: "metadata.phase_signals.p8_delivery"
-signal_format: "{STATUS}|commit:{hash}|files:{N}|ref:tasks/{team}/p8-delivery.md"
+signal_format: "{STATUS}|commit:{hash}|files:{N}|ref:tasks/{work_dir}/p8-delivery.md"
 ```
 ### L2
 - Delivery manifest (all domain outputs consolidated)

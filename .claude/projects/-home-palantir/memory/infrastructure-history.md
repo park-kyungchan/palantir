@@ -117,6 +117,32 @@
 - Plans: `docs/plans/2026-02-09-cow-v2-design.md` (778L) + `cow-v2-implementation.md` (2498L)
 - Previous v1.0: Superseded (was c14d592, MCP server-centric, 53 files/7367L)
 
+## INFRA v14 — DELIVERED (2026-02-20)
+- Architecture: Single-session (removed Agent Teams/tmux multi-session)
+- CLAUDE.md: v14, 193L, "Pipeline Architecture v14" title, Two-Channel Handoff [D17]
+- Terminology: "Teammate" removed; only "Subagent" + "Work Directory" concepts remain
+- DPS template: removed `COMM_PROTOCOL` section (P2P messaging gone)
+- Cost model: 3 subagents ≈ 440K tokens (was 800K for teammates)
+- Spawn pattern: all spawns use `run_in_background:true` + `context:fork` + `model:sonnet`
+- Agents: 7 files, all subagent-only (no AT-mode dual-mode agents)
+- Memory: MEMORY.md + ref_teams.md + ref_agents.md updated; pipeline-bugs.md created
+- State: `~/.claude/doing-like-agent-teams/projects/infra-single-session-refactor/`
+
+## INFRA v13 — DELIVERED (2026-02-20)
+- PR: #66 (feat/infra-v13), commit: 3b77698 — 15 files, 692 insertions, 1216 deletions
+- Pipeline: DLAT (P0→P6→P7→P8, P1-P5 skipped by user directive), CONDITIONAL_PASS
+- Key deliverables:
+  - CLAUDE.md: Semantic Integrity INVIOLABLE block + verify-coordinator P7 row + 200-250L policy
+  - NEW: verify-coordinator (P7 synthesis coordinator — fills coordinator gap)
+  - NEW: manage-codebase (Homeostasis — project source file cleanup domain)
+  - NEW: ce-pre-grep-block.sh (BLOCKING exit 2 hook — Grep without path parameter)
+  - DELETED: agent-organizer.md (wrong YAML, Haiku model, non-existent agents)
+  - verify-* skills (5 files): refactored to project-independent scope
+  - execution-cascade: semantic ambiguity resolved
+  - pre-design-feasibility: CC constraint pre-check step added
+- Requirements: 14 total (REQ-001~014), 12 implemented, 2 deferred (REQ-012 RSIL format, REQ-013 PT schema)
+- State: `~/.claude/doing-like-agent-teams/projects/infra-v13-design/session-summary.md`
+
 ## RSIL System — DELIVERED (2026-02-09)
 - P1→P6→P9 complete (P7-8 skipped, markdown-only)
 - Two-Skill System: `/rsil-global` (452L, auto-invoke) + `/rsil-review` (549L, user-invoke)

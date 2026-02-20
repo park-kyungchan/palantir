@@ -8,7 +8,7 @@ description: >-
   plan-verify-coordinator complete with all PASS. Reads from
   plan-verify-coordinator verified plan L3 via $ARGUMENTS.
   Produces DPS specs with chain completeness flag and data flow
-  chain with gap report for orchestrate-coordinator. DPS contracts include MCP_DIRECTIVES (WHEN/WHY/WHAT) and COMM_PROTOCOL (P2P handoff targets) per DPS v5. On FAIL, Lead
+  chain with gap report for orchestrate-coordinator. DPS contracts include MCP_DIRECTIVES (WHEN/WHY/WHAT) and file-based handoff spec per DPS v5. On FAIL, Lead
   applies D12 escalation. DPS needs plan-verify-coordinator
   verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: true
@@ -24,10 +24,10 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-P2+ Team mode only. Agent Teams coordination applies:
-- **Task tracking**: Update task status via TaskUpdate after completion. File ownership: only modify assigned files.
-- **Input**: Read upstream outputs directly from `tasks/{team}/` files via $ARGUMENTS path.
-- **Output (D17 Four-Channel)**: Ch1 PT metadata signal · Ch2 `tasks/{team}/p5-orch-relational.md` · Ch3 micro-signal to Lead · Ch4 P2P signal to orchestrate-coordinator.
+Two-Channel protocol only. Single-session subagent execution:
+- **Subagent writes** output file to `tasks/{work_dir}/p5-orch-relational.md`
+- **Ch3 micro-signal** to Lead with PASS/FAIL status
+- **Task tracking**: Subagent calls TaskUpdate on completion. File ownership: only modify assigned files.
 
 > For micro-signal format details: read `.claude/resources/output-micro-signal-format.md`
 
@@ -36,7 +36,7 @@ P2+ Team mode only. Agent Teams coordination applies:
 ### DPS Granularity
 - **Independent tasks** (no shared data): No DPS needed. Skip.
 - **File-based handoff** (producer writes file, consumer reads): Define path + format + required fields.
-- **Status-signal handoff** (producer reports PASS/FAIL): Define signal format per SendMessage protocol. No file DPS needed.
+- **Status-signal handoff** (producer reports PASS/FAIL): Define signal format per file-based signal protocol. No file DPS needed.
 - **Shared-state handoff** (both read/write same file): REJECT. Redesign as file-based with single producer.
 
 ### Format Selection
@@ -54,21 +54,21 @@ P2+ Team mode only. Agent Teams coordination applies:
 ### 1. Read Verified Plan
 Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract task list, dependency graph (producer-consumer edges), interface contracts, and file change manifest per task.
 
-Construct analyst DPS with D11 context filtering (cognitive focus first — exclude other dimension outputs, historical rationale, full pipeline state). Budget: Context ≤ 30% of teammate context.
+Construct analyst DPS with D11 context filtering (cognitive focus first — exclude other dimension outputs, historical rationale, full pipeline state). Budget: Context ≤ 30% of subagent context.
 
 > For DPS construction details (D11 INCLUDE/EXCLUDE blocks, tier DPS variations): read `resources/methodology.md`
 
-**Analyst delivery:** Write to `tasks/{team}/p5-orch-relational.md`. Ch3: `PASS|handoffs:{N}|ref:tasks/{team}/p5-orch-relational.md`. Ch4 to orchestrate-coordinator: `READY|path:tasks/{team}/p5-orch-relational.md|fields:handoffs,chain_complete,comm_protocols`.
+**Analyst delivery:** Write to `tasks/{work_dir}/p5-orch-relational.md`. Ch3: `PASS|handoffs:{N}|ref:tasks/{work_dir}/p5-orch-relational.md`.
 
 ### 2. Identify Inter-Task Data Dependencies
 Scan dependency graph for all producer-consumer relationships: file outputs, artifact references, status signals, and shared-state cases (reject last type).
 
 > For dependency type definitions and discovery algorithm: read `resources/methodology.md`
 
-### 3. Define DPS Per Handoff (with COMM_PROTOCOL)
-For each identified dependency, create a Data-Passing Specification with P2P handoff protocol. COMM_PROTOCOL (notify/signal_format/await) is MANDATORY for every DPS entry in COMPLEX tier.
+### 3. Define DPS Per Handoff (with file-based handoff spec)
+For each identified dependency, create a Data-Passing Specification with P2P handoff protocol. file-based handoff spec (notify/signal_format/await) is MANDATORY for every DPS entry in COMPLEX tier.
 
-> For full DPS YAML schema, COMM_PROTOCOL details, path convention, and format selection table: read `resources/methodology.md`
+> For full DPS YAML schema, file-based handoff spec details, path convention, and format selection table: read `resources/methodology.md`
 
 ### 4. Validate Handoff Chain Completeness
 Verify no dangling inputs, no format mismatches, no path inconsistencies, and no circular chains. Build chain visualization (ASCII data flow diagram).
@@ -83,7 +83,7 @@ Produce ordered DPS entries by execution sequence, chain completeness verdict, f
 | Failure Type | Level | Action |
 |---|---|---|
 | Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
-| DPS incomplete or handoff path ambiguous | L1 Nudge | SendMessage with refined path convention constraints |
+| DPS incomplete or handoff path ambiguous | L1 Nudge | Respawn with refined DPS targeting refined path convention constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Dangling inputs unresolvable without plan restructure | L3 Restructure | Route to orchestrate-coordinator as chain design blocker |
 | 3+ L2 failures or circular chains unresolvable | L4 Escalate | AskUserQuestion with situation + options |
@@ -118,7 +118,7 @@ Produce ordered DPS entries by execution sequence, chain completeness verdict, f
 | Chain cycle | orchestrate-coordinator | Cycle path + break recommendation |
 | All handoffs defined | orchestrate-coordinator | Complete DPS specs (normal flow) |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -126,7 +126,7 @@ Produce ordered DPS entries by execution sequence, chain completeness verdict, f
 - Every DPS has concrete path, format, and fields
 - No dangling inputs (every consumer input has a producer)
 - No circular handoff chains
-- Path convention followed (`tasks/{team}/` prefix)
+- Path convention followed (`tasks/{work_dir}/` prefix)
 - Format consistency between producer output and consumer input
 - Producer wave precedes consumer wave in all DPS entries
 
@@ -147,12 +147,8 @@ handoffs:
     path: ""
     format: yaml|json|markdown
     fields: []
-    comm_protocol:
-      notify: []
-      signal_format: "READY|path:tasks/{team}/{file}|fields:{list}"
-      await: []
 pt_signal: "metadata.phase_signals.p5_orchestrate_relational"
-signal_format: "PASS|handoffs:{N}|chain_complete:{bool}|ref:tasks/{team}/p5-orch-relational.md"
+signal_format: "PASS|handoffs:{N}|chain_complete:{bool}|ref:tasks/{work_dir}/p5-orch-relational.md"
 ```
 
 ### L2

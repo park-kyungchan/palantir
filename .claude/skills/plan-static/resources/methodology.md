@@ -65,28 +65,28 @@ When dependency cluster boundaries are ambiguous:
 
 - **Context** (D11 priority: cognitive focus > token efficiency):
   - INCLUDE:
-    - research-coordinator audit-static L3 from `tasks/{team}/p2-coordinator-audit-static.md` (path via `$ARGUMENTS`)
+    - research-coordinator audit-static L3 from `tasks/{work_dir}/p2-coordinator-audit-static.md` (path via `$ARGUMENTS`)
     - Pipeline tier and iteration count from PT metadata
   - EXCLUDE:
     - Other plan dimension outputs (behavioral, relational, impact) — unless explicit dependency exists
     - Full research evidence detail — use L3 summaries only
     - Pre-design and design conversation history
-  - Budget: Context field ≤ 30% of teammate effective context
+  - Budget: Context field ≤ 30% of subagent effective context
 - **Task**: "Identify dependency clusters in the file graph. Group files into tasks (1-4 files each, SRP). Assign file ownership (non-overlapping). Map inter-task dependency edges. Identify critical path. Estimate per-task complexity (T/S/C)."
 - **Constraints**: analyst agent. Read-only (Glob/Grep/Read only). No file modifications. maxTurns: 20.
 - **Expected Output**: L1 YAML with task_count, tasks[] (id, files, complexity, depends_on, cluster). L2 task descriptions with cluster rationale and critical path visualization.
-- **Delivery (Four-Channel)**:
+- **Delivery (Two-Channel)**:
   - Ch1: PT signal → `metadata.phase_signals.p3_plan_static`
-  - Ch2: Write full result to `tasks/{team}/p3-plan-static.md`
-  - Ch3: Micro-signal to Lead → `PASS|tasks:{N}|deps:{N}|ref:tasks/{team}/p3-plan-static.md`
-  - Ch4: P2P to plan-verify-static teammate (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete; send only if verifier is already active)
+  - Ch2: Write full result to `tasks/{work_dir}/p3-plan-static.md`
+  - Ch3: Micro-signal to Lead → `PASS|tasks:{N}|deps:{N}|ref:tasks/{work_dir}/p3-plan-static.md`
+  - Ch4: P2P to plan-verify-static subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete; send only if verifier is already active)
 
 ### STANDARD (simplified DPS)
 
 - Spawn analyst (maxTurns: 15)
 - Simplified cluster identification across 3-8 files, single-pass grouping
 - Skip critical path analysis if ≤ 3 tasks total
-- Same Four-Channel delivery as COMPLEX
+- Same Two-Channel delivery as COMPLEX
 
 ### TRIVIAL (Lead-direct)
 

@@ -28,8 +28,8 @@ disable-model-invocation: true
 
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
-**P2+ Delivery**: Agent writes to `tasks/{team}/p2-audit-impact.md`, sends micro-signal:
-`PASS|direct:{N}|transitive:{N}|ref:tasks/{team}/p2-audit-impact.md`
+**Delivery**: Subagent writes to `{work_dir}/p2-audit-impact.md`, sends micro-signal:
+`PASS|direct:{N}|transitive:{N}|ref:{work_dir}/p2-audit-impact.md`
 
 ## Decision Points
 
@@ -79,7 +79,7 @@ Produce propagation path table (origin, hops, terminal, severity, evidence), DIR
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error during propagation trace | L0 Retry | Re-invoke same analyst, same scope |
-| Incomplete path tracing or off-scope analysis | L1 Nudge | SendMessage with refined change point scope |
+| Incomplete path tracing or off-scope analysis | L1 Nudge | Respawn with refined DPS targeting change point scope |
 | Analyst exhausted turns tracing chains | L2 Respawn | Kill → fresh analyst with refined DPS |
 | DIRECT-TRANSITIVE handoff broken (COMPLEX) | L3 Restructure | Merge into single analyst or re-partition |
 | Strategic ambiguity on hop depth, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -120,7 +120,7 @@ Special cases: no propagation paths found → report `direct: 0, transitive: 0` 
 | Analyst exhausted | research-coordinator | Partial paths + coverage percentage |
 | Design-risk missing | Continue (degraded) | Reduced confidence flag in output |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -155,7 +155,7 @@ propagation:
     severity: CRITICAL|HIGH|MEDIUM|LOW
     terminal: ""
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|direct:{N}|transitive:{N}|ref:tasks/{team}/p2-audit-impact.md"
+signal_format: "PASS|direct:{N}|transitive:{N}|ref:{work_dir}/p2-audit-impact.md"
 ```
 
 ### L2

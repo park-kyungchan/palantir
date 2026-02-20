@@ -31,7 +31,7 @@ argument-hint: "[focus-area]"
 ## Phase-Aware Execution
 
 Runs outside the linear P0–P8 pipeline (homeostasis domain). Team mode applies when a team is active.
-- **Communication**: Four-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + Ch4 P2P). Homeostasis reports are terminal — no downstream P2P consumers.
+- **Communication**: Two-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + file-based output). Homeostasis reports are terminal — no downstream P2P consumers.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
 > For phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
@@ -130,7 +130,7 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 | cc-reference cache unavailable AND claude-code-guide fails | (Abort) | `status: blocked`, reason: no ground truth |
 | Analyst maxTurns exhausted | (Partial) | `status: partial`, findings so far with coverage % |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 > Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
@@ -142,7 +142,7 @@ This skill is read-only diagnosis. All modifications go through self-implement.
 | Failure Type | Level | Action |
 |---|---|---|
 | File read error, tool timeout on specific files | L0 Retry | Re-invoke same analyst with same DPS |
-| Analyst output missing specific diagnostic categories | L1 Nudge | SendMessage with category-specific scan instructions |
+| Analyst output missing specific diagnostic categories | L1 Nudge | Respawn with refined DPS targeting category-specific scan instructions |
 | Analyst maxTurns exhausted or context polluted | L2 Respawn | Kill → fresh analyst with focused scan scope |
 | cc-reference cache corrupted and claude-code-guide fails | L3 Restructure | Rebuild cache from scratch, re-scope diagnosis |
 | 3+ L2 failures or no ground truth source available | L4 Escalate | AskUserQuestion with situation summary and options |
@@ -163,7 +163,7 @@ skill: self-diagnose
 status: complete|partial|blocked
 cc_reference_source: cache|delta|full|none
 pt_signal: "metadata.phase_signals.homeostasis"
-signal_format: "{STATUS}|findings:{N}|severity_high:{N}|ref:tasks/{team}/homeostasis-self-diagnose.md"
+signal_format: "{STATUS}|findings:{N}|severity_high:{N}|ref:tasks/{work_dir}/homeostasis-self-diagnose.md"
 findings_total: 0
 findings_by_severity:
   critical: 0

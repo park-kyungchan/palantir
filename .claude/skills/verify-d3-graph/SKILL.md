@@ -92,4 +92,4 @@ L2: Node count, edge count, console error count. PASS routes to verify-quality. 
 | verify-quality | PASS signal + node_count + edge_count | On PASS |
 | execution-code | FAIL + expected_vs_actual counts | On FAIL |
 
-> D17 Note: Ch1: `metadata.phase_signals.p7_verify-d3-graph` · Ch2: `tasks/{team}/p7-verify-d3-graph.md` · Ch3: micro-signal to Lead · Ch4: P2P to verify-quality on PASS
+> D17 Note: Ch2: `tasks/{work_dir}/p7-verify-d3-graph.md` · Ch3: micro-signal to Lead

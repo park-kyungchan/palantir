@@ -114,7 +114,7 @@ Criteria spec is self-contained. Consumers access via `TaskGet [PERMANENT]`:
 | Failure Type | Level | Action |
 |---|---|---|
 | AskUserQuestion timeout or user unavailable | L0 Retry | Re-invoke same AskUserQuestion round |
-| User provides partial criteria, criteria incomplete | L1 Nudge | SendMessage with refined options presentation |
+| User provides partial criteria, criteria incomplete | L1 Nudge | Respawn with refined DPS targeting options presentation |
 | Calibration analyst exhausted turns | L2 Respawn | Kill → fresh analyst with full criteria spec and research findings |
 | MECE violation unresolvable, criteria conflict with domain | L3 Restructure | Re-invoke DEFINE with revised objective scope |
 | User rejects all criteria after 3 rounds, 3+ L2 failures | L4 Escalate | AskUserQuestion with decision deadlock summary and alternatives |
@@ -181,7 +181,7 @@ has_golden_example: false
 phase: define|calibrate|final
 version: 1
 pt_signal: "metadata.phase_signals.p2_criteria"
-signal_format: "PASS|criteria:{N}|phase:{phase}|ref:tasks/{team}/p2-evaluation-criteria.md"
+signal_format: "PASS|criteria:{N}|phase:{phase}|ref:{work_dir}/p2-evaluation-criteria.md"
 criteria:
   - name: ""
     weight: H|M|L

@@ -2,7 +2,7 @@
 name: execution-code
 description: >-
   Spawns implementers for non-.claude/ source files via DPS
-  delegation prompts. Monitors completion via SendMessage,
+  delegation prompts. Monitors completion via output files,
   handles failures with max 3 retries. Parallel with
   execution-infra. Use after orchestrate-coordinator complete
   with PASS and code tasks assigned in unified plan. Reads from
@@ -10,8 +10,8 @@ description: >-
   task assignments and DPS prompts. Produces file change manifest
   with per-implementer status and implementation summary for
   execution-impact and execution-review. All spawns model:sonnet.
-  Atomic commit per task with pre-commit backpressure. P2P
-  SendMessage for producer→consumer handoffs. On FAIL, routes to
+  Atomic commit per task with pre-commit backpressure. File-based
+  output for producer→consumer handoffs. On FAIL, routes to
   execution-review with partial manifest and retry count. DPS
   needs orchestrate-coordinator task_id/files/dependencies +
   plan-relational contracts verbatim. Exclude ADR rationale and
@@ -43,7 +43,7 @@ Lead determines tier based on orchestrate-coordinator output:
 ### Input Validation Before Proceeding
 Before spawning, verify:
 1. orchestrate-coordinator L1 shows `status: PASS`
-2. Task-teammate matrix has complete file assignments (no empty `files[]`)
+2. Task-subagent matrix has complete file assignments (no empty `files[]`)
 3. Interface contracts exist for all cross-task dependencies
 4. No file appears in multiple task assignments
 
@@ -57,7 +57,7 @@ If any fails: route back to orchestrate-coordinator with specific failure reason
 ## Methodology
 
 ### 1. Read Validated Assignments
-Load orchestrate-coordinator PASS report and task-teammate matrix.
+Load orchestrate-coordinator PASS report and task-subagent matrix.
 Extract file assignments, dependency order, and interface contracts per implementer.
 
 ### 2. Spawn Implementers
@@ -68,14 +68,14 @@ Construct each delegation prompt with:
 - **Task**: List exact file paths. Specify function/class/method to implement, behavior, tests to satisfy. Reference existing patterns by `file:line_range`.
 - **Constraints**: Non-.claude/ source files only. Report (don't fix) issues in unassigned files.
 - **Expected Output**: L1 YAML: `files_changed[]`, `status`, `blockers[]`. L2 markdown: implementation summary, key decisions, deviations.
-- **Delivery (Four-Channel)**: Ch2: `tasks/{team}/p6-{task_id}-output.md`. Ch3 micro-signal to Lead. Ch4 P2P READY signal to COMM_PROTOCOL NOTIFY targets.
+- **Delivery (Two-Channel)**: Ch2: `tasks/{work_dir}/p6-{task_id}-output.md`. Ch3 micro-signal to Lead. file-based output READY signal to file-based handoff spec NOTIFY targets.
 
 > For tier-specific DPS content (TRIVIAL/STANDARD/COMPLEX maxTurns and context rules): read `resources/methodology.md`
 
 ### 3. Monitor Progress
 - Receive Ch3 micro-signals from implementers (status only, not full data)
 - Track `files_changed` count against expected from L3 execution plan
-- **Sequential deps**: COMM_PROTOCOL AWAIT/NOTIFY enables self-coordination — Lead does NOT relay data between waves
+- **Sequential deps**: file-based handoff enables self-coordination — Lead does NOT relay data between waves
 
 > For monitoring heuristics (healthy/stalled/blocked/scope-creep/test-failure patterns): read `resources/methodology.md`
 
@@ -95,7 +95,7 @@ Collect L1 YAML from each implementer. Build unified file change manifest. Check
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error, implementer spawn timeout | L0 Retry | Re-invoke same implementer with same DPS |
-| Implementer output incomplete or off-scope | L1 Nudge | SendMessage with corrected constraints or scope |
+| Implementer output incomplete or off-scope | L1 Nudge | Respawn with refined DPS targeting corrected constraints or scope |
 | Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS |
 | File ownership conflict or dependency broken | L3 Restructure | Reassign files, reorder task graph, split tasks |
 | All implementers failed after L2, architectural issue | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -128,7 +128,7 @@ Background implementers can't receive mid-task guidance. Use background only for
 
 ## Phase-Aware Execution
 
-P2+ Team mode. Four-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers). Sequential deps use COMM_PROTOCOL AWAIT/NOTIFY — Lead is NOT in the data path. No overlapping file edits with parallel agents.
+Two-Channel protocol. Two-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) Sequential deps use file-based handoff — Lead is NOT in the data path. No overlapping file edits with parallel agents.
 
 > Phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 > DPS construction guide: read `.claude/resources/dps-construction-guide.md`
@@ -159,7 +159,7 @@ P2+ Team mode. Four-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lea
 | Assignment invalid | orchestrate-coordinator | Specific validation failure reason |
 | Interface contract mismatch | plan-relational | Mismatched contract details from implementer report |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -183,7 +183,7 @@ tasks:
     files: []
     status: complete|in-progress|failed
 pt_signal: "metadata.phase_signals.p6_code"
-signal_format: "{STATUS}|files:{N}|implementers:{N}|ref:tasks/{team}/p6-code.md"
+signal_format: "{STATUS}|files:{N}|implementers:{N}|ref:tasks/{work_dir}/p6-code.md"
 ```
 
 ### L2

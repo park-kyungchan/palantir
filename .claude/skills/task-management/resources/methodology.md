@@ -90,7 +90,7 @@ Key rendering rules:
 
 ## PT Description Density Management
 
-- **Keep in PT description**: Core requirements, acceptance criteria, tier classification, key architecture decisions (up to ~2000 chars). Information that every teammate needs on `TaskGet`.
+- **Keep in PT description**: Core requirements, acceptance criteria, tier classification, key architecture decisions (up to ~2000 chars). Information that every subagent needs on `TaskGet`.
 - **Move to file reference**: Extended design docs, full task breakdowns, detailed analysis reports. Store in workspace files and add file paths to `references[]`. Prevents PT description from becoming unwieldy.
 
 ## Work Task Granularity
@@ -123,5 +123,5 @@ Key rendering rules:
 - **Action**: Lead detects via `TaskList`. If agent confirmed terminated, update task status to `failed` with `metadata.error: "agent_interrupted"`. Route to execution skill for re-assignment.
 
 ### Dead Teammate Blocking TeamDelete
-- **Cause**: User killed a teammate process. Agent is dead but `config.json` still lists it as active. `TeamDelete` fails: "Cannot cleanup team with N active member(s)."
+- **Cause**: User killed a subagent process. Agent is dead but `config.json` still lists it as active. `TeamDelete` fails: "Cannot cleanup team with N active member(s)."
 - **Action**: Edit `~/.claude/teams/{team-name}/config.json` directly to remove the dead member from `members` array. Then retry TeamDelete. Only CC-native workaround available.

@@ -151,7 +151,7 @@ CONSTRAINTS:
   - No inferred relationships. Only explicitly declared references.
   - maxTurns: 25
 
-OUTPUT: Write to tasks/{team}/p2-audit-relational-map.md
+OUTPUT: Write to tasks/{work_dir}/p2-audit-relational-map.md
   L1 YAML:
     total_edges: N
     types_found: [data_flow, transition, ...]
@@ -159,8 +159,8 @@ OUTPUT: Write to tasks/{team}/p2-audit-relational-map.md
     Adjacency list with full Link Evidence Template entries per edge.
 
 DELIVERY:
-  Ch3: SendMessage(Lead): "PASS|edges:{N}|ref:tasks/{team}/p2-audit-relational-map.md"
-  Ch4: SendMessage(Analyst-2): "READY|path:tasks/{team}/p2-audit-relational-map.md|fields:edges,evidence"
+  Ch3: file-based signal(Lead): "PASS|edges:{N}|ref:tasks/{work_dir}/p2-audit-relational-map.md"
+  file-based signal(Analyst-2): "READY|path:tasks/{work_dir}/p2-audit-relational-map.md|fields:edges,evidence"
 ```
 
 ### COMPLEX Tier — Analyst-2 (Validator)
@@ -170,16 +170,16 @@ OBJECTIVE: Validate bidirectional consistency of the relationship map produced b
 
 CONTEXT (D11 — cognitive focus):
   INCLUDE:
-    - Analyst-1 relationship map (await Ch4 READY signal, then read path from signal)
+    - Analyst-1 relationship map (await file-based READY signal, then read path from signal)
     - design-interface L1 API contracts (path via $ARGUMENTS[0])
   EXCLUDE:
     - research-codebase raw file inventory (already processed by Analyst-1)
     - Other audit dimensions
 
-AWAIT: Ch4 signal from Analyst-1 before starting validation.
+AWAIT: file-based READY signal from Analyst-1 before starting validation.
 
 TASK:
-  1. Read Analyst-1 map from tasks/{team}/p2-audit-relational-map.md.
+  1. Read Analyst-1 map from tasks/{work_dir}/p2-audit-relational-map.md.
   2. Apply Asymmetry Detection Algorithm to classify each edge:
      consistent | asymmetric | orphan | stale.
   3. Assign severity: HIGH | MEDIUM | LOW per classification rubric.
@@ -190,7 +190,7 @@ CONSTRAINTS:
   - Read-only analysis. Do not edit any file.
   - maxTurns: 25
 
-OUTPUT: Write to tasks/{team}/p2-audit-relational.md
+OUTPUT: Write to tasks/{work_dir}/p2-audit-relational.md
   L1 YAML: total_relations, consistent, asymmetric, orphan, broken, integrity_percent
   L2:
     - Complete relationship graph with edge types and directions
@@ -200,22 +200,22 @@ OUTPUT: Write to tasks/{team}/p2-audit-relational.md
     - Per-issue evidence with file:line references for both sides
     - Summary statistics and integrity percentage
 
-DELIVERY (4-channel D17):
+DELIVERY (2-channel D17):
   Ch1: TaskUpdate PT metadata.phase_signals.p2_research:
        "PASS|relations:{N}|broken:{N}"
-  Ch2: tasks/{team}/p2-audit-relational.md (already written above)
-  Ch3: SendMessage(Lead):
-       "PASS|relations:{N}|broken:{N}|ref:tasks/{team}/p2-audit-relational.md"
-  Ch4: SendMessage(research-coordinator):
-       "READY|path:tasks/{team}/p2-audit-relational.md|fields:graph,issues,integrity_percent"
+  Ch2: tasks/{work_dir}/p2-audit-relational.md (already written above)
+  Ch3: file-based signal(Lead):
+       "PASS|relations:{N}|broken:{N}|ref:tasks/{work_dir}/p2-audit-relational.md"
+  file-based signal(research-coordinator):
+       "READY|path:tasks/{work_dir}/p2-audit-relational.md|fields:graph,issues,integrity_percent"
 ```
 
 ### STANDARD Tier — Single Analyst
 
 Single analyst performs both mapping and validation in one pass.
 - maxTurns: 25
-- Output path: `tasks/{team}/p2-audit-relational.md`
-- DELIVERY: same 4-channel D17 protocol as Analyst-2 above
+- Output path: `tasks/{work_dir}/p2-audit-relational.md`
+- DELIVERY: same 2-channel D17 protocol as Analyst-2 above
 
 ### TRIVIAL Tier
 
@@ -232,14 +232,14 @@ If any HIGH issues found, immediately route to research-coordinator with finding
 - **Cause**: Codebase has no cross-file relationship declarations (monolithic file, early-stage project, or no metadata).
 - **Action**: Report `relations: 0`. Note that relationship auditing is not applicable to this codebase in its current state. Do not treat as FAIL.
 - **Route**: research-coordinator with empty graph and explanation note.
-- **Signal**: `"PASS|relations:0|broken:0|ref:tasks/{team}/p2-audit-relational.md"`
+- **Signal**: `"PASS|relations:0|broken:0|ref:tasks/{work_dir}/p2-audit-relational.md"`
 
 ### Wave 1 Input Missing
 
 - **Cause**: research-codebase did not produce file inventory, or inventory path is incorrect in $ARGUMENTS.
 - **Action**: FAIL immediately. Cannot map relationships without knowing which files exist.
 - **Route**: Lead for re-routing to research-codebase.
-- **Signal**: `"FAIL|reason:missing_wave1_input|ref:tasks/{team}/p2-audit-relational.md"`
+- **Signal**: `"FAIL|reason:missing_wave1_input|ref:tasks/{work_dir}/p2-audit-relational.md"`
 
 ### Too Many Relationships for Turn Budget
 

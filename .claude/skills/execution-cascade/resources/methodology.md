@@ -21,7 +21,7 @@ Construct each implementer delegation prompt with:
 
 **Expected Output**: Report as L1 YAML: `files_changed` (array), `status` (complete|failed), `verification` (grep confirms no stale references). L2: before/after for each updated reference.
 
-**Delivery**: Upon completion, send summary to Lead via SendMessage: status (PASS/FAIL), files changed, grep verification result.
+**Delivery**: Upon completion, send summary to Lead via file-based signal: status (PASS/FAIL), files changed, grep verification result.
 
 ### Tier-Specific DPS Variations
 
@@ -49,7 +49,7 @@ Analyst delegation prompt:
 
 **Expected Output**: Return `new_impacts` as a list of `{file, dependents[]}` pairs. Empty list = converged.
 
-**Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
+**Delivery**: Upon completion, send L1 summary to Lead via file-based signal. Include: status, key metrics, cross-reference notes. L2 detail stays in your context.
 
 ### Convergence Check Algorithm
 

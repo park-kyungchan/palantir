@@ -24,16 +24,6 @@ if [[ "$BLOCK_VALUE" == "false" ]]; then
   exit 0
 fi
 
-# Session_id guard (BUG-007): only enforce in Lead context
-# In teammate/subagent contexts, TaskOutput may be legitimate
-TEAM_CONFIG=$(find ~/.claude/teams/ -name "config.json" -print -quit 2>/dev/null)
-if [[ -n "$TEAM_CONFIG" ]]; then
-  LEAD_SESSION=$(jq -r '.leadSessionId // empty' "$TEAM_CONFIG" 2>/dev/null)
-  if [[ -n "$LEAD_SESSION" && -n "$SESSION_ID" && "$SESSION_ID" != "$LEAD_SESSION" ]]; then
-    exit 0  # Non-lead session — allow
-  fi
-fi
-
 # Log the blocked attempt
 echo "$(date -Iseconds) BLOCKED TaskOutput(block:true) session=${SESSION_ID}" \
   >> "/tmp/taskoutput-relay-blocked.log" 2>/dev/null || true
@@ -55,7 +45,7 @@ cat <<'HOOK_JSON'
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "additionalContext": "DATA RELAY TAX BLOCKED: TaskOutput(block:true) denied. Lead MUST NOT read full subagent/teammate output into its context window. Alternatives: (1) TaskOutput(block:false) for status checks only, (2) Read the output_file path returned by Task(run_in_background:true) and pass it downstream via $ARGUMENTS — let the consuming agent read the file directly, (3) In team mode rely on Ch3 micro-signals via SendMessage. The anti-pattern costs ~10k tokens per relay for zero orchestration value."
+    "additionalContext": "DATA RELAY TAX BLOCKED: TaskOutput(block:true) denied. Lead MUST NOT read full subagent output into its context window. Alternatives: (1) TaskOutput(block:false) for status checks only, (2) Read the output_file path returned by Task(run_in_background:true) and pass it downstream via $ARGUMENTS — let the consuming agent read the file directly. The anti-pattern costs ~10k tokens per relay for zero orchestration value."
   }
 }
 HOOK_JSON

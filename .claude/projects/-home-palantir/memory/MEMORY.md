@@ -47,32 +47,31 @@
 - `ce-pre-grep-block.sh`: PreToolUse(Grep) — BLOCK Grep without path parameter (blocking, exit 2)
 - Registered in settings.json
 
-## Current INFRA State (v13, 2026-02-20)
+## Current INFRA State (v14, 2026-02-20)
 
 | Component | Version | Key Feature |
 |-----------|---------|-------------|
-| CLAUDE.md | v13 | 209L, Semantic Integrity INVIOLABLE block, 200-250L policy |
-| Agents | v13 | 8 files (agent-organizer.md deleted), Completion Protocol |
+| CLAUDE.md | v14 | 193L, Single-session architecture, Two-Channel Handoff [D17] |
+| Agents | v14 | 7 files, subagent-only model (no Teammate/AT) |
 | Skills | v13 | 87 dirs — added verify-coordinator, manage-codebase |
 | Resources | 6 files | .claude/resources/ +DPS Principles in dps-construction-guide |
 | Hooks | 20 scripts | +ce-pre-grep-block.sh (BLOCKING: exit 2, Grep without path) |
 | Rules | CE-optimized | 4,167 chars (was 5,299), legacy refs removed |
 
-### Architecture (v12 3-Stage Progressive Disclosure)
-- Stage 1 (Metadata): YAML frontmatter — auto-loaded
-- Stage 2 (Instructions): L2 body ≤200L — on invocation
-- Stage 3 (Resources): `resources/methodology.md` — on-demand Read
+### Architecture (v14 Single-Session)
+- All spawns: `run_in_background:true` + `context:fork` + `model:sonnet`
+- File coordination: subagents write to Work Directory → micro-signals → Lead reads
+- Two-Channel Handoff: Ch2 (output files) + Ch3 (micro-signals). No P2P messaging.
 - **Lead**: Pure Orchestrator, never edits files directly
 
 ### Known Bugs
 | ID | Severity | Summary | Workaround |
 |----|----------|---------|------------|
 | BUG-001 | CRITICAL | `permissionMode: plan` blocks MCP tools | Always spawn with `mode: "default"` |
-| BUG-002 | HIGH | Large-task teammates auto-compact before L1/L2 | Keep prompts focused |
 | BUG-006 | MEDIUM | `allowed-tools` frontmatter NOT_ENFORCED (CC #18837) | Use `tools` in agent frontmatter |
 | BUG-007 | MEDIUM | Global hooks fire in ALL contexts | session_id guard in command hooks |
 
-Details: `memory/agent-teams-bugs.md`
+Details: `memory/pipeline-bugs.md`
 
 ## Active Topics
 
@@ -91,10 +90,10 @@ Active whenever Ontology/Foundry concepts arise. User = concept-level decision-m
 - `memory/CC_SECTIONS.md` -- L1 (ALWAYS READ): routing shortcuts for all ref files
 - `memory/ref_hooks.md` -- R3: 14 hook events, I/O contract, exit codes
 - `memory/ref_skills.md` -- R4: Skill frontmatter, $ARGUMENTS, shell preprocessing
-- `memory/ref_agents.md` -- R5: Agent fields, permissionMode, subagent comparison
-- `memory/ref_teams.md` -- R6: Agent Teams coordination, task sharing, inbox messaging
+- `memory/ref_agents.md` -- R5: Agent fields, permissionMode, subagent spawning patterns
+- `memory/ref_teams.md` -- R6: File-based coordination, Task API, Work Directory patterns
 - `memory/ref_model_integration.md` -- R7: Model config, cost benchmarks, MCP
-- `memory/agent-teams-bugs.md` -- BUG-001~BUG-008 details and workarounds
+- `memory/pipeline-bugs.md` -- BUG-001~BUG-008 details and workarounds
 - `memory/math-question-bank.md` -- Math portfolio: D1-D24, W4 plan, DLAT_BASE refs
 - `memory/infrastructure-history.md` -- Full delivery history (INFRA, RSIL, etc.)
 - `memory/grep-optimization-handoff.md` -- Grep pattern audit + CE optimization results (2026-02-20)

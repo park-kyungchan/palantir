@@ -130,7 +130,7 @@ Route prioritized patterns to self-implement for execution.
 - Max 3 iterations for convergence per wave
 
 ### 4b. Implementation Monitoring
-- Track wave completion via SendMessage from self-implement
+- Track wave completion via file-based signal from self-implement
 - If a wave fails: self-implement handles retry (max 1 retry per wave)
 - If non-convergence after 3 iterations: accept partial, record deferred items
 
@@ -175,7 +175,7 @@ Record RSIL cycle results for cross-session continuity.
 ### 6a. PT Metadata Update
 - If PT exists: update `metadata.iterations.rsil: N` with current cycle count (D15 canonical field)
 - Record cycle results in `metadata.phase_signals.homeostasis`:
-  `"{STATUS}|health_delta:{N}|patterns:{N}|ref:tasks/{team}/homeostasis-rsil.md"`
+  `"{STATUS}|health_delta:{N}|patterns:{N}|ref:tasks/{work_dir}/homeostasis-rsil.md"`
 - Record: health delta, patterns applied, patterns deferred, focus-area, trigger source
 
 ### 6b. MEMORY.md Update

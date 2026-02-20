@@ -109,7 +109,7 @@ and pipeline impact assessment.
 | Failure Type | Level | Action |
 |---|---|---|
 | Analyst tool error reading skill descriptions | L0 Retry | Re-invoke analyst with same DPS |
-| Reference graph incomplete or missed files | L1 Nudge | SendMessage with corrected file list + exemption docs |
+| Reference graph incomplete or missed files | L1 Nudge | Respawn with refined DPS targeting corrected file list + exemption docs |
 | Analyst stuck on circular dependency, turns exhausted | L2 Respawn | Fresh instance, reduced scope per domain |
 | Count mismatch reveals filesystem/CLAUDE.md divergence | L3 Restructure | Route count fixes to execution-infra first |
 | 3+ L2 failures or graph construction strategy unclear | L4 Escalate | AskUserQuestion with summary + options |
@@ -136,11 +136,11 @@ and pipeline impact assessment.
 
 ## Phase-Aware Execution
 
-Runs in P2+ Team mode only. Four-Channel Protocol applies:
+Runs in Two-Channel protocol only. Two-Channel Protocol applies:
 - **Ch1**: PT metadata signal `metadata.phase_signals.p7_consistency`
-- **Ch2**: Full output file at `tasks/{team}/p7-consistency.md`
+- **Ch2**: Full output file at `tasks/{work_dir}/p7-consistency.md`
 - **Ch3**: Micro-signal to Lead (status only, not full data)
-- **Ch4**: P2P signal to verify-quality on PASS
+- **File handoff**: Write output to `tasks/{work_dir}/p7-consistency.md` for verify-quality to read on PASS
 
 > For phase-aware routing and compaction survival: read `.claude/resources/phase-aware-execution.md`
 
@@ -164,7 +164,7 @@ Runs in P2+ Team mode only. Four-Channel Protocol applies:
 FAIL → execution-infra (bidirectionality violations, count drift) or Lead → execution-infra
 (phase sequence violations). See Failure Handling section for data passed per type.
 
-> **D17 Note**: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> **D17 Note**: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -185,7 +185,7 @@ domain: verify
 skill: consistency
 status: PASS|FAIL
 pt_signal: "metadata.phase_signals.p7_consistency"
-signal_format: "{STATUS}|relationships:{n}|violations:{n}|ref:tasks/{team}/p7-consistency.md"
+signal_format: "{STATUS}|relationships:{n}|violations:{n}|ref:tasks/{work_dir}/p7-consistency.md"
 relationships_checked: 0
 inconsistencies: 0
 bidirectionality_violations: 0

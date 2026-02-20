@@ -44,11 +44,12 @@ Standard 3-Stage Progressive Disclosure for SKILL.md optimization:
 | pipeline-resume | 300L | 181L | 153L | 2026-02-19 |
 | verify-consistency | 330L | 200L | 131L | 2026-02-19 |
 | execution-cascade | 323L | 199L | 157L | 2026-02-19 |
-| manage-codebase | 276L | 199L | 130L | 2026-02-19 |
+| manage-codebase | 276L→rewrite | 175L | 119L | 2026-02-20 (REQ-008: semantic fix — was .claude/ dep-mapper, now project source refactorer) |
 | delivery-pipeline | 300L | 200L | 135L | 2026-02-19 |
 | plan-verify-coordinator | 272L | 159L | 107L | 2026-02-19 |
 | orchestrate-coordinator | 372L | 183L | 164L | 2026-02-19 |
 | doing-like-agent-teams | 162L | 176L (rewrite) | 103L | 2026-02-19 |
+| doing-like-agent-teams | 322L→rewrite | 359L | — | 2026-02-20 (single-session elevation: removed AT comparisons, added Prompt Caching + PT as Universal Context Source sections) |
 | manage-skill | 400L | 184L | 151L | 2026-02-19 |
 
 ## Content Routing — plan-verify-static Pattern

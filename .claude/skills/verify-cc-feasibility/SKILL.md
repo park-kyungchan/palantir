@@ -109,7 +109,7 @@ Only frontmatter needs CC field validation. L2 body checking is verify-structura
 
 ## Phase-Aware Execution
 For shared protocol: Read `~/.claude/resources/phase-aware-execution.md`
-This skill runs P2+ Team mode. Four-Channel Protocol applies.
+This skill runs Two-Channel protocol. Two-Channel Protocol applies.
 
 ## Transitions
 
@@ -146,7 +146,7 @@ domain: verify
 skill: cc-feasibility
 status: PASS|FAIL|SKIP
 pt_signal: "metadata.phase_signals.p7_cc_feasibility"
-signal_format: "{STATUS}|files:{total_files}|non_native:{non_native_fields}|ref:tasks/{team}/p7-cc-feasibility.md"
+signal_format: "{STATUS}|files:{total_files}|non_native:{non_native_fields}|ref:tasks/{work_dir}/p7-cc-feasibility.md"
 total_files: 0
 non_native_fields: 0
 value_type_errors: 0

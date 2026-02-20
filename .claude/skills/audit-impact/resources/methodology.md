@@ -104,7 +104,7 @@ Rate each dimension as HIGH/MEDIUM/LOW with one-sentence justification.
 
 ## Shift-Left Prediction Format
 
-This output is consumed directly by **execution-impact** (P6) via `$ARGUMENTS` referencing `tasks/{team}/p2-audit-impact.md`.
+This output is consumed directly by **execution-impact** (P6) via `$ARGUMENTS` referencing `tasks/{work_dir}/p2-audit-impact.md`.
 
 The Shift-Left section in the L2 output must be structured as follows:
 
@@ -138,24 +138,24 @@ P2 predicts; P6 validates predictions against real changes. This avoids redundan
 **Context (D11 priority: cognitive focus > token efficiency)**:
 - INCLUDE: research-codebase L1 file inventory + dependency patterns; research-external L2 change propagation constraints; design-risk L1 risk matrix with change points.
 - EXCLUDE: Other audit dimensions' results (static/behavioral/relational); pre-design conversation history; full pipeline state (P2 phase only).
-- Budget: Context field ≤ 30% of teammate effective context.
+- Budget: Context field ≤ 30% of subagent effective context.
 
 **Analyst-1 (DIRECT)**:
-- Task: "From each design change point, trace all 1-hop DIRECT impacts: files that import, reference, or configure the changed component. Record each path with `file:line` evidence. Output edge list to `tasks/{team}/p2-audit-impact-direct.md`."
+- Task: "From each design change point, trace all 1-hop DIRECT impacts: files that import, reference, or configure the changed component. Record each path with `file:line` evidence. Output edge list to `tasks/{work_dir}/p2-audit-impact-direct.md`."
 - Constraints: Read-only analysis (analyst agent, no Bash). No recommendations. maxTurns: 25.
-- COMM_PROTOCOL NOTIFY: Analyst-2 — signal `"READY|path:tasks/{team}/p2-audit-impact-direct.md|fields:direct_edges"`
+- file-based handoff spec NOTIFY: Analyst-2 — signal `"READY|path:tasks/{work_dir}/p2-audit-impact-direct.md|fields:direct_edges"`
 
 **Analyst-2 (TRANSITIVE)**:
-- Task: "Read Analyst-1 DIRECT edge list from `tasks/{team}/p2-audit-impact-direct.md`. Trace 2-3 hop TRANSITIVE chains from each directly impacted file. Cap at 3 hops. Record full chain with per-hop evidence."
+- Task: "Read Analyst-1 DIRECT edge list from `tasks/{work_dir}/p2-audit-impact-direct.md`. Trace 2-3 hop TRANSITIVE chains from each directly impacted file. Cap at 3 hops. Record full chain with per-hop evidence."
 - AWAIT: Analyst-1 input-ready signal.
 - Constraints: Read-only. Cap at 3 hops. maxTurns: 25.
-- Delivery: Write consolidated output to `tasks/{team}/p2-audit-impact.md`. Send Ch3 micro-signal to Lead: `"PASS|direct:{N}|transitive:{N}|ref:tasks/{team}/p2-audit-impact.md"`. Send Ch4 P2P to research-coordinator.
+- Delivery: Write consolidated output to `tasks/{work_dir}/p2-audit-impact.md`. Send Ch3 micro-signal to Lead: `"PASS|direct:{N}|transitive:{N}|ref:tasks/{work_dir}/p2-audit-impact.md"`. Send file-based output to research-coordinator.
 
 ### STANDARD Tier (Single Analyst)
 
 Single analyst traces both DIRECT and TRANSITIVE in one pass. maxTurns: 25.
-- Output: `tasks/{team}/p2-audit-impact.md`
-- Delivery: Ch3 micro-signal + Ch4 P2P to research-coordinator.
+- Output: `tasks/{work_dir}/p2-audit-impact.md`
+- Delivery: Ch3 micro-signal + file-based output to research-coordinator.
 
 ### TRIVIAL Tier
 

@@ -27,8 +27,8 @@ argument-hint: "[project_root] [--target=pattern] [--test-cmd=command]"
 
 ## Phase-Aware Execution
 Runs outside the linear pipeline (homeostasis). Team mode applies when called in P2+ context.
-- 4-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers).
-- Write to `tasks/{team}/homeostasis-manage-codebase.md`. Micro-signal: `{STATUS}|files:{N}|reverted:{R}|ref:tasks/{team}/homeostasis-manage-codebase.md`.
+- Two-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead)
+- Write to `tasks/{work_dir}/homeostasis-manage-codebase.md`. Micro-signal: `{STATUS}|files:{N}|reverted:{R}|ref:tasks/{work_dir}/homeostasis-manage-codebase.md`.
 - For phase-aware routing details: read `.claude/resources/phase-aware-execution.md`
 
 ## Decision Points
@@ -140,7 +140,7 @@ Mix of DELETE + EXTRACT + RENAME in a single pass makes revert ambiguous. Apply 
 | No test suite detected | (user) | Report-only candidate list with severity |
 | Scope exceeds safe threshold | (user) | Candidate list with blast-radius scores |
 
-> D17 Note: P2+ team mode — use 4-channel protocol.
+> D17 Note: Two-Channel protocol — use 2-channel protocol.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -163,7 +163,7 @@ files_reverted: 0
 tech_debt_items: 0
 tests_passed: true|false
 pt_signal: "metadata.phase_signals.homeostasis"
-signal_format: "{STATUS}|files:{N}|reverted:{R}|ref:tasks/{team}/homeostasis-manage-codebase.md"
+signal_format: "{STATUS}|files:{N}|reverted:{R}|ref:tasks/{work_dir}/homeostasis-manage-codebase.md"
 ```
 
 ### L2

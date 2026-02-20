@@ -24,8 +24,8 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-P2+ Team mode only. See `.claude/resources/phase-aware-execution.md` for coordination protocol.
-Four-Channel output: Ch2 (disk file) + Ch3 (micro-signal → Lead) + Ch4 (P2P → downstream). See `.claude/resources/output-micro-signal-format.md`.
+Two-Channel protocol only. See `.claude/resources/phase-aware-execution.md` for coordination protocol.
+Two-Channel output: Ch2 (disk file) + Ch3 (micro-signal → Lead) See `.claude/resources/output-micro-signal-format.md`.
 
 ## Decision Points
 
@@ -59,7 +59,7 @@ Construct analyst DPS per `.claude/resources/dps-construction-guide.md`:
 - **Context**: Include verified plan L3 (task list, wave structure, dependency graph) + pipeline constraints (max 4 parallel per wave, max 3 phase iterations). Exclude other orchestrate dimension outputs and historical plan-verify rationale.
 - **Task**: Identify WHERE verification checkpoints should be placed. For each: define pass/fail criteria, map to wave boundary, specify data to check.
 - **Constraints**: Read-only. Every checkpoint must have measurable criteria. Map each to a specific wave boundary.
-- **Delivery**: Four-Channel. Ch2: `tasks/{team}/p5-orch-behavioral.md`. Ch3: `PASS|checkpoints:{N}|ref:tasks/{team}/p5-orch-behavioral.md`. Ch4 → orchestrate-coordinator: `READY|path:tasks/{team}/p5-orch-behavioral.md|fields:checkpoints,verification_criteria`.
+- **Delivery**: Two-Channel. Ch2: `tasks/{work_dir}/p5-orch-behavioral.md`. Ch3: `PASS|checkpoints:{N}|ref:tasks/{work_dir}/p5-orch-behavioral.md`.
 
 ### 2. Identify Critical Transition Points
 Scan the execution flow for wave boundaries, producer-consumer handoffs, domain boundaries, critical path junctions, and risk mitigation points. Score each transition for priority (blast radius + recoverability + frequency). Mandatory if total >= 10.
@@ -88,12 +88,12 @@ See `.claude/resources/failure-escalation-ladder.md` for D12 decision rules and 
 | Failure Type | Level | Action |
 |---|---|---|
 | Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
-| Checkpoint incomplete or criteria unmeasurable | L1 Nudge | SendMessage with refined wave boundary constraints |
+| Checkpoint incomplete or criteria unmeasurable | L1 Nudge | Respawn with refined DPS targeting refined wave boundary constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | No wave boundaries in plan (cannot infer) | L3 Restructure | Route to plan-verify-coordinator for plan restructuring |
 | 3+ L2 failures or excessive checkpoint conflicts | L4 Escalate | AskUserQuestion with situation + options |
 
-**Verified Plan Data Missing**: Report `FAIL|reason:plan-L3-missing|ref:tasks/{team}/p5-orch-behavioral.md`. Route back to plan-verify-coordinator for re-export.
+**Verified Plan Data Missing**: Report `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-behavioral.md`. Route back to plan-verify-coordinator for re-export.
 
 **No Clear Wave Boundaries**: Infer from dependency graph. Flag as assumption in L2. Continue — orchestrate-coordinator will validate.
 
@@ -152,7 +152,7 @@ checkpoints:
     criteria: ""
     fail_action: ""
 pt_signal: "metadata.phase_signals.p5_orchestrate_behavioral"
-signal_format: "PASS|checkpoints:{N}|gates:{N}|ref:tasks/{team}/p5-orch-behavioral.md"
+signal_format: "PASS|checkpoints:{N}|gates:{N}|ref:tasks/{work_dir}/p5-orch-behavioral.md"
 ```
 
 ### L2

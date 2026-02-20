@@ -5,11 +5,11 @@ description: >-
   interruption. Categorizes work tasks, determines resume point,
   and re-spawns agents with PT context. Use when session continues
   after interruption and PT exists with metadata.current_phase
-  set. Reads from PERMANENT task phase_signals and tasks/{team}/
+  set. Reads from PERMANENT task phase_signals and tasks/{work_dir}/
   output files, plus git branch state. Produces resume context
   for the interrupted skill with phase-by-phase recovery report
   and resume rationale for Lead. Restores DPS v5 context including
-  MCP directives and P2P COMM_PROTOCOL state.
+  MCP directives and file-based handoff state.
   On FAIL (corrupted PT or missing phase artifacts), Lead L4
   escalation with recovery options presented to user.
   DPS needs PT current_phase, tier, phase_signals, and git branch.
@@ -79,7 +79,7 @@ Indicators: context shows compaction summary, task details are absent from memor
 | Failure Type | Level | Action |
 |---|---|---|
 | Task API tool error during state reconstruction | L0 Retry | Re-invoke analyst with same DPS |
-| Incomplete reconstruction output or off-direction | L1 Nudge | SendMessage with targeted reconstruction context |
+| Incomplete reconstruction output or off-direction | L1 Nudge | Respawn with refined DPS targeting targeted reconstruction context |
 | Analyst exhausted turns or contradictions unresolvable | L2 Respawn | Kill → fresh analyst with deep reconstruction DPS |
 | Corrupted PT or missing phase artifacts | L4 Escalate | AskUserQuestion with recovery options |
 
@@ -114,12 +114,12 @@ After compaction, Lead may have inaccurate memories. Task API (TaskList, TaskGet
 > Secondary anti-patterns (auto-resume without awareness, duplicate task creation, parallel→sequential serialization): read `resources/methodology.md §8`.
 
 ## Phase-Aware Execution
-Runs in P2+ Team mode only:
-- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream consumers).
+Runs in Two-Channel protocol only:
+- **Communication**: Two-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead).
 - **Task tracking**: Update task status via TaskUpdate after completion.
 - **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Transitions
@@ -171,7 +171,7 @@ completed_tasks: 0
 in_progress_tasks: 0
 pending_tasks: 0
 pt_signal: "metadata.phase_signals.cross-cutting"
-signal_format: "{STATUS}|resume:{phase}|tasks:{completed}/{total}|ref:tasks/{team}/pipeline-resume.md"
+signal_format: "{STATUS}|resume:{phase}|tasks:{completed}/{total}|ref:tasks/{work_dir}/pipeline-resume.md"
 ```
 
 ### L2

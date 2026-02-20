@@ -69,4 +69,4 @@ All output files follow the L1/L2/L3 structure:
 - Agent system: `~/.claude/projects/-home-palantir/memory/ref_agents.md` §2 (frontmatter fields), §5 (usage pattern v2)
 - Skill system: `~/.claude/projects/-home-palantir/memory/ref_skills.md` §2 (frontmatter), §4 (invocation flow)
 - Pipeline phases: `~/.claude/CLAUDE.md` §2 (phase table), §3 (Lead spawn patterns)
-- Output conventions: `~/.claude/CLAUDE.md` §4 (Four-Channel Handoff Protocol)
+- Output conventions: `~/.claude/CLAUDE.md` §5 (Two-Channel Handoff Protocol [D17])

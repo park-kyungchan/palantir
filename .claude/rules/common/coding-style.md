@@ -36,13 +36,7 @@ ALWAYS validate at system boundaries:
 - Fail fast with clear error messages
 - Never trust external data (API responses, user input, file content)
 
-## Code Quality Checklist
+## Size Constraints
 
-Before marking work complete:
-- [ ] Code is readable and well-named
-- [ ] Functions are small (<50 lines)
-- [ ] Files are focused (<800 lines)
-- [ ] No deep nesting (>4 levels)
-- [ ] Proper error handling
-- [ ] No hardcoded values (use constants or config)
-- [ ] No mutation (immutable patterns used)
+- Functions: <50 lines
+- Files: <800 lines (800 = hard cap, 400 = target)

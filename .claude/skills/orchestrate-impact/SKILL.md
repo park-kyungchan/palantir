@@ -23,11 +23,11 @@ disable-model-invocation: true
 - **COMPLEX**: Spawn 1 analyst with maxTurns:25. Deep DAG analysis with load balancing and critical path optimization.
 
 ## Phase-Aware Execution
-P2+ Team mode only. Four-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream).
-- Read upstream from `tasks/{team}/` via $ARGUMENTS. Write output to `tasks/{team}/p5-orch-impact.md`.
+Two-Channel protocol only. Two-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead)
+- Read upstream from `tasks/{work_dir}/` via $ARGUMENTS. Write output to `tasks/{work_dir}/p5-orch-impact.md`.
 - Update task status via TaskUpdate. No overlapping edits with parallel agents.
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Decision Points
@@ -56,8 +56,8 @@ Load plan-verify-coordinator L3 via `$ARGUMENTS`. Extract task list, dependency 
 Build analyst DPS with D11 context filter:
 - **INCLUDE**: Verified plan L3, platform constraint (max 4 parallel/wave), wave scheduling principles
 - **EXCLUDE**: Other orchestrate dimension outputs, historical rationale, full pipeline state
-- **Budget**: Context field ≤ 30% of teammate effective context
-- **Delivery (Ch2+Ch3+Ch4)**: Write to `tasks/{team}/p5-orch-impact.md`. Ch3: `PASS|waves:{N}|max_parallel:{N}|ref:tasks/{team}/p5-orch-impact.md`. Ch4 P2P to orchestrate-coordinator: `READY|path:tasks/{team}/p5-orch-impact.md|fields:wave_schedule,parallel_limits,capacity`
+- **Budget**: Context field ≤ 30% of subagent effective context
+- **Delivery (Ch2+Ch3)**: Write to `tasks/{work_dir}/p5-orch-impact.md`. Ch3: `PASS|waves:{N}|max_parallel:{N}|ref:tasks/{work_dir}/p5-orch-impact.md`. file-based output to orchestrate-coordinator: `READY|path:tasks/{work_dir}/p5-orch-impact.md|fields:wave_schedule,parallel_limits,capacity`
 
 ### 2. Build Execution DAG
 Construct directed acyclic graph from dependency edges. Verify acyclicity via topological sort. Identify root nodes (in-degree = 0). On cycle detected: FAIL → route to plan-verify-coordinator.
@@ -83,7 +83,7 @@ Produce ordered waves with task assignments, per-wave load metrics, critical pat
 | Failure Type | Level | Action |
 |---|---|---|
 | Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
-| Wave schedule incomplete or dependency order ambiguous | L1 Nudge | SendMessage with refined capacity constraints |
+| Wave schedule incomplete or dependency order ambiguous | L1 Nudge | Respawn with refined DPS targeting refined capacity constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Cycle in DAG unresolvable without plan restructure | L3 Restructure | Route to plan-verify-coordinator for dependency redesign |
 | 3+ L2 failures or DAG unschedulable within wave limits | L4 Escalate | AskUserQuestion with situation + options |
@@ -142,7 +142,7 @@ waves:
     file_count: 0
     agent_types: []
 pt_signal: "metadata.phase_signals.p5_orchestrate_impact"
-signal_format: "PASS|waves:{N}|max_parallel:{N}|ref:tasks/{team}/p5-orch-impact.md"
+signal_format: "PASS|waves:{N}|max_parallel:{N}|ref:tasks/{work_dir}/p5-orch-impact.md"
 ```
 
 ### L2

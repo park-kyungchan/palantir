@@ -26,7 +26,7 @@
 | Context hint | 15% | No DPS guidance | Partial ("needs architecture") | "DPS needs {skill} L1 {fields} + L2 {sections}" |
 | Char efficiency | 10% | >1024 or <500 | 500-700 (underutilized) | 700-1024 (well-utilized) |
 
-**D11 Cognitive Focus Check (P6):** Good hint specifies what to EXCLUDE, not just include. BAD: "Needs all architecture data." GOOD: "DPS needs architecture L1 components only. Exclude L2 ADR rationale — teammate needs structure not reasoning."
+**D11 Cognitive Focus Check (P6):** Good hint specifies what to EXCLUDE, not just include. BAD: "Needs all architecture data." GOOD: "DPS needs architecture L1 components only. Exclude L2 ADR rationale — subagent needs structure not reasoning."
 
 ## Audit Steps
 
@@ -53,19 +53,19 @@ Parse each: frontmatter (`name`, `description`, flags) + body section headers.
 | Tier-specific DPS | TRIVIAL, STANDARD, COMPLEX each addressed |
 | DPS 5 fields | Context, Task, Constraints, Expected Output, Delivery |
 | Context field cognitive focus | Specifies inclusions AND exclusions per D11 |
-| Delivery field 4-channel | Matches D17 protocol (see 3b) |
-| Output location physical | `~/.claude/tasks/{team}/{phase}-{skill}.md` |
+| Delivery field 2-channel | Matches D17 protocol (see 3b) |
+| Output location physical | `~/.claude/tasks/{work_dir}/{phase}-{skill}.md` |
 
-**3b. D17 Four-Channel Compliance:**
+**3b. D17 Two-Channel Compliance:**
 
 | Channel | Location | Content | Check |
 |---------|----------|---------|-------|
 | Ch1: PT metadata | `metadata.phase_signals.{phase}` | `"PASS\|key:value"` | Output section mentions PT update? |
-| Ch2: Full output file | `~/.claude/tasks/{team}/{phase}-{skill}.md` | L1 YAML + L2 detail | File path pattern specified? |
-| Ch3: Micro-signal | Lead inbox | `"PASS\|ref:tasks/{team}/{file}"` | DPS Delivery field matches? Lead not receiving full data? |
-| Ch4: P2P input-ready | Consumer inboxes | `"READY\|path:...\|fields:{list}"` | COMM_PROTOCOL specifies NOTIFY targets? |
+| Ch2: Full output file | `~/.claude/tasks/{work_dir}/{phase}-{skill}.md` | L1 YAML + L2 detail | File path pattern specified? |
+| Ch3: Micro-signal | Lead inbox | `"PASS\|ref:tasks/{work_dir}/{file}"` | DPS Delivery field matches? Lead not receiving full data? |
+| File-based READY signal | Downstream output file | `"READY\|path:...\|fields:{list}"` | file-based handoff spec specifies NOTIFY targets? |
 
-Migration flag: any skill referencing `/tmp/pipeline/` needs update to `tasks/{team}/`.
+Migration flag: any skill referencing `/tmp/pipeline/` needs update to `tasks/{work_dir}/`.
 
 **3c. D15 Iteration Tracking:** For loop skills — does L2 mention iteration count? Is `PT metadata iterations.{skill}: N` the tracking mechanism? Does max iteration reference PT-based count (not Lead memory)?
 
@@ -89,7 +89,7 @@ Skills with Failure Handling sections should cover at least L0, L2, L4.
 
 **4b. Domain Compound Failure Gaps:** Per pipeline domain — what if 2+ skills fail simultaneously?
 
-**4c. Handoff Protocol Consistency:** All skills use `tasks/{team}/` (not mixed with `/tmp/pipeline/`). SendMessage micro-signal format consistent. PT signal key naming consistent.
+**4c. Handoff Protocol Consistency:** All skills use `tasks/{work_dir}/` (not mixed with `/tmp/pipeline/`). file-based signal micro-signal format consistent. PT signal key naming consistent.
 
 **4d. Context Distribution Pattern:** How many domains use coordinator's L1/L2/L3 tiered output? Which domains should adopt it?
 

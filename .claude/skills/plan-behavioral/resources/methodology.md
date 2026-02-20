@@ -60,14 +60,14 @@ If a task has no P0/P1 changes, no checkpoint needed (flow-through).
 ```
 Context (D11 priority: cognitive focus > token efficiency):
   INCLUDE:
-    - research-coordinator audit-behavioral L3 from tasks/{team}/p2-coordinator-audit-behavioral.md
+    - research-coordinator audit-behavioral L3 from tasks/{work_dir}/p2-coordinator-audit-behavioral.md
     - Pipeline tier and iteration count from PT
     - Task list from plan-static if available (for checkpoint alignment)
   EXCLUDE:
     - Other plan dimension outputs (unless direct dependency for checkpoint mapping)
     - Full research evidence detail (use L3 summaries only)
     - Pre-design and design conversation history
-  Budget: Context field ≤ 30% of teammate effective context
+  Budget: Context field ≤ 30% of subagent effective context
 
 Task: For each predicted behavior change: define test case (subject, pre/post condition,
       type, priority P0-P3). For P0/P1 changes: define rollback trigger (condition,
@@ -81,9 +81,9 @@ Expected Output: L1 YAML with test_count, rollback_count, checkpoint_count,
                  coverage_percent, tests[] and rollbacks[].
                  L2 per-change test cases and rollback procedures.
 
-Delivery (Four-Channel):
-  Ch2: Write full result to tasks/{team}/p3-plan-behavioral.md
-  Ch3: Micro-signal to Lead: PASS|tests:{N}|rollbacks:{N}|ref:tasks/{team}/p3-plan-behavioral.md
+Delivery (Two-Channel):
+  Ch2: Write full result to tasks/{work_dir}/p3-plan-behavioral.md
+  Ch3: Micro-signal to Lead: PASS|tests:{N}|rollbacks:{N}|ref:tasks/{work_dir}/p3-plan-behavioral.md
   Ch4: P2P to plan-verify-behavioral (Deferred Spawn — Lead spawns after all 4 plan dimensions complete)
 ```
 

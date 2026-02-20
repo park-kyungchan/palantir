@@ -11,7 +11,7 @@ description: >-
   matrix, orchestrate-behavioral checkpoint schedule,
   orchestrate-relational DPS specs, and orchestrate-impact wave
   schedule. Produces L1 index and L2 summary for Lead, L3
-  execution-plan for execution-code and execution-infra. Enforces DPS v5 with MCP_DIRECTIVES and COMM_PROTOCOL. All spawns model:sonnet. Plan-first gate for COMPLEX tier. On FAIL (execution plan inconsistency), Lead applies D12 escalation. DPS needs all four orchestrate dimension outputs. Exclude plan-verify raw data.
+  execution-plan for execution-code and execution-infra. Enforces DPS v5 with MCP_DIRECTIVES and file-based handoff spec. All spawns model:sonnet. Plan-first gate for COMPLEX tier. On FAIL (execution plan inconsistency), Lead applies D12 escalation. DPS needs all four orchestrate dimension outputs. Exclude plan-verify raw data.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -25,10 +25,10 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-P5 — Team mode only. $ARGUMENTS receives 4 dimension file paths from Lead.
-- **Communication**: Four-Channel Protocol — Ch2 disk file + Ch3 micro-signal to Lead + Ch4 P2P to downstream.
-- **P2P Self-Coordination**: Read dimension outputs directly from `tasks/{team}/` via $ARGUMENTS paths.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+P5 — Subagent mode. $ARGUMENTS receives 4 dimension file paths from Lead.
+- **Communication**: Two-Channel protocol — Ch2 output file in work directory + Ch3 micro-signal to Lead.
+- **Input**: Read dimension outputs directly from work directory via $ARGUMENTS paths.
+- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel subagents.
 
 > Phase-aware routing: read `.claude/resources/phase-aware-execution.md`
 > DPS construction guide: read `.claude/resources/dps-construction-guide.md`
@@ -83,7 +83,7 @@ Detect long serial chains, single-task waves, low parallelism, cost overrun. Gen
 Write L1 (compact YAML with counts and validation status) and L2 (narrative with cross-validation results, conflicts, critical path, and recommendations for P6).
 
 ### 5. Produce L3 Execution Plan
-Write detailed per-wave spawn instructions with complete DPS prompts, COMM_PROTOCOL (NOTIFY/SIGNAL_FORMAT/AWAIT), input/output handoff references, file ownership, and checkpoint criteria.
+Write detailed per-wave spawn instructions with complete DPS prompts, file-based handoff spec, input/output handoff references, file ownership, and checkpoint criteria.
 > L3 YAML format spec: read `resources/methodology.md`
 
 ## Failure Handling
@@ -91,7 +91,7 @@ Write detailed per-wave spawn instructions with complete DPS prompts, COMM_PROTO
 | Failure Type | Level | Action |
 |---|---|---|
 | Dimension output missing (transient) | L0 Retry | Re-invoke after missing dimension skill re-exports |
-| Cross-validation incomplete or merge ambiguous | L1 Nudge | SendMessage with refined conflict resolution constraints |
+| Cross-validation incomplete or merge ambiguous | L1 Nudge | Respawn with refined DPS targeting conflict resolution constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Cross-validation FAIL unresolvable without restructure | L3 Restructure | Route to affected dimension skill(s) for redesign |
 | 3+ L2 failures or task coverage mismatch unresolvable | L4 Escalate | AskUserQuestion with situation + options |
@@ -108,7 +108,7 @@ L3 must contain COMPLETE DPS prompts per task. P6 should not reconstruct prompts
 Every conflict must be resolved explicitly and documented in L2. Silent resolution creates hidden inconsistencies.
 
 ### DO NOT: Create L3 Without Handoff Paths
-Every inter-task dependency must have a concrete `tasks/{team}/` path. Tasks reading from undefined paths fail at execution.
+Every inter-task dependency must have a concrete work directory path. Tasks reading from undefined paths fail at execution.
 
 ### DO NOT: Skip Agent-Wave Validation
 A wave with 5 agents will fail. Agent-wave fit is the most critical cross-validation check.
@@ -121,10 +121,10 @@ If any BLOCKING check fails, do NOT produce an L3. A partial L3 misleads P6 into
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| orchestrate-static | Task-agent assignment matrix (WHO) | L1 YAML + L2 at `tasks/{team}/p5-orch-static.md` |
-| orchestrate-behavioral | Checkpoint schedule (WHERE) | L1 YAML + L2 at `tasks/{team}/p5-orch-behavioral.md` |
-| orchestrate-relational | DPS handoff specs (HOW) | L1 YAML + L2 chain at `tasks/{team}/p5-orch-relational.md` |
-| orchestrate-impact | Wave capacity schedule (WHEN) | L1 YAML + L2 timeline at `tasks/{team}/p5-orch-impact.md` |
+| orchestrate-static | Task-agent assignment matrix (WHO) | L1 YAML + L2 at `{work_dir}/p5-orch-static.md` |
+| orchestrate-behavioral | Checkpoint schedule (WHERE) | L1 YAML + L2 at `{work_dir}/p5-orch-behavioral.md` |
+| orchestrate-relational | DPS handoff specs (HOW) | L1 YAML + L2 chain at `{work_dir}/p5-orch-relational.md` |
+| orchestrate-impact | Wave capacity schedule (WHEN) | L1 YAML + L2 timeline at `{work_dir}/p5-orch-impact.md` |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
@@ -140,7 +140,7 @@ If any BLOCKING check fails, do NOT produce an L3. A partial L3 misleads P6 into
 | Cross-validation FAIL | Lead (re-invoke relevant dimension) | Check ID, evidence, fix suggestion |
 | Task coverage mismatch | Lead (investigate discrepancy) | Missing/extra task list |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -151,7 +151,7 @@ If any BLOCKING check fails, do NOT produce an L3. A partial L3 misleads P6 into
 - Cross-validation Check C (checkpoint-wave alignment): PASS or WARN only
 - Cross-validation Check D (task coverage completeness): PASS
 - L3 execution plan contains complete spawn instructions for every task
-- L3 handoff paths are all concrete `tasks/{team}/` paths
+- L3 handoff paths are all concrete work directory paths
 - No wave exceeds 4 parallel tasks
 
 ## Output
@@ -171,8 +171,8 @@ cross_validation:
   checkpoint_alignment: PASS|FAIL|WARN
   task_coverage: PASS|FAIL
 files:
-  l2_summary: tasks/{team}/p5-coordinator-summary.md
-  l3_execution_plan: tasks/{team}/p5-coordinator-execution-plan.md
+  l2_summary: "{work_dir}/p5-coordinator-summary.md"
+  l3_execution_plan: "{work_dir}/p5-coordinator-execution-plan.md"
 ```
 
 ### L2 (summary.md)

@@ -100,7 +100,7 @@ EXCLUDE:
   - Pre-design conversation history
   - Full pipeline state (P2 phase only)
   - Components outside assigned subsystem
-Budget: Context field ≤ 30% of teammate effective context.
+Budget: Context field ≤ 30% of subagent effective context.
 ```
 
 **Task**: "Identify all behavior-bearing components within assigned subsystem `{subsystem_name}`. For each: (1) document current behavior with file:line reference, (2) predict side effects and regressions from design decisions in the architecture doc, (3) classify risk HIGH/MEDIUM/LOW with evidence from both current code and the relevant ADR."
@@ -111,11 +111,11 @@ Budget: Context field ≤ 30% of teammate effective context.
 - L1 YAML: `total_changes`, `risk_high`, `risk_medium`, `risk_low`, `conflicts`, `predictions[]`
 - L2: per-component behavior change table, side effect inventory, regression risk matrix
 
-**Delivery**: Write to `tasks/{team}/p2-audit-behavioral-{subsystem}.md`. SendMessage to Lead: `PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral-{subsystem}.md`
+**Delivery**: Write to `tasks/{work_dir}/p2-audit-behavioral-{subsystem}.md`. file-based handoff to Lead: `PASS|changes:{N}|risks:{N}|ref:tasks/{work_dir}/p2-audit-behavioral-{subsystem}.md`
 
 ### STANDARD Tier (Single Analyst)
 
-Same task structure as COMPLEX. No subsystem partitioning — analyst covers all behavior-bearing components. maxTurns: 25. Output file: `tasks/{team}/p2-audit-behavioral.md`.
+Same task structure as COMPLEX. No subsystem partitioning — analyst covers all behavior-bearing components. maxTurns: 25. Output file: `tasks/{work_dir}/p2-audit-behavioral.md`.
 
 ### TRIVIAL Tier
 
@@ -129,19 +129,19 @@ Lead-direct inline execution. Read 1-2 behavior-bearing files. Note obvious risk
 - **Cause**: Design changes affect only static content (documentation, config values, types with no runtime effect).
 - **Action**: Report `changes: 0, risks: 0`. This is valid — document-only changes have no behavioral risk.
 - **Route**: Send to research-coordinator with empty prediction set and explanation note.
-- **Signal**: `PASS|changes:0|risks:0|ref:tasks/{team}/p2-audit-behavioral.md`
+- **Signal**: `PASS|changes:0|risks:0|ref:tasks/{work_dir}/p2-audit-behavioral.md`
 
 ### Design Scope Too Broad
 - **Cause**: Architecture decisions affect many components; analyst cannot cover all within turn budget (maxTurns: 25).
 - **Action**: Prioritize HIGH-risk components by applying Risk Factor Scoring first. Report partial coverage with explicit list of uncovered components.
 - **Route**: research-coordinator with `partial: true` flag and uncovered component list.
-- **Signal**: `PASS|changes:{N}|risks:{N}|partial:true|ref:tasks/{team}/p2-audit-behavioral.md`
+- **Signal**: `PASS|changes:{N}|risks:{N}|partial:true|ref:tasks/{work_dir}/p2-audit-behavioral.md`
 
 ### Conflicting Predictions
 - **Cause**: Two design decisions create contradictory behavior predictions for the same component (e.g., ADR-1 says component X will gain retry logic; ADR-2 removes the error handler X relies on).
 - **Action**: Document both predictions with their respective ADR references. Flag as design conflict requiring resolution before plan phase.
 - **Route**: research-coordinator with `conflicts: {N}` flag. Do not attempt to resolve the conflict — that is plan-phase work.
-- **Signal**: `FAIL|conflicts:{N}|ref:tasks/{team}/p2-audit-behavioral.md`
+- **Signal**: `FAIL|conflicts:{N}|ref:tasks/{work_dir}/p2-audit-behavioral.md`
 
 ---
 
@@ -159,4 +159,4 @@ DPS adjustment: Explicitly list contested component in one analyst's INCLUDE and
 
 ### Quality Gate Failure (post-completion)
 Signs: Predictions missing file:line evidence, risk classifications without criteria documentation, or prescriptive recommendations embedded in predictions.
-Action: L1 Nudge — SendMessage to analyst with specific gaps listed. Analyst revises affected predictions only (does not re-run full analysis).
+Action: L1 Nudge — file-based handoff to analyst with specific gaps listed. Analyst revises affected predictions only (does not re-run full analysis).

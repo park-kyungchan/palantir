@@ -40,7 +40,7 @@ Many tasks across all phases. Full state reconstruction required:
 
 **Expected Output**: L1 YAML with `resume_phase`, `completed_tasks`, `failed_tasks`, `contradictions`. L2 recovery report with phase-by-phase status matrix.
 
-**Delivery**: SendMessage to Lead: `PASS|resume:{phase}|tasks:{completed}/{total}|ref:tasks/{team}/pipeline-resume.md`
+**Delivery**: file-based handoff to Lead: `PASS|resume:{phase}|tasks:{completed}/{total}|ref:tasks/{work_dir}/pipeline-resume.md`
 
 ### Analyst Tier-Specific DPS Variations
 - **TRIVIAL**: Lead-direct. No analyst spawn — just TaskList + TaskGet inline.

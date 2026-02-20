@@ -17,7 +17,7 @@ Spawn analyst for design compliance check. Construct the delegation prompt with:
 
 **Expected Output**: Per-file compliance verdict (PASS/FAIL) with file:line references for deviations. Severity: critical (spec violation), high (interface mismatch), medium (pattern deviation), low (style issue).
 
-**Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+**Delivery**: Upon completion, send L1 summary to Lead via file-based signal. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### Stage 1 Tier-Specific DPS Variations
 
@@ -38,7 +38,7 @@ Spawn analyst for design compliance check. Construct the delegation prompt with:
 Spawn analyst for code quality assessment. Construct the delegation prompt with:
 
 **Context (D11 — cognitive focus first)**:
-- INCLUDE: execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Stage 1 findings summary received via SendMessage. Relevant convention patterns from research-codebase if available.
+- INCLUDE: execution-code/infra L1 `files_changed[]` manifest (same file list as Stage 1). Stage 1 findings summary received via file-based signal. Relevant convention patterns from research-codebase if available.
 - EXCLUDE: Design-architecture and design-interface L2 full content (covered by Stage 1). Cascade history. Full pipeline state.
 - Budget: Context field ≤ 30% of analyst effective context.
 
@@ -48,7 +48,7 @@ Spawn analyst for code quality assessment. Construct the delegation prompt with:
 
 **Expected Output**: Per-file quality findings with file:line locations. Categorize each as: required fix (blocking merge) vs suggestion (non-blocking). Security findings always classified as critical severity.
 
-**Delivery**: Upon completion, send L1 summary to Lead via SendMessage. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
+**Delivery**: Upon completion, send L1 summary to Lead via file-based signal. Include: status (PASS/FAIL), files changed count, key metrics. L2 detail stays in agent context.
 
 ### Stage 2 Tier-Specific Adjustments
 

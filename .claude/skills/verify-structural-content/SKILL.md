@@ -100,7 +100,7 @@ Full scan (major restructuring / new release / first-time setup). Targeted scan 
 
 All FAIL-level findings route to **execution-infra** with: file path + error type + line location + suggested fix. Data per type: YAML corruption → error location; missing fields → field list; naming violation → expected pattern; missing keys → key list; missing sections → section list; low utilization → char count + target.
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ---
@@ -112,7 +112,7 @@ All FAIL-level findings route to **execution-infra** with: file path + error typ
 | Failure Type | Level | Action |
 |---|---|---|
 | Analyst tool error or timeout during scan | L0 Retry | Re-invoke analyst with same DPS and file list |
-| Analyst output missing scores or incomplete coverage | L1 Nudge | SendMessage with refined scope + scoring rubric reminder |
+| Analyst output missing scores or incomplete coverage | L1 Nudge | Respawn with refined DPS targeting refined scope + scoring rubric reminder |
 | Analyst exhausted turns, context polluted mid-scan | L2 Respawn | Kill analyst → spawn fresh with refined DPS, reduced scope |
 | Tier misclassification discovered (split wrong) | L3 Restructure | Reclassify tier → resplit analyst ownership |
 | 3+ L2 failures or verify pipeline strategy unclear | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -178,7 +178,7 @@ avg_utilization_pct: 0
 missing_keys_count: 0
 missing_sections_count: 0
 warnings: 0
-signal_format: "{STATUS}|files:{N}|pass:{N}|ref:tasks/{team}/p7-structural-content.md"
+signal_format: "{STATUS}|files:{N}|pass:{N}|ref:tasks/{work_dir}/p7-structural-content.md"
 findings:
   - file: ""
     structure_score: 0

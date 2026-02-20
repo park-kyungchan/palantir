@@ -19,8 +19,8 @@ Spawn `subagent_type: infra-implementer`, `maxTurns: 30`:
   Edit/Write. Read-back after each edit to verify. Then run test command. On test fail: restore
   original content (Write original back). Report L1 YAML + per-file diff summary."
 - **Constraints**: Never modify any file under `.claude/`. Max 10 files per invocation.
-- **Delivery**: Write full result to `tasks/{team}/homeostasis-manage-codebase.md`.
-  Send micro-signal to Lead: `{STATUS}|files:{N}|reverted:{R}|ref:tasks/{team}/homeostasis-manage-codebase.md`.
+- **Delivery**: Write full result to `tasks/{work_dir}/homeostasis-manage-codebase.md`.
+  Send micro-signal to Lead: `{STATUS}|files:{N}|reverted:{R}|ref:tasks/{work_dir}/homeostasis-manage-codebase.md`.
   Fallback if no team active: `/tmp/pipeline/homeostasis-manage-codebase.md`.
 
 ---
@@ -37,8 +37,8 @@ Spawn 2 × `subagent_type: infra-implementer`, `maxTurns: 30` each:
 - **Coordination**: Both implementers run in parallel (wave 1). After both complete, Lead runs test
   command once more against full suite. If full-suite test fails: identify which segment caused failure
   → revert only that segment.
-- **Delivery**: Each writes to its own segment file (`tasks/{team}/homeostasis-manage-codebase-seg{N}.md`).
-  Lead synthesizes into `tasks/{team}/homeostasis-manage-codebase.md`.
+- **Delivery**: Each writes to its own segment file (`tasks/{work_dir}/homeostasis-manage-codebase-seg{N}.md`).
+  Lead synthesizes into `tasks/{work_dir}/homeostasis-manage-codebase.md`.
 
 ---
 

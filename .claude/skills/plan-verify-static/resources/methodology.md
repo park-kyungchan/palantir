@@ -17,7 +17,7 @@
 - Full pipeline state beyond P3-P4
 - Rejected task decomposition alternatives
 
-**Budget:** Context field ≤ 30% of teammate effective context
+**Budget:** Context field ≤ 30% of subagent effective context
 
 ### Task
 
@@ -36,7 +36,7 @@ L2: Coverage matrix with file:line evidence
 
 ### Delivery
 
-SendMessage to Lead: `PASS|coverage:{pct}|orphans:{N}|ref:tasks/{team}/p4-pv-static.md`
+file-based handoff to Lead: `PASS|coverage:{pct}|orphans:{N}|ref:tasks/{work_dir}/p4-pv-static.md`
 
 ## Tier-Specific DPS Variations
 

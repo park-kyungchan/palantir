@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# DEPRECATED: TeammateIdle event removed in INFRA v14 (single-session architecture)
 set -euo pipefail
 
 # TeammateIdle hook — blocks idle when teammate has unfinished tasks (RSIL-011)

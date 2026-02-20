@@ -20,7 +20,7 @@ SKILL.md holds routing intelligence; this file holds execution detail.
 - Full pipeline state beyond P3-P4
 - Rejected contract alternatives
 
-**Budget**: Context field ≤ 30% of teammate effective context
+**Budget**: Context field ≤ 30% of subagent effective context
 
 ### Task
 Cross-reference contract inventory against relationship inventory. Verify bidirectional consistency
@@ -37,8 +37,8 @@ L1 YAML: contract_count, relationship_count, asymmetric_count, missing_count, or
 verdict, findings[]. L2: consistency matrix with gap analysis.
 
 ### Delivery
-Write result to `tasks/{team}/p4-pv-relational.md`.
-SendMessage to Lead: `PASS|contracts:{N}|asymmetric:{N}|ref:tasks/{team}/p4-pv-relational.md`
+Write result to `tasks/{work_dir}/p4-pv-relational.md`.
+file-based handoff to Lead: `PASS|contracts:{N}|asymmetric:{N}|ref:tasks/{work_dir}/p4-pv-relational.md`
 
 ---
 

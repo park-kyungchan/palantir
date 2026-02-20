@@ -30,8 +30,8 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 Runs outside the linear pipeline (homeostasis). Team mode applies when called in P2+ context.
-- Four-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers).
-- Write to `tasks/{team}/homeostasis-manage-infra.md`. Micro-signal: `{STATUS}|health:{score}|drift:{N}|ref:tasks/{team}/homeostasis-manage-infra.md`.
+- Two-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead).
+- Write to `tasks/{work_dir}/homeostasis-manage-infra.md`. Micro-signal: `{STATUS}|health:{score}|drift:{N}|ref:tasks/{work_dir}/homeostasis-manage-infra.md`.
 - For phase-aware routing details: read `.claude/resources/phase-aware-execution.md`
 
 ## Methodology
@@ -98,7 +98,7 @@ Thresholds: `>85%` = healthy | `60-85%` = degraded | `<60%` = critical.
 | Failure Type | Level | Action |
 |---|---|---|
 | File read error, tool timeout | L0 Retry | Re-invoke same analyst with same DPS |
-| Analyst output missing component categories | L1 Nudge | SendMessage with refined scan scope |
+| Analyst output missing component categories | L1 Nudge | Respawn with refined DPS targeting refined scan scope |
 | Analyst stuck or maxTurns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Multiple component types unreadable | L3 Restructure | Split into targeted scans per component type |
 | 3+ L2 failures or scan structurally blocked | L4 Escalate | AskUserQuestion with situation summary and options |
@@ -155,7 +155,7 @@ manage-infra reads files that execution-infra writes. Running during active pipe
 | Critical broken references | (user) | Urgent report requiring immediate manual intervention |
 | Unfixable structural issues | (user) | Findings with severity classification, no auto-fix |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -176,7 +176,7 @@ skill: manage-infra
 status: healthy|degraded|critical
 health_score: 87          # percentage, see resources/methodology.md for calculation
 pt_signal: "metadata.phase_signals.homeostasis"
-signal_format: "{STATUS}|health:{score}|drift:{N}|ref:tasks/{team}/homeostasis-manage-infra.md"
+signal_format: "{STATUS}|health:{score}|drift:{N}|ref:tasks/{work_dir}/homeostasis-manage-infra.md"
 trigger: post-pipeline|post-modification|periodic|post-rsi
 components:
   agents: {count: 6, expected: 6, orphans: 0, score: 3}

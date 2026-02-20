@@ -32,7 +32,7 @@ for each skill in .claude/skills/*/SKILL.md:
   sequence (no backward refs except cross-cutting). Compare CLAUDE.md counts against filesystem.
 - **Output**: L1 YAML with relationships_checked, inconsistencies, findings[]. L2 relationship graph +
   phase sequence validation.
-- **Delivery**: `"{STATUS}|relationships:{n}|violations:{n}|ref:tasks/{team}/p7-consistency.md"`
+- **Delivery**: `"{STATUS}|relationships:{n}|violations:{n}|ref:tasks/{work_dir}/p7-consistency.md"`
 
 ## Bidirectionality Check — Example Table
 

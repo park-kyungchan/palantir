@@ -25,11 +25,10 @@ disable-model-invocation: true
 
 ## Phase-Aware Execution
 
-This skill runs in P2+ Team mode only. Agent Teams coordination applies:
-- **Communication**: Four-Channel Protocol — Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to downstream consumers). Lead receives status only, not full data.
-- **Task tracking**: Update task status via TaskUpdate after completion.
-- **P2P Self-Coordination**: Read upstream outputs directly from `tasks/{team}/` files via $ARGUMENTS path. Send P2P signals to downstream consumers.
-- **File ownership**: Only modify files assigned to you. No overlapping edits with parallel agents.
+This skill runs in Two-Channel protocol only. Single-session subagent execution:
+- **Subagent writes** output file to `tasks/{work_dir}/p3-plan-impact.md`
+- **Ch3 micro-signal** to Lead with PASS/FAIL status
+- **Task tracking**: Subagent calls TaskUpdate on completion. File ownership: only modify assigned files.
 
 ## Decision Points
 
@@ -106,7 +105,7 @@ See: `resources/methodology.md §DPS Templates` for TRIVIAL/STANDARD/COMPLEX ana
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error or timeout during wave grouping | L0 Retry | Re-invoke same agent, same DPS |
-| Wave assignment incomplete or propagation containment off-direction | L1 Nudge | SendMessage with refined propagation scope constraints |
+| Wave assignment incomplete or propagation containment off-direction | L1 Nudge | Respawn with refined DPS targeting refined propagation scope constraints |
 | Agent stuck on topological sort or context exhausted | L2 Respawn | Kill agent → fresh analyst with refined DPS |
 | Wave structure broken or task count exceeds capacity requiring restructure | L3 Restructure | Modify wave plan, redefine containment boundaries |
 | Strategic ambiguity on checkpoint density or 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -124,7 +123,7 @@ See: `resources/methodology.md §DPS Templates` for TRIVIAL/STANDARD/COMPLEX ana
 Execution order must be justified by propagation paths from audit-impact, not by intuition or file naming.
 
 ### DO NOT: Exceed 4 Tasks Per Wave
-The teammate capacity constraint is absolute. Split into multiple sequential waves even if propagation-safe in parallel.
+The subagent capacity constraint is absolute. Split into multiple sequential waves even if propagation-safe in parallel.
 
 ### DO NOT: Skip Checkpoints Between High-Risk Waves
 Every wave containing a high-risk source (DIRECT to 3+ targets, or any TRANSITIVE path) must be followed by a checkpoint.
@@ -172,7 +171,7 @@ wave_count: 0
 checkpoint_count: 0
 parallel_efficiency: 0.0
 pt_signal: "metadata.phase_signals.p3_plan_impact"
-signal_format: "{STATUS}|groups:{N}|checkpoints:{N}|ref:tasks/{team}/p3-plan-impact.md"
+signal_format: "{STATUS}|groups:{N}|checkpoints:{N}|ref:tasks/{work_dir}/p3-plan-impact.md"
 groups:
   - wave: 1
     tasks: []
@@ -192,7 +191,7 @@ checkpoints:
 
 ## Resources
 - `resources/methodology.md` — Depth calculation steps, wave construction format, checkpoint schedule format, DPS templates
-- `.claude/resources/phase-aware-execution.md` — Team mode, Four-Channel Protocol, task tracking
+- `.claude/resources/phase-aware-execution.md` — Team mode, Two-Channel Protocol, task tracking
 - `.claude/resources/failure-escalation-ladder.md` — L0–L4 escalation definitions and triggers
 - `.claude/resources/dps-construction-guide.md` — DPS v5 template, D11 context distribution
-- `.claude/resources/output-micro-signal-format.md` — Ch1–Ch4 signal formats and examples
+- `.claude/resources/output-micro-signal-format.md` — Ch2–Ch3 signal formats and examples

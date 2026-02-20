@@ -51,12 +51,13 @@ SessionEnd (clear/logout/other)
 | SubagentStart | Subagent spawned | no | agent type | global |
 | SubagentStop | Subagent finishes | yes (exit 2) | agent type | global |
 | Stop | Claude finishes responding | yes (exit 2) | no | global, agent, skill |
-| TeammateIdle | Teammate about to idle | yes (exit 2) | no | global |
-| TaskCompleted | Task marked complete | yes (exit 2) | no | global |
+| TeammateIdle | Teammate about to idle | yes (exit 2) | no | global | **AT-only (v14: unused)** |
+| TaskCompleted | Task marked complete | yes (exit 2) | no | global | **AT-only (v14: unused)** |
 | PreCompact | Before compaction | no | manual, auto | global |
 | SessionEnd | Session terminates | no | clear, logout, other | global |
 
 **Handler type support**: `TeammateIdle` and `TaskCompleted` do NOT support `prompt` or `agent` hook types — exit code (0/2) only. No JSON decision control for these events.
+**v14 note**: `TeammateIdle` and `TaskCompleted` are Agent Teams hooks — not used in v14 single-session architecture.
 
 ---
 

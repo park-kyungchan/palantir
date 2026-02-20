@@ -11,10 +11,10 @@
 
 | Dimension | Skill | Output File | Key Data |
 |-----------|-------|-------------|----------|
-| WHO | orchestrate-static | `tasks/{team}/p5-orch-static.md` | Task-agent assignment matrix |
-| WHERE | orchestrate-behavioral | `tasks/{team}/p5-orch-behavioral.md` | Checkpoint schedule |
-| HOW | orchestrate-relational | `tasks/{team}/p5-orch-relational.md` | DPS handoff specs |
-| WHEN | orchestrate-impact | `tasks/{team}/p5-orch-impact.md` | Wave capacity schedule |
+| WHO | orchestrate-static | `tasks/{work_dir}/p5-orch-static.md` | Task-agent assignment matrix |
+| WHERE | orchestrate-behavioral | `tasks/{work_dir}/p5-orch-behavioral.md` | Checkpoint schedule |
+| HOW | orchestrate-relational | `tasks/{work_dir}/p5-orch-relational.md` | DPS handoff specs |
+| WHEN | orchestrate-impact | `tasks/{work_dir}/p5-orch-impact.md` | Wave capacity schedule |
 
 ---
 
@@ -27,9 +27,9 @@
 **COMPLEX**: Full DPS. maxTurns:35. All 4 checks, conflict resolution, optimization recommendations.
 
 DPS Context field (D11 principle — cognitive focus first):
-- INCLUDE: All 4 dimension output paths, tiered output structure (L1/L2/L3), max 4 teammates/wave constraint
+- INCLUDE: All 4 dimension output paths, tiered output structure (L1/L2/L3), max 4 subagents/wave constraint
 - EXCLUDE: plan-verify raw data, historical design rationale, full pipeline state
-- Budget: Context field ≤ 30% of teammate effective context
+- Budget: Context field ≤ 30% of subagent effective context
 
 ---
 
@@ -51,12 +51,12 @@ task:
   inputs:
     - dps_id: DPS-01
       from_task: T0
-      path: tasks/{team}/p6-input-schema.md
+      path: tasks/{work_dir}/p6-input-schema.md
       format: yaml
   outputs:
     - dps_id: DPS-02
       to_task: T3
-      path: tasks/{team}/p6-auth-module.md
+      path: tasks/{work_dir}/p6-auth-module.md
       format: markdown
   # WHERE (from behavioral)
   checkpoint: CP-02
@@ -150,14 +150,14 @@ waves:
           Task: {what to implement}
           Constraints: {file ownership, interfaces}
           Expected Output: {deliverables}
-          Delivery: Write to tasks/{team}/p6-T1-output.md
-          COMM_PROTOCOL:
-            NOTIFY: [{consumer_teammate_names}]
-            SIGNAL_FORMAT: "READY|path:tasks/{team}/p6-T1-output.md|fields:{fields}"
-            AWAIT: [{producer_teammate_names if sequential}]
+          Delivery: Write to tasks/{work_dir}/p6-T1-output.md
+          file-based handoff spec:
+            NOTIFY: [{consumer_subagent_names}]
+            SIGNAL_FORMAT: "READY|path:tasks/{work_dir}/p6-T1-output.md|fields:{fields}"
+            AWAIT: [{producer_subagent_names if sequential}]
         inputs: [{dps_id, path, format}]
         outputs: [{dps_id, path, format}]
         files: [file1.ts, file2.ts]
 ```
 
-Required per task: agent type, complete DPS prompt, COMM_PROTOCOL (NOTIFY/SIGNAL_FORMAT/AWAIT), input/output DPS refs, file ownership, checkpoint criteria.
+Required per task: agent type, complete DPS prompt, file-based handoff spec (NOTIFY/SIGNAL_FORMAT/AWAIT), input/output DPS refs, file ownership, checkpoint criteria.

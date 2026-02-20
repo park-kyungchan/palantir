@@ -29,7 +29,7 @@ case "$TOOL_NAME" in
 {
   "hookSpecificOutput": {
     "hookEventName": "PostToolUseFailure",
-    "additionalContext": "⚠️ CRITICAL MCP FAILURE: Research MCP tool is unavailable. You MUST stop all research work immediately. Do NOT attempt WebSearch or WebFetch as fallback — these waste tokens without MCP-quality results. Report failure to Lead via SendMessage: FAIL|reason:mcp-unavailable|tool:{failed_tool}|action:retry-later. If in Local mode, write FAIL status to output file."
+    "additionalContext": "⚠️ CRITICAL MCP FAILURE: Research MCP tool is unavailable. You MUST stop all research work immediately. Do NOT attempt WebSearch or WebFetch as fallback — these waste tokens without MCP-quality results. Write FAIL status to your output file: FAIL|reason:mcp-unavailable|tool:{failed_tool}|action:retry-later. Lead will detect failure via output file micro-signal."
   }
 }
 EOF

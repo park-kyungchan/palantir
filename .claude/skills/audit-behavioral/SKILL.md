@@ -67,7 +67,7 @@ Produce per-component behavior change table, side effect inventory, regression r
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error during behavior analysis | L0 Retry | Re-invoke same analyst, same scope |
-| Incomplete predictions or off-scope analysis | L1 Nudge | SendMessage with refined component scope |
+| Incomplete predictions or off-scope analysis | L1 Nudge | Respawn with refined DPS targeting component scope |
 | Analyst exhausted turns, context polluted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Subsystem scope conflict between parallel analysts | L3 Restructure | Modify subsystem boundaries, reassign components |
 | Design conflict requiring strategic decision, 3+ L2 failures | L4 Escalate | AskUserQuestion with options |
@@ -106,7 +106,7 @@ Import chains and file dependencies belong to audit-static. Focus on runtime eff
 | Analyst exhausted | research-coordinator | Partial predictions + uncovered component list |
 | Design conflict detected | research-coordinator | Conflicting predictions with both ADR references |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 output file in work directory, Ch3 micro-signal to Lead.
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -134,7 +134,7 @@ predictions:
     risk: HIGH|MEDIUM|LOW
     design_decision: ""
 pt_signal: "metadata.phase_signals.p2_research"
-signal_format: "PASS|changes:{N}|risks:{N}|ref:tasks/{team}/p2-audit-behavioral.md"
+signal_format: "PASS|changes:{N}|risks:{N}|ref:{work_dir}/p2-audit-behavioral.md"
 ```
 
 ### L2

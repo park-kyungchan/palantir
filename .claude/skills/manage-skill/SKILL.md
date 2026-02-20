@@ -5,8 +5,8 @@ description: >-
   intelligence. L1 audit: routing signal density within 1024-char
   budget, context distribution hints, failure route summary, output
   location clarity, and cross-skill transition consistency. L2
-  audit: DPS completeness per tier, 4-channel handoff compliance
-  (PT signal + tasks/{team}/ output + SendMessage micro-signal + P2P input-ready signal),
+  audit: DPS completeness per tier, Two-Channel handoff compliance
+  (Ch2 file output + Ch3 micro-signal),
   iteration tracking in PT metadata, and cognitive focus filtering
   in DPS Context fields. Cross-skill audit: transition graph
   orphans, domain compound failure gaps, and handoff protocol
@@ -43,7 +43,7 @@ This skill enforces confirmed design decisions across all skills:
 | D12: Re-planning full autonomy ladder | L2 Failure Handling completeness |
 | D15: Iteration tracking in PT metadata | L2 iteration ownership check |
 | D16: Fix mode = propose+approve (old/new diff, batch) | Audit output format |
-| D17: 4-channel handoff (PT signal + tasks/{team}/ + micro-signal to Lead + P2P to consumers) | L2 output location + delivery audit |
+| D17: Two-Channel handoff (Ch2 tasks/{work_dir}/ file output + Ch3 micro-signal to Lead) | L2 output location + delivery audit |
 
 ## CC Native Constraint: L1 Description Budget
 
@@ -70,7 +70,7 @@ Every L1 must pack 7 routing signals (P0 core verb → P6 context hint). Budget:
 
 ### Analyst Division (Full Audit)
 - **Analyst A (L1 + Cross-Skill)**: All SKILL.md frontmatter. L1 scores. Transition graph. Orphans, duplicates.
-- **Analyst B (L2 + DPS)**: All SKILL.md bodies. DPS completeness. 4-channel compliance. Iteration tracking.
+- **Analyst B (L2 + DPS)**: All SKILL.md bodies. DPS completeness. 2-channel compliance. Iteration tracking.
 - **Lead merges**: Cross-references A's transition gaps with B's DPS gaps.
 
 ### Fix Proposal Mode (D16)
@@ -85,9 +85,9 @@ All audit findings produce fix proposals in **propose+approve** mode:
 
 ## Phase-Aware Execution
 - **Homeostasis (all tiers)**: Lead-direct or analyst spawn. No team infrastructure for audit-single. Full audit may use team mode for parallel analysts.
-- **P2+ (active Team)**: Analysts spawn with `team_name`. Deliver via Four-Channel Protocol.
-- **Ch2**: Write report to `tasks/{team}/homeostasis-manage-skill.md`.
-- **Ch3** micro-signal to Lead: `PASS|action:{type}|audited:{N}|ref:tasks/{team}/homeostasis-manage-skill.md`.
+- **P2+ (background subagents)**: Analysts spawn with `run_in_background:true`, `context:fork`. Deliver via Two-Channel Protocol.
+- **Ch2**: Write report to `tasks/{work_dir}/homeostasis-manage-skill.md`.
+- **Ch3** micro-signal to Lead: `PASS|action:{type}|audited:{N}|ref:tasks/{work_dir}/homeostasis-manage-skill.md`.
 
 > Phase-aware routing: read `.claude/resources/phase-aware-execution.md`
 > DPS construction: read `.claude/resources/dps-construction-guide.md`
@@ -117,7 +117,7 @@ New skills must have valid Receives From / Sends To. No orphan creation.
 D16 mandates propose+approve mode. Never write to SKILL.md without Human batch approval via AskUserQuestion.
 
 ### DO NOT: Ignore /tmp/pipeline/ Legacy References
-D17 standardized on `tasks/{team}/`. Any remaining `/tmp/pipeline/` references must be flagged for migration.
+D17 standardized on `tasks/{work_dir}/`. Any remaining `/tmp/pipeline/` references must be flagged for migration.
 
 ## Transitions
 
@@ -141,7 +141,7 @@ D17 standardized on `tasks/{team}/`. Any remaining `/tmp/pipeline/` references m
 | Skill parse error | (Lead context) | Error + file path |
 | Over-budget L1 | (Self — optimize-l1) | Current + trimmed proposal |
 
-> D17 Note: P2+ team mode — use 4-channel protocol (Ch1 PT, Ch2 tasks/{team}/, Ch3 micro-signal, Ch4 P2P).
+> D17 Note: Two-Channel protocol — Ch2 (file output to tasks/{work_dir}/) + Ch3 (micro-signal to Lead).
 > Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
@@ -178,6 +178,6 @@ d17_compliance_pct: 0
 - Old/new L1 diff (optimize-l1)
 
 ### Output Location (D17)
-- Full report: `~/.claude/tasks/{team}/homeostasis-manage-skill.md`
+- Full report: `~/.claude/tasks/{work_dir}/homeostasis-manage-skill.md`
 - PT signal: `metadata.phase_signals.homeostasis: "PASS|audited:{N}|avg:{score}"`
-- SendMessage: `"PASS|action:{type}|audited:{N}|ref:tasks/{team}/homeostasis-manage-skill.md"`
+- file-based signal: `"PASS|action:{type}|audited:{N}|ref:tasks/{work_dir}/homeostasis-manage-skill.md"`

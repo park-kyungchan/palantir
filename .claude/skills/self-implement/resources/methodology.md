@@ -47,9 +47,9 @@ L2 with per-file change log: finding ID, what changed, before→after.
 
 ### DELIVERY field
 
-Write full result to `tasks/{team}/homeostasis-self-implement.md`.
-Send micro-signal to Lead via SendMessage:
-`{STATUS}|fixed:{N}|deferred:{N}|ref:tasks/{team}/homeostasis-self-implement.md`
+Write full result to `tasks/{work_dir}/homeostasis-self-implement.md`.
+Send micro-signal to Lead via file-based signal:
+`{STATUS}|fixed:{N}|deferred:{N}|ref:tasks/{work_dir}/homeostasis-self-implement.md`
 
 If wave fails: re-spawn with corrected instructions (max 1 retry per wave).
 
@@ -92,9 +92,9 @@ L2 with change summary per file.
 
 ### DELIVERY
 
-Write full result to `tasks/{team}/homeostasis-self-implement-records.md`.
-Send micro-signal to Lead via SendMessage:
-`PASS|files:{N}|ref:tasks/{team}/homeostasis-self-implement-records.md`
+Write full result to `tasks/{work_dir}/homeostasis-self-implement-records.md`.
+Send micro-signal to Lead via file-based signal:
+`PASS|files:{N}|ref:tasks/{work_dir}/homeostasis-self-implement-records.md`
 
 ---
 

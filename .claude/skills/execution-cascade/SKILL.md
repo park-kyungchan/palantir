@@ -110,7 +110,7 @@ State persisted in Lead's context across iterations:
 | Failure Type | Level | Action |
 |---|---|---|
 | Tool error, implementer spawn timeout | L0 Retry | Re-invoke same implementer with same DPS |
-| Incomplete output or stale references remain | L1 Nudge | SendMessage with corrected pattern or updated scope |
+| Incomplete output or stale references remain | L1 Nudge | Respawn with refined DPS targeting corrected pattern or updated scope |
 | Implementer exhausted turns or context polluted | L2 Respawn | Kill → fresh implementer with refined DPS |
 | Cascade scope conflict or circular dependency blocks | L3 Restructure | Reorder processing, break cycle, reassign ownership |
 | All implementers failed after L2, or 3+ non-convergent | L4 Escalate | AskUserQuestion with situation summary + options |
@@ -125,11 +125,11 @@ State persisted in Lead's context across iterations:
 - **DO NOT ignore hook alerts during cascade**: Lead reads alerts for monitoring but does NOT act on them — no re-routing to execution-impact.
 - **DO NOT block pipeline on non-convergence**: Max 3 iterations is a hard limit. Report as warnings and continue. Blocking indefinitely is worse than incomplete cascade.
 - **DO NOT force-update false positives**: If a dependent file doesn't actually reference the changed file, mark `status: false_positive` and exclude from further iterations.
-- **DO NOT use background agents for cascade implementers**: Cascade implementers need monitoring between iterations. Always use foreground spawning.
+- **DO NOT lose cascade iteration state**: Use Ch3 micro-signals between cascade iterations for monitoring. Background subagents (run_in_background:true) with structured output files enable Lead to track progress between iterations.
 
 ## Transitions
 
-> P2+ team mode: 4-channel protocol — Ch1 (PT metadata) + Ch2 (`tasks/{team}/`) + Ch3 (micro-signal to Lead) + Ch4 (P2P).
+> Two-Channel protocol: 2-channel protocol — Ch1 (PT metadata) + Ch2 (`tasks/{work_dir}/`) + Ch3 (micro-signal to Lead) + file-based output.
 > TaskUpdate on completion. One file per implementer (no overlapping edits).
 > Micro-signal format: `.claude/resources/output-micro-signal-format.md` | Phase-aware routing: `.claude/resources/phase-aware-execution.md`
 
@@ -188,7 +188,7 @@ iteration_details:
 warnings:
   - ""
 pt_signal: "metadata.phase_signals.p6_cascade"
-signal_format: "{STATUS}|iterations:{N}|converged:{true|false}|ref:tasks/{team}/p6-cascade.md"
+signal_format: "{STATUS}|iterations:{N}|converged:{true|false}|ref:tasks/{work_dir}/p6-cascade.md"
 ```
 
 ### L2

@@ -1,287 +1,156 @@
-# Agent Teams — Architecture, Coordination & Task Sharing
+# File-Based Coordination & Task API
 
-> Verified: 2026-02-18 via claude-code-guide team investigation
+> Updated: 2026-02-20 (v14 single-session architecture)
+> Previously: Agent Teams reference. Retained filename for CC_SECTIONS.md link compatibility.
 
 ---
 
 ## 1. Overview
 
-Agent Teams enable multiple Claude Code instances to coordinate as a team. One session becomes the **team lead**, spawning **teammates** — each a full, independent Claude Code instance with its own context window.
+In v14 single-session architecture, all coordination is file-based:
+- **Lead** spawns subagents via Task tool (`run_in_background:true`, `context:fork`, `model:sonnet`)
+- **Subagents** write output to Work Directory files
+- **Lead** reads micro-signals (Ch3) for orchestration decisions; reads Ch2 files only for ENFORCE
 
-### Enabling
-
-```json
-// settings.json env block:
-"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-```
-
-Or set `teammateMode` in settings.json: `"in-process"`, `"tmux"`, or `"auto"` (default — split panes if inside tmux, otherwise in-process). CLI flag: `claude --teammate-mode in-process`.
-
-### Core Architecture
-
-- Shared task list with dependency tracking
-- Inbox-based messaging for inter-agent communication
-- Teammates can self-claim work as they finish tasks
+There is no P2P messaging, no inbox, no TeamCreate. All coordination is Task API + file I/O.
 
 ---
 
-## 2. Team Lifecycle
+## 2. Task API Reference
 
-```
-1. spawnTeam("team-name")     → Creates team config at ~/.claude/teams/{team-name}/
-2. spawn(teammate)            → Launches teammate in tmux pane with unique agent ID
-3. createTask(tasks)          → Creates task JSON files at ~/.claude/tasks/{team-name}/
-4. [Teammates work]           → Claim tasks, execute, communicate via inbox
-5. sendMessage(target, text)  → Write to target's inbox JSON
-6. requestShutdown(target)    → Gracefully terminate teammate
-7. cleanup                    → Remove team config and task files
-```
-
-### TeammateTool Operations
-
-| Operation | Who Can Call | Effect |
-|-----------|-------------|--------|
-| `spawnTeam` | Lead | Create team infrastructure |
-| `spawn` | Lead | Launch a new teammate |
-| `sendMessage` / `write` | Lead → anyone; Teammate → any teammate or lead | Write to recipient's inbox |
-| `broadcast` | Lead or Teammate | Message all teammates (costly) |
-| `requestShutdown` | Lead | Ask teammate to terminate |
-| `approveShutdown` | Lead | Approve teammate shutdown request |
-| `cleanup` | Lead | Remove team resources |
-| `createTask` | Lead | Add tasks to shared task list |
-| `updateTask` | Lead or assigned teammate | Change task status/details |
-| `claimTask` | Teammate | Take ownership of a pending task |
-
-### Mailbox System
-
-The official docs refer to the messaging infrastructure as the **"Mailbox"** system. Each message in the inbox JSON follows this structure:
-
+### TaskCreate
 ```json
 {
-  "from": "sender-name",
-  "text": "full content",
-  "summary": "5-10 word preview",
-  "timestamp": "2026-02-05T18:56:10.615Z",
-  "read": false
+  "title": "Short task name",
+  "description": "Full context for subagent",
+  "status": "pending",
+  "blocked_by": []
 }
 ```
 
-- `text`: Full message content delivered to recipient
-- `summary`: Brief preview used for UI display (not the full message)
-- `read`: Toggled to `true` once the recipient processes the message
+### TaskUpdate
+```json
+{
+  "id": "task-id",
+  "status": "in_progress | completed | failed",
+  "metadata": { "key": "value" }
+}
+```
 
-### Display Modes
+### TaskGet
+```
+TaskGet [PERMANENT]   → retrieves PT (Permanent Task) by keyword match
+TaskGet <id>          → retrieves specific task
+```
 
-- **Split panes**: Each teammate gets own pane. Requires tmux or iTerm2 with `it2` CLI
-- **In-process**: All teammates in main terminal. Shift+Up/Down to select. Any terminal
-- **Auto** (default): Split panes if inside tmux, otherwise in-process
+### TaskList
+Returns all tasks for the current task list. Use for OBSERVE mode.
+
+### Dependency Tracking (DAG)
+
+Tasks support `blocked_by` for dependency ordering:
+- `blocked_by: [task-id]` → task stays pending until blocker completes
+- Bidirectional auto-sync: `addBlockedBy`/`addBlocks` both update the DAG
+- Completing a blocker does NOT auto-remove it from `blocked_by` (field remains, status gates execution)
+
+**Known issue (ISS-002)**: TaskGet shows raw `blocked_by` (includes completed), but TaskList filters correctly.
 
 ---
 
-## 3. Coordination Channels
+## 3. Work Directory Convention
 
-There are exactly two coordination mechanisms, **both file-based and persistent on disk**:
-
-1. **Task files on disk** (`~/.claude/tasks/{team-name}/*.json`)
-2. **Inbox messaging via SendMessage** (`~/.claude/teams/{team-name}/inboxes/*.json`)
-
-**There is no shared memory.** No sockets, no pipes, no IPC. Every coordination action is file I/O.
-
-### Physical File Structure
+Each pipeline uses a persistent Work Directory for file-based output:
 
 ```
-~/.claude/
-├── teams/{team-name}/
-│   ├── config.json          # Team metadata, member list
-│   └── inboxes/
-│       ├── team-lead.json   # Lead's inbox
-│       ├── worker-1.json    # Worker 1's inbox
-│       └── worker-2.json    # Worker 2's inbox
-└── tasks/{team-name}/
-    ├── 1.json               # Task #1
-    ├── 2.json               # Task #2
-    └── .lock                # File lock
+~/.claude/doing-like-agent-teams/projects/{pipeline-name}/
+├── exec/
+│   ├── t1-output.md       # Subagent T1 output
+│   ├── t2-output.md       # Subagent T2 output
+│   └── coordinator.md     # Coordinator synthesis
+└── session-summary.md     # Phase signals (compaction recovery)
 ```
 
-This is the **complete** physical infrastructure. These JSON files are the entirety of team coordination.
-
-### Channel 1: Task Files
-
-Each task is an independent JSON file. State machine: `pending → in_progress → completed`.
-
-**Claiming**: Teammate reads task directory, finds pending task, atomically updates JSON (status + owner). File locking prevents race conditions.
-
-**Concurrency control**: `tempfile + os.replace` for atomic writes, `filelock` library for cross-platform locking.
-
-**Key**: This is not a database or IPC mechanism. It is literally **reading and writing JSON files** on the filesystem. This runs on the local filesystem (WSL2, macOS, Linux) — no network, no daemon, no database engine.
-
-**Dependency tracking**: Tasks support DAGs via `blocked_by` field. Completing a blocking task automatically unblocks downstream tasks.
-
-**Location**: `~/.claude/tasks/{team-name}/{n}.json`
-
-### Channel 2: Inbox / Mailbox (SendMessage)
-
-The official docs call this the **"Mailbox"** system.
-
-**Location**: `~/.claude/teams/{team-name}/inboxes/{agent-id}.json`
-
-**Tool availability**: SendMessage is part of TeammateTool -- automatically available to ALL teammates. It is NOT subject to the agent's `tools` allowlist. This is infrastructure-level tooling.
-
-**Team discovery**: Teammates can read `~/.claude/teams/{team-name}/config.json` to discover other team members. The config contains a `members` array with `name`, `agentId`, and `agentType` for each teammate.
-
-**Communication constraints**:
-- Lead can message anyone
-- Teammates can message other teammates directly (not lead-only)
-- `broadcast` sends to all teammates (costly — use sparingly)
-- Each agent reads only its own inbox file
-- Sending = appending entry to recipient's inbox JSON, protected by file locks
-
-**"Automatic delivery"**: Claude Code checks inbox on each API turn — NOT OS-level push. "Automatic" means user doesn't need to poll manually. Each teammate checks its inbox JSON file at the start of each API turn. The message sits as an unread JSON entry until that check happens. This is pull-based, not push-based.
-
-**Persistence**: Inbox JSON files are **disk-resident and persist** through compaction, agent termination, session restart, and crashes. Compaction only affects the context window (conversation history compression) — disk files are untouched. Messages remain in inbox files indefinitely until explicitly cleaned up.
-
-**Concurrency**: Same as Task files — `tempfile + os.replace` for atomic writes, `filelock` for cross-platform file locking.
-
-### Sequence Diagram
-
-```
-Lead                    Worker-1                  Worker-2
-  │                        │                         │
-  ├─ spawnTeam("feat")     │                         │
-  ├─ createTask(#1,#2,#3)  │                         │
-  ├─ spawn(worker-1)───────┤                         │
-  ├─ spawn(worker-2)───────┼─────────────────────────┤
-  │                   claim #1 (file lock)       claim #2 (file lock)
-  │                   tasks/1.json→in_progress   tasks/2.json→in_progress
-  │                   [executes task...]         [executes task...]
-  │                   tasks/1.json→completed          │
-  │                   ← idle notification             │
-  │                   [reads tasks/ dir]              │
-  │                   claim #3                        │
-  │                        │                    tasks/2.json→completed
-```
-
-Every arrow is a file I/O operation.
+**Pattern**: DPS specifies output path → subagent writes → sends micro-signal → Lead reads path.
 
 ---
 
-## 4. What Is Isolated vs Shared
+## 4. Two-Channel Handoff Protocol [D17]
 
-| Isolated Per Teammate | Shared Across Team |
-|----------------------|-------------------|
-| Context window (conversation history) | Project filesystem (codebase) |
-| Lead's conversation history | CLAUDE.md, MCP servers, skills |
-| Reasoning process, intermediate state | Task JSON files on disk |
-| Token usage | Inbox JSON files on disk |
-| Memory of what others are doing | Git repository |
+| Channel | Content | Who Reads |
+|---------|---------|-----------|
+| Ch2 (files) | Full output, evidence, analysis | Consumer subagents (via file path in DPS) |
+| Ch3 (micro-signals) | PASS/FAIL + key findings (~50-100 tokens) | Lead (OBSERVE/ENFORCE) |
 
-### The "No Shared Memory" Implication
+Lead accumulates ONLY Ch3 micro-signals. Reads Ch2 only when ENFORCE requires verification.
+**Anti-pattern**: Lead reading full subagent output and re-embedding in next DPS = Data Relay Tax.
 
-When Teammate A develops an insight, that insight exists ONLY in A's context. For B to know:
-1. A must `sendMessage` to B (or to lead who relays), OR
-2. A must write to disk and B must read it, OR
-3. Lead must receive A's result and forward to B
+### Micro-Signal Format (Ch3)
 
-**No automatic propagation of insights between teammates.**
-
-Each teammate is a complete Claude Code session with its own context window. All teammates load the same project context (CLAUDE.md, MCP servers, skills) but do NOT inherit the lead's conversation history. The two disk-based channels (Task JSON + Inbox JSON) are the ONLY coordination mechanisms — there is no shared memory segment.
-
-### Design Rationale
-
-1. **Simplicity**: Filesystem works in any environment — WSL2, Docker, macOS, Linux
-2. **Crash recovery**: Process dies, JSON files remain. No state loss
-3. **Observability**: `cat ~/.claude/tasks/feat/1.json | jq .` for instant debugging
-4. **No daemon**: No coordination server (Redis, SQLite) required
-
-### Hook-Based Pseudo-Shared Memory
-
-The "no shared memory" limitation can be circumvented within CC native boundaries:
-- **PostToolUse hook** detects `.claude/**` Write/Edit operations
-- Hook script updates a shared JSON file (e.g., `ontology.json`)
-- `hookSpecificOutput.additionalContext` injects updated state into next turn for ALL teammates
-- This is the ONLY CC-native mechanism for meta-level coordination beyond Task API and SendMessage
-- Limitation: `additionalContext` is single-turn only (not persisted), not visible to spawned subagents
-
-**Concrete example**: Place `ontology.json` under `~/.claude/`. A PostToolUse hook detects Write/Edit on `.claude/**`, regenerates `ontology.json`, and the updated content is injected via `additionalContext` to all teammates on their next turn. This pattern enables team-wide state synchronization within CC native boundaries.
-
----
-
-## 5. Task Sharing Mechanisms
-
-### Mechanism A: Agent Teams Native Task List
-
-- **Location**: `~/.claude/tasks/{team-name}/`
-- **Creation**: Automatic when `spawnTeam` is called
-- **Real-time**: File-lock based, near real-time (not strict)
-- **Dependency**: Native `blocked_by` field
-
-No manual task_id needed. `spawnTeam` creates infrastructure automatically.
-
-**Task sizing guideline**: Having 5-6 tasks per teammate keeps everyone productive and lets the lead reassign work if someone gets stuck.
-
-**Self-claim after completion**: After finishing a task, a teammate reads the task directory, finds the next unblocked pending task, and claims it autonomously. No lead intervention required for task flow.
-
-### Mechanism B: `CLAUDE_CODE_TASK_LIST_ID` (Independent Sessions)
-
-Enables task sharing between independent sessions NOT part of a team:
-
-```bash
-# Terminal A                                    # Terminal B
-CLAUDE_CODE_TASK_LIST_ID="my-project" claude     CLAUDE_CODE_TASK_LIST_ID="my-project" claude
+```
+STATUS: PASS | FAIL | PARTIAL
+KEY: [one-line finding]
+OUTPUT: /path/to/output/file.md
 ```
 
-### Known Limitation: Task Status Lag
+---
 
-A teammate may complete a task but fail to update JSON, blocking downstream tasks.
+## 5. Cross-Session Task Sharing
 
-**Mitigation**: `TaskCompleted` hook with verification logic. Exit code 2 rejects completion, stderr fed back to teammate.
+`CLAUDE_CODE_TASK_LIST_ID` in settings.json `env` block enables shared task list across independent sessions:
 
-### Heartbeat and Timeout
+```json
+"env": {
+  "CLAUDE_CODE_TASK_LIST_ID": "my-project"
+}
+```
 
-5-minute timeout. If teammate crashes mid-task, timeout releases tasks back to pool.
-
-### Plan Approval Workflow
-
-Official pattern for requiring teammates to plan before implementing:
-
-1. Spawn teammate with plan approval requirement (mode: `plan`)
-2. Teammate works in read-only plan mode until lead approves
-3. On plan completion, teammate sends `plan_approval_request` to lead
-4. Lead reviews and approves or rejects with feedback
-5. If rejected, teammate revises and resubmits
-6. Once approved, teammate exits plan mode and implements
-
-Lead makes approval decisions autonomously. Influence via prompt (e.g., "only approve plans that include test coverage").
-
-### Delegate Mode (Shift+Tab)
-
-- Activated by pressing Shift+Tab during active team session
-- Restricts lead to coordination-only tools: spawn, message, shutdown, task management
-- Lead CANNOT write code, run tests, or do implementation work
-- This is the CC native enforcement of "Lead NEVER edits files directly"
-- **Known Bug (#25037)**: Enabling delegate mode causes teammates to inherit restricted tool access — they lose Read, Write, Edit, Bash, Glob, Grep. Workaround: enforce via CLAUDE.md convention instead of delegate permissionMode.
+Use for orchestrator + validator session pattern (different terminals, same task list).
 
 ---
 
-## 6. Cost Model
+## 6. Permanent Task (PT)
 
-Each teammate is a separate Claude instance. Solo: ~200K tokens. Team of 3: ~800K. Team of 5: ~1.2M+. Agent Teams use ~7x tokens when teammates run in plan mode.
+Single source of truth for the active pipeline:
+- **Create**: P0 pipeline start via `pt-manager` agent
+- **Read**: `TaskGet [PERMANENT]` — subagents call at spawn for project context. Lead calls after auto-compact for compaction recovery.
+- **Update**: Each phase completion writes to PT metadata (Read-Merge-Write pattern)
+- **Complete**: Only at final git commit (P8 delivery)
 
-### Delegate Mode (Shift+Tab)
+**Key PT metadata fields**:
+```json
+{
+  "tier": "TRIVIAL|STANDARD|COMPLEX",
+  "phase_signals": { "P0": "PASS", "P6": "..." },
+  "iterations": { "skill_name": 1 },
+  "escalations": { "skill_name": "L1|reason" },
+  "user_directives": [],
+  "thinking_insights": []
+}
+```
 
-Delegate mode restricts the lead to coordination-only tools: spawning, messaging, shutting down teammates, and managing tasks. The lead CANNOT write code, run tests, or do implementation work. This is the CC native way to enforce "Lead NEVER edits files directly." Activated via Shift+Tab after team creation.
+**Compaction recovery**: After auto-compact, Lead calls `TaskGet(PT)` to restore full pipeline context.
 
 ---
 
-## 7. Known Limitations
+## 7. Known Task API Issues
 
-- **No session resumption**: `/resume` and `/rewind` do not restore teammates
-- **One team per session**: Lead can only manage one team at a time
-- **No nested teams (VERIFIED 2026-02-19, WSL2 tmux)**: The "no nested teams" restriction means **two things only**: (1) a Teammate CANNOT call `TeamCreate` to create a new team, and (2) a Teammate CANNOT spawn another Teammate via `Task(team_name=X)`. It does **NOT** prohibit a Teammate from spawning a regular subagent via `Task(subagent_type=Y)` without `team_name`. A Teammate WITH `Task` in its `tools` field CAN successfully spawn a custom agent .md as a fire-and-forget subagent. **Verified**: a `general-purpose` teammate called `Task({subagent_type: "analyst"})` → `analyst.md` loaded correctly with its exact frontmatter tools list. Condition: the spawning teammate must have `Task` in its `tools` field. The built-in `general-purpose` agent has all tools (including `Task`) by default. Custom agents without `Task` in `tools` cannot spawn subagents.
-- **Lead is fixed**: No leadership transfer mechanism
-- **Split panes require tmux or iTerm2**: In-process mode works everywhere
-- **Token cost**: ~7x in plan mode. Use Sonnet for teammates
-- **Delegate mode bug ([#23447](https://github.com/anthropics/claude-code/issues/23447), OPEN as of 2026-02-19)**: When lead enables delegate mode, teammates inherit the lead's coordination-only tool restriction — they lose Read, Write, Edit, Bash, Glob, Grep. Root issue #23447 (`area:core`, `has repro`) is **still OPEN**. #25037 was closed as duplicate of #23447. Workaround: Do NOT use delegate permissionMode. Enforce "Lead NEVER edits" via CLAUDE.md convention instead.
-- **Inbox delivery bug ([#23415](https://github.com/anthropics/claude-code/issues/23415), tmux)**: On macOS tmux backend, teammates may fail to establish messaging layer. Messages sit unread indefinitely. Workaround: Export `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in shell init (`.zshrc`) instead of only in `settings.json`.
-- **Bedrock/Vertex/Foundry env propagation** (RESOLVED in CC 2.1.45, [#23561](https://github.com/anthropics/claude-code/issues/23561)): tmux-spawned teammates now correctly inherit API provider environment variables. Previously, teammates on Bedrock/Vertex/Foundry would fail because env vars were not propagated to tmux processes.
-- **Task tool crash** (RESOLVED in CC 2.1.45, [#22087](https://github.com/anthropics/claude-code/issues/22087)): Backgrounded agents no longer crash with `ReferenceError` on completion.
+| ID | Severity | Issue | Mitigation |
+|----|----------|-------|-----------|
+| ISS-001 | HIGH | Completed task files may auto-delete from disk (trigger unknown) | Use Team scope always; store results in Work Directory |
+| ISS-002 | MED | TaskGet shows raw blockedBy (includes completed); TaskList filters correctly | Use TaskList for dependency checking |
+| ISS-003 | HIGH | Task orphaning on context clear | Always use consistent task list ID |
+| ISS-004 | LOW | highwatermark can be stale vs actual max ID | Don't rely on highwatermark for sequencing |
+
+---
+
+## 8. Historical: Agent Teams (v7–v13)
+
+Prior to v14, the system used Agent Teams (multi-session tmux):
+- **TeamCreate** → teammates spawned in tmux panes
+- **SendMessage** → inbox-based P2P messaging
+- **TeammateIdle** hook → notified lead when teammate went idle
+- File structure: `~/.claude/teams/{team-name}/inboxes/*.json` + `~/.claude/tasks/{team-name}/*.json`
+
+**Removed in v14**: TeamCreate, SendMessage, spawn (teammate), broadcast, requestShutdown, approveShutdown, claimTask (teammate self-claim), TeammateIdle hook. All replaced by file-based output + micro-signal pattern.
+
+For historical AT architecture details, see `infrastructure-history.md`.
