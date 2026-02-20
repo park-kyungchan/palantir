@@ -41,14 +41,11 @@
 - Phase-to-domain: `~/.claude/CLAUDE.md` §2.0 Phase Definitions table
 
 ### CE Hooks (2026-02-20)
-- 4 runtime hooks: ce-pre-read-section-anchor, ce-pre-grep-optimize, ce-post-grep-guard, ce-pre-grep-block (BLOCKING)
+- 3 CE hooks: ce-pre-read-section-anchor, ce-pre-grep-optimize (BLOCKING), ce-pre-grep-block (BLOCKING)
 
-## INFRA v15 COMPLETE (2026-02-20)
-- W1: Agent files (model:sonnet ×4, coordinator rework, delivery-agent fix, resource paths, coordinator MEMORY)
-- W2: DLAT SKILL.md + methodology.md (state.md→PT, DLAT_BASE→WORK_DIR, per-Agent DPS)
-- W3: CLAUDE.md §3-§5 + dps-construction-guide.md (PT 3-tier, DPS reform, metadata→description)
-- Skill audit: freewheelin deleted, pipeline-resume→disabled
-- Architecture: v15 = PT description as primary state + per-Agent DPS profiles + 3-Tier Data Access
+## INFRA v15 DELIVERED (2026-02-20) — PR #69 merged
+- Architecture: PT description-first + per-Agent DPS profiles + 3-Tier Data Access
+- 29 files, 317+/2360- (net -2043L), 10/10 tasks ALL PASS
 
 ### Key Decisions
 - D01: 3-Tier Data Access (TaskList/TaskGet/Read)

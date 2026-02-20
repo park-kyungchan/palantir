@@ -1,6 +1,6 @@
-# Pipeline Architecture v14
+# Pipeline Architecture v15
 
-> v14 · Single-session · Opus 4.6 native · Skill-driven routing · Protocol-only CLAUDE.md
+> v15 · Single-session · Opus 4.6 native · Skill-driven routing · Protocol-only CLAUDE.md
 > Agent L1 auto-loaded in Task tool definition · Skill L1 auto-loaded in system-reminder
 
 > **INVIOLABLE — Skill-Driven Orchestration**
@@ -20,7 +20,7 @@
 > OBSERVE (detect gaps/anomalies) → ANALYZE (compare current state vs. ideal state) → DECIDE (determine corrective action) → RECORD (persist to PT metadata) → IMPROVE (apply to next task/wave/pipeline).
 > Homeostasis (batch: self-diagnose + manage-infra) + Real-Time RSIL (continuous: per-task observation) = complete self-improvement system.
 > CC-native claims: empirical verification is mandatory (research-cc-verify gate). Inference-based judgment is prohibited. Corrections to existing claims are themselves new claims requiring verification.
-> **Thinking Capture Protocol** [ALWAYS ACTIVE]: ∴ Thinking is a live RSIL input stream. Every INFRA gap surfaced during thinking triggers: (1) RECORD in PT `metadata.thinking_insights[]` immediately, (2) ROUTE severity HIGH+ to next available RSIL wave — do not defer to pipeline end, (3) No task is "non-RSIL" — this cycle runs in every mode, every pipeline, every phase.
+> **Thinking Capture Protocol** [ALWAYS ACTIVE]: ∴ Thinking is a live RSIL input stream. Every INFRA gap surfaced during thinking triggers: (1) RECORD in PT description immediately, (2) ROUTE severity HIGH+ to next available RSIL wave — do not defer to pipeline end, (3) No task is "non-RSIL" — this cycle runs in every mode, every pipeline, every phase.
 
 > **INVIOLABLE — Semantic Integrity**
 >
@@ -41,7 +41,7 @@
 - **Agent** = A profile definition file (`.claude/agents/*.md`). Specifies a tool set, model, and description. This is the invocation target.
 - **Subagent** = A one-shot CC session spawned via the Task tool. Operates as a fire-and-forget worker: reports results only to its spawner.
 - **PT** = Permanent Task — a single persistent task record that serves as the source of truth for the active pipeline. Exactly one PT exists per pipeline. (See §4 for full specification.)
-- **DPS** = Delegation Prompt Specification — a structured prompt template used when spawning subagents. (See §5 "DPS v5 Template" for full specification.)
+- **DPS** = Delegation Prompt Specification — a structured prompt template used when spawning subagents. (See §5 "Per-Agent DPS Profiles" for full specification.)
 - **RSIL** = Recursive Self-Improvement Loop — Lead's continuous meta-cognitive cycle. (See INVIOLABLE block above.)
 - **Work Directory** = Persistent file-based coordination space for a pipeline. Subagents write output files here; Lead reads micro-signals from them.
 
