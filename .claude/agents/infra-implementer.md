@@ -5,14 +5,15 @@ description: |
   .claude/ directory files (agents, skills, hooks, settings, refs). No Bash.
 
   WHEN: .claude/ infrastructure file creation or modification.
-  TOOLS: Read, Glob, Grep, Edit, Write, sequential-thinking.
-  CANNOT: Bash, Task, WebSearch, WebFetch.
+  TOOLS: Read, Glob, Grep, Edit, Write, TaskGet, sequential-thinking.
+  CANNOT: Bash, Task(spawn), WebSearch, WebFetch.
 tools:
   - Read
   - Glob
   - Grep
   - Edit
   - Write
+  - TaskGet
   - mcp__sequential-thinking__sequentialthinking
 model: sonnet
 memory: project

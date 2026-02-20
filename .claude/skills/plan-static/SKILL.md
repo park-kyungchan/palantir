@@ -7,7 +7,7 @@ description: >-
   plan-impact. Use after research-coordinator complete. Reads
   from research-coordinator audit-static L3 dependency graph via
   $ARGUMENTS. Produces task list with dependency edges and
-  complexity, and cluster rationale for plan-verify-static.
+  complexity, and cluster rationale for validate-syntactic.
   On FAIL (coverage <85% or HIGH orphans), routes back to
   plan-static with refined research context. DPS needs
   research-coordinator audit-static L3 dependency graph. Exclude
@@ -102,7 +102,7 @@ Identify the critical path (longest blocking chain) and calculate per-wave paral
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |---|---|---|
-| plan-verify-static | Task breakdown with dependency edges | Always (PASS or partial) |
+| validate-syntactic | Task breakdown with dependency edges | Always (PASS or partial) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

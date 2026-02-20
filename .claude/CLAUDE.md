@@ -27,7 +27,7 @@
 > Every skill description (frontmatter `description` field) MUST semantically match its L2 body methodology.
 > Semantic Matching: Lead must route to a skill without ambiguity — description alone must determine WHEN.
 > Semantic Integrity: The skill body must deliver exactly what the description promises — no gap.
-> Verification: P7 verify-coordinator checks description vs. body alignment. self-diagnose Category 11 audits globally.
+> Verification: P7 validate-coordinator checks description vs. body alignment. self-diagnose audits globally.
 > Anti-pattern: description says "generates X" but body only "analyzes X" — this is a Semantic Integrity violation.
 
 ## 0. Language Policy
@@ -43,6 +43,7 @@
 - **PT** = Permanent Task — a single persistent task record that serves as the source of truth for the active pipeline. Exactly one PT exists per pipeline. (See §4 for full specification.)
 - **DPS** = Delegation Prompt Specification — a structured prompt template used when spawning subagents. (See §5 "Per-Agent DPS Profiles" for full specification.)
 - **RSIL** = Recursive Self-Improvement Loop — Lead's continuous meta-cognitive cycle. (See INVIOLABLE block above.)
+- **Task(spawn)** = The `Task` tool used to create background subagents. Distinguished from the Task API tools (`TaskGet`, `TaskList`, `TaskCreate`, `TaskUpdate`) which are read/write lifecycle tools available to most agents.
 - **Work Directory** = Persistent file-based coordination space for a pipeline. Subagents write output files here; Lead reads micro-signals from them.
 
 ### Environment
@@ -66,10 +67,10 @@ Each pipeline progresses through a subset of phases P0–P8, selected by tier. P
 | P1 | Design | `design` | `design-architecture`, `design-interface`, `design-risk` |
 | P2 | Research | `research` | `research-codebase`, `research-external`, `research-cc-verify`, `evaluation-criteria`, `audit-static`, `audit-behavioral`, `audit-relational`, `audit-impact`, `research-coordinator` |
 | P3 | Plan | `plan` | `plan-static`, `plan-behavioral`, `plan-relational`, `plan-impact` |
-| P4 | Plan Verify | `plan-verify` | `plan-verify-static`, `plan-verify-behavioral`, `plan-verify-relational`, `plan-verify-impact`, `plan-verify-coordinator` |
+| P4 | Plan Verify | `validate` | `validate-syntactic`, `validate-semantic`, `validate-behavioral`, `validate-consumer`, `validate-relational`, `validate-impact`, `validate-coordinator` |
 | P5 | Orchestrate | `orchestration` | `orchestrate-static`, `orchestrate-behavioral`, `orchestrate-relational`, `orchestrate-impact`, `orchestrate-coordinator` |
 | P6 | Execution | `execution` | `execution-code`, `execution-infra`, `execution-impact`, `execution-review`, `execution-cascade` |
-| P7 | Verify | `verify` | `verify-structural-content`, `verify-consistency`, `verify-quality`, `verify-cc-feasibility`, `verify-coordinator` |
+| P7 | Validate | `validate` | `validate-syntactic`, `validate-semantic`, `validate-behavioral`, `validate-consumer`, `validate-relational`, `validate-impact`, `validate-coordinator` |
 | P8 | Delivery | `cross-cutting` | `delivery-pipeline` |
 | — | Homeostasis | `homeostasis` | `self-diagnose`, `self-implement`, `manage-infra`, `manage-codebase`, `rsil` |
 | — | Cross-Cutting | `cross-cutting` | `pipeline-resume`, `task-management` |

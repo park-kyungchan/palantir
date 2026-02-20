@@ -78,7 +78,7 @@ Validation:
 **Delivery (Two-Channel)**:
 - Ch2: Write full result to `tasks/{work_dir}/p3-plan-relational.md`
 - Ch3 micro-signal to Lead: `PASS|contracts:{N}|gaps:{N}|ref:tasks/{work_dir}/p3-plan-relational.md`
-- file-based output to plan-verify-relational subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active
+- file-based output to validate-relational subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active
 
 See `.claude/resources/dps-construction-guide.md` for DPS v5 field order and file-based handoff spec spec.
 See `.claude/resources/output-micro-signal-format.md` for channel format and micro-signal examples.

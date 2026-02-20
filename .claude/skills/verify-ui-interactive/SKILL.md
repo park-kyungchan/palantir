@@ -60,7 +60,7 @@ elements_tested: N
 elements_failed: []
 console_errors: N
 ```
-L2: Element count tested, state change results per element. PASS routes to verify-quality. FAIL routes to execution-code with failed element list.
+L2: Element count tested, state change results per element. PASS routes to validate-semantic. FAIL routes to execution-code with failed element list.
 
 ## Decision Points
 - Element click causes JS error → FAIL for that element
@@ -88,7 +88,7 @@ L2: Element count tested, state change results per element. PASS routes to verif
 ### Sends To
 | Target | Data Produced | Trigger |
 |--------|---------------|---------|
-| verify-quality | PASS signal + tested_count | On PASS |
+| validate-semantic | PASS signal + tested_count | On PASS |
 | execution-code | FAIL + failed_elements[] + screenshots | On FAIL |
 
 > D17 Note: Ch2: `tasks/{work_dir}/p7-verify-ui-interactive.md` · Ch3: micro-signal to Lead

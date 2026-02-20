@@ -158,7 +158,7 @@ All modes. Communication via 2-channel protocol (Ch2 disk + Ch3 micro-signal to 
 |-------------|---------------|-------------------|
 | execution-impact | Infra file change manifest | Always (even if partial). SRC hook auto-triggers for .claude/ changes. |
 | execution-review | Infra change artifacts + L1/L2 per implementer | After all infra-implementers complete |
-| verify-structural-content | Modified .claude/ files for structural+content validation | Via execution-review routing |
+| validate-syntactic | Modified .claude/ files for structural+content validation | Via execution-review routing |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

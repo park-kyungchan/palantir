@@ -5,11 +5,11 @@ description: >-
   boundaries with pass/fail criteria. Assigns checkpoint types
   and failure escalation paths. Parallel with orchestrate-static,
   orchestrate-relational, and orchestrate-impact. Use after
-  plan-verify-coordinator complete with all PASS. Reads from
-  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  validate-coordinator complete with all PASS. Reads from
+  validate-coordinator verified plan L3 via $ARGUMENTS.
   Produces checkpoint schedule with type counts and rationale
   per checkpoint for orchestrate-coordinator. On FAIL, Lead
-  applies D12 escalation. DPS needs plan-verify-coordinator
+  applies D12 escalation. DPS needs validate-coordinator
   verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: true
 disable-model-invocation: true
@@ -53,7 +53,7 @@ When defining fail_action per checkpoint:
 See `resources/methodology.md` for: DPS template details, tier-specific DPS variations, transition categories table, priority scoring formula, checkpoint criteria fields, and wave-checkpoint matrix example.
 
 ### 1. Read Verified Plan
-Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract: task list with wave assignments, dependency graph, file change manifest, risk assessment findings.
+Load validate-coordinator L3 output via `$ARGUMENTS` path. Extract: task list with wave assignments, dependency graph, file change manifest, risk assessment findings.
 
 Construct analyst DPS per `.claude/resources/dps-construction-guide.md`:
 - **Context**: Include verified plan L3 (task list, wave structure, dependency graph) + pipeline constraints (max 4 parallel per wave, max 3 phase iterations). Exclude other orchestrate dimension outputs and historical plan-verify rationale.
@@ -87,13 +87,13 @@ See `.claude/resources/failure-escalation-ladder.md` for D12 decision rules and 
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after validate-coordinator re-exports |
 | Checkpoint incomplete or criteria unmeasurable | L1 Nudge | Respawn with refined DPS targeting refined wave boundary constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
-| No wave boundaries in plan (cannot infer) | L3 Restructure | Route to plan-verify-coordinator for plan restructuring |
+| No wave boundaries in plan (cannot infer) | L3 Restructure | Route to validate-coordinator for plan restructuring |
 | 3+ L2 failures or excessive checkpoint conflicts | L4 Escalate | AskUserQuestion with situation + options |
 
-**Verified Plan Data Missing**: Report `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-behavioral.md`. Route back to plan-verify-coordinator for re-export.
+**Verified Plan Data Missing**: Report `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-behavioral.md`. Route back to validate-coordinator for re-export.
 
 **No Clear Wave Boundaries**: Infer from dependency graph. Flag as assumption in L2. Continue — orchestrate-coordinator will validate.
 
@@ -112,7 +112,7 @@ See `.claude/resources/failure-escalation-ladder.md` for D12 decision rules and 
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| plan-verify-coordinator | Verified plan L3 | File path via $ARGUMENTS: tasks, waves, dependencies |
+| validate-coordinator | Verified plan L3 | File path via $ARGUMENTS: tasks, waves, dependencies |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
@@ -122,7 +122,7 @@ See `.claude/resources/failure-escalation-ladder.md` for D12 decision rules and 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Plan L3 missing | plan-verify-coordinator | Missing file path |
+| Plan L3 missing | validate-coordinator | Missing file path |
 | No wave boundaries | orchestrate-coordinator | Inferred boundaries (flagged) |
 | All checkpoints defined | orchestrate-coordinator | Complete schedule (normal flow) |
 

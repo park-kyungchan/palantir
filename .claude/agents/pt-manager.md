@@ -66,7 +66,7 @@ Every task must include structured metadata:
 └────────────────────────────────┘
          ↓ blocked by T-1,T-2
 ┌─ P4 Plan Verify ──────────────┐
-│ T-3: plan-verify-static [○]   │
+│ T-3: validate-syntactic [○]   │
 └────────────────────────────────┘
 Legend: [✓]=completed [→]=in_progress [○]=pending [✗]=blocked
 ```

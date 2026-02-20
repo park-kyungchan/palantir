@@ -5,11 +5,11 @@ description: >-
   path, format, and validation rules. Validates chain
   completeness. Parallel with orchestrate-static,
   orchestrate-behavioral, and orchestrate-impact. Use after
-  plan-verify-coordinator complete with all PASS. Reads from
-  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  validate-coordinator complete with all PASS. Reads from
+  validate-coordinator verified plan L3 via $ARGUMENTS.
   Produces DPS specs with chain completeness flag and data flow
   chain with gap report for orchestrate-coordinator. DPS contracts include MCP_DIRECTIVES (WHEN/WHY/WHAT) and file-based handoff spec per DPS v5. On FAIL, Lead
-  applies D12 escalation. DPS needs plan-verify-coordinator
+  applies D12 escalation. DPS needs validate-coordinator
   verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: true
 disable-model-invocation: true
@@ -52,7 +52,7 @@ Two-Channel protocol only. Single-session subagent execution:
 ## Methodology
 
 ### 1. Read Verified Plan
-Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract task list, dependency graph (producer-consumer edges), interface contracts, and file change manifest per task.
+Load validate-coordinator L3 output via `$ARGUMENTS` path. Extract task list, dependency graph (producer-consumer edges), interface contracts, and file change manifest per task.
 
 Construct analyst DPS with D11 context filtering (cognitive focus first — exclude other dimension outputs, historical rationale, full pipeline state). Budget: Context ≤ 30% of subagent context.
 
@@ -82,7 +82,7 @@ Produce ordered DPS entries by execution sequence, chain completeness verdict, f
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after validate-coordinator re-exports |
 | DPS incomplete or handoff path ambiguous | L1 Nudge | Respawn with refined DPS targeting refined path convention constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Dangling inputs unresolvable without plan restructure | L3 Restructure | Route to orchestrate-coordinator as chain design blocker |
@@ -103,7 +103,7 @@ Produce ordered DPS entries by execution sequence, chain completeness verdict, f
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| plan-verify-coordinator | Verified plan L3 | File path via $ARGUMENTS: tasks, dependencies, file assignments |
+| validate-coordinator | Verified plan L3 | File path via $ARGUMENTS: tasks, dependencies, file assignments |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
@@ -113,7 +113,7 @@ Produce ordered DPS entries by execution sequence, chain completeness verdict, f
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Plan L3 missing | plan-verify-coordinator | Missing file path |
+| Plan L3 missing | validate-coordinator | Missing file path |
 | Dangling inputs | orchestrate-coordinator | Consumer details + missing producer |
 | Chain cycle | orchestrate-coordinator | Cycle path + break recommendation |
 | All handoffs defined | orchestrate-coordinator | Complete DPS specs (normal flow) |

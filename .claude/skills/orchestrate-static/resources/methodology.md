@@ -85,9 +85,9 @@ Beyond tool-boundary splits, consider splitting for scheduling efficiency:
 ## Failure Sub-Cases
 
 ### Verified Plan Data Missing
-- **Cause**: `$ARGUMENTS` path is empty or plan-verify-coordinator L3 file not found
+- **Cause**: `$ARGUMENTS` path is empty or validate-coordinator L3 file not found
 - **Signal**: `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-static.md`
-- **Route**: Back to plan-verify-coordinator for re-export
+- **Route**: Back to validate-coordinator for re-export
 
 ### Unassignable Task (No Agent Match)
 - **Cause**: Task requires capabilities spanning 2+ agent profiles with no clean split boundary

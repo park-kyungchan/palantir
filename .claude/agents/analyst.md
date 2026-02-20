@@ -5,13 +5,14 @@ description: |
   Single-dimension focused: audit, plan, orchestrate, verify tasks.
 
   WHEN: Codebase reading + analytical reasoning + structured output.
-  TOOLS: Read, Glob, Grep, Write, sequential-thinking.
-  CANNOT: Edit, Bash, Task, WebSearch, WebFetch.
+  TOOLS: Read, Glob, Grep, Write, TaskGet, sequential-thinking.
+  CANNOT: Edit, Bash, Task(spawn), WebSearch, WebFetch.
 tools:
   - Read
   - Glob
   - Grep
   - Write
+  - TaskGet
   - mcp__sequential-thinking__sequentialthinking
 model: sonnet
 memory: project

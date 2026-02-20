@@ -1,7 +1,7 @@
 ---
 name: research-external
 description: >-
-  Collects community patterns via tavily MCP and WebSearch. Filters
+  Collects community patterns via tavily MCP exclusively. Filters
   for verified and reproducible information, cross-references
   with official docs. Tags CC-native behavioral claims from
   community sources for shift-left verification. Parallel with
@@ -11,7 +11,7 @@ description: >-
   choices, design-interface API contracts, and design-risk risk
   areas. Produces community pattern matrix with source URLs for
   audit skills, plus CC-native claims for research-cc-verify gate.
-  Requires general-purpose subagent_type for MCP ToolSearch access.
+  Requires researcher subagent_type for MCP ToolSearch access.
   On FAIL (MCP unavailable or no verified results), pauses for MCP
   health check. NO_FALLBACK: never substitute WebSearch for MCP tools.
   DPS needs design-architecture technology choices, design-risk risk

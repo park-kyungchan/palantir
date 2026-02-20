@@ -59,7 +59,7 @@ routes_failed:
 console_errors_total: N
 ```
 
-L2: Routes tested count, per-route PASS/FAIL with URL and title evidence. PASS routes to verify-quality. FAIL routes to execution-code with failed route list.
+L2: Routes tested count, per-route PASS/FAIL with URL and title evidence. PASS routes to validate-semantic. FAIL routes to execution-code with failed route list.
 
 ## Decision Points
 - Route returns 404 → FAIL for that route
@@ -87,7 +87,7 @@ L2: Routes tested count, per-route PASS/FAIL with URL and title evidence. PASS r
 ### Sends To
 | Target | Data Produced | Trigger |
 |--------|---------------|---------|
-| verify-quality | PASS signal + routes_tested count | On PASS |
+| validate-semantic | PASS signal + routes_tested count | On PASS |
 | execution-code | FAIL + failed_routes[] + screenshots | On FAIL |
 
 > D17 Note: Ch2: `tasks/{work_dir}/p7-verify-navigation-routing.md` · Ch3: micro-signal to Lead

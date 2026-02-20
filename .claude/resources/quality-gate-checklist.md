@@ -21,7 +21,7 @@ Each skill adds domain-specific criteria on top of universals. These are defined
 
 - **audit-static**: Every dependency edge has file:line evidence for both source and target
 - **execution-code**: All tests pass after implementation
-- **verify-quality**: Quality scores calculated for all files in scope
+- **validate-semantic**: Quality scores calculated for all files in scope
 
 ## PASS/FAIL Decision
 

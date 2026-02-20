@@ -8,7 +8,7 @@ description: >-
   research-coordinator audit-behavioral L3 behavior predictions
   via $ARGUMENTS. Produces test and rollback inventory, and
   per-change test cases with rollback procedures for
-  plan-verify-behavioral. On FAIL (untested HIGH behavior),
+  validate-semantic. On FAIL (untested HIGH behavior),
   routes back to plan-behavioral with additional predictions.
   DPS needs research-coordinator audit-behavioral L3 behavior
   predictions. Exclude static, relational, and impact dimension
@@ -128,7 +128,7 @@ Produce complete behavioral strategy: test case inventory, rollback triggers, ch
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| plan-verify-behavioral | Test/rollback strategy | Always (PASS or partial) |
+| validate-semantic | Test/rollback strategy | Always (PASS or partial) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

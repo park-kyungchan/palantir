@@ -84,7 +84,7 @@ Expected Output: L1 YAML with test_count, rollback_count, checkpoint_count,
 Delivery (Two-Channel):
   Ch2: Write full result to tasks/{work_dir}/p3-plan-behavioral.md
   Ch3: Micro-signal to Lead: PASS|tests:{N}|rollbacks:{N}|ref:tasks/{work_dir}/p3-plan-behavioral.md
-  Ch4: P2P to plan-verify-behavioral (Deferred Spawn — Lead spawns after all 4 plan dimensions complete)
+  Ch4: P2P to validate-semantic (Deferred Spawn — Lead spawns after all 4 plan dimensions complete)
 ```
 
 ### STANDARD — Simplified Analyst Spawn

@@ -84,9 +84,9 @@ Per-claim verdict table with evidence, gate decision, and recommended actions fo
 - **OPTIONAL**: When existing ref cache content is suspected stale
 
 ### When NOT to Invoke
-- CC-native FIELD validation → handled by `verify-cc-feasibility` (P7)
+- CC-native FIELD validation → handled by `validate-behavioral` (P7)
 - Application code verification → not CC-native scope
-- Skill frontmatter compliance → handled by `verify-structural-content`
+- Skill frontmatter compliance → handled by `validate-syntactic`
 
 ### Verification Depth by Tier
 - **TRIVIAL**: 1-3 claims, single file check each. Lead-direct.

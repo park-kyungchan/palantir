@@ -132,7 +132,7 @@ Produce complete handoff specification with:
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
 - **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-relational.md`
-- **Route**: Back to plan-verify-coordinator for re-export
+- **Route**: Back to validate-coordinator for re-export
 
 ### Dangling Input Detected
 - **Cause**: Consumer task expects data that no producer task generates

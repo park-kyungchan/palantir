@@ -6,7 +6,7 @@ description: |
 
   WHEN: N-to-1 synthesis — research-coordinator, orchestrate-coordinator,
   or any multi-dimension consolidation task.
-  TOOLS: Read, Glob, Grep, Write, Edit, sequential-thinking.
+  TOOLS: Read, Glob, Grep, Write, Edit, TaskGet, sequential-thinking.
   CANNOT: Bash, WebSearch, WebFetch.
 tools:
   - Read
@@ -14,6 +14,7 @@ tools:
   - Grep
   - Write
   - Edit
+  - TaskGet
   - mcp__sequential-thinking__sequentialthinking
 model: sonnet
 memory: project

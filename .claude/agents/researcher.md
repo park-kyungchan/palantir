@@ -6,13 +6,14 @@ description: |
   When MCP unavailable, STOPS and reports FAIL.
 
   WHEN: Web research via MCP — tavily, context7, github. Library docs, API refs, GitHub repos/code/issues, pattern validation.
-  TOOLS: Read, Glob, Grep, Write, tavily, context7, github, sequential-thinking.
-  CANNOT: Edit, Bash, Task, WebSearch (hook-blocked), WebFetch (hook-blocked).
+  TOOLS: Read, Glob, Grep, Write, TaskGet, tavily, context7, github, sequential-thinking.
+  CANNOT: Edit, Bash, Task(spawn), WebSearch (hook-blocked), WebFetch (hook-blocked).
 tools:
   - Read
   - Glob
   - Grep
   - Write
+  - TaskGet
   - mcp__sequential-thinking__sequentialthinking
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs

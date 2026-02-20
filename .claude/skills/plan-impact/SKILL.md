@@ -7,7 +7,7 @@ description: >-
   plan-relational. Use after research-coordinator complete. Reads
   from research-coordinator audit-impact L3 propagation paths via
   $ARGUMENTS. Produces execution sequence with wave groups and
-  checkpoints, and sequencing rationale for plan-verify-impact.
+  checkpoints, and sequencing rationale for validate-impact.
   On FAIL (HIGH uncontained propagation), routes back to
   plan-impact with additional path data. DPS needs
   research-coordinator audit-impact L3 propagation paths. Exclude
@@ -144,7 +144,7 @@ Containment coverage takes priority over parallel efficiency for COMPLEX pipelin
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| plan-verify-impact | Execution sequence with checkpoints | Always (PASS or partial) |
+| validate-impact | Execution sequence with checkpoints | Always (PASS or partial) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

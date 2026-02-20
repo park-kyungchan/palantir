@@ -79,7 +79,7 @@ When dependency cluster boundaries are ambiguous:
   - Ch1: PT signal → `metadata.phase_signals.p3_plan_static`
   - Ch2: Write full result to `tasks/{work_dir}/p3-plan-static.md`
   - Ch3: Micro-signal to Lead → `PASS|tasks:{N}|deps:{N}|ref:tasks/{work_dir}/p3-plan-static.md`
-  - Ch4: P2P to plan-verify-static subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete; send only if verifier is already active)
+  - Ch4: P2P to validate-syntactic subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete; send only if verifier is already active)
 
 ### STANDARD (simplified DPS)
 

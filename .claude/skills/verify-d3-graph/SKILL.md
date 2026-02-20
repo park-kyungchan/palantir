@@ -60,7 +60,7 @@ edge_count: N
 expected_min_nodes: N
 screenshot_id: "{imageId}"
 ```
-L2: Node count, edge count, console error count. PASS routes to verify-quality. FAIL routes to execution-code with expected vs actual counts.
+L2: Node count, edge count, console error count. PASS routes to validate-semantic. FAIL routes to execution-code with expected vs actual counts.
 
 ## Decision Points
 - svg_found = false → FAIL (component did not mount)
@@ -88,7 +88,7 @@ L2: Node count, edge count, console error count. PASS routes to verify-quality. 
 ### Sends To
 | Target | Data Produced | Trigger |
 |--------|---------------|---------|
-| verify-quality | PASS signal + node_count + edge_count | On PASS |
+| validate-semantic | PASS signal + node_count + edge_count | On PASS |
 | execution-code | FAIL + expected_vs_actual counts | On FAIL |
 
 > D17 Note: Ch2: `tasks/{work_dir}/p7-verify-d3-graph.md` · Ch3: micro-signal to Lead

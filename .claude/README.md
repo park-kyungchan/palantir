@@ -79,26 +79,30 @@ flows through **Skills** (methodology definitions) executed by **Agents** (tool 
  ┌─────────────────────────────────────────────────────────────────┘
  │
  ▼
- PLAN (P3)                    PLAN-VERIFY (P4)           ORCHESTRATION (P5)
+ PLAN (P3)                    VALIDATE (P4)              ORCHESTRATION (P5)
  ┌─────────────────┐          ┌─────────────────┐        ┌─────────────────┐
- │ static           │──PASS──▶│ static       ∥   │──ALL──▶│ static          │
- │ behavioral       │         │ behavioral   ∥   │ PASS  │ behavioral      │
- │ relational       │         │ relational       │       │ relational      │
- │ impact           │         │ impact           │       │ impact          │
- └─────────────────┘          │ coordinator      │        │ coordinator     │
-                              └─────────────────┘        └────────┬────────┘
+ │ static           │──PASS──▶│ syntactic    ∥   │──ALL──▶│ static          │
+ │ behavioral       │         │ semantic     ∥   │ PASS  │ behavioral      │
+ │ relational       │         │ behavioral       │       │ relational      │
+ │ impact           │         │ consumer         │       │ impact          │
+ └─────────────────┘          │ relational       │        │ coordinator     │
+                              │ impact           │        └────────┬────────┘
+                              │ coordinator      │                  │
+                              └─────────────────┘
                                                                   │
  ┌─────────────────────────────────────────────────────────────────┘
  │
  ▼
- EXECUTION (P6)               VERIFY (P7)                DELIVERY (P8)
+ EXECUTION (P6)               VALIDATE (P7)              DELIVERY (P8)
  ┌─────────────────┐          ┌─────────────────┐        ┌─────────────────┐
- │ code       ∥    │──DONE──▶│ structure        │──ALL──▶│ delivery-       │
- │ infra      ∥    │         │ content          │ PASS  │ pipeline        │
- │ impact          │         │ consistency      │       │                 │
- │ cascade         │         │ quality          │       │ git commit      │
- │ review          │         │ cc-feasibility   │       │ MEMORY.md       │
- └─────────────────┘          └─────────────────┘        └─────────────────┘
+ │ code       ∥    │──DONE──▶│ syntactic        │──ALL──▶│ delivery-       │
+ │ infra      ∥    │         │ semantic         │ PASS  │ pipeline        │
+ │ impact          │         │ behavioral       │       │                 │
+ │ cascade         │         │ consumer         │       │ git commit      │
+ │ review          │         │ relational       │       │ MEMORY.md       │
+ └─────────────────┘          │ impact           │        └─────────────────┘
+                              │ coordinator      │
+                              └─────────────────┘
 
  HOMEOSTASIS (Cross-cutting)
  ┌──────────────────────────────────────────────────┐
@@ -177,10 +181,10 @@ Lead = Pure Orchestrator
 | P1 | Design | architecture, interface, risk | Lead + local agents |
 | P2 | Research | codebase, external, audit | Team infrastructure |
 | P3 | Plan | static, behavioral, relational, impact | Team infrastructure |
-| P4 | Plan-Verify | static, behavioral, relational, impact, coordinator | Team infrastructure |
+| P4 | Validate | syntactic, semantic, behavioral, consumer, relational, impact, coordinator | Team infrastructure |
 | P5 | Orchestration | static, behavioral, relational, impact, coordinator | Team infrastructure |
 | P6 | Execution | code, infra, impact, cascade, review | Team infrastructure |
-| P7 | Verify | structure, content, consistency, quality, cc-feasibility | Team infrastructure |
+| P7 | Validate | syntactic, semantic, behavioral, consumer, relational, impact, coordinator | Team infrastructure |
 | P8 | Delivery | delivery-pipeline | Team infrastructure |
 | X | Homeostasis | manage-infra, manage-skills, manage-codebase, self-diagnose, self-implement | Any |
 | X | Cross-cutting | task-management, pipeline-resume | Any |
@@ -317,7 +321,7 @@ Six custom agents, each with a unique tool profile and color.
 
 ## 6. Skills
 
-40 skills across 10 domains. Each skill has L1 (routing frontmatter) and L2 (methodology body).
+38 skills across 9 domains. Each skill has L1 (routing frontmatter) and L2 (methodology body).
 
 ### Skill Inventory by Domain
 
@@ -328,19 +332,17 @@ Six custom agents, each with a unique tool profile and color.
  design            │ P1    │ architecture, interface, risk                  │   3
  research          │ P2    │ codebase, external, audit                     │   3
  plan              │ P3    │ static, behavioral, relational, impact    │   4
- plan-verify       │ P4    │ static, behavioral, relational, impact,   │   5
-                   │       │ coordinator                                │
+ validate          │ P4+P7 │ syntactic, semantic, behavioral, consumer, │   7
+                   │       │ relational, impact, coordinator            │
  orchestration     │ P5    │ static, behavioral, relational, impact,   │   5
                    │       │ coordinator                                │
  execution         │ P6    │ code, infra, impact, cascade, review          │   5
- verify            │ P7    │ structure, content, consistency, quality,      │   5
-                   │       │ cc-feasibility                                 │
  homeostasis       │ X-cut │ manage-infra, manage-skills, manage-codebase, │   5
                    │       │ self-diagnose, self-implement                  │
  cross-cutting     │ X-cut │ delivery-pipeline, pipeline-resume,           │   3
                    │       │ task-management                                │
  ──────────────────┼───────┼────────────────────────────────────────────────┼──────
-                   │       │                                        TOTAL: │  40
+                   │       │                                        TOTAL: │  38
 ```
 
 ### Skill Routing Flags
@@ -444,33 +446,31 @@ For STANDARD/COMPLEX tiers, construct the delegation prompt with:
 | 11 | plan-behavioral | plan | P3 | /plan-behavioral | Yes | analyst |
 | 12 | plan-relational | plan | P3 | /plan-relational | Yes | analyst |
 | 13 | plan-impact | plan | P3 | /plan-impact | Yes | analyst |
-| 14 | plan-verify-static | plan-verify | P4 | /plan-verify-static | Yes | analyst |
-| 15 | plan-verify-behavioral | plan-verify | P4 | /plan-verify-behavioral | Yes | analyst |
-| 16 | plan-verify-relational | plan-verify | P4 | /plan-verify-relational | Yes | analyst |
-| 17 | plan-verify-impact | plan-verify | P4 | /plan-verify-impact | Yes | analyst |
-| 18 | plan-verify-coordinator | plan-verify | P4 | /plan-verify-coordinator | Yes | analyst |
-| 19 | orchestrate-static | orchestration | P5 | /orchestrate-static | Yes | Lead-direct |
-| 20 | orchestrate-behavioral | orchestration | P5 | /orchestrate-behavioral | Yes | Lead-direct |
-| 21 | orchestrate-relational | orchestration | P5 | /orchestrate-relational | Yes | Lead-direct |
-| 22 | orchestrate-impact | orchestration | P5 | /orchestrate-impact | Yes | Lead-direct |
-| 23 | orchestrate-coordinator | orchestration | P5 | /orchestrate-coordinator | Yes | Lead-direct |
-| 24 | execution-code | execution | P6 | /execution-code | Yes | implementer |
-| 25 | execution-infra | execution | P6 | /execution-infra | Yes | infra-implementer |
-| 26 | execution-impact | execution | P6 | No | Yes | analyst |
-| 27 | execution-cascade | execution | P6 | No | Yes | implementer |
-| 28 | execution-review | execution | P6 | /execution-review | Yes | analyst |
-| 29 | verify-structural-content | verify | P7 | /verify-structural-content | Yes | analyst |
-| 30 | verify-consistency | verify | P7 | /verify-consistency | Yes | analyst |
-| 31 | verify-quality | verify | P7 | /verify-quality | Yes | analyst |
-| 32 | verify-cc-feasibility | verify | P7 | /verify-cc-feasibility | Yes | researcher |
-| 33 | manage-infra | homeostasis | X | /manage-infra | Yes | analyst |
-| 34 | manage-skills | homeostasis | X | /manage-skills | Yes | analyst |
-| 35 | manage-codebase | homeostasis | X | /manage-codebase | Yes | analyst |
-| 36 | self-diagnose | homeostasis | X | /self-diagnose | Yes | analyst |
-| 37 | self-implement | homeostasis | X | /self-implement | Yes | infra-implementer |
-| 38 | delivery-pipeline | cross-cutting | P8 | /delivery-pipeline | No | delivery-agent |
-| 39 | pipeline-resume | cross-cutting | X | /pipeline-resume | No | Lead-direct |
-| 40 | task-management | cross-cutting | X | /task-management | No | pt-manager |
+| 14 | validate-syntactic | validate | P4+P7 | /validate-syntactic | Yes | analyst |
+| 15 | validate-semantic | validate | P4+P7 | /validate-semantic | Yes | analyst |
+| 16 | validate-behavioral | validate | P4+P7 | /validate-behavioral | Yes | analyst |
+| 17 | validate-consumer | validate | P4+P7 | /validate-consumer | Yes | analyst |
+| 18 | validate-relational | validate | P4+P7 | /validate-relational | Yes | analyst |
+| 19 | validate-impact | validate | P4+P7 | /validate-impact | Yes | analyst |
+| 20 | validate-coordinator | validate | P4+P7 | /validate-coordinator | Yes | coordinator |
+| 21 | orchestrate-static | orchestration | P5 | /orchestrate-static | Yes | Lead-direct |
+| 22 | orchestrate-behavioral | orchestration | P5 | /orchestrate-behavioral | Yes | Lead-direct |
+| 23 | orchestrate-relational | orchestration | P5 | /orchestrate-relational | Yes | Lead-direct |
+| 24 | orchestrate-impact | orchestration | P5 | /orchestrate-impact | Yes | Lead-direct |
+| 25 | orchestrate-coordinator | orchestration | P5 | /orchestrate-coordinator | Yes | Lead-direct |
+| 26 | execution-code | execution | P6 | /execution-code | Yes | implementer |
+| 27 | execution-infra | execution | P6 | /execution-infra | Yes | infra-implementer |
+| 28 | execution-impact | execution | P6 | No | Yes | analyst |
+| 29 | execution-cascade | execution | P6 | No | Yes | implementer |
+| 30 | execution-review | execution | P6 | /execution-review | Yes | analyst |
+| 31 | manage-infra | homeostasis | X | /manage-infra | Yes | analyst |
+| 32 | manage-skills | homeostasis | X | /manage-skills | Yes | analyst |
+| 33 | manage-codebase | homeostasis | X | /manage-codebase | Yes | analyst |
+| 34 | self-diagnose | homeostasis | X | /self-diagnose | Yes | analyst |
+| 35 | self-implement | homeostasis | X | /self-implement | Yes | infra-implementer |
+| 36 | delivery-pipeline | cross-cutting | P8 | /delivery-pipeline | No | delivery-agent |
+| 37 | pipeline-resume | cross-cutting | X | /pipeline-resume | No | Lead-direct |
+| 38 | task-management | cross-cutting | X | /task-management | No | pt-manager |
 
 ---
 
@@ -787,11 +787,13 @@ Persistent knowledge storage per agent, auto-loaded at startup.
  │   ├── plan-behavioral/SKILL.md         P3
  │   ├── plan-relational/SKILL.md         P3
  │   ├── plan-impact/SKILL.md             P3
- │   ├── plan-verify-static/SKILL.md      P4
- │   ├── plan-verify-behavioral/SKILL.md  P4
- │   ├── plan-verify-relational/SKILL.md  P4
- │   ├── plan-verify-impact/SKILL.md      P4
- │   ├── plan-verify-coordinator/SKILL.md P4
+ │   ├── validate-behavioral/SKILL.md     P4+P7
+ │   ├── validate-consumer/SKILL.md       P4+P7
+ │   ├── validate-coordinator/SKILL.md    P4+P7
+ │   ├── validate-impact/SKILL.md         P4+P7
+ │   ├── validate-relational/SKILL.md     P4+P7
+ │   ├── validate-semantic/SKILL.md       P4+P7
+ │   ├── validate-syntactic/SKILL.md      P4+P7
  │   ├── orchestrate-static/SKILL.md      P5
  │   ├── orchestrate-behavioral/SKILL.md  P5
  │   ├── orchestrate-relational/SKILL.md  P5
@@ -802,11 +804,6 @@ Persistent knowledge storage per agent, auto-loaded at startup.
  │   ├── execution-impact/SKILL.md        P6
  │   ├── execution-cascade/SKILL.md       P6
  │   ├── execution-review/SKILL.md        P6
- │   ├── verify-structure/SKILL.md        P7
- │   ├── verify-content/SKILL.md          P7
- │   ├── verify-consistency/SKILL.md      P7
- │   ├── verify-quality/SKILL.md          P7
- │   ├── verify-cc-feasibility/SKILL.md   P7
  │   ├── manage-infra/SKILL.md            Homeostasis
  │   ├── manage-skills/SKILL.md           Homeostasis
  │   ├── manage-codebase/SKILL.md         Homeostasis
@@ -917,7 +914,7 @@ Reproduction: [steps to trigger]
 
 | Scenario | What to Tell Lead |
 |----------|-------------------|
-| Skill produces wrong output | "Run /verify-quality on skill-name" |
+| Skill produces wrong output | "Run /validate-semantic on skill-name" |
 | Agent uses wrong tool | "Check agents/name.md tools list vs Profile requirements" |
 | Pipeline skips a phase | "Check tier classification — should this be STANDARD not TRIVIAL?" |
 | Hook not firing | "Check settings.json hooks → matcher regex for event-name" |
@@ -948,4 +945,4 @@ Reproduction: [steps to trigger]
 
 ---
 
-*Generated from .claude/ INFRA v10.9 — 6 agents, 33 skills, 5 hooks*
+*Generated from .claude/ INFRA v10.9 — 6 agents, 38 skills, 5 hooks*

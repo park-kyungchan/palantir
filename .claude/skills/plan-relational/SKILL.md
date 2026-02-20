@@ -7,7 +7,7 @@ description: >-
   research-coordinator complete. Reads from research-coordinator
   audit-relational L3 relationship graph via $ARGUMENTS and
   design-interface API contracts. Produces contract registry with
-  gap counts and per-task contracts for plan-verify-relational.
+  gap counts and per-task contracts for validate-relational.
   On FAIL (HIGH asymmetric gaps), routes back to plan-relational
   with integrity evidence. DPS needs research-coordinator
   audit-relational L3 relationships and design-interface
@@ -144,7 +144,7 @@ Contracts without validation rules are aspirational, not enforceable. Every cont
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| plan-verify-relational | Interface contract specification | Always (PASS or partial) |
+| validate-relational | Interface contract specification | Always (PASS or partial) |
 
 ### Failure Routes
 | Failure Type | Route To | Data Passed |

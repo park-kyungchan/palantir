@@ -58,7 +58,7 @@ title_found: true | false
 console_errors: N
 errors: []
 ```
-L2: Screenshot ID, element count, console error count. PASS routes to verify-quality. FAIL routes to execution-code with screenshot and error details.
+L2: Screenshot ID, element count, console error count. PASS routes to validate-semantic. FAIL routes to execution-code with screenshot and error details.
 
 ## Decision Points
 - element_count < 5 → FAIL (blank page)
@@ -86,7 +86,7 @@ L2: Screenshot ID, element count, console error count. PASS routes to verify-qua
 ### Sends To
 | Target | Data Produced | Trigger |
 |--------|---------------|---------|
-| verify-quality | PASS signal + screenshot_id | On PASS |
+| validate-semantic | PASS signal + screenshot_id | On PASS |
 | execution-code | FAIL + screenshot_id + errors | On FAIL |
 
 > D17 Note: Ch2: `tasks/{work_dir}/p7-verify-page-load.md` · Ch3: micro-signal to Lead

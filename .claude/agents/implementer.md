@@ -5,8 +5,8 @@ description: |
   application files, runs tests/builds. The only agent with Bash access.
 
   WHEN: Source code modification + command execution required.
-  TOOLS: Read, Glob, Grep, Edit, Write, Bash, sequential-thinking.
-  CANNOT: Task, WebSearch, WebFetch. No .claude/ file modification.
+  TOOLS: Read, Glob, Grep, Edit, Write, Bash, TaskGet, sequential-thinking.
+  CANNOT: Task(spawn), WebSearch, WebFetch. No .claude/ file modification.
 tools:
   - Read
   - Glob
@@ -14,6 +14,7 @@ tools:
   - Edit
   - Write
   - Bash
+  - TaskGet
   - mcp__sequential-thinking__sequentialthinking
 model: sonnet
 memory: project

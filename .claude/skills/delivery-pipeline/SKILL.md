@@ -5,12 +5,12 @@ description: >-
   structured git commit, MEMORY.md archive, and PT completion.
   User confirmation required before git commit. Pipeline terminal
   skill. Use after verify domain complete with all 4 stages PASS
-  and no outstanding FAIL. Reads from verify-cc-feasibility (main
+  and no outstanding FAIL. Reads from validate-coordinator (main
   pipeline) or self-implement (homeostasis path) with all-PASS
   confirmed. Produces git commit, MEMORY.md archive, and PT status
   DELIVERED. On FAIL (pre-commit hook failure or user rejection),
   Lead retries L0 or applies D12 escalation. DPS needs
-  verify-cc-feasibility all-PASS confirmation + PT metadata for
+  validate-coordinator all-PASS confirmation + PT metadata for
   commit message. Exclude detailed verify findings beyond PASS
   status. delivery-agent memory:none — full context required in
   DPS (D11 exception: include all).
@@ -127,7 +127,7 @@ Before spawning delivery-agent, Lead must verify all required checks. If any fai
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| verify-cc-feasibility | All-PASS verification report (4 stages) | L1 YAML: `all_pass: true`, per-stage verdicts |
+| validate-coordinator | All-PASS verification report (4 stages) | L1 YAML: `all_pass: true`, per-stage verdicts |
 | (User invocation) | Direct delivery request with optional commit message | `$ARGUMENTS` text: commit message or empty |
 | self-implement | RSI cycle results ready for commit | L1 YAML: `status: complete`, `files_changed`, `commit_hash: ""` |
 

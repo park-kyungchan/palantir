@@ -18,7 +18,7 @@
 
 | Check | Expected | Failure Action |
 |-------|----------|----------------|
-| Acyclicity | Topological sort succeeds | Report cycle path → route to plan-verify-coordinator |
+| Acyclicity | Topological sort succeeds | Report cycle path → route to validate-coordinator |
 | Connectedness | All tasks reachable from roots | Orphan tasks flagged, added to earliest possible wave |
 | No self-loops | No task depends on itself | Remove self-loop, flag in L2 |
 
@@ -147,12 +147,12 @@ Serial Chains:
 ### Verified Plan Data Missing
 - **Cause**: $ARGUMENTS path is empty or L3 file not found
 - **Action**: Report FAIL. Signal: `FAIL|reason:plan-L3-missing|ref:tasks/{work_dir}/p5-orch-impact.md`
-- **Route**: Back to plan-verify-coordinator for re-export
+- **Route**: Back to validate-coordinator for re-export
 
 ### Cycle Detected in DAG
 - **Cause**: Circular dependency between tasks
 - **Action**: Report FAIL with cycle path. Signal: `FAIL|reason:cycle-detected|ref:tasks/{work_dir}/p5-orch-impact.md`
-- **Route**: Back to plan-verify-coordinator for dependency restructuring
+- **Route**: Back to validate-coordinator for dependency restructuring
 
 ### Capacity Overflow (>4 Tasks All Eligible)
 - **Cause**: Many independent tasks at same dependency level

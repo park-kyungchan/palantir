@@ -77,10 +77,10 @@ Lead (P1-P5) — Deferred Spawn Pattern [CLAUDE.md §3]:
     Step 3 — Wave B (parallel): audit-static, audit-behavioral, audit-relational, audit-impact
     Step 4 — Synthesis: research-coordinator (N→1, all P2 outputs → p2-synthesis.md)
   P3 (Plan):      4 analysts [plan-static, plan-behavioral, plan-relational, plan-impact]
-                  → coordinator synthesis (plan-verify-coordinator equivalent)
-  P4 (Plan Verify): 4 analysts [plan-verify-static, plan-verify-behavioral,
-                    plan-verify-relational, plan-verify-impact]
-                    → plan-verify-coordinator → PASS/FAIL gate (iterate if FAIL, max 2×)
+                  → coordinator synthesis (validate-coordinator equivalent)
+  P4 (Plan Verify): 6 analysts [validate-syntactic, validate-semantic,
+                    validate-behavioral, validate-consumer, validate-relational,
+                    validate-impact] → validate-coordinator → PASS/FAIL gate (max 2×)
   P5 (Orchestrate): 4 analysts [orchestrate-static, orchestrate-behavioral,
                     orchestrate-relational, orchestrate-impact]
                     → orchestrate-coordinator → Lead writes p5-execution-plan.md
@@ -88,9 +88,10 @@ Lead (P1-P5) — Deferred Spawn Pattern [CLAUDE.md §3]:
 
 Lead (P6-P8):
   P6 Execution:  spawn implementer/infra subagents per P5 plan
-  P7 Verify:     spawn 4 verify analysts in parallel (structural-content, consistency, quality, cc-feasibility)
-                 → collect all 4 micro-signals (PASS and FAIL alike)
-                 → spawn verify-coordinator with ALL 4 file paths + conditional Lead D-decisions in DPS
+  P7 Verify:     spawn 6 validate-* analysts in parallel (syntactic, semantic,
+                 behavioral, consumer, relational, impact)
+                 → collect all 6 micro-signals (PASS and FAIL alike)
+                 → spawn validate-coordinator with ALL 6 file paths + conditional Lead D-decisions in DPS
                  → coordinator returns unified verdict → gate decision
                  ⚠ NEVER read individual analyst outputs — FAIL micro-signals go directly to coordinator
   P8 Delivery:   spawn delivery-agent → commit + archive
@@ -315,7 +316,7 @@ Each work task includes:
 - **Phase-Gated violation** [BLOCK]: Loading P3/P4 skill L2 bodies while executing P2 = pure context waste. Load ONLY current phase's SKILL.md L1 frontmatters (sed head -20). Canonical skill list per phase: CLAUDE.md §2.0 Phase Definitions (grep -n "2.0 Phase Definitions" ~/.claude/CLAUDE.md).
 - **P2 skill count underestimate** [BLOCK]: P2 has 8 skills (not 2-3). Spawning only research-codebase + research-external misses all 4 audit dimensions (static/behavioral/relational/impact) and the mandatory research-coordinator synthesis. Always check CLAUDE.md §2.0 Phase Definitions (grep -n "2.0 Phase Definitions" ~/.claude/CLAUDE.md) for authoritative P2 skill list.
 - **evaluation-criteria order violation** [BLOCK]: evaluation-criteria MUST run FIRST in P2, before research-codebase and research-external. Its L1 frontmatter explicitly states this ordering requirement. Skipping it or running it in parallel with other P2 analysts violates P2 protocol.
-- **Verify FAIL investigation** [BLOCK]: On FAIL micro-signal from any verify analyst (e.g., "FAIL|crits:4/5|failing:CRIT-2"), Lead MUST NOT read the analyst output file to investigate. Spawn verify-coordinator immediately with all N file paths (PASS and FAIL alike). For known CRIT override scenarios, embed CONDITIONAL D-decisions in coordinator DPS: "If dim X FAIL with reason Y → evaluate if Z is acceptable alternative — if yes, treat as CONDITIONAL_PASS." Coordinator reads the file, evaluates actual failure mode, and applies or rejects the override. Root cause: CRIT-level FAIL triggers "investigation instinct" — this is Data Relay Tax in disguise. Trust coordinator to analyze and decide.
+- **Verify FAIL investigation** [BLOCK]: On FAIL micro-signal from any verify analyst (e.g., "FAIL|crits:4/5|failing:CRIT-2"), Lead MUST NOT read the analyst output file to investigate. Spawn validate-coordinator immediately with all N file paths (PASS and FAIL alike). For known CRIT override scenarios, embed CONDITIONAL D-decisions in coordinator DPS: "If dim X FAIL with reason Y → evaluate if Z is acceptable alternative — if yes, treat as CONDITIONAL_PASS." Coordinator reads the file, evaluates actual failure mode, and applies or rejects the override. Root cause: CRIT-level FAIL triggers "investigation instinct" — this is Data Relay Tax in disguise. Trust coordinator to analyze and decide.
 
 ## Transitions
 

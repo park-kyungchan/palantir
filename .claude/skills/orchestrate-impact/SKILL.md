@@ -5,11 +5,11 @@ description: >-
   balancing at max 4 parallel per wave. Calculates critical path
   and parallel efficiency. Parallel with orchestrate-static,
   orchestrate-behavioral, and orchestrate-relational. Use after
-  plan-verify-coordinator complete with all PASS. Reads from
-  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  validate-coordinator complete with all PASS. Reads from
+  validate-coordinator verified plan L3 via $ARGUMENTS.
   Produces wave schedule with critical path length and wave
   visualization with DAG for orchestrate-coordinator. On FAIL,
-  Lead applies D12 escalation. DPS needs plan-verify-coordinator
+  Lead applies D12 escalation. DPS needs validate-coordinator
   verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: true
 disable-model-invocation: true
@@ -51,7 +51,7 @@ When >4 tasks are eligible for the same wave:
 ## Methodology
 
 ### 1. Read Verified Plan
-Load plan-verify-coordinator L3 via `$ARGUMENTS`. Extract task list, dependency graph, file assignments, phase structure.
+Load validate-coordinator L3 via `$ARGUMENTS`. Extract task list, dependency graph, file assignments, phase structure.
 
 Build analyst DPS with D11 context filter:
 - **INCLUDE**: Verified plan L3, platform constraint (max 4 parallel/wave), wave scheduling principles
@@ -60,7 +60,7 @@ Build analyst DPS with D11 context filter:
 - **Delivery (Ch2+Ch3)**: Write to `tasks/{work_dir}/p5-orch-impact.md`. Ch3: `PASS|waves:{N}|max_parallel:{N}|ref:tasks/{work_dir}/p5-orch-impact.md`. file-based output to orchestrate-coordinator: `READY|path:tasks/{work_dir}/p5-orch-impact.md|fields:wave_schedule,parallel_limits,capacity`
 
 ### 2. Build Execution DAG
-Construct directed acyclic graph from dependency edges. Verify acyclicity via topological sort. Identify root nodes (in-degree = 0). On cycle detected: FAIL → route to plan-verify-coordinator.
+Construct directed acyclic graph from dependency edges. Verify acyclicity via topological sort. Identify root nodes (in-degree = 0). On cycle detected: FAIL → route to validate-coordinator.
 
 ### 3. Group Tasks Into Waves
 Topological wave assignment: max 4 tasks/wave, all dependencies in prior waves. Priority order: critical path → fan-out → complexity → task ID. Defer overflow to next wave.
@@ -82,10 +82,10 @@ Produce ordered waves with task assignments, per-wave load metrics, critical pat
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Plan L3 path empty or file missing (transient) | L0 Retry | Re-invoke after validate-coordinator re-exports |
 | Wave schedule incomplete or dependency order ambiguous | L1 Nudge | Respawn with refined DPS targeting refined capacity constraints |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
-| Cycle in DAG unresolvable without plan restructure | L3 Restructure | Route to plan-verify-coordinator for dependency redesign |
+| Cycle in DAG unresolvable without plan restructure | L3 Restructure | Route to validate-coordinator for dependency redesign |
 | 3+ L2 failures or DAG unschedulable within wave limits | L4 Escalate | AskUserQuestion with situation + options |
 
 > For failure sub-case details (verbose prose): read `resources/methodology.md`
@@ -102,7 +102,7 @@ Produce ordered waves with task assignments, per-wave load metrics, critical pat
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| plan-verify-coordinator | Verified plan L3 | File path via $ARGUMENTS: tasks, dependencies, complexity |
+| validate-coordinator | Verified plan L3 | File path via $ARGUMENTS: tasks, dependencies, complexity |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
@@ -112,8 +112,8 @@ Produce ordered waves with task assignments, per-wave load metrics, critical pat
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Plan L3 missing | plan-verify-coordinator | Missing file path |
-| Cycle detected | plan-verify-coordinator | Cycle path details |
+| Plan L3 missing | validate-coordinator | Missing file path |
+| Cycle detected | validate-coordinator | Cycle path details |
 | All waves scheduled | orchestrate-coordinator | Complete schedule (normal flow) |
 
 ## Quality Gate

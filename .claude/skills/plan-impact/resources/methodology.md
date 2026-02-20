@@ -100,4 +100,4 @@ Spawn analyst (maxTurns: 15). Systematic grouping across 3-8 tasks. Checkpoints 
 - **Delivery (Two-Channel)**:
   - Ch2: Write full result to `tasks/{work_dir}/p3-plan-impact.md`
   - Ch3 micro-signal to Lead: `PASS|groups:{N}|checkpoints:{N}|ref:tasks/{work_dir}/p3-plan-impact.md`
-  - file-based output to plan-verify-impact subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active
+  - file-based output to validate-impact subagent (Deferred Spawn — Lead spawns verifier after all 4 plan dimensions complete): signal sent only if verifier is already active

@@ -60,7 +60,7 @@ scroll_progress_bar_found: true | false
 sections_visible_after_scroll: N
 screenshot_ids: []
 ```
-L2: Scroll positions tested, animation triggers count, screenshot IDs. PASS routes to verify-quality. FAIL routes to execution-code with scroll position and error details.
+L2: Scroll positions tested, animation triggers count, screenshot IDs. PASS routes to validate-semantic. FAIL routes to execution-code with scroll position and error details.
 
 ## Decision Points
 - scroll_progress_bar not found → WARN
@@ -88,7 +88,7 @@ L2: Scroll positions tested, animation triggers count, screenshot IDs. PASS rout
 ### Sends To
 | Target | Data Produced | Trigger |
 |--------|---------------|---------|
-| verify-quality | PASS signal + scroll_positions_checked | On PASS |
+| validate-semantic | PASS signal + scroll_positions_checked | On PASS |
 | execution-code | FAIL + screenshot_ids + animation_errors | On FAIL |
 
 > D17 Note: Ch2: `tasks/{work_dir}/p7-verify-ui-scroll.md` · Ch3: micro-signal to Lead

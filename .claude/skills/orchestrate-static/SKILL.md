@@ -5,11 +5,11 @@ description: >-
   profiles. Splits multi-capability tasks into single-profile
   sub-tasks. Parallel with orchestrate-behavioral,
   orchestrate-relational, and orchestrate-impact. Use after
-  plan-verify-coordinator complete with all PASS. Reads from
-  plan-verify-coordinator verified plan L3 via $ARGUMENTS.
+  validate-coordinator complete with all PASS. Reads from
+  validate-coordinator verified plan L3 via $ARGUMENTS.
   Produces task-agent matrix with splits count and assignment
-  rationale for orchestrate-coordinator. Model:sonnet for all spawns. MCP tasks require general-purpose subagent_type. Subagents for all spawns.
-  On FAIL, Lead applies D12 escalation. DPS needs plan-verify-coordinator verified plan L3. Exclude other orchestrate dimension outputs.
+  rationale for orchestrate-coordinator. Model:sonnet for all spawns. MCP tasks require researcher subagent_type. Subagents for all spawns.
+  On FAIL, Lead applies D12 escalation. DPS needs validate-coordinator verified plan L3. Exclude other orchestrate dimension outputs.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -26,7 +26,7 @@ disable-model-invocation: true
 Runs in Two-Channel protocol only. See `.claude/resources/phase-aware-execution.md` for team mode routing and compaction recovery.
 
 - **Communication**: Two-Channel Protocol (Ch2 disk + Ch3 micro-signal to Lead + file-based output).
-- **Input**: Read plan-verify-coordinator L3 output directly from `$ARGUMENTS` path.
+- **Input**: Read validate-coordinator L3 output directly from `$ARGUMENTS` path.
 - **File ownership**: Only modify `tasks/{work_dir}/p5-orch-static.md`. No overlapping edits with parallel agents.
 
 ## Decision Points
@@ -50,7 +50,7 @@ When task spans `.claude/` and source files simultaneously:
 ## Methodology
 
 ### 1. Read Verified Plan
-Load plan-verify-coordinator L3 output via `$ARGUMENTS` path. Extract task list with IDs, descriptions, file assignments, dependency graph, and complexity estimates.
+Load validate-coordinator L3 output via `$ARGUMENTS` path. Extract task list with IDs, descriptions, file assignments, dependency graph, and complexity estimates.
 
 Construct DPS for analyst using D11 context filtering. See `resources/methodology.md §DPS Template` for full INCLUDE/EXCLUDE blocks and delivery format.
 
@@ -85,7 +85,7 @@ See `.claude/resources/failure-escalation-ladder.md` for D12 escalation levels (
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Plan L3 path empty or file missing | L0 Retry | Re-invoke after plan-verify-coordinator re-exports |
+| Plan L3 path empty or file missing | L0 Retry | Re-invoke after validate-coordinator re-exports |
 | Assignment incomplete or capability gap ambiguous | L1 Nudge | Respawn with refined DPS targeting refined capability criteria |
 | Agent stuck, context polluted, turns exhausted | L2 Respawn | Kill → fresh analyst with refined DPS |
 | Unassignable task that cannot be split | L3 Restructure | Route to orchestrate-coordinator as architectural blocker |
@@ -114,7 +114,7 @@ See `.claude/resources/transitions-template.md` for standard transition format.
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| plan-verify-coordinator | Verified plan L3 | File path via $ARGUMENTS: task list, dependencies, files |
+| validate-coordinator | Verified plan L3 | File path via $ARGUMENTS: task list, dependencies, files |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
@@ -124,7 +124,7 @@ See `.claude/resources/transitions-template.md` for standard transition format.
 ### Failure Routes
 | Failure Type | Route To | Data Passed |
 |-------------|----------|-------------|
-| Plan L3 missing | plan-verify-coordinator | Missing file path |
+| Plan L3 missing | validate-coordinator | Missing file path |
 | Unassignable task (unsplittable) | orchestrate-coordinator | Task details + capability gap |
 | All tasks assigned | orchestrate-coordinator | Complete matrix (normal flow) |
 
