@@ -1,23 +1,24 @@
 ---
 name: verify-quality
 description: >-
-  Audits routing effectiveness via description specificity,
-  input/output clarity, and description utilization. Scores
-  skills 0-100 and identifies bottom-5 for improvement. Third of
-  four sequential verify stages. Use after verify-consistency
-  PASS or after routing failures requiring investigation. Reads
-  from verify-consistency relationship integrity confirmation.
-  Produces quality scores per file for verify-cc-feasibility on
-  PASS, or routes back to execution-infra on FAIL. On FAIL,
-  routes bottom-5 skills with scores and improvement instructions
-  to execution-infra. Weighted scoring: WHEN specificity 30% +
-  METHODOLOGY concreteness 30% + OUTPUT completeness 20% +
-  utilization 20%. TRIVIAL: Lead-direct spot check. STANDARD: 1
-  analyst full scoring audit. COMPLEX: 2 analysts — WHEN/
-  METHODOLOGY vs OUTPUT/utilization. DPS context: all skill
-  description texts + scoring rubric. Exclude L2 body content,
-  cross-skill consistency checks (verify-consistency domain),
-  and non-.claude/ files.
+  Assesses artifact quality across specificity, concreteness,
+  completeness, and utilization dimensions. Scores artifacts 0-100
+  and identifies bottom-5 for improvement. Third of four sequential
+  verify stages. Use after verify-consistency PASS or after routing
+  failures requiring investigation. Reads from verify-consistency
+  relationship integrity confirmation. Produces quality scores per
+  file for verify-cc-feasibility on PASS, or routes to the relevant
+  execution skill on FAIL. On FAIL, routes bottom-5 artifacts with
+  scores and improvement instructions. Scoring rubric is
+  DPS-parameterized per artifact type. Default rubric (INFRA skills):
+  WHEN specificity 30% + METHODOLOGY concreteness 30% + OUTPUT
+  completeness 20% + utilization 20%. For non-INFRA artifacts,
+  caller provides rubric and dimension weights via DPS. TRIVIAL:
+  Lead-direct spot check. STANDARD: 1 analyst full scoring audit.
+  COMPLEX: 2 analysts — specificity/concreteness vs
+  completeness/utilization split. DPS context: all artifact
+  description texts + scoring rubric. Exclude L2 body content and
+  cross-artifact consistency checks (verify-consistency domain).
 user-invocable: true
 disable-model-invocation: true
 ---

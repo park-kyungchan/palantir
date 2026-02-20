@@ -38,6 +38,15 @@ fi
 echo "$(date -Iseconds) BLOCKED TaskOutput(block:true) session=${SESSION_ID}" \
   >> "/tmp/taskoutput-relay-blocked.log" 2>/dev/null || true
 
+# Stderr message for operator visibility (exit 2 path is not used here,
+# but stderr is still surfaced in hook logs)
+echo "CE-BLOCK: TaskOutput is prohibited for Lead (Data Relay Tax)." >&2
+echo "Correct pattern:" >&2
+echo "  1. Spawn with run_in_background:true" >&2
+echo "  2. Receive auto-notification on completion" >&2
+echo "  3. Read output file via Read tool if details needed" >&2
+echo "  Never use TaskOutput — it floods Lead context with subagent data." >&2
+
 # Exit 0 + permissionDecision:"deny" — blocks tool call AND injects
 # additionalContext into Lead's next turn for reinforced guidance.
 # (exit 2 only feeds stderr; exit 0 parses stdout JSON for both fields)

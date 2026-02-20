@@ -1,22 +1,24 @@
 ---
 name: verify-structural-content
 description: >-
-  Inspects YAML frontmatter, naming conventions, and L2 body
-  sections for completeness. First of four sequential verify
-  stages: structure, consistency, quality, cc-feasibility. Use
-  after execution-review PASS or any INFRA file creation or
-  modification. Reads from execution-review PASS verdict and
+  Inspects file structure and content quality: required metadata
+  fields, naming conventions, section completeness, and description
+  utilization. First of four sequential verify stages: structure,
+  consistency, quality, cc-feasibility. Use after execution-review
+  PASS or any file creation or modification requiring structural
+  validation. Reads from execution-review PASS verdict and
   implementation artifacts. Produces structure and content scores
-  per file for verify-consistency on PASS, or routes back to
-  execution-infra on FAIL. On FAIL, routes file path + error
-  location + suggested fix to execution-infra. Scores 0-100 per
-  file: structure (YAML parseability, required fields, naming,
-  directory compliance) + content (utilization %, orchestration
-  key presence, body section presence, L1/L2 format). TRIVIAL:
-  Lead-direct on 1-3 files. STANDARD: 1 analyst maxTurns 25.
-  COMPLEX: 2 analysts — structural vs content split. DPS context:
-  Glob results + CLAUDE.md declared counts. Exclude L2 body
-  content, non-.claude/ files, source code outside skills/agents/.
+  per file for verify-consistency on PASS, or routes to the relevant
+  execution skill on FAIL. On FAIL, routes file path + error location
+  + suggested fix. Scores 0-100 per file: structure (parse validity,
+  required fields, naming, directory compliance) + content
+  (utilization %, key presence, body section presence, format).
+  DPS-parameterized: caller specifies artifact type, required fields,
+  naming rules, and declared counts. Default scope: .claude/ INFRA
+  files (skills, agents, hooks). TRIVIAL: Lead-direct on 1-3 files.
+  STANDARD: 1 analyst maxTurns 25. COMPLEX: 2 analysts — structural
+  vs content split. DPS context: Glob results + DPS-declared counts.
+  Exclude files outside DPS-specified scope.
 user-invocable: true
 disable-model-invocation: true
 ---

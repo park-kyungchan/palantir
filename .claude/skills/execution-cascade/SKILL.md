@@ -1,16 +1,17 @@
 ---
 name: execution-cascade
 description: >-
-  Iterates DIRECT-dependent updates in max 3 rounds with
+  WHEN execution-impact reports cascade_recommended:true AND the
+  initial change is already committed by execution-code or
+  execution-infra. NOT for initial implementation — cascade
+  handles downstream propagation only. Distinct from
+  execution-code (initial file edits) and execution-infra
+  (infra-only initial edits): cascade updates N dependent modules
+  that reference the already-changed module. Iterates
+  DIRECT-dependent updates (hop_count=1) in max 3 rounds with
   convergence tracking. Max 2 implementers per iteration. Reports
-  converged, partial, or non-convergent status. Use after
-  execution-impact reports cascade_recommended true. Never
-  invoked if cascade is false. Reads from execution-impact DIRECT
-  dependent files with classification. Produces cascade result
-  with iteration details and update log with convergence evidence
-  for execution-review. On non-convergence (3 iterations
-  exhausted), routes to execution-review with partial status,
-  warnings, and unresolved file list. DPS needs execution-impact
+  converged, partial, or non-convergent status. Routes to
+  execution-review on completion. DPS needs execution-impact
   DIRECT dependents with evidence + root cause change summary.
   Exclude TRANSITIVE dependents and full pipeline history.
 user-invocable: true

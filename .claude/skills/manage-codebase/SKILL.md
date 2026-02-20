@@ -1,116 +1,86 @@
 ---
 name: manage-codebase
 description: >-
-  Generates per-file dependency map across .claude/ scope.
-  Creates or updates codebase-map.md with refs, refd_by, and
-  hotspot scores. Supports full scan or incremental mode. Use
-  after pipeline execution, major codebase changes, or periodic
-  maintenance. AI can auto-invoke. Reads from .claude/ directory
-  files via structural reference scanning. Produces
-  codebase-map.md and map health report with entries count,
-  mode, and staleness metrics for self-diagnose structural
-  analysis. On FAIL (scan timeout or map corruption), Lead
-  applies L0 retry; 3+ failures escalate to L4.
-  DPS needs changed file list from pipeline execution and
-  current codebase-map.md. Exclude historical rationale and
-  full pipeline state.
+  Analyzes project source files for tech debt, dead code, and refactoring
+  opportunities outside the .claude/ INFRA directory. Executes automated
+  cleanup and refactoring with test verification. Distinct from manage-infra
+  (which targets .claude/ files) and self-implement (which applies RSIL
+  improvements to INFRA). Use when codebase health audit identifies source
+  files needing cleanup, or when user requests project file maintenance.
+  Reads from project directory structure and test suite results. Produces
+  refactoring report with before/after diff and test pass confirmation.
+  On FAIL (tests fail after refactor), reverts change and reports to Lead.
+  TRIVIAL: Lead-direct for single file. STANDARD: 1 implementer (maxTurns:
+  30). COMPLEX: 2 implementers split by module. DPS needs project root path,
+  target file patterns, and test command. Exclude .claude/ directory.
 user-invocable: true
-argument-hint: "[full|incremental]"
 disable-model-invocation: true
+argument-hint: "[project_root] [--target=pattern] [--test-cmd=command]"
 ---
 
 # Manage — Codebase
 
-## Current Map State
-- Codebase map lines: !`wc -l < .claude/agent-memory/analyst/codebase-map.md 2>/dev/null || echo "0"`
-
 ## Execution Model
-- **TRIVIAL**: Lead-direct. Quick staleness check or single-file incremental update. No agent spawn.
-- **STANDARD**: Spawn 1 analyst (maxTurns:20). Incremental update for 3-8 changed files.
-- **COMPLEX**: Spawn 1 analyst (maxTurns:30). Full generation scan of entire `.claude/` scope.
+- **TRIVIAL**: Lead-direct. Single file cleanup, no spawn. Apply Edit inline, verify manually.
+- **STANDARD**: Spawn 1 implementer (maxTurns:30). 3–10 files, 1–2 modules.
+- **COMPLEX**: Spawn 2 implementers (maxTurns:30 each). Split by module/domain boundary.
 
 ## Phase-Aware Execution
-
-P2+ Team mode only. Use 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal to Lead, Ch4 P2P).
-Homeostasis utility — no downstream P2P consumers. Write to disk + micro-signal to Lead only.
-
-> D17 Note: Micro-signal format — read `.claude/resources/output-micro-signal-format.md`
-> Phase-aware routing details — read `.claude/resources/phase-aware-execution.md`
-
-## Methodology
-
-### 1. Determine Mode
-- **`full` argument**: Force full regeneration regardless of existing map state.
-- **`incremental` argument**: Incremental update only (fail if no map exists).
-- **No argument (default)**: Auto-detect — if `codebase-map.md` exists and is valid, use incremental; otherwise full.
-- **Post-pipeline invocation**: Lead provides list of changed files for incremental update.
-
-Check `.claude/agent-memory/analyst/codebase-map.md`:
-- Missing → switch to full generation.
-- Corrupted (unparseable) → delete and regenerate.
-- >30% entries with `updated` older than git modification date → trigger full regeneration.
-
-### 2. Full Generation (First Run or Recovery)
-
-1. `Glob .claude/**/*` — enumerate all files in scope.
-2. Apply scope filters (see Scope Boundary section).
-3. For each file: grep for structural references using detection patterns — SKILL.md (INPUT_FROM/OUTPUT_TO, agent names), Agent .md (skill names, tool names), CLAUDE.md (domain names), Hook .sh (file paths), settings.json (hook paths).
-4. Build bidirectional refs: A refs B → B's `refd_by` includes A.
-5. Calculate hotspot scores by `refd_by` count.
-6. Write complete map to `.claude/agent-memory/analyst/codebase-map.md`.
-
-> For Full Generation DPS template: read `resources/methodology.md`
-
-### 3. Incremental Update
-
-For each changed file from pipeline execution:
-1. Re-scan `refs` by grepping content for tracked-file references.
-2. Update `refd_by` bidirectionally — add/remove as needed.
-3. New files → add entry. Deleted files → remove entry + clean `refd_by`. Renames → old→new + update all `refd_by`.
-4. Recalculate hotspot for affected entries. Set `updated` to today.
-
-> For Incremental Update DPS template: read `resources/methodology.md`
-
-### 4. Staleness Detection
-
-Compare `updated` vs git modification (`git log --format=%cd --date=short -1 -- {file_path}`).
-Flag stale files for re-scan. Remove missing-filesystem entries. Add new `.claude/` files without entries.
-If >30% stale → trigger full regeneration.
-
-### 5. Write Map and Report
-
-Write updated map to `.claude/agent-memory/analyst/codebase-map.md`.
-
-> For map schema format and hotspot scoring table: read `resources/methodology.md`
+Runs outside the linear pipeline (homeostasis). Team mode applies when called in P2+ context.
+- 4-Channel Protocol: Ch2 (disk file) + Ch3 (micro-signal to Lead) + Ch4 (P2P to consumers).
+- Write to `tasks/{team}/homeostasis-manage-codebase.md`. Micro-signal: `{STATUS}|files:{N}|reverted:{R}|ref:tasks/{team}/homeostasis-manage-codebase.md`.
+- For phase-aware routing details: read `.claude/resources/phase-aware-execution.md`
 
 ## Decision Points
 
-### Mode Selection
-- **Auto-detect** (default): If `codebase-map.md` valid → incremental. If missing/corrupted → full.
-- **Force full** (`full`): Use after major structural changes (skill domain reorganization, agent renames).
-- **Force incremental** (`incremental`): Use when Lead provides specific changed-file list. Fails without existing map.
+### Refactor vs. Report Only
+- **Refactor** (default): Tests exist and pass before any changes. Scope is ≤10 files. No cross-module renames.
+- **Report only**: No test suite available, or scope exceeds 10 files. List candidates with severity for user decision.
 
-> For staleness threshold, pruning strategy, and bidirectional handling details: read `resources/methodology.md`
-> Escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
+### Scope Determination
+- User provides `--target=pattern` → restrict Glob to that pattern.
+- No pattern → scan all source files in project root excluding `.claude/`, `node_modules/`, `.git/`, `dist/`, `build/`.
+- File count >30 → split by top-level directory and assign one implementer per segment (COMPLEX tier).
 
-## Scope Boundary
+### Safety Gate (Pre-Execution Check)
+Before applying any change: verify test command runs successfully on unmodified code.
+If baseline tests fail → abort, report in L1 as `tests_passed: false`, `files_refactored: 0`.
 
-### Phase 1 (Current): `.claude/` Directory Only
+## Methodology
 
-**Included paths:**
-- `.claude/agents/*.md`
-- `.claude/skills/*/SKILL.md`
-- `.claude/hooks/*.sh`
-- `.claude/settings.json`
-- `.claude/CLAUDE.md`
-- `.claude/projects/*/memory/MEMORY.md`
+### Step 1: Scan
+Glob project source files (`.ts`, `.tsx`, `.js`, `.py`, `.html`, `.css`, and user-specified patterns).
+Exclude: `.claude/`, `node_modules/`, `.git/`, `dist/`, `build/`, `coverage/`, binary files.
+Flag candidates meeting any threshold: file >800 lines, duplicate function signature patterns, unreachable exports.
+> For language-specific detection patterns and tech debt criteria: read `resources/methodology.md`
 
-**Excluded paths:**
-- `.claude/agent-memory/` (except codebase-map.md itself)
-- `.claude/agent-memory-local/`
-- `.claude/projects/*/memory/cc-reference/*`
-- `.claude/plugins/`
-- Binary files, `.git/`, `node_modules/`
+### Step 2: Analyze
+Read each candidate file. Assess:
+- **Dead code**: Unexported symbols with zero cross-file references.
+- **Large files**: Files >800L that can be split by cohesion boundary.
+- **Duplicate patterns**: Repeated code blocks (>10 identical lines across files).
+- **Risk**: Files with >5 importers have high blast radius — flag for report-only unless isolated.
+> For risk scoring matrix and blast-radius calculation: read `resources/methodology.md`
+
+### Step 3: Plan
+Produce a change plan listing each action:
+- `DELETE {symbol}` — dead code removal
+- `EXTRACT {symbol} → {new_file}` — split large file
+- `INLINE {call_site}` — remove unnecessary abstraction
+- `RENAME {old} → {new}` — clarity improvement
+Confirm with user before executing changes in report-only mode.
+
+### Step 4: Execute
+Apply changes file-by-file using Edit (targeted changes) or Write (rewrites).
+After each file: read back to verify edit applied correctly. Log original content for revert.
+Never touch `.claude/` directory — scope enforcement is mandatory.
+
+### Step 5: Test
+Run the test command provided in DPS. If `--test-cmd` not supplied, use auto-detected command
+(`pnpm test`, `npm test`, `pytest`, in that priority order).
+- **Pass**: Record `tests_passed: true`. Commit changes.
+- **Fail**: Restore original content (Write original back to each modified file). Record `files_reverted: N`.
+> For revert procedure and test runner auto-detection logic: read `resources/methodology.md`
 
 ## Failure Handling
 
@@ -118,56 +88,67 @@ Write updated map to `.claude/agent-memory/analyst/codebase-map.md`.
 
 | Failure Type | Level | Action |
 |---|---|---|
-| Filesystem scan timeout or partial read | L0 Retry | Re-invoke same analyst with same DPS |
-| Analyst output missing hotspot scoring or bidirectional refs | L1 Nudge | SendMessage with refined reference detection patterns |
-| Analyst stuck, map corrupted on repeated attempts | L2 Respawn | Kill → fresh analyst with force-full mode DPS |
-| Map size limit exceeded and incremental fails repeatedly | L3 Restructure | Switch to targeted scan by scope segment, prune aggressively |
-| 3+ L2 failures or scan structurally blocked | L4 Escalate | AskUserQuestion with situation summary and options |
+| Glob timeout or partial read | L0 Retry | Re-invoke same implementer with same DPS |
+| Test fail after refactor | L1 Nudge | Revert changes → narrow scope to 1 file, retry |
+| Implementer stuck or maxTurns exhausted | L2 Respawn | Kill → fresh implementer with reduced file set |
+| Multiple modules fail repeatedly | L3 Restructure | Switch to report-only mode, generate candidate list |
+| 3+ L2 failures or scope structurally blocked | L4 Escalate | AskUserQuestion with partial findings and options |
 
-- **Map corrupted**: Delete and regenerate (full scan).
-- **Map exceeds 300 lines**: Prune lowest-hotspot, oldest-updated entries.
-- **Orphaned entry found**: Remove immediately, clean `refd_by` references.
+- **No test suite**: Immediately switch to report-only mode. Never refactor without tests.
+- **Scope exceeds 30 files**: Pause, split into waves (max 10 files per wave), await user approval.
+- **Pipeline impact**: Non-blocking (homeostasis). Partial report is actionable.
+- For escalation ladder details: read `.claude/resources/failure-escalation-ladder.md`
 
 ## Anti-Patterns
 
-### DO NOT: Track Agent-Memory Files as INFRA Components
-Agent-memory directories are volatile runtime data. Including them inflates the map with entries that change constantly, consuming the 150-entry budget with low-value data.
+### DO NOT: Refactor Without a Passing Test Baseline
+If tests fail before any changes, the codebase state is unknown. Applying refactors compounds the problem. Always confirm baseline test pass before executing Step 4.
 
-### DO NOT: Skip Bidirectional Consistency Checks
-Writing `refs` without updating the target's `refd_by` creates silent inconsistencies that compound over time. Every reference must be written bidirectionally in the same operation.
+### DO NOT: Touch .claude/ Directory Files
+manage-codebase scope is project source code only. .claude/ files are managed by manage-infra and execution-infra. Scope violation = immediate abort.
 
-### DO NOT: Run Full Scan When Incremental Suffices
-Full scans consume 20-30 analyst turns. If only 2-3 files changed, incremental completes in 5-10 turns. Always check changed-file count before selecting mode.
+### DO NOT: Auto-Apply High-Blast-Radius Changes
+Files imported by 5+ other files require manual user review. Auto-refactoring these risks cascading breakage across modules. Flag for report-only even when tests exist.
 
-### DO NOT: Include Non-Structural References in refs
-Only track structural references (imports, INPUT_FROM/OUTPUT_TO, settings.json paths, hook script references). Content mentions of other skills are not structural dependencies.
+### DO NOT: Apply Multiple Refactoring Types in One Pass
+Mix of DELETE + EXTRACT + RENAME in a single pass makes revert ambiguous. Apply one type per implementer turn, test after each type, then proceed.
 
-### DO NOT: Allow Map to Exceed 300 Lines Without Pruning
-The 300-line limit keeps the map readable as context for analysts. Prune proactively when approaching 250 lines.
+### DO NOT: Confuse Roles
+- **manage-codebase**: Project source files (TypeScript, Python, HTML, etc.)
+- **manage-infra**: .claude/ INFRA files (skills, agents, hooks, resources)
+- **self-implement**: Applying RSIL-generated improvements to INFRA
 
 ## Transitions
 
 ### Receives From
 | Source Skill | Data Expected | Format |
 |-------------|---------------|--------|
-| (self-triggered) | Periodic maintenance or post-pipeline invocation | User argument: `full` or `incremental`, or auto-detect |
-| execution-impact | Changed file list from pipeline execution | L1 YAML: file change manifest with paths |
-| delivery-pipeline | Post-delivery map update request | L1 YAML: pipeline completion status with changed files |
+| self-diagnose | Tech debt item list from Category 8 (code quality) | L1 YAML with file paths and issue types |
+| (user-invoked) | Project root, target pattern, test command | CLI arguments via $ARGUMENTS |
+| delivery-pipeline | Post-delivery cleanup request | L1 YAML with changed file manifest |
 
 ### Sends To
 | Target Skill | Data Produced | Trigger Condition |
 |-------------|---------------|-------------------|
-| (filesystem) | Updated codebase-map.md | Always (writes to `.claude/agent-memory/analyst/codebase-map.md`) |
-| execution-impact | Fresh dependency data for impact analysis | When impact analysis requests codebase-map data |
-| (user) | Map health report | Always (terminal — L1/L2 health summary) |
+| (user) | Refactoring report with before/after diff and test confirmation | Always (terminal) |
+| manage-infra | Notification if .claude/ references in source files are discovered | When cross-boundary references found |
 
-> D17 Note: 4-channel protocol (Ch1 PT, Ch2 `tasks/{team}/`, Ch3 micro-signal, Ch4 P2P) — format: read `.claude/resources/output-micro-signal-format.md`
+### Failure Routes
+| Failure Type | Route To | Data Passed |
+|-------------|----------|-------------|
+| Tests fail after refactor | (user) | Revert confirmation + original failure diff |
+| No test suite detected | (user) | Report-only candidate list with severity |
+| Scope exceeds safe threshold | (user) | Candidate list with blast-radius scores |
+
+> D17 Note: P2+ team mode — use 4-channel protocol.
+> Micro-signal format: read `.claude/resources/output-micro-signal-format.md`
 
 ## Quality Gate
-- All entries point to existing filesystem files. No entries for excluded paths.
-- `refs` and `refd_by` bidirectionally consistent (A refs B → B refd_by A).
-- Hotspot scores match threshold criteria. Map within 300-line limit.
-- Analyst completed within maxTurns (30).
+1. All modified files pass test suite after refactoring (or reverted to original state on fail).
+2. Zero .claude/ directory files modified (scope boundary enforced).
+3. Baseline test pass confirmed before any refactoring applied.
+4. Each refactored file read-back verified after Edit/Write.
+5. L1 output includes accurate counts: `files_scanned`, `files_refactored`, `files_reverted`, `tech_debt_items`.
 
 ## Output
 
@@ -175,25 +156,19 @@ The 300-line limit keeps the map readable as context for analysts. Prune proacti
 ```yaml
 domain: homeostasis
 skill: manage-codebase
-status: complete|partial
-mode: full-generation|incremental-update|staleness-check
+status: PASS|FAIL
+files_scanned: 0
+files_refactored: 0
+files_reverted: 0
+tech_debt_items: 0
+tests_passed: true|false
 pt_signal: "metadata.phase_signals.homeostasis"
-signal_format: "{STATUS}|entries:{N}|mode:{mode}|ref:tasks/{team}/homeostasis-manage-codebase.md"
-entries: 0
-stale_entries_removed: 0
-new_entries_added: 0
-entries_updated: 0
-map_path: ".claude/agent-memory/analyst/codebase-map.md"
-staleness_report:
-  total_entries: 0
-  stale_count: 0
-  missing_count: 0
-  recommendation: "none|incremental|full-regeneration"
+signal_format: "{STATUS}|files:{N}|reverted:{R}|ref:tasks/{team}/homeostasis-manage-codebase.md"
 ```
 
 ### L2
-- Mode selection rationale (full vs incremental)
-- Files scanned and references discovered
-- Staleness detection results
-- Entries added, updated, or removed
-- Map health summary with hotspot distribution
+- Tech debt scan results (candidates per category: dead code, large files, duplicates)
+- Per-file refactoring plan with action type and rationale
+- Before/after diff summary for each modified file
+- Test execution results (pass/fail per test file, total count)
+- Revert log if any files were restored (file path + reason)

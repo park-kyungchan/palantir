@@ -1,23 +1,27 @@
 ---
 name: verify-consistency
 description: >-
-  Cross-references skill input/output bidirectionality and counts
-  across all skill descriptions. Verifies phase sequence P0
-  through P8. Second of four sequential verify stages. Use after
-  verify-structural-content PASS or after multi-skill description
-  edits. Reads from verify-structural-content structural and
-  content integrity confirmation. Produces relationship matrix
-  with consistency status for verify-quality on PASS, or routes
-  back to execution-infra on FAIL. On FAIL, routes source skill,
-  target skill, and missing direction to execution-infra. Builds
-  directed reference graph from INPUT_FROM/OUTPUT_TO keys. Flags
-  unidirectional references, unauthorized backward phase
-  references, and CLAUDE.md count drift. TRIVIAL: Lead-direct
-  on 2-3 files. STANDARD: 1 analyst. COMPLEX: 2 analysts —
-  bidirectionality split from phase sequence. DPS context: all
-  skill descriptions with INPUT_FROM/OUTPUT_TO extracted +
-  CLAUDE.md counts. Exclude L2 body cross-references, FAIL
-  route exceptions already documented as exempt.
+  Checks cross-file reference integrity by verifying bidirectional
+  consistency of declared dependencies, sequence ordering, and
+  declared counts. Second of four sequential verify stages. Use
+  after verify-structural-content PASS or after multi-file
+  dependency edits. Reads from verify-structural-content structural
+  and content integrity confirmation. Produces relationship matrix
+  with consistency status for verify-quality on PASS, or routes to
+  the relevant execution skill on FAIL. On FAIL, routes source,
+  target, and missing direction to the execution skill. Builds
+  directed reference graph from declared dependency keys. Flags
+  unidirectional references, unauthorized backward sequence
+  references, and declared count drift. Default scope: INFRA skill
+  routing topology (INPUT_FROM/OUTPUT_TO keys + CLAUDE.md counts +
+  P0-P8 phase sequence). DPS-parameterized: caller specifies
+  reference keys, sequence rules, and count sources for non-INFRA
+  artifacts. TRIVIAL: Lead-direct on 2-3 files. STANDARD: 1
+  analyst. COMPLEX: 2 analysts — bidirectionality split from
+  sequence verification. DPS context: all artifact descriptions
+  with dependency keys extracted + declared counts. Exclude L2
+  body cross-references, FAIL route exceptions already documented
+  as exempt.
 user-invocable: true
 disable-model-invocation: true
 ---
